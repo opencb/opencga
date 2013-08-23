@@ -1,0 +1,4 @@
+
+This folder must exist in order to execute "mvn install", it's empty as it is ignored by Git.
+
+

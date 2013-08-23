@@ -1,0 +1,196 @@
+{
+	author: {
+		name: "",
+		email: ""
+	},
+	version: "1.0",
+	id: "hpg-variant",
+	name: "HPG-Variant",
+	description: "HPG-Variant",
+	icon: {
+		size: "",
+		data: ""
+	},
+	website: "http://",
+	publication: "",
+	globalParams: [
+    	           {name:"out", description:"Filename prefix for main output files."},
+    	           {name:"num-batches", description:"Maximum number of batches stored at the same time."},
+    	           {name:"batch-lines", description:"Maximum number of lines in a batch."},
+    	           {name:"batch-bytes", description:"Maximum number of bytes in a batch."},
+    	           {name:"num-threads", description:"Number of threads when a task runs in parallel."},
+    	           {name:"entries-per-thread", description:"Number of entries in a batch each thread processes."},
+    	           {name:"config", description:"File that contains the parameters for configuring the application."},
+    	           {name:"mmap-vcf", description:"Whether to map VCF files to virtual memory or use the I/O API."}
+    ],
+	executions: [
+	             {
+	            	 id: "effect",
+	            	 name: "Variant Effect",
+	            	 executable: "bin/hpg-var-effect",
+	            	 inputParams: [{name:"vcf-file", dataType:"vcf"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-txt", dataType:"vcf"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+	            	           {name:"vcf-file", description:"VCF file used as input.", required:"true"},
+	            	           {name:"url", description:"URL of the host where remote web services run."},
+	            	           {name:"version", description:"Version of the web service to query."},
+	            	           {name:"species", description:"Species whose genome is taken as reference."},
+	            	           {name:"alleles", description:"Filter: by number of alleles."},
+	            	           {name:"coverage", description:"Filter: by minimum coverage."},
+	            	           {name:"quality", description:"Filter: by minimum quality."},
+	            	           {name:"maf", description:"Filter: by maximum MAF (minimum allele frequency)."},
+	            	           {name:"region", description:"Filter: by a list of regions (chr1:start1-end1,chr2:start2-end2...)."},
+	            	           {name:"region-file", description:"Filter: by a list of regions (read from a GFF file)."},
+	            	           {name:"snp", description:"Filter: by being a SNP or not."},
+	            	           {name:"no-phenotypes", description:"Flag asking not to retrieve phenotypical information."},
+	            	           {name:"exclude", description:"Consequence types to exclude from the query (comma-separated)."}
+	            	 ],
+	            	 configAttr: [],
+	            	 testCmd: ""
+	             },
+	             {
+	            	 id: "vcf-filter",
+	            	 name: "Variant VCF",
+	            	 executable: "bin/hpg-var-vcf filter",
+	            	 inputParams: [{name:"vcf-file", dataType:"vcf"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-txt", dataType:"vcf"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+            	               {name:"vcf-file", description:"VCF file used as input.", required:"true"},
+            	               {name:"url", description:"URL of the host where remote web services run."},
+            	               {name:"version", description:"Version of the web service to query."},
+            	               {name:"species", description:"Species whose genome is taken as reference."},
+            	               {name:"alleles", description:"Filter: by number of alleles."},
+            	               {name:"coverage", description:"Filter: by minimum coverage."},
+            	               {name:"quality", description:"Filter: by minimum quality."},
+            	               {name:"maf", description:"Filter: by maximum MAF (minimum allele frequency)."},
+            	               {name:"region", description:"Filter: by a list of regions (chr1:start1-end1,chr2:start2-end2...)."},
+            	               {name:"region-file", description:"Filter: by a list of regions (read from a GFF file)."},
+            	               {name:"snp", description:"Filter: by being a SNP or not."},
+            	               {name:"save-rejected", description:"Write a file containing the rejected records."}
+	                 ],
+	                 configAttr: [],
+	                 testCmd: ""
+	             },
+	             {
+	            	 id: "vcf-merge",
+	            	 name: "Variant VCF",
+	            	 executable: "bin/hpg-var-vcf merge",
+	            	 inputParams: [{name:"vcf-list", dataType:"vcf"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-content", dataType:"vcf"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+            	               {name:"vcf-list", description:"VCF file used as input.", required:"true"},
+            	               {name:"url", description:"URL of the host where remote web services run."},
+            	               {name:"version", description:"Version of the web service to query."},
+            	               {name:"species", description:"Species whose genome is taken as reference."},
+            	               {name:"missing-mode", description:"How to fill missing genotypes (missing = ./., reference = 0/0)."},
+            	               {name:"copy-filter", description:"Whether to copy the FILTER column from the original files into the samples."},
+            	               {name:"copy-info", description:"Whether to copy the INFO column from the original files into the samples."},
+            	               {name:"info-fields", description:"Information to generate in the new INFO column."}
+    	             ],
+    	             configAttr: [],
+    	             testCmd: ""
+	             },
+	             {
+	            	 id: "vcf-split",
+	            	 name: "Variant VCF",
+	            	 executable: "bin/hpg-var-vcf split",
+	            	 inputParams: [{name:"vcf-file", dataType:"vcf"}, {name:"ped-file", dataType:"ped"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-txt", dataType:"vcf"}, {name:"ped-file-txt", dataType:"ped"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+            	               {name:"vcf-file", description:"VCF file used as input.", required:"true"},
+            	               {name:"criterion", description:"Criterion for splitting the file."}
+    	             ],
+    	             configAttr: [],
+    	             testCmd: ""
+	             },
+	             {
+	            	 id: "vcf-stats",
+	            	 name: "Variant VCF",
+	            	 executable: "bin/hpg-var-vcf stats",
+	            	 inputParams: [{name:"vcf-file", dataType:"vcf"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-txt", dataType:"vcf"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+            	               {name:"vcf-file", description:"VCF file used as input.", required:"true"},
+            	               {name:"variants", description:"Get statistics about variants, both per variant and per file (default)."},
+            	               {name:"samples", description:"Get statistics about samples."}
+    	             ],
+    	             configAttr: [],
+    	             testCmd: ""
+	             },
+	             {
+	            	 id: "gwas-assoc",
+	            	 name: "Variant GWAS",
+	            	 executable: "bin/hpg-var-gwas assoc",
+	            	 inputParams: [{name:"vcf-file", dataType:"vcf"}, {name:"ped-file", dataType:"ped"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-txt", dataType:"vcf"}, {name:"ped-file-txt", dataType:"ped"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+            	               {name:"vcf-file", description:"VCF file used as input.", required:"true"},
+            	               {name:"ped-file", description:"PED file used as input.", required:"true"},
+            	               {name:"url", description:"URL of the host where remote web services run."},
+            	               {name:"version", description:"Version of the web service to query."},
+            	               {name:"species", description:"Species whose genome is taken as reference."},
+            	               {name:"alleles", description:"Filter: by number of alleles."},
+            	               {name:"coverage", description:"Filter: by minimum coverage."},
+            	               {name:"quality", description:"Filter: by minimum quality."},
+            	               {name:"maf", description:"Filter: by maximum MAF (minimum allele frequency)."},
+            	               {name:"region", description:"Filter: by a list of regions (chr1:start1-end1,chr2:start2-end2...)."},
+            	               {name:"region-file", description:"Filter: by a list of regions (read from a GFF file)."},
+            	               {name:"snp", description:"Filter: by being a SNP or not."},
+            	               {name:"chisq", description:"Chi-square association test."},
+            	               {name:"fisher", description:"Fisher's exact test."}
+    	             ],
+    	             configAttr: [],
+    	             testCmd: ""
+	             },
+	             {
+	            	 id: "gwas-tdt",
+	            	 name: "Variant GWAS",
+	            	 executable: "bin/hpg-var-gwas tdt",
+	            	 inputParams: [{name:"vcf-file", dataType:"vcf"}, {name:"ped-file", dataType:"ped"}],
+	            	 inputParamsFromTxt: [{name:"vcf-file-txt", dataType:"vcf"}, {name:"ped-file-txt", dataType:"ped"}],
+	            	 outputParam: "outdir",
+	            	 validParams: [
+            	               {name:"vcf-file", description:"VCF file used as input.", required:"true"},
+            	               {name:"ped-file", description:"PED file used as input.", required:"true"},
+            	               {name:"url", description:"URL of the host where remote web services run."},
+            	               {name:"version", description:"Version of the web service to query."},
+            	               {name:"species", description:"Species whose genome is taken as reference."},
+            	               {name:"alleles", description:"Filter: by number of alleles."},
+            	               {name:"coverage", description:"Filter: by minimum coverage."},
+            	               {name:"quality", description:"Filter: by minimum quality."},
+            	               {name:"maf", description:"Filter: by maximum MAF (minimum allele frequency)."},
+            	               {name:"region", description:"Filter: by a list of regions (chr1:start1-end1,chr2:start2-end2...)."},
+            	               {name:"region-file", description:"Filter: by a list of regions (read from a GFF file)."},
+            	               {name:"snp", description:"Filter: by being a SNP or not."}
+    	             ],
+    	             configAttr: [],
+    	             testCmd: ""
+	             }
+	],
+    examples: [
+                {
+                	name: "Example 1",
+                	executionId: "1",
+                	options: [{paramName:"input", value:"example/CHB.exon.2010_03.sites.vcf"}]
+                },
+                {
+                	name: "Example 2",
+                	executionId: "1",
+                	options: [{paramName:"input", value:"example/1000genomes_5000_variants.vcf"}]
+                }
+    ],
+    acl: [
+          {
+        	  userId: "12345",
+        	  read: "true",
+        	  write: "false",
+        	  execute: "true"
+          }
+    ]
+}

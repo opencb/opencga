@@ -1,0 +1,51 @@
+{
+	author: {
+		name: "",
+		email: ""
+	},
+	version: "1.0",
+	id: "sw",
+	name: "Smith-Waterman",
+	description: "HPG Smith-Waterman",
+	icon: "",
+	executions: [
+	             {
+	            	 id: "sw",
+	            	 name: "Smith-Waterman",
+	            	 executable: "bin/sw-hpc",
+	            	 inputParam: ["q", "r"],
+	            	 outParam: "d",
+	            	 validParams: [
+	            	           {name:"q", required:"true", description:"Filename containing the query sequences."},
+	            	           {name:"r", required:"true", description:"Filename containing the reference sequences."},
+	            	           {name:"o", required:"false", description:"Filename where the resulting alignments will be saved."},
+	            	           {name:"b", required:"false", description:"Number of reads per batch."},
+	            	           {name:"p", required:"false", description:"Penalty for the gap openning: from 0.0 to 100.0."},
+	            	           {name:"e", required:"false", description:"Penalty for the gap extending: from 0.0 to 10.0."},
+	            	           {name:"s", required:"false", description:"Substitution score matrix name, for DNA: dnafull, for proteins: blosum50, blosum62, blosum80."},
+	            	           {name:"n", required:"false", description:"Number of threads."}
+	            	 ],
+	            	 dataType: ["txt"],
+	            	 configAttr: [],
+	            	 testCmd: "date"
+	             }
+	],
+    examples: [
+                {
+                	name: "Example 1",
+                	executionId: "1",
+                	options: [
+                	          {paramName:"q", value:"/httpd/bioinfo/labs/sw/example/12-length-reads-6.txt"},
+                	          {paramName:"r", value:"/httpd/bioinfo/labs/sw/example/12-length-refs-6.txt"}
+                	]
+                }
+    ],
+    acl: [
+          {
+        	  userId: "12345",
+        	  read: "true",
+        	  write: "false",
+        	  execute: "true"
+          }
+    ]
+}

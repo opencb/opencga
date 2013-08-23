@@ -1,0 +1,53 @@
+{
+	author: {
+		name: "",
+		email: ""
+	},
+	version: "1.0",
+	id: "fatigo",
+	name: "Fatigo",
+	description: "",
+	icon: {
+		size: "",
+		data: ""
+	},
+	website: "http://",
+	publication: "",
+	globalParams: [],
+	executions: [
+	             {
+	            	 id: "fatigo",
+	            	 name: "Fatigo",
+	            	 executable: "babelomics.sh --tool fatigo",
+	            	 inputParams: [{name:"list1", dataType:"txt"},{name:"list2", dataType:"txt"}],
+	            	 inputParamsFromTxt: [],
+	            	 outputParam: "o",
+	            	 validParams: [
+	            	           {name:"list1", description:"the feature data containig the list #1 of genes, or the feature data file", required:"true"},
+	            	           {name:"list2", description:"the file containig the list #2 of genes, or the feature data file"},
+	            	           {name:"fisher", description:"the Fisher test mode, valid values: less, greater, two-tailed"},
+	            	           {name:"duplicates", description:"to remove duplicated IDs, valid values: never, each, ref"},
+	            	           {name:"species", description:"The specie of the ids"},
+	            	           {name:"go-bp", description:"GO biological process database"},
+	            	           {name:"go-bp-min-num-genes", description:""},
+	            	           {name:"go-bp-max-num-genes", description:""},
+	            	           {name:"go-cc", description:"GO cellular component database"},
+	            	           {name:"go-cc-min-num-genes", description:""},
+	            	           {name:"go-cc-max-num-genes", description:""},
+	            	           {name:"go-mf", description:"GO molecular function database"},
+	            	           {name:"go-mf-min-num-genes", description:""},
+	            	           {name:"go-mf-max-num-genes", description:""},
+	            	           {name:"go-slim", description:"go-slim"},
+	            	           {name:"go-slim-min-num-genes", description:""},
+	            	           {name:"go-slim-max-num-genes", description:""},
+	            	           {name:"mirna", description:"mirna"},
+	            	           {name:"jaspar", description:"jaspar"},
+	            	           {name:"annotations", description:"Your own annotations"}
+	            	 ],
+	            	 configAttr: [],
+	            	 testCmd: ""
+	             }
+	],
+    examples: [],
+    acl: []
+}

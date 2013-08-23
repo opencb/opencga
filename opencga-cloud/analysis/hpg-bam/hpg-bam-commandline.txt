@@ -1,0 +1,1 @@
+./hpg-bam stats -b 1M_ERR089819.bam -o /tmp/out-bam/ --db
