@@ -18,6 +18,7 @@
 
     <properties>
         <opencga.version>0.2.0</opencga.version>
+        <java.version>1.7</java.version>
     </properties>
 
     <dependencyManagement>
@@ -135,4 +136,16 @@
         </dependencies>
 
     </dependencyManagement>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
