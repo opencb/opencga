@@ -151,8 +151,10 @@ public class AnalysisWSServer extends GenericWSServer {
 		}
 
 		String analysisName = analysis;
+        String toolName = analysis;
 		if (analysis.contains(".")) {
-			analysisName = analysis.split("\\.")[0];
+			String[] split = analysis.split("\\.");
+			analysisName = split[0];
 		}
 
 		String analysisOwner = "system";
@@ -217,7 +219,7 @@ public class AnalysisWSServer extends GenericWSServer {
 			example = Boolean.parseBoolean(params.get("example").get(0));
 			params.remove("example");
 		}
-		String toolName = analysisObj.getId();
+
 
 		// Set input param
 		List<String> dataList = new ArrayList<String>();

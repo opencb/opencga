@@ -34,6 +34,13 @@ var RESULT = {
                     colVisibility : [1,1,1,1],
                     colOrder : [0,1,2,3]
 		         };
+				var swmFeaturesTable = {
+                    name : "SWM_FEATURES_TABLE",
+                    colNames : ["Subpathway Name"],
+                    colTypes : ["string"],
+                    colVisibility : [1],
+                    colOrder : [0]
+		         };
 				var pathwayDict = {'Summary':'Summary', 'Normalization':'Normalization',
 				    '03320':'PPAR SIGNALING PATHWAY',
 				    '04010':'MAPK SIGNALING PATHWAY',
@@ -80,7 +87,7 @@ var RESULT = {
 					var group = ' ';
 					if(outItem.indexOf('_normmatrix.') != -1){
                         group = "Normalization";
-					}else if(outItem.indexOf('ALL.txt') != -1) {
+					}else if(outItem.indexOf('ALL.txt') != -1 || outItem.indexOf('svm_') != -1) {
 						group = "Summary";
 					}else {
 					    for(var p = 0; p< pathwayNames.length; p++){
@@ -105,6 +112,9 @@ var RESULT = {
                         if(outItem.indexOf('_normmatrix.')!=-1){
                             title='Normalization image';
                         }
+                        if(outItem.indexOf('_preds.')!=-1){
+                            title='Predictor results';
+                        }
 						item = {
 							"title": title,
 							"file": outItem,
@@ -126,6 +136,10 @@ var RESULT = {
                         if(outItem.indexOf('wilcoxon.txt') != -1) {
                             tLayout = wilcoxonTable;
                         }
+                        if(outItem.indexOf('svm_features.txt') != -1) {
+                            title = 'Features';
+                            tLayout = swmFeaturesTable;
+                        }
 						var renderers = [{type: 'file'},
 						    {type: 'grid', tableLayout: tLayout}
 						];
@@ -133,10 +147,17 @@ var RESULT = {
 						    renderers = [{type: 'file'}];
 						    title = 'Normalization matrix';
                         }
+                        if(outItem.indexOf('svm_confusion_matrix.txt') != -1){
+                            title = 'Confusion Matrix';
+                            renderers = [{type: 'file'},{type: 'table'}];
+                        }
+                        if(outItem.indexOf('svm_stats.txt') != -1){
+                            title = 'Stats';
+                            renderers = [{type: 'file'},{type: 'table', header:true}];
+                        }
                         item = {
                             "title": title,
                             "file": outItem,
-
                             "renderers": renderers
                         };
 					break;

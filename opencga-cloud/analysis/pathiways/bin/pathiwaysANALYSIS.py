@@ -37,7 +37,13 @@ def main():
       opts.celornormalizedmatrix = matrixDir+""+normMatrix;
       print(opts.celornormalizedmatrix);
 
-    command = "/opt/R/R-2.15.2/bin/Rscript "+homePath+"/pathiwaysMAIN.r "+homePath+" "+opts.pathways+" "+opts.celornormalizedmatrix+" "+opts.summ+" "+opts.experimentaldesign+" "+opts.control+" "+opts.disease+" "+opts.outdir+" "+opts.platform+" "+opts.expname+" "+opts.test+" "+opts.paired
+
+    if opts.execution == 'pathiways': 
+      command = "/opt/R/R-2.15.2/bin/Rscript "+homePath+"/pathiwaysMAIN.r "+homePath+" "+opts.pathways+" "+opts.celornormalizedmatrix+" "+opts.summ+" "+opts.experimentaldesign+" "+opts.control+" "+opts.disease+" "+opts.outdir+" "+opts.platform+" "+opts.expname+" "+opts.test+" "+opts.paired
+    
+    if opts.execution == 'pathipred': 
+      command = "/opt/R/R-2.15.2/bin/Rscript "+homePath+"/pathipredMAIN.r "+homePath+" "+homePath+" "+opts.celornormalizedmatrix+" "+opts.experimentaldesign+" "+opts.outdir+" "+opts.pathways+" "+opts.summ+" "+opts.control+" "+opts.disease+" "+opts.platform+" "+opts.expname+" "+opts.k
+    
     execute(command)
 
     # Get date
@@ -151,6 +157,13 @@ def get_options():
                       help='Comparison tests')
     parser.add_option('--paired', dest='paired', metavar="STRING",
                       help='Wilcoxon comparison test can be paired or not')
+                      
+    parser.add_option('-k', dest='k', metavar="STRING",
+                      help='Wilcoxon comparison test can be paired or not')
+                      
+    parser.add_option('--execution', dest='execution', metavar="STRING",
+                      help='pathiways or pathipred')
+                      
 
     opts = parser.parse_args()[0]
 
@@ -159,7 +172,7 @@ def get_options():
 
     if not opts.outdir.endswith('/'):
         opts.outdir += '/'
-
+    
     return opts
 
 

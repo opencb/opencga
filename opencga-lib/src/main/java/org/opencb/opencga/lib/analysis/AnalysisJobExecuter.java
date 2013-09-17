@@ -61,7 +61,7 @@ public class AnalysisJobExecuter {
 //		manifestFile = analysisPath + "manifest.json";
         manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
 //		resultsFile = analysisPath + "results.json";
-        resultsFile = analysisPath.resolve(Paths.get("results.json"));
+        resultsFile = analysisPath.resolve(Paths.get("results.js"));
 
         analysis = getAnalysis();
         execution = getExecution();
@@ -263,6 +263,10 @@ public class AnalysisJobExecuter {
     }
 
     public InputStream getResultInputStream() throws AnalysisExecutionException, IOException {
+        if (!Files.exists(resultsFile)) {
+            resultsFile = analysisPath.resolve(Paths.get("results.json"));
+        }
+
         if (Files.exists(resultsFile)) {
             return Files.newInputStream(resultsFile);
         }
