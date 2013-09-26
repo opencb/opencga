@@ -56,7 +56,8 @@
 	            	           {name:"disease", description:"Disease value.", required:"true"},
 	            	           {name:"platform", description:"Platform value.", required:"true"},
 	            	           {name:"exp-name", description:"Experiment name.", required:"true"},
-	            	           {name:"k", description:"k-fold", required:"true"}
+	            	           {name:"k", description:"k-fold", required:"true"},
+	            	           {name:"expdesigntype", description:"exp design type", required:"true"}
 	            	 ],
 	            	 configAttr: [],
 	            	 testCmd: "",
