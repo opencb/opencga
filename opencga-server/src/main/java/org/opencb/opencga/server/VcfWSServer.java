@@ -1,4 +1,4 @@
-package org.opencb.opencga.ws;
+package org.opencb.opencga.server;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;

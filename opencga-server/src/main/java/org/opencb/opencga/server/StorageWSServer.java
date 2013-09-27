@@ -1,4 +1,4 @@
-package org.opencb.opencga.ws;
+package org.opencb.opencga.server;
 
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;

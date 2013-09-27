@@ -10,7 +10,7 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>opencga-ws</artifactId>
+    <artifactId>opencga-server</artifactId>
     <version>${opencga.version}</version>
     <packaging>war</packaging>
 

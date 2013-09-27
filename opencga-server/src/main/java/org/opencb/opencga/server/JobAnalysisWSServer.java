@@ -1,4 +1,4 @@
-package org.opencb.opencga.ws;
+package org.opencb.opencga.server;
 
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;

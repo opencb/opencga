@@ -1,4 +1,4 @@
-package org.opencb.opencga.ws;
+package org.opencb.opencga.server;
 
 import nl.bitwalker.useragentutils.Browser;
 import nl.bitwalker.useragentutils.OperatingSystem;
@@ -67,7 +67,7 @@ public class GenericWSServer {
 		// logger.info("------------------->" + op.getId());
 		// logger.info("------------------->" + op.getDeviceType().getName());
 
-		properties = ResourceBundle.getBundle("org.opencb.opencga.ws.application");
+		properties = ResourceBundle.getBundle("application");
 		config = new Config(properties);
 
 		File dqsDir = new File(properties.getString("DQS.PATH"));

@@ -978,10 +978,8 @@ public class BamManager {
         reader.close();
 
         JsonElement json = new JsonParser().parse(sb.toString());
-        JsonArray array = json.getAsJsonArray();
-        JsonObject obj = array.get(0).getAsJsonObject();
-
-        return obj.get("sequence").getAsString();
+        String sequence = json.getAsJsonObject().get("response").getAsJsonArray().get(0).getAsJsonObject().get("result").getAsJsonObject().get("sequence").getAsString();
+        return sequence;
     }
 
     private String revcomp(String seq) {

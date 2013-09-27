@@ -1,6 +1,7 @@
 package org.opencb.opencga.account;
 
 import org.apache.log4j.Logger;
+import org.dom4j.DocumentException;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -11,7 +12,8 @@ import org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.common.Config;
 import org.opencb.opencga.common.IOUtils;
 import org.opencb.opencga.common.StringUtils;
-import org.dom4j.DocumentException;
+import org.opencb.opencga.lib.storage.datamanagers.VcfManager;
+import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -378,7 +380,7 @@ public class CloudSessionManager {
 
     public String region(String accountId, String bucketId, Path objectId, String regionStr,
                          Map<String, List<String>> params, String sessionId) throws Exception {
-
+        System.out.println("(>·_·)>");
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -392,18 +394,18 @@ public class CloudSessionManager {
         logger.debug(regionStr);
 
         String result = "";
-//        switch (objectItem.getFileFormat()) {
-//            case "bam":
-//                BamManager bamManager = new BamManager();
-////                result = bamManager.getByRegion(fullFilePath, regionStr, params);
-//                result = bamManager.queryRegion(fullFilePath, regionStr, params);
-//                break;
-//            case "vcf":
-//                VcfManager vcfManager = new VcfManager();
-////                result = vcfManager.getByRegion(fullFilePath, regionStr, params);
-//                result = vcfManager.queryRegion(fullFilePath, regionStr, params);
-//                break;
-//        }
+        switch (objectItem.getFileFormat()) {
+            case "bam":
+                BamManager bamManager = new BamManager();
+//                result = bamManager.getByRegion(fullFilePath, regionStr, params);
+                result = bamManager.queryRegion(fullFilePath, regionStr, params);
+                break;
+            case "vcf":
+                VcfManager vcfManager = new VcfManager();
+//                result = vcfManager.getByRegion(fullFilePath, regionStr, params);
+                result = vcfManager.queryRegion(fullFilePath, regionStr, params);
+                break;
+        }
         return result;
     }
 

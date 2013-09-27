@@ -1,8 +1,7 @@
-package org.opencb.opencga.ws;
+package org.opencb.opencga.server;
 
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
-import org.opencb.opencga.common.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
