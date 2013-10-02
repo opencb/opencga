@@ -24,6 +24,8 @@ public class AccountWSServer extends GenericWSServer {
 	@Path("/create")
 	public Response create(@DefaultValue("") @QueryParam("password") String password,
 			@DefaultValue("") @QueryParam("name") String name, @DefaultValue("") @QueryParam("email") String email) {
+
+
 		try {
 			if (accountId.toLowerCase().equals("anonymous")) {
 				cloudSessionManager.createAnonymousAccount(sessionIp);
@@ -77,39 +79,12 @@ public class AccountWSServer extends GenericWSServer {
 			String res = cloudSessionManager.getAccountInfo(accountId, lastActivity, sessionId);
 			return createOkResponse(res);
 		} catch (AccountManagementException e) {
+			logger.error(accountId);
 			logger.error(e.toString());
 			return createErrorResponse("could not get account information");
 		}
 	}
-	
 
-	@GET
-	@Path("/index")
-	public Response index(@DefaultValue("") @QueryParam("object") String object) throws Exception {
-		try {
-//			String res = cloudSessionManager.indexFileObjects(accountId, StringUtils.parseObjectId(object));
-			String res = "TODO";
-			return createOkResponse(res);
-		} catch (Exception e) {
-			logger.error(e.toString());
-			return createErrorResponse("job id not found.");
-		}
-		
-	}
-	@GET
-	@Path("/index_status")
-	public Response indexStatus(@DefaultValue("") @QueryParam("index_job") String index_job) throws Exception {
-		try {
-//			String res = cloudSessionManager.indexJobStatus(accountId, index_job);
-            String res = "TODO";
-			return createOkResponse(res);
-		} catch (Exception e) {
-			logger.error(e.toString());
-			return createErrorResponse("index_job id not found.");
-		}
-
-	}
-	
 	// @GET
 	// @Path("/delete/")
 	// public Response deleteAccount() {

@@ -1,9 +1,10 @@
 package org.opencb.opencga.server;
 
+import java.io.IOException;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
 
 public class VcfWSServer extends GenericWSServer {
 

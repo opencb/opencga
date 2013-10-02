@@ -1,9 +1,26 @@
 package org.opencb.opencga.server;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.opencb.opencga.account.beans.Acl;
-import org.opencb.opencga.account.beans.AnalysisPlugin;
-import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.account.io.IOManagementException;
+import  org.opencb.opencga.account.beans.AnalysisPlugin;
+import  org.opencb.opencga.account.db.AccountManagementException;
+import  org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.lib.analysis.AnalysisExecutionException;
 import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.lib.analysis.SgeManager;
@@ -11,17 +28,6 @@ import org.opencb.opencga.lib.analysis.beans.Analysis;
 import org.opencb.opencga.lib.analysis.beans.Execution;
 import org.opencb.opencga.lib.analysis.beans.InputParam;
 import org.opencb.opencga.common.StringUtils;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @Path("/account/{accountId}/analysis/{analysis}")
 public class AnalysisWSServer extends GenericWSServer {
@@ -150,12 +156,12 @@ public class AnalysisWSServer extends GenericWSServer {
 			params.remove("_");
 		}
 
-		String analysisName = analysis;
+        String analysisName = analysis;
         String toolName = analysis;
-		if (analysis.contains(".")) {
-			String[] split = analysis.split("\\.");
-			analysisName = split[0];
-		}
+        if (analysis.contains(".")) {
+            String[] split = analysis.split("\\.");
+            analysisName = split[0];
+        }
 
 		String analysisOwner = "system";
 		boolean hasPermission = false;
@@ -220,7 +226,6 @@ public class AnalysisWSServer extends GenericWSServer {
 			params.remove("example");
 		}
 
-
 		// Set input param
 		List<String> dataList = new ArrayList<String>();
 		for (InputParam inputParam : execution.getInputParams()) {
@@ -229,12 +234,12 @@ public class AnalysisWSServer extends GenericWSServer {
 				List<String> dataPaths = new ArrayList<String>();
 				for (String dataId : dataIds) {
 					String dataPath = null;
-					if (example) { // is a example
+					if (dataId.contains("example_")) { // is a example
+                        dataId = dataId.replace("example_","");
 						dataPath = aje.getExamplePath(dataId);
 					} else { // is a dataId
-                        // TO FIX
-                        dataPath = cloudSessionManager.getObjectPath(accountId, null, StringUtils.parseObjectId(dataId)).toString();
-                    }
+						dataPath = cloudSessionManager.getObjectPath(accountId, null, StringUtils.parseObjectId(dataId)).toString();
+					}
 
 					if (dataPath.contains("ERROR")) {
 						return createErrorResponse(dataPath);

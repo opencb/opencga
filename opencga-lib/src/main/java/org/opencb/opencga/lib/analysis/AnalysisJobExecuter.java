@@ -263,13 +263,14 @@ public class AnalysisJobExecuter {
     }
 
     public InputStream getResultInputStream() throws AnalysisExecutionException, IOException {
+        System.out.println(resultsFile.toAbsolutePath().toString());
         if (!Files.exists(resultsFile)) {
-            resultsFile = analysisPath.resolve(Paths.get("results.json"));
+            resultsFile = analysisPath.resolve(Paths.get("results.js"));
         }
 
         if (Files.exists(resultsFile)) {
             return Files.newInputStream(resultsFile);
         }
-        throw new AnalysisExecutionException("result.json not found.");
+        throw new AnalysisExecutionException("result.js not found.");
     }
 }

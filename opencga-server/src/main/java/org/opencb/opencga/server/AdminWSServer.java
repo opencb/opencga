@@ -1,16 +1,21 @@
 package org.opencb.opencga.server;
 
+import java.io.IOException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
 import org.opencb.opencga.account.beans.Bucket;
 import org.opencb.opencga.account.beans.Project;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
 
 @Path("/account/{accountId}/admin")
 public class AdminWSServer extends GenericWSServer {
@@ -66,20 +71,17 @@ public class AdminWSServer extends GenericWSServer {
 	}
 
 	// TODO
-	// @GET
-	// @Path("/{bucketname}/rename/{newName}")
-	// public Response renameBucket(@DefaultValue("") @PathParam("bucket_name")
-	// String bucketId,
-	// @DefaultValue("") @PathParam("newName") String newName) {
-	// try {
-	// cloudSessionManager.renameBucket(accountId, bucketId, newName,
-	// sessionId);
-	// return createOkResponse("OK");
-	// } catch (AccountManagementException | IOManagementException e) {
-	// logger.error(e.toString());
-	// return createErrorResponse("could not rename bucket");
-	// }
-	// }
+    @GET
+    @Path("/bucket/{bucketId}/rename/{newName}")
+    public Response renameBucket(@DefaultValue("") @PathParam("bucketId") String bucketId, @DefaultValue("") @PathParam("newName") String newName) {
+        try {
+            cloudSessionManager.renameBucket(accountId, bucketId, newName, sessionId);
+            return createOkResponse("OK");
+        } catch (AccountManagementException | IOManagementException e) {
+            logger.error(e.toString());
+            return createErrorResponse("could not rename bucket");
+        }
+    }
 
 	// TODO
 	// @GET

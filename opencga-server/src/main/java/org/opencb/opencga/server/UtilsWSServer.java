@@ -21,8 +21,18 @@ public class UtilsWSServer extends GenericWSServer {
 		super(uriInfo, httpServletRequest);
 		layout = new Layout();
 	}
-	
-	
+
+//    @GET
+//    @Path("/job_status")
+//    public Response indexStatus(@DefaultValue("") @QueryParam("jobId") String jobId) throws Exception {
+//        try {
+//            return createOkResponse(SgeManager.status(jobId));
+//        } catch (Exception e) {
+//            logger.error(e.toString());
+//            return createErrorResponse("job id not found.");
+//        }
+//    }
+
 	@POST
 	@Path("/network/layout/{algorithm}.{format}")
 	public Response layout(@PathParam("algorithm") String layoutAlgorithm, @PathParam("format") String outputFormat, @FormParam("dot") String dotData, @DefaultValue("output") @FormParam("filename") String filename, @DefaultValue("false") @FormParam("base64") String base64, @FormParam("jsonp") String jsonpCallback) {

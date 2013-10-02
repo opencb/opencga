@@ -1,6 +1,6 @@
 package org.opencb.opencga.server;
 
-import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
+import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
@@ -10,7 +10,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
+
+import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
 
 @Deprecated
 @Path("/bam")

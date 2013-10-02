@@ -1,17 +1,22 @@
 package org.opencb.opencga.server;
 
-import org.opencb.opencga.account.beans.Job;
-import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+
+import org.opencb.opencga.account.beans.Job;
+import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
 
 @Path("/account/{accountId}/analysis/job/{jobId}")
 public class JobAnalysisWSServer extends GenericWSServer {
