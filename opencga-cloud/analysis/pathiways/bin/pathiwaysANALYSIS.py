@@ -44,6 +44,9 @@ def main():
     if opts.execution == 'pathipred': 
       command = "/opt/R/R-2.15.2/bin/Rscript "+homePath+"/pathipredMAIN.r "+homePath+" "+homePath+" "+opts.celornormalizedmatrix+" "+opts.experimentaldesign+" "+opts.outdir+" "+opts.pathways+" "+opts.summ+" "+opts.control+" "+opts.disease+" "+opts.platform+" "+opts.expname+" "+opts.k+" "+opts.expdesigntype
     
+    if opts.execution == 'pathipred-prediction':
+      command = "/opt/R/R-2.15.2/bin/Rscript "+homePath+"/pathipred_prediction_MAIN.r "+homePath+" "+homePath+" "+opts.celornormalizedmatrix+" "+opts.experimentaldesign+" "+opts.outdir+" "+opts.pathways+" "+opts.summ+" "+opts.control+" "+opts.disease+" "+opts.platform+"  "+opts.expdesigntype+" "+opts.bestmodelfile
+
     execute(command)
 
     # Get date
@@ -167,6 +170,9 @@ def get_options():
     parser.add_option('--execution', dest='execution', metavar="STRING",
                       help='pathiways or pathipred')
                       
+    parser.add_option('--bestmodelfile', dest='bestmodelfile', metavar="STRING",
+                      help='bestmodelfile for pathipred prediction execution')
+
 
     opts = parser.parse_args()[0]
 

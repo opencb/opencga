@@ -74,6 +74,10 @@ public class FileIOManager implements IOManager {
         return getBucketPath(accountId, bucketId).resolve(objectId);
     }
 
+    public Path getJobFolderPath(String accountId, String projectId, Path jobId) {
+        return getProjectPath(accountId, projectId).resolve(jobId);
+    }
+
     // TODO tener en cuenta las demás implementaciones de la interfaz.
     public Path getJobPath(String accountId, String projectId, String bucketId, String jobId) {
         Path jobFolder;

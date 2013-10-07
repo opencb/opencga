@@ -1,5 +1,7 @@
 package org.opencb.opencga.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import nl.bitwalker.useragentutils.Browser;
 import nl.bitwalker.useragentutils.OperatingSystem;
 import nl.bitwalker.useragentutils.UserAgent;
@@ -35,6 +37,9 @@ public class GenericWSServer {
 
 	protected MultivaluedMap<String, String> params;
 
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
+
 	/**
 	 * Only one CloudSessionManager
 	 */
@@ -45,6 +50,9 @@ public class GenericWSServer {
 		} catch (IOException | IOManagementException e) {
 			e.printStackTrace();
 		}
+
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
 	}
 
 	public GenericWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {

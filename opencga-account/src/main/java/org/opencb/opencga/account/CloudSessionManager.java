@@ -65,6 +65,10 @@ public class CloudSessionManager {
         return ioManager.getObjectPath(accountId, bucketId, ObjectId);
     }
 
+    public Path getJobFolderPath(String accountId, String projectId, Path JobId) {
+        return ioManager.getJobFolderPath(accountId, projectId, JobId);
+    }
+
     public Path getTmpPath() {
         return ioManager.getTmpPath();
     }

@@ -174,8 +174,7 @@ var RESULT = {
                             if (outItem.indexOf('pathiways_probabilities.txt') != -1) {
                                 title = 'Probabilities';
                                 renderers = [
-                                    {type: 'file'},
-                                    {type: 'grid', tableLayout: pathiwaysProbabilitiesTable}
+                                    {type: 'file'}
                                 ];
                             }
                             item = {
@@ -190,6 +189,14 @@ var RESULT = {
                                 'file': outItem,
                                 "renderers": [
                                     {type: 'file'}
+                                ]
+                            };
+                            break;
+                        default :
+                            item = {
+                                'title': '',
+                                'file': outItem,
+                                "renderers": [
                                 ]
                             };
                             break;
@@ -221,6 +228,54 @@ var RESULT = {
                     return 0;
                 }
                 return (getWeight(b) - getWeight(a));
+            }
+        }
+    },
+    "pathipred-prediction": {
+        "layout": {
+            "title": "Job results",
+//            "presentation": "tabs",
+            "children": function () {
+                var children = [];
+
+//-rw-r--r-- 1 cafetero cafetero  188 Oct  2 17:08 prediction_stats.txt
+//-rw-r--r-- 1 cafetero cafetero 1.2K Oct  2 17:08 prediction.txt
+//-rw-r--r-- 1 cafetero cafetero  480 Oct  2 17:08 result.xml
+//-rw-r--r-- 1 cafetero cafetero    0 Oct  2 17:08 sge_err.log
+//-rw-r--r-- 1 cafetero cafetero 3.9K Oct  2 17:08 sge_out.log
+//-rw-r--r-- 1 cafetero cafetero   45 Oct  2 17:08 svm_confusion_matrix.txt
+
+                var predictionStatsTable = {
+                    name: "Prediction Stats",
+                    colNames: ["Sample", "Prediction"],
+                    colTypes: ["string", "String"],
+                    colVisibility: [1, 1],
+                    colOrder: [0, 1]
+                };
+
+                for (var i = 0; i < this.outputItems.length; i++) {
+                    var outItem = this.outputItems[i];
+                    var outTitle = outItem.replace('.txt', '').replace(/_/, ' ');
+                    var renderers = [
+                        {type: 'file'}
+                    ];
+
+                    if (outItem.indexOf('prediction.txt') != -1) {
+                        renderers.push({type: 'grid', tableLayout: predictionStatsTable});
+                    }
+                    if (outItem.indexOf('svm_confusion_matrix.txt') != -1 || outItem.indexOf('prediction_stats.txt') != -1) {
+                        renderers.push({type: 'table'});
+                    }
+
+                    children.push({
+                        "title": outTitle,
+                        "file": outItem,
+                        "renderers": renderers
+                    });
+                }
+                return  [
+                    {title: 'Results', children: children}
+                ];
             }
         }
     }

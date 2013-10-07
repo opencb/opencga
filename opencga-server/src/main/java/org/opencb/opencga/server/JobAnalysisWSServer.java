@@ -3,20 +3,22 @@ package org.opencb.opencga.server;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
+import javax.ws.rs.*;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
+import org.opencb.variant.lib.core.formats.VariantInfo;
+import org.opencb.variant.lib.core.sqlite.WSSqliteManager;
 
 @Path("/account/{accountId}/analysis/job/{jobId}")
 public class JobAnalysisWSServer extends GenericWSServer {
@@ -152,5 +154,44 @@ public class JobAnalysisWSServer extends GenericWSServer {
 			return createErrorResponse("can not get result json.");
 		}
 	}
+
+    //VARIANT EXPLORER WS
+    @POST
+    @Path("/variants")
+    // @Consumes(MediaType.MULTIPART_FORM_DATA)
+    // @Produces(MediaType.APPLICATION_JSON)
+    public Response getVariantInfo(@DefaultValue("") @QueryParam("filename") String filename, MultivaluedMap<String, String> postParams) {
+
+
+        HashMap<String, String> map = new LinkedHashMap<>();
+
+
+        for (Map.Entry<String, List<String>> entry : postParams.entrySet()) {
+            map.put(entry.getKey(), StringUtils.join(entry.getValue(), ","));
+        }
+
+        System.out.println(map);
+
+
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, org.opencb.opencga.common.StringUtils.parseObjectId(filename));
+
+        System.out.println("dataPath = " + dataPath.toString());
+
+        map.put("db_name", dataPath.toString());
+        List<VariantInfo> list = WSSqliteManager.getRecords(map);
+
+
+        String res = null;
+        try {
+            res = jsonObjectMapper.writeValueAsString(list);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+        return createOkResponse(res);
+    }
+
+
 
 }
