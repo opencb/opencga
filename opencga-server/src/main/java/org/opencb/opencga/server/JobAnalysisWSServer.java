@@ -3,6 +3,7 @@ package org.opencb.opencga.server;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,9 +15,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
+import org.opencb.variant.lib.core.formats.VariantAnalysisInfo;
 import org.opencb.variant.lib.core.formats.VariantInfo;
 import org.opencb.variant.lib.core.sqlite.WSSqliteManager;
 
@@ -172,8 +175,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
 
         System.out.println(map);
 
-
-        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, org.opencb.opencga.common.StringUtils.parseObjectId(filename));
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
 
         System.out.println("dataPath = " + dataPath.toString());
 
@@ -193,5 +195,28 @@ public class JobAnalysisWSServer extends GenericWSServer {
     }
 
 
+    @GET
+    @Path("/variant_info")
+    public Response getAnalysisInfo(@DefaultValue("") @QueryParam("filename") String filename) {
+
+        HashMap<String, String> map = new LinkedHashMap<>();
+
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
+        map.put("db_name", dataPath.toString());
+
+        VariantAnalysisInfo vi= WSSqliteManager.getAnalysisInfo(map);
+
+
+
+        String res = null;
+        try {
+            res = jsonObjectMapper.writeValueAsString(vi);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return createOkResponse(res);
+    }
 
 }

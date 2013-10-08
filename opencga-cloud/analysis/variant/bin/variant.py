@@ -15,11 +15,14 @@ def main(vcf, ped, outdir):
     aux_vcf = vcf + ".bier"
     annot_vcf = "annot_" + vcf
 
+    db_file = os.path.basename(vcf)
+    db_name = os.path.splitext(db_file)[0] + ".db"
+
     # execute('./variant annot --vcf-file '+vcf+' --control-prefix BIER --control ./controls/bier/bier.gz --outdir '+outdir+' --output-file ' + aux_vcf)
     # execute('./variant annot --vcf-file '+ aux_vcf +' --control-prefix 1000G --control-list ./controls/1000G/list.txt --outdir '+outdir+' --output-file ' + annot_vcf)
     # execute('./variant stats --vcf-file '+ annot_vcf +' --ped-file '+ ped +' --outdir '+ outdir)
     print variantPath+'/variant.sh stats --vcf-file '+ vcf +' --ped-file '+ ped +' --outdir '+ outdir
-    execute("export JAVA_HOME=/opt/jdk1.7.0_13 && " variantPath+'/variant.sh stats --vcf-file '+ vcf +' --ped-file '+ ped +' --outdir '+ outdir)
+    execute("export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath+'/variant.sh stats --vcf-file '+ vcf +' --ped-file '+ ped +' --outdir '+ outdir + ' --output-file ' + db_name )
     # execute('../../indexer/indexerManager.py -t vcf -i ' + annot_vcf + '  --outdir ' + outdir )
 
 
