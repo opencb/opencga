@@ -188,7 +188,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
             res = jsonObjectMapper.writeValueAsString(list);
 
         } catch (JsonProcessingException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
         }
 
         return createOkResponse(res);
