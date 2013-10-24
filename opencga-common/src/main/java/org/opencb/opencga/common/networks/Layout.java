@@ -1,20 +1,22 @@
 package org.opencb.opencga.common.networks;
 
 import org.apache.commons.codec.binary.Base64;
-import org.bioinfo.commons.Config;
-import org.bioinfo.commons.io.utils.FileUtils;
-import org.bioinfo.commons.io.utils.IOUtils;
-import org.bioinfo.commons.log.Logger;
-import org.bioinfo.commons.utils.StringUtils;
+import org.opencb.opencga.common.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.regex.Pattern;
 
 public class Layout {
-    protected Config config;
-    protected Logger logger;
+    protected Logger logger = LoggerFactory.getLogger(this.getClass());
+    protected Properties properties;
     protected String homePath;
 
     static HashSet<String> graphvizLayoutAlgorithms;
@@ -45,10 +47,9 @@ public class Layout {
 
     public Layout() throws IOException {
         homePath = System.getenv("OPENCGA_HOME");
-        config = new Config(homePath + "/conf/utils.properties");
-
-        logger = new Logger();
-        logger.setLevel(Integer.parseInt(config.getProperty("UTILS.LOG.LEVEL")));
+        String utilsPath = homePath + "/conf/utils.properties";
+        properties = new Properties();
+        properties.load(Files.newInputStream(Paths.get(utilsPath)));
     }
 
     public LayoutResp layout(String layoutAlgorithm, String outputFormat, String dotData, String filename, String base64, String jsonpCallback) {
@@ -60,19 +61,24 @@ public class Layout {
                 if (dotData != null && !dotData.equals("")) {
                     logger.debug("Algorithm layout: " + layoutAlgorithm + ", output format: " + outputFormat + ", dot: " + dotData);
                     try {
-                        logger.info("defaultConfig:" + config.toString());
-                        String randomFolder = config.getProperty("TMP.FOLDER") + "/" + StringUtils.randomString(20) + "_layout";
+//                        logger.info("defaultConfig:" + properties.toString());
+                        Path randomFolder = Paths.get(properties.getProperty("TMP.FOLDER") + "/" + StringUtils.randomString(20) + "_layout");
                         logger.debug("Creating output folder: " + randomFolder);
-                        FileUtils.createDirectory(randomFolder);
+                        Files.createDirectory(randomFolder);
 
                         String inputFile = randomFolder + "/input.dot";
                         String outputFile = randomFolder + "/" + filename + "." + outputFormat;
+                        Path inputPath = Paths.get(inputFile);
+                        Path outputPath = Paths.get(outputFile);
                         logger.debug("Writting dot data file: " + inputFile);
-                        IOUtils.write(inputFile, dotData);
+
+//                        Files.write(completedFilePath, Files.readAllBytes(partPath), StandardOpenOption.APPEND);
+                        Files.write(inputPath, dotData.getBytes(), StandardOpenOption.CREATE_NEW);
+//                        IOUtils.write(inputFile, dotData);
 
                         int exitValue = executeGraphviz(new File(inputFile), layoutAlgorithm, outputFormat, new File(outputFile));
-                        if (exitValue == 0) {
-                            FileUtils.checkFile(outputFile);
+                        if (exitValue == 0 && Files.exists(outputPath)) {
+//                            FileUtils.checkFile(outputFile);
                             if (base64 != null && base64.trim().equalsIgnoreCase("true")) {
                                 logger.debug("Encoding in Base64 the dot output file...");
                                 byte[] binaryBytes = toByteArray(new FileInputStream(outputFile));
@@ -110,17 +116,17 @@ public class Layout {
                             return resp;
                         }
                     } catch (Exception e) {
-                        logger.error("Error in LayoutWSServer, layout() method: " + StringUtils.getStackTrace(e));
+                        logger.error("Error in LayoutWSServer, layout() method: " + e);
                         if (base64 != null && base64.trim().equalsIgnoreCase("true")) {
 //							return Response.ok("Error in LayoutWSServer, layout() method:\n"+StringUtils.getStackTrace(e), MediaType.TEXT_PLAIN).build();
 //							return createOkResponse("Error in LayoutWSServer, layout() method:\n"+StringUtils.getStackTrace(e), MediaType.TEXT_PLAIN_TYPE);
-                            resp.setData("Error in LayoutWSServer, layout() method:\n" + StringUtils.getStackTrace(e));
+                            resp.setData("Error in LayoutWSServer, layout() method:\n" + e);
                             resp.setType("text");
                             return resp;
                         } else {
 //							return Response.ok("Error in LayoutWSServer, layout() method:\n"+StringUtils.getStackTrace(e), MediaType.TEXT_PLAIN).header("content-disposition","attachment; filename = "+filename+".err.log").build();
 //							return createOkResponse("Error in LayoutWSServer, layout() method:\n"+StringUtils.getStackTrace(e), MediaType.TEXT_PLAIN_TYPE, filename+".err.log");
-                            resp.setData("Error in LayoutWSServer, layout() method:\n" + StringUtils.getStackTrace(e));
+                            resp.setData("Error in LayoutWSServer, layout() method:\n" + e);
                             resp.setType("text");
                             resp.setFileName(filename + ".err.log");
                             return resp;
@@ -183,20 +189,36 @@ public class Layout {
         if (graphvizLayoutAlgorithms.contains(layoutAlgorithm)) {
             StringBuilder sb = new StringBuilder("{");
             try {
-                String randomFolder = config.getProperty("TMP.FOLDER") + "/" + StringUtils.randomString(20) + "_layout";
+                Path randomFolder = Paths.get(properties.getProperty("TMP.FOLDER") + "/" + StringUtils.randomString(20) + "_layout");
                 logger.debug("Creating output folder: " + randomFolder);
-                FileUtils.createDirectory(randomFolder);
+                Files.createDirectory(randomFolder);
+//                FileUtils.createDirectory(randomFolder);
 
                 String inputFile = randomFolder + "/input.dot";
                 String outputFile = randomFolder + "/output.plain";
+                Path inputPath = Paths.get(inputFile);
+                Path outputPath = Paths.get(outputFile);
                 logger.debug("Writting dot data file: " + inputFile);
-                IOUtils.write(inputFile, dotData);
+//                IOUtils.write(inputFile, dotData);
+                Files.write(inputPath, dotData.getBytes(), StandardOpenOption.CREATE_NEW);
 
                 int exitValue = executeGraphviz(new File(inputFile), layoutAlgorithm, "plain", new File(outputFile));
-                if (exitValue == 0) {
-                    FileUtils.checkFile(outputFile);
+                if (exitValue == 0 && Files.exists(outputPath)) {
+//                    FileUtils.checkFile(outputFile);
                     // getting the coords form the file
-                    List<String> lines = IOUtils.grep(new File(outputFile), "^node.+");
+
+                    // Grep the file
+                    BufferedReader br = Files.newBufferedReader(outputPath, Charset.defaultCharset());
+                    final Pattern pattern = Pattern.compile("^node.+");
+                    String currentLine;
+                    List<String> lines = new ArrayList<>();
+                    while ((currentLine = br.readLine()) != null) {
+                        if(pattern.matcher(currentLine).matches()) {
+                                lines.add(currentLine);
+                        }
+                    }
+
+//                    List<String> lines = IOUtils.grep(new File(outputFile), "^node.+");
                     String[] fields;
                     double min = Double.POSITIVE_INFINITY;
                     double max = Double.NEGATIVE_INFINITY;
@@ -241,10 +263,10 @@ public class Layout {
                     return resp;
                 }
             } catch (Exception e) {
-                logger.error("Error in LayoutWSServer, layout() method: " + StringUtils.getStackTrace(e));
+                logger.error("Error in LayoutWSServer, layout() method: " + e);
 //				return Response.ok("Error in LayoutWSServer, coordinates() method:\n"+StringUtils.getStackTrace(e), MediaType.TEXT_PLAIN).build();
 //				return createOkResponse("Error in LayoutWSServer, coordinates() method:\n"+StringUtils.getStackTrace(e), MediaType.TEXT_PLAIN_TYPE);
-                resp.setData("Error in LayoutWSServer, coordinates() method:\n" + StringUtils.getStackTrace(e));
+                resp.setData("Error in LayoutWSServer, coordinates() method:\n" + e);
                 resp.setType("text");
                 return resp;
             }
@@ -258,8 +280,16 @@ public class Layout {
     }
 
     private int executeGraphviz(File inputFile, String layoutAlgorithm, String outputFormat, File outputFile) throws IOException, InterruptedException {
-        FileUtils.checkFile(inputFile);
-        FileUtils.checkDirectory(outputFile.getParent());
+//        FileUtils.checkFile(inputFile);
+//        FileUtils.checkDirectory(outputFile.getParent());
+
+        if (inputFile.exists()) {
+            throw new IOException("input file not exists");
+        }
+        if (outputFile.getParentFile().exists()) {
+            throw new IOException("output parent file not exists");
+        }
+
         String command = "dot -K" + layoutAlgorithm + " -T" + outputFormat + " -o" + outputFile + " " + inputFile;
         logger.debug("Graphviz command line: " + command);
         Process process = Runtime.getRuntime().exec(command);

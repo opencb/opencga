@@ -1,6 +1,5 @@
 package org.opencb.opencga.lib.storage;
 
-import com.google.gson.Gson;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -181,10 +180,6 @@ public class XObject extends LinkedHashMap<String, Object> {
         return defaultValue;
     }
 
-
-    public String toJsonByGson() {
-        return new Gson().toJson(this);
-    }
 
     //    @Override
     //    public String toString() {

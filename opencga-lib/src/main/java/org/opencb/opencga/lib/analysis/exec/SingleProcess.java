@@ -1,6 +1,7 @@
 package org.opencb.opencga.lib.analysis.exec;
 
-import org.bioinfo.commons.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,7 +19,7 @@ public class SingleProcess {
 
 
     public SingleProcess() {
-        logger = new Logger("org.bioinfo.exec");
+        logger = LoggerFactory.getLogger(this.getClass());
         timeout = 0;
     }
 

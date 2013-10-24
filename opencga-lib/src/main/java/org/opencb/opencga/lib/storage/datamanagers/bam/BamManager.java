@@ -1,23 +1,29 @@
 package org.opencb.opencga.lib.storage.datamanagers.bam;
 
-import com.google.gson.*;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import net.sf.samtools.*;
 import net.sf.samtools.SAMRecord.SAMTagAndValue;
-import org.apache.log4j.Logger;
-import org.bioinfo.cellbase.lib.common.Region;
-import org.bioinfo.commons.io.utils.FileUtils;
-import org.bioinfo.commons.utils.StringUtils;
+import org.opencb.cellbase.core.common.Region;
+import org.opencb.opencga.common.Config;
+import org.opencb.opencga.common.IOUtils;
+import org.opencb.opencga.common.StringUtils;
 import org.opencb.opencga.lib.analysis.AnalysisExecutionException;
 import org.opencb.opencga.lib.analysis.SgeManager;
 import org.opencb.opencga.lib.storage.XObject;
 import org.opencb.opencga.lib.storage.indices.SqliteManager;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,10 +32,12 @@ import java.util.*;
 
 public class BamManager {
 
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
+
     private String species = "";
     private String cellbasehost = "";
-    private Gson gson;
-    private static Logger logger = Logger.getLogger(BamManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(BamManager.class);
     private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(),
             Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
 
@@ -38,7 +46,8 @@ public class BamManager {
     XObject bamDbColumns;
 
     public BamManager() throws IOException {
-        gson = new Gson();
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
 
         bamDbColumns = new XObject();
         bamDbColumns.put("chromosome", 0);
@@ -182,7 +191,8 @@ public class BamManager {
                     i++;
                 }
 
-                return gson.toJson(sumList);
+                return jsonObjectWriter.writeValueAsString(sumList);
+//                gson.toJson(sumList);
             }
 
             if (histogramLogarithm) {
@@ -193,7 +203,8 @@ public class BamManager {
             }
 
             System.out.println("Query time " + (System.currentTimeMillis() - tq) + "ms");
-            return gson.toJson(queryResults);
+//            return gson.toJson(queryResults);
+            return jsonObjectWriter.writeValueAsString(queryResults);
         }
 
 //        String tableName = "global_stats";
@@ -526,7 +537,8 @@ public class BamManager {
         coverage.put("g", gBaseArray);
         coverage.put("t", tBaseArray);
 
-        return gson.toJson(res);
+        return jsonObjectWriter.writeValueAsString(res);
+//        return gson.toJson(res);
     }
 
     @Deprecated
@@ -926,11 +938,11 @@ public class BamManager {
 
         // FIXME
         sb.append("]");
-        sb.append(",\"coverage\":{\"all\":" + gson.toJson(coverageArray));
-        sb.append(",\"a\":" + gson.toJson(aBaseArray));
-        sb.append(",\"c\":" + gson.toJson(cBaseArray));
-        sb.append(",\"g\":" + gson.toJson(gBaseArray));
-        sb.append(",\"t\":" + gson.toJson(tBaseArray));
+        sb.append(",\"coverage\":{\"all\":" + jsonObjectWriter.writeValueAsString(coverageArray));
+        sb.append(",\"a\":" + jsonObjectWriter.writeValueAsString(aBaseArray));
+        sb.append(",\"c\":" + jsonObjectWriter.writeValueAsString(cBaseArray));
+        sb.append(",\"g\":" + jsonObjectWriter.writeValueAsString(gBaseArray));
+        sb.append(",\"t\":" + jsonObjectWriter.writeValueAsString(tBaseArray));
         sb.append("}");
         sb.append("}");
 
@@ -969,16 +981,23 @@ public class BamManager {
 
         URL url = new URL(urlString);
         InputStream is = url.openConnection().getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
         String line = null;
         StringBuilder sb = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
+        while ((line = br.readLine()) != null) {
             sb.append(line.trim());
         }
-        reader.close();
+        br.close();
 
-        JsonElement json = new JsonParser().parse(sb.toString());
-        String sequence = json.getAsJsonObject().get("response").getAsJsonArray().get(0).getAsJsonObject().get("result").getAsJsonObject().get("sequence").getAsString();
+        ObjectMapper mapper = new ObjectMapper();
+        JsonFactory factory = mapper.getFactory();
+        JsonParser jp = factory.createParser(br);
+        JsonNode o = mapper.readTree(jp);
+
+        ArrayNode response = (ArrayNode) o.get("response");
+        String sequence = response.get(0).get("result").get("sequence").asText();
+//        JsonElement json = new JsonParser().parse(sb.toString());
+//        String sequence = json.getAsJsonObject().get("response").getAsJsonArray().get(0).getAsJsonObject().get("result").getAsJsonObject().get("sequence").getAsString();
         return sequence;
     }
 
@@ -1007,22 +1026,28 @@ public class BamManager {
     }
 
     public String getFileList(final String filePath) {
-        File bamDir = new File(filePath + "/bam");
+//        File bamDir = new File(filePath + "/bam");
+        Path bamDirPath = Paths.get(filePath + "/bam");
         try {
-            FileUtils.checkDirectory(bamDir);
+//            FileUtils.checkDirectory(bamDir);
 
-            File[] files = FileUtils.listFiles(bamDir, ".+.bam");
+//            File[] files = FileUtils.listFiles(bamDir, ".+.bam");
+
+            List<Path> files = new ArrayList<>();
+            DirectoryStream<Path> stream = Files.newDirectoryStream(bamDirPath);
+            for (Path p : stream) {
+                files.add(p);
+            }
+
             StringBuilder sb = new StringBuilder();
-
             sb.append("[");
-            for (int i = 0; i < files.length; i++) {
-                if (!files[i].isDirectory()) {
-                    File bai = new File(files[i].getAbsolutePath() + ".bai");
-                    try {
-                        FileUtils.checkFile(bai);
-                        sb.append("\"" + files[i].getName() + "\",");
-                    } catch (IOException e) {
-                        logger.info(files[i].getName() + " was not added because " + files[i].getName()
+            for (int i = 0; i < files.size(); i++) {
+                if (!Files.isDirectory(files.get(i))) {
+                    Path bai = Paths.get(files.get(i).toAbsolutePath() + ".bai");
+                    if (Files.exists(bai)) {
+                        sb.append("\"" + files.get(i).getFileName() + "\",");
+                    } else {
+                        logger.info(files.get(i).getFileName() + " was not added because " + files.get(i).getFileName()
                                 + ".bai was not found.");
                     }
                 }
@@ -1037,7 +1062,7 @@ public class BamManager {
             return sb.toString();
 
         } catch (IOException e1) {
-            return bamDir.getAbsolutePath() + "not exists.";
+            return bamDirPath.toAbsolutePath() + "not exists.";
         }
 
     }

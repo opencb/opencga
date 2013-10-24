@@ -1,10 +1,11 @@
 package org.opencb.opencga.lib.analysis;
 
-import org.apache.log4j.Logger;
-import org.bioinfo.commons.exec.Command;
-import org.bioinfo.commons.exec.SingleProcess;
-import org.bioinfo.commons.utils.StringUtils;
+import com.google.common.base.Splitter;
 import org.opencb.opencga.common.Config;
+import org.opencb.opencga.lib.analysis.exec.Command;
+import org.opencb.opencga.lib.analysis.exec.SingleProcess;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -21,7 +22,7 @@ import java.util.*;
 public class SgeManager {
 
 
-    private static Logger logger = Logger.getLogger(SgeManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
     private static Properties analysisProperties = Config.getAnalysisProperties();
 
     public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine,
@@ -90,14 +91,15 @@ public class SgeManager {
 
     private static List<String> getQueueList() {
         if (analysisProperties.containsKey("OPENCGA.SGE.AVAILABLE.QUEUES")) {
-            return StringUtils.toList(analysisProperties.getProperty("OPENCGA.SGE.AVAILABLE.QUEUES"), ",");
+            return Splitter.on(",").splitToList(analysisProperties.getProperty("OPENCGA.SGE.AVAILABLE.QUEUES"));
         } else {
             return new ArrayList<String>();
         }
     }
 
     private static boolean belongsTheToolToQueue(String tools, String toolName) {
-        List<String> toolList = StringUtils.toList(tools, ",");
+        List<String> toolList = Splitter.on(",").splitToList(tools);
+//        List<String> toolList = StringUtils.toList(tools, ",");
         // System.err.println("Tool list : " + toolList);
         return toolList.contains(toolName);
     }

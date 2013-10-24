@@ -1,8 +1,9 @@
 package org.opencb.opencga.lib.analysis.exec;
 
-import org.apache.log4j.Logger;
-import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.common.ListUtils;
+import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +20,7 @@ public class Command extends RunnableProcess {
     private List<String> environment;
     private Process proc;
 
-    private static Logger logger = Logger.getLogger(AnalysisJobExecuter.class);
+    protected static Logger logger = LoggerFactory.getLogger(Command.class);
     private StringBuffer outputBuffer = new StringBuffer();
     private StringBuffer errorBuffer = new StringBuffer();
 

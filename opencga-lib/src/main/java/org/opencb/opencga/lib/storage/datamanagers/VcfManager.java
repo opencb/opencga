@@ -1,18 +1,19 @@
 package org.opencb.opencga.lib.storage.datamanagers;
 
-import com.google.gson.Gson;
-import org.apache.log4j.Logger;
-import org.bioinfo.cellbase.lib.common.Region;
-import org.bioinfo.commons.utils.StringUtils;
-import org.bioinfo.formats.core.variant.vcf4.VcfRecord;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+import org.opencb.cellbase.core.common.Region;
+import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
+import org.opencb.opencga.common.Config;
+import org.opencb.opencga.common.IOUtils;
+import org.opencb.opencga.common.StringUtils;
 import org.opencb.opencga.lib.analysis.AnalysisExecutionException;
 import org.opencb.opencga.lib.analysis.SgeManager;
 import org.opencb.opencga.lib.storage.TabixReader;
 import org.opencb.opencga.lib.storage.XObject;
-import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
 import org.opencb.opencga.lib.storage.indices.SqliteManager;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,16 +27,21 @@ import java.util.List;
 import java.util.Map;
 
 public class VcfManager {
-    private Gson gson;
-    private static Logger logger = Logger.getLogger(BamManager.class);
+//    private Gson gson;
 
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
+
+    protected static Logger logger = LoggerFactory.getLogger(VcfManager.class);
     private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(),
             Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
 
     XObject vcfColumns;
 
     public VcfManager() throws IOException {
-        gson = new Gson();
+//        gson = new Gson();
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
 
         vcfColumns = new XObject();
         vcfColumns.put("chromosome", 0);
@@ -155,7 +161,8 @@ public class VcfManager {
                     j++;
                     i++;
                 }
-                return gson.toJson(sumList);
+                return jsonObjectWriter.writeValueAsString(sumList);
+//                return gson.toJson(sumList);
             }
 
             if (histogramLogarithm) {
@@ -166,7 +173,8 @@ public class VcfManager {
             }
 
             System.out.println("Query time " + (System.currentTimeMillis() - tq) + "ms");
-            return gson.toJson(queryResults);
+            return jsonObjectWriter.writeValueAsString(queryResults);
+//            return gson.toJson(queryResults);
         }
 
 //        String tableName = "global_stats";
@@ -207,9 +215,10 @@ public class VcfManager {
         }
         logger.info("lines != null: " + (lines == null));
         logger.info("lines: " + lines);
-        List<org.bioinfo.formats.core.variant.vcf4.VcfRecord> records = new ArrayList<>();
+        List<VcfRecord> records = new ArrayList<>();
         while (lines != null && ((line = lines.next()) != null)) {
-            VcfRecord vcfRecord = new VcfRecord(line.split("\t"));
+            //TODO fix
+            VcfRecord vcfRecord = new VcfRecord(line.split("\t"),new ArrayList<String>());
             if (queryResultsMap.get(String.valueOf(vcfRecord.getPosition())) != null) {
                 records.add(vcfRecord);
                 queryResultsLength--;
@@ -218,7 +227,8 @@ public class VcfManager {
                 break;
             }
         }
-        return gson.toJson(records);
+        return jsonObjectWriter.writeValueAsString(records);
+//        return gson.toJson(records);
     }
 
     @Deprecated
@@ -231,8 +241,9 @@ public class VcfManager {
             String line;
             sb.append("[");
             while ((line = lines.next()) != null) {
-                VcfRecord vcfRecord = new VcfRecord(line.split("\t"));
-                sb.append(gson.toJson(vcfRecord) + ",");
+                //TODO fix
+                VcfRecord vcfRecord = new VcfRecord(line.split("\t"),new ArrayList<String>());
+                sb.append(jsonObjectWriter.writeValueAsString(vcfRecord) + ",");
             }
             // Remove last comma
             int sbLength = sb.length();
@@ -243,7 +254,7 @@ public class VcfManager {
             sb.append("]");
 
         } catch (Exception e) {
-            logger.info(e);
+            logger.info(e.toString());
             sb.append("[]");
         }
 
