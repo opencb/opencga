@@ -1,7 +1,5 @@
 package org.opencb.opencga.common;
 
-import org.bioinfo.commons.io.utils.FileUtils;
-
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.*;
@@ -132,38 +130,41 @@ public class IOUtils {
     }
 
     public static void zipFiles(File[] files, File dest) throws IOException {
-        FileUtils.checkDirectory(dest.getParentFile(), true); //
-        // /mnt/commons/test/job.zip ---> ¿/mnt/commons/test exists?
-        BufferedInputStream origin = null;
-        int BUFFER_SIZE = 1024;
-        byte[] data = new byte[BUFFER_SIZE];
+        Path destParent = dest.getParentFile().toPath();
 
-        OutputStream destination = new FileOutputStream(dest);
-        ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(destination));
+//        FileUtils.checkDirectory(dest.getParentFile(), true); //
+        if(Files.exists(destParent)){
+            // /mnt/commons/test/job.zip ---> ¿/mnt/commons/test exists?
+            BufferedInputStream origin = null;
+            int BUFFER_SIZE = 1024;
+            byte[] data = new byte[BUFFER_SIZE];
 
-        for (int i = 0; i < files.length; i++) {
-            if (files[i].isFile()) {
-                FileUtils.checkFile(files[i]);
-                String filename = files[i].getAbsolutePath();
-                files[i].getName();
-                System.out.println("Adding: " + filename);
-                FileInputStream fi = new FileInputStream(filename);
-                origin = new BufferedInputStream(fi, BUFFER_SIZE);
-                // Setup the entry in the zip file
-                ZipEntry zipEntry = new ZipEntry(filename.substring(filename.lastIndexOf("/")));
-                out.putNextEntry(zipEntry);
-                // Read data from the source file and write it out to the zip
-                // file
-                int count;
-                while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
-                    out.write(data, 0, count);
+            OutputStream destination = new FileOutputStream(dest);
+            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(destination));
+
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].isFile() && files[i].exists()) {
+                    String filename = files[i].getAbsolutePath();
+                    files[i].getName();
+                    System.out.println("Adding: " + filename);
+                    FileInputStream fi = new FileInputStream(filename);
+                    origin = new BufferedInputStream(fi, BUFFER_SIZE);
+                    // Setup the entry in the zip file
+                    ZipEntry zipEntry = new ZipEntry(filename.substring(filename.lastIndexOf("/")));
+                    out.putNextEntry(zipEntry);
+                    // Read data from the source file and write it out to the zip
+                    // file
+                    int count;
+                    while ((count = origin.read(data, 0, BUFFER_SIZE)) != -1) {
+                        out.write(data, 0, count);
+                    }
+                    // Close the source file
+                    origin.close();
                 }
-                // Close the source file
-                origin.close();
             }
+            // Close the zip file
+            out.close();
         }
-        // Close the zip file
-        out.close();
     }
 
     // zip avoiding some files

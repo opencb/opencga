@@ -29,5 +29,6 @@ print "****************************"
 print "A example of URL address to access the server is: http://localhost:{PORT}/opencga/rest/storage/fetch?filepath={ABSOLUTE FILE PATH}&region={REGION}"
 
 JAVA_OPTIONS=" -Xms128m -Xmx2048m -Djava.net.preferIPv4Stack=true "
-command = "java"+JAVA_OPTIONS+" -classpath "+CLASSPATH+" org.bioinfo.opencga.lib.cli.OpenCGAMain "+OPENCGA_HOME
+command = "java"+JAVA_OPTIONS+" -classpath "+CLASSPATH+" org.opencb.opencga.lib.cli.OpenCGAMain "+OPENCGA_HOME
+print command
 status, output = commands.getstatusoutput(command)

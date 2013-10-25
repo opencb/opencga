@@ -13,11 +13,12 @@
         <module>opencga-account</module>
         <module>opencga-common</module>
         <module>opencga-lib</module>
-        <module>opencga-ws</module>
+        <module>opencga-server</module>
     </modules>
 
     <properties>
         <opencga.version>0.2.0</opencga.version>
+        <java.version>1.7</java.version>
     </properties>
 
     <dependencyManagement>
@@ -41,34 +42,29 @@
 
             <!-- General dependencies -->
             <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>15.0</version>
+            </dependency>
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>1.7.5</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
+                <artifactId>slf4j-simple</artifactId>
                 <version>1.7.5</version>
             </dependency>
+            <!--<dependency>-->
+                <!--<groupId>nl.bitwalker</groupId>-->
+                <!--<artifactId>user-agent-util</artifactId>-->
+                <!--<version>1.6</version>-->
+                <!--<scope>compile</scope>-->
+            <!--</dependency>-->
             <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>1.2.17</version>
-            </dependency>
-            <dependency>
-                <groupId>nl.bitwalker</groupId>
-                <artifactId>user-agent-util</artifactId>
-                <version>1.6</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>14.0.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.bioinfo</groupId>
-                <artifactId>cellbase-lib</artifactId>
+                <groupId>org.opencb.cellbase</groupId>
+                <artifactId>cellbase-core</artifactId>
                 <version>3.0.0</version>
                 <scope>compile</scope>
             </dependency>
@@ -80,35 +76,33 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongo-java-driver</artifactId>
-                <version>2.11.1</version>
-                <!-- <scope>compile</scope> -->
-                <!-- <optional>true</optional> -->
+                <version>2.11.3</version>
             </dependency>
+            <!--<dependency>-->
+                <!--<groupId>net.sf</groupId>-->
+                <!--<artifactId>samtools</artifactId>-->
+                <!--<version>1.72</version>-->
+            <!--</dependency>-->
             <dependency>
-                <groupId>net.sf</groupId>
-                <artifactId>samtools</artifactId>
-                <version>1.72</version>
+                <groupId>org.utgenome.thirdparty</groupId>
+                <artifactId>picard</artifactId>
+                <version>1.86.0</version>
             </dependency>
+            <!--<dependency>-->
+                <!--<groupId>com.google.code.gson</groupId>-->
+                <!--<artifactId>gson</artifactId>-->
+                <!--<version>2.2.2</version>-->
+                <!--<scope>compile</scope>-->
+            <!--</dependency>-->
             <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
                 <version>2.2.2</version>
-                <scope>compile</scope>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk</artifactId>
                 <version>1.3.19</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-servlet</artifactId>
-                <version>1.17</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sun.jersey.contribs</groupId>
-                <artifactId>jersey-multipart</artifactId>
-                <version>1.17</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
@@ -132,7 +126,25 @@
                 <version>4.11</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.3</version>
+            </dependency>
         </dependencies>
 
     </dependencyManagement>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

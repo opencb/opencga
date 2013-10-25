@@ -1,14 +1,15 @@
 package org.opencb.opencga.account.db;
 
-import org.apache.log4j.Logger;
 import org.opencb.opencga.common.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Properties;
 
 public class AccountFileManager /* implements AccountManager */ {
 
-    private static Logger logger = Logger.getLogger(AccountFileManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(AccountFileManager.class);
     private Properties accountProperties;
 
     private String home;

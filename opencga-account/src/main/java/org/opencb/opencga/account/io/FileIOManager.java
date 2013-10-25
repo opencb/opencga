@@ -1,13 +1,14 @@
 package org.opencb.opencga.account.io;
 
-import com.google.gson.Gson;
-import org.apache.log4j.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.account.beans.ObjectItem;
-import org.opencb.opencga.account.io.result.Result;
+//import org.opencb.opencga.account.io.result.Result;
 import org.opencb.opencga.common.Config;
 import org.opencb.opencga.common.IOUtils;
 import org.opencb.opencga.common.StringUtils;
-import org.dom4j.DocumentException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -20,7 +21,10 @@ import java.util.Properties;
 
 public class FileIOManager implements IOManager {
 
-    private static Logger logger = Logger.getLogger(FileIOManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(FileIOManager.class);
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
+
     private Properties accountProperties;
 
     private String appHomePath;
@@ -72,6 +76,10 @@ public class FileIOManager implements IOManager {
 
     public Path getObjectPath(String accountId, String bucketId, Path objectId) {
         return getBucketPath(accountId, bucketId).resolve(objectId);
+    }
+
+    public Path getJobFolderPath(String accountId, String projectId, Path jobId) {
+        return getProjectPath(accountId, projectId).resolve(jobId);
     }
 
     // TODO tener en cuenta las demás implementaciones de la interfaz.
@@ -368,7 +376,7 @@ public class FileIOManager implements IOManager {
 
     public Path deleteObject(String accountId, String bucketId, Path objectId) throws IOManagementException {
         Path fullFilePath = getObjectPath(accountId, bucketId, objectId);
-        logger.info(fullFilePath);
+        logger.info(fullFilePath.toString());
         try {
             if (Files.deleteIfExists(fullFilePath)) {
                 return objectId;
@@ -379,20 +387,24 @@ public class FileIOManager implements IOManager {
             throw new IOManagementException("deleteObject(): could not delete the object " + e.toString());
         }
     }
-
-    public String getJobResult(Path jobPath) throws DocumentException, IOManagementException, IOException {
-        Path resultFile = jobPath.resolve("result.xml");
-
-        if (Files.exists(resultFile)) {
-            Result resultXml = new Result();
-            resultXml.loadXmlFile(resultFile.toAbsolutePath().toString());
-            Gson g = new Gson();
-            String resultJson = g.toJson(resultXml);
-            return resultJson;
-        } else {
-            throw new IOManagementException("getJobResultFromBucket(): the file '" + resultFile + "' not exists");
-        }
-    }
+//
+//    public String getJobResult(Path jobPath) throws IOManagementException, IOException {
+//        jsonObjectMapper = new ObjectMapper();
+//        jsonObjectWriter = jsonObjectMapper.writer();
+//
+//        Path resultFile = jobPath.resolve("result.xml");
+//
+//        if (Files.exists(resultFile)) {
+//            Result resultXml = new Result();
+//            resultXml.loadXmlFile(resultFile.toAbsolutePath().toString());
+////            Gson g = new Gson();
+////            String resultJson = g.toJson(resultXml);
+//            String resultJson = jsonObjectWriter.writeValueAsString(resultXml);
+//            return resultJson;
+//        } else {
+//            throw new IOManagementException("getJobResultFromBucket(): the file '" + resultFile + "' not exists");
+//        }
+//    }
 
     public String getFileTableFromJob(Path jobPath, String filename, String start, String limit, String colNames,
                                       String colVisibility, String callback, String sort) throws IOManagementException, IOException {

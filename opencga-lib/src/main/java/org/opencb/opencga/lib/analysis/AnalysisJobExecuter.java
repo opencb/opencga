@@ -1,15 +1,15 @@
 package org.opencb.opencga.lib.analysis;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import org.apache.log4j.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.opencga.common.Config;
 import org.opencb.opencga.lib.analysis.beans.Analysis;
 import org.opencb.opencga.lib.analysis.beans.Execution;
 import org.opencb.opencga.lib.analysis.beans.Option;
 import org.opencb.opencga.lib.analysis.exec.Command;
 import org.opencb.opencga.lib.analysis.exec.SingleProcess;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,9 +20,8 @@ import java.util.*;
 
 public class AnalysisJobExecuter {
 
-    protected Gson gson = new Gson();
     protected Properties analysisProperties;
-    protected static Logger logger = Logger.getLogger(AnalysisJobExecuter.class);
+    protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecuter.class);
     protected String home;
     protected String analysisName;
     protected String executionName;
@@ -34,16 +33,17 @@ public class AnalysisJobExecuter {
     protected Analysis analysis;
     protected Execution execution;
 
-    public AnalysisJobExecuter(String analysisStr) throws JsonSyntaxException, IOException, AnalysisExecutionException {
+    protected static ObjectMapper jsonObjectMapper  = new ObjectMapper();
+
+    public AnalysisJobExecuter(String analysisStr) throws  IOException, AnalysisExecutionException {
         this(analysisStr, "system");
     }
 
-    public AnalysisJobExecuter(String analysisStr, String analysisOwner) throws IOException, JsonSyntaxException, AnalysisExecutionException {
+    public AnalysisJobExecuter(String analysisStr, String analysisOwner) throws IOException,  AnalysisExecutionException {
 
         home = Config.getGcsaHome();
         analysisProperties = Config.getAnalysisProperties();
 
-        gson = new Gson();
 
         if (analysisOwner.equals("system"))
             analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
@@ -61,7 +61,7 @@ public class AnalysisJobExecuter {
 //		manifestFile = analysisPath + "manifest.json";
         manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
 //		resultsFile = analysisPath + "results.json";
-        resultsFile = analysisPath.resolve(Paths.get("results.json"));
+        resultsFile = analysisPath.resolve(Paths.get("results.js"));
 
         analysis = getAnalysis();
         execution = getExecution();
@@ -168,9 +168,10 @@ public class AnalysisJobExecuter {
         }
     }
 
-    public Analysis getAnalysis() throws JsonSyntaxException, IOException, AnalysisExecutionException {
+    public Analysis getAnalysis() throws IOException, AnalysisExecutionException {
         if (analysis == null) {
-            analysis = gson.fromJson(IOUtils.toString(manifestFile.toFile()), Analysis.class);
+            analysis = jsonObjectMapper.readValue(manifestFile.toFile(), Analysis.class);
+//            analysis = gson.fromJson(IOUtils.toString(manifestFile.toFile()), Analysis.class);
         }
         return analysis;
     }
@@ -263,9 +264,14 @@ public class AnalysisJobExecuter {
     }
 
     public InputStream getResultInputStream() throws AnalysisExecutionException, IOException {
+        System.out.println(resultsFile.toAbsolutePath().toString());
+        if (!Files.exists(resultsFile)) {
+            resultsFile = analysisPath.resolve(Paths.get("results.js"));
+        }
+
         if (Files.exists(resultsFile)) {
             return Files.newInputStream(resultsFile);
         }
-        throw new AnalysisExecutionException("result.json not found.");
+        throw new AnalysisExecutionException("result.js not found.");
     }
 }
