@@ -1,6 +1,7 @@
 #!/usr/bin/python -u
 
 import sys, os, argparse, commands
+import logging
 
 opencgaHome = "";
 samtoolsCmd = "";
@@ -9,6 +10,8 @@ hpgvarvcfCmd = "";
 hpgvarvcfConfig = "";
 tabixCmd = "";
 tabixbgzipCmd = "";
+
+logging.basicConfig(level=logging.DEBUG)
 
 #Functions
 def checkGcsaHome():
@@ -21,7 +24,7 @@ def checkGcsaHome():
         global tabixCmd
         global tabixbgzipCmd
         #opencgaHome = os.environ["GCSA_HOME"]
-        opencgaHome = "/httpd/bioinfo/opencga"
+        opencgaHome = "/home/imedina/appl/opencga/opencga-cloud"
         samtoolsCmd = opencgaHome +"/analysis/samtools/samtools"
         hpgbamCmd = opencgaHome +"/analysis/hpg-bam/hpg-bam"
         hpgvarvcfCmd = opencgaHome +"/analysis/hpg-variant/bin/hpg-var-vcf"
@@ -37,7 +40,8 @@ def checkGcsaHome():
 
 def execute(cmd):
     status, output = commands.getstatusoutput(cmd)
-    print(str(status)+" -> "+output+" - "+cmd)
+    # print(str(status)+" -> "+output+" - "+cmd)
+    logging.info(output+" - "+cmd)
     if 35584 == status and "[bam_header_read]" in output:
         sys.exit(-1)
     #if "open: No such file or directory" in output:
@@ -80,7 +84,7 @@ def indexVCF(inputVCF, outdir):
     destName = outdir +"/"+ inputVCFname
     print("indexing vcf file...")
     execute("tar -zcvf "+ inputVCF + ".tar.gz" + " " + inputVCF)
-    execute("mv "+inputVCF + ".tar.gz "+outdir)
+    # execute("mv "+inputVCF + ".tar.gz "+outdir)
     execute("sort -k1,1 -k2,2n "+ inputVCF + " > " + inputVCF + ".sort.vcf");
     execute(tabixbgzipCmd + " -c " + inputVCF + ".sort.vcf" + " > " + destName + ".gz")
     execute(tabixCmd + " -p vcf " + destName + ".gz")
