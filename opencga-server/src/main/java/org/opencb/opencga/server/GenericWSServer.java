@@ -3,6 +3,7 @@ package org.opencb.opencga.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.opencb.opencga.account.CloudSessionManager;
 import org.opencb.opencga.account.io.IOManagementException;
 import org.slf4j.Logger;
@@ -46,6 +47,10 @@ public class GenericWSServer {
     protected static CloudSessionManager cloudSessionManager;
 
     static {
+
+        final ResourceConfig resourceConfig = new ResourceConfig(StorageWSServer.class);
+        resourceConfig.register(MultiPartFeature.class);
+
         try {
             cloudSessionManager = new CloudSessionManager();
         } catch (IOException | IOManagementException e) {
