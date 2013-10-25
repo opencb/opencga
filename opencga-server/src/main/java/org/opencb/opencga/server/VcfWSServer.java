@@ -8,8 +8,8 @@ import javax.ws.rs.core.UriInfo;
 
 public class VcfWSServer extends GenericWSServer {
 
-	public VcfWSServer(@Context UriInfo uriInfo,@Context HttpServletRequest httpServletRequest) throws IOException {
-		super(uriInfo,httpServletRequest); 
-	}
+    public VcfWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+        super(uriInfo, httpServletRequest);
+    }
 
 }

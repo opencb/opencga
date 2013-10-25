@@ -1,7 +1,6 @@
 package org.opencb.opencga.account;
 
-import org.apache.log4j.Logger;
-import org.dom4j.DocumentException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -14,6 +13,8 @@ import org.opencb.opencga.common.IOUtils;
 import org.opencb.opencga.common.StringUtils;
 import org.opencb.opencga.lib.storage.datamanagers.VcfManager;
 import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -28,7 +29,8 @@ public class CloudSessionManager {
     private AccountManager accountManager;
     private FileIOManager ioManager;
 
-    private static Logger logger = Logger.getLogger(CloudSessionManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(CloudSessionManager.class);
+
     private Properties accountProperties;
 
     public CloudSessionManager() throws IOException, IOManagementException {
@@ -36,8 +38,6 @@ public class CloudSessionManager {
     }
 
     public CloudSessionManager(String gcsaHome) throws IOException, IOManagementException {
-        logger.info("!");
-        Config.configureLog4j();
         accountProperties = Config.getAccountProperties();
 
         if (accountProperties.getProperty("OPENCGA.ACCOUNT.MODE").equals("file")) {
@@ -78,7 +78,7 @@ public class CloudSessionManager {
      * ***************************
      */
     public void createAccount(String accountId, String password, String name, String email, String sessionIp)
-            throws AccountManagementException, IOManagementException {
+            throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(accountId, "accountId");
         checkParameter(password, "password");
         checkParameter(name, "name");
@@ -97,7 +97,7 @@ public class CloudSessionManager {
 
     }
 
-    public String createAnonymousAccount(String sessionIp) throws AccountManagementException, IOManagementException {
+    public String createAnonymousAccount(String sessionIp) throws AccountManagementException, IOManagementException, IOException {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
@@ -114,7 +114,7 @@ public class CloudSessionManager {
 
     }
 
-    public String login(String accountId, String password, String sessionIp) throws AccountManagementException {
+    public String login(String accountId, String password, String sessionIp) throws AccountManagementException, IOException {
         checkParameter(accountId, "accountId");
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");
@@ -122,7 +122,7 @@ public class CloudSessionManager {
         return accountManager.login(accountId, password, session);
     }
 
-    public void logout(String accountId, String sessionId) throws AccountManagementException {
+    public void logout(String accountId, String sessionId) throws AccountManagementException, IOException {
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
         accountManager.logout(accountId, sessionId);
@@ -183,12 +183,12 @@ public class CloudSessionManager {
      * Bucket methods
      * ***************************
      */
-    public String getBucketsList(String accountId, String sessionId) throws AccountManagementException {
+    public String getBucketsList(String accountId, String sessionId) throws AccountManagementException, JsonProcessingException {
         return accountManager.getBucketsList(accountId, sessionId);
     }
 
     public void createBucket(String accountId, Bucket bucket, String sessionId) throws AccountManagementException,
-            IOManagementException {
+            IOManagementException, JsonProcessingException {
         checkParameter(bucket.getName(), "bucketName");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -259,7 +259,7 @@ public class CloudSessionManager {
     }
 
     public String createFolderToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                       boolean parents, String sessionId) throws AccountManagementException, IOManagementException {
+                                       boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -394,7 +394,7 @@ public class CloudSessionManager {
         Path fullFilePath = ioManager.getObjectPath(accountId, bucketId, objectId);
         ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
 
-        logger.debug(fullFilePath);
+        logger.debug(fullFilePath.toString());
         logger.debug(regionStr);
 
         String result = "";
@@ -465,7 +465,7 @@ public class CloudSessionManager {
     }
 
     public void createProject(String accountId, Project project, String sessionId) throws AccountManagementException,
-            IOManagementException {
+            IOManagementException, JsonProcessingException {
         checkParameter(project.getId(), "projectName");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -479,11 +479,11 @@ public class CloudSessionManager {
         }
     }
 
-    public String checkJobStatus(String accountId, String jobId, String sessionId) throws AccountManagementException {
+    public String checkJobStatus(String accountId, String jobId, String sessionId) throws AccountManagementException, IOException {
         return accountManager.getJobStatus(accountId, jobId, sessionId);
     }
 
-    public void incJobVisites(String accountId, String jobId, String sessionId) throws AccountManagementException {
+    public void incJobVisites(String accountId, String jobId, String sessionId) throws AccountManagementException, IOException {
         accountManager.incJobVisites(accountId, jobId, sessionId);
     }
 
@@ -498,17 +498,16 @@ public class CloudSessionManager {
         accountManager.deleteJobFromProject(accountId, projectId, jobId, sessionId);
     }
 
-    public String getJobResult(String accountId, String jobId, String sessionId) throws IOException, DocumentException,
-            IOManagementException, AccountManagementException {
+    public String getJobResult(String accountId, String jobId, String sessionId) throws IOException, IOManagementException, AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(jobId, "jobId");
 
         Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
-        return ioManager.getJobResult(jobPath);
+//        return ioManager.getJobResult(jobPath);
+        return "DEPRECATED";
     }
 
-    public Job getJob(String accountId, String jobId, String sessionId) throws IOException, DocumentException,
-            IOManagementException, AccountManagementException {
+    public Job getJob(String accountId, String jobId, String sessionId) throws IOException, IOManagementException, AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(jobId, "jobId");
 
@@ -553,7 +552,7 @@ public class CloudSessionManager {
     }
 
     public String createJob(String jobName, String projectId, String jobFolder, String toolName, List<String> dataList,
-                            String commandLine, String sessionId) throws AccountManagementException, IOManagementException {
+                            String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
 
         checkParameter(jobName, "jobName");
         checkParameter(projectId, "projectId");
@@ -585,17 +584,17 @@ public class CloudSessionManager {
         return jobId;
     }
 
-    public String getJobFolder(String accountId, String jobId, String sessionId) throws AccountManagementException {
+    public String getJobFolder(String accountId, String jobId, String sessionId) throws AccountManagementException, IOException {
         String projectId = accountManager.getJobProject(accountId, jobId, sessionId).getId();
         return ioManager.getJobPath(accountId, projectId, null, jobId).toString();
     }
 
-    public List<AnalysisPlugin> getUserAnalysis(String sessionId) throws AccountManagementException {
+    public List<AnalysisPlugin> getUserAnalysis(String sessionId) throws AccountManagementException, IOException {
         return accountManager.getUserAnalysis(sessionId);
     }
 
     public void setJobCommandLine(String accountId, String jobId, String commandLine, String sessionId)
-            throws AccountManagementException {
+            throws AccountManagementException, IOException {
         accountManager.setJobCommandLine(accountId, jobId, commandLine, sessionId);// this
         // method
         // increases

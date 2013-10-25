@@ -8,9 +8,9 @@ import javax.ws.rs.core.UriInfo;
 
 public class GffWSServer extends GenericWSServer {
 
-	public GffWSServer(@Context UriInfo uriInfo,@Context HttpServletRequest httpServletRequest) throws IOException {
-		super(uriInfo,httpServletRequest); 
-	}
+    public GffWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+        super(uriInfo, httpServletRequest);
+    }
 
-	
+
 }

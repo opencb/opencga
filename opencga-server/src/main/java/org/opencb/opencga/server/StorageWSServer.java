@@ -1,38 +1,28 @@
 package org.opencb.opencga.server;
 
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.opencga.account.beans.ObjectItem;
+import org.opencb.opencga.account.db.AccountManagementException;
+import org.opencb.opencga.common.IOUtils;
+import org.opencb.opencga.common.StringUtils;
+import org.opencb.opencga.common.TimeUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-
-import org.opencb.opencga.account.beans.ObjectItem;
-import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
-import org.opencb.opencga.common.StringUtils;
-import org.opencb.opencga.common.TimeUtils;
-
-import com.sun.jersey.core.header.FormDataContentDisposition;
-import com.sun.jersey.multipart.FormDataParam;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
 public class StorageWSServer extends GenericWSServer {

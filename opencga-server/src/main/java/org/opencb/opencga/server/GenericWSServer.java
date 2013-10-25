@@ -2,6 +2,7 @@ package org.opencb.opencga.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.opencb.opencga.account.CloudSessionManager;
 import org.opencb.opencga.account.io.IOManagementException;
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ import java.util.ResourceBundle;
 @Path("/")
 @Produces("text/plain")
 public class GenericWSServer {
+
 
     protected UriInfo uriInfo;
     protected Logger logger = LoggerFactory.getLogger(this.getClass());

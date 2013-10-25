@@ -29,6 +29,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.opencb.variant</groupId>
+            <artifactId>variant-cli</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
@@ -61,8 +67,8 @@
             <version>2.3.1</version>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>nl.bitwalker</groupId>-->
-            <!--<artifactId>user-agent-util</artifactId>-->
+        <!--<groupId>nl.bitwalker</groupId>-->
+        <!--<artifactId>user-agent-util</artifactId>-->
         <!--</dependency>-->
     </dependencies>
 

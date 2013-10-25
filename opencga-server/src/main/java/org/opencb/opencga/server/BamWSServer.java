@@ -17,19 +17,19 @@ import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
 @Path("/bam")
 public class BamWSServer extends GenericWSServer {
 
-	
-	public BamWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-		super(uriInfo,httpServletRequest); 
-	}
-	
-	@GET
-	@Path("/{filename}/{region}/region")
+
+    public BamWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+        super(uriInfo, httpServletRequest);
+    }
+
+    @GET
+    @Path("/{filename}/{region}/region")
 //	public Response getByRegion(final File inputSamOrBamFile, final File indexFile, final File outputSamOrBamFile) {
-	public Response getByRegion(
-			@DefaultValue("") @PathParam("filename") String filename, 
-			@DefaultValue("") @PathParam("region") String region
-								) throws IOException {
-		
+    public Response getByRegion(
+            @DefaultValue("") @PathParam("filename") String filename,
+            @DefaultValue("") @PathParam("region") String region
+    ) throws IOException {
+
 //		Boolean viewAsPairs = false;
 //		if(params.get("view_as_pairs") != null){
 //			viewAsPairs = true;
@@ -67,18 +67,18 @@ public class BamWSServer extends GenericWSServer {
 //		String result = bamManager.getByRegion(filePath, filename, viewAsPairs, showSoftclipping, chr, start, end);
 //		
 //		return createOkResponse(result);
-		return createOkResponse("");
-	}
-	
-	@GET
-	@Path("/list")
-	public Response getFileList() throws IOException{
-		String filePath = config.getProperty("FILES.PATH");
-		return createOkResponse(new BamManager().getFileList(filePath));
-	}
-	
-	
-	//TODO
+        return createOkResponse("");
+    }
+
+    @GET
+    @Path("/list")
+    public Response getFileList() throws IOException {
+        String filePath = properties.getProperty("FILES.PATH");
+        return createOkResponse(new BamManager().getFileList(filePath));
+    }
+
+
+    //TODO
 //	public void testGetByRegion() {
 ////		File inputSamFile = new File("/tmp/input2.bam");
 ////		File indexFile = new File("/tmp/input2.bam.bai");

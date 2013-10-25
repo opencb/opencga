@@ -1,10 +1,12 @@
 package org.opencb.opencga.account.io;
 
-import com.google.gson.Gson;
-import org.apache.log4j.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.opencga.common.ArrayUtils;
 import org.opencb.opencga.common.IOUtils;
 import org.opencb.opencga.common.ListUtils;
-import org.opencb.opencga.common.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,10 +17,17 @@ import java.util.*;
 
 public class JobFileIOUtils implements IOManager {
 
-    private static Logger logger = Logger.getLogger(JobFileIOUtils.class);
+    protected static Logger logger = LoggerFactory.getLogger(JobFileIOUtils.class);
+
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
 
     public static String getSenchaTable(Path jobFile, String filename, String start, String limit, String colNames,
                                         String colVisibility, String callback, String sort) throws IOManagementException, IOException {
+
+
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
 
         int first = Integer.parseInt(start);
         int end = first + Integer.parseInt(limit);
@@ -87,8 +96,9 @@ public class JobFileIOUtils implements IOManager {
             // Parsear y obtener el nombre de la columna que envia
             // Sencha
             // logger.info("PAKO::SORT1: "+ sort);
-            Gson gson = new Gson();
-            TableSort[] datos = gson.fromJson(sort, TableSort[].class);
+
+            TableSort[] datos = jsonObjectMapper.readValue(sort, TableSort[].class);
+//            TableSort[] datos = gson.fromJson(sort, TableSort[].class);
             logger.info("PAKO:SORT: " + Arrays.toString(datos));
             int numColumn = indexColumn.get(datos[0].getProperty());
             String direction = datos[0].getDirection();
