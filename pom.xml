@@ -3,7 +3,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
     <version>0.2.0</version>
@@ -11,9 +10,10 @@
 
     <modules>
         <module>opencga-account</module>
-        <module>opencga-common</module>
         <module>opencga-lib</module>
         <module>opencga-server</module>
+        <module>opencga-storage</module>
+        <module>opencga-analysis</module>
     </modules>
 
     <properties>
@@ -27,11 +27,6 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-account</artifactId>
-                <version>${opencga.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-common</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
             <dependency>

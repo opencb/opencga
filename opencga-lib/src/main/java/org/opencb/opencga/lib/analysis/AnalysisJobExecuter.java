@@ -1,8 +1,7 @@
 package org.opencb.opencga.lib.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.common.Config;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.analysis.beans.Analysis;
 import org.opencb.opencga.lib.analysis.beans.Execution;
 import org.opencb.opencga.lib.analysis.beans.Option;

@@ -1,4 +1,4 @@
-package org.opencb.opencga.common;
+package org.opencb.opencga.lib.common;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,7 +1,7 @@
 package org.opencb.opencga.lib.analysis;
 
 import com.google.common.base.Splitter;
-import org.opencb.opencga.common.Config;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.analysis.exec.Command;
 import org.opencb.opencga.lib.analysis.exec.SingleProcess;
 import org.slf4j.Logger;

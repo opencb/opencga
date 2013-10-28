@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
 import org.opencb.opencga.account.beans.*;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.MailUtils;
-import org.opencb.opencga.common.StringUtils;
-import org.opencb.opencga.common.TimeUtils;
+import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.lib.common.MailUtils;
+import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

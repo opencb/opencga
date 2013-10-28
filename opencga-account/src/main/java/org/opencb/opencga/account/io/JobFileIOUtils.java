@@ -2,9 +2,9 @@ package org.opencb.opencga.account.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.common.ArrayUtils;
-import org.opencb.opencga.common.IOUtils;
-import org.opencb.opencga.common.ListUtils;
+import org.opencb.opencga.lib.common.ArrayUtils;
+import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.lib.common.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

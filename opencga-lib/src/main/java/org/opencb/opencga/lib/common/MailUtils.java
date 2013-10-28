@@ -1,4 +1,4 @@
-package org.opencb.opencga.common;
+package org.opencb.opencga.lib.common;
 
 public class MailUtils {
     public static void sendResetPasswordMail(String to, String message) {

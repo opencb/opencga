@@ -1,7 +1,6 @@
 package org.opencb.opencga.lib.analysis.exec;
 
-import org.opencb.opencga.common.ListUtils;
-import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.lib.common.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

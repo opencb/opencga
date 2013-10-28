@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.account.beans.ObjectItem;
 //import org.opencb.opencga.account.io.result.Result;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
-import org.opencb.opencga.common.StringUtils;
+import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

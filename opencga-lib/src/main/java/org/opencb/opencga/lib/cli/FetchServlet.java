@@ -2,7 +2,7 @@ package org.opencb.opencga.lib.cli;
 
 import org.opencb.opencga.lib.storage.datamanagers.VcfManager;
 import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
-import org.opencb.opencga.common.StringUtils;
+import org.opencb.opencga.lib.common.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

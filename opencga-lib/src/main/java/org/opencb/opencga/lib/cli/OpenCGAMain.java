@@ -3,8 +3,8 @@ package org.opencb.opencga.lib.cli;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
+import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.lib.common.IOUtils;
 
 import java.io.File;
 import java.io.IOException;

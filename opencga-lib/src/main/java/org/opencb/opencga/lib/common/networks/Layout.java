@@ -1,7 +1,7 @@
-package org.opencb.opencga.common.networks;
+package org.opencb.opencga.lib.common.networks;
 
 import org.apache.commons.codec.binary.Base64;
-import org.opencb.opencga.common.StringUtils;
+import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

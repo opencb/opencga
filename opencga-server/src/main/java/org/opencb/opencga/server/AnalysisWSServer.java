@@ -27,7 +27,7 @@ import org.opencb.opencga.lib.analysis.SgeManager;
 import org.opencb.opencga.lib.analysis.beans.Analysis;
 import org.opencb.opencga.lib.analysis.beans.Execution;
 import org.opencb.opencga.lib.analysis.beans.InputParam;
-import org.opencb.opencga.common.StringUtils;
+import org.opencb.opencga.lib.common.StringUtils;
 
 @Path("/account/{accountId}/analysis/{analysis}")
 public class AnalysisWSServer extends GenericWSServer {

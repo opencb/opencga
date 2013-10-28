@@ -1,4 +1,4 @@
-package org.opencb.opencga.common;
+package org.opencb.opencga.lib.common;
 
 import java.lang.reflect.Array;
 import java.text.DecimalFormat;

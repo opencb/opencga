@@ -10,15 +10,11 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>opencga-server</artifactId>
-    <packaging>war</packaging>
+    <artifactId>opencga-analysis</artifactId>
+    <packaging>jar</packaging>
     <version>${opencga.version}</version>
 
     <dependencies>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-account</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-common</artifactId>
@@ -27,12 +23,6 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-lib</artifactId>
         </dependency>
-
-        <!--<dependency>-->
-            <!--<groupId>org.opencb.variant</groupId>-->
-            <!--<artifactId>variant-cli</artifactId>-->
-            <!--<version>1.0.0</version>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -49,27 +39,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
-            <scope>provided</scope>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet</artifactId>
-            <version>2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-multipart</artifactId>
-            <version>2.4</version>
-        </dependency>
-        <!--<dependency>-->
-        <!--<groupId>nl.bitwalker</groupId>-->
-        <!--<artifactId>user-agent-util</artifactId>-->
-        <!--</dependency>-->
     </dependencies>
 
 </project>
