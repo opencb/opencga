@@ -204,7 +204,28 @@ var RESULT = {
                     groups[group].children.push(item);
                 }
 
+
+                var checkXgmml = function (p) {
+                    for (var i = 0; i < p.children.length; i++) {
+                        var file = p.children[i].file;
+                        var ext = file.substring(file.lastIndexOf('.'))
+                        if (ext === '.xgmml') {
+                            return;
+                        }
+                    }
+                    p.children.push({
+                        'title': 'No pathways found',
+                        "renderers": [
+                            {type: 'message'}
+                        ]
+                    });
+                };
+
+
                 for (var group in groups) {
+                    if(group !== 'Summary'){
+                        checkXgmml(groups[group]);
+                    }
                     children.push(groups[group]);
                 }
 
