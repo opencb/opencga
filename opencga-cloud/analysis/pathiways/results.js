@@ -214,7 +214,7 @@ var RESULT = {
                         }
                     }
                     p.children.push({
-                        'title': 'No pathways found',
+                        'title': 'There are not significant subpathways',
                         "renderers": [
                             {type: 'message'}
                         ]
