@@ -17,10 +17,6 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-lib</artifactId>
         </dependency>
 

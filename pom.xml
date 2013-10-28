@@ -9,11 +9,12 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>opencga-account</module>
+        <module>opencga-app</module>
         <module>opencga-lib</module>
-        <module>opencga-server</module>
+        <module>opencga-account</module>
         <module>opencga-storage</module>
         <module>opencga-analysis</module>
+        <module>opencga-server</module>
     </modules>
 
     <properties>
@@ -34,6 +35,16 @@
                 <artifactId>opencga-lib</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-analysis</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
 
             <!-- General dependencies -->
             <dependency>
@@ -52,10 +63,10 @@
                 <version>1.7.5</version>
             </dependency>
             <!--<dependency>-->
-                <!--<groupId>nl.bitwalker</groupId>-->
-                <!--<artifactId>user-agent-util</artifactId>-->
-                <!--<version>1.6</version>-->
-                <!--<scope>compile</scope>-->
+            <!--<groupId>nl.bitwalker</groupId>-->
+            <!--<artifactId>user-agent-util</artifactId>-->
+            <!--<version>1.6</version>-->
+            <!--<scope>compile</scope>-->
             <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
@@ -74,9 +85,9 @@
                 <version>2.11.3</version>
             </dependency>
             <!--<dependency>-->
-                <!--<groupId>net.sf</groupId>-->
-                <!--<artifactId>samtools</artifactId>-->
-                <!--<version>1.72</version>-->
+            <!--<groupId>net.sf</groupId>-->
+            <!--<artifactId>samtools</artifactId>-->
+            <!--<version>1.72</version>-->
             <!--</dependency>-->
             <dependency>
                 <groupId>org.utgenome.thirdparty</groupId>
@@ -84,10 +95,10 @@
                 <version>1.86.0</version>
             </dependency>
             <!--<dependency>-->
-                <!--<groupId>com.google.code.gson</groupId>-->
-                <!--<artifactId>gson</artifactId>-->
-                <!--<version>2.2.2</version>-->
-                <!--<scope>compile</scope>-->
+            <!--<groupId>com.google.code.gson</groupId>-->
+            <!--<artifactId>gson</artifactId>-->
+            <!--<version>2.2.2</version>-->
+            <!--<scope>compile</scope>-->
             <!--</dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
