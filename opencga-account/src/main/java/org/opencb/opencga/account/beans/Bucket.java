@@ -1,6 +1,6 @@
 package org.opencb.opencga.account.beans;
 
-import org.opencb.opencga.common.TimeUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.List;

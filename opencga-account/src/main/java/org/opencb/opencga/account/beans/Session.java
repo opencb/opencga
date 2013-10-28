@@ -1,7 +1,7 @@
 package org.opencb.opencga.account.beans;
 
-import org.opencb.opencga.common.StringUtils;
-import org.opencb.opencga.common.TimeUtils;
+import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
 
 
 public class Session {

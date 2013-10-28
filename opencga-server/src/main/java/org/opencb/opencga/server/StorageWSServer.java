@@ -4,9 +4,9 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.account.beans.ObjectItem;
 import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.common.IOUtils;
-import org.opencb.opencga.common.StringUtils;
-import org.opencb.opencga.common.TimeUtils;
+import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

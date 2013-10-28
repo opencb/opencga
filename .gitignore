@@ -1,3 +1,6 @@
+# OpenCGA folders
+opencga-app/build/libs
+
 # General
 *.jar
 *.war

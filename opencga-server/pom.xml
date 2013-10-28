@@ -4,15 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>opencga</artifactId>
         <groupId>org.opencb.opencga</groupId>
+        <artifactId>opencga</artifactId>
         <version>0.2.0</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>opencga-server</artifactId>
-    <version>${opencga.version}</version>
     <packaging>war</packaging>
+    <version>${opencga.version}</version>
 
     <dependencies>
         <dependency>
@@ -21,11 +21,15 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-common</artifactId>
+            <artifactId>opencga-lib</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-lib</artifactId>
+            <artifactId>opencga-analysis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage</artifactId>
         </dependency>
 
         <!--<dependency>-->

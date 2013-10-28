@@ -3,16 +3,17 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
     <version>0.2.0</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>opencga-account</module>
-        <module>opencga-common</module>
+        <module>opencga-app</module>
         <module>opencga-lib</module>
+        <module>opencga-account</module>
+        <module>opencga-storage</module>
+        <module>opencga-analysis</module>
         <module>opencga-server</module>
     </modules>
 
@@ -31,12 +32,17 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-common</artifactId>
+                <artifactId>opencga-lib</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-lib</artifactId>
+                <artifactId>opencga-analysis</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
 
@@ -57,10 +63,10 @@
                 <version>1.7.5</version>
             </dependency>
             <!--<dependency>-->
-                <!--<groupId>nl.bitwalker</groupId>-->
-                <!--<artifactId>user-agent-util</artifactId>-->
-                <!--<version>1.6</version>-->
-                <!--<scope>compile</scope>-->
+            <!--<groupId>nl.bitwalker</groupId>-->
+            <!--<artifactId>user-agent-util</artifactId>-->
+            <!--<version>1.6</version>-->
+            <!--<scope>compile</scope>-->
             <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
@@ -79,9 +85,9 @@
                 <version>2.11.3</version>
             </dependency>
             <!--<dependency>-->
-                <!--<groupId>net.sf</groupId>-->
-                <!--<artifactId>samtools</artifactId>-->
-                <!--<version>1.72</version>-->
+            <!--<groupId>net.sf</groupId>-->
+            <!--<artifactId>samtools</artifactId>-->
+            <!--<version>1.72</version>-->
             <!--</dependency>-->
             <dependency>
                 <groupId>org.utgenome.thirdparty</groupId>
@@ -89,10 +95,10 @@
                 <version>1.86.0</version>
             </dependency>
             <!--<dependency>-->
-                <!--<groupId>com.google.code.gson</groupId>-->
-                <!--<artifactId>gson</artifactId>-->
-                <!--<version>2.2.2</version>-->
-                <!--<scope>compile</scope>-->
+            <!--<groupId>com.google.code.gson</groupId>-->
+            <!--<artifactId>gson</artifactId>-->
+            <!--<version>2.2.2</version>-->
+            <!--<scope>compile</scope>-->
             <!--</dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>

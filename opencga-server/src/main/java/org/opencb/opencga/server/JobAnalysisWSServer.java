@@ -1,7 +1,7 @@
 package org.opencb.opencga.server;
 
 import org.opencb.opencga.account.beans.Job;
-import org.opencb.opencga.lib.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

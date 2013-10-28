@@ -1,7 +1,7 @@
 package org.opencb.opencga.server;
 
-import org.opencb.opencga.common.networks.Layout;
-import org.opencb.opencga.common.networks.Layout.LayoutResp;
+import org.opencb.opencga.lib.common.networks.Layout;
+import org.opencb.opencga.lib.common.networks.Layout.LayoutResp;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

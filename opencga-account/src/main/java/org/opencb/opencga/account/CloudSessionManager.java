@@ -8,11 +8,11 @@ import org.opencb.opencga.account.db.AccountManager;
 import org.opencb.opencga.account.db.AccountMongoDBManager;
 import org.opencb.opencga.account.io.FileIOManager;
 import org.opencb.opencga.account.io.IOManagementException;
-import org.opencb.opencga.common.Config;
-import org.opencb.opencga.common.IOUtils;
-import org.opencb.opencga.common.StringUtils;
-import org.opencb.opencga.lib.storage.datamanagers.VcfManager;
-import org.opencb.opencga.lib.storage.datamanagers.bam.BamManager;
+import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.storage.datamanagers.VcfManager;
+import org.opencb.opencga.storage.datamanagers.bam.BamManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

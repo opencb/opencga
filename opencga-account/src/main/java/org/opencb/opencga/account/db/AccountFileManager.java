@@ -1,6 +1,6 @@
 package org.opencb.opencga.account.db;
 
-import org.opencb.opencga.common.Config;
+import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
