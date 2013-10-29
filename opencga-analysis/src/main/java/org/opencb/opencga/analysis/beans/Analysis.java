@@ -11,6 +11,10 @@ public class Analysis {
     private List<Example> examples;
     private List<Acl> acl;
 
+    public Analysis() {
+
+    }
+
     public Analysis(Author author, String version, String id, String name, String description,
                     String website, String publication, Icon icon, List<Option> globalParams,
                     List<Execution> executions, List<Example> examples, List<Acl> acl) {

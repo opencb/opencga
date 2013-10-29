@@ -3,6 +3,10 @@ package org.opencb.opencga.analysis.beans;
 public class Icon {
     private String size, data;
 
+    public Icon() {
+
+    }
+
     public Icon(String size, String data) {
         this.size = size;
         this.data = data;

@@ -9,6 +9,11 @@ public class Execution {
     private List<Option> validParams;
     private List<ConfigAttr> configAttr;
 
+
+    public Execution() {
+
+    }
+
     public Execution(String id, String name, String executable,
                      List<InputParam> inputParams, List<InputParam> inputParamsFromTxt, String outputParam,
                      List<Option> validParams, List<ConfigAttr> configAttr, String testCmd, String result) {

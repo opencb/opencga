@@ -1,6 +1,7 @@
 package org.opencb.opencga.account.db;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
@@ -34,6 +35,7 @@ public class AccountMongoDBManager implements AccountManager {
 
     public AccountMongoDBManager() throws NumberFormatException, IOException {
         jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectWriter = jsonObjectMapper.writer();
 
         accountProperties = Config.getAccountProperties();

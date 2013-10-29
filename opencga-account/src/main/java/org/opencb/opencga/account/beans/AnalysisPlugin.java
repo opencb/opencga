@@ -9,6 +9,9 @@ public class AnalysisPlugin {
     private String ownerId;
     private List<Acl> acl;
 
+    public AnalysisPlugin() {
+
+    }
     public AnalysisPlugin(String id, String name, String ownerId, List<Acl> acl) {
         super();
         this.id = id;

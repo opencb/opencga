@@ -26,6 +26,10 @@ public class ObjectItem {
     public static String UPLOADED = "uploaded";
     public static String READY = "ready";
 
+    public ObjectItem() {
+
+    }
+
 
     public ObjectItem(String id, String fileName, String fileType) {
         this(id, fileName, fileType, "", "", 0, ObjectItem.READY, "", TimeUtils.getTime(), "", "", "", new ArrayList<Acl>());

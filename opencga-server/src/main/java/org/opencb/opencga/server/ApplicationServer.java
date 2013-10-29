@@ -28,6 +28,7 @@ public class ApplicationServer extends ResourceConfig {
                 UtilsWSServer.class,
                 VcfWSServer.class,
                 WSResponse.class,
+                GenericWSServer.class,
 
                 MultiPartFeature.class
         );

@@ -215,6 +215,7 @@ var RESULT = {
                     }
                     p.children.push({
                         'title': 'There are not significant subpathways',
+                        'type': 'danger',
                         "renderers": [
                             {type: 'message'}
                         ]

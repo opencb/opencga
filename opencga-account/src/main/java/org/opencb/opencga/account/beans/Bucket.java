@@ -20,6 +20,10 @@ public class Bucket {
     private List<ObjectItem> objects;
 
 
+    public Bucket() {
+
+    }
+
     public Bucket(String name) {
         this(name.toLowerCase(), name, "1", "", TimeUtils.getTime(), "", "", "", new ArrayList<Acl>(), new ArrayList<ObjectItem>());
     }

@@ -12,6 +12,9 @@ public class Project {
     private List<Acl> acl;
     private List<Job> jobs = new ArrayList<>();
 
+    public Project() {
+
+    }
 
     public Project(String name) {
         this(name.toLowerCase(), name, "", "", 1, new ArrayList<Acl>(), new ArrayList<Job>());

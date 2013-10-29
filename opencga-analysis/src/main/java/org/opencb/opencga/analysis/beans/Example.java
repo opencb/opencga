@@ -6,6 +6,10 @@ public class Example {
     private String name, executionId;
     private List<ExampleOption> options;
 
+    public Example() {
+
+    }
+
     public Example(String name, String executionId, List<ExampleOption> options) {
         this.name = name;
         this.executionId = executionId;

@@ -3,6 +3,10 @@ package org.opencb.opencga.analysis.beans;
 public class ConfigAttr {
     private String name, value;
 
+    public ConfigAttr() {
+
+    }
+
     public ConfigAttr(String name, String value) {
         this.name = name;
         this.value = value;

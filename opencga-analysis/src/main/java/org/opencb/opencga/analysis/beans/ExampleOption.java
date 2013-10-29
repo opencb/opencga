@@ -4,6 +4,10 @@ package org.opencb.opencga.analysis.beans;
 public class ExampleOption {
     private String paramName, value;
 
+    public ExampleOption() {
+
+    }
+
     public ExampleOption(String executionId, String value) {
         this.paramName = executionId;
         this.value = value;

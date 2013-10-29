@@ -10,10 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.File;
@@ -26,20 +23,28 @@ import java.util.ResourceBundle;
 @Produces("text/plain")
 public class GenericWSServer {
 
-
-    protected UriInfo uriInfo;
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
     protected static Properties properties;
 
+    protected UriInfo uriInfo;
     protected String accountId;
-    protected String sessionId;
+    //    protected String sessionId;
     protected String sessionIp;
-    protected String of;
 
     protected MultivaluedMap<String, String> params;
 
-    protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
+    protected static ObjectMapper jsonObjectMapper;
+
+    //General params
+    @DefaultValue("")
+    @QueryParam("sessionid")
+    protected String sessionId;
+
+    @DefaultValue("json")
+    @QueryParam("of")
+    protected String of;
+
 
     /**
      * Only one CloudSessionManager
@@ -47,9 +52,6 @@ public class GenericWSServer {
     protected static CloudSessionManager cloudSessionManager;
 
     static {
-
-        final ResourceConfig resourceConfig = new ResourceConfig(StorageWSServer.class);
-        resourceConfig.register(MultiPartFeature.class);
 
         try {
             cloudSessionManager = new CloudSessionManager();
@@ -72,8 +74,8 @@ public class GenericWSServer {
     public GenericWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         this.uriInfo = uriInfo;
         this.params = this.uriInfo.getQueryParameters();
-        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";
-        this.of = (this.params.get("of") != null) ? this.params.get("of").get(0) : "";
+//        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";
+//        this.of = (this.params.get("of") != null) ? this.params.get("of").get(0) : "";
         this.sessionIp = httpServletRequest.getRemoteAddr();
 
 //		UserAgent userAgent = UserAgent.parseUserAgentString(httpServletRequest.getHeader("User-Agent"));
@@ -102,6 +104,8 @@ public class GenericWSServer {
     @GET
     @Path("/echo/{message}")
     public Response echoGet(@PathParam("message") String message) {
+        logger.info(sessionId);
+        logger.info(of);
         return createOkResponse(message);
     }
 

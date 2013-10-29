@@ -4,6 +4,10 @@ public class Option {
     private String name, description;
     private boolean required;
 
+    public Option() {
+
+    }
+
     public Option(String name, String description, boolean required) {
         this.name = name;
         this.description = description;

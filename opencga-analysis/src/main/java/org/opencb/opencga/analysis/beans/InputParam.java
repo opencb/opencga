@@ -3,6 +3,10 @@ package org.opencb.opencga.analysis.beans;
 public class InputParam {
     private String name, dataType;
 
+    public InputParam() {
+
+    }
+
     public InputParam(String name, String dataType) {
         this.name = name;
         this.dataType = dataType;

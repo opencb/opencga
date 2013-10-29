@@ -28,6 +28,11 @@ public class Job {
     public static final String RUNNING = "running";
     public static final String DONE = "done";
 
+
+    public Job() {
+
+    }
+
     public Job(String id, String name, String outdir, String toolName, String status, String commandLine,
                String description, List<String> inputData) {
         this(id, name, outdir, toolName, 0, status, TimeUtils.getTime(), "", "", "", -2, commandLine, description,

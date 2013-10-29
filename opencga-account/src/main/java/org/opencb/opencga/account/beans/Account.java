@@ -23,6 +23,10 @@ public class Account {
     private List<Config> configs = new ArrayList<Config>();
     private List<Project> projects = new ArrayList<>();
 
+    public Account() {
+
+    }
+
     public Account(String accountId, String accountName, String password, String role, String email) {
         this.accountId = accountId;
         this.accountName = accountName;
