@@ -55,6 +55,14 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>bioformats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.variant</groupId>
+            <artifactId>variant-lib</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
