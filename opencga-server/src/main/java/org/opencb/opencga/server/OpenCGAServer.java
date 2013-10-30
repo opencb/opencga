@@ -3,8 +3,6 @@ package org.opencb.opencga.server;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
-import javax.ws.rs.ApplicationPath;
-
 /**
  * Created with IntelliJ IDEA.
  * User: fsalavert
@@ -13,9 +11,8 @@ import javax.ws.rs.ApplicationPath;
  * To change this template use File | Settings | File Templates.
  */
 
-@ApplicationPath("/")
-public class ApplicationServer extends ResourceConfig {
-    public ApplicationServer() {
+public class OpenCGAServer extends ResourceConfig {
+    public OpenCGAServer() {
         super(
                 AccountWSServer.class,
                 AdminWSServer.class,
@@ -33,4 +30,5 @@ public class ApplicationServer extends ResourceConfig {
                 MultiPartFeature.class
         );
     }
+
 }

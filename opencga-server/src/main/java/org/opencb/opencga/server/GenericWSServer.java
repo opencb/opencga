@@ -2,8 +2,6 @@ package org.opencb.opencga.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.opencb.opencga.account.CloudSessionManager;
 import org.opencb.opencga.account.io.IOManagementException;
 import org.slf4j.Logger;
@@ -17,7 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import java.util.ResourceBundle;
 
 @Path("/")
 @Produces("text/plain")
@@ -71,7 +68,30 @@ public class GenericWSServer {
         }
     }
 
+//    public GenericWSServer() {
+////        packages("org.opencb.opencga.server");
+//                super(
+//                AccountWSServer.class,
+//                AdminWSServer.class,
+//                AnalysisWSServer.class,
+//                BamWSServer.class,
+//                GeocodingAddressService.class,
+//                GffWSServer.class,
+//                JobAnalysisWSServer.class,
+//                StorageWSServer.class,
+//                UtilsWSServer.class,
+//                VcfWSServer.class,
+//                WSResponse.class,
+//                GenericWSServer.class,
+//
+//                MultiPartFeature.class
+//        );
+//    }
+
     public GenericWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+//        this();
+//        packages("org.opencb.opencga.server");
+
         this.uriInfo = uriInfo;
         this.params = this.uriInfo.getQueryParameters();
 //        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";

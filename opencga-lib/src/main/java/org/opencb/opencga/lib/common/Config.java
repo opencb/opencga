@@ -125,7 +125,7 @@ public class Config {
         if (System.currentTimeMillis() - lastPropertyLoad > 60000) {
             loadProperties(accountProperties, Paths.get(opencgaHome, "conf", "account.properties"));
             loadProperties(analysisProperties, Paths.get(opencgaHome, "conf", "analysis.properties"));
-            loadProperties(localServerProperties, Paths.get(opencgaLightHome, "conf", "localserver.properties"));
+            loadProperties(localServerProperties, Paths.get(opencgaLightHome, "conf", "local-server.properties"));
             lastPropertyLoad = System.currentTimeMillis();
         }
     }
