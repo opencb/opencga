@@ -1,4 +1,4 @@
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import java.io.IOException;
 

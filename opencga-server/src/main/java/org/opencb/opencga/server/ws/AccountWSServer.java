@@ -1,4 +1,4 @@
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
@@ -19,6 +19,7 @@ public class AccountWSServer extends GenericWSServer {
         super(uriInfo, httpServletRequest);
         this.accountId = accountId;
     }
+
 
     @GET
     @Path("/create")

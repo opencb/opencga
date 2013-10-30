@@ -1,4 +1,4 @@
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
