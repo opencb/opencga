@@ -1,4 +1,4 @@
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

@@ -1,4 +1,4 @@
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import org.opencb.opencga.lib.common.networks.Layout;
 import org.opencb.opencga.lib.common.networks.Layout.LayoutResp;

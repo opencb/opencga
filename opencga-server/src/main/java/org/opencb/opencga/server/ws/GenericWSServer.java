@@ -1,4 +1,4 @@
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -17,7 +17,6 @@ import java.io.InputStream;
 import java.util.Properties;
 
 @Path("/")
-@Produces("text/plain")
 public class GenericWSServer {
 
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -29,7 +28,6 @@ public class GenericWSServer {
     protected String sessionIp;
 
     protected MultivaluedMap<String, String> params;
-
     protected static ObjectWriter jsonObjectWriter;
     protected static ObjectMapper jsonObjectMapper;
 
@@ -68,29 +66,7 @@ public class GenericWSServer {
         }
     }
 
-//    public GenericWSServer() {
-////        packages("org.opencb.opencga.server");
-//                super(
-//                AccountWSServer.class,
-//                AdminWSServer.class,
-//                AnalysisWSServer.class,
-//                BamWSServer.class,
-//                GeocodingAddressService.class,
-//                GffWSServer.class,
-//                JobAnalysisWSServer.class,
-//                StorageWSServer.class,
-//                UtilsWSServer.class,
-//                VcfWSServer.class,
-//                WSResponse.class,
-//                GenericWSServer.class,
-//
-//                MultiPartFeature.class
-//        );
-//    }
-
     public GenericWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-//        this();
-//        packages("org.opencb.opencga.server");
 
         this.uriInfo = uriInfo;
         this.params = this.uriInfo.getQueryParameters();
@@ -110,7 +86,6 @@ public class GenericWSServer {
         // logger.info("------------------->" + op.getName());
         // logger.info("------------------->" + op.getId());
         // logger.info("------------------->" + op.getDeviceType().getName());
-
 
         File dqsDir = new File(properties.getProperty("DQS.PATH"));
         if (dqsDir.exists()) {
