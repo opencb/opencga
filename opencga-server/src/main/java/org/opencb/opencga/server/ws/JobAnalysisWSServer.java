@@ -1,17 +1,26 @@
 package org.opencb.opencga.server.ws;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Joiner;
+import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
+import org.opencb.commons.bioformats.variant.json.VariantInfo;
+import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.storage.variant.VariantQueryMaker;
+import org.opencb.opencga.storage.variant.VariantSqliteQueryMaker;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Path("/account/{accountId}/analysis/job/{jobId}")
 public class JobAnalysisWSServer extends GenericWSServer {
@@ -148,64 +157,94 @@ public class JobAnalysisWSServer extends GenericWSServer {
         }
     }
 
-
     // TODO Find place for this webservices
-//    //VARIANT EXPLORER WS
-//    @POST
-//    @Path("/variants")
-//    @Consumes("application/x-www-form-urlencoded")
-//    public Response getVariantInfo(@DefaultValue("") @QueryParam("filename") String filename, MultivaluedMap<String, String> postParams) {
-//
-//        HashMap<String, String> map = new LinkedHashMap<>();
-//
-//        for (Map.Entry<String, List<String>> entry : postParams.entrySet()) {
-//            map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
-////            map.put(entry.getKey(), StringUtils.join(entry.getValue(), ","));
-//        }
-//
-//        System.out.println(map);
-//
-//        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
-//
-//        System.out.println("dataPath = " + dataPath.toString());
-//
-//        map.put("db_name", dataPath.toString());
-//        List<VariantInfo> list = WSSqliteManager.getRecords(map);
-//
-//
-//        String res = null;
-//        try {
-//            res = jsonObjectMapper.writeValueAsString(list);
-//
-//        } catch (JsonProcessingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return createOkResponse(res);
-//    }
+    //VARIANT EXPLORER WS
+    @POST
+    @Path("/variants")
+    @Consumes("application/x-www-form-urlencoded")
+    public Response getVariantInfo(@DefaultValue("") @QueryParam("filename") String filename, MultivaluedMap<String, String> postParams) {
+        Map<String, String> map = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : postParams.entrySet()) {
+            map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
+//            map.put(entry.getKey(), StringUtils.join(entry.getValue(), ","));
+        }
+
+        System.out.println(map);
+
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
+
+        System.out.println("dataPath = " + dataPath.toString());
+
+        map.put("db_name", dataPath.toString());
+        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        List<VariantInfo> list = vqm.getRecords(map);
 
 
-//    @GET
-//    @Path("/variant_info")
-//    public Response getAnalysisInfo(@DefaultValue("") @QueryParam("filename") String filename) {
-//
-//        HashMap<String, String> map = new LinkedHashMap<>();
-//
-//        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
-//        map.put("db_name", dataPath.toString());
-//
-//        VariantAnalysisInfo vi = WSSqliteManager.getAnalysisInfo(map);
-//
-//
-//        String res = null;
-//        try {
-//            res = jsonObjectMapper.writeValueAsString(vi);
-//
-//        } catch (JsonProcessingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return createOkResponse(res);
-//    }
+        String res = null;
+        try {
+            res = jsonObjectMapper.writeValueAsString(list);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return createOkResponse(res);
+    }
+
+    @GET
+    @Path("/variant_info")
+    public Response getAnalysisInfo(@DefaultValue("") @QueryParam("filename") String filename) {
+
+        Map<String, String> map = new LinkedHashMap<>();
+
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
+        map.put("db_name", dataPath.toString());
+
+        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        VariantAnalysisInfo vi = vqm.getAnalysisInfo(map);
+
+
+        String res = null;
+        try {
+            res = jsonObjectMapper.writeValueAsString(vi);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return createOkResponse(res);
+    }
+
+    @POST
+    @Path("/variant_stats")
+    @Consumes("application/x-www-form-urlencoded")
+    public Response getVariantStats(@DefaultValue("") @QueryParam("filename") String filename, MultivaluedMap<String, String> postParams) {
+
+        Map<String, String> map = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : postParams.entrySet()) {
+            map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
+        }
+
+        System.out.println(map);
+
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
+
+        System.out.println("dataPath = " + dataPath.toString());
+
+        map.put("db_name", dataPath.toString());
+        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        List<VcfVariantStat> list = vqm.getRecordsStats(map);
+
+
+        String res = null;
+        try {
+            res = jsonObjectMapper.writeValueAsString(list);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return createOkResponse(res);
+    }
 
 }

@@ -14,6 +14,7 @@
     <packaging>war</packaging>
     <version>${opencga.version}</version>
 
+
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -33,9 +34,9 @@
         </dependency>
 
         <!--<dependency>-->
-            <!--<groupId>org.opencb.variant</groupId>-->
-            <!--<artifactId>variant-cli</artifactId>-->
-            <!--<version>1.0.0</version>-->
+        <!--<groupId>org.opencb.variant</groupId>-->
+        <!--<artifactId>variant-cli</artifactId>-->
+        <!--<version>1.0.0</version>-->
         <!--</dependency>-->
 
         <dependency>
@@ -69,6 +70,10 @@
             <groupId>org.glassfish.jersey.media</groupId>
             <artifactId>jersey-media-multipart</artifactId>
             <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.variant</groupId>
+            <artifactId>variant-lib</artifactId>
         </dependency>
         <!--<dependency>-->
         <!--<groupId>nl.bitwalker</groupId>-->

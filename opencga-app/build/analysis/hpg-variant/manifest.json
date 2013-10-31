@@ -116,7 +116,8 @@
 	            	 outputParam: "outdir",
 	            	 validParams: [
             	               {name:"vcf-file", description:"VCF file used as input.", required:"true"},
-            	               {name:"variants", description:"Get statistics about variants, both per variant and per file (default)."},
+                               {name:"ped-file", description:"PED file used as input.", required:"true"},
+                               {name:"variants", description:"Get statistics about variants, both per variant and per file (default)."},
             	               {name:"samples", description:"Get statistics about samples."}
     	             ],
     	             configAttr: [],
