@@ -16,6 +16,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.opencb.commons.bioformats.variant.VariantStudy;
 
 /**
  * Created with IntelliJ IDEA.
@@ -506,5 +507,10 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         }
 
         return res;
+    }
+
+    @Override
+    public boolean writeStudy(VariantStudy study) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }
