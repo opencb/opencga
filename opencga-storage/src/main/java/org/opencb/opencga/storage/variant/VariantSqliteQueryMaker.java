@@ -6,13 +6,13 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.VariantEffect;
+import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+//import javax.ws.rs.client.Client;
+//import javax.ws.rs.client.ClientBuilder;
+//import javax.ws.rs.client.WebTarget;
+//import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
@@ -39,7 +39,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         Statement stmt;
         List<VariantInfo> list = new ArrayList<>(100);
 
-        String dbName = options.get("db_name");
+       String dbName = options.get("db_name");
 
         try {
             Class.forName("org.sqlite.JDBC");
@@ -611,55 +611,56 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
     private String processGeneList(String genes) {
 
-        System.out.println("genes = " + genes);
-        List<String> list = new ArrayList<>();
+//        System.out.println("genes = " + genes);
+//        List<String> list = new ArrayList<>();
 
-        Client client = ClientBuilder.newClient();
-        WebTarget webTarget = client.target("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
+//        Client client = ClientBuilder.newClient();
+//        WebTarget webTarget = client.target("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
+//
+//        ObjectMapper mapper = new ObjectMapper();
+//
+//        Response response = webTarget.path(genes).path("info").queryParam("of", "json").request().get();
+//        String data = response.toString();
+//
+//        System.out.println("response = " + response);
+//
+//
+//        try {
+//            JsonNode actualObj = mapper.readTree(data);
+//            Iterator<JsonNode> it = actualObj.iterator();
+//            Iterator<JsonNode> aux;
+//            StringBuilder sb;
+//
+//            while (it.hasNext()) {
+//                JsonNode node = it.next();
+//                if (node.isArray()) {
+//
+//                    aux = node.iterator();
+//                    while (aux.hasNext()) {
+//                        JsonNode auxNode = aux.next();
+//                        sb = new StringBuilder("(");
+//
+//                        System.out.println("auxNode.get(\"chromosome\").asText() = " + auxNode.get("chromosome").asText());
+//
+//                        sb.append("variant_stats.chromosome='").append(auxNode.get("chromosome").asText()).append("' AND ");
+//                        sb.append("variant_stats.position>=").append(auxNode.get("start")).append(" AND ");
+//                        sb.append("variant_stats.position<=").append(auxNode.get("end")).append(" )");
+//
+//                        list.add(sb.toString());
+//                    }
+//
+//                }
+//            }
+//
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
-        ObjectMapper mapper = new ObjectMapper();
 
-        Response response = webTarget.path(genes).path("info").queryParam("of", "json").request().get();
-        String data = response.toString();
+//        String res = "(" + StringUtils.join(list, " OR ") + ")";
 
-        System.out.println("response = " + response);
-
-
-        try {
-            JsonNode actualObj = mapper.readTree(data);
-            Iterator<JsonNode> it = actualObj.iterator();
-            Iterator<JsonNode> aux;
-            StringBuilder sb;
-
-            while (it.hasNext()) {
-                JsonNode node = it.next();
-                if (node.isArray()) {
-
-                    aux = node.iterator();
-                    while (aux.hasNext()) {
-                        JsonNode auxNode = aux.next();
-                        sb = new StringBuilder("(");
-
-                        System.out.println("auxNode.get(\"chromosome\").asText() = " + auxNode.get("chromosome").asText());
-
-                        sb.append("variant_stats.chromosome='").append(auxNode.get("chromosome").asText()).append("' AND ");
-                        sb.append("variant_stats.position>=").append(auxNode.get("start")).append(" AND ");
-                        sb.append("variant_stats.position<=").append(auxNode.get("end")).append(" )");
-
-                        list.add(sb.toString());
-                    }
-
-                }
-            }
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        String res = "(" + StringUtils.join(list, " OR ") + ")";
-
+        String res ="";
         return res;
 
     }

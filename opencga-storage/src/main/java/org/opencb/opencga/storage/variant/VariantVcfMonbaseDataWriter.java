@@ -2,14 +2,17 @@ package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.hfile.Compression;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
+import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -17,12 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.vcf4.VariantEffect;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
-import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -34,7 +31,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private String study;
     private HBaseAdmin admin;
     private HTable table;
+    private HTable effectTable;
     private Map<String, Put> putMap;
+    private Map<String, Put> effectPutMap;
     private final byte[] info_cf = "i".getBytes();
     private final byte[] data_cf = "d".getBytes();
     private MongoClient mongoClient;
@@ -45,6 +44,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         this.tableName = tableName;
         this.study = study;
         this.putMap = new HashMap<>();
+        this.effectPutMap = new HashMap<>();
     }
 
     @Override
@@ -74,7 +74,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     @Override
     public boolean pre() {
         try {
-            // HBase table creation
+            // HBase variant table creation
             if (!admin.tableExists(tableName)) {
                 HTableDescriptor newTable = new HTableDescriptor(tableName.getBytes());
                 // Add column family for samples
@@ -90,11 +90,23 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             }
             table = new HTable(admin.getConfiguration(), tableName);
             table.setAutoFlush(false, true);
-            
+            // HBase effect table creation
+            String tableEffectName = tableName + "effect";
+            if (!admin.tableExists(tableName)) {
+                HTableDescriptor newEffectTable = new HTableDescriptor(tableEffectName.getBytes());
+                // Add column family for effect
+                HColumnDescriptor effectDescriptor = new HColumnDescriptor("e".getBytes());
+                effectDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
+                newEffectTable.addFamily(effectDescriptor);
+                // Create effect table
+                admin.createTable(newEffectTable);
+            }
+            effectTable = new HTable(admin.getConfiguration(), tableName);
+            effectTable.setAutoFlush(false, true);
             // Mongo collection creation
             studyCollection = db.getCollection("study");
             
-            return table != null && studyCollection != null;
+            return table != null && studyCollection != null && effectTable != null;
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
@@ -117,11 +129,11 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             byte[] qualdata = (study + "_data").getBytes();
             if (putMap.get(rowkey) != null) {
                 auxPut = putMap.get(rowkey);
-                auxPut.add(info_cf, qualdata, info.toByteArray());
+                auxPut.add(data_cf, qualdata, info.toByteArray());
                 putMap.put(rowkey, auxPut);
             } else {
                 auxPut = new Put(rowkey.getBytes());
-                auxPut.add(info_cf, qualdata, info.toByteArray());
+                auxPut.add(data_cf, qualdata, info.toByteArray());
                 putMap.put(rowkey, auxPut);
             }
 
@@ -143,7 +155,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         }
 
         // Insert into the database
-        save(putMap.values());
+        save(putMap.values(), table);
         return true;
     }
 
@@ -160,33 +172,47 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         }
 
         // Insert into the database
-        save(putMap.values());
+        save(putMap.values(), table);
         return true;
     }
 
     @Override
     public boolean writeGlobalStats(VcfGlobalStat vgs) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true;
+        //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeSampleStats(VcfSampleStat vss) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true;
+        //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeSampleGroupStats(VcfSampleGroupStat vsgs) throws IOException {
-        throw new UnsupportedOperationException("Not supported yet.");
+       return true;
+       // throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeVariantGroupStats(VcfVariantGroupStat vvgs) throws IOException {
-        throw new UnsupportedOperationException("Not supported yet.");
+         return true;
+       // throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeVariantEffect(List<VariantEffect> list) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        for(VariantEffect v : list){
+            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+            Put put2 = new Put(Bytes.toBytes(rowkey));
+            VariantEffectProtos.EffectInfo effect = buildEffectProto(v);
+            String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
+            put2.add("e".getBytes(), qualifier.getBytes(), effect.toByteArray());
+            effectPutMap.put(rowkey, put2);
+        }
+        //insert into database
+        save(effectPutMap.values(), effectTable);
+        return true;
     }
 
     @Override
@@ -325,6 +351,34 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return stats.build();
     }
 
+
+    private VariantEffectProtos.EffectInfo buildEffectProto(VariantEffect v) {
+        VariantEffectProtos.EffectInfo.Builder effect = VariantEffectProtos.EffectInfo.newBuilder();
+        effect.setReference(v.getReferenceAllele());
+        effect.setAlternative(v.getAlternativeAllele());
+        effect.setChromosome(v.getChromosome());
+        effect.setPosition(v.getPosition());
+        effect.setFeatureId(v.getFeatureId());
+        effect.setFeatureName(v.getFeatureName());
+        effect.setFeatureBiotype(v.getFeatureBiotype());
+        effect.setFeatureChromosome(v.getFeatureChromosome());
+        effect.setFeatureStart(v.getFeatureStart());
+        effect.setFeatureEnd(v.getFeatureEnd());
+        effect.setSnpId(v.getSnpId());
+        effect.setAncestral(v.getAncestral());
+        effect.setGeneId(v.getGeneId());
+        effect.setTranscriptId(v.getTranscriptId());
+        effect.setGeneName(v.getGeneName());
+        effect.setConsequenceType(v.getConsequenceType());
+        effect.setConsequenceTypeObo(v.getConsequenceTypeObo());
+        effect.setConsequenceTypeDesc(v.getConsequenceTypeDesc());
+        effect.setConsequenceTypeType(v.getConsequenceTypeType());
+        effect.setAaPosition(v.getAaPosition());
+        effect.setAminoacidChange(v.getAminoacidChange());
+        effect.setCodonChange(v.getCodonChange());
+        return effect.build();
+    }
+
     /*
      * Auxiliary functions
      */
@@ -345,18 +399,21 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     private String buildRowkey(String chromosome, String position) {
-        if (chromosome.length() < 2) {
-            chromosome = "0" + chromosome;
+        if(chromosome.substring(0,2).equals("chr")){
+            chromosome = chromosome.substring(2);
         }
-        if (position.length() < 10) {
-            while (position.length() < 10) {
-                position = "0" + position;
+            if (chromosome.length() < 2) {
+                chromosome = "0" + chromosome;
             }
-        }
+            if (position.length() < 10) {
+                while (position.length() < 10) {
+                    position = "0" + position;
+                }
+            }
         return chromosome + "_" + position;
     }
 
-    private void save(Collection<Put> puts) {
+    private void save(Collection<Put> puts, HTable table) {
         try {
             table.put(new LinkedList(puts));
             putMap.clear();
