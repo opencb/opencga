@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.vcf4.VariantEffect;
+import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 

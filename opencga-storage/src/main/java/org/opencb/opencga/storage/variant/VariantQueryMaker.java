@@ -2,10 +2,9 @@ package org.opencb.opencga.storage.variant;
 
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.VariantEffect;
+import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

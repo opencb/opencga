@@ -3,8 +3,10 @@ package org.opencb.opencga.storage.variant;
 import com.google.common.base.Joiner;
 import org.opencb.commons.bioformats.commons.SqliteSingletonConnection;
 import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.variant.vcf4.VariantEffect;
+import org.opencb.commons.bioformats.feature.Genotypes;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
+import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
+import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 
@@ -13,9 +15,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.opencb.commons.bioformats.variant.VariantStudy;
 
 /**
@@ -55,6 +56,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         Genotype g;
         int id;
         boolean res = true;
+        List<List<VariantEffect>> batchEffect;
 
         PreparedStatement pstmt;
         if (!createdSampleTable && vcfRecords.size() > 0) {
@@ -76,9 +78,12 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
             }
         }
 
-        sql = "INSERT INTO variant (chromosome, position, id, ref, alt, qual, filter, info, format) VALUES(?,?,?,?,?,?,?,?,?);";
+        sql = "INSERT INTO variant (chromosome, position, id, ref, alt, qual, filter, info, format,genes,consequence_types, genotypes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?);";
         sqlSampleInfo = "INSERT INTO sample_info(id_variant, sample_name, allele_1, allele_2, data) VALUES (?,?,?,?,?);";
         sqlInfo = "INSERT INTO variant_info(id_variant, key, value) VALUES (?,?,?);";
+
+
+        batchEffect = EffectCalculator.getEffectPerVariant(vcfRecords);
 
         try {
 
@@ -86,7 +91,10 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
             pstmtSample = SqliteSingletonConnection.getConnection().prepareStatement(sqlSampleInfo);
             pstmtInfo = SqliteSingletonConnection.getConnection().prepareStatement(sqlInfo);
 
-            for (VcfRecord v : vcfRecords) {
+            VcfRecord v;
+            String genes, consecuenteTypes, genotypes;
+            for (int i = 0; i < vcfRecords.size(); i++) {
+                v = vcfRecords.get(i);
 
                 pstmt.setString(1, v.getChromosome());
                 pstmt.setInt(2, v.getPosition());
@@ -97,6 +105,14 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 pstmt.setString(7, v.getFilter());
                 pstmt.setString(8, v.getInfo());
                 pstmt.setString(9, v.getFormat());
+
+                genes = parseGenes(batchEffect.get(i));
+                consecuenteTypes = parseConsequenceTypes(batchEffect.get(i));
+                genotypes = parseGenotypes(v);
+
+                pstmt.setString(10, genes);
+                pstmt.setString(11, consecuenteTypes);
+                pstmt.setString(12, genotypes);
 
                 pstmt.execute();
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -146,6 +162,45 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         }
 
         return res;
+    }
+
+    private String parseGenotypes(VcfRecord r) {
+        List<Genotype> list = new ArrayList<>();
+
+        for (String sample : r.getSampleNames()) {
+            Genotypes.addGenotypeToList(list, r.getSampleGenotype(sample));
+        }
+
+        return Joiner.on(",").join(list);
+    }
+
+    private String parseConsequenceTypes(List<VariantEffect> variantEffects) {
+//        StringBuilder res = new StringBuilder();
+
+        Set<String> cts = new HashSet<>();
+        for (int i = 0; i < variantEffects.size(); i++) {
+            if (!variantEffects.get(i).getConsequenceTypeObo().equals("")) {
+
+                cts.add(variantEffects.get(i).getConsequenceTypeObo());
+            }
+        }
+
+        return Joiner.on(",").join(cts);
+
+    }
+
+    private String parseGenes(List<VariantEffect> variantEffects) {
+
+        Set<String> genes = new HashSet<>();
+
+        for (int i = 0; i < variantEffects.size(); i++) {
+            if (!variantEffects.get(i).getGeneName().equals("")) {
+
+                genes.add(variantEffects.get(i).getGeneName());
+            }
+        }
+
+        return Joiner.on(",").join(genes);
     }
 
     @Override
@@ -402,7 +457,10 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 "qual DOUBLE, " +
                 "filter TEXT, " +
                 "info TEXT, " +
-                "format TEXT);";
+                "format TEXT, " +
+                "genes TEXT, " +
+                "consequence_types TEXT, " +
+                "genotypes TEXT);";
 
         String sampleTable = "CREATE TABLE IF NOT EXISTS sample(" +
                 "name TEXT PRIMARY KEY);";
@@ -494,7 +552,20 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
             stmt.execute("CREATE INDEX IF NOT EXISTS variant_info_id_variant_key_idx ON variant_info (id_variant, key);");
             stmt.execute("CREATE INDEX IF NOT EXISTS variant_stats_chromosome_position_idx ON variant_stats (chromosome, position);");
 
-            stmt.execute("CREATE TABLE IF NOT EXISTS consequence_type_count AS SELECT count(*) as count, consequence_type_obo from variant_effect group by consequence_type_obo order by consequence_type_obo ASC;  ");
+            stmt.execute("REINDEX variant_effect_chromosome_position_idx;");
+            stmt.execute("REINDEX variant_effect_feature_biotype_idx;");
+            stmt.execute("REINDEX variant_effect_consequence_type_obo_idx;");
+            stmt.execute("REINDEX variant_chromosome_position_idx;");
+            stmt.execute("REINDEX variant_pass_idx;");
+            stmt.execute("REINDEX variant_id_idx;");
+            stmt.execute("REINDEX sample_name_idx;");
+            stmt.execute("REINDEX sample_info_id_variant_idx;");
+            stmt.execute("REINDEX variant_id_variant_idx;");
+            stmt.execute("REINDEX variant_info_id_variant_key_idx;");
+            stmt.execute("REINDEX variant_stats_chromosome_position_idx;");
+
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS consequence_type_count AS SELECT count(*) as count, consequence_type_obo from (select distinct chromosome, position, reference_allele, alternative_allele, consequence_type_obo from variant_effect) group by consequence_type_obo;");
             stmt.execute("CREATE TABLE IF NOT EXISTS biotype_count AS SELECT count(*) as count, feature_biotype from variant_effect group by feature_biotype order by feature_biotype ASC;  ");
             stmt.execute("CREATE TABLE IF NOT EXISTS chromosome_count AS SELECT count(*) as count, chromosome from variant group by chromosome order by chromosome ASC;");
 
@@ -511,6 +582,6 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean writeStudy(VariantStudy study) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true;
     }
 }

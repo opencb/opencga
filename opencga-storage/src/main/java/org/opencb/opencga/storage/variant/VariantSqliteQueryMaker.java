@@ -6,7 +6,7 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.VariantEffect;
+import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
 
 import javax.ws.rs.client.Client;
@@ -282,8 +282,9 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                 String gt = rs.getInt("allele_1") + "/" + rs.getInt("allele_2");
 
                 vi.addSammpleGenotype(sample, gt);
-                vi.addGeneAndConsequenceType(rs.getString("gene_name"), rs.getString("consequence_type_obo"));
-
+                // vi.addGeneAndConsequenceType(rs.getString("gene_name"), rs.getString("consequence_type_obo"));
+                vi.addGenes(rs.getString("gene_name"));
+                vi.addConsequenceTypes(rs.getString("consequence_type_obo"));
 
             }
 
@@ -333,9 +334,9 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                         int start = Integer.valueOf(matcher.group(2));
                         int end = Integer.valueOf(matcher.group(3));
 
-                        regionClauses.append("( record_query_fields.chromosome='").append(chr).append("' AND ");
-                        regionClauses.append("record_query_fields.position>=").append(start).append(" AND ");
-                        regionClauses.append("record_query_fields.position<=").append(end).append(" )");
+                        regionClauses.append("( variant_stats.chromosome='").append(chr).append("' AND ");
+                        regionClauses.append("variant_stats.position>=").append(start).append(" AND ");
+                        regionClauses.append("variant_stats.position<=").append(end).append(" )");
 
 
                         if (i < (regions.length - 1)) {
@@ -352,61 +353,61 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
             if (options.containsKey("mend_error") && !options.get("mend_error").equals("")) {
                 String val = options.get("mend_error");
                 String opt = options.get("option_mend_error");
-                whereClauses.add("record_query_fields.mendel_err " + opt + " " + val);
+                whereClauses.add("variant_stats.mendel_err " + opt + " " + val);
 
             }
 
             if (options.containsKey("is_indel") && options.get("is_indel").equalsIgnoreCase("on")) {
-                whereClauses.add("record_query_fields.is_indel=1");
+                whereClauses.add("variant_stats.is_indel=1");
             }
 
             if (options.containsKey("maf") && !options.get("maf").equals("")) {
                 String val = options.get("maf");
                 String opt = options.get("option_maf");
-                whereClauses.add("record_query_fields.maf " + opt + " " + val);
+                whereClauses.add("variant_stats.maf " + opt + " " + val);
 
             }
 
             if (options.containsKey("mgf") && !options.get("mgf").equals("")) {
                 String val = options.get("mgf");
                 String opt = options.get("option_mgf");
-                whereClauses.add("record_query_fields.mgf " + opt + " " + val);
+                whereClauses.add("variant_stats.mgf " + opt + " " + val);
 
             }
 
             if (options.containsKey("miss_allele") && !options.get("miss_allele").equals("")) {
                 String val = options.get("miss_allele");
                 String opt = options.get("option_miss_allele");
-                whereClauses.add("record_query_fields.miss_allele " + opt + " " + val);
+                whereClauses.add("variant_stats.miss_allele " + opt + " " + val);
             }
             if (options.containsKey("miss_gt") && !options.get("miss_gt").equals("")) {
                 String val = options.get("miss_gt");
                 String opt = options.get("option_miss_gt");
-                whereClauses.add("record_query_fields.miss_gt " + opt + " " + val);
+                whereClauses.add("variant_stats.miss_gt " + opt + " " + val);
 
             }
             if (options.containsKey("cases_percent_dominant") && !options.get("cases_percent_dominant").equals("")) {
                 String val = options.get("cases_percent_dominant");
                 String opt = options.get("option_cases_dom");
-                whereClauses.add("record_query_fields.cases_percent_dominant " + opt + " " + val);
+                whereClauses.add("variant_stats.cases_percent_dominant " + opt + " " + val);
             }
 
             if (options.containsKey("controls_percent_dominant") && !options.get("controls_percent_dominant").equals("")) {
                 String val = options.get("controls_percent_dominant");
                 String opt = options.get("option_controls_dom");
-                whereClauses.add("record_query_fields.controls_percent_dominant " + opt + " " + val);
+                whereClauses.add("variant_stats.controls_percent_dominant " + opt + " " + val);
             }
 
             if (options.containsKey("cases_percent_recessive") && !options.get("cases_percent_recessive").equals("")) {
                 String val = options.get("cases_percent_recessive");
                 String opt = options.get("option_cases_rec");
-                whereClauses.add("record_query_fields.cases_percent_recessive " + opt + " " + val);
+                whereClauses.add("variant_stats.cases_percent_recessive " + opt + " " + val);
             }
 
             if (options.containsKey("controls_percent_recessive") && !options.get("controls_percent_recessive").equals("")) {
                 String val = options.get("controls_percent_recessive");
                 String opt = options.get("option_controls_rec");
-                whereClauses.add("record_query_fields.controls_percent_recessive " + opt + " " + val);
+                whereClauses.add("variant_stats.controls_percent_recessive " + opt + " " + val);
             }
 
             if (options.containsKey("genes") && !options.get("genes").equals("")) {
@@ -414,11 +415,11 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
             }
 
 
-            String sql = "SELECT distinct record_query_fields.chromosome ," +
-                    "record_query_fields.position , record_query_fields.allele_ref , record_query_fields.allele_maf_freq , record_query_fields.genotype_maf_freq, " +
-                    "record_query_fields.allele_maf , record_query_fields.genotype_maf , record_query_fields.miss_allele , record_query_fields.miss_gt , record_query_fields.mendel_err ," +
-                    "record_query_fields.is_indel , record_query_fields.cases_percent_dominant , record_query_fields.controls_percent_dominant , record_query_fields.cases_percent_recessive , record_query_fields.controls_percent_recessive" +
-                    " FROM record_query_fields ";
+            String sql = "SELECT distinct variant_stats.chromosome ," +
+                    "variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt, variant_stats.maf , variant_stats.mgf, " +
+                    "variant_stats.allele_maf , variant_stats.genotype_maf , variant_stats.miss_allele , variant_stats.miss_gt , variant_stats.mendel_err ," +
+                    "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive" +
+                    " FROM variant_stats ";
 
             if (whereClauses.size() > 0) {
                 StringBuilder where = new StringBuilder(" where ");
@@ -430,7 +431,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                     }
                 }
 
-                sql += where.toString() + " ORDER BY record_query_fields.chromosome , record_query_fields.position , record_query_fields.allele_ref ;";
+                sql += where.toString() + " ORDER BY variant_stats.chromosome , variant_stats.position , variant_stats.allele_ref ;";
             }
 
             System.out.println(sql);
@@ -453,9 +454,10 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                 chr = rs.getString("chromosome");
                 pos = rs.getInt("position");
                 ref = rs.getString("allele_ref");
+                alt = rs.getString("allele_alt");
 
-                vs = new VcfVariantStat(chr, pos, ref, "",
-                        rs.getDouble("allele_maf_freq"), rs.getDouble("genotype_maf_freq"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
+                vs = new VcfVariantStat(chr, pos, ref, alt,
+                        rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
                         rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                         rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
 
