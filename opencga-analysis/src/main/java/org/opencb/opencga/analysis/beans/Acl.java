@@ -4,6 +4,9 @@ public class Acl {
     private String userId;
     private boolean read, write, execute;
 
+    public Acl() {
+    }
+
     public Acl(String userId, boolean read, boolean write, boolean execute) {
         this.userId = userId;
         this.read = read;

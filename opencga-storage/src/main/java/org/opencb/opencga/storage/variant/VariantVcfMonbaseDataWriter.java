@@ -14,6 +14,10 @@ import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.bioformats.variant.vcf4.stats.*;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.*;
+import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
+import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -161,9 +165,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeVariantStats(List<VariantStat> data) {
+    public boolean writeVariantStats(List<VariantStats> data) {
         Put put2;
-        for (VariantStat v : data) {
+        for (VariantStats v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
             byte[] qual = (study + "_stats").getBytes();
@@ -178,26 +182,23 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeGlobalStats(GlobalStat vgs) {
-        return true;
+    public boolean writeGlobalStats(VariantGlobalStats vgs) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleStats(SampleStat vss) {
-        return true;
-        //throw new UnsupportedOperationException("Not supported yet.");
+    public boolean writeSampleStats(VariantSampleStats vss) {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleGroupStats(SampleGroupStat vsgs) throws IOException {
-       return true;
-       // throw new UnsupportedOperationException("Not supported yet.");
+    public boolean writeSampleGroupStats(VariantSampleGroupStats vsgs) throws IOException {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeVariantGroupStats(VariantGroupStat vvgs) throws IOException {
-         return true;
-       // throw new UnsupportedOperationException("Not supported yet.");
+    public boolean writeVariantGroupStats(VariantGroupStats vvgs) throws IOException {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -224,10 +225,8 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 .add("samples", study.getSamples())
                 .add("description", study.getDescription())
                 .add("sources", study.getSources());
-                //.add("global_stats", study.getStats())
-                //.add("filters", study.getFilters);
 
-       GlobalStat global = study.getStats();
+       VariantGlobalStats global = study.getStats();
        DBObject globalStats = new BasicDBObjectBuilder()
                .add("samples_count", global.getSamplesCount())
                .add("variants_count", global.getVariantsCount())
@@ -244,8 +243,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
        Map<String,String> meta = study.getMetadata();
 
         DBObject metadataMongo = new BasicDBObjectBuilder()
-                .add("Filters", meta.get("filters"))
-                .add("Header", meta.get("header"))
+                .add("header", meta.get("variant_file_header"))
                 .get();
         studyMongo.add("metadata", metadataMongo);
 
@@ -307,7 +305,8 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return info.build();
     }
 
-    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStat v) {
+
+    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStats v) {
         VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
         stats.setNumAlleles(v.getNumAlleles());
         stats.setMafAllele(v.getMafAllele());

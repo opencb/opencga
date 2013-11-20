@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStat;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
 import java.io.IOException;
 import java.sql.*;
@@ -447,7 +447,7 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
     }
 
     @Override
-    public List<VariantStat> getRecordsStats(Map<String, String> options) {
+    public List<VariantStats> getRecordsStats(Map<String, String> options) {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 

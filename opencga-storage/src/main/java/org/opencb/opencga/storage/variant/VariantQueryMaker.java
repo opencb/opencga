@@ -2,8 +2,8 @@ package org.opencb.opencga.storage.variant;
 
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
 import java.util.List;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.Map;
 public interface VariantQueryMaker {
     List<VariantInfo> getRecords(Map<String, String> options);
 
-    List<VcfVariantStat> getRecordsStats(Map<String, String> options);
+    List<VariantStats> getRecordsStats(Map<String, String> options);
 
     List<VariantEffect> getEffect(Map<String, String> options);
 
