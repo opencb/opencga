@@ -7,8 +7,8 @@ import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.*;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStat;
 
 import java.io.IOException;
 import java.sql.*;
@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 public class VariantMonbaseQueryMaker implements VariantQueryMaker{
     private List<Scan> regionScans;
     private List<ResultScanner> regionResults;
+    private List<ResultScanner> regionEffect;
     private String study;
     private String tableName;
     private HTable table;
@@ -33,7 +34,7 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
     private Configuration config;
     private HBaseAdmin admin;
 
-    @Override
+    /*@Override
     public List<VariantInfo> getRecords(Map<String, String> options) {
 
         List<VariantInfo> list = new ArrayList<>(100);
@@ -105,7 +106,9 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
             // Result extraction and protobuf decoding.
             for(Scan region: regionScans){
                 ResultScanner resultScan = table.getScanner(region);
+                ResultScanner resultEffect = effectTable.getScanner(region);
                 regionResults.add(resultScan);
+                regionEffect.add(resultEffect);
             }
 
             for(ResultScanner regionRes : regionResults){
@@ -309,7 +312,7 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
                 whereClauses.add(biotypesClauses.toString());
             }
 
- /*           if (options.containsKey("exc_1000g_controls") && options.get("exc_1000g_controls").equalsIgnoreCase("on")) {
+ *//*           if (options.containsKey("exc_1000g_controls") && options.get("exc_1000g_controls").equalsIgnoreCase("on")) {
                 whereClauses.add("(key NOT LIKE '1000G%' OR key is null)");
             } else if (options.containsKey("maf_1000g_controls") && !options.get("maf_1000g_controls").equals("")) {
                 controlsMAFs.put("1000G", options.get("maf_1000g_controls"));
@@ -320,7 +323,7 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
                 whereClauses.add("(key NOT LIKE 'BIER%' OR key is null)");
             } else if (options.containsKey("maf_bier_controls") && !options.get("maf_bier_controls").equals("")) {
                 controlsMAFs.put("BIER", options.get("maf_bier_controls"));
-            }*/
+            }*//*
 
 
             if (options.containsKey("conseq_type[]") && !options.get("conseq_type[]").equals("")) {
@@ -436,10 +439,15 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
 
         return list;
     }
+    }*/
+
+    @Override
+    public List<VariantInfo> getRecords(Map<String, String> options) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
-    public List<VcfVariantStat> getRecordsStats(Map<String, String> options) {
+    public List<VariantStat> getRecordsStats(Map<String, String> options) {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 

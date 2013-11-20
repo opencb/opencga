@@ -9,8 +9,9 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
-import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 
@@ -160,9 +161,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeVariantStats(List<VcfVariantStat> data) {
+    public boolean writeVariantStats(List<VariantStat> data) {
         Put put2;
-        for (VcfVariantStat v : data) {
+        for (VariantStat v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
             byte[] qual = (study + "_stats").getBytes();
@@ -177,25 +178,24 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeGlobalStats(VcfGlobalStat vgs) {
+    public boolean writeGlobalStats(GlobalStat vgs) {
+        return true;
+    }
+
+    @Override
+    public boolean writeSampleStats(SampleStat vss) {
         return true;
         //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleStats(VcfSampleStat vss) {
-        return true;
-        //throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    public boolean writeSampleGroupStats(VcfSampleGroupStat vsgs) throws IOException {
+    public boolean writeSampleGroupStats(SampleGroupStat vsgs) throws IOException {
        return true;
        // throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeVariantGroupStats(VcfVariantGroupStat vvgs) throws IOException {
+    public boolean writeVariantGroupStats(VariantGroupStat vvgs) throws IOException {
          return true;
        // throw new UnsupportedOperationException("Not supported yet.");
     }
@@ -217,54 +217,41 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean writeStudy(VariantStudy study) {
-//        "estudio_1" : {
-//                "alias" : "e1",
-//                "description" : "Mi primer estudio fabuloso",
-//                "date" : "01/01/2014",
-//                "authors" : [ "Nacho", "Pako", "Alex", "Jesús", "Cris" ],
-//                "samples" : [ "NA001", "NA002", "NA003" ],
-//                "variants" : [ "1:10000", "1:20000", "2:20000" ],
-//                "pedigree" : "Fenotipo, sexo, y relaciones entre samples. Formato por definir :(",
-//                "filters" : {
-//                        "q10" : "Mínimo de calidad 10",
-//                        "STD_FILTER" : "El filtro que se usa siempre"
-//                },
-//                "sources" : [ "file1.vcf", "file1.ped" ],
-//                "meta" : {
-//                        "Cabeceras" : "del VCF",
-//                        "Otras" : "cosas"
-//                },
-//                "global_stats" : {
-//                        "num_variants" : 500,
-//                        "num_snps" : 300,
-//                        "titv_ratio" : "0.6"
-//                }
-//        }
-//        }
-
-//        BasicDBObject doc = new BasicDBObject("name", "MongoDB").
-//                              append("type", "database").
-//                              append("count", 1).
-//                              append("info", new BasicDBObject("x", 203).append("y", 102));
-        BasicDBObject st = new BasicDBObject("name", study.getName()).append("alias", study.getAlias()).
-                append("description", study.getDescription());
         String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
-        st.append("date", timeStamp);
-        //st.append("authors", study); //Where?
-        st.append("samples", study.getSamples());
-        //st.append("variants", study);//use put list, if called last. 
-        //List <BasicDBObject> filters = new ArrayList();
-        //BasicDBObject aux = new BasicDBObject();
-        //for(String s: study.getFilters()){
-        //    aux = new BasicDBObject("", ""); 
-        //}
-        //from annot runner?
-        //st.append("sources", study.getFiles());
-        //st.append("meta", );
-        //BasicDBObject stats = new BasicDBObject("")
-        //st.append(global_stats)
+        BasicDBObjectBuilder studyMongo = new BasicDBObjectBuilder().add("_id", study.getName())
+                .add("alias", study.getAlias())
+                .add("date", timeStamp)
+                .add("samples", study.getSamples())
+                .add("description", study.getDescription())
+                .add("sources", study.getSources());
+                //.add("global_stats", study.getStats())
+                //.add("filters", study.getFilters);
+
+       GlobalStat global = study.getStats();
+       DBObject globalStats = new BasicDBObjectBuilder()
+               .add("samples_count", global.getSamplesCount())
+               .add("variants_count", global.getVariantsCount())
+               .add("snp_count", global.getSnpsCount())
+               .add("indel_count", global.getIndelsCount())
+               .add("pass_count", global.getPassCount())
+               .add("transitions_count", global.getTransitionsCount())
+               .add("transversions_count", global.getTransversionsCount())
+               .add("biallelics_count", global.getBiallelicsCount())
+               .add("multiallelics_count", global.getMultiallelicsCount())
+               .add("accumulative_qualitiy", global.getAccumQuality()).get();
+        studyMongo.add("global_stats", globalStats);
+
+       Map<String,String> meta = study.getMetadata();
+
+        DBObject metadataMongo = new BasicDBObjectBuilder()
+                .add("Filters", meta.get("filters"))
+                .add("Header", meta.get("header"))
+                .get();
+        studyMongo.add("metadata", metadataMongo);
+
+        DBObject st = studyMongo.get();
         
-        WriteResult wr = studyCollection.insert(st);
+        WriteResult wr = studyCollection.update(st, st, true, true);
         return true; // TODO Set proper return statement
     }
 
@@ -320,7 +307,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return info.build();
     }
 
-    private VariantFieldsProtos.VariantStats buildStatsProto(VcfVariantStat v) {
+    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStat v) {
         VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
         stats.setNumAlleles(v.getNumAlleles());
         stats.setMafAllele(v.getMafAllele());
