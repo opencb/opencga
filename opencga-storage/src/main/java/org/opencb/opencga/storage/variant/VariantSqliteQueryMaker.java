@@ -615,6 +615,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         VariantAnalysisInfo vi = new VariantAnalysisInfo();
 
         String dbName = options.get("db_name");
+
         showDb(dbName);
 
         try {

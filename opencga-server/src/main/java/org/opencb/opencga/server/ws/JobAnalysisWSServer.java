@@ -235,7 +235,6 @@ public class JobAnalysisWSServer extends GenericWSServer {
         VariantQueryMaker vqm = new VariantSqliteQueryMaker();
         List<VariantStat> list = vqm.getRecordsStats(map);
 
-
         String res = null;
         try {
             res = jsonObjectMapper.writeValueAsString(list);
