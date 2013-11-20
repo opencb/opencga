@@ -17,14 +17,19 @@ def main(vcf, ped, outdir):
     db_file = os.path.basename(vcf)
     db_name = os.path.splitext(db_file)[0] + ".db"
 
-    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh annot --vcf-file ' + vcf + ' --control-prefix BIER --control /httpd/bioinfo/controls/BIER/bier.vcf.gz --outdir ' + outdir + ' --output-file annot_BIER.vcf'
-    print cmd
-    execute(cmd)
-    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh annot --vcf-file ' + outdir + '/annot_BIER.vcf' + ' --control-prefix 1000G --control-list /httpd/bioinfo/controls/1000G/list.txt --outdir ' + outdir + ' --output-file annot_final.vcf'
+    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh --annot --vcf-file ' + vcf + ' --annot-control-prefix BIER --annot-control-file /httpd/bioinfo/controls/BIER/bier.vcf.gz --outdir ' + outdir + ' --output-file annot_BIER.vcf'
     print cmd
     execute(cmd)
 
-    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh stats --vcf-file ' + outdir + '/annot_final.vcf' + ' --ped-file ' + ped + ' --outdir ' + outdir + ' --output-file ' + db_name
+    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh --annot --vcf-file ' + outdir + '/annot_BIER.vcf' +  ' --annot-control-prefix EVS --annot-control-evs /httpd/bioinfo/controls/EVS/evs.vcf.gz --outdir ' + outdir + ' --output-file annot_BIER_EVS.vcf'
+    print cmd
+    execute(cmd)
+
+    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh --annot --vcf-file ' + outdir + '/annot_BIER_EVS.vcf' + ' --annot-control-prefix 1000G --annot-control-list /httpd/bioinfo/controls/1000G/list.txt --outdir ' + outdir + ' --output-file annot_final.vcf'
+    print cmd
+    execute(cmd)
+
+    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh --index --annot --effect --stats --annot-snp --vcf-file ' + outdir + '/annot_final.vcf' + ' --ped-file ' + ped + ' --outdir ' + outdir + ' --output-file ' + db_name
     print cmd
     execute(cmd)
 

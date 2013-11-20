@@ -1,0 +1,45 @@
+package org.opencb.opencga.storage.variant;
+
+option java_outer_classname = "VariantFieldsProtos";
+
+
+message VariantInfo {
+    repeated string info = 1;
+    repeated string filters = 2;
+    repeated string format = 3; 
+    optional string reference =4;	
+    repeated string alternate =5;
+    optional string quality =6;	
+}
+
+message VariantSample {
+    required string sample = 1;
+}
+
+
+message VariantStats {
+    required int32 num_alleles = 1;                    /* Number of alleles of the variant (1 reference + N alternates). */
+
+    required string maf_allele = 2;                    /* Allele with MAF. */
+    required string mgf_genotype = 3;                  /* Genotype with MGF. */
+    
+    required float maf = 4;                            /* Minimum allele frequency. */
+    required float mgf = 5;                            /* Minimum genotype frequency. */
+
+    repeated int32 alleles_count = 6;                  /* Times each allele has been counted. */
+    repeated int32 genotypes_count = 7;                /* Times each possible genotype has been counted. */
+    repeated float alleles_freq = 8;                   /* Frequency of each allele in relation to the total. */
+    repeated float genotypes_freq = 9;                 /* Frequency of each genotype in relation to the total. */
+    
+    required int32 missing_alleles = 10;               /* Number of alleles whose information is missing. */
+    required int32 missing_genotypes = 11;             /* Number of genotypes with at least one allele missing. */
+    optional int32 mendelian_errors = 12;              /* Number of mendelian errors found. */
+    optional bool is_indel = 13;                       /* Whether this variant is an indel or not. */
+    
+    optional float cases_percent_dominant = 14;        /* Percentage of cases that follow a dominant inheritance pattern */
+    optional float controls_percent_dominant = 15;     /* Percentage of controls that follow a dominant inheritance pattern */
+    optional float cases_percent_recessive = 16;       /* Percentage of cases that follow a recessive inheritance pattern */
+    optional float controls_percent_recessive = 17;    /* Percentage of controls that follow a recessive inheritance pattern */
+    
+    optional float hardy_weinberg = 18;                /* All samples Hardy-Weinberg stats*/
+}
