@@ -1,7 +1,8 @@
 package org.opencb.opencga.storage.datamanagers;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.cellbase.core.common.Region;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.opencga.lib.SgeManager;
@@ -40,6 +41,7 @@ public class VcfManager {
     public VcfManager() throws IOException {
 //        gson = new Gson();
         jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectWriter = jsonObjectMapper.writer();
 
         vcfColumns = new XObject();
@@ -213,12 +215,24 @@ public class VcfManager {
         }
         logger.info("lines != null: " + (lines == null));
         logger.info("lines: " + lines);
-        List<VcfRecord> records = new ArrayList<>();
+        List<XObject> records = new ArrayList<>();
         while (lines != null && ((line = lines.next()) != null)) {
-            //TODO fix
-            VcfRecord vcfRecord = new VcfRecord(line.split("\t"),new ArrayList<String>());
-            if (queryResultsMap.get(String.valueOf(vcfRecord.getPosition())) != null) {
-                records.add(vcfRecord);
+            String[] fields = line.split("\t",10);
+
+            XObject record = new XObject();
+            record.put("chromosome", fields[0]);
+            record.put("start", Integer.valueOf(fields[1]));
+            record.put("end", Integer.valueOf(fields[1]));
+            record.put("id", fields[2]);
+            record.put("reference", fields[3]);
+            record.put("alternate", fields[4]);
+            record.put("quality", fields[5]);
+            record.put("filter", fields[6]);
+            record.put("info", fields[7]);
+            record.put("format", fields[8]);
+            record.put("samples", fields[9].split("\\s"));
+            if (queryResultsMap.get(String.valueOf(record.get("start"))) != null) {
+                records.add(record);
                 queryResultsLength--;
             }
             if (queryResultsLength < 0) {
@@ -239,8 +253,8 @@ public class VcfManager {
             String line;
             sb.append("[");
             while ((line = lines.next()) != null) {
-                //TODO fix
-                VcfRecord vcfRecord = new VcfRecord(line.split("\t"),new ArrayList<String>());
+                String[] fields = line.split("\t");
+                VcfRecord vcfRecord = new VcfRecord(fields[0],Integer.parseInt(fields[1]),fields[2],fields[3],fields[4],fields[5],fields[6],fields[7]);
                 sb.append(jsonObjectWriter.writeValueAsString(vcfRecord) + ",");
             }
             // Remove last comma

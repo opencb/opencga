@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.ws;
 
+import com.google.common.base.Splitter;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.account.beans.ObjectItem;
@@ -116,9 +117,14 @@ public class StorageWSServer extends GenericWSServer {
     @Path("/fetch")
     public Response region(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
                            @DefaultValue("") @QueryParam("region") String regionStr) {
+
         try {
-            String res = cloudSessionManager.region(accountId, bucketId, objectId, regionStr, params, sessionId);
-            return createOkResponse(res);
+            List<String> regions = Splitter.on(',').splitToList(regionStr);
+            List<String> results = new ArrayList<>();
+            for (String region : regions) {
+                results.add(cloudSessionManager.region(accountId, bucketId, objectId, region, params, sessionId));
+            }
+            return createOkResponse(results.toString());
         } catch (Exception e) {
             logger.error(e.toString());
             e.printStackTrace();

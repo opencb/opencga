@@ -420,22 +420,22 @@ public class CloudSessionManager {
         }
         String sgeJobName = "ready";
         boolean indexReady;
-//        switch (objectItem.getFileFormat()) {
-//            case "bam":
-//                indexReady = BamManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
-//                if (force || !indexReady) {
-//                    sgeJobName = BamManager.createIndex(getObjectPath(accountId, bucketId, objectId));
-//                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
-//                }
-//                break;
-//            case "vcf":
-//                indexReady = VcfManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
-//                if (force || !indexReady) {
-//                    sgeJobName = VcfManager.createIndex(getObjectPath(accountId, bucketId, objectId));
-//                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
-//                }
-//                break;
-//        }
+        switch (objectItem.getFileFormat()) {
+            case "bam":
+                indexReady = BamManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
+                if (force || !indexReady) {
+                    sgeJobName = BamManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
+                }
+                break;
+            case "vcf":
+                indexReady = VcfManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
+                if (force || !indexReady) {
+                    sgeJobName = VcfManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
+                }
+                break;
+        }
 
         return sgeJobName;
     }
