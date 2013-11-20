@@ -2,14 +2,17 @@ package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.hfile.Compression;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
+import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -17,12 +20,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
-import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -90,10 +87,10 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             }
             table = new HTable(admin.getConfiguration(), tableName);
             table.setAutoFlush(false, true);
-            
+
             // Mongo collection creation
             studyCollection = db.getCollection("study");
-            
+
             return table != null && studyCollection != null;
         } catch (IOException e) {
             e.printStackTrace();
@@ -148,9 +145,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeVariantStats(List<VcfVariantStat> data) {
+    public boolean writeVariantStats(List<VariantStat> data) {
         Put put2;
-        for (VcfVariantStat v : data) {
+        for (VariantStat v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
             byte[] qual = (study + "_stats").getBytes();
@@ -165,22 +162,22 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeGlobalStats(VcfGlobalStat vgs) {
+    public boolean writeGlobalStats(GlobalStat vgs) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleStats(VcfSampleStat vss) {
+    public boolean writeSampleStats(SampleStat vss) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleGroupStats(VcfSampleGroupStat vsgs) throws IOException {
+    public boolean writeSampleGroupStats(SampleGroupStat vsgs) throws IOException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeVariantGroupStats(VcfVariantGroupStat vvgs) throws IOException {
+    public boolean writeVariantGroupStats(VariantGroupStat vvgs) throws IOException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -237,7 +234,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         //st.append("meta", );
         //BasicDBObject stats = new BasicDBObject("")
         //st.append(global_stats)
-        
+
         WriteResult wr = studyCollection.insert(st);
         return true; // TODO Set proper return statement
     }
@@ -294,7 +291,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return info.build();
     }
 
-    private VariantFieldsProtos.VariantStats buildStatsProto(VcfVariantStat v) {
+    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStat v) {
         VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
         stats.setNumAlleles(v.getNumAlleles());
         stats.setMafAllele(v.getMafAllele());

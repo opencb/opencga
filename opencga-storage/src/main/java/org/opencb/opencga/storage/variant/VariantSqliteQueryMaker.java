@@ -6,8 +6,8 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.vcf4.stats.VcfVariantStat;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStat;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -18,6 +18,10 @@ import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+//import javax.ws.rs.client.Client;
+//import javax.ws.rs.client.ClientBuilder;
+//import javax.ws.rs.client.WebTarget;
 
 /**
  * Created with IntelliJ IDEA.
@@ -40,6 +44,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         List<VariantInfo> list = new ArrayList<>(100);
 
         String dbName = options.get("db_name");
+        showDb(dbName);
 
         try {
             Class.forName("org.sqlite.JDBC");
@@ -49,6 +54,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
             Map<String, List<String>> sampleGenotypes;
             Map<String, String> controlsMAFs = new LinkedHashMap<>();
+            sampleGenotypes = processSamplesGT(options);
 
             if (options.containsKey("region_list") && !options.get("region_list").equals("")) {
 
@@ -186,6 +192,12 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                 controlsMAFs.put("BIER", options.get("maf_bier_controls"));
             }
 
+            if (options.containsKey("exc_evs_controls") && options.get("exc_evs_controls").equalsIgnoreCase("on")) {
+                whereClauses.add("(key NOT LIKE 'EVS%' OR key is null)");
+            } else if (options.containsKey("maf_evs_controls") && !options.get("maf_evs_controls").equals("")) {
+                controlsMAFs.put("BIER", options.get("maf_evs_controls"));
+            }
+
 
             if (options.containsKey("conseq_type[]") && !options.get("conseq_type[]").equals("")) {
                 whereClauses.add(processConseqType(options.get("conseq_type[]")));
@@ -196,10 +208,59 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 //                processGeneList(options.get("genes"));
             }
 
+            if (sampleGenotypes.size() > 0) {
+                StringBuilder sg = new StringBuilder();
+                int csg = 0;
+                sg.append("(");
+                for (Map.Entry<String, List<String>> entry : sampleGenotypes.entrySet()) {
+                    sg.append("(");
+                    sg.append("sample_name='").append(entry.getKey()).append("' AND (");
+
+                    for (int i = 0; i < entry.getValue().size(); i++) {
+                        String[] aux = entry.getValue().get(i).split("/");
+                        sg.append("(");
+                        sg.append("allele_1=").append(aux[0]).append(" AND allele_2=").append(aux[1]);
+                        sg.append(")");
+
+                        if (i + 1 < entry.getValue().size()) {
+                            sg.append(" OR ");
+                        }
+                    }
+
+                    sg.append(")");
+
+                    sg.append(" OR sample_name<>'").append(entry.getKey()).append("'");
+
+
+                    sg.append(")");
+
+                    if (csg + 1 < sampleGenotypes.entrySet().size()) {
+                        sg.append(" AND ");
+                    }
+                    csg++;
+                }
+                sg.append(")");
+                System.out.println(sg);
+                whereClauses.add(sg.toString());
+            }
+
+
+            String sql = "SELECT count(*) as count FROM sample ;";
+
+            stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            int numSamples = 0;
+
+            while (rs.next()) {
+
+                numSamples = rs.getInt("count");
+            }
+
+            stmt.close();
+
 
             System.out.println("controlsMAFs = " + controlsMAFs);
 
-            sampleGenotypes = processSamplesGT(options);
 
             System.out.println("sampleGenotypes = " + sampleGenotypes);
 
@@ -207,13 +268,13 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
             String innerJoinEffectSQL = " inner join variant_effect on variant_effect.chromosome=variant.chromosome AND variant_effect.position=variant.position AND variant_effect.reference_allele=variant.ref AND variant_effect.alternative_allele = variant.alt ";
 
 
-            String sql = "SELECT distinct variant_effect.gene_name,variant_effect.consequence_type_obo, variant.id_variant, variant_info.key, variant_info.value, sample_info.sample_name, sample_info.allele_1, sample_info.allele_2, variant_stats.chromosome ," +
+            sql = "SELECT distinct variant.genes,variant.consequence_types, variant.id_variant, variant_info.key, variant_info.value, sample_info.sample_name, sample_info.allele_1, sample_info.allele_2, variant_stats.chromosome ," +
                     "variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt , variant_stats.id , variant_stats.maf , variant_stats.mgf, " +
                     "variant_stats.allele_maf , variant_stats.genotype_maf , variant_stats.miss_allele , variant_stats.miss_gt , variant_stats.mendel_err ," +
                     "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive " + //, variant_stats.genotypes  " +
                     " FROM variant_stats " +
                     "inner join variant on variant_stats.chromosome=variant.chromosome AND variant_stats.position=variant.position AND variant_stats.allele_ref=variant.ref AND variant_stats.allele_alt=variant.alt " +
-                    innerJoinEffectSQL +
+                    //innerJoinEffectSQL +
                     "inner join sample_info on variant.id_variant=sample_info.id_variant " +
                     innerJoinVariantSQL;
 
@@ -232,10 +293,13 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
             System.out.println(sql);
 
+            System.out.println("Start SQL");
+            long start = System.currentTimeMillis();
             stmt = con.createStatement();
-            ResultSet rs = stmt.executeQuery(sql);
 
-            VcfVariantStat vs;
+            rs = stmt.executeQuery(sql);
+
+            VariantStat vs;
             VariantInfo vi = null;
 
 
@@ -243,6 +307,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
             int pos = 0;
             String ref = "", alt = "";
 
+            System.out.println("End SQL: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
             System.out.println("Processing");
 
             while (rs.next()) {
@@ -257,11 +322,11 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                     ref = rs.getString("allele_ref");
                     alt = rs.getString("allele_alt");
 
-                    if (vi != null && filterGenotypes(vi, sampleGenotypes) && filterControls(vi, controlsMAFs)) {
+                    if (vi != null && filterGenotypes(vi, numSamples) && filterControls(vi, controlsMAFs)) {
                         list.add(vi);
                     }
                     vi = new VariantInfo(chr, pos, ref, alt);
-                    vs = new VcfVariantStat(chr, pos, ref, alt,
+                    vs = new VariantStat(chr, pos, ref, alt,
                             rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
                             rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                             rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
@@ -270,6 +335,8 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                     // vi.addGenotypes(rs.getString("genotypes"));
 
                     vi.addStats(vs);
+                    vi.addGenes(rs.getString("genes"));
+                    vi.addConsequenceTypes(rs.getString("consequence_types"));
                 }
 
                 if (rs.getString("key") != null && rs.getString("value") != null) {
@@ -283,17 +350,18 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
                 vi.addSammpleGenotype(sample, gt);
                 // vi.addGeneAndConsequenceType(rs.getString("gene_name"), rs.getString("consequence_type_obo"));
-                vi.addGenes(rs.getString("gene_name"));
-                vi.addConsequenceTypes(rs.getString("consequence_type_obo"));
 
             }
 
-            System.out.println("End processing");
-            if (vi != null && filterGenotypes(vi, sampleGenotypes) && filterControls(vi, controlsMAFs)) {
+            if (vi != null && filterGenotypes(vi, numSamples) && filterControls(vi, controlsMAFs)) {
                 list.add(vi);
             }
-
             stmt.close();
+
+
+            System.out.println("Total: (" + list.size() + ")");
+            System.out.println("End processing: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
+
             con.close();
 
         } catch (ClassNotFoundException | SQLException e) {
@@ -303,12 +371,16 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         return list;
     }
 
+    private void showDb(String dbName) {
+        System.out.println("DB: " + dbName);
+    }
+
     @Override
-    public List<VcfVariantStat> getRecordsStats(Map<String, String> options) {
+    public List<VariantStat> getRecordsStats(Map<String, String> options) {
 
         Connection con;
         Statement stmt;
-        List<VcfVariantStat> list = new ArrayList<>(100);
+        List<VariantStat> list = new ArrayList<>(100);
 
         String dbName = options.get("db_name");
 
@@ -436,16 +508,21 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
             System.out.println(sql);
 
+            System.out.println("Start SQL");
+            long start = System.currentTimeMillis();
+            stmt = con.createStatement();
+
             stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
 
-            VcfVariantStat vs;
+            VariantStat vs;
             VariantInfo vi = null;
 
 
             String chr = "";
             int pos = 0;
             String ref = "", alt = "";
+            System.out.println("End SQL: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
 
             System.out.println("Processing");
 
@@ -456,7 +533,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                 ref = rs.getString("allele_ref");
                 alt = rs.getString("allele_alt");
 
-                vs = new VcfVariantStat(chr, pos, ref, alt,
+                vs = new VariantStat(chr, pos, ref, alt,
                         rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
                         rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                         rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
@@ -464,6 +541,10 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                 list.add(vs);
 
             }
+
+            System.out.println("Total: (" + list.size() + ")");
+            System.out.println("End processing: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
+
 
             stmt.close();
             con.close();
@@ -533,8 +614,8 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         Connection con;
         VariantAnalysisInfo vi = new VariantAnalysisInfo();
 
-
         String dbName = options.get("db_name");
+        showDb(dbName);
 
         try {
             Class.forName("org.sqlite.JDBC");
@@ -697,7 +778,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         String[] cts = conseqType.split(",");
 
         for (String ct : cts) {
-            clauses.add("(variant_effect.consequence_type_obo LIKE '" + ct + "' )");
+            clauses.add("(variant.consequence_types LIKE '%" + ct + "%' )");
         }
 
         String res = "";
@@ -709,21 +790,14 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         return res;
     }
 
-    private boolean filterGenotypes(VariantInfo variantInfo, Map<String, List<String>> sampleGenotypes) {
+    private boolean filterGenotypes(VariantInfo variantInfo, int numSamples) {
 
-        boolean res = true;
-
-        Iterator<String> it = sampleGenotypes.keySet().iterator();
-
-        while (it.hasNext() && res) {
-
-            String sampleName = it.next();
-            if (!sampleGenotypes.get(sampleName).contains(variantInfo.getSampleGenotypes().get(sampleName))) {
-                res = false;
-            }
-
+        if (variantInfo.getSampleGenotypes().size() != numSamples) {
+            return false;
+        } else {
+            return true;
         }
-        return res;
+
 
     }
 

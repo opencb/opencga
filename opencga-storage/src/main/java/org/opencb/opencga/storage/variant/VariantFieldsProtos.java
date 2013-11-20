@@ -10,31 +10,31 @@ public final class VariantFieldsProtos {
   }
   public interface VariantInfoOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // repeated string info = 1;
     java.util.List<String> getInfoList();
     int getInfoCount();
     String getInfo(int index);
-    
+
     // repeated string filters = 2;
     java.util.List<String> getFiltersList();
     int getFiltersCount();
     String getFilters(int index);
-    
+
     // repeated string format = 3;
     java.util.List<String> getFormatList();
     int getFormatCount();
     String getFormat(int index);
-    
+
     // optional string reference = 4;
     boolean hasReference();
     String getReference();
-    
+
     // repeated string alternate = 5;
     java.util.List<String> getAlternateList();
     int getAlternateCount();
     String getAlternate(int index);
-    
+
     // optional string quality = 6;
     boolean hasQuality();
     String getQuality();
@@ -47,26 +47,26 @@ public final class VariantFieldsProtos {
       super(builder);
     }
     private VariantInfo(boolean noInit) {}
-    
+
     private static final VariantInfo defaultInstance;
     public static VariantInfo getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public VariantInfo getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
     }
-    
+
     private int bitField0_;
     // repeated string info = 1;
     public static final int INFO_FIELD_NUMBER = 1;
@@ -81,7 +81,7 @@ public final class VariantFieldsProtos {
     public String getInfo(int index) {
       return info_.get(index);
     }
-    
+
     // repeated string filters = 2;
     public static final int FILTERS_FIELD_NUMBER = 2;
     private com.google.protobuf.LazyStringList filters_;
@@ -95,7 +95,7 @@ public final class VariantFieldsProtos {
     public String getFilters(int index) {
       return filters_.get(index);
     }
-    
+
     // repeated string format = 3;
     public static final int FORMAT_FIELD_NUMBER = 3;
     private com.google.protobuf.LazyStringList format_;
@@ -109,7 +109,7 @@ public final class VariantFieldsProtos {
     public String getFormat(int index) {
       return format_.get(index);
     }
-    
+
     // optional string reference = 4;
     public static final int REFERENCE_FIELD_NUMBER = 4;
     private java.lang.Object reference_;
@@ -121,7 +121,7 @@ public final class VariantFieldsProtos {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -133,7 +133,7 @@ public final class VariantFieldsProtos {
     private com.google.protobuf.ByteString getReferenceBytes() {
       java.lang.Object ref = reference_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         reference_ = b;
         return b;
@@ -141,7 +141,7 @@ public final class VariantFieldsProtos {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // repeated string alternate = 5;
     public static final int ALTERNATE_FIELD_NUMBER = 5;
     private com.google.protobuf.LazyStringList alternate_;
@@ -155,7 +155,7 @@ public final class VariantFieldsProtos {
     public String getAlternate(int index) {
       return alternate_.get(index);
     }
-    
+
     // optional string quality = 6;
     public static final int QUALITY_FIELD_NUMBER = 6;
     private java.lang.Object quality_;
@@ -167,7 +167,7 @@ public final class VariantFieldsProtos {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -179,7 +179,7 @@ public final class VariantFieldsProtos {
     private com.google.protobuf.ByteString getQualityBytes() {
       java.lang.Object ref = quality_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         quality_ = b;
         return b;
@@ -187,7 +187,7 @@ public final class VariantFieldsProtos {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     private void initFields() {
       info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -200,11 +200,11 @@ public final class VariantFieldsProtos {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -228,12 +228,12 @@ public final class VariantFieldsProtos {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       {
         int dataSize = 0;
@@ -283,14 +283,14 @@ public final class VariantFieldsProtos {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
+
     public static org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -357,14 +357,14 @@ public final class VariantFieldsProtos {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
@@ -378,17 +378,17 @@ public final class VariantFieldsProtos {
           getDescriptor() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
       }
-      
+
       // Construct using org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
+
       private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -400,7 +400,7 @@ public final class VariantFieldsProtos {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -417,20 +417,20 @@ public final class VariantFieldsProtos {
         bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo.getDescriptor();
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo getDefaultInstanceForType() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo.getDefaultInstance();
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo build() {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo result = buildPartial();
         if (!result.isInitialized()) {
@@ -438,7 +438,7 @@ public final class VariantFieldsProtos {
         }
         return result;
       }
-      
+
       private org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo result = buildPartial();
@@ -448,7 +448,7 @@ public final class VariantFieldsProtos {
         }
         return result;
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo buildPartial() {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo result = new org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo(this);
         int from_bitField0_ = bitField0_;
@@ -489,7 +489,7 @@ public final class VariantFieldsProtos {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo) {
           return mergeFrom((org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo)other);
@@ -498,7 +498,7 @@ public final class VariantFieldsProtos {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo other) {
         if (other == org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantInfo.getDefaultInstance()) return this;
         if (!other.info_.isEmpty()) {
@@ -550,11 +550,11 @@ public final class VariantFieldsProtos {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -611,9 +611,9 @@ public final class VariantFieldsProtos {
           }
         }
       }
-      
+
       private int bitField0_;
-      
+
       // repeated string info = 1;
       private com.google.protobuf.LazyStringList info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       private void ensureInfoIsMutable() {
@@ -669,7 +669,7 @@ public final class VariantFieldsProtos {
         info_.add(value);
         onChanged();
       }
-      
+
       // repeated string filters = 2;
       private com.google.protobuf.LazyStringList filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       private void ensureFiltersIsMutable() {
@@ -725,7 +725,7 @@ public final class VariantFieldsProtos {
         filters_.add(value);
         onChanged();
       }
-      
+
       // repeated string format = 3;
       private com.google.protobuf.LazyStringList format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       private void ensureFormatIsMutable() {
@@ -781,7 +781,7 @@ public final class VariantFieldsProtos {
         format_.add(value);
         onChanged();
       }
-      
+
       // optional string reference = 4;
       private java.lang.Object reference_ = "";
       public boolean hasReference() {
@@ -817,7 +817,7 @@ public final class VariantFieldsProtos {
         reference_ = value;
         onChanged();
       }
-      
+
       // repeated string alternate = 5;
       private com.google.protobuf.LazyStringList alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       private void ensureAlternateIsMutable() {
@@ -873,7 +873,7 @@ public final class VariantFieldsProtos {
         alternate_.add(value);
         onChanged();
       }
-      
+
       // optional string quality = 6;
       private java.lang.Object quality_ = "";
       public boolean hasQuality() {
@@ -909,21 +909,21 @@ public final class VariantFieldsProtos {
         quality_ = value;
         onChanged();
       }
-      
+
       // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantInfo)
     }
-    
+
     static {
       defaultInstance = new VariantInfo(true);
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantInfo)
   }
-  
+
   public interface VariantSampleOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required string sample = 1;
     boolean hasSample();
     String getSample();
@@ -936,26 +936,26 @@ public final class VariantFieldsProtos {
       super(builder);
     }
     private VariantSample(boolean noInit) {}
-    
+
     private static final VariantSample defaultInstance;
     public static VariantSample getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public VariantSample getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
     }
-    
+
     private int bitField0_;
     // required string sample = 1;
     public static final int SAMPLE_FIELD_NUMBER = 1;
@@ -968,7 +968,7 @@ public final class VariantFieldsProtos {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -980,7 +980,7 @@ public final class VariantFieldsProtos {
     private com.google.protobuf.ByteString getSampleBytes() {
       java.lang.Object ref = sample_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         sample_ = b;
         return b;
@@ -988,7 +988,7 @@ public final class VariantFieldsProtos {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     private void initFields() {
       sample_ = "";
     }
@@ -996,7 +996,7 @@ public final class VariantFieldsProtos {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasSample()) {
         memoizedIsInitialized = 0;
         return false;
@@ -1004,7 +1004,7 @@ public final class VariantFieldsProtos {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -1013,12 +1013,12 @@ public final class VariantFieldsProtos {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1028,14 +1028,14 @@ public final class VariantFieldsProtos {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
+
     public static org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1102,14 +1102,14 @@ public final class VariantFieldsProtos {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
@@ -1123,17 +1123,17 @@ public final class VariantFieldsProtos {
           getDescriptor() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
       }
-      
+
       // Construct using org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
+
       private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -1145,27 +1145,27 @@ public final class VariantFieldsProtos {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         sample_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample.getDescriptor();
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample getDefaultInstanceForType() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample.getDefaultInstance();
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample build() {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample result = buildPartial();
         if (!result.isInitialized()) {
@@ -1173,7 +1173,7 @@ public final class VariantFieldsProtos {
         }
         return result;
       }
-      
+
       private org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample result = buildPartial();
@@ -1183,7 +1183,7 @@ public final class VariantFieldsProtos {
         }
         return result;
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample buildPartial() {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample result = new org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample(this);
         int from_bitField0_ = bitField0_;
@@ -1196,7 +1196,7 @@ public final class VariantFieldsProtos {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample) {
           return mergeFrom((org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample)other);
@@ -1205,7 +1205,7 @@ public final class VariantFieldsProtos {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample other) {
         if (other == org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantSample.getDefaultInstance()) return this;
         if (other.hasSample()) {
@@ -1214,15 +1214,15 @@ public final class VariantFieldsProtos {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasSample()) {
-          
+
           return false;
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -1254,9 +1254,9 @@ public final class VariantFieldsProtos {
           }
         }
       }
-      
+
       private int bitField0_;
-      
+
       // required string sample = 1;
       private java.lang.Object sample_ = "";
       public boolean hasSample() {
@@ -1292,93 +1292,93 @@ public final class VariantFieldsProtos {
         sample_ = value;
         onChanged();
       }
-      
+
       // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantSample)
     }
-    
+
     static {
       defaultInstance = new VariantSample(true);
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantSample)
   }
-  
+
   public interface VariantStatsOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required int32 num_alleles = 1;
     boolean hasNumAlleles();
     int getNumAlleles();
-    
+
     // required string maf_allele = 2;
     boolean hasMafAllele();
     String getMafAllele();
-    
+
     // required string mgf_genotype = 3;
     boolean hasMgfGenotype();
     String getMgfGenotype();
-    
+
     // required float maf = 4;
     boolean hasMaf();
     float getMaf();
-    
+
     // required float mgf = 5;
     boolean hasMgf();
     float getMgf();
-    
+
     // repeated int32 alleles_count = 6;
     java.util.List<java.lang.Integer> getAllelesCountList();
     int getAllelesCountCount();
     int getAllelesCount(int index);
-    
+
     // repeated int32 genotypes_count = 7;
     java.util.List<java.lang.Integer> getGenotypesCountList();
     int getGenotypesCountCount();
     int getGenotypesCount(int index);
-    
+
     // repeated float alleles_freq = 8;
     java.util.List<java.lang.Float> getAllelesFreqList();
     int getAllelesFreqCount();
     float getAllelesFreq(int index);
-    
+
     // repeated float genotypes_freq = 9;
     java.util.List<java.lang.Float> getGenotypesFreqList();
     int getGenotypesFreqCount();
     float getGenotypesFreq(int index);
-    
+
     // required int32 missing_alleles = 10;
     boolean hasMissingAlleles();
     int getMissingAlleles();
-    
+
     // required int32 missing_genotypes = 11;
     boolean hasMissingGenotypes();
     int getMissingGenotypes();
-    
+
     // optional int32 mendelian_errors = 12;
     boolean hasMendelianErrors();
     int getMendelianErrors();
-    
+
     // optional bool is_indel = 13;
     boolean hasIsIndel();
     boolean getIsIndel();
-    
+
     // optional float cases_percent_dominant = 14;
     boolean hasCasesPercentDominant();
     float getCasesPercentDominant();
-    
+
     // optional float controls_percent_dominant = 15;
     boolean hasControlsPercentDominant();
     float getControlsPercentDominant();
-    
+
     // optional float cases_percent_recessive = 16;
     boolean hasCasesPercentRecessive();
     float getCasesPercentRecessive();
-    
+
     // optional float controls_percent_recessive = 17;
     boolean hasControlsPercentRecessive();
     float getControlsPercentRecessive();
-    
+
     // optional float hardy_weinberg = 18;
     boolean hasHardyWeinberg();
     float getHardyWeinberg();
@@ -1391,26 +1391,26 @@ public final class VariantFieldsProtos {
       super(builder);
     }
     private VariantStats(boolean noInit) {}
-    
+
     private static final VariantStats defaultInstance;
     public static VariantStats getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public VariantStats getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
     }
-    
+
     private int bitField0_;
     // required int32 num_alleles = 1;
     public static final int NUM_ALLELES_FIELD_NUMBER = 1;
@@ -1421,7 +1421,7 @@ public final class VariantFieldsProtos {
     public int getNumAlleles() {
       return numAlleles_;
     }
-    
+
     // required string maf_allele = 2;
     public static final int MAF_ALLELE_FIELD_NUMBER = 2;
     private java.lang.Object mafAllele_;
@@ -1433,7 +1433,7 @@ public final class VariantFieldsProtos {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -1445,7 +1445,7 @@ public final class VariantFieldsProtos {
     private com.google.protobuf.ByteString getMafAlleleBytes() {
       java.lang.Object ref = mafAllele_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         mafAllele_ = b;
         return b;
@@ -1453,7 +1453,7 @@ public final class VariantFieldsProtos {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // required string mgf_genotype = 3;
     public static final int MGF_GENOTYPE_FIELD_NUMBER = 3;
     private java.lang.Object mgfGenotype_;
@@ -1465,7 +1465,7 @@ public final class VariantFieldsProtos {
       if (ref instanceof String) {
         return (String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
+        com.google.protobuf.ByteString bs =
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
@@ -1477,7 +1477,7 @@ public final class VariantFieldsProtos {
     private com.google.protobuf.ByteString getMgfGenotypeBytes() {
       java.lang.Object ref = mgfGenotype_;
       if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
+        com.google.protobuf.ByteString b =
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
         mgfGenotype_ = b;
         return b;
@@ -1485,7 +1485,7 @@ public final class VariantFieldsProtos {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // required float maf = 4;
     public static final int MAF_FIELD_NUMBER = 4;
     private float maf_;
@@ -1495,7 +1495,7 @@ public final class VariantFieldsProtos {
     public float getMaf() {
       return maf_;
     }
-    
+
     // required float mgf = 5;
     public static final int MGF_FIELD_NUMBER = 5;
     private float mgf_;
@@ -1505,7 +1505,7 @@ public final class VariantFieldsProtos {
     public float getMgf() {
       return mgf_;
     }
-    
+
     // repeated int32 alleles_count = 6;
     public static final int ALLELES_COUNT_FIELD_NUMBER = 6;
     private java.util.List<java.lang.Integer> allelesCount_;
@@ -1519,7 +1519,7 @@ public final class VariantFieldsProtos {
     public int getAllelesCount(int index) {
       return allelesCount_.get(index);
     }
-    
+
     // repeated int32 genotypes_count = 7;
     public static final int GENOTYPES_COUNT_FIELD_NUMBER = 7;
     private java.util.List<java.lang.Integer> genotypesCount_;
@@ -1533,7 +1533,7 @@ public final class VariantFieldsProtos {
     public int getGenotypesCount(int index) {
       return genotypesCount_.get(index);
     }
-    
+
     // repeated float alleles_freq = 8;
     public static final int ALLELES_FREQ_FIELD_NUMBER = 8;
     private java.util.List<java.lang.Float> allelesFreq_;
@@ -1547,7 +1547,7 @@ public final class VariantFieldsProtos {
     public float getAllelesFreq(int index) {
       return allelesFreq_.get(index);
     }
-    
+
     // repeated float genotypes_freq = 9;
     public static final int GENOTYPES_FREQ_FIELD_NUMBER = 9;
     private java.util.List<java.lang.Float> genotypesFreq_;
@@ -1561,7 +1561,7 @@ public final class VariantFieldsProtos {
     public float getGenotypesFreq(int index) {
       return genotypesFreq_.get(index);
     }
-    
+
     // required int32 missing_alleles = 10;
     public static final int MISSING_ALLELES_FIELD_NUMBER = 10;
     private int missingAlleles_;
@@ -1571,7 +1571,7 @@ public final class VariantFieldsProtos {
     public int getMissingAlleles() {
       return missingAlleles_;
     }
-    
+
     // required int32 missing_genotypes = 11;
     public static final int MISSING_GENOTYPES_FIELD_NUMBER = 11;
     private int missingGenotypes_;
@@ -1581,7 +1581,7 @@ public final class VariantFieldsProtos {
     public int getMissingGenotypes() {
       return missingGenotypes_;
     }
-    
+
     // optional int32 mendelian_errors = 12;
     public static final int MENDELIAN_ERRORS_FIELD_NUMBER = 12;
     private int mendelianErrors_;
@@ -1591,7 +1591,7 @@ public final class VariantFieldsProtos {
     public int getMendelianErrors() {
       return mendelianErrors_;
     }
-    
+
     // optional bool is_indel = 13;
     public static final int IS_INDEL_FIELD_NUMBER = 13;
     private boolean isIndel_;
@@ -1601,7 +1601,7 @@ public final class VariantFieldsProtos {
     public boolean getIsIndel() {
       return isIndel_;
     }
-    
+
     // optional float cases_percent_dominant = 14;
     public static final int CASES_PERCENT_DOMINANT_FIELD_NUMBER = 14;
     private float casesPercentDominant_;
@@ -1611,7 +1611,7 @@ public final class VariantFieldsProtos {
     public float getCasesPercentDominant() {
       return casesPercentDominant_;
     }
-    
+
     // optional float controls_percent_dominant = 15;
     public static final int CONTROLS_PERCENT_DOMINANT_FIELD_NUMBER = 15;
     private float controlsPercentDominant_;
@@ -1621,7 +1621,7 @@ public final class VariantFieldsProtos {
     public float getControlsPercentDominant() {
       return controlsPercentDominant_;
     }
-    
+
     // optional float cases_percent_recessive = 16;
     public static final int CASES_PERCENT_RECESSIVE_FIELD_NUMBER = 16;
     private float casesPercentRecessive_;
@@ -1631,7 +1631,7 @@ public final class VariantFieldsProtos {
     public float getCasesPercentRecessive() {
       return casesPercentRecessive_;
     }
-    
+
     // optional float controls_percent_recessive = 17;
     public static final int CONTROLS_PERCENT_RECESSIVE_FIELD_NUMBER = 17;
     private float controlsPercentRecessive_;
@@ -1641,7 +1641,7 @@ public final class VariantFieldsProtos {
     public float getControlsPercentRecessive() {
       return controlsPercentRecessive_;
     }
-    
+
     // optional float hardy_weinberg = 18;
     public static final int HARDY_WEINBERG_FIELD_NUMBER = 18;
     private float hardyWeinberg_;
@@ -1651,7 +1651,7 @@ public final class VariantFieldsProtos {
     public float getHardyWeinberg() {
       return hardyWeinberg_;
     }
-    
+
     private void initFields() {
       numAlleles_ = 0;
       mafAllele_ = "";
@@ -1676,7 +1676,7 @@ public final class VariantFieldsProtos {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasNumAlleles()) {
         memoizedIsInitialized = 0;
         return false;
@@ -1708,7 +1708,7 @@ public final class VariantFieldsProtos {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -1768,12 +1768,12 @@ public final class VariantFieldsProtos {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1865,14 +1865,14 @@ public final class VariantFieldsProtos {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
+
     public static org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -1939,14 +1939,14 @@ public final class VariantFieldsProtos {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
     public static Builder newBuilder(org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
@@ -1960,17 +1960,17 @@ public final class VariantFieldsProtos {
           getDescriptor() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
       }
-      
+
       // Construct using org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
+
       private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
@@ -1982,7 +1982,7 @@ public final class VariantFieldsProtos {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         numAlleles_ = 0;
@@ -2023,20 +2023,20 @@ public final class VariantFieldsProtos {
         bitField0_ = (bitField0_ & ~0x00020000);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats.getDescriptor();
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats getDefaultInstanceForType() {
         return org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats.getDefaultInstance();
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats build() {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats result = buildPartial();
         if (!result.isInitialized()) {
@@ -2044,7 +2044,7 @@ public final class VariantFieldsProtos {
         }
         return result;
       }
-      
+
       private org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats result = buildPartial();
@@ -2054,7 +2054,7 @@ public final class VariantFieldsProtos {
         }
         return result;
       }
-      
+
       public org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats buildPartial() {
         org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats result = new org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats(this);
         int from_bitField0_ = bitField0_;
@@ -2139,7 +2139,7 @@ public final class VariantFieldsProtos {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
         if (other instanceof org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats) {
           return mergeFrom((org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats)other);
@@ -2148,7 +2148,7 @@ public final class VariantFieldsProtos {
           return this;
         }
       }
-      
+
       public Builder mergeFrom(org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats other) {
         if (other == org.opencb.opencga.storage.variant.VariantFieldsProtos.VariantStats.getDefaultInstance()) return this;
         if (other.hasNumAlleles()) {
@@ -2236,39 +2236,39 @@ public final class VariantFieldsProtos {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasNumAlleles()) {
-          
+
           return false;
         }
         if (!hasMafAllele()) {
-          
+
           return false;
         }
         if (!hasMgfGenotype()) {
-          
+
           return false;
         }
         if (!hasMaf()) {
-          
+
           return false;
         }
         if (!hasMgf()) {
-          
+
           return false;
         }
         if (!hasMissingAlleles()) {
-          
+
           return false;
         }
         if (!hasMissingGenotypes()) {
-          
+
           return false;
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
@@ -2421,9 +2421,9 @@ public final class VariantFieldsProtos {
           }
         }
       }
-      
+
       private int bitField0_;
-      
+
       // required int32 num_alleles = 1;
       private int numAlleles_ ;
       public boolean hasNumAlleles() {
@@ -2444,7 +2444,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // required string maf_allele = 2;
       private java.lang.Object mafAllele_ = "";
       public boolean hasMafAllele() {
@@ -2480,7 +2480,7 @@ public final class VariantFieldsProtos {
         mafAllele_ = value;
         onChanged();
       }
-      
+
       // required string mgf_genotype = 3;
       private java.lang.Object mgfGenotype_ = "";
       public boolean hasMgfGenotype() {
@@ -2516,7 +2516,7 @@ public final class VariantFieldsProtos {
         mgfGenotype_ = value;
         onChanged();
       }
-      
+
       // required float maf = 4;
       private float maf_ ;
       public boolean hasMaf() {
@@ -2537,7 +2537,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // required float mgf = 5;
       private float mgf_ ;
       public boolean hasMgf() {
@@ -2558,7 +2558,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // repeated int32 alleles_count = 6;
       private java.util.List<java.lang.Integer> allelesCount_ = java.util.Collections.emptyList();;
       private void ensureAllelesCountIsMutable() {
@@ -2603,7 +2603,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // repeated int32 genotypes_count = 7;
       private java.util.List<java.lang.Integer> genotypesCount_ = java.util.Collections.emptyList();;
       private void ensureGenotypesCountIsMutable() {
@@ -2648,7 +2648,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // repeated float alleles_freq = 8;
       private java.util.List<java.lang.Float> allelesFreq_ = java.util.Collections.emptyList();;
       private void ensureAllelesFreqIsMutable() {
@@ -2693,7 +2693,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // repeated float genotypes_freq = 9;
       private java.util.List<java.lang.Float> genotypesFreq_ = java.util.Collections.emptyList();;
       private void ensureGenotypesFreqIsMutable() {
@@ -2738,7 +2738,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // required int32 missing_alleles = 10;
       private int missingAlleles_ ;
       public boolean hasMissingAlleles() {
@@ -2759,7 +2759,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // required int32 missing_genotypes = 11;
       private int missingGenotypes_ ;
       public boolean hasMissingGenotypes() {
@@ -2780,7 +2780,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional int32 mendelian_errors = 12;
       private int mendelianErrors_ ;
       public boolean hasMendelianErrors() {
@@ -2801,7 +2801,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional bool is_indel = 13;
       private boolean isIndel_ ;
       public boolean hasIsIndel() {
@@ -2822,7 +2822,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional float cases_percent_dominant = 14;
       private float casesPercentDominant_ ;
       public boolean hasCasesPercentDominant() {
@@ -2843,7 +2843,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional float controls_percent_dominant = 15;
       private float controlsPercentDominant_ ;
       public boolean hasControlsPercentDominant() {
@@ -2864,7 +2864,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional float cases_percent_recessive = 16;
       private float casesPercentRecessive_ ;
       public boolean hasCasesPercentRecessive() {
@@ -2885,7 +2885,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional float controls_percent_recessive = 17;
       private float controlsPercentRecessive_ ;
       public boolean hasControlsPercentRecessive() {
@@ -2906,7 +2906,7 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // optional float hardy_weinberg = 18;
       private float hardyWeinberg_ ;
       public boolean hasHardyWeinberg() {
@@ -2927,18 +2927,18 @@ public final class VariantFieldsProtos {
         onChanged();
         return this;
       }
-      
+
       // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantStats)
     }
-    
+
     static {
       defaultInstance = new VariantStats(true);
       defaultInstance.initFields();
     }
-    
+
     // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantStats)
   }
-  
+
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
   private static
@@ -2954,7 +2954,7 @@ public final class VariantFieldsProtos {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
-  
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -3019,6 +3019,6 @@ public final class VariantFieldsProtos {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   // @@protoc_insertion_point(outer_class_scope)
 }

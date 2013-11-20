@@ -4,11 +4,12 @@ import com.google.common.base.Joiner;
 import org.opencb.commons.bioformats.commons.SqliteSingletonConnection;
 import org.opencb.commons.bioformats.feature.Genotype;
 import org.opencb.commons.bioformats.feature.Genotypes;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
-import org.opencb.commons.bioformats.variant.vcf4.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
-import org.opencb.commons.bioformats.variant.vcf4.stats.*;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -16,8 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-
-import org.opencb.commons.bioformats.variant.VariantStudy;
 
 /**
  * Created with IntelliJ IDEA.
@@ -257,7 +256,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeVariantStats(List<VcfVariantStat> vcfVariantStats) {
+    public boolean writeVariantStats(List<VariantStat> vcfVariantStats) {
         String sql = "INSERT INTO variant_stats (chromosome, position, allele_ref, allele_alt, id, maf, mgf, allele_maf, genotype_maf, miss_allele, miss_gt, mendel_err, is_indel, cases_percent_dominant, controls_percent_dominant, cases_percent_recessive, controls_percent_recessive, genotypes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         boolean res = true;
 
@@ -266,7 +265,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         try {
             pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-            for (VcfVariantStat v : vcfVariantStats) {
+            for (VariantStat v : vcfVariantStats) {
                 pstmt.setString(1, v.getChromosome());
                 pstmt.setLong(2, v.getPosition());
                 pstmt.setString(3, v.getRefAlleles());
@@ -306,7 +305,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeGlobalStats(VcfGlobalStat vcfGlobalStat) {
+    public boolean writeGlobalStats(GlobalStat vcfGlobalStat) {
         boolean res = true;
         float titv = 0;
         float pass = 0;
@@ -359,15 +358,15 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeSampleStats(VcfSampleStat vcfSampleStat) {
+    public boolean writeSampleStats(SampleStat vcfSampleStat) {
         String sql = "INSERT INTO sample_stats VALUES(?,?,?,?);";
-        SampleStat s;
+        SingleSampleStat s;
         String name;
         boolean res = true;
         try {
             pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-            for (Map.Entry<String, SampleStat> entry : vcfSampleStat.getSamplesStats().entrySet()) {
+            for (Map.Entry<String, SingleSampleStat> entry : vcfSampleStat.getSamplesStats().entrySet()) {
                 s = entry.getValue();
                 name = entry.getKey();
 
@@ -388,12 +387,12 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeSampleGroupStats(VcfSampleGroupStat vcfSampleGroupStat) throws IOException {
+    public boolean writeSampleGroupStats(SampleGroupStat vcfSampleGroupStat) throws IOException {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
-    public boolean writeVariantGroupStats(VcfVariantGroupStat vcfVariantGroupStat) throws IOException {
+    public boolean writeVariantGroupStats(VariantGroupStat vcfVariantGroupStat) throws IOException {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
