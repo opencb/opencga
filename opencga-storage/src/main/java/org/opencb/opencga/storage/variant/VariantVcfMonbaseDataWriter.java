@@ -27,13 +27,13 @@ import java.util.logging.Logger;
  */
 public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
+    private final byte[] info_cf = "i".getBytes();
+    private final byte[] data_cf = "d".getBytes();
     private String tableName;
     private String study;
     private HBaseAdmin admin;
     private HTable table;
     private Map<String, Put> putMap;
-    private final byte[] info_cf = "i".getBytes();
-    private final byte[] data_cf = "d".getBytes();
     private MongoClient mongoClient;
     private DB db;
     private DBCollection studyCollection;
@@ -145,9 +145,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeVariantStats(List<VariantStat> data) {
+    public boolean writeVariantStats(List<VariantStats> data) {
         Put put2;
-        for (VariantStat v : data) {
+        for (VariantStats v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
             byte[] qual = (study + "_stats").getBytes();
@@ -162,22 +162,22 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeGlobalStats(GlobalStat vgs) {
+    public boolean writeGlobalStats(VariantGlobalStats vgs) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleStats(SampleStat vss) {
+    public boolean writeSampleStats(VariantSampleStats vss) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeSampleGroupStats(SampleGroupStat vsgs) throws IOException {
+    public boolean writeSampleGroupStats(VariantSampleGroupStats vsgs) throws IOException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public boolean writeVariantGroupStats(VariantGroupStat vvgs) throws IOException {
+    public boolean writeVariantGroupStats(VariantGroupStats vvgs) throws IOException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
@@ -291,7 +291,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return info.build();
     }
 
-    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStat v) {
+    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStats v) {
         VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
         stats.setNumAlleles(v.getNumAlleles());
         stats.setMafAllele(v.getMafAllele());

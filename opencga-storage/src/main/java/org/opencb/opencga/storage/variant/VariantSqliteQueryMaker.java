@@ -7,7 +7,7 @@ import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStat;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -18,10 +18,6 @@ import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-//import javax.ws.rs.client.Client;
-//import javax.ws.rs.client.ClientBuilder;
-//import javax.ws.rs.client.WebTarget;
 
 /**
  * Created with IntelliJ IDEA.
@@ -299,7 +295,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
             rs = stmt.executeQuery(sql);
 
-            VariantStat vs;
+            VariantStats vs;
             VariantInfo vi = null;
 
 
@@ -326,7 +322,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                         list.add(vi);
                     }
                     vi = new VariantInfo(chr, pos, ref, alt);
-                    vs = new VariantStat(chr, pos, ref, alt,
+                    vs = new VariantStats(chr, pos, ref, alt,
                             rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
                             rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                             rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
@@ -376,11 +372,11 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
     }
 
     @Override
-    public List<VariantStat> getRecordsStats(Map<String, String> options) {
+    public List<VariantStats> getRecordsStats(Map<String, String> options) {
 
         Connection con;
         Statement stmt;
-        List<VariantStat> list = new ArrayList<>(100);
+        List<VariantStats> list = new ArrayList<>(100);
 
         String dbName = options.get("db_name");
 
@@ -515,7 +511,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
             stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
 
-            VariantStat vs;
+            VariantStats vs;
             VariantInfo vi = null;
 
 
@@ -533,7 +529,7 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
                 ref = rs.getString("allele_ref");
                 alt = rs.getString("allele_alt");
 
-                vs = new VariantStat(chr, pos, ref, alt,
+                vs = new VariantStats(chr, pos, ref, alt,
                         rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
                         rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                         rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));

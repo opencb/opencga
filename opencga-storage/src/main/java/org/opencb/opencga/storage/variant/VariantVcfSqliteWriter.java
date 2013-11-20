@@ -256,7 +256,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeVariantStats(List<VariantStat> vcfVariantStats) {
+    public boolean writeVariantStats(List<VariantStats> vcfVariantStats) {
         String sql = "INSERT INTO variant_stats (chromosome, position, allele_ref, allele_alt, id, maf, mgf, allele_maf, genotype_maf, miss_allele, miss_gt, mendel_err, is_indel, cases_percent_dominant, controls_percent_dominant, cases_percent_recessive, controls_percent_recessive, genotypes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         boolean res = true;
 
@@ -265,7 +265,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         try {
             pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-            for (VariantStat v : vcfVariantStats) {
+            for (VariantStats v : vcfVariantStats) {
                 pstmt.setString(1, v.getChromosome());
                 pstmt.setLong(2, v.getPosition());
                 pstmt.setString(3, v.getRefAlleles());
@@ -305,7 +305,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeGlobalStats(GlobalStat vcfGlobalStat) {
+    public boolean writeGlobalStats(VariantGlobalStats vcfGlobalStat) {
         boolean res = true;
         float titv = 0;
         float pass = 0;
@@ -358,15 +358,15 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeSampleStats(SampleStat vcfSampleStat) {
+    public boolean writeSampleStats(VariantSampleStats vcfSampleStat) {
         String sql = "INSERT INTO sample_stats VALUES(?,?,?,?);";
-        SingleSampleStat s;
+        VariantSingleSampleStats s;
         String name;
         boolean res = true;
         try {
             pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-            for (Map.Entry<String, SingleSampleStat> entry : vcfSampleStat.getSamplesStats().entrySet()) {
+            for (Map.Entry<String, VariantSingleSampleStats> entry : vcfSampleStat.getSamplesStats().entrySet()) {
                 s = entry.getValue();
                 name = entry.getKey();
 
@@ -387,12 +387,12 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeSampleGroupStats(SampleGroupStat vcfSampleGroupStat) throws IOException {
+    public boolean writeSampleGroupStats(VariantSampleGroupStats vcfSampleGroupStat) throws IOException {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
-    public boolean writeVariantGroupStats(VariantGroupStat vcfVariantGroupStat) throws IOException {
+    public boolean writeVariantGroupStats(VariantGroupStats vcfVariantGroupStat) throws IOException {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
 

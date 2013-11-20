@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Joiner;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStat;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.storage.variant.VariantQueryMaker;
@@ -233,7 +233,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
 
         map.put("db_name", dataPath.toString());
         VariantQueryMaker vqm = new VariantSqliteQueryMaker();
-        List<VariantStat> list = vqm.getRecordsStats(map);
+        List<VariantStats> list = vqm.getRecordsStats(map);
 
         String res = null;
         try {
