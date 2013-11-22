@@ -13,11 +13,7 @@ import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
-import org.opencb.commons.bioformats.variant.vcf4.stats.*;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.*;
-import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -44,12 +40,15 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private MongoClient mongoClient;
     private DB db;
     private DBCollection studyCollection;
+    private DBCollection variantCollection;
+    private List<DBObject> mongoVariants;
 
     public VariantVcfMonbaseDataWriter(String tableName, String study) {
         this.tableName = tableName;
         this.study = study;
         this.putMap = new HashMap<>();
         this.effectPutMap = new HashMap<>();
+        this.mongoVariants = new ArrayList<>();
     }
 
     @Override
@@ -110,6 +109,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             effectTable.setAutoFlush(false, true);
             // Mongo collection creation
             studyCollection = db.getCollection("study");
+            variantCollection = db.getCollection("variants");
             
             return table != null && studyCollection != null && effectTable != null;
         } catch (IOException e) {
@@ -121,7 +121,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean writeHeader(String string) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true; //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -174,31 +174,42 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             put2 = new Put(Bytes.toBytes(rowkey));
             put2.add(info_cf, qual, stats.toByteArray());
             putMap.put(rowkey, put2);
+            BasicDBObject mongoStats = new BasicDBObject("MAF", v.getMaf()).append("allele_maf",v.getMafAllele()).append("missing", v.getMissingGenotypes()).append("genotype_count", v.getGenotypesCount());
+            BasicDBObject currentStudy = new BasicDBObject("_id", study).append("ref", v.getRefAlleles()).append("alt", v.getAltAlleles())
+                    .append("stats", mongoStats);
+            BasicDBObject mongoVariant = new BasicDBObject("_id", rowkey)
+                    .append("studies", currentStudy);
+            mongoVariants.add(mongoVariant);
+
         }
 
         // Insert into the database
         save(putMap.values(), table);
+        for(DBObject mv : mongoVariants){
+            BasicDBObject compare = new BasicDBObject("_id",mv.get("_id"));
+            WriteResult wr = variantCollection.update(compare, mv, true, false);
+        }
         return true;
     }
 
     @Override
     public boolean writeGlobalStats(VariantGlobalStats vgs) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true; //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeSampleStats(VariantSampleStats vss) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true; //throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeSampleGroupStats(VariantSampleGroupStats vsgs) throws IOException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true;//throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public boolean writeVariantGroupStats(VariantGroupStats vvgs) throws IOException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return true;//throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -248,8 +259,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         studyMongo.add("metadata", metadataMongo);
 
         DBObject st = studyMongo.get();
-        
-        WriteResult wr = studyCollection.update(st, st, true, true);
+        WriteResult wr = studyCollection.update(st, st, true, false);
         return true; // TODO Set proper return statement
     }
 
@@ -385,9 +395,11 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     private String buildRowkey(String chromosome, String position) {
-        if(chromosome.substring(0,2).equals("chr")){
-            chromosome = chromosome.substring(2);
-        }
+          if(chromosome.length()>2){
+            if(chromosome.substring(0,2).equals("chr")){
+                chromosome = chromosome.substring(2);
+            }
+          }
             if (chromosome.length() < 2) {
                 chromosome = "0" + chromosome;
             }
