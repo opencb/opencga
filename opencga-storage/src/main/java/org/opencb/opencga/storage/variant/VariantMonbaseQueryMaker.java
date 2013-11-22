@@ -1,18 +1,25 @@
 package org.opencb.opencga.storage.variant;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.mongodb.*;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.*;
+import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.sql.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,423 +30,160 @@ import java.util.regex.Pattern;
  * Time: 12:37 PM
  * To change this template use File | Settings | File Templates.
  */
+
+
+
 public class VariantMonbaseQueryMaker implements VariantQueryMaker{
     private List<Scan> regionScans;
     private List<ResultScanner> regionResults;
     private List<ResultScanner> regionEffect;
     private String study;
     private String tableName;
+    private String effectTableName;
     private HTable table;
     private HTable effectTable;
     private Configuration config;
     private HBaseAdmin admin;
+    private MongoClient mongoClient;
+    private DB database;
+    private List<Get> hbaseQuery;
+    private Result[] hbaseResultStats;
+    private Result[] hbaseResultEffect;
+    private List<Variant> results;
+    private Variant partialResult;
+    private Map<byte[], Variant> resultsMap;
 
-    /*@Override
-    public List<VariantInfo> getRecords(Map<String, String> options) {
-
-        List<VariantInfo> list = new ArrayList<>(100);
-
-        study = "whatever";
-        tableName = "prueba7";
-
-        //String dbName = options.get("db_name");
-
-        regionScans = new ArrayList<>();
-
-        try {
-            // HBase configuration and inicialization
-            config = HBaseConfiguration.create();
+    public List<Variant> getRecordSimpleStats(String study, int missing_gt, float maf, String maf_allele, int gt_count){
+        BasicDBObject mongoStudy = new BasicDBObject("allele_maf", maf_allele).append("maf", maf).append("genotype_count", gt_count).append("missing", missing_gt );
+        BasicDBObject compare = new BasicDBObject("studies", mongoStudy);
+        database = mongoConnect("cgonzalez");
+        DBCollection collection = database.getCollection("variants");
+        Iterator<DBObject> result = collection.find(compare);
+        String chromosome = new String();
+        while(result.hasNext()){
+            DBObject variant = result.next();
+            String position = variant.get("_id").toString();
+            //hbase query construction
+            Get get = new Get(position.getBytes());
+            hbaseQuery.add(get);
+        }
+        //Complete results, from HBase
+        try{
+            //HBase connection
+            Configuration config = HBaseConfiguration.create();
             config.set("hbase.master", "172.24.79.30:60010");
             config.set("hbase.zookeeper.quorum", "172.24.79.30");
             config.set("hbase.zookeeper.property.clientPort", "2181");
             admin = new HBaseAdmin(config);
-            table = new HTable(config, tableName);
-            effectTable = new HTable(config, tableName + "effect");
-
-            List<String> whereClauses = new ArrayList<>(10);
-
-            Map<String, List<String>> sampleGenotypes;
-            Map<String, String> controlsMAFs = new LinkedHashMap<>();
-
-            // Region filters
-            if (options.containsKey("region_list") && !options.get("region_list").equals("")) {
-
-                StringBuilder regionClauses = new StringBuilder("(");
-                String[] regions = options.get("region_list").split(",");
-                Pattern pattern = Pattern.compile("(\\w+):(\\d+)-(\\d+)");
-                Matcher matcher;
-
-
-                for (int i = 0; i < regions.length; i++) {
-                    String region = regions[i];
-                    matcher = pattern.matcher(region);
-                    if (matcher.find()) {
-                        String chr = matcher.group(1);
-                        String start = matcher.group(2);
-                        String end = matcher.group(3);
-                        start = buildRowkey(chr, start);
-                        end = buildRowkey(chr, end);
-                        Scan regionScan = new Scan(start.getBytes(), end.getBytes());
-                        regionScans.add(regionScan);
-                    }
-                }
-            }
-
-            if (options.containsKey("chr_pos") && !options.get("chr_pos").equals("")) {
-                String chr = options.get("chr_pos");
-                String start = options.get("start_pos");
-                String end = options.get("end_pos");
-                Scan regionScan = new Scan();
-                regionScans.add(regionScan);
-                if (options.containsKey("start_pos") && !options.get("start_pos").equals("")) {
-                    start = buildRowkey(chr, start);
-                    regionScan.setStartRow(start.getBytes());
-                }
-
-                if (options.containsKey("end_pos") && !options.get("end_pos").equals("")) {
-                    end = buildRowkey(chr, end);
-                    regionScan.setStopRow(end.getBytes());
-                }
-                regionScans.add(regionScan);
-            }
-
-            // Result extraction and protobuf decoding.
-            for(Scan region: regionScans){
-                ResultScanner resultScan = table.getScanner(region);
-                ResultScanner resultEffect = effectTable.getScanner(region);
-                regionResults.add(resultScan);
-                regionEffect.add(resultEffect);
-            }
-
-            for(ResultScanner regionRes : regionResults){
-                for(Result r : regionRes){
-                    List <VariantFieldsProtos.VariantSample> samples = new LinkedList<>();
-                    NavigableMap<byte[], byte[]> infoMap = r.getFamilyMap("i".getBytes());
-                    byte[] byteStats = infoMap.get((study + "_" + "stats").getBytes());
-                    VariantFieldsProtos.VariantStats stats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
-                    byte[] byteInfo = infoMap.get((study + "_" + "info").getBytes());
-                    VariantFieldsProtos.VariantInfo info = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
-                    if (options.containsKey("mend_error") && !options.get("mend_error").equals("")) {
-                        String val = options.get("mend_error");
-                        String opt = options.get("option_mend_error");
-                        switch (opt){
-                            case "=":  if(!(stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMendelianErrors() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMendelianErrors() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMendelianErrors() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMendelianErrors() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("is_indel") && options.get("is_indel").equalsIgnoreCase("on")) {
-                        if(!stats.getIsIndel()){
-                            continue;
-                        }
-                    }
-                    if (options.containsKey("maf") && !options.get("maf").equals("")) {
-                        String val = options.get("maf");
-                        String opt = options.get("option_maf");
-                        switch (opt){
-                            case "=":  if(!(stats.getMaf() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMaf() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMaf() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMaf() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMaf() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMaf() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("mgf") && !options.get("mgf").equals("")) {
-                        String val = options.get("mgf");
-                        String opt = options.get("option_mgf");
-                        switch (opt){
-                            case "=":  if(!(stats.getMgf() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMgf() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMgf() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMgf() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMgf() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMgf() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("miss_allele") && !options.get("miss_allele").equals("")) {
-                        String val = options.get("miss_allele");
-                        String opt = options.get("option_miss_allele");
-                        switch (opt){
-                            case "=":  if(!(stats.getMissingAlleles() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMissingAlleles() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMissingAlleles() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMissingAlleles()>= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMissingAlleles() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMissingAlleles()== Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("miss_gt") && !options.get("miss_gt").equals("")) {
-                        String val = options.get("miss_gt");
-                        String opt = options.get("option_miss_gt");
-                        switch (opt){
-                            case "=":  if(!(stats.getMissingGenotypes() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMissingGenotypes() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMissingGenotypes() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMissingGenotypes()>= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMissingGenotypes() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMissingGenotypes()== Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("cases_percent_dominant") && !options.get("cases_percent_dominant").equals("")) {
-                        String val = options.get("cases_percent_dominant");
-                        String opt = options.get("option_cases_dom");
-                        switch (opt){
-                            case "=":  if(!(stats.getCasesPercentDominant() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getCasesPercentDominant() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getCasesPercentDominant() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getCasesPercentDominant() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getCasesPercentDominant() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getCasesPercentDominant() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("controls_percent_dominant") && !options.get("controls_percent_dominant").equals("")) {
-                        String val = options.get("controls_percent_dominant");
-                        String opt = options.get("option_controls_dom");
-                        switch (opt){
-                            case "=":  if(!(stats.getControlsPercentDominant() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getControlsPercentDominant() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getControlsPercentDominant() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getControlsPercentDominant() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getControlsPercentDominant() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getControlsPercentDominant() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("cases_percent_recessive") && !options.get("cases_percent_recessive").equals("")) {
-                        String val = options.get("cases_percent_recessive");
-                        String opt = options.get("option_cases_rec");
-                        switch (opt){
-                            case "=":  if(!(stats.getCasesPercentRecessive() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getCasesPercentRecessive() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getCasesPercentRecessive() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getCasesPercentRecessive() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getCasesPercentRecessive() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getCasesPercentRecessive() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("controls_percent_recessive") && !options.get("controls_percent_recessive").equals("")) {
-                        String val = options.get("controls_percent_recessive");
-                        String opt = options.get("option_controls_rec");
-                        switch (opt){
-                            case "=":  if(!(stats.getControlsPercentRecessive() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getControlsPercentRecessive() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getControlsPercentRecessive() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getControlsPercentRecessive() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getControlsPercentRecessive() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getControlsPercentRecessive() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("mend_error") && !options.get("mend_error").equals("")) {
-                        String val = options.get("mend_error");
-                        String opt = options.get("option_mend_error");
-                        switch (opt){
-                            case "=":  if(!(stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMendelianErrors() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMendelianErrors() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMendelianErrors() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMendelianErrors() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("mend_error") && !options.get("mend_error").equals("")) {
-                        String val = options.get("mend_error");
-                        String opt = options.get("option_mend_error");
-                        switch (opt){
-                            case "=":  if(!(stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMendelianErrors() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMendelianErrors() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMendelianErrors() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMendelianErrors() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("mend_error") && !options.get("mend_error").equals("")) {
-                        String val = options.get("mend_error");
-                        String opt = options.get("option_mend_error");
-                        switch (opt){
-                            case "=":  if(!(stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                            case ">":  if(!(stats.getMendelianErrors() > Integer.valueOf(val))){continue;}
-                            case "<":  if(!(stats.getMendelianErrors() < Integer.valueOf(val))){continue;}
-                            case ">=": if(!(stats.getMendelianErrors() >= Integer.valueOf(val))){continue;}
-                            case "<=": if(!(stats.getMendelianErrors() <= Integer.valueOf(val))){continue;}
-                            case "!=": if((stats.getMendelianErrors() == Integer.valueOf(val))){continue;}
-                        }
-                    }
-                    if (options.containsKey("biotype") && !options.get("biotype").equals("")) {
-                        String[] biotypes = options.get("biotype").split(",");
-
-                        StringBuilder biotypesClauses = new StringBuilder(" ( ");
-
-                        for (int i = 0; i < biotypes.length; i++) {
-                            biotypesClauses.append("variant_effect.feature_biotype LIKE '%").append(biotypes[i]).append("%'");
-
-                            if (i < (biotypes.length - 1)) {
-                                biotypesClauses.append(" OR ");
-                            }
-                        }
-
-                        biotypesClauses.append(" ) ");
-                        whereClauses.add(biotypesClauses.toString());
-                    }
-                    NavigableMap<byte[], byte[]> dataMap = r.getFamilyMap("d".getBytes());
-                    for(Map.Entry<byte[], byte[]> qualifier : dataMap.entrySet()){
-                        String qual = new String(qualifier.getKey(), "US-ASCII");
-                        VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(qualifier.getValue());
-                        samples.add(sample);
-                    }
-                }
-            }
-
-
-
-            if (options.containsKey("biotype") && !options.get("biotype").equals("")) {
-                String[] biotypes = options.get("biotype").split(",");
-
-                StringBuilder biotypesClauses = new StringBuilder(" ( ");
-
-                for (int i = 0; i < biotypes.length; i++) {
-                    biotypesClauses.append("variant_effect.feature_biotype LIKE '%").append(biotypes[i]).append("%'");
-
-                    if (i < (biotypes.length - 1)) {
-                        biotypesClauses.append(" OR ");
-                    }
-                }
-
-                biotypesClauses.append(" ) ");
-                whereClauses.add(biotypesClauses.toString());
-            }
-
- *//*           if (options.containsKey("exc_1000g_controls") && options.get("exc_1000g_controls").equalsIgnoreCase("on")) {
-                whereClauses.add("(key NOT LIKE '1000G%' OR key is null)");
-            } else if (options.containsKey("maf_1000g_controls") && !options.get("maf_1000g_controls").equals("")) {
-                controlsMAFs.put("1000G", options.get("maf_1000g_controls"));
-            }
-
-
-            if (options.containsKey("exc_bier_controls") && options.get("exc_bier_controls").equalsIgnoreCase("on")) {
-                whereClauses.add("(key NOT LIKE 'BIER%' OR key is null)");
-            } else if (options.containsKey("maf_bier_controls") && !options.get("maf_bier_controls").equals("")) {
-                controlsMAFs.put("BIER", options.get("maf_bier_controls"));
-            }*//*
-
-
-            if (options.containsKey("conseq_type[]") && !options.get("conseq_type[]").equals("")) {
-                whereClauses.add(processConseqType(options.get("conseq_type[]")));
-            }
-
-            if (options.containsKey("genes") && !options.get("genes").equals("")) {
-                whereClauses.add(processGeneList(options.get("genes")));
-//                processGeneList(options.get("genes"));
-            }
-
-
-            System.out.println("controlsMAFs = " + controlsMAFs);
-
-            sampleGenotypes = processSamplesGT(options);
-
-            System.out.println("sampleGenotypes = " + sampleGenotypes);
-
-            String innerJoinVariantSQL = " left join variant_info on variant.id_variant=variant_info.id_variant ";
-            String innerJoinEffectSQL = " inner join variant_effect on variant_effect.chromosome=variant.chromosome AND variant_effect.position=variant.position AND variant_effect.reference_allele=variant.ref AND variant_effect.alternative_allele = variant.alt ";
-
-
-            String sql = "SELECT distinct variant_effect.gene_name,variant_effect.consequence_type_obo, variant.id_variant, variant_info.key, variant_info.value, sample_info.sample_name, sample_info.allele_1, sample_info.allele_2, variant_stats.chromosome ," +
-                    "variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt , variant_stats.id , variant_stats.maf , variant_stats.mgf, " +
-                    "variant_stats.allele_maf , variant_stats.genotype_maf , variant_stats.miss_allele , variant_stats.miss_gt , variant_stats.mendel_err ," +
-                    "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive " + //, variant_stats.genotypes  " +
-                    " FROM variant_stats " +
-                    "inner join variant on variant_stats.chromosome=variant.chromosome AND variant_stats.position=variant.position AND variant_stats.allele_ref=variant.ref AND variant_stats.allele_alt=variant.alt " +
-                    innerJoinEffectSQL +
-                    "inner join sample_info on variant.id_variant=sample_info.id_variant " +
-                    innerJoinVariantSQL;
-
-            if (whereClauses.size() > 0) {
-                StringBuilder where = new StringBuilder(" where ");
-
-                for (int i = 0; i < whereClauses.size(); i++) {
-                    where.append(whereClauses.get(i));
-                    if (i < whereClauses.size() - 1) {
-                        where.append(" AND ");
-                    }
-                }
-
-                sql += where.toString() + " ORDER BY variant_stats.chromosome , variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt ;";
-            }
-
-            System.out.println(sql);
-
-            stmt = con.createStatement();
-            ResultSet rs = stmt.executeQuery(sql);
-
-            VcfVariantStat vs;
-            VariantInfo vi = null;
-
-
-            String chr = "";
-            int pos = 0;
-            String ref = "", alt = "";
-
-            System.out.println("Processing");
-
-            while (rs.next()) {
-                if (!rs.getString("chromosome").equals(chr) ||
-                        rs.getInt("position") != pos ||
-                        !rs.getString("allele_ref").equals(ref) ||
-                        !rs.getString("allele_alt").equals(alt)) {
-
-
-                    chr = rs.getString("chromosome");
-                    pos = rs.getInt("position");
-                    ref = rs.getString("allele_ref");
-                    alt = rs.getString("allele_alt");
-
-                    if (vi != null && filterGenotypes(vi, sampleGenotypes) && filterControls(vi, controlsMAFs)) {
-                        list.add(vi);
-                    }
-                    vi = new VariantInfo(chr, pos, ref, alt);
-                    vs = new VcfVariantStat(chr, pos, ref, alt,
-                            rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
-                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
-                            rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
-                    vs.setId(rs.getString("id"));
-
-                    // vi.addGenotypes(rs.getString("genotypes"));
-
-                    vi.addStats(vs);
-                }
-
-                if (rs.getString("key") != null && rs.getString("value") != null) {
-
-                    vi.addControl(rs.getString("key"), rs.getString("value"));
-                }
-
-
-                String sample = rs.getString("sample_name");
-                String gt = rs.getInt("allele_1") + "/" + rs.getInt("allele_2");
-
-                vi.addSammpleGenotype(sample, gt);
-                vi.addGeneAndConsequenceType(rs.getString("gene_name"), rs.getString("consequence_type_obo"));
-
-
-            }
-
-            System.out.println("End processing");
-            if (vi != null && filterGenotypes(vi, sampleGenotypes) && filterControls(vi, controlsMAFs)) {
-                list.add(vi);
-            }
-            table.close();
-            admin.close();
-
-        } catch (ClassNotFoundException | SQLException | ZooKeeperConnectionException | MasterNotRunningException | IOException e) {
-            System.err.println("STATS: " + e.getClass().getName() + ": " + e.getMessage());
+        }catch (MasterNotRunningException | ZooKeeperConnectionException ex) {
+            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
         }
+        tableName = study;
+        effectTableName = tableName + "effect";
+        try{
+            table = new HTable(admin.getConfiguration(), tableName);
+            effectTable = new HTable(admin.getConfiguration(), effectTableName);
+            hbaseResultEffect = effectTable.get(hbaseQuery);
+            hbaseResultStats = table.get(hbaseQuery);
+            for(Result r : hbaseResultStats){
+                String position = new String(r.getRow(), "US-ASCII");
+                String[] aux  = position.split("_");
+                String inner_position = aux[1];
+                String chr = aux[0];
+                //position parsing
+                if(chr.startsWith("0")){
+                    chr = chr.substring(1);
+            }
+            while(inner_position.startsWith("0")){
+                inner_position = inner_position.substring(1);
+            }
+            List <VariantFieldsProtos.VariantSample> samples = new LinkedList<>();
+            NavigableMap<byte[], byte[]> infoMap = r.getFamilyMap("i".getBytes());
+            byte[] byteStats = infoMap.get((study + "_" + "stats").getBytes());
+            VariantFieldsProtos.VariantStats stats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
+            byte[] byteInfo = infoMap.get((study + "_" + "info").getBytes());
+            VariantFieldsProtos.VariantInfo info = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
+            String alternate = StringUtils.join(info.getAlternateList(), ", ");
+            String reference = info.getReference();
+            partialResult = new Variant(chr, Integer.parseInt(position), reference, alternate);
+            String format = StringUtils.join(info.getFormatList(), ":");
+            NavigableMap<byte[], byte[]> sampleMap = r.getFamilyMap("d".getBytes());
+            Map <String, Map<String, String>> resultSampleMap = new HashMap<>();
+            StringBuilder sampleRaw = new StringBuilder();
+            for(byte[] s : sampleMap.keySet()){
+                String qual = (new String(s, "US-ASCII")).replaceAll(study+"_","");
+                VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
+                String sample1 = sample.getSample();
+                String[] values = sample1.split(":");
+                String[] fields = format.split(":");
+                Map<String, String> singleSampleMap = new HashMap<>();
+                for(int i=0;i<fields.length;i++){
+                    singleSampleMap.put(fields[i], values[i]);
+                }
+                resultSampleMap.put(qual, singleSampleMap);
 
-        return list;
+            }
+            VariantStats variantStats = new VariantStats(chromosome, Integer.parseInt(inner_position), reference, alternate,
+                    stats.getMaf(),
+                    stats.getMgf(),
+                    stats.getMafAllele(),
+                    stats.getMgfGenotype(),
+                    stats.getMissingAlleles(),
+                    stats.getMissingGenotypes(),
+                    stats.getMendelianErrors(),
+                    stats.getIsIndel(),
+                    stats.getCasesPercentDominant(),
+                    stats.getControlsPercentDominant(),
+                    stats.getCasesPercentRecessive(),
+                    stats.getControlsPercentRecessive());
+            partialResult.setStats(variantStats);
+            resultsMap.put(r.getRow(), partialResult);
+            }
+            for(Result r : hbaseResultEffect){
+                NavigableMap<byte[], byte[]> effectMap = r.getFamilyMap("e".getBytes());
+                partialResult = resultsMap.get(r.getRow());
+                VariantEffectProtos.EffectInfo effectInfo = VariantEffectProtos.EffectInfo.parseFrom(effectMap.get(partialResult.getReference() + "_" + partialResult.getAlternate()));
+                VariantEffect variantEffect = new VariantEffect(
+                        partialResult.getChromosome(),
+                        (int) partialResult.getPosition(),
+                        partialResult.getReference(),
+                        partialResult.getAlternate(),
+                        effectInfo.getFeatureId(),
+                        effectInfo.getFeatureName(),
+                        effectInfo.getFeatureType(),
+                        effectInfo.getFeatureBiotype(),
+                        effectInfo.getFeatureChromosome(),
+                        effectInfo.getFeatureStart(),
+                        effectInfo.getFeatureEnd(),
+                        effectInfo.getFeatureStrand(),
+                        effectInfo.getSnpId(),
+                        effectInfo.getAncestral(),
+                        effectInfo.getAlternative(),
+                        effectInfo.getGeneId(),
+                        effectInfo.getTranscriptId(),
+                        effectInfo.getGeneName(),
+                        effectInfo.getConsequenceType(),
+                        effectInfo.getConsequenceTypeObo(),
+                        effectInfo.getConsequenceTypeDesc(),
+                        effectInfo.getConsequenceTypeType(),
+                        effectInfo.getAaPosition(),
+                        effectInfo.getAminoacidChange(),
+                        effectInfo.getCodonChange()
+                    );
+                resultsMap.put(r.getRow(), partialResult);
+                }
+            }catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }catch (IOException e) {
+                e.printStackTrace();
+                System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            }
+        for(byte[] r : resultsMap.keySet()){
+            results.add(resultsMap.get(r));
+        }
+        return results;
     }
-    }*/
 
     @Override
     public List<VariantInfo> getRecords(Map<String, String> options) {
@@ -472,4 +216,17 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
         }
         return chromosome + "_" + position;
     }
+
+    //Connect to mongodb
+    private DB mongoConnect(String database){
+        try{
+            mongoClient = new MongoClient("localhost");
+            DB db = mongoClient.getDB("cgonzalez");
+            return db;
+        }catch (UnknownHostException ex) {
+            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+    }
 }
+
