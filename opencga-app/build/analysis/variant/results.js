@@ -1,13 +1,21 @@
 var RESULT = {
-    "variant-index": {
+    "variant": {
         "layout": {
             "title": "Job results",
-            "presentation": "tabs",
             "children": function () {
+
                 var children = [];
-
-
+                children.push({title: 'Variant Widget', children: [
+                    {
+                        "title": 'Variant Widget',
+                        "renderers": [
+                            {type: 'variant-widget'}
+                        ]
+                    }
+                ]});
                 return children;
+            },
+            "sortOutputItems": function (a, b) {
             }
         }
     }

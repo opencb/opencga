@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Joiner;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
@@ -178,6 +179,37 @@ public class JobAnalysisWSServer extends GenericWSServer {
         map.put("db_name", dataPath.toString());
         VariantQueryMaker vqm = new VariantSqliteQueryMaker();
         List<VariantInfo> list = vqm.getRecords(map);
+
+
+        String res = null;
+        try {
+            res = jsonObjectMapper.writeValueAsString(list);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return createOkResponse(res);
+    }
+
+    @POST
+    @Path("/variant_effects")
+    @Consumes("application/x-www-form-urlencoded")
+    public Response getVariantEffects(@DefaultValue("") @QueryParam("filename") String filename, MultivaluedMap<String, String> postParams) {
+        Map<String, String> map = new LinkedHashMap<>();
+
+        for (Map.Entry<String, List<String>> entry : postParams.entrySet()) {
+            map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
+        }
+
+        System.out.println(map);
+
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
+
+        System.out.println("dataPath = " + dataPath.toString());
+
+        map.put("db_name", dataPath.toString());
+        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        List<VariantEffect> list = vqm.getEffect(map);
 
 
         String res = null;

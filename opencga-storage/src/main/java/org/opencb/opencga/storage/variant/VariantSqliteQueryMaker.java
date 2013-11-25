@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.variant;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
@@ -9,9 +11,9 @@ import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
+//import javax.ws.rs.client.Client;
+//import javax.ws.rs.client.ClientBuilder;
+//import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.*;
@@ -694,12 +696,16 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         System.out.println("genes = " + genes);
         List<String> list = new ArrayList<>();
 
-        Client client = ClientBuilder.newClient();
-        WebTarget webTarget = client.target("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
+//        Client client = ClientBuilder.newClient();
+//        WebTarget webTarget = client.target("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
+
+        Client client = Client.create();
+        WebResource webResource = client.resource("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
 
         ObjectMapper mapper = new ObjectMapper();
 
-        Response response = webTarget.path(genes).path("info").queryParam("of", "json").request().get();
+//        Response response = webTarget.path(genes).path("info").queryParam("of", "json").request().get();
+        String response = webResource.path(genes).path("info").queryParam("of", "json").get(String.class);
         String data = response.toString();
 
         System.out.println("response = " + response);
