@@ -58,28 +58,39 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
                 StringBuilder regionClauses = new StringBuilder("(");
                 String[] regions = options.get("region_list").split(",");
-                Pattern pattern = Pattern.compile("(\\w+):(\\d+)-(\\d+)");
-                Matcher matcher;
-
+                Pattern patternReg = Pattern.compile("(\\w+):(\\d+)-(\\d+)");
+                Matcher matcherReg, matcherChr;
 
                 for (int i = 0; i < regions.length; i++) {
                     String region = regions[i];
-                    matcher = pattern.matcher(region);
-                    if (matcher.find()) {
-                        String chr = matcher.group(1);
-                        int start = Integer.valueOf(matcher.group(2));
-                        int end = Integer.valueOf(matcher.group(3));
+                    matcherReg = patternReg.matcher(region);
+                    if (matcherReg.find()) {
+                        String chr = matcherReg.group(1);
+                        int start = Integer.valueOf(matcherReg.group(2));
+                        int end = Integer.valueOf(matcherReg.group(3));
 
                         regionClauses.append("( variant_stats.chromosome='").append(chr).append("' AND ");
                         regionClauses.append("variant_stats.position>=").append(start).append(" AND ");
                         regionClauses.append("variant_stats.position<=").append(end).append(" )");
 
-
                         if (i < (regions.length - 1)) {
                             regionClauses.append(" OR ");
 
                         }
+                    } else {
+                        Pattern patternChr = Pattern.compile("(\\w+)");
+                        matcherChr = patternChr.matcher(region);
 
+                        if (matcherChr.find()) {
+                            String chr = matcherChr.group();
+                            regionClauses.append("( variant_stats.chromosome='").append(chr).append("')");
+
+                            if (i < (regions.length - 1)) {
+                                regionClauses.append(" OR ");
+                            }
+                        } else {
+                            System.err.println("ERROR: Region (" + region + ")");
+                        }
                     }
                 }
                 regionClauses.append(" ) ");
