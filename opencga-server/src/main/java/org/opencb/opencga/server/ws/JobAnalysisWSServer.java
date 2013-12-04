@@ -8,8 +8,8 @@ import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
-import org.opencb.opencga.storage.variant.VariantQueryMaker;
-import org.opencb.opencga.storage.variant.VariantSqliteQueryMaker;
+import org.opencb.opencga.storage.variant.VariantQueryBuilder;
+import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -177,7 +177,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
         System.out.println("dataPath = " + dataPath.toString());
 
         map.put("db_name", dataPath.toString());
-        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        VariantQueryBuilder vqm = new VariantSqliteQueryBuilder();
         List<VariantInfo> list = vqm.getRecords(map);
 
 
@@ -208,7 +208,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
         System.out.println("dataPath = " + dataPath.toString());
 
         map.put("db_name", dataPath.toString());
-        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        VariantQueryBuilder vqm = new VariantSqliteQueryBuilder();
         List<VariantEffect> list = vqm.getEffect(map);
 
 
@@ -231,7 +231,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
         java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
         map.put("db_name", dataPath.toString());
 
-        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        VariantQueryBuilder vqm = new VariantSqliteQueryBuilder();
         VariantAnalysisInfo vi = vqm.getAnalysisInfo(map);
 
 
@@ -264,7 +264,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
         System.out.println("dataPath = " + dataPath.toString());
 
         map.put("db_name", dataPath.toString());
-        VariantQueryMaker vqm = new VariantSqliteQueryMaker();
+        VariantQueryBuilder vqm = new VariantSqliteQueryBuilder();
         List<VariantStats> list = vqm.getRecordsStats(map);
 
         String res = null;

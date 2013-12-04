@@ -11,15 +11,15 @@ import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
-//import javax.ws.rs.client.Client;
-//import javax.ws.rs.client.ClientBuilder;
-//import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+//import javax.ws.rs.client.Client;
+//import javax.ws.rs.client.ClientBuilder;
+//import javax.ws.rs.client.WebTarget;
 
 /**
  * Created with IntelliJ IDEA.
@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * Time: 12:14 PM
  * To change this template use File | Settings | File Templates.
  */
-public class VariantSqliteQueryMaker implements VariantQueryMaker {
+public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
-    public VariantSqliteQueryMaker() {
+    public VariantSqliteQueryBuilder() {
         System.out.println("Variant Query Maker");
     }
 
