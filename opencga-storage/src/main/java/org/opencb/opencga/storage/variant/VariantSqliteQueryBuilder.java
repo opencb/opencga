@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.variant;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
@@ -9,15 +11,15 @@ import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+//import javax.ws.rs.client.Client;
+//import javax.ws.rs.client.ClientBuilder;
+//import javax.ws.rs.client.WebTarget;
 
 /**
  * Created with IntelliJ IDEA.
@@ -26,9 +28,9 @@ import java.util.regex.Pattern;
  * Time: 12:14 PM
  * To change this template use File | Settings | File Templates.
  */
-public class VariantSqliteQueryMaker implements VariantQueryMaker {
+public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
-    public VariantSqliteQueryMaker() {
+    public VariantSqliteQueryBuilder() {
         System.out.println("Variant Query Maker");
     }
 
@@ -56,28 +58,39 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
 
                 StringBuilder regionClauses = new StringBuilder("(");
                 String[] regions = options.get("region_list").split(",");
-                Pattern pattern = Pattern.compile("(\\w+):(\\d+)-(\\d+)");
-                Matcher matcher;
-
+                Pattern patternReg = Pattern.compile("(\\w+):(\\d+)-(\\d+)");
+                Matcher matcherReg, matcherChr;
 
                 for (int i = 0; i < regions.length; i++) {
                     String region = regions[i];
-                    matcher = pattern.matcher(region);
-                    if (matcher.find()) {
-                        String chr = matcher.group(1);
-                        int start = Integer.valueOf(matcher.group(2));
-                        int end = Integer.valueOf(matcher.group(3));
+                    matcherReg = patternReg.matcher(region);
+                    if (matcherReg.find()) {
+                        String chr = matcherReg.group(1);
+                        int start = Integer.valueOf(matcherReg.group(2));
+                        int end = Integer.valueOf(matcherReg.group(3));
 
                         regionClauses.append("( variant_stats.chromosome='").append(chr).append("' AND ");
                         regionClauses.append("variant_stats.position>=").append(start).append(" AND ");
                         regionClauses.append("variant_stats.position<=").append(end).append(" )");
 
-
                         if (i < (regions.length - 1)) {
                             regionClauses.append(" OR ");
 
                         }
+                    } else {
+                        Pattern patternChr = Pattern.compile("(\\w+)");
+                        matcherChr = patternChr.matcher(region);
 
+                        if (matcherChr.find()) {
+                            String chr = matcherChr.group();
+                            regionClauses.append("( variant_stats.chromosome='").append(chr).append("')");
+
+                            if (i < (regions.length - 1)) {
+                                regionClauses.append(" OR ");
+                            }
+                        } else {
+                            System.err.println("ERROR: Region (" + region + ")");
+                        }
                     }
                 }
                 regionClauses.append(" ) ");
@@ -694,12 +707,16 @@ public class VariantSqliteQueryMaker implements VariantQueryMaker {
         System.out.println("genes = " + genes);
         List<String> list = new ArrayList<>();
 
-        Client client = ClientBuilder.newClient();
-        WebTarget webTarget = client.target("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
+//        Client client = ClientBuilder.newClient();
+//        WebTarget webTarget = client.target("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
+
+        Client client = Client.create();
+        WebResource webResource = client.resource("http://ws.bioinfo.cipf.es/cellbase/rest/latest/hsa/feature/gene/");
 
         ObjectMapper mapper = new ObjectMapper();
 
-        Response response = webTarget.path(genes).path("info").queryParam("of", "json").request().get();
+//        Response response = webTarget.path(genes).path("info").queryParam("of", "json").request().get();
+        String response = webResource.path(genes).path("info").queryParam("of", "json").get(String.class);
         String data = response.toString();
 
         System.out.println("response = " + response);
