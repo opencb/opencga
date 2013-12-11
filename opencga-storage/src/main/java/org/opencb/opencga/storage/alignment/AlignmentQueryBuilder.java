@@ -21,8 +21,9 @@ public interface AlignmentQueryBuilder {
 //    
 //    List<QueryResult> getAllAlignmentBlocksByRegionList(List<Region> region, QueryOptions options);
     
-    
     QueryResult getAllAlignmentsByGene(String gene, QueryOptions options);
+    
+    QueryResult getCoverageByRegion(Region region, QueryOptions options);
     
     QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
     

@@ -61,7 +61,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         try {
             List<SAMRecord> records = getSamRecordsByRegion(region);
             // TODO Start and end, long or int?
-            List<Alignment> alignments = getAlignmentsFromSamRecords(region, records, options, queryResult);
+            List<Alignment> alignments = getAlignmentsFromSamRecords(region, records, options);
             queryResult.setResult(alignments);
             queryResult.setNumResults(alignments.size());
         } catch (AlignmentIndexNotExistsException | IOException | ClassNotFoundException | SQLException ex) {
@@ -78,6 +78,11 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    @Override
+    public QueryResult<Map<String, int[]>> getCoverageByRegion(Region region, QueryOptions options) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
     @Override
     public QueryResult<List<ObjectMap>> getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax) {
         QueryResult<List<ObjectMap>> queryResult = new QueryResult<>(String.format("%s:%d-%d", 
@@ -216,18 +221,9 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         return records;
     }
     
-    private List<Alignment> getAlignmentsFromSamRecords(Region region, List<SAMRecord> records, 
-            QueryOptions params, QueryResult queryResult) throws IOException {
+    private List<Alignment> getAlignmentsFromSamRecords(Region region, List<SAMRecord> records, QueryOptions params) throws IOException {
         List<Alignment> alignments = new ArrayList<>();
         
-        XObject res = new XObject();
-        List<XObject> reads = new ArrayList<XObject>();
-        XObject coverage = new XObject();
-        res.put("reads", reads);
-        res.put("coverage", coverage);
-        res.put("start", region.getStart());
-        res.put("end", region.getEnd());
-
         if (params.get("view_as_pairs") != null) {
             // If must be shown as pairs, create new comparator by read name
             if (((Boolean) params.get("view_as_pairs")).booleanValue()) {
@@ -243,22 +239,10 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             }
         }
         
-//        boolean showSoftClipping = false;
-//        if (params.get("show_softclipping") != null) {
-//            showSoftClipping = ((Boolean) params.get("show_softclipping")).booleanValue();
-//        }
-
         // Get genome sequence
         String referenceSequence = getSequence(region, params);
         
-//        // Coverage of each base and all of them together
-//        short[] coverageArray = new short[end - start + 1];
-//        short[] aBaseArray = new short[end - start + 1];
-//        short[] cBaseArray = new short[end - start + 1];
-//        short[] gBaseArray = new short[end - start + 1];
-//        short[] tBaseArray = new short[end - start + 1];
-
-        
+        // Create an Alignment per SAMRecord object
         for (SAMRecord record : records) {
             if (!record.getReadUnmappedFlag()) {
                 Map<String, String> attributes = new HashMap<>();
@@ -266,90 +250,16 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                     attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
                 }
 
-                String refStr = referenceSequence.substring((500 + record.getUnclippedStart() - ((int)region.getStart())),
-                            (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
+                String referenceSubstring = referenceSequence.substring(
+                        (500 + record.getUnclippedStart() - ((int)region.getStart())), 
+                        (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
                 
                 // Build alignment object, including differences calculation
-                Alignment alignment = new Alignment(record, attributes, refStr);
+                Alignment alignment = new Alignment(record, attributes, referenceSubstring);
                 alignments.add(alignment);
-
-//                // TODO Populate coverage arrays
-////                logger.info("Creating coverage array");
-//                // TODO cigar check for correct coverage calculation and
-//                String readStr = record.getReadString();
-//                int refgenomeOffset = 0;
-//                int readOffset = 0;
-//                int offset = record.getAlignmentStart() - start;
-//                
-//                for (int i = 0; i < record.getCigar().getCigarElements().size(); i++) {
-//                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.M) {
-////                        logger.info("start: "+start);
-////                        logger.info("r a start: "+record.getAlignmentStart());
-////                        logger.info("refgenomeOffset: "+refgenomeOffset);
-////                        logger.info("r c lenght: "+record.getCigar().getCigarElement(i).getLength());
-////                        logger.info(record.getAlignmentStart() - start + refgenomeOffset);
-////                        logger.info("readStr: "+readStr.length());
-////                        logger.info("readStr: "+readStr.length());
-//
-//
-//                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar().getCigarElement(i).getLength(); j++, cont++) {
-//                            if (j >= 0 && j < coverageArray.length) {
-//                                coverageArray[j]++;
-////   /*check unused*/             readPos = j - offset;
-//                                // if(record.getAlignmentStart() == 32877696){
-//                                // System.out.println(i-(record.getAlignmentStart()-start));
-//                                // System.out.println(record.getAlignmentStart()-start);
-//                                // }
-//                                // System.out.print(" - "+(cont+readOffset));
-//                                // System.out.print("|"+readStr.length());
-//                                int total = cont + readOffset;
-//                                // if(total < readStr.length()){
-////                                logger.info(readStr.length());
-//                                switch (readStr.charAt(total)) {
-//                                    case 'A':
-//                                        aBaseArray[j]++;
-//                                        break;
-//                                    case 'C':
-//                                        cBaseArray[j]++;
-//                                        break;
-//                                    case 'G':
-//                                        gBaseArray[j]++;
-//                                        break;
-//                                    case 'T':
-//                                        tBaseArray[j]++;
-//                                        break;
-//                                }
-//                                // }
-//                            }
-//                        }
-//                    }
-//                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.I) {
-//                        refgenomeOffset++;
-//                        readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
-//                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.D) {
-//                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
-//                        readOffset++;
-//                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.H) {
-//                        //Ignored Hardclipping and do not update offset pointers
-//                    } else {
-//                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
-//                        readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
-//                    }
-////                    if (record.getCigar().getCigarElement(i).getOperator() != CigarOperator.I) {
-////                    } else if(){
-////                    }
-//                }
-//                logger.info("coverage array created");
             }
-//            logger.info(" ");
         }
 
-//        coverage.put("all", coverageArray);
-//        coverage.put("a", aBaseArray);
-//        coverage.put("c", cBaseArray);
-//        coverage.put("g", gBaseArray);
-//        coverage.put("t", tBaseArray);
-        
         return alignments;
     }
     
