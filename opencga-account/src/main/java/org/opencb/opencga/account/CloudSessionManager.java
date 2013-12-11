@@ -1,6 +1,8 @@
 package org.opencb.opencga.account;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -23,6 +25,12 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.opencb.cellbase.core.common.Region;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
+import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
 
 public class CloudSessionManager {
 
@@ -31,8 +39,11 @@ public class CloudSessionManager {
 
     protected static Logger logger = LoggerFactory.getLogger(CloudSessionManager.class);
 
-    private Properties accountProperties;
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
 
+    private Properties accountProperties;
+    
     public CloudSessionManager() throws IOException, IOManagementException {
         this(System.getenv("OPENCGA_HOME"));
     }
@@ -46,6 +57,9 @@ public class CloudSessionManager {
             accountManager = new AccountMongoDBManager();
         }
         ioManager = new FileIOManager();
+        
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
     }
 
     /**
@@ -400,9 +414,20 @@ public class CloudSessionManager {
         String result = "";
         switch (objectItem.getFileFormat()) {
             case "bam":
-                BamManager bamManager = new BamManager();
-//                result = bamManager.getByRegion(fullFilePath, regionStr, params);
-                result = bamManager.queryRegion(fullFilePath, regionStr, params);
+                if (!params.containsKey("histogram")) {
+                    BamManager bamManager = new BamManager();
+    //                result = bamManager.getByRegion(fullFilePath, regionStr, params);
+                    result = bamManager.queryRegion(fullFilePath, regionStr, params);
+                } else {
+                    AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(fullFilePath), null, null);
+                    Region region = Region.parseRegion(regionStr);
+                    QueryResult<List<ObjectMap>> queryResult = 
+                            queryBuilder.getAlignmentsHistogramByRegion(region.getChromosome(), region.getStart(), region.getEnd(), 
+                            params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+                            params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
+                    result = jsonObjectWriter.writeValueAsString(queryResult);
+                    System.out.println("result = " + result);
+                }
                 break;
             case "vcf":
                 VcfManager vcfManager = new VcfManager();
