@@ -426,6 +426,11 @@ public class CloudSessionManager {
                                 params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
                         result = jsonObjectWriter.writeValueAsString(queryResult);
                         System.out.println("result = " + result);
+                    } else if (params.containsKey("coverage")) {
+                        QueryOptions options = new QueryOptions(params, true);
+                        QueryResult<Map<String, short[]>> queryResult = 
+                                queryBuilder.getCoverageByRegion(region, options);
+                        result = jsonObjectWriter.writeValueAsString(queryResult);
                     } else { // Query the alignments themselves
                         QueryOptions options = new QueryOptions(params, true);
                         QueryResult<List<Alignment>> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);

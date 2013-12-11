@@ -14,9 +14,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
+import net.sf.samtools.*;
 import org.opencb.cellbase.core.common.Region;
 import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.containers.QueryResult;
@@ -54,7 +52,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     }
     
     @Override
-    public QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options) {
+    public QueryResult<List<Alignment>> getAllAlignmentsByRegion(Region region, QueryOptions options) {
         QueryResult<List<Alignment>> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
         long startTime = System.currentTimeMillis();
@@ -79,8 +77,22 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     }
 
     @Override
-    public QueryResult<Map<String, int[]>> getCoverageByRegion(Region region, QueryOptions options) {
-        throw new UnsupportedOperationException("Not supported yet.");
+    public QueryResult<Map<String, short[]>> getCoverageByRegion(Region region, QueryOptions options) {
+        QueryResult<Map<String, short[]>> queryResult = new QueryResult<>(
+                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
+        long startTime = System.currentTimeMillis();
+        try {
+            List<SAMRecord> records = getSamRecordsByRegion(region);
+            Map<String, short[]> coverage = getCoverageFromSamRecords(region, records, options);
+            queryResult.setResult(coverage);
+            queryResult.setNumResults(coverage.size());
+        } catch (AlignmentIndexNotExistsException | ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(TabixAlignmentQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            queryResult.setErrorMsg(ex.getMessage());
+        }
+        
+        queryResult.setTime(System.currentTimeMillis() - startTime);
+        return queryResult;  
     }
     
     @Override
@@ -263,6 +275,90 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         return alignments;
     }
     
+    private Map<String, short[]> getCoverageFromSamRecords(Region region, List<SAMRecord> records, QueryOptions params) {
+        Map<String, short[]> coverage = new HashMap<>();
+        int start = region.getStart();
+        int end = region.getEnd();
+        
+        if (params.get("view_as_pairs") != null) {
+            // If must be shown as pairs, create new comparator by read name
+            if (((Boolean) params.get("view_as_pairs")).booleanValue()) {
+                Collections.sort(records, new Comparator<SAMRecord>() {
+                    @Override
+                    public int compare(SAMRecord o1, SAMRecord o2) {
+                        if (o1 != null && o1.getReadName() != null && o2 != null) {
+                            return o1.getReadName().compareTo(o2.getReadName());
+                        }
+                        return -1;
+                    }
+                });
+            }
+        }
+
+        // Arrays containing global and per-nucleotide coverage information
+        short[] coverageArray = new short[end - start + 1];
+        short[] aBaseArray = new short[end - start + 1];
+        short[] cBaseArray = new short[end - start + 1];
+        short[] gBaseArray = new short[end - start + 1];
+        short[] tBaseArray = new short[end - start + 1];
+
+        
+        for (SAMRecord record : records) {
+            if (!record.getReadUnmappedFlag()) {
+                String readStr = record.getReadString();
+                int refgenomeOffset = 0, readOffset = 0;
+                
+                for (int i = 0; i < record.getCigar().getCigarElements().size(); i++) {
+                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.M) {
+                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar().getCigarElement(i).getLength(); j++, cont++) {
+                            if (j >= 0 && j < coverageArray.length) {
+                                coverageArray[j]++;
+                                
+                                switch (readStr.charAt(cont + readOffset)) {
+                                    case 'A':
+                                        aBaseArray[j]++;
+                                        break;
+                                    case 'C':
+                                        cBaseArray[j]++;
+                                        break;
+                                    case 'G':
+                                        gBaseArray[j]++;
+                                        break;
+                                    case 'T':
+                                        tBaseArray[j]++;
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.I) {
+                        refgenomeOffset++;
+                        readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.D) {
+                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+                        readOffset++;
+                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.H) {
+                        // Ignore hardclipping and do not update offset pointers
+                    } else {
+                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+                        readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+                    }
+//                    if (record.getCigar().getCigarElement(i).getOperator() != CigarOperator.I) {
+//                    } else if(){
+//                    }
+                }
+            }
+        }
+
+        coverage.put("all", coverageArray);
+        coverage.put("a", aBaseArray);
+        coverage.put("c", cBaseArray);
+        coverage.put("g", gBaseArray);
+        coverage.put("t", tBaseArray);
+        
+        return coverage;
+    }
+
     
     /* ******************************************
      *          Path and index checking         *
