@@ -26,8 +26,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
 import org.opencb.cellbase.core.common.Region;
+import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
+import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
@@ -414,20 +416,22 @@ public class CloudSessionManager {
         String result = "";
         switch (objectItem.getFileFormat()) {
             case "bam":
-                if (!params.containsKey("histogram")) {
-                    BamManager bamManager = new BamManager();
-    //                result = bamManager.getByRegion(fullFilePath, regionStr, params);
-                    result = bamManager.queryRegion(fullFilePath, regionStr, params);
-                } else {
                     AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(fullFilePath), null, null);
                     Region region = Region.parseRegion(regionStr);
-                    QueryResult<List<ObjectMap>> queryResult = 
-                            queryBuilder.getAlignmentsHistogramByRegion(region.getChromosome(), region.getStart(), region.getEnd(), 
-                            params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
-                            params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-                    result = jsonObjectWriter.writeValueAsString(queryResult);
-                    System.out.println("result = " + result);
-                }
+                    
+                    if (params.containsKey("histogram")) { // Query the alignments' histogram
+                        QueryResult<List<ObjectMap>> queryResult = 
+                                queryBuilder.getAlignmentsHistogramByRegion(region, 
+                                params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+                                params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
+                        result = jsonObjectWriter.writeValueAsString(queryResult);
+                        System.out.println("result = " + result);
+                    } else { // Query the alignments themselves
+                        QueryOptions options = new QueryOptions(params, true);
+                        QueryResult<List<Alignment>> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+                        result = jsonObjectWriter.writeValueAsString(queryResult);
+//                        System.out.println("result = " + result);
+                    }
                 break;
             case "vcf":
                 VcfManager vcfManager = new VcfManager();

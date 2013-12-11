@@ -1,12 +1,23 @@
 package org.opencb.opencga.storage.alignment;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordIterator;
+import org.opencb.cellbase.core.common.Region;
 import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
@@ -14,8 +25,10 @@ import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.CellbaseCredentials;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.lib.auth.TabixCredentials;
+import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.lib.common.XObject;
 import org.opencb.opencga.storage.indices.SqliteManager;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -28,6 +41,8 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     
     private SqliteCredentials sqliteCredentials;
     private SqliteManager sqliteManager;
+    
+    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(TabixAlignmentQueryBuilder.class);
 
     public TabixAlignmentQueryBuilder(SqliteCredentials sqliteCredentials, 
                                          TabixCredentials tabixCredentials, 
@@ -39,19 +54,34 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     }
     
     @Override
-    public QueryResult<Alignment> getAlignmentsByRegion(String chromosome, long start, long end, QueryOptions options) {
+    public QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options) {
+        QueryResult<List<Alignment>> queryResult = new QueryResult<>(
+                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
+        long startTime = System.currentTimeMillis();
+        try {
+            List<SAMRecord> records = getSamRecordsByRegion(region);
+            // TODO Start and end, long or int?
+            List<Alignment> alignments = getAlignmentsFromSamRecords(region, records, options, queryResult);
+            queryResult.setResult(alignments);
+            queryResult.setNumResults(alignments.size());
+        } catch (AlignmentIndexNotExistsException | IOException | ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(TabixAlignmentQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            queryResult.setErrorMsg(ex.getMessage());
+        }
+        
+        queryResult.setTime(System.currentTimeMillis() - startTime);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<List<Alignment>> getAllAlignmentsByGene(String gene, QueryOptions options) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public QueryResult<Alignment> getAlignmentsByGene(String gene, QueryOptions options) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    public QueryResult<List<ObjectMap>> getAlignmentsHistogramByRegion(
-            String chromosome, long start, long end, boolean histogramLogarithm, int histogramMax) {
-        QueryResult<List<ObjectMap>> queryResult = new QueryResult<>(String.format("%s:%d-%d", chromosome, start, end)); // TODO Fill metadata
+    public QueryResult<List<ObjectMap>> getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax) {
+        QueryResult<List<ObjectMap>> queryResult = new QueryResult<>(String.format("%s:%d-%d", 
+                region.getChromosome(), region.getStart(), region.getEnd())); // TODO Fill metadata
         List<ObjectMap> data = new ArrayList<>();
         
         long startTime = System.currentTimeMillis();
@@ -63,7 +93,8 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             long startDbTime = System.currentTimeMillis(); 
             sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
             System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
-            String queryString = "SELECT * FROM chunk WHERE chromosome='" + chromosome + "' AND start <= " + end + " AND end >= " + start;
+            String queryString = "SELECT * FROM chunk WHERE chromosome='" + region.getChromosome() + 
+                    "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
             List<XObject> queryResults = sqliteManager.query(queryString);
             sqliteManager.disconnect(true);
             queryResult.setDbTime(System.currentTimeMillis() - startDbTime);
@@ -123,9 +154,262 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         return queryResult;
     }
     
+    
+    /* ******************************************
+     *              Auxiliary queries           *
+     * ******************************************/
+    
+    private List<SAMRecord> getSamRecordsByRegion(Region region) 
+            throws ClassNotFoundException, SQLException, AlignmentIndexNotExistsException {
+        List<SAMRecord> records = new ArrayList<>();
+        
+        Path filePath = sqliteCredentials.getPath();
+        Path metaDir = getMetaDir(filePath);
+        String fileName = filePath.getFileName().toString();
+
+        long startDbTime = System.currentTimeMillis(); 
+        sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
+        System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
+        String queryString = "SELECT id, start FROM record_query_fields WHERE chromosome='" + 
+                region.getChromosome() + "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
+        List<XObject> queryResults = sqliteManager.query(queryString);
+        sqliteManager.disconnect(true);
+
+        System.out.println("Query time " + (System.currentTimeMillis() - startDbTime) + "ms");
+
+        Map<String, XObject> queryResultsMap = new HashMap<>();
+        for (XObject r : queryResults) {
+            queryResultsMap.put(r.getString("id") + r.getString("start"), r);
+        }
+        
+        // Query using Picard
+        File inputBamFile = new File(filePath.toString());
+        File inputBamIndexFile = checkBamIndex(filePath);
+        if (inputBamIndexFile == null) {
+            logger.warn("Index for file " + filePath + " does not exist");
+            throw new AlignmentIndexNotExistsException("Index for file " + filePath + " does not exist");
+        }
+        
+        SAMFileReader inputSam = new SAMFileReader(inputBamFile, inputBamIndexFile);
+        inputSam.setValidationStringency(SAMFileReader.ValidationStringency.valueOf("LENIENT"));
+//        System.out.println("hasIndex " + inputSam.hasIndex());
+        SAMRecordIterator recordsRegion = inputSam.query(region.getChromosome(), (int) region.getStart(), (int) region.getEnd(), false);
+
+        // Filter .db and Picard lists
+        long t1 = System.currentTimeMillis();
+//        System.out.println(queryResults.size() + " ");
+
+        int resultsPending = queryResults.size();
+
+//        System.out.println("queryResultsLength " + resultsPending);
+
+        while (recordsRegion.hasNext() && resultsPending > 0) {
+            SAMRecord record = recordsRegion.next();
+            if (queryResultsMap.get(record.getReadName() + record.getAlignmentStart()) != null) {
+                records.add(record);
+                resultsPending--;
+            }
+        }
+//        System.out.println(records.size() + " ");
+        System.out.println("Filter time " + (System.currentTimeMillis() - t1) + "ms");
+        
+        return records;
+    }
+    
+    private List<Alignment> getAlignmentsFromSamRecords(Region region, List<SAMRecord> records, 
+            QueryOptions params, QueryResult queryResult) throws IOException {
+        List<Alignment> alignments = new ArrayList<>();
+        
+        XObject res = new XObject();
+        List<XObject> reads = new ArrayList<XObject>();
+        XObject coverage = new XObject();
+        res.put("reads", reads);
+        res.put("coverage", coverage);
+        res.put("start", region.getStart());
+        res.put("end", region.getEnd());
+
+        if (params.get("view_as_pairs") != null) {
+            // If must be shown as pairs, create new comparator by read name
+            if (((Boolean) params.get("view_as_pairs")).booleanValue()) {
+                Collections.sort(records, new Comparator<SAMRecord>() {
+                    @Override
+                    public int compare(SAMRecord o1, SAMRecord o2) {
+                        if (o1 != null && o1.getReadName() != null && o2 != null) {
+                            return o1.getReadName().compareTo(o2.getReadName());
+                        }
+                        return -1;
+                    }
+                });
+            }
+        }
+        
+//        boolean showSoftClipping = false;
+//        if (params.get("show_softclipping") != null) {
+//            showSoftClipping = ((Boolean) params.get("show_softclipping")).booleanValue();
+//        }
+
+        // Get genome sequence
+        String referenceSequence = getSequence(region, params);
+        
+//        // Coverage of each base and all of them together
+//        short[] coverageArray = new short[end - start + 1];
+//        short[] aBaseArray = new short[end - start + 1];
+//        short[] cBaseArray = new short[end - start + 1];
+//        short[] gBaseArray = new short[end - start + 1];
+//        short[] tBaseArray = new short[end - start + 1];
+
+        
+        for (SAMRecord record : records) {
+            if (!record.getReadUnmappedFlag()) {
+                Map<String, String> attributes = new HashMap<>();
+                for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
+                    attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
+                }
+
+                String refStr = referenceSequence.substring((500 + record.getUnclippedStart() - ((int)region.getStart())),
+                            (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
+                
+                // Build alignment object, including differences calculation
+                Alignment alignment = new Alignment(record, attributes, refStr);
+                alignments.add(alignment);
+
+//                // TODO Populate coverage arrays
+////                logger.info("Creating coverage array");
+//                // TODO cigar check for correct coverage calculation and
+//                String readStr = record.getReadString();
+//                int refgenomeOffset = 0;
+//                int readOffset = 0;
+//                int offset = record.getAlignmentStart() - start;
+//                
+//                for (int i = 0; i < record.getCigar().getCigarElements().size(); i++) {
+//                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.M) {
+////                        logger.info("start: "+start);
+////                        logger.info("r a start: "+record.getAlignmentStart());
+////                        logger.info("refgenomeOffset: "+refgenomeOffset);
+////                        logger.info("r c lenght: "+record.getCigar().getCigarElement(i).getLength());
+////                        logger.info(record.getAlignmentStart() - start + refgenomeOffset);
+////                        logger.info("readStr: "+readStr.length());
+////                        logger.info("readStr: "+readStr.length());
+//
+//
+//                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar().getCigarElement(i).getLength(); j++, cont++) {
+//                            if (j >= 0 && j < coverageArray.length) {
+//                                coverageArray[j]++;
+////   /*check unused*/             readPos = j - offset;
+//                                // if(record.getAlignmentStart() == 32877696){
+//                                // System.out.println(i-(record.getAlignmentStart()-start));
+//                                // System.out.println(record.getAlignmentStart()-start);
+//                                // }
+//                                // System.out.print(" - "+(cont+readOffset));
+//                                // System.out.print("|"+readStr.length());
+//                                int total = cont + readOffset;
+//                                // if(total < readStr.length()){
+////                                logger.info(readStr.length());
+//                                switch (readStr.charAt(total)) {
+//                                    case 'A':
+//                                        aBaseArray[j]++;
+//                                        break;
+//                                    case 'C':
+//                                        cBaseArray[j]++;
+//                                        break;
+//                                    case 'G':
+//                                        gBaseArray[j]++;
+//                                        break;
+//                                    case 'T':
+//                                        tBaseArray[j]++;
+//                                        break;
+//                                }
+//                                // }
+//                            }
+//                        }
+//                    }
+//                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.I) {
+//                        refgenomeOffset++;
+//                        readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+//                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.D) {
+//                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+//                        readOffset++;
+//                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.H) {
+//                        //Ignored Hardclipping and do not update offset pointers
+//                    } else {
+//                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+//                        readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+//                    }
+////                    if (record.getCigar().getCigarElement(i).getOperator() != CigarOperator.I) {
+////                    } else if(){
+////                    }
+//                }
+//                logger.info("coverage array created");
+            }
+//            logger.info(" ");
+        }
+
+//        coverage.put("all", coverageArray);
+//        coverage.put("a", aBaseArray);
+//        coverage.put("c", cBaseArray);
+//        coverage.put("g", gBaseArray);
+//        coverage.put("t", tBaseArray);
+        
+        return alignments;
+    }
+    
+    
+    /* ******************************************
+     *          Path and index checking         *
+     * ******************************************/
+    
     private Path getMetaDir(Path file) {
         String inputName = file.getFileName().toString();
         return file.getParent().resolve(".meta_" + inputName);
+    }
+
+    private File checkBamIndex(Path inputBamPath) {
+        Path metaDir = getMetaDir(inputBamPath);
+        String fileName = inputBamPath.getFileName().toString();
+        
+        //name.bam & name.bam.bai
+        Path inputBamIndexFile = metaDir.resolve(Paths.get(fileName + ".bai"));
+        logger.info(inputBamIndexFile.toString());
+        if (Files.exists(inputBamIndexFile)) {
+            return inputBamIndexFile.toFile();
+        }
+        
+        //name.bam & name.bai
+        fileName = IOUtils.removeExtension(fileName);
+        inputBamIndexFile = metaDir.resolve(Paths.get(fileName + ".bai"));
+        logger.info(inputBamIndexFile.toString());
+        if (Files.exists(inputBamIndexFile)) {
+            return inputBamIndexFile.toFile();
+        }
+        
+        return null;
+    }
+    
+    private String getSequence(Region region, QueryOptions params) throws IOException {
+        String cellbaseHost = params.getString("cellbasehost", "http://ws-beta.bioinfo.cipf.es/cellbase/rest/latest");
+        String species = params.getString("species", "hsapiens");
+        
+//        if (species.equals("cclementina")) {
+//            cellbasehost = "http://citrusgenn.bioinfo.cipf.es/cellbasecitrus/rest/v3";
+//        }
+
+        String urlString = cellbaseHost + "/" + species + "/genomic/region/" + region.getChromosome() + ":"
+                + (region.getStart() - 500) + "-" + (region.getEnd() + 500) + "/sequence?of=json";
+        System.out.println(urlString);
+
+        URL url = new URL(urlString);
+        InputStream is = url.openConnection().getInputStream();
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonFactory factory = mapper.getFactory();
+        JsonParser jp = factory.createParser(br);
+        JsonNode o = mapper.readTree(jp);
+
+        ArrayNode response = (ArrayNode) o.get("response");
+        String sequence = response.get(0).get("result").get("sequence").asText();
+        br.close();
+        return sequence;
     }
 
 }
