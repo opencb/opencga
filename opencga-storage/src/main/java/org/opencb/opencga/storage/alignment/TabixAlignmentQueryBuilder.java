@@ -256,20 +256,22 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         
         // Create an Alignment per SAMRecord object
         for (SAMRecord record : records) {
-            if (!record.getReadUnmappedFlag()) {
-                Map<String, String> attributes = new HashMap<>();
-                for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
-                    attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
-                }
-
-                String referenceSubstring = referenceSequence.substring(
-                        (500 + record.getUnclippedStart() - ((int)region.getStart())), 
-                        (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
-                
-                // Build alignment object, including differences calculation
-                Alignment alignment = new Alignment(record, attributes, referenceSubstring);
-                alignments.add(alignment);
+            if (record.getReadUnmappedFlag()) {
+                continue;
             }
+            
+            Map<String, String> attributes = new HashMap<>();
+            for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
+                attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
+            }
+
+            String referenceSubstring = referenceSequence.substring(
+                    (500 + record.getUnclippedStart() - ((int)region.getStart())), 
+                    (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
+
+            // Build alignment object, including differences calculation
+            Alignment alignment = new Alignment(record, attributes, referenceSubstring);
+            alignments.add(alignment);
         }
 
         return alignments;
@@ -304,16 +306,20 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
 
         
         for (SAMRecord record : records) {
-            if (!record.getReadUnmappedFlag()) {
-                String readStr = record.getReadString();
-                int refgenomeOffset = 0, readOffset = 0;
-                
-                for (int i = 0; i < record.getCigar().getCigarElements().size(); i++) {
-                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.M) {
-                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar().getCigarElement(i).getLength(); j++, cont++) {
+            if (record.getReadUnmappedFlag()) {
+                continue;
+            }
+            
+            String readStr = record.getReadString();
+            int referenceOffset = 0, readOffset = 0;
+
+            for (int i = 0; i < record.getCigar().getCigarElements().size(); i++) {
+                CigarElement element = record.getCigar().getCigarElement(i);
+                switch(element.getOperator()) {
+                    case M:
+                        for (int j = record.getAlignmentStart() - start + referenceOffset, cont = 0; cont < element.getLength(); j++, cont++) {
                             if (j >= 0 && j < coverageArray.length) {
                                 coverageArray[j]++;
-                                
                                 switch (readStr.charAt(cont + readOffset)) {
                                     case 'A':
                                         aBaseArray[j]++;
@@ -330,22 +336,21 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                                 }
                             }
                         }
-                    }
-                    if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.I) {
-                        refgenomeOffset++;
+                        break;
+                    case I:
+                        referenceOffset++;
                         readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
-                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.D) {
-                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+                        break;
+                    case D:
+                        referenceOffset += record.getCigar().getCigarElement(i).getLength() - 1;
                         readOffset++;
-                    } else if (record.getCigar().getCigarElement(i).getOperator() == CigarOperator.H) {
+                        break;
+                    case H:
                         // Ignore hardclipping and do not update offset pointers
-                    } else {
-                        refgenomeOffset += record.getCigar().getCigarElement(i).getLength() - 1;
+                        break;
+                    default:
+                        referenceOffset += record.getCigar().getCigarElement(i).getLength() - 1;
                         readOffset += record.getCigar().getCigarElement(i).getLength() - 1;
-                    }
-//                    if (record.getCigar().getCigarElement(i).getOperator() != CigarOperator.I) {
-//                    } else if(){
-//                    }
                 }
             }
         }
