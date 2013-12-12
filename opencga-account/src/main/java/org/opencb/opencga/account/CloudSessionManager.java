@@ -25,8 +25,9 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
-import org.opencb.cellbase.core.common.Region;
 import org.opencb.commons.bioformats.alignment.Alignment;
+import org.opencb.commons.bioformats.alignment.AlignmentRegion;
+import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
@@ -426,14 +427,19 @@ public class CloudSessionManager {
                                 params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
                         result = jsonObjectWriter.writeValueAsString(queryResult);
                         System.out.println("result = " + result);
-                    } else if (params.containsKey("coverage")) {
+                    } else if (params.containsKey("alignments")) { // Query the alignments themselves
+                        QueryOptions options = new QueryOptions(params, true);
+                        QueryResult<List<Alignment>> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+                        result = jsonObjectWriter.writeValueAsString(queryResult);
+//                        System.out.println("result = " + result);
+                    } else if (params.containsKey("coverage")) { // Query the alignments' coverage
                         QueryOptions options = new QueryOptions(params, true);
                         QueryResult<Map<String, short[]>> queryResult = 
                                 queryBuilder.getCoverageByRegion(region, options);
                         result = jsonObjectWriter.writeValueAsString(queryResult);
-                    } else { // Query the alignments themselves
+                    } else {
                         QueryOptions options = new QueryOptions(params, true);
-                        QueryResult<List<Alignment>> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+                        QueryResult<AlignmentRegion> queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
                         result = jsonObjectWriter.writeValueAsString(queryResult);
 //                        System.out.println("result = " + result);
                     }

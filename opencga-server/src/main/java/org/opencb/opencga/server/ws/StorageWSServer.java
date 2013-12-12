@@ -115,6 +115,7 @@ public class StorageWSServer extends GenericWSServer {
     // TODO for now, only region filter allowed
     @GET
     @Path("/fetch")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response region(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
                            @DefaultValue("") @QueryParam("region") String regionStr) {
 

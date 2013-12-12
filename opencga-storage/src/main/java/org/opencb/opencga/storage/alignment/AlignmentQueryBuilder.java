@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.alignment;
 
-import org.opencb.cellbase.core.common.Region;
+import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 
@@ -26,5 +26,7 @@ public interface AlignmentQueryBuilder {
     QueryResult getCoverageByRegion(Region region, QueryOptions options);
     
     QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
+    
+    QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
     
 }
