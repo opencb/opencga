@@ -15,12 +15,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import org.opencb.opencga.lib.common.Config;
 
 @Path("/")
 public class GenericWSServer {
 
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
     protected static Properties properties;
+    protected static Config config;
 
     protected UriInfo uriInfo;
     protected String accountId;

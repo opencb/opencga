@@ -15,8 +15,8 @@
     <version>${opencga.version}</version>
 
     <properties>
-        <installation.dir>build</installation.dir>
-        <dest.installation.dir>/opt/opencga</dest.installation.dir>
+        <build.dir>build</build.dir>
+        <installation.dir>/opt/opencga</installation.dir>
     </properties>
 
     <dependencies>
@@ -66,6 +66,7 @@
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
+        <finalName>opencga-app</finalName>
 
         <plugins>
             <plugin>
@@ -97,7 +98,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <outputDirectory>${installation.dir}/libs</outputDirectory>
+                    <outputDirectory>${build.dir}/libs</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -112,7 +113,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${installation.dir}/libs</outputDirectory>
+                            <outputDirectory>${build.dir}/libs</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
@@ -125,15 +126,25 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
-                                <echo>Copying to ${dest.installation.dir}</echo><!-- <copy todir="${installation.dir}">
+                                <echo>Deleting from ${installation.dir}</echo><!-- <copy todir="${installation.dir}">
 									<fileset dir="installation" includes="**" /> </copy> -->
-                                <exec executable="cp">
-                                    <arg value="-r" />
+                                <exec executable="rm">
+                                    <arg value="-rf" />
                                     <arg value="${installation.dir}/analysis" />
                                     <arg value="${installation.dir}/conf" />
                                     <arg value="${installation.dir}/bin" />
                                     <arg value="${installation.dir}/libs" />
-                                    <arg value="${dest.installation.dir}" />
+                                </exec>
+                                
+                                <echo>Copying to ${installation.dir}</echo><!-- <copy todir="${installation.dir}">
+									<fileset dir="installation" includes="**" /> </copy> -->
+                                <exec executable="cp">
+                                    <arg value="-r" />
+                                    <arg value="${build.dir}/analysis" />
+                                    <arg value="${build.dir}/conf" />
+                                    <arg value="${build.dir}/bin" />
+                                    <arg value="${build.dir}/libs" />
+                                    <arg value="${installation.dir}" />
                                 </exec>
                             </target>
                         </configuration>

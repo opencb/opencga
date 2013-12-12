@@ -126,7 +126,7 @@ public class StorageWSServer extends GenericWSServer {
             List<String> results = new ArrayList<>();
             
             for (String region : regions) {
-                results.add(cloudSessionManager.fetchData(objectPath, objectItem, region, params));
+                results.add(cloudSessionManager.fetchData(objectPath, objectItem.getFileFormat(), region, params));
             }
             return createOkResponse(results.toString());
         } catch (Exception e) {

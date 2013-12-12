@@ -407,12 +407,12 @@ public class CloudSessionManager {
     }
 
     
-    public String fetchData(Path objectId, ObjectItem objectItem, String regionStr, Map<String, List<String>> params) throws Exception {
+    public String fetchData(Path objectId, String fileFormat, String regionStr, Map<String, List<String>> params) throws Exception {
         checkParameter(objectId.toString(), "objectId");
         checkParameter(regionStr, "regionStr");
 
         String result = "";
-        switch (objectItem.getFileFormat()) {
+        switch (fileFormat) {
             case "bam":
                 result = fetchAlignmentData(objectId, regionStr, params);
                 break;
@@ -420,7 +420,7 @@ public class CloudSessionManager {
                 result = fetchVariationData(objectId, regionStr, params);
                 break;
             default:
-                throw new IllegalArgumentException("File format " + objectItem.getFileFormat() + " not yet supported");
+                throw new IllegalArgumentException("File format " + fileFormat + " not yet supported");
         }
         
         return result;

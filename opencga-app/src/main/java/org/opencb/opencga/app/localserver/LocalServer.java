@@ -25,7 +25,7 @@ public class LocalServer {
             home = ".";
         }
 
-        properties = Config.getLocalServerProperties(home);
+        properties = Config.getStorageProperties(home);
         int port = Integer.parseInt(properties.getProperty("OPENCGA.LOCAL.PORT", "61976"));
 
         tomcat = new Tomcat();
