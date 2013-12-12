@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
+import org.opencb.commons.bioformats.alignment.RegionCoverage;
 import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
@@ -90,10 +91,16 @@ public class CloudSessionManager {
         return ioManager.getTmpPath();
     }
 
+    public ObjectItem getObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId) 
+            throws AccountManagementException, IOException {
+        return accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
+    }
+    
     /**
      * Account methods
      * ***************************
      */
+    
     public void createAccount(String accountId, String password, String name, String email, String sessionIp)
             throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(accountId, "accountId");
@@ -399,60 +406,61 @@ public class CloudSessionManager {
         accountManager.shareObject(accountId, bucketId, objectId, acl, sessionId);
     }
 
-    public String region(String accountId, String bucketId, Path objectId, String regionStr,
-                         Map<String, List<String>> params, String sessionId) throws Exception {
-        System.out.println("(>·_·)>");
-        checkParameter(bucketId, "bucket");
-        checkParameter(accountId, "accountId");
-        checkParameter(sessionId, "sessionId");
+    
+    public String fetchData(Path objectId, ObjectItem objectItem, String regionStr, Map<String, List<String>> params) throws Exception {
         checkParameter(objectId.toString(), "objectId");
         checkParameter(regionStr, "regionStr");
-
-        Path fullFilePath = ioManager.getObjectPath(accountId, bucketId, objectId);
-        ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
-
-        logger.debug(fullFilePath.toString());
-        logger.debug(regionStr);
 
         String result = "";
         switch (objectItem.getFileFormat()) {
             case "bam":
-                    AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(fullFilePath), null, null);
-                    Region region = Region.parseRegion(regionStr);
-                    
-                    if (params.containsKey("histogram")) { // Query the alignments' histogram
-                        QueryResult<List<ObjectMap>> queryResult = 
-                                queryBuilder.getAlignmentsHistogramByRegion(region, 
-                                params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
-                                params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-                        result = jsonObjectWriter.writeValueAsString(queryResult);
-                        System.out.println("result = " + result);
-                    } else if (params.containsKey("alignments")) { // Query the alignments themselves
-                        QueryOptions options = new QueryOptions(params, true);
-                        QueryResult<List<Alignment>> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
-                        result = jsonObjectWriter.writeValueAsString(queryResult);
-//                        System.out.println("result = " + result);
-                    } else if (params.containsKey("coverage")) { // Query the alignments' coverage
-                        QueryOptions options = new QueryOptions(params, true);
-                        QueryResult<Map<String, short[]>> queryResult = 
-                                queryBuilder.getCoverageByRegion(region, options);
-                        result = jsonObjectWriter.writeValueAsString(queryResult);
-                    } else {
-                        QueryOptions options = new QueryOptions(params, true);
-                        QueryResult<AlignmentRegion> queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
-                        result = jsonObjectWriter.writeValueAsString(queryResult);
-//                        System.out.println("result = " + result);
-                    }
+                result = fetchAlignmentData(objectId, regionStr, params);
                 break;
             case "vcf":
-                VcfManager vcfManager = new VcfManager();
-//                result = vcfManager.getByRegion(fullFilePath, regionStr, params);
-                result = vcfManager.queryRegion(fullFilePath, regionStr, params);
+                result = fetchVariationData(objectId, regionStr, params);
                 break;
+            default:
+                throw new IllegalArgumentException("File format " + objectItem.getFileFormat() + " not yet supported");
         }
+        
         return result;
     }
+    
+    private String fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
+        AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
+        Region region = Region.parseRegion(regionStr);
+        QueryOptions options = new QueryOptions(params, true);
+        String result = null;
 
+        if (params.containsKey("histogram")) { // Query the alignments' histogram
+            QueryResult<ObjectMap> queryResult = 
+                    queryBuilder.getAlignmentsHistogramByRegion(region, 
+                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
+            result = jsonObjectWriter.writeValueAsString(queryResult);
+            System.out.println("result = " + result);
+        } else if ((params.containsKey("alignments") && params.containsKey("coverage")) || 
+                   (!params.containsKey("alignments") && !params.containsKey("coverage"))) { // If both or none requested
+            QueryResult<AlignmentRegion> queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
+            result = jsonObjectWriter.writeValueAsString(queryResult);
+        } else if (params.containsKey("alignments")) { // Query the alignments themselves
+            QueryResult<Alignment> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+            result = jsonObjectWriter.writeValueAsString(queryResult);
+        } else if (params.containsKey("coverage")) { // Query the alignments' coverage
+            QueryResult<RegionCoverage> queryResult = queryBuilder.getCoverageByRegion(region, options);
+            result = jsonObjectWriter.writeValueAsString(queryResult);
+        } 
+        
+        return result;
+    }
+    
+    private String fetchVariationData(Path objectId, String regionStr, Map<String, List<String>> params) throws Exception {
+        VcfManager vcfManager = new VcfManager();
+//        result = vcfManager.getByRegion(fullFilePath, regionStr, params);
+        return vcfManager.queryRegion(objectId, regionStr, params);
+    }
+    
+    
     public String indexFileObject(String accountId, String bucketId, Path objectId, boolean force, String sessionId) throws Exception {
         ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
         if (objectItem.getStatus().contains("indexer")) {

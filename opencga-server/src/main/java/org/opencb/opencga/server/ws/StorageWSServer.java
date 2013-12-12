@@ -112,18 +112,21 @@ public class StorageWSServer extends GenericWSServer {
         }
     }
 
-    // TODO for now, only region filter allowed
     @GET
     @Path("/fetch")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response region(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
-                           @DefaultValue("") @QueryParam("region") String regionStr) {
-
+    public Response fetchData(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
+                            @DefaultValue("") @QueryParam("region") String regionStr) {
         try {
+            // Validate user and object permissions, and retrieve paths
+            java.nio.file.Path objectPath = cloudSessionManager.getObjectPath(accountId, bucketId, objectId);
+            ObjectItem objectItem = cloudSessionManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
+            
             List<String> regions = Splitter.on(',').splitToList(regionStr);
             List<String> results = new ArrayList<>();
+            
             for (String region : regions) {
-                results.add(cloudSessionManager.region(accountId, bucketId, objectId, region, params, sessionId));
+                results.add(cloudSessionManager.fetchData(objectPath, objectItem, region, params));
             }
             return createOkResponse(results.toString());
         } catch (Exception e) {
