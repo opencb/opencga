@@ -2,6 +2,7 @@ package org.opencb.opencga.server.ws;
 
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -60,23 +61,29 @@ public class PublicStorageWSServer extends GenericWSServer {
                 throw new IllegalArgumentException("Reading the files inside the requested folder is forbidden");
             }
             
-            // 2: Check if the path corresponding to alias folder + filename exists
+            String bucketPathName = storageProperties.getProperty("OPENCGA.LOCAL.FOLDERS." + bucketId, "");
+            java.nio.file.Path bucketPath = Paths.get(bucketPathName);
+            java.nio.file.Path objectPath = Paths.get(bucketPathName, objectId.toString());
+            System.out.println("* Bucket path = " + bucketPath.toString());
+            System.out.println("* Object path = " + objectPath.toString());
+            
+            // 2: Check if the path structure is valid (stays inside the working folder)
+            if (!isValidPathStructure(bucketPath, objectPath)) {
+                throw new IllegalArgumentException("The specified file path is not valid");
+            }
+            
+            // 3: Check if the path corresponding to alias folder + filename exists
             if (!storageProperties.containsKey("OPENCGA.LOCAL.FOLDERS." + bucketId)) {
                 throw new IllegalStateException("There is no path defined for the requested folder ID");
             }
-            
-            String bucketPathName = storageProperties.getProperty("OPENCGA.LOCAL.FOLDERS." + bucketId, "");
-            System.out.println("* Bucket path name = " + bucketPathName);
-            java.nio.file.Path objectPath = Paths.get(bucketPathName + "/" + objectId);
-            System.out.println("* Object path name = " + bucketPathName);
             FileUtils.checkFile(objectPath); // Check file exists and is readable
             
-            // 3: Check if the file format is allowed for that alias
+            // 4: Check if the file format is allowed for that alias
             if (!isFileFormatAllowed(Files.getFileExtension(objectPath.toString()), storageProperties)) {
                 throw new IllegalArgumentException("Reading this file format inside the requested folder is forbidden");
             }
             
-            // 4: Launch queries
+            // 5: Launch queries
             List<String> regions = Splitter.on(',').splitToList(regionStr);
             List<String> results = new ArrayList<>();
             
@@ -107,6 +114,20 @@ public class PublicStorageWSServer extends GenericWSServer {
         return bucketAllowed;
     }
 
+    private boolean isValidPathStructure(java.nio.file.Path bucketPath, java.nio.file.Path filePath) throws IOException {
+        File parent = bucketPath.toFile().getCanonicalFile();
+        File child = filePath.toFile().getCanonicalFile();
+        
+        while (child != null) {
+            if (child.equals(parent)) {
+                return true;
+            }
+            child = child.getParentFile();
+        }
+        
+        return false;
+    }
+    
     private boolean isFileFormatAllowed(String fileFormat, Properties storageProperties) {
         String[] fileFormatsAllowed = new String[0]; // No formats allowed if none specified
         if (storageProperties.containsKey("OPENCGA.LOCAL.EXTENSIONS." + bucketId)) {
@@ -127,4 +148,5 @@ public class PublicStorageWSServer extends GenericWSServer {
         }
         return formatAllowed;
     }
+
 }
