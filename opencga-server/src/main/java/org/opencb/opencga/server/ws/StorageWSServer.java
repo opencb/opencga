@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.opencb.commons.containers.QueryResult;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
 public class StorageWSServer extends GenericWSServer {
@@ -123,17 +124,27 @@ public class StorageWSServer extends GenericWSServer {
             ObjectItem objectItem = cloudSessionManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
             
             List<String> regions = Splitter.on(',').splitToList(regionStr);
-            List<String> results = new ArrayList<>();
             
-            for (String region : regions) {
-                results.add(cloudSessionManager.fetchData(objectPath, objectItem.getFileFormat(), region, params));
+            switch (objectItem.getFileFormat()) {
+                case "bam":
+                    List<QueryResult> bamResults = new ArrayList<>();
+                    for (String region : regions) {
+                        bamResults.add(cloudSessionManager.fetchAlignmentData(objectPath, region, params));
+                    }
+                    return createOkResponse(bamResults);
+                case "vcf":
+                    List<String> vcfResults = new ArrayList<>();
+                    for (String region : regions) {
+                        vcfResults.add(cloudSessionManager.fetchVariationData(objectPath, region, params));
+                    }
+                    return createOkResponse(vcfResults.toString());
             }
-            return createOkResponse(results.toString());
         } catch (Exception e) {
             logger.error(e.toString());
-            e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+        
+        return createErrorResponse("Data not found with given arguments");
     }
 
     /**

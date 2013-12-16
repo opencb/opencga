@@ -14,6 +14,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.lib.common.Config;
@@ -83,18 +84,30 @@ public class PublicStorageWSServer extends GenericWSServer {
                 throw new IllegalArgumentException("Reading this file format inside the requested folder is forbidden");
             }
             
-            // 5: Launch queries
+            // 5: Launch queries depending of file format
             List<String> regions = Splitter.on(',').splitToList(regionStr);
-            List<String> results = new ArrayList<>();
             
-            for (String region : regions) {
-                results.add(cloudSessionManager.fetchData(objectPath, Files.getFileExtension(objectPath.toString()), region, params));
+            switch (Files.getFileExtension(objectPath.toString())) {
+                case "bam":
+                    List<QueryResult> bamResults = new ArrayList<>();
+                    for (String region : regions) {
+                        bamResults.add(cloudSessionManager.fetchAlignmentData(objectPath, region, params));
+                    }
+                    return createOkResponse(bamResults);
+                case "vcf":
+                    List<String> vcfResults = new ArrayList<>();
+                    for (String region : regions) {
+                        vcfResults.add(cloudSessionManager.fetchVariationData(objectPath, region, params));
+                    }
+                    return createOkResponse(vcfResults.toString());
             }
-            return createOkResponse(results.toString());
+            
         } catch (Exception e) {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
         }
+        
+        return createErrorResponse("Data not found with given arguments");
     }
 
 

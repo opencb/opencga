@@ -407,54 +407,60 @@ public class CloudSessionManager {
     }
 
     
-    public String fetchData(Path objectId, String fileFormat, String regionStr, Map<String, List<String>> params) throws Exception {
-        checkParameter(objectId.toString(), "objectId");
-        checkParameter(regionStr, "regionStr");
-
-        String result = "";
-        switch (fileFormat) {
-            case "bam":
-                result = fetchAlignmentData(objectId, regionStr, params);
-                break;
-            case "vcf":
-                result = fetchVariationData(objectId, regionStr, params);
-                break;
-            default:
-                throw new IllegalArgumentException("File format " + fileFormat + " not yet supported");
-        }
-        
-        return result;
-    }
+//    public String fetchData(Path objectId, String fileFormat, String regionStr, Map<String, List<String>> params) throws Exception {
+//        checkParameter(objectId.toString(), "objectId");
+//        checkParameter(regionStr, "regionStr");
+//
+//        String result = "";
+//        switch (fileFormat) {
+//            case "bam":
+//                result = fetchAlignmentData(objectId, regionStr, params);
+//                break;
+//            case "vcf":
+//                result = fetchVariationData(objectId, regionStr, params);
+//                break;
+//            default:
+//                throw new IllegalArgumentException("File format " + fileFormat + " not yet supported");
+//        }
+//        
+//        return result;
+//    }
     
-    private String fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
+    public QueryResult fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
         AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
         Region region = Region.parseRegion(regionStr);
         QueryOptions options = new QueryOptions(params, true);
+        QueryResult queryResult = null;
         String result = null;
 
         if (params.containsKey("histogram")) { // Query the alignments' histogram
-            QueryResult<ObjectMap> queryResult = 
+//            QueryResult<ObjectMap> 
+            queryResult = 
                     queryBuilder.getAlignmentsHistogramByRegion(region, 
                     params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
                     params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-            result = jsonObjectWriter.writeValueAsString(queryResult);
-            System.out.println("result = " + result);
+//            result = jsonObjectWriter.writeValueAsString(queryResult);
+//            System.out.println("result = " + result);
         } else if ((params.containsKey("alignments") && params.containsKey("coverage")) || 
                    (!params.containsKey("alignments") && !params.containsKey("coverage"))) { // If both or none requested
-            QueryResult<AlignmentRegion> queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
-            result = jsonObjectWriter.writeValueAsString(queryResult);
+//            QueryResult<AlignmentRegion> 
+                    queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
+//            result = jsonObjectWriter.writeValueAsString(queryResult);
         } else if (params.containsKey("alignments")) { // Query the alignments themselves
-            QueryResult<Alignment> queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
-            result = jsonObjectWriter.writeValueAsString(queryResult);
+//            QueryResult<Alignment> 
+                    queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+//            result = jsonObjectWriter.writeValueAsString(queryResult);
         } else if (params.containsKey("coverage")) { // Query the alignments' coverage
-            QueryResult<RegionCoverage> queryResult = queryBuilder.getCoverageByRegion(region, options);
-            result = jsonObjectWriter.writeValueAsString(queryResult);
+//            QueryResult<RegionCoverage> 
+                    queryResult = queryBuilder.getCoverageByRegion(region, options);
+//            result = jsonObjectWriter.writeValueAsString(queryResult);
         } 
         
-        return result;
+//        return result;
+        return queryResult;
     }
     
-    private String fetchVariationData(Path objectId, String regionStr, Map<String, List<String>> params) throws Exception {
+    public String fetchVariationData(Path objectId, String regionStr, Map<String, List<String>> params) throws Exception {
         VcfManager vcfManager = new VcfManager();
 //        result = vcfManager.getByRegion(fullFilePath, regionStr, params);
         return vcfManager.queryRegion(objectId, regionStr, params);
