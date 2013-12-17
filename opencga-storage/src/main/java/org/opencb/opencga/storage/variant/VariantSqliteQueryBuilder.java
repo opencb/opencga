@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.commons.bioformats.feature.Region;
+import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.QueryOptions;
 
 import java.io.IOException;
 import java.sql.*;
@@ -28,6 +32,21 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
     public VariantSqliteQueryBuilder() {
         System.out.println("Variant Query Maker");
+    }
+
+    @Override
+    public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
+        return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult getStatsByVariant(Variant variant, QueryOptions options) {
+        return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options) {
+        return null;  // TODO Implementation needed
     }
 
     @Override

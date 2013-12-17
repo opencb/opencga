@@ -11,9 +11,7 @@ import org.opencb.commons.containers.map.QueryOptions;
 public interface AlignmentQueryBuilder {
     
     QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options);
-    
-//    QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options);
-//    
+
 //    List<QueryResult> getAllAlignmentsByRegionList(List<Region> region, QueryOptions options);
     
     
