@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.bam;
+package org.opencb.opencga.storage.alignment;
 
 import net.sf.samtools.BAMRecord;
 
