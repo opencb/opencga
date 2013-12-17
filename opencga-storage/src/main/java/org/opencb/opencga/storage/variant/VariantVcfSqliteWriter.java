@@ -12,6 +12,7 @@ import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+import org.opencb.commons.db.SqliteSingletonConnection;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;

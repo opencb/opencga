@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 
 
 
-public class VariantMonbaseQueryMaker implements VariantQueryMaker{
+public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     private List<Scan> regionScans;
     private List<ResultScanner> regionResults;
     private List<ResultScanner> regionEffect;
@@ -56,7 +56,7 @@ public class VariantMonbaseQueryMaker implements VariantQueryMaker{
     private Variant partialResult;
     private Map<String, Variant> resultsMap;
 
-    public VariantMonbaseQueryMaker(String server, String dbname){
+    public VariantMonbaseQueryBuilder(String server, String dbname){
         try{
             mongoClient = new MongoClient(server);
             database = mongoClient.getDB(dbname);

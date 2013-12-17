@@ -1,8 +1,10 @@
+package org.opencb.opencga.storage.variant;
+
 import org.junit.Test;
 import org.opencb.commons.bioformats.feature.Genotype;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
-import org.opencb.opencga.storage.variant.VariantMonbaseQueryMaker;
+import org.opencb.opencga.storage.variant.VariantMonbaseQueryBuilder;
 
 import java.util.List;
 
@@ -13,13 +15,13 @@ import java.util.List;
  * Time: 2:56 PM
  * To change this template use File | Settings | File Templates.
  */
-public class VariantMonbaseQueryMakerTest {
+public class VariantMonbaseQueryBuilderTest {
 
     @Test
     public void test1() {
         Long start, end;
         start = System.currentTimeMillis();
-        VariantMonbaseQueryMaker tal = new VariantMonbaseQueryMaker("localhost", "pruebaVariant");
+        VariantMonbaseQueryBuilder tal = new VariantMonbaseQueryBuilder("localhost", "pruebaVariant");
         List<Variant> cual = tal.getRegionMongo("1", "1", 32100000, 32180000, "miEstudio2");
         end = System.currentTimeMillis();
         System.out.println("Time: " + (end - start));

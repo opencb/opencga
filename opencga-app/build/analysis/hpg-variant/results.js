@@ -106,7 +106,27 @@ var RESULT = {
 
                 return children;
             },
-            sortOutputItems: function (a, b) {
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.vcf-stats": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+                var children = [];
+                children.push({title: 'Variant Stats Widget', children: [
+                    {
+                        "title": 'Variant Stats Widget',
+                        "renderers": [
+                            {type: 'variant-stats-widget'}
+                        ]
+                    }
+                ]});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
             }
         }
     }

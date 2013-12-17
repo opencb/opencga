@@ -15,7 +15,7 @@ import java.util.Map;
  * Time: 12:14 PM
  * To change this template use File | Settings | File Templates.
  */
-public interface VariantQueryMaker {
+public interface VariantQueryBuilder {
     List<VariantInfo> getRecords(Map<String, String> options);
 
     List<VariantStats> getRecordsStats(Map<String, String> options);

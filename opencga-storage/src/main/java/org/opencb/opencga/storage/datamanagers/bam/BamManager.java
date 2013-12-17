@@ -265,6 +265,8 @@ public class BamManager {
         XObject coverage = new XObject();
         res.put("reads", reads);
         res.put("coverage", coverage);
+        res.put("start", start);
+        res.put("end", end);
 
         Boolean viewAsPairs = false;
         if (params.get("view_as_pairs") != null) {
@@ -980,12 +982,12 @@ public class BamManager {
         URL url = new URL(urlString);
         InputStream is = url.openConnection().getInputStream();
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        String line = null;
-        StringBuilder sb = new StringBuilder();
-        while ((line = br.readLine()) != null) {
-            sb.append(line.trim());
-        }
-        br.close();
+//        String line = null;
+//        StringBuilder sb = new StringBuilder();
+//        while ((line = br.readLine()) != null) {
+//            sb.append(line.trim());
+//        }
+
 
         ObjectMapper mapper = new ObjectMapper();
         JsonFactory factory = mapper.getFactory();
@@ -996,6 +998,7 @@ public class BamManager {
         String sequence = response.get(0).get("result").get("sequence").asText();
 //        JsonElement json = new JsonParser().parse(sb.toString());
 //        String sequence = json.getAsJsonObject().get("response").getAsJsonArray().get(0).getAsJsonObject().get("result").getAsJsonObject().get("sequence").getAsString();
+        br.close();
         return sequence;
     }
 

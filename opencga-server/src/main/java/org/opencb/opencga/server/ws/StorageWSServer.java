@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.ws;
 
+import com.google.common.base.Splitter;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.account.beans.ObjectItem;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.opencb.commons.containers.QueryResult;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
 public class StorageWSServer extends GenericWSServer {
@@ -111,19 +113,38 @@ public class StorageWSServer extends GenericWSServer {
         }
     }
 
-    // TODO for now, only region filter allowed
     @GET
     @Path("/fetch")
-    public Response region(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
-                           @DefaultValue("") @QueryParam("region") String regionStr) {
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response fetchData(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
+                            @DefaultValue("") @QueryParam("region") String regionStr) {
         try {
-            String res = cloudSessionManager.region(accountId, bucketId, objectId, regionStr, params, sessionId);
-            return createOkResponse(res);
+            // Validate user and object permissions, and retrieve paths
+            java.nio.file.Path objectPath = cloudSessionManager.getObjectPath(accountId, bucketId, objectId);
+            ObjectItem objectItem = cloudSessionManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
+            
+            List<String> regions = Splitter.on(',').splitToList(regionStr);
+            
+            switch (objectItem.getFileFormat()) {
+                case "bam":
+                    List<QueryResult> bamResults = new ArrayList<>();
+                    for (String region : regions) {
+                        bamResults.add(cloudSessionManager.fetchAlignmentData(objectPath, region, params));
+                    }
+                    return createOkResponse(bamResults);
+                case "vcf":
+                    List<String> vcfResults = new ArrayList<>();
+                    for (String region : regions) {
+                        vcfResults.add(cloudSessionManager.fetchVariationData(objectPath, region, params));
+                    }
+                    return createOkResponse(vcfResults.toString());
+            }
         } catch (Exception e) {
             logger.error(e.toString());
-            e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+        
+        return createErrorResponse("Data not found with given arguments");
     }
 
     /**
