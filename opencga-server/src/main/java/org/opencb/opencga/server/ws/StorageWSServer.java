@@ -125,7 +125,7 @@ public class StorageWSServer extends GenericWSServer {
             
             List<String> regions = Splitter.on(',').splitToList(regionStr);
             
-            switch (objectItem.getFileFormat()) {
+            switch (objectItem.getFileFormat().toLowerCase()) {
                 case "bam":
                     List<QueryResult> bamResults = new ArrayList<>();
                     for (String region : regions) {

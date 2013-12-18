@@ -87,7 +87,7 @@ public class PublicStorageWSServer extends GenericWSServer {
             // 5: Launch queries depending of file format
             List<String> regions = Splitter.on(',').splitToList(regionStr);
             
-            switch (Files.getFileExtension(objectPath.toString())) {
+            switch (Files.getFileExtension(objectPath.toString()).toLowerCase()) {
                 case "bam":
                     List<QueryResult> bamResults = new ArrayList<>();
                     for (String region : regions) {
