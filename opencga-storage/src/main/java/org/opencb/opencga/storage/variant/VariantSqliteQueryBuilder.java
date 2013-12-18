@@ -13,30 +13,120 @@ import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
+import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.storage.indices.SqliteManager;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created with IntelliJ IDEA.
- * User: aaleman
- * Date: 10/30/13
- * Time: 12:14 PM
- * To change this template use File | Settings | File Templates.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
+
+    private SqliteCredentials sqliteCredentials;
+    private SqliteManager sqliteManager;
 
     public VariantSqliteQueryBuilder() {
         System.out.println("Variant Query Maker");
     }
 
+    public VariantSqliteQueryBuilder(SqliteCredentials sqliteCredentials) {
+        System.out.println("Variant Query Maker");
+        this.sqliteCredentials = sqliteCredentials;
+        this.sqliteManager = new SqliteManager();
+    }
+
     @Override
     public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
         return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult<ObjectMap> getVariantsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax) {
+        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d",
+                region.getChromosome(), region.getStart(), region.getEnd())); // TODO Fill metadata
+        List<ObjectMap> data = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
+
+        Path metaDir = getMetaDir(sqliteCredentials.getPath());
+        String fileName = sqliteCredentials.getPath().getFileName().toString();
+
+        try {
+            long startDbTime = System.currentTimeMillis();
+            sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
+            System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
+            String queryString = "SELECT * FROM chunk WHERE chromosome='" + region.getChromosome() +
+                    "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
+            List<XObject> queryResults = sqliteManager.query(queryString);
+            sqliteManager.disconnect(true);
+            queryResult.setDbTime(System.currentTimeMillis() - startDbTime);
+
+            int resultSize = queryResults.size();
+
+            if (resultSize > histogramMax) { // Need to group results to fit maximum size of the histogram
+                int sumChunkSize = resultSize / histogramMax;
+                int i = 0, j = 0;
+                int featuresCount = 0;
+                ObjectMap item = null;
+
+                for (XObject result : queryResults) {
+                    featuresCount += result.getInt("features_count");
+                    if (i == 0) {
+                        item = new ObjectMap("chromosome", result.getString("chromosome"));
+                        item.put("chunkId", result.getInt("chunk_id"));
+                        item.put("start", result.getInt("start"));
+                    } else if (i == sumChunkSize - 1 || j == resultSize - 1) {
+                        if (histogramLogarithm) {
+                            item.put("featuresCount", (featuresCount > 0) ? Math.log(featuresCount) : 0);
+                        } else {
+                            item.put("featuresCount", featuresCount);
+                        }
+                        item.put("end", result.getInt("end"));
+                        data.add(item);
+                        i = -1;
+                        featuresCount = 0;
+                    }
+                    j++;
+                    i++;
+                }
+            } else {
+                for (XObject result : queryResults) {
+                    ObjectMap item = new ObjectMap("chromosome", result.getString("chromosome"));
+                    item.put("chunkId", result.getInt("chunk_id"));
+                    item.put("start", result.getInt("start"));
+                    if (histogramLogarithm) {
+                        int features_count = result.getInt("features_count");
+                        result.put("featuresCount", (features_count > 0) ? Math.log(features_count) : 0);
+                    } else {
+                        item.put("featuresCount", result.getInt("features_count"));
+                    }
+                    item.put("end", result.getInt("end"));
+                    data.add(item);
+                }
+            }
+        } catch (ClassNotFoundException | SQLException ex ) {
+            Logger.getLogger(VariantSqliteQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            queryResult.setErrorMsg(ex.getMessage());
+        }
+
+        queryResult.setResult(data);
+        queryResult.setNumResults(data.size());
+        queryResult.setTime(System.currentTimeMillis() - startTime);
+
+        return queryResult;
     }
 
     @Override
@@ -717,7 +807,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private String processGeneList(String genes) {
-
         System.out.println("genes = " + genes);
         List<String> list = new ArrayList<>();
 
@@ -800,7 +889,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private String processConseqType(String conseqType) {
-
         List<String> clauses = new ArrayList<>(10);
 
         String[] cts = conseqType.split(",");
@@ -819,7 +907,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private boolean filterGenotypes(VariantInfo variantInfo, int numSamples) {
-
         if (variantInfo.getSampleGenotypes().size() != numSamples) {
             return false;
         } else {
@@ -830,11 +917,8 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private Map<String, List<String>> processSamplesGT(Map<String, String> options) {
-
-
         Map<String, List<String>> samplesGenotypes = new LinkedHashMap<>(10);
         List<String> genotypesList;
-
 
         String key, val;
         for (Map.Entry<String, String> entry : options.entrySet()) {
@@ -866,7 +950,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private void processSamplesGT(Map<String, String> options, List<String> whereClauses) {
-
         String key, val;
 
         List<String> auxClauses = new ArrayList<>();
@@ -908,6 +991,16 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
         }
 
     }
+
+    /* ******************************************
+     *          Path and index checking         *
+     * ******************************************/
+
+    private Path getMetaDir(Path file) {
+        String inputName = file.getFileName().toString();
+        return file.getParent().resolve(".meta_" + inputName);
+    }
+
 
 
 }

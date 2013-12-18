@@ -25,11 +25,13 @@ public interface VariantQueryBuilder {
 
 //    QueryResult getAllVariantsByRegionList(List<Region> region, QueryOptions options);
 
+    QueryResult getVariantsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
+
+
 
     QueryResult getStatsByVariant(Variant variant, QueryOptions options);
 
 //    QueryResult getStatsByVariantList(List<Variant> variant, QueryOptions options);
-
 
     QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options);
 

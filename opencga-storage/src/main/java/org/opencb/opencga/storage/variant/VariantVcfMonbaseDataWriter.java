@@ -1,12 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -16,10 +10,17 @@ import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.bioformats.feature.Genotype;
 import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -27,6 +28,8 @@ import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
  */
 public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
+    private final byte[] infoColumnFamily = "i".getBytes();
+    private final byte[] dataColumnFamily = "d".getBytes();
     private String tableName;
     private String study;
     private HBaseAdmin admin;
@@ -34,8 +37,6 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private HTable effectTable;
     private Map<String, Put> putMap;
     private Map<String, Put> effectPutMap;
-    private final byte[] info_cf = "i".getBytes();
-    private final byte[] data_cf = "d".getBytes();
     private MongoClient mongoClient;
     private DB db;
     private DBCollection studyCollection;
@@ -79,11 +80,11 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             if (!admin.tableExists(tableName)) {
                 HTableDescriptor newTable = new HTableDescriptor(tableName.getBytes());
                 // Add column family for samples
-                HColumnDescriptor samplesDescriptor = new HColumnDescriptor(data_cf);
+                HColumnDescriptor samplesDescriptor = new HColumnDescriptor(dataColumnFamily);
                 samplesDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
                 newTable.addFamily(samplesDescriptor);
                 // Add column family for statistics
-                HColumnDescriptor statsDescriptor = new HColumnDescriptor(info_cf);
+                HColumnDescriptor statsDescriptor = new HColumnDescriptor(infoColumnFamily);
                 statsDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
                 newTable.addFamily(statsDescriptor);
                 // Create table
@@ -107,7 +108,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             // Mongo collection creation
             studyCollection = db.getCollection("study");
             variantCollection = db.getCollection("variants");
-            
+
             return variantTable != null && studyCollection != null && effectTable != null;
         } catch (IOException e) {
             e.printStackTrace();
@@ -131,11 +132,11 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             byte[] qualdata = (study + "_data").getBytes();
             if (putMap.get(rowkey) != null) {
                 auxPut = putMap.get(rowkey);
-                auxPut.add(info_cf, qualdata, info.toByteArray());
+                auxPut.add(infoColumnFamily, qualdata, info.toByteArray());
                 putMap.put(rowkey, auxPut);
             } else {
                 auxPut = new Put(rowkey.getBytes());
-                auxPut.add(info_cf, qualdata, info.toByteArray());
+                auxPut.add(infoColumnFamily, qualdata, info.toByteArray());
                 putMap.put(rowkey, auxPut);
             }
 
@@ -146,11 +147,11 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 byte[] qual = (study + "_" + s).getBytes();
                 if (putMap.get(rowkey) != null) {
                     auxPut = putMap.get(rowkey);
-                    auxPut.add(data_cf, qual, sample.toByteArray());
+                    auxPut.add(dataColumnFamily, qual, sample.toByteArray());
                     putMap.put(rowkey, auxPut);
                 } else {
                     auxPut = new Put(rowkey.getBytes());
-                    auxPut.add(data_cf, qual, sample.toByteArray());
+                    auxPut.add(dataColumnFamily, qual, sample.toByteArray());
                     putMap.put(rowkey, auxPut);
                 }
             }
@@ -169,20 +170,20 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
             byte[] qual = (study + "_stats").getBytes();
             put2 = new Put(Bytes.toBytes(rowkey));
-            put2.add(info_cf, qual, stats.toByteArray());
+            put2.add(infoColumnFamily, qual, stats.toByteArray());
             putMap.put(rowkey, put2);
             ArrayList<BasicDBObject> genotypes = new ArrayList<>();
-            for(Genotype g : v.getGenotypes()){
+            for (Genotype g : v.getGenotypes()) {
                 BasicDBObject genotype = new BasicDBObject();
                 String count = g.getAllele1() + "/" + g.getAllele2();
                 genotype.append(count, g.getCount());
                 genotypes.add(genotype);
             }
-            BasicDBObject mongoStats = new BasicDBObject("MAF", v.getMaf()).append("allele_maf",v.getMafAllele()).append("missing", v.getMissingGenotypes()).append("genotype_count", genotypes);
+            BasicDBObject mongoStats = new BasicDBObject("MAF", v.getMaf()).append("allele_maf", v.getMafAllele()).append("missing", v.getMissingGenotypes()).append("genotype_count", genotypes);
             BasicDBObject currentStudy = new BasicDBObject("_id", study).append("ref", v.getRefAlleles()).append("alt", v.getAltAlleles())
                     .append("stats", mongoStats);
             BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", currentStudy));
-            BasicDBObject compare = new BasicDBObject("_id",rowkey);
+            BasicDBObject compare = new BasicDBObject("_id", rowkey);
             WriteResult wr = variantCollection.update(compare, mongoVariant, true, false);
         }
 
@@ -213,7 +214,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean writeVariantEffect(List<VariantEffect> list) {
-        for(VariantEffect v : list){
+        for (VariantEffect v : list) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             Put put2 = new Put(Bytes.toBytes(rowkey));
             VariantEffectProtos.EffectInfo effect = buildEffectProto(v);
@@ -236,21 +237,21 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 .add("description", study.getDescription())
                 .add("sources", study.getSources());
 
-       VariantGlobalStats global = study.getStats();
-       DBObject globalStats = new BasicDBObjectBuilder()
-               .add("samples_count", global.getSamplesCount())
-               .add("variants_count", global.getVariantsCount())
-               .add("snp_count", global.getSnpsCount())
-               .add("indel_count", global.getIndelsCount())
-               .add("pass_count", global.getPassCount())
-               .add("transitions_count", global.getTransitionsCount())
-               .add("transversions_count", global.getTransversionsCount())
-               .add("biallelics_count", global.getBiallelicsCount())
-               .add("multiallelics_count", global.getMultiallelicsCount())
-               .add("accumulative_qualitiy", global.getAccumQuality()).get();
+        VariantGlobalStats global = study.getStats();
+        DBObject globalStats = new BasicDBObjectBuilder()
+                .add("samples_count", global.getSamplesCount())
+                .add("variants_count", global.getVariantsCount())
+                .add("snp_count", global.getSnpsCount())
+                .add("indel_count", global.getIndelsCount())
+                .add("pass_count", global.getPassCount())
+                .add("transitions_count", global.getTransitionsCount())
+                .add("transversions_count", global.getTransversionsCount())
+                .add("biallelics_count", global.getBiallelicsCount())
+                .add("multiallelics_count", global.getMultiallelicsCount())
+                .add("accumulative_qualitiy", global.getAccumQuality()).get();
         studyMongo.add("global_stats", globalStats);
 
-       Map<String,String> meta = study.getMetadata();
+        Map<String, String> meta = study.getMetadata();
 
         DBObject metadataMongo = new BasicDBObjectBuilder()
                 .add("header", meta.get("variant_file_header"))
@@ -289,34 +290,33 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private VariantFieldsProtos.VariantInfo buildInfoProto(VcfRecord v) {
         String[] format = parseFormat(v.getFormat());
         String[] filter = parseFilter(v.getFilter());
-        String[] infor = parseInfo(v.getInfo());
+        String[] info = parseInfo(v.getInfo());
         String[] alternate = parseAlternate(v.getAlternate());
-        VariantFieldsProtos.VariantInfo.Builder info = VariantFieldsProtos.VariantInfo.newBuilder();
-        info.setQuality(v.getQuality());
-        info.setReference(v.getReference());
+        VariantFieldsProtos.VariantInfo.Builder infoBuilder = VariantFieldsProtos.VariantInfo.newBuilder();
+        infoBuilder.setQuality(v.getQuality());
+        infoBuilder.setReference(v.getReference());
         if (format != null) {
             for (String s : format) {
-                info.addFormat(s);
+                infoBuilder.addFormat(s);
             }
         }
         if (alternate != null) {
             for (String s : alternate) {
-                info.addAlternate(s);
+                infoBuilder.addAlternate(s);
             }
         }
         if (filter != null) {
             for (String s : filter) {
-                info.addFilters(s);
+                infoBuilder.addFilters(s);
             }
         }
-        if (infor != null) {
-            for (String s : infor) {
-                info.addInfo(s);
+        if (info != null) {
+            for (String s : info) {
+                infoBuilder.addInfo(s);
             }
         }
-        return info.build();
+        return infoBuilder.build();
     }
-
 
     private VariantFieldsProtos.VariantStats buildStatsProto(VariantStats v) {
         VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
@@ -348,7 +348,6 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         //stats.setHardyWeinberg(v.getHw().getpValue());
         return stats.build();
     }
-
 
     private VariantEffectProtos.EffectInfo buildEffectProto(VariantEffect v) {
         VariantEffectProtos.EffectInfo.Builder effect = VariantEffectProtos.EffectInfo.newBuilder();
@@ -397,19 +396,19 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     private String buildRowkey(String chromosome, String position) {
-          if(chromosome.length()>2){
-            if(chromosome.substring(0,2).equals("chr")){
+        if (chromosome.length() > 2) {
+            if (chromosome.substring(0, 2).equals("chr")) {
                 chromosome = chromosome.substring(2);
             }
-          }
-            if (chromosome.length() < 2) {
-                chromosome = "0" + chromosome;
+        }
+        if (chromosome.length() < 2) {
+            chromosome = "0" + chromosome;
+        }
+        if (position.length() < 10) {
+            while (position.length() < 10) {
+                position = "0" + position;
             }
-            if (position.length() < 10) {
-                while (position.length() < 10) {
-                    position = "0" + position;
-                }
-            }
+        }
         return chromosome + "_" + position;
     }
 
