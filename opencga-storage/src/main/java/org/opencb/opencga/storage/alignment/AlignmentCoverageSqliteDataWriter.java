@@ -1,8 +1,8 @@
 package org.opencb.opencga.storage.alignment;
 
-import org.opencb.commons.bioformats.alignment.AlignmentCoverage;
+import org.opencb.commons.bioformats.alignment.stats.AlignmentCoverage;
 import org.opencb.commons.bioformats.alignment.io.writers.coverage.AlignmentCoverageDataWriter;
-import org.opencb.commons.bioformats.commons.SqliteSingletonConnection;
+import org.opencb.commons.db.SqliteSingletonConnection;
 
 import java.lang.Override;
 import java.sql.PreparedStatement;
