@@ -14,6 +14,7 @@ import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.*;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -32,21 +33,36 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private final byte[] dataColumnFamily = "d".getBytes();
     private String tableName;
     private String study;
+
     private HBaseAdmin admin;
     private HTable variantTable;
     private HTable effectTable;
     private Map<String, Put> putMap;
     private Map<String, Put> effectPutMap;
+
     private MongoClient mongoClient;
     private DB db;
     private DBCollection studyCollection;
     private DBCollection variantCollection;
 
-    public VariantVcfMonbaseDataWriter(String tableName, String study) {
-        this.tableName = tableName;
+    private MonbaseCredentials credentials;
+
+//    public VariantVcfMonbaseDataWriter(String tableName, String study) {
+//        this.tableName = tableName;
+//        this.study = study;
+//        this.putMap = new HashMap<>();
+//        this.effectPutMap = new HashMap<>();
+//    }
+
+    public VariantVcfMonbaseDataWriter(String study, String species, MonbaseCredentials credentials) {
+        if (credentials == null) {
+            throw new IllegalArgumentException("Credentials for accessing the database must be specified");
+        }
         this.study = study;
+        this.tableName = species;
         this.putMap = new HashMap<>();
         this.effectPutMap = new HashMap<>();
+        this.credentials = credentials;
     }
 
     @Override
@@ -54,14 +70,19 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         try {
             // HBase configuration
             Configuration config = HBaseConfiguration.create();
-            config.set("hbase.master", "172.24.79.30:60010");
-            config.set("hbase.zookeeper.quorum", "172.24.79.30");
-            config.set("hbase.zookeeper.property.clientPort", "2181");
+            config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
+            config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
+            config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+//            config.set("hbase.master", "172.24.79.30:60010");
+//            config.set("hbase.zookeeper.quorum", "172.24.79.30");
+//            config.set("hbase.zookeeper.property.clientPort", "2181");
             admin = new HBaseAdmin(config);
 
             // Mongo configuration
-            mongoClient = new MongoClient("localhost");
-            db = mongoClient.getDB(tableName);
+            mongoClient = new MongoClient(credentials.getMongoHost());
+            db = mongoClient.getDB(credentials.getMongoDbName());
+//            mongoClient = new MongoClient("localhost");
+//            db = mongoClient.getDB(tableName);
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -76,14 +97,14 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     @Override
     public boolean pre() {
         try {
-            // HBase variant table creation
+            // HBase variant table creation (one per species)
             if (!admin.tableExists(tableName)) {
                 HTableDescriptor newTable = new HTableDescriptor(tableName.getBytes());
                 // Add column family for samples
                 HColumnDescriptor samplesDescriptor = new HColumnDescriptor(dataColumnFamily);
                 samplesDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
                 newTable.addFamily(samplesDescriptor);
-                // Add column family for statistics
+                // Add column family for the raw main columns and statistics
                 HColumnDescriptor statsDescriptor = new HColumnDescriptor(infoColumnFamily);
                 statsDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
                 newTable.addFamily(statsDescriptor);
@@ -92,7 +113,8 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             }
             variantTable = new HTable(admin.getConfiguration(), tableName);
             variantTable.setAutoFlush(false, true);
-            // HBase effect table creation
+
+            // HBase effect table creation (one per species)
             String tableEffectName = tableName + "effect";
             if (!admin.tableExists(tableEffectName)) {
                 HTableDescriptor newEffectTable = new HTableDescriptor(tableEffectName.getBytes());
@@ -105,8 +127,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             }
             effectTable = new HTable(admin.getConfiguration(), tableEffectName);
             effectTable.setAutoFlush(false, true);
+
             // Mongo collection creation
-            studyCollection = db.getCollection("study");
+            studyCollection = db.getCollection("studies");
             variantCollection = db.getCollection("variants");
 
             return variantTable != null && studyCollection != null && effectTable != null;
@@ -164,14 +187,15 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean writeVariantStats(List<VariantStats> data) {
-        Put put2;
         for (VariantStats v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
-            byte[] qual = (study + "_stats").getBytes();
-            put2 = new Put(Bytes.toBytes(rowkey));
-            put2.add(infoColumnFamily, qual, stats.toByteArray());
+            byte[] qualifier = (study + "_stats").getBytes();
+            Put put2 = new Put(Bytes.toBytes(rowkey));
+            put2.add(infoColumnFamily, qualifier, stats.toByteArray());
             putMap.put(rowkey, put2);
+
+            // Generate genotype counts
             ArrayList<BasicDBObject> genotypes = new ArrayList<>();
             for (Genotype g : v.getGenotypes()) {
                 BasicDBObject genotype = new BasicDBObject();
@@ -179,7 +203,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 genotype.append(count, g.getCount());
                 genotypes.add(genotype);
             }
-            BasicDBObject mongoStats = new BasicDBObject("MAF", v.getMaf()).append("allele_maf", v.getMafAllele()).append("missing", v.getMissingGenotypes()).append("genotype_count", genotypes);
+
+            // Save results in Mongo
+            BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append("missing", v.getMissingGenotypes()).append("genotypeCount", genotypes);
             BasicDBObject currentStudy = new BasicDBObject("_id", study).append("ref", v.getRefAlleles()).append("alt", v.getAltAlleles())
                     .append("stats", mongoStats);
             BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", currentStudy));
@@ -187,8 +213,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             WriteResult wr = variantCollection.update(compare, mongoVariant, true, false);
         }
 
-        // Insert to Hbase
+        // Save results in HBase
         save(putMap.values(), variantTable, putMap);
+
         return true;
     }
 
@@ -239,34 +266,39 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
         VariantGlobalStats global = study.getStats();
         DBObject globalStats = new BasicDBObjectBuilder()
-                .add("samples_count", global.getSamplesCount())
-                .add("variants_count", global.getVariantsCount())
-                .add("snp_count", global.getSnpsCount())
-                .add("indel_count", global.getIndelsCount())
-                .add("pass_count", global.getPassCount())
-                .add("transitions_count", global.getTransitionsCount())
-                .add("transversions_count", global.getTransversionsCount())
-                .add("biallelics_count", global.getBiallelicsCount())
-                .add("multiallelics_count", global.getMultiallelicsCount())
-                .add("accumulative_qualitiy", global.getAccumQuality()).get();
-        studyMongo.add("global_stats", globalStats);
+                .add("samplesCount", global.getSamplesCount())
+                .add("variantsCount", global.getVariantsCount())
+                .add("snpCount", global.getSnpsCount())
+                .add("indelCount", global.getIndelsCount())
+                .add("passCount", global.getPassCount())
+                .add("transitionsCount", global.getTransitionsCount())
+                .add("transversionsCount", global.getTransversionsCount())
+                .add("biallelicsCount", global.getBiallelicsCount())
+                .add("multiallelicsCount", global.getMultiallelicsCount())
+                .add("accumulativeQuality", global.getAccumQuality()).get();
+        studyMongo.add("globalStats", globalStats);
 
         Map<String, String> meta = study.getMetadata();
 
         DBObject metadataMongo = new BasicDBObjectBuilder()
-                .add("header", meta.get("variant_file_header"))
+                .add("header", meta.get("variantFileHeader"))
                 .get();
         studyMongo.add("metadata", metadataMongo);
 
-        DBObject compare = new BasicDBObject("_id", study.getName());
-
         DBObject st = studyMongo.get();
         WriteResult wr = studyCollection.update(st, st, true, false);
-        return true; // TODO Set proper return statement
+        return wr.getLastError() == null; // TODO Is this a proper return statement?
     }
 
     @Override
     public boolean post() {
+        try {
+            variantTable.flushCommits();
+            effectTable.flushCommits();
+        } catch (IOException ex) {
+            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
         return false;
     }
 
@@ -278,8 +310,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             effectTable.close();
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, e);
             return false;
         }
     }
