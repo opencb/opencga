@@ -11,12 +11,12 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.mapreduce.RowCounter;
 import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
@@ -105,7 +105,7 @@ public class VariantVcfMonbaseDataWriterTest {
         assertEquals("rec1 alternate must be T", rec1.getAlternate(), StringUtils.join(protoInfo.getAlternateList(), ","));
         assertEquals("rec1 format must be GT:DP", rec1.getFormat(), StringUtils.join(protoInfo.getFormatList(), ":"));
 
-        // Set samples if requested
+        // Get samples
         NavigableMap<byte[], byte[]> sampleMap = result1.getFamilyMap("d".getBytes());
         
         for (Map.Entry<byte[], byte[]> entry : sampleMap.entrySet()) {
@@ -131,7 +131,7 @@ public class VariantVcfMonbaseDataWriterTest {
         assertEquals("rec4 alternate must be T", rec4.getAlternate(), StringUtils.join(protoInfo.getAlternateList(), ","));
         assertEquals("rec4 format must be GT:DP", rec4.getFormat(), StringUtils.join(protoInfo.getFormatList(), ":"));
 
-        // Set samples if requested
+        // Get samples
         sampleMap = result4.getFamilyMap("d".getBytes());
         
         for (Map.Entry<byte[], byte[]> entry : sampleMap.entrySet()) {
@@ -156,8 +156,31 @@ public class VariantVcfMonbaseDataWriterTest {
     }
 
     @Test
-    public void testWriteVariantEffect() {
-
+    public void testWriteVariantEffect() throws IOException, InterruptedException, ClassNotFoundException {
+        VariantEffect eff1 = new VariantEffect("1", 724949, "A", "T", "", "RP11-206L10.6",
+                "intron", "processed_transcript", "1", 714473, 739298, "1", "", "", "",
+                "ENSG00000237491", "ENST00000429505", "RP11-206L10.6", "SO:0001627",
+                "intron_variant", "In intron", "feature", -1, "", "");
+        VariantEffect eff2 = new VariantEffect("1", 724949, "A", "T", "ENST00000358533", "AL669831.1",
+                "downstream", "protein_coding", "1", 722513, 727513, "1", "", "", "",
+                "ENSG00000197049", "ENST00000358533", "AL669831.1", "SO:0001633",
+                "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
+        VariantEffect eff3 = new VariantEffect("1", 724950, "C", "A", "ENST00000434264", "RP11-206L10.7",
+                "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
+                "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
+                "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
+        List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
+        
+        writer.writeVariantEffect(effects);
+        writer.post();
+        
+        // Query number of inserted records
+        Job job = RowCounter.createSubmittableJob(config, new String[] { tableName + "effect" } );
+        job.waitForCompletion(true);
+        assertTrue(job.isSuccessful());
+        // How to count in HBase test suite: http://searchcode.com/codesearch/view/25291904
+        Counter counter = job.getCounters().findCounter("org.apache.hadoop.hbase.mapreduce.RowCounter$RowCounterMapper$Counters", "ROWS");
+        assertEquals("The number of inserted effects is incorrect", 3, counter.getValue());
     }
 
     @Test

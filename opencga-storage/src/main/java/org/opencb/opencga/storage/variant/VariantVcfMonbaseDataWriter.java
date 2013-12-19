@@ -73,16 +73,11 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
             config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-//            config.set("hbase.master", "172.24.79.30:60010");
-//            config.set("hbase.zookeeper.quorum", "172.24.79.30");
-//            config.set("hbase.zookeeper.property.clientPort", "2181");
             admin = new HBaseAdmin(config);
 
             // Mongo configuration
             mongoClient = new MongoClient(credentials.getMongoHost());
             db = mongoClient.getDB(credentials.getMongoDbName());
-//            mongoClient = new MongoClient("localhost");
-//            db = mongoClient.getDB(tableName);
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -182,6 +177,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
         // Insert into the database
         save(putMap.values(), variantTable, putMap);
+        // TODO Insert in Mongo (it is in writeVariantStats)
         return true;
     }
 
@@ -243,14 +239,16 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     public boolean writeVariantEffect(List<VariantEffect> list) {
         for (VariantEffect v : list) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            Put put2 = new Put(Bytes.toBytes(rowkey));
-            VariantEffectProtos.EffectInfo effect = buildEffectProto(v);
+            VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
             String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
-            put2.add("e".getBytes(), qualifier.getBytes(), effect.toByteArray());
-            effectPutMap.put(rowkey, put2);
+            Put effectPut = new Put(Bytes.toBytes(rowkey));
+            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
+            effectPutMap.put(rowkey, effectPut);
         }
-        //insert into database
+        // Insert in HBase
         save(effectPutMap.values(), effectTable, effectPutMap);
+        // TODO Insert in Mongo
+        
         return true;
     }
 
@@ -297,9 +295,10 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             effectTable.flushCommits();
         } catch (IOException ex) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
         }
         
-        return false;
+        return true;
     }
 
     @Override
@@ -308,11 +307,12 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             admin.close();
             variantTable.close();
             effectTable.close();
-            return true;
         } catch (IOException e) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, e);
             return false;
         }
+        
+        return true;
     }
 
     /*
