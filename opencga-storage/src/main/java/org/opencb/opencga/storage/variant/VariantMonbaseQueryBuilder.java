@@ -17,6 +17,7 @@ import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -41,6 +42,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     private DB database;
     private Variant partialResult;
 
+    private MonbaseCredentials monbaseCredentials;
+
     public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
 
 
@@ -63,24 +66,23 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         }
     }
 
+    public VariantMonbaseQueryBuilder(MonbaseCredentials monbaseCredentials) {
+         this.monbaseCredentials = monbaseCredentials;
+    }
+
     @Override
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
+    public QueryResult<Variant> getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
         QueryResult<Variant> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
 
-        String study = null;
-        if (options.containsKey("study")) {
-            study = (String) options.get("study");
-        }
-
-        List<Variant> res = getRegionHBase(region.getChromosome(), region.getStart(), region.getEnd(), study);
+        List<Variant> res = getRegionHBase(region.getChromosome(), region.getStart(), region.getEnd(), studyName);
         queryResult.setResult(res);
         queryResult.setNumResults(res.size());
         return queryResult;
     }
 
     @Override
-    public QueryResult getVariantsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax) {
+    public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
@@ -94,6 +96,96 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
+    @Override
+    public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    private List<Variant> buildVariantByRegion(String startChr, long startPosition, long stopPosition, String study, QueryOptions options) {
+        List<Variant> results = new ArrayList<>();
+        boolean includeSamples = options.containsKey("samples") && options.getBoolean("samples");
+        boolean includeStats = options.containsKey("stats") && options.getBoolean("stats");
+        boolean includeEffects = options.containsKey("effects") &&  options.getBoolean("effects");
+
+        try {
+            String startRow = buildRowkey(startChr, Long.toString(startPosition));
+            String stopRow = buildRowkey(startChr, Long.toString(stopPosition));
+            HTable table = new HTable(admin.getConfiguration(), tableName);
+            Scan regionScan = new Scan(startRow.getBytes(), stopRow.getBytes());
+
+            // Iterate over variants and, optionally, their samples and statistics
+            for (Result result : table.getScanner(regionScan)) {
+                String[] rowkeyParts = new String(result.getRow(), CHARSET_UTF_8).split("_");
+                String chromosome = rowkeyParts[0];
+                int position = Integer.parseInt(rowkeyParts[1]);
+                // TODO Reimplement chromosome padding
+                if (chromosome.startsWith("0")) {
+                    chromosome = chromosome.substring(1);
+                }
+
+                // Get basic variant fields from Protocol Buffers message
+                NavigableMap<byte[], byte[]> infoMap = result.getFamilyMap("i".getBytes());
+                byte[] byteInfo = infoMap.get((study + "_data").getBytes());
+                VariantFieldsProtos.VariantInfo protoInfo = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
+                String reference = protoInfo.getReference();
+                String alternate = StringUtils.join(protoInfo.getAlternateList(), ",");
+                String format = StringUtils.join(protoInfo.getFormatList(), ":");
+                Variant variant = new Variant(chromosome, position, reference, alternate);
+
+                // Set samples if requested
+                if (includeSamples) {
+                    NavigableMap<byte[], byte[]> sampleMap = result.getFamilyMap("d".getBytes());
+                    Map<String, Map<String, String>> resultSampleMap = new HashMap<>();
+
+                    // Set samples?
+                    for (byte[] s : sampleMap.keySet()) {
+                        String sampleName = (new String(s, CHARSET_UTF_8)).replaceAll(study + "_", "");
+                        VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
+                        String sample1 = sample.getSample();
+                        String[] values = sample1.split(":");
+                        String[] fields = format.split(":");
+                        Map<String, String> singleSampleMap = new HashMap<>();
+                        for (int i = 0; i < fields.length; i++) {
+                            singleSampleMap.put(fields[i], values[i]);
+                        }
+                        resultSampleMap.put(sampleName, singleSampleMap);
+
+                    }
+                }
+
+                // Set stats if requested
+                if (includeStats) {
+                    byte[] byteStats = infoMap.get((study + "_stats").getBytes());
+                    VariantFieldsProtos.VariantStats protoStats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
+                    VariantStats variantStats = new VariantStats(chromosome, position, reference, alternate,
+                            protoStats.getMaf(),
+                            protoStats.getMgf(),
+                            protoStats.getMafAllele(),
+                            protoStats.getMgfGenotype(),
+                            protoStats.getMissingAlleles(),
+                            protoStats.getMissingGenotypes(),
+                            protoStats.getMendelianErrors(),
+                            protoStats.getIsIndel(),
+                            protoStats.getCasesPercentDominant(),
+                            protoStats.getControlsPercentDominant(),
+                            protoStats.getCasesPercentRecessive(),
+                            protoStats.getControlsPercentRecessive());
+                    variant.setStats(variantStats);
+    //                resultsMap.put(new String(result.getRow(), CHARSET_UTF_8), partialResult);
+                }
+
+                if (includeEffects) {
+                    QueryResult<VariantEffect> queryEffects = getEffectsByVariant(variant, options);
+                    variant.setEffect(queryEffects.getResult());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        }
+        return results;
+    }
+
     private List<Variant> getRegionHBase(String startChr, long startPosition, long stopPosition, String study) {
         Map<String, Variant> resultsMap = new HashMap<>();
 
@@ -104,12 +196,10 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
             effectTableName = tableName + "effect";
             HTable effectTable = new HTable(admin.getConfiguration(), effectTableName);
             Scan region = new Scan(startRow.getBytes(), stopRow.getBytes());
-            ResultScanner effectScan = effectTable.getScanner(region);
-            ResultScanner statsScan = table.getScanner(region);
 
             // Iterate over variant and its statistics
-            for (Result r : statsScan) {
-                String position = new String(r.getRow(), CHARSET_UTF_8);
+            for (Result result : table.getScanner(region)) {
+                String position = new String(result.getRow(), CHARSET_UTF_8);
                 String[] aux = position.split("_");
                 String inner_position = aux[1];
                 String chr = aux[0];
@@ -121,7 +211,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                     inner_position = inner_position.substring(1);
                 }
                 List<VariantFieldsProtos.VariantSample> samples = new LinkedList<>();
-                NavigableMap<byte[], byte[]> infoMap = r.getFamilyMap("i".getBytes());
+                NavigableMap<byte[], byte[]> infoMap = result.getFamilyMap("i".getBytes());
                 byte[] byteStats = infoMap.get((study + "_stats").getBytes());
                 VariantFieldsProtos.VariantStats stats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
                 byte[] byteInfo = infoMap.get((study + "_data").getBytes());
@@ -130,9 +220,10 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                 String reference = info.getReference();
                 partialResult = new Variant(chr, Integer.parseInt(inner_position), reference, alternate);
                 String format = StringUtils.join(info.getFormatList(), ":");
-                NavigableMap<byte[], byte[]> sampleMap = r.getFamilyMap("d".getBytes());
+                NavigableMap<byte[], byte[]> sampleMap = result.getFamilyMap("d".getBytes());
                 Map<String, Map<String, String>> resultSampleMap = new HashMap<>();
 
+                // Set samples?
                 for (byte[] s : sampleMap.keySet()) {
                     String quality = (new String(s, CHARSET_UTF_8)).replaceAll(study + "_", "");
                     VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
@@ -146,6 +237,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                     resultSampleMap.put(quality, singleSampleMap);
 
                 }
+
+                // Set stats
                 VariantStats variantStats = new VariantStats(chr, Integer.parseInt(inner_position), reference, alternate,
                         stats.getMaf(),
                         stats.getMgf(),
@@ -160,11 +253,11 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                         stats.getCasesPercentRecessive(),
                         stats.getControlsPercentRecessive());
                 partialResult.setStats(variantStats);
-                resultsMap.put(new String(r.getRow(), CHARSET_UTF_8), partialResult);
+                resultsMap.put(new String(result.getRow(), CHARSET_UTF_8), partialResult);
             }
 
             // Iterate over variant effects
-            for (Result r : effectScan) {
+            for (Result r : effectTable.getScanner(region)) {
                 if (!r.isEmpty()) {
                     NavigableMap<byte[], byte[]> effectMap = r.getFamilyMap("e".getBytes());
                     partialResult = resultsMap.get(new String(r.getRow(), CHARSET_UTF_8));
@@ -207,6 +300,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                                     effectInfo.getAminoacidChange(),
                                     effectInfo.getCodonChange()
                             );
+                            partialResult.addEffect(variantEffect);
                             resultsMap.put(new String(r.getRow(), CHARSET_UTF_8), partialResult);
                         }
                     }

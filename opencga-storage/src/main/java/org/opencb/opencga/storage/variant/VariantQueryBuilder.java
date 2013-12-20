@@ -21,11 +21,21 @@ import java.util.Map;
  */
 public interface VariantQueryBuilder {
 
-    QueryResult getAllVariantsByRegion(Region region, QueryOptions options);
+    /**
+     * Given a genomic region and a study name, it retrieves a set of variants and, optionally, all the information
+     * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
+     * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
+     *
+     * @param region The region where variants must be searched
+     * @param studyName The name of the study where variants are filed
+     * @param options Optional arguments
+     * @return A QueryResult containing a set of variants and other optional information
+     */
+    QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options);
 
 //    QueryResult getAllVariantsByRegionList(List<Region> region, QueryOptions options);
 
-    QueryResult getVariantsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
+    QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax);
 
 
 
@@ -35,6 +45,8 @@ public interface VariantQueryBuilder {
 
     QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options);
 
+
+    QueryResult getEffectsByVariant(Variant variant, QueryOptions options);
 
 
 //    QueryResult getAllBySample(Sample sample, QueryOptions options);

@@ -49,12 +49,12 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     @Override
-    public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
+    public QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
         return null;  // TODO Implementation needed
     }
 
     @Override
-    public QueryResult<ObjectMap> getVariantsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax) {
+    public QueryResult<ObjectMap> getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
         QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d",
                 region.getChromosome(), region.getStart(), region.getEnd())); // TODO Fill metadata
         List<ObjectMap> data = new ArrayList<>();
@@ -137,6 +137,11 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     @Override
     public QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options) {
         return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
@@ -441,7 +446,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                     vi = new VariantInfo(chr, pos, ref, alt);
                     vs = new VariantStats(chr, pos, ref, alt,
                             rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
-                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
+                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel") == 1, rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                             rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
                     vs.setId(rs.getString("id"));
 
@@ -648,7 +653,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
                 vs = new VariantStats(chr, pos, ref, alt,
                         rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
-                        rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
+                        rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel") == 1, rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                         rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
 
                 list.add(vs);
