@@ -274,16 +274,16 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
             System.out.println("sampleGenotypes = " + sampleGenotypes);
 
             String innerJoinVariantSQL = " left join variant_info on variant.id_variant=variant_info.id_variant ";
-            String innerJoinEffectSQL = " inner join variant_effect on variant_effect.chromosome=variant.chromosome AND variant_effect.position=variant.position AND variant_effect.reference_allele=variant.ref AND variant_effect.alternative_allele = variant.alt ";
+//            String innerJoinEffectSQL = " inner join variant_effect on variant_effect.chromosome=variant.chromosome AND variant_effect.position=variant.position AND variant_effect.reference_allele=variant.ref AND variant_effect.alternative_allele = variant.alt ";
 
 
             sql = "SELECT distinct variant.genes,variant.consequence_types, variant.id_variant, variant_info.key, variant_info.value, sample_info.sample_name, sample_info.allele_1, sample_info.allele_2, variant_stats.chromosome ," +
                     "variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt , variant_stats.id , variant_stats.maf , variant_stats.mgf, " +
                     "variant_stats.allele_maf , variant_stats.genotype_maf , variant_stats.miss_allele , variant_stats.miss_gt , variant_stats.mendel_err ," +
-                    "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive " + //, variant_stats.genotypes  " +
+                    "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive, " +
+                    "variant.polyphen_score, variant.polyphen_effect, variant.sift_score, variant.sift_effect " +
                     " FROM variant_stats " +
                     "inner join variant on variant_stats.chromosome=variant.chromosome AND variant_stats.position=variant.position AND variant_stats.allele_ref=variant.ref AND variant_stats.allele_alt=variant.alt " +
-                    //innerJoinEffectSQL +
                     "inner join sample_info on variant.id_variant=sample_info.id_variant " +
                     innerJoinVariantSQL;
 
@@ -346,6 +346,11 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                     vi.addStats(vs);
                     vi.addGenes(rs.getString("genes"));
                     vi.addConsequenceTypes(rs.getString("consequence_types"));
+                    vi.setPolyphen_score(rs.getDouble("polyphen_score"));
+                    vi.setSift_score(rs.getDouble("sift_score"));
+                    vi.setPolyphen_effect(rs.getInt("polyphen_effect"));
+                    vi.setSift_effect(rs.getInt("sift_effect"));
+
                 }
 
                 if (rs.getString("key") != null && rs.getString("value") != null) {
@@ -601,6 +606,11 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                         rs.getString("snp_id"), rs.getString("ancestral"), rs.getString("alternative"), rs.getString("gene_id"), rs.getString("transcript_id"),
                         rs.getString("gene_name"), rs.getString("consequence_type"), rs.getString("consequence_type_obo"), rs.getString("consequence_type_desc"),
                         rs.getString("consequence_type_type"), rs.getInt("aa_position"), rs.getString("aminoacid_change"), rs.getString("codon_change"));
+
+                ve.setPolyphenEffect(rs.getInt("polyphen_effect"));
+                ve.setSiftEffect(rs.getInt("sift_effect"));
+                ve.setPolyphenScore(rs.getDouble("polyphen_score"));
+                ve.setSiftScore(rs.getDouble("sift_score"));
                 list.add(ve);
 
             }
