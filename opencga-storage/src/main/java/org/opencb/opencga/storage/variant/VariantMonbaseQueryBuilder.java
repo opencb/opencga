@@ -2,6 +2,12 @@ package org.opencb.opencga.storage.variant;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -19,13 +25,6 @@ import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -33,13 +32,12 @@ import java.util.logging.Logger;
 
 
 public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
-    private String study;
-
+    
     private String tableName;
     private String effectTableName;
     private HBaseAdmin admin;
     private MongoClient mongoClient;
-    private DB database;
+    private DB db;
     private Variant partialResult;
 
     private MonbaseCredentials monbaseCredentials;
@@ -47,74 +45,58 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
 
 
-    public VariantMonbaseQueryBuilder(String server, String dbname) {
-        try {
-            mongoClient = new MongoClient(server);
-            database = mongoClient.getDB(dbname);
-            //HBase connection
-            Configuration config = HBaseConfiguration.create();
-            config.set("hbase.master", "172.24.79.30:60010");
-            config.set("hbase.zookeeper.quorum", "172.24.79.30");
-            config.set("hbase.zookeeper.property.clientPort", "2181");
-            admin = new HBaseAdmin(config);
-            tableName = dbname;
+    public VariantMonbaseQueryBuilder(String species, MonbaseCredentials credentials) 
+            throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
+        this.monbaseCredentials = credentials;
+        this.tableName = species;
+        this.effectTableName = species + "effect";
+        
+        // HBase configuration
+        Configuration config = HBaseConfiguration.create();
+        config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
+        config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
+        config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+        admin = new HBaseAdmin(config);
 
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (MasterNotRunningException | ZooKeeperConnectionException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        // Mongo configuration
+        mongoClient = new MongoClient(credentials.getMongoHost());
+        db = mongoClient.getDB(credentials.getMongoDbName());
     }
 
-    public VariantMonbaseQueryBuilder(MonbaseCredentials monbaseCredentials) {
-         this.monbaseCredentials = monbaseCredentials;
-    }
-
+    
     @Override
     public QueryResult<Variant> getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
+        Long start, end, dbstart, dbend;
+        start = System.currentTimeMillis();
         QueryResult<Variant> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
-
-        List<Variant> res = getRegionHBase(region.getChromosome(), region.getStart(), region.getEnd(), studyName);
-        queryResult.setResult(res);
-        queryResult.setNumResults(res.size());
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public QueryResult<VariantStats> getStatsByVariant(Variant variant, QueryOptions options) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public QueryResult<VariantStats> getSimpleStatsByVariant(Variant variant, QueryOptions options) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    private List<Variant> buildVariantByRegion(String startChr, long startPosition, long stopPosition, String study, QueryOptions options) {
-        List<Variant> results = new ArrayList<>();
-        boolean includeSamples = options.containsKey("samples") && options.getBoolean("samples");
-        boolean includeStats = options.containsKey("stats") && options.getBoolean("stats");
-        boolean includeEffects = options.containsKey("effects") &&  options.getBoolean("effects");
+        List<Variant> results =  new LinkedList<>();
+        
+        boolean includeSamples;
+        boolean includeStats;
+        boolean includeEffects;
+        if(!options.containsKey("samples") && !options.containsKey("stats") && !options.containsKey("effects")){
+            includeSamples = true;
+            includeStats = true;
+            includeEffects = true;
+        } else {
+            includeSamples = options.containsKey("samples") && options.getBoolean("samples");
+            includeStats = options.containsKey("stats") && options.getBoolean("stats");
+            includeEffects = options.containsKey("effects") &&  options.getBoolean("effects");
+        }
 
         try {
-            String startRow = buildRowkey(startChr, Long.toString(startPosition));
-            String stopRow = buildRowkey(startChr, Long.toString(stopPosition));
+            String startRow = buildRowkey(region.getChromosome(), Long.toString(region.getStart()));
+            String stopRow = buildRowkey(region.getChromosome(), Long.toString(region.getEnd()));
             HTable table = new HTable(admin.getConfiguration(), tableName);
+            dbstart = System.currentTimeMillis();
             Scan regionScan = new Scan(startRow.getBytes(), stopRow.getBytes());
+            ResultScanner scanres =  table.getScanner(regionScan);
+            dbend = System.currentTimeMillis();
+            queryResult.setDbTime(dbend-dbstart);
 
             // Iterate over variants and, optionally, their samples and statistics
-            for (Result result : table.getScanner(regionScan)) {
+            for (Result result : scanres) {
                 String[] rowkeyParts = new String(result.getRow(), CHARSET_UTF_8).split("_");
                 String chromosome = rowkeyParts[0];
                 int position = Integer.parseInt(rowkeyParts[1]);
@@ -125,7 +107,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
                 // Get basic variant fields from Protocol Buffers message
                 NavigableMap<byte[], byte[]> infoMap = result.getFamilyMap("i".getBytes());
-                byte[] byteInfo = infoMap.get((study + "_data").getBytes());
+                byte[] byteInfo = infoMap.get((studyName + "_data").getBytes());
                 VariantFieldsProtos.VariantInfo protoInfo = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
                 String reference = protoInfo.getReference();
                 String alternate = StringUtils.join(protoInfo.getAlternateList(), ",");
@@ -137,9 +119,9 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                     NavigableMap<byte[], byte[]> sampleMap = result.getFamilyMap("d".getBytes());
                     Map<String, Map<String, String>> resultSampleMap = new HashMap<>();
 
-                    // Set samples?
+                    // Set samples
                     for (byte[] s : sampleMap.keySet()) {
-                        String sampleName = (new String(s, CHARSET_UTF_8)).replaceAll(study + "_", "");
+                        String sampleName = (new String(s, CHARSET_UTF_8)).replaceAll(studyName + "_", "");
                         VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
                         String sample1 = sample.getSample();
                         String[] values = sample1.split(":");
@@ -149,13 +131,14 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                             singleSampleMap.put(fields[i], values[i]);
                         }
                         resultSampleMap.put(sampleName, singleSampleMap);
-
                     }
+                    
+                    variant.setSampleData(resultSampleMap);
                 }
 
                 // Set stats if requested
                 if (includeStats) {
-                    byte[] byteStats = infoMap.get((study + "_stats").getBytes());
+                    byte[] byteStats = infoMap.get((studyName + "_stats").getBytes());
                     VariantFieldsProtos.VariantStats protoStats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
                     VariantStats variantStats = new VariantStats(chromosome, position, reference, alternate,
                             protoStats.getMaf(),
@@ -171,164 +154,76 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                             protoStats.getCasesPercentRecessive(),
                             protoStats.getControlsPercentRecessive());
                     variant.setStats(variantStats);
-    //                resultsMap.put(new String(result.getRow(), CHARSET_UTF_8), partialResult);
                 }
 
                 if (includeEffects) {
                     QueryResult<VariantEffect> queryEffects = getEffectsByVariant(variant, options);
                     variant.setEffect(queryEffects.getResult());
                 }
+                
+                results.add(variant);
             }
         } catch (IOException e) {
-            e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
-        return results;
+        queryResult.setResult(results);
+        queryResult.setNumResults(results.size());
+        end = System.currentTimeMillis();
+        queryResult.setTime(end-start);
+        return queryResult;
     }
 
-    private List<Variant> getRegionHBase(String startChr, long startPosition, long stopPosition, String study) {
-        Map<String, Variant> resultsMap = new HashMap<>();
+    @Override
+    public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 
-        try {
-            String startRow = buildRowkey(startChr, Long.toString(startPosition));
-            String stopRow = buildRowkey(startChr, Long.toString(stopPosition));
-            HTable table = new HTable(admin.getConfiguration(), tableName);
-            effectTableName = tableName + "effect";
-            HTable effectTable = new HTable(admin.getConfiguration(), effectTableName);
-            Scan region = new Scan(startRow.getBytes(), stopRow.getBytes());
+    @Override
+    public QueryResult<VariantStats> getStatsByVariant(Variant variant, QueryOptions options) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 
-            // Iterate over variant and its statistics
-            for (Result result : table.getScanner(region)) {
-                String position = new String(result.getRow(), CHARSET_UTF_8);
-                String[] aux = position.split("_");
-                String inner_position = aux[1];
-                String chr = aux[0];
-                //position parsing
-                if (chr.startsWith("0")) {
-                    chr = chr.substring(1);
-                }
-                while (inner_position.startsWith("0")) {
-                    inner_position = inner_position.substring(1);
-                }
-                List<VariantFieldsProtos.VariantSample> samples = new LinkedList<>();
-                NavigableMap<byte[], byte[]> infoMap = result.getFamilyMap("i".getBytes());
-                byte[] byteStats = infoMap.get((study + "_stats").getBytes());
-                VariantFieldsProtos.VariantStats stats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
-                byte[] byteInfo = infoMap.get((study + "_data").getBytes());
-                VariantFieldsProtos.VariantInfo info = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
-                String alternate = StringUtils.join(info.getAlternateList(), ", ");
-                String reference = info.getReference();
-                partialResult = new Variant(chr, Integer.parseInt(inner_position), reference, alternate);
-                String format = StringUtils.join(info.getFormatList(), ":");
-                NavigableMap<byte[], byte[]> sampleMap = result.getFamilyMap("d".getBytes());
-                Map<String, Map<String, String>> resultSampleMap = new HashMap<>();
+    @Override
+    public QueryResult<VariantStats> getSimpleStatsByVariant(Variant variant, QueryOptions options) {
+        return null;
+    }
 
-                // Set samples?
-                for (byte[] s : sampleMap.keySet()) {
-                    String quality = (new String(s, CHARSET_UTF_8)).replaceAll(study + "_", "");
-                    VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
-                    String sample1 = sample.getSample();
-                    String[] values = sample1.split(":");
-                    String[] fields = format.split(":");
-                    Map<String, String> singleSampleMap = new HashMap<>();
-                    for (int i = 0; i < fields.length; i++) {
-                        singleSampleMap.put(fields[i], values[i]);
-                    }
-                    resultSampleMap.put(quality, singleSampleMap);
+    @Override
+    public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
 
-                }
-
-                // Set stats
-                VariantStats variantStats = new VariantStats(chr, Integer.parseInt(inner_position), reference, alternate,
-                        stats.getMaf(),
-                        stats.getMgf(),
-                        stats.getMafAllele(),
-                        stats.getMgfGenotype(),
-                        stats.getMissingAlleles(),
-                        stats.getMissingGenotypes(),
-                        stats.getMendelianErrors(),
-                        stats.getIsIndel(),
-                        stats.getCasesPercentDominant(),
-                        stats.getControlsPercentDominant(),
-                        stats.getCasesPercentRecessive(),
-                        stats.getControlsPercentRecessive());
-                partialResult.setStats(variantStats);
-                resultsMap.put(new String(result.getRow(), CHARSET_UTF_8), partialResult);
-            }
-
-            // Iterate over variant effects
-            for (Result r : effectTable.getScanner(region)) {
-                if (!r.isEmpty()) {
-                    NavigableMap<byte[], byte[]> effectMap = r.getFamilyMap("e".getBytes());
-                    partialResult = resultsMap.get(new String(r.getRow(), CHARSET_UTF_8));
-                    List<String> alts = new ArrayList<>();
-                    if (partialResult.getAlternate().length() >= 2) {
-                        for (String s : partialResult.getAlternate().split(",")) {
-                            alts.add(s);
-                        }
-                    } else {
-                        alts.add(partialResult.getAlternate());
-                    }
-                    for (String alt : alts) {
-                        String s = partialResult.getReference() + "_" + alt;
-                        if (effectMap.containsKey(s.getBytes())) {
-                            VariantEffectProtos.EffectInfo effectInfo = VariantEffectProtos.EffectInfo.parseFrom(effectMap.get(s.getBytes()));
-                            VariantEffect variantEffect = new VariantEffect(
-                                    partialResult.getChromosome(),
-                                    (int) partialResult.getPosition(),
-                                    partialResult.getReference(),
-                                    partialResult.getAlternate(),
-                                    effectInfo.getFeatureId(),
-                                    effectInfo.getFeatureName(),
-                                    effectInfo.getFeatureType(),
-                                    effectInfo.getFeatureBiotype(),
-                                    effectInfo.getFeatureChromosome(),
-                                    effectInfo.getFeatureStart(),
-                                    effectInfo.getFeatureEnd(),
-                                    effectInfo.getFeatureStrand(),
-                                    effectInfo.getSnpId(),
-                                    effectInfo.getAncestral(),
-                                    effectInfo.getAlternative(),
-                                    effectInfo.getGeneId(),
-                                    effectInfo.getTranscriptId(),
-                                    effectInfo.getGeneName(),
-                                    effectInfo.getConsequenceType(),
-                                    effectInfo.getConsequenceTypeObo(),
-                                    effectInfo.getConsequenceTypeDesc(),
-                                    effectInfo.getConsequenceTypeType(),
-                                    effectInfo.getAaPosition(),
-                                    effectInfo.getAminoacidChange(),
-                                    effectInfo.getCodonChange()
-                            );
-                            partialResult.addEffect(variantEffect);
-                            resultsMap.put(new String(r.getRow(), CHARSET_UTF_8), partialResult);
-                        }
-                    }
-                }
-            }
-        } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+    public QueryResult getSimpleVariantsByRegion(Region region, String studyName, QueryOptions options){
+        Long start, end, dbstart, dbend;
+        start = System.currentTimeMillis();
+        boolean includeSamples;
+        boolean includeStats;
+        boolean includeEffects;
+        if(!options.containsKey("samples") && !options.containsKey("stats") && !options.containsKey("effects")){
+            includeSamples = true;
+            includeStats = true;
+            includeEffects = true;
         }
-        List<Variant> results = new ArrayList<>(resultsMap.values());
-        return results;
-    }
+        else{
+            includeSamples = options.containsKey("samples") && options.getBoolean("samples");
+            includeStats = options.containsKey("stats") && options.getBoolean("stats");
+            includeEffects = options.containsKey("effects") &&  options.getBoolean("effects");
+        }
 
-    public List<Variant> getRegionMongo(String startChr, String stopChr, int startPosition, int stopPosition, String study) {
-        String startRow = buildRowkey(startChr, Integer.toString(startPosition));
-        String stopRow = buildRowkey(stopChr, Integer.toString(stopPosition));
-        BasicDBObject compare = new BasicDBObject("_id", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies._id", study);
-        DBCollection collection = database.getCollection("variants");
-        Iterator<DBObject> result = collection.find(compare, new BasicDBObject("studies.$", 1));
-        List<Variant> results = new ArrayList<>();
-        while (result.hasNext()) {
-            DBObject variant = result.next();
+        QueryResult<Variant> queryResult = new QueryResult<>(String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
+        List<Variant> result = new ArrayList<>();
+        String startRow = buildRowkey(region.getChromosome(), Long.toString(region.getStart()));
+        String stopRow = buildRowkey(region.getChromosome(), Long.toString(region.getEnd()));
+        BasicDBObject compare = new BasicDBObject("_id", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies._id", studyName);
+        DBCollection collection = db.getCollection("variants");
+        dbstart = System.currentTimeMillis();
+        Iterator<DBObject> dbresults = collection.find(compare, new BasicDBObject("studies.$", 1));
+        dbend = System.currentTimeMillis();
+        while (dbresults.hasNext()) {
+            DBObject variant = dbresults.next();
             String position = variant.get("_id").toString();
             String[] pos = position.split("_");
-            String chr = pos[0];
+            String varchr = pos[0];
             String inner_position = pos[1];
             BasicDBList studies = (BasicDBList) variant.get("studies");
             BasicDBObject st = (BasicDBObject) studies.get(0);
@@ -338,38 +233,236 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                 alt.append(s);
             }
             System.out.println(alt);
-            if (chr.startsWith("0")) {
-                chr = chr.substring(1);
+            if (varchr.startsWith("0")) {
+                varchr = varchr.substring(1);
             }
             while (inner_position.startsWith("0")) {
                 inner_position = inner_position.substring(1);
             }
 
-            Variant partial = new Variant(chr, Integer.parseInt(inner_position), ref, alt.toString());
-            VariantStats stats = new VariantStats();
-            BasicDBObject mongoStats = (BasicDBObject) st.get("stats");
-            stats.setMaf((float) (double) mongoStats.get("MAF"));
-            stats.setMafAllele((String) mongoStats.get("allele_maf"));
-            stats.setMissingGenotypes((int) mongoStats.get("missing"));
-            List<org.opencb.commons.bioformats.feature.Genotype> geno = new ArrayList<>();
-            for (BasicDBObject s : (List<BasicDBObject>) mongoStats.get("genotype_count")) {
-                for (String str : s.keySet()) {
-                    Genotype genotype = new Genotype(str);
-                    genotype.setCount((int) s.get(str));
-                    geno.add(genotype);
+            Variant partial = new Variant(varchr, Integer.parseInt(inner_position), ref, alt.toString());
+            if(includeStats){
+                VariantStats stats = new VariantStats();
+                BasicDBObject mongoStats = (BasicDBObject) st.get("stats");
+                stats.setMaf((float) (double) mongoStats.get("MAF"));
+                stats.setMafAllele((String) mongoStats.get("allele_maf"));
+                stats.setMissingGenotypes((int) mongoStats.get("missing"));
+                List<org.opencb.commons.bioformats.feature.Genotype> geno = new ArrayList<>();
+                for (BasicDBObject s : (List<BasicDBObject>) mongoStats.get("genotype_count")) {
+                    for (String str : s.keySet()) {
+                        Genotype genotype = new Genotype(str);
+                        genotype.setCount((int) s.get(str));
+                        geno.add(genotype);
+                    }
                 }
+                stats.setGenotypes(geno);
+                partial.setStats(stats);
             }
-            stats.setGenotypes(geno);
-            partial.setStats(stats);
-            results.add(partial);
+            result.add(partial);
         }
+
+        queryResult.setResult(result);
+        queryResult.setNumResults(result.size());
+        end = System.currentTimeMillis();
+        queryResult.setTime(end-start);
+        return queryResult;
+    }
+
+    private List<Variant> buildVariantByRegion(String startChr, long startPosition, long stopPosition, String study, QueryOptions options) {
+        List<Variant> results = new ArrayList<>();
+        boolean includeSamples = options.containsKey("samples") && options.getBoolean("samples");
+        boolean includeStats = options.containsKey("stats") && options.getBoolean("stats");
+        boolean includeEffects = options.containsKey("effects") &&  options.getBoolean("effects");
+
+
         return results;
     }
+
+//    private List<Variant> getRegionHBase(String startChr, long startPosition, long stopPosition, String study) {
+//        Map<String, Variant> resultsMap = new HashMap<>();
+//
+//        try {
+//            String startRow = buildRowkey(startChr, Long.toString(startPosition));
+//            String stopRow = buildRowkey(startChr, Long.toString(stopPosition));
+//            HTable table = new HTable(admin.getConfiguration(), tableName);
+//            effectTableName = tableName + "effect";
+//            HTable effectTable = new HTable(admin.getConfiguration(), effectTableName);
+//            Scan region = new Scan(startRow.getBytes(), stopRow.getBytes());
+//
+//            // Iterate over variant and its statistics
+//            for (Result result : table.getScanner(region)) {
+//                String position = new String(result.getRow(), CHARSET_UTF_8);
+//                String[] aux = position.split("_");
+//                String inner_position = aux[1];
+//                String chr = aux[0];
+//                //position parsing
+//                if (chr.startsWith("0")) {
+//                    chr = chr.substring(1);
+//                }
+//                while (inner_position.startsWith("0")) {
+//                    inner_position = inner_position.substring(1);
+//                }
+//                List<VariantFieldsProtos.VariantSample> samples = new LinkedList<>();
+//                NavigableMap<byte[], byte[]> infoMap = result.getFamilyMap("i".getBytes());
+//                byte[] byteStats = infoMap.get((study + "_stats").getBytes());
+//                VariantFieldsProtos.VariantStats stats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
+//                byte[] byteInfo = infoMap.get((study + "_data").getBytes());
+//                VariantFieldsProtos.VariantInfo info = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
+//                String alternate = StringUtils.join(info.getAlternateList(), ", ");
+//                String reference = info.getReference();
+//                partialResult = new Variant(chr, Integer.parseInt(inner_position), reference, alternate);
+//                String format = StringUtils.join(info.getFormatList(), ":");
+//                NavigableMap<byte[], byte[]> sampleMap = result.getFamilyMap("d".getBytes());
+//                Map<String, Map<String, String>> resultSampleMap = new HashMap<>();
+//                // Set samples
+//                String[] fields = format.split(":");
+//                for (byte[] s : sampleMap.keySet()) {
+//                    String quality = (new String(s, CHARSET_UTF_8)).replaceAll(study + "_", "");
+//                    VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
+//                    String sample1 = sample.getSample();
+//                    String[] values = sample1.split(":");
+//                    Map<String, String> singleSampleMap = new HashMap<>();
+//                    for (int i = 0; i < fields.length; i++) {
+//                        singleSampleMap.put(fields[i], values[i]);
+//                    }
+//                    resultSampleMap.put(quality, singleSampleMap);
+//
+//                }
+//
+//                // Set stats
+//                VariantStats variantStats = new VariantStats(chr, Integer.parseInt(inner_position), reference, alternate,
+//                        stats.getMaf(),
+//                        stats.getMgf(),
+//                        stats.getMafAllele(),
+//                        stats.getMgfGenotype(),
+//                        stats.getMissingAlleles(),
+//                        stats.getMissingGenotypes(),
+//                        stats.getMendelianErrors(),
+//                        stats.getIsIndel(),
+//                        stats.getCasesPercentDominant(),
+//                        stats.getControlsPercentDominant(),
+//                        stats.getCasesPercentRecessive(),
+//                        stats.getControlsPercentRecessive());
+//                partialResult.setStats(variantStats);
+//                resultsMap.put(new String(result.getRow(), CHARSET_UTF_8), partialResult);
+//            }
+//
+//            // Iterate over variant effects
+//            for (Result r : effectTable.getScanner(region)) {
+//                if (!r.isEmpty()) {
+//                    NavigableMap<byte[], byte[]> effectMap = r.getFamilyMap("e".getBytes());
+//                    partialResult = resultsMap.get(new String(r.getRow(), CHARSET_UTF_8));
+//                    List<String> alts = new ArrayList<>();
+//                    if (partialResult.getAlternate().length() >= 2) {
+//                        for (String s : partialResult.getAlternate().split(",")) {
+//                            alts.add(s);
+//                        }
+//                    } else {
+//                        alts.add(partialResult.getAlternate());
+//                    }
+//                    for (String alt : alts) {
+//                        String s = partialResult.getReference() + "_" + alt;
+//                        if (effectMap.containsKey(s.getBytes())) {
+//                            VariantEffectProtos.EffectInfo effectInfo = VariantEffectProtos.EffectInfo.parseFrom(effectMap.get(s.getBytes()));
+//                            VariantEffect variantEffect = new VariantEffect(
+//                                    partialResult.getChromosome(),
+//                                    (int) partialResult.getPosition(),
+//                                    partialResult.getReference(),
+//                                    partialResult.getAlternate(),
+//                                    effectInfo.getFeatureId(),
+//                                    effectInfo.getFeatureName(),
+//                                    effectInfo.getFeatureType(),
+//                                    effectInfo.getFeatureBiotype(),
+//                                    effectInfo.getFeatureChromosome(),
+//                                    effectInfo.getFeatureStart(),
+//                                    effectInfo.getFeatureEnd(),
+//                                    effectInfo.getFeatureStrand(),
+//                                    effectInfo.getSnpId(),
+//                                    effectInfo.getAncestral(),
+//                                    effectInfo.getAlternative(),
+//                                    effectInfo.getGeneId(),
+//                                    effectInfo.getTranscriptId(),
+//                                    effectInfo.getGeneName(),
+//                                    effectInfo.getConsequenceType(),
+//                                    effectInfo.getConsequenceTypeObo(),
+//                                    effectInfo.getConsequenceTypeDesc(),
+//                                    effectInfo.getConsequenceTypeType(),
+//                                    effectInfo.getAaPosition(),
+//                                    effectInfo.getAminoacidChange(),
+//                                    effectInfo.getCodonChange()
+//                            );
+//                            partialResult.addEffect(variantEffect);
+//                            resultsMap.put(new String(r.getRow(), CHARSET_UTF_8), partialResult);
+//                        }
+//                    }
+//                }
+//            }
+//        } catch (InvalidProtocolBufferException e) {
+//            e.printStackTrace();
+//            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            System.err.println(e.getClass().getName() + ": " + e.getMessage());
+//        }
+//        List<Variant> results = new ArrayList<>(resultsMap.values());
+//        return results;
+//    }
+
+//    public List<Variant> getRegionMongo(String chr, long startPosition, long stopPosition, String study, QueryOptions options) {
+//        String startRow = buildRowkey(chr, Long.toString(startPosition));
+//        String stopRow = buildRowkey(chr, Long.toString(stopPosition));
+//        BasicDBObject compare = new BasicDBObject("_id", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies._id", study);
+//        DBCollection collection = db.getCollection("variants");
+//        Iterator<DBObject> result = collection.find(compare, new BasicDBObject("studies.$", 1));
+//        List<Variant> results = new ArrayList<>();
+//        while (result.hasNext()) {
+//            DBObject variant = result.next();
+//            String position = variant.get("_id").toString();
+//            String[] pos = position.split("_");
+//            String varchr = pos[0];
+//            String inner_position = pos[1];
+//            BasicDBList studies = (BasicDBList) variant.get("studies");
+//            BasicDBObject st = (BasicDBObject) studies.get(0);
+//            String ref = (String) st.get("ref");
+//            StringBuilder alt = new StringBuilder();
+//            for (String s : (ArrayList<String>) st.get("alt")) {
+//                alt.append(s);
+//            }
+//            System.out.println(alt);
+//            if (varchr.startsWith("0")) {
+//                varchr = varchr.substring(1);
+//            }
+//            while (inner_position.startsWith("0")) {
+//                inner_position = inner_position.substring(1);
+//            }
+//
+//            Variant partial = new Variant(varchr, Integer.parseInt(inner_position), ref, alt.toString());
+//            if(includeStats){
+//                VariantStats stats = new VariantStats();
+//                BasicDBObject mongoStats = (BasicDBObject) st.get("stats");
+//                stats.setMaf((float) (double) mongoStats.get("MAF"));
+//                stats.setMafAllele((String) mongoStats.get("allele_maf"));
+//                stats.setMissingGenotypes((int) mongoStats.get("missing"));
+//                List<org.opencb.commons.bioformats.feature.Genotype> geno = new ArrayList<>();
+//                for (BasicDBObject s : (List<BasicDBObject>) mongoStats.get("genotype_count")) {
+//                    for (String str : s.keySet()) {
+//                        Genotype genotype = new Genotype(str);
+//                        genotype.setCount((int) s.get(str));
+//                        geno.add(genotype);
+//                    }
+//                }
+//                stats.setGenotypes(geno);
+//                partial.setStats(stats);
+//            }
+//            results.add(partial);
+//        }
+//        return results;
+//    }
 
     public List<Variant> getRecordSimpleStats(String study, int missing_gt, float maf, String maf_allele) {
         BasicDBObject compare = new BasicDBObject("studies.stats.allele_maf", maf_allele).append("studies.stats.MAF", maf).append("studies.stats.missing", missing_gt);
         List<Get> hbaseQuery = new ArrayList<>();
-        DBCollection collection = database.getCollection("variants");
+        DBCollection collection = db.getCollection("variants");
         Iterator<DBObject> result = collection.find(compare);
         String chromosome = new String();
         while (result.hasNext()) {
@@ -485,10 +578,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                 }
             }
         } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
         }
 
@@ -533,16 +624,4 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         return chromosome + "_" + position;
     }
 
-    //Connect to mongodb
-    private DB mongoConnect(String database) {
-        try {
-            mongoClient = new MongoClient("localhost");
-            DB db = mongoClient.getDB("cgonzalez");
-            return db;
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return null;
-        }
-    }
 }
-
