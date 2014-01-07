@@ -16,6 +16,8 @@ import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantGlobalStats;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
@@ -156,10 +158,10 @@ public class VariantVcfMonbaseDataWriterTest {
         VariantStats stats2 = new VariantStats("1", 200000, "G", "T", 0.05, 0.20, "T", "T/T", 1, 1, 0, true, 0.05, 0.30, 0.30, 0.10);
         List<VariantStats> stats = Arrays.asList(stats1, stats2);
         
-        writer.writeVariantStats(stats);
+        assertTrue(writer.writeVariantStats(stats));
         writer.post();
         
-        // Query stats inserted in HBase
+        // Query studyStats inserted in HBase
         HTable table = new HTable(config, tableName);
         Scan regionScan = new Scan("01_0000100000".getBytes(), "01_0000200001".getBytes());
         ResultScanner variantScanner = table.getScanner(regionScan);
@@ -181,7 +183,7 @@ public class VariantVcfMonbaseDataWriterTest {
         assertArrayEquals(stats2.getAltAlleles(), new String[] { "T" });
         
         
-        // Query stats inserted in Mongo
+        // Query studyStats inserted in Mongo
         MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
         DB db = mongoClient.getDB(credentials.getMongoDbName());
         DBCollection variantsCollection = db.getCollection("variants");
@@ -252,8 +254,37 @@ public class VariantVcfMonbaseDataWriterTest {
     }
 
     @Test
-    public void testWriteStudy() {
-
+    public void testWriteStudy() throws UnknownHostException {
+        VariantStudy study = new VariantStudy(studyName, "s1", "Study created for testing purposes", 
+                Arrays.asList("Cristina", "Alex", "Jesus"), Arrays.asList("vcf", "ped"));
+        VariantGlobalStats studyStats = new VariantGlobalStats();
+        studyStats.setVariantsCount(5);
+        studyStats.setSnpsCount(3);
+        studyStats.setAccumQuality(45.0f);
+        study.setStats(studyStats);
+        
+        assertTrue(writer.writeStudy(study));
+        writer.post();
+        
+        // Query study inserted in Mongo
+        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+        DB db = mongoClient.getDB(credentials.getMongoDbName());
+        DBCollection variantsCollection = db.getCollection("studies");
+        
+        DBObject query = new BasicDBObject("name", studyName);
+        DBObject studyObj = variantsCollection.findOne(query);
+        assertNotNull(studyObj);
+        
+        String alias = studyObj.get("alias").toString();
+        List<String> authors = (List<String>) studyObj.get("authors");
+        DBObject stats = (DBObject) studyObj.get("globalStats");
+        int variantsCount = ((Integer) stats.get("variantsCount")).intValue();
+        float accumQuality = ((Double) stats.get("accumulatedQuality")).floatValue();
+        
+        assertEquals(study.getAlias(), alias);
+        assertEquals(study.getAuthors(), authors);
+        assertEquals(studyStats.getVariantsCount(), variantsCount);
+        assertEquals(studyStats.getAccumQuality(), accumQuality, 1e-6);
     }
 
     @AfterClass

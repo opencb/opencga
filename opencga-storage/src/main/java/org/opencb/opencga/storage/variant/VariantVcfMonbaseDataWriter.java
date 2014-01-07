@@ -46,12 +46,6 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     private MonbaseCredentials credentials;
 
-//    public VariantVcfMonbaseDataWriter(String tableName, String studyName) {
-//        this.tableName = tableName;
-//        this.studyName = studyName;
-//        this.putMap = new HashMap<>();
-//        this.effectPutMap = new HashMap<>();
-//    }
 
     public VariantVcfMonbaseDataWriter(String study, String species, MonbaseCredentials credentials) {
         if (credentials == null) {
@@ -178,8 +172,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
             BasicDBObject query = new BasicDBObject("position", rowkey);
             WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
-            if (wr.getLastError() != null) {
+            if (!wr.getLastError().ok()) {
                 // TODO If not correct, retry?
+                return false;
             }
         }
 
@@ -220,8 +215,9 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             BasicDBObject action = new BasicDBObject("$set", item);
 
             WriteResult wr = variantCollection.update(query, action, true, false);
-            if (wr.getLastError() != null) {
+            if (!wr.getLastError().ok()) {
                 // TODO If not correct, retry?
+                return false;
             }
         }
 
@@ -271,37 +267,42 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     @Override
     public boolean writeStudy(VariantStudy study) {
         String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
-        BasicDBObjectBuilder studyMongo = new BasicDBObjectBuilder()
-                .add("alias", study.getAlias())
-                .add("date", timeStamp)
-                .add("samples", study.getSamples())
-                .add("description", study.getDescription())
-                .add("sources", study.getSources());
+        BasicDBObject studyMongo = new BasicDBObject("name", study.getName())
+                .append("alias", study.getAlias())
+                .append("date", timeStamp)
+                .append("authors", study.getAuthors())
+                .append("samples", study.getSamples())
+                .append("description", study.getDescription())
+                .append("sources", study.getSources());
 
         VariantGlobalStats global = study.getStats();
-        DBObject globalStats = new BasicDBObjectBuilder()
-                .add("samplesCount", global.getSamplesCount())
-                .add("variantsCount", global.getVariantsCount())
-                .add("snpCount", global.getSnpsCount())
-                .add("indelCount", global.getIndelsCount())
-                .add("passCount", global.getPassCount())
-                .add("transitionsCount", global.getTransitionsCount())
-                .add("transversionsCount", global.getTransversionsCount())
-                .add("biallelicsCount", global.getBiallelicsCount())
-                .add("multiallelicsCount", global.getMultiallelicsCount())
-                .add("accumulativeQuality", global.getAccumQuality()).get();
-        studyMongo.add("globalStats", globalStats);
+        if (global != null) {
+            DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
+                    .append("variantsCount", global.getVariantsCount())
+                    .append("snpCount", global.getSnpsCount())
+                    .append("indelCount", global.getIndelsCount())
+                    .append("passCount", global.getPassCount())
+                    .append("transitionsCount", global.getTransitionsCount())
+                    .append("transversionsCount", global.getTransversionsCount())
+                    .append("biallelicsCount", global.getBiallelicsCount())
+                    .append("multiallelicsCount", global.getMultiallelicsCount())
+                    .append("accumulatedQuality", global.getAccumQuality());
+            studyMongo = studyMongo.append("globalStats", globalStats);
+        } else {
+            // TODO Notify?
+        }
 
+        // TODO Save pedigree information
+        
         Map<String, String> meta = study.getMetadata();
-
         DBObject metadataMongo = new BasicDBObjectBuilder()
                 .add("header", meta.get("variantFileHeader"))
                 .get();
-        studyMongo.add("metadata", metadataMongo);
+        studyMongo = studyMongo.append("metadata", metadataMongo);
 
-        DBObject st = studyMongo.get();
-        WriteResult wr = studyCollection.update(st, st, true, false);
-        return wr.getLastError() == null; // TODO Is this a proper return statement?
+        DBObject query = new BasicDBObject("name", study.getName());
+        WriteResult wr = studyCollection.update(query, studyMongo, true, false);
+        return wr.getLastError().ok(); // TODO Is this a proper return statement?
     }
 
     @Override
