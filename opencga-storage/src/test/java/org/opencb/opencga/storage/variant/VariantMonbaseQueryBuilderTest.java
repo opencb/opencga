@@ -183,6 +183,52 @@ public class VariantMonbaseQueryBuilderTest {
     
     @Test
     public void testGetSimpleVariantsByRegion() {
+        Region region = new Region("1", 0, 100000000);
+        
+        // TODO !!!!!!!!!!
+        // Test query with stats and samples included
+        QueryOptions options = new QueryOptions();
+        options.put("stats", true);
+        options.put("samples", true);
+        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, studyName, options);
+        List<Variant> result = queryResult.getResult();
+        assertEquals(3, result.size());
+        
+        Variant var1 = result.get(0);
+        Map<String, String> sampleNA002 = new HashMap<>();
+        sampleNA002.put("GT", "1/0");
+        sampleNA002.put("DP", "2");
+        
+        Variant var2 = result.get(1);
+        Variant var3 = result.get(2);
+        
+        assertEquals("1", var1.getChromosome());
+        assertEquals(100000, var1.getPosition());
+        assertEquals("T,G", var1.getAlternate());
+        assertNull(var1.getSampleData());
+//        assertEquals(3, var1.getSampleData().size());
+        assertNotNull(var1.getStats());
+        assertEquals(0.01, var1.getStats().getMaf(), 1e-6);
+        assertEquals(0, var1.getStats().getMissingGenotypes());
+//        assertEquals(sampleNA002, var1.getSampleData().get("NA002"));
+        
+        assertEquals("1", var2.getChromosome());
+        assertEquals(200000, var2.getPosition());
+        assertEquals("T", var2.getAlternate());
+        assertNull(var2.getSampleData());
+//        assertEquals(3, var2.getSampleData().size());
+        assertNotNull(var2.getStats());
+        assertEquals(0.05, var2.getStats().getMaf(), 1e-6);
+        assertEquals(1, var2.getStats().getMissingGenotypes());
+        
+        assertEquals("1", var3.getChromosome());
+        assertEquals(300000, var3.getPosition());
+        assertEquals("T", var3.getAlternate());
+        assertNull(var3.getSampleData());
+//        assertEquals(3, var3.getSampleData().size());
+        assertNotNull(var3.getStats());
+        assertEquals(0.06, var3.getStats().getMaf(), 1e-6);
+        assertEquals(1, var3.getStats().getMissingGenotypes());
 //        Region region = new Region("1", 0, 1000000);
 //        QueryOptions options = new QueryOptions();
 //        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, studyName, options);
