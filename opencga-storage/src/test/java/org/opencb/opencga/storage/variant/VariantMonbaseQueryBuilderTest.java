@@ -18,6 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.bioformats.variant.Variant;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.containers.QueryResult;
@@ -69,12 +70,26 @@ public class VariantMonbaseQueryBuilderTest {
             VariantStats stats3 = new VariantStats("1", 300000, "G", "T", 0.06, 0.20, "T", "T/G", 1, 1, 0, true, 0.08, 0.30, 0.30, 0.20);
             VariantStats stats4 = new VariantStats("2", 100000, "G", "T", 0.05, 0.30, "C", "T/T", 1, 1, 0, true, 0.04, 0.20, 0.10, 0.10);
             VariantStats stats5 = new VariantStats("3", 200000, "G", "T", 0.02, 0.40, "C", "C/C", 1, 1, 0, true, 0.01, 0.40, 0.20, 0.15);
+            VariantEffect eff1 = new VariantEffect("1", 100000, "A", "T", "", "RP11-206L10.6",
+                    "intron", "processed_transcript", "1", 714473, 739298, "1", "", "", "",
+                    "ENSG00000237491", "ENST00000429505", "RP11-206L10.6", "SO:0001627",
+                    "intron_variant", "In intron", "feature", -1, "", "");
+            VariantEffect eff2 = new VariantEffect("1", 100000, "A", "T", "ENST00000358533", "AL669831.1",
+                    "downstream", "protein_coding", "1", 722513, 727513, "1", "", "", "",
+                    "ENSG00000197049", "ENST00000358533", "AL669831.1", "SO:0001633",
+                    "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
+            VariantEffect eff3 = new VariantEffect("1", 200000, "C", "A", "ENST00000434264", "RP11-206L10.7",
+                    "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
+                    "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
+                    "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
 
             List<VcfRecord> records = Arrays.asList(rec1, rec2, rec3, rec4, rec5);
             List<VariantStats> stats = Arrays.asList(stats1, stats2, stats3, stats4, stats5);
+            List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
             assertTrue("Table creation could not be performed", writer.pre());
             assertTrue("Variants could not be written", writer.writeBatch(records));
             assertTrue("Stats could not be written", writer.writeVariantStats(stats));
+            assertTrue("Effects could not be written", writer.writeVariantEffect(effects));
             writer.post();
             // Monbase query builder
             queryBuilder = new VariantMonbaseQueryBuilder(tableName, credentials);
@@ -185,67 +200,47 @@ public class VariantMonbaseQueryBuilderTest {
     public void testGetSimpleVariantsByRegion() {
         Region region = new Region("1", 0, 100000000);
         
-        // TODO !!!!!!!!!!
         // Test query with stats and samples included
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
-        options.put("samples", true);
+        options.put("effects", true);
         QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, studyName, options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
         
-        Variant var1 = result.get(0);
-        Map<String, String> sampleNA002 = new HashMap<>();
-        sampleNA002.put("GT", "1/0");
-        sampleNA002.put("DP", "2");
-        
-        Variant var2 = result.get(1);
-        Variant var3 = result.get(2);
-        
-        assertEquals("1", var1.getChromosome());
-        assertEquals(100000, var1.getPosition());
-        assertEquals("T,G", var1.getAlternate());
-        assertNull(var1.getSampleData());
-//        assertEquals(3, var1.getSampleData().size());
-        assertNotNull(var1.getStats());
-        assertEquals(0.01, var1.getStats().getMaf(), 1e-6);
-        assertEquals(0, var1.getStats().getMissingGenotypes());
-//        assertEquals(sampleNA002, var1.getSampleData().get("NA002"));
-        
-        assertEquals("1", var2.getChromosome());
-        assertEquals(200000, var2.getPosition());
-        assertEquals("T", var2.getAlternate());
-        assertNull(var2.getSampleData());
-//        assertEquals(3, var2.getSampleData().size());
-        assertNotNull(var2.getStats());
-        assertEquals(0.05, var2.getStats().getMaf(), 1e-6);
-        assertEquals(1, var2.getStats().getMissingGenotypes());
-        
-        assertEquals("1", var3.getChromosome());
-        assertEquals(300000, var3.getPosition());
-        assertEquals("T", var3.getAlternate());
-        assertNull(var3.getSampleData());
-//        assertEquals(3, var3.getSampleData().size());
-        assertNotNull(var3.getStats());
-        assertEquals(0.06, var3.getStats().getMaf(), 1e-6);
-        assertEquals(1, var3.getStats().getMissingGenotypes());
-//        Region region = new Region("1", 0, 1000000);
-//        QueryOptions options = new QueryOptions();
-//        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, studyName, options);
-//        
-//        for(Variant v: (List<Variant>)queryResult.getResult()){
-//            System.out.println(v.getReference());
-//            System.out.println(v.getAlternate());
-//            System.out.println(v.getChromosome());
-//            System.out.println(v.getPosition());
-//            VariantStats st = v.getStats();
-//            List<Genotype> gn = st.getGenotypes();
-//            for(Genotype gnt : gn){
-//                System.out.println(gnt.getGenotype());
-//            }
-//
-//        }
-
+        for (Variant v : result) {
+            switch ((int) v.getPosition()) {
+                case 100000:
+                    assertEquals("1", v.getChromosome());
+                    assertEquals("T,G", v.getAlternate());
+                    assertNull(v.getSampleData());
+                    assertNotNull(v.getStats());
+                    assertEquals(0.01, v.getStats().getMaf(), 1e-6);
+                    assertEquals(0, v.getStats().getMissingGenotypes());
+                    assertNotNull(v.getEffect());
+                    assertEquals(2, v.getEffect().size());
+                    break;
+                case 200000:
+                    assertEquals("1", v.getChromosome());
+                    assertEquals("T", v.getAlternate());
+                    assertNull(v.getSampleData());
+                    assertNotNull(v.getStats());
+                    assertEquals(0.05, v.getStats().getMaf(), 1e-6);
+                    assertEquals(1, v.getStats().getMissingGenotypes());
+                    assertNotNull(v.getEffect());
+                    assertEquals(1, v.getEffect().size());
+                    break;
+                case 300000:
+                    assertEquals("1", v.getChromosome());
+                    assertEquals("T", v.getAlternate());
+                    assertNull(v.getSampleData());
+                    assertNotNull(v.getStats());
+                    assertEquals(0.06, v.getStats().getMaf(), 1e-6);
+                    assertEquals(1, v.getStats().getMissingGenotypes());
+                    assertNotNull(v.getEffect());
+                    assertEquals(0, v.getEffect().size());
+            }
+        }
     }
     
     @AfterClass

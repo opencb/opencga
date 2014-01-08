@@ -241,7 +241,17 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
             }
             
             // TODO Set consequence type names
-            if (includeEffects) { }
+            if (includeEffects) { 
+                BasicDBList mongoEffects = (BasicDBList) st.get("effects");
+                if (mongoEffects != null) {
+                    for (Object e : mongoEffects) {
+                        String effectObo = e.toString();
+                        VariantEffect effect = new VariantEffect();
+                        effect.setConsequenceTypeObo(effectObo);
+                        variant.addEffect(effect);
+                    }
+                }
+            }
             
             results.add(variant);
         }
