@@ -249,17 +249,31 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean writeVariantEffect(List<VariantEffect> list) {
+        Map<String, Set<String>> mongoPutMap = new HashMap<>();
+        
         for (VariantEffect v : list) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
             String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
-            Put effectPut = new Put(Bytes.toBytes(rowkey));
-            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-            effectPutMap.put(rowkey, effectPut);
+            
+            // TODO Insert in the map for HBase storage
+//            Put effectPut = new Put(Bytes.toBytes(rowkey));
+//            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
+//            effectPutMap.put(rowkey, effectPut);
+            
+            // Insert in the map for Mongo storage
+            Set<String> positionSet = mongoPutMap.get(rowkey);
+            if (positionSet == null) { 
+                positionSet = new HashSet<>(); 
+                mongoPutMap.put(rowkey, positionSet);
+            }
+            positionSet.add(effectProto.getConsequenceTypeObo());
         }
         // Insert in HBase
         save(effectPutMap.values(), effectTable, effectPutMap);
+        
         // TODO Insert in Mongo
+        saveEffectMongo(variantCollection, mongoPutMap);
         
         return true;
     }
@@ -467,5 +481,18 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private void saveEffectMongo(DBCollection collection, Map<String, Set<String>> putMap) {
+        for (Map.Entry<String, Set<String>> entry : putMap.entrySet()) {
+            BasicDBObject query = new BasicDBObject("position", entry.getKey());
+            query.put("studies.studyId", studyName);
+            
+            DBObject item = new BasicDBObject("studies.$.effects", entry.getValue());
+            BasicDBObject action = new BasicDBObject("$set", item);
+
+            WriteResult wr = variantCollection.update(query, action, true, false);
+        }
+        putMap.clear();
     }
 }

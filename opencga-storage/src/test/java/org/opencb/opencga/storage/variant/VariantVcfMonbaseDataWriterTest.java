@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -20,6 +22,7 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantGlobalStats;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
@@ -230,30 +233,50 @@ public class VariantVcfMonbaseDataWriterTest {
 
     @Test
     public void testWriteVariantEffect() throws IOException, InterruptedException, ClassNotFoundException {
-//        VariantEffect eff1 = new VariantEffect("1", 724949, "A", "T", "", "RP11-206L10.6",
-//                "intron", "processed_transcript", "1", 714473, 739298, "1", "", "", "",
-//                "ENSG00000237491", "ENST00000429505", "RP11-206L10.6", "SO:0001627",
-//                "intron_variant", "In intron", "feature", -1, "", "");
-//        VariantEffect eff2 = new VariantEffect("1", 724949, "A", "T", "ENST00000358533", "AL669831.1",
-//                "downstream", "protein_coding", "1", 722513, 727513, "1", "", "", "",
-//                "ENSG00000197049", "ENST00000358533", "AL669831.1", "SO:0001633",
-//                "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
-//        VariantEffect eff3 = new VariantEffect("1", 724950, "C", "A", "ENST00000434264", "RP11-206L10.7",
-//                "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
-//                "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
-//                "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
-//        List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
-//        
-//        writer.writeVariantEffect(effects);
-//        writer.post();
-//        
-//        // Query number of inserted records
+        VariantEffect eff1 = new VariantEffect("1", 100000, "A", "T", "", "RP11-206L10.6",
+                "intron", "processed_transcript", "1", 714473, 739298, "1", "", "", "",
+                "ENSG00000237491", "ENST00000429505", "RP11-206L10.6", "SO:0001627",
+                "intron_variant", "In intron", "feature", -1, "", "");
+        VariantEffect eff2 = new VariantEffect("1", 100000, "A", "T", "ENST00000358533", "AL669831.1",
+                "downstream", "protein_coding", "1", 722513, 727513, "1", "", "", "",
+                "ENSG00000197049", "ENST00000358533", "AL669831.1", "SO:0001633",
+                "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
+        VariantEffect eff3 = new VariantEffect("1", 100000, "C", "A", "ENST00000434264", "RP11-206L10.7",
+                "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
+                "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
+                "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
+        List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
+        
+        writer.writeVariantEffect(effects);
+        writer.post();
+        
+//        // TODO Query number of inserted records in HBase
 //        Job job = RowCounter.createSubmittableJob(config, new String[] { tableName + "effect" } );
 //        job.waitForCompletion(true);
 //        assertTrue(job.isSuccessful());
 //        // How to count in HBase test suite: http://searchcode.com/codesearch/view/25291904
 //        Counter counter = job.getCounters().findCounter("org.apache.hadoop.hbase.mapreduce.RowCounter$RowCounterMapper$Counters", "ROWS");
 //        assertEquals("The number of inserted effects is incorrect", 3, counter.getValue());
+        
+        // Query effects inserted in Mongo
+        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+        DB db = mongoClient.getDB(credentials.getMongoDbName());
+        DBCollection variantsCollection = db.getCollection("variants");
+        
+        DBObject query = new BasicDBObject("position", "01_0000100000");
+        query.put("studies.studyId", studyName);
+        DBObject returnValues = new BasicDBObject("studies.effects", 1);
+        DBObject variantsInStudy = variantsCollection.findOne(query, returnValues);
+        assertNotNull(variantsInStudy);
+        
+        BasicDBList studiesDbObject = (BasicDBList) variantsInStudy.get("studies");
+        DBObject studyObj = (DBObject) studiesDbObject.get(0);
+        Set<String> effectsObj = new HashSet<>((List<String>) studyObj.get("effects"));
+        Set<String> oboList = new HashSet<>(Arrays.asList("intron_variant", "5KB_downstream_variant"));
+        
+        assertEquals(oboList, effectsObj);
+        
+        mongoClient.close();
     }
 
     @Test
