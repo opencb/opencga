@@ -33,7 +33,7 @@ public interface VariantQueryBuilder {
      */
     QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options);
 
-//    QueryResult getAllVariantsByRegionList(List<Region> region, QueryOptions options);
+    List<QueryResult> getAllVariantsByRegionList(List<Region> region, String studyName, QueryOptions options);
 
     QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax);
 

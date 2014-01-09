@@ -50,6 +50,150 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
     @Override
     public QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
+        Connection con;
+        Statement stmt;
+        List<VariantInfo> list = new ArrayList<>(100);
+
+        String dbName = (String) options.get("db_name");
+        showDb(dbName);
+        try {
+            Class.forName("org.sqlite.JDBC");
+            con = DriverManager.getConnection("jdbc:sqlite:" + dbName);
+
+            List<String> whereClauses = new ArrayList<>(10);
+
+            StringBuilder regionClauses = new StringBuilder();
+            regionClauses.append("( variant_stats.chromosome='").append(region.getChromosome()).append("' AND ");
+            regionClauses.append("variant_stats.position>=").append(String.valueOf(region.getStart())).append(" AND ");
+            regionClauses.append("variant_stats.position<=").append(String.valueOf(region.getStart())).append(" )");
+            regionClauses.append(" ) ");
+            whereClauses.add(regionClauses.toString());
+
+            String sql = "SELECT count(*) as count FROM sample ;";
+
+            stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            int numSamples = 0;
+
+            while (rs.next()) {
+                numSamples = rs.getInt("count");
+            }
+
+            stmt.close();
+
+            String innerJoinVariantSQL = " left join variant_info on variant.id_variant=variant_info.id_variant ";
+            String innerJoinEffectSQL = " inner join variant_effect on variant_effect.chromosome=variant.chromosome AND variant_effect.position=variant.position AND variant_effect.reference_allele=variant.ref AND variant_effect.alternative_allele = variant.alt ";
+
+
+            sql = "SELECT distinct variant.genes,variant.consequence_types, variant.id_variant, variant_info.key, variant_info.value, sample_info.sample_name, sample_info.allele_1, sample_info.allele_2, variant_stats.chromosome ," +
+                    "variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt , variant_stats.id , variant_stats.maf , variant_stats.mgf, " +
+                    "variant_stats.allele_maf , variant_stats.genotype_maf , variant_stats.miss_allele , variant_stats.miss_gt , variant_stats.mendel_err ," +
+                    "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive " + //, variant_stats.genotypes  " +
+                    " FROM variant_stats " +
+                    "inner join variant on variant_stats.chromosome=variant.chromosome AND variant_stats.position=variant.position AND variant_stats.allele_ref=variant.ref AND variant_stats.allele_alt=variant.alt " +
+                    //innerJoinEffectSQL +
+                    "inner join sample_info on variant.id_variant=sample_info.id_variant " +
+                    innerJoinVariantSQL;
+
+            if (whereClauses.size() > 0) {
+                StringBuilder where = new StringBuilder(" where ");
+
+                for (int i = 0; i < whereClauses.size(); i++) {
+                    where.append(whereClauses.get(i));
+                    if (i < whereClauses.size() - 1) {
+                        where.append(" AND ");
+                    }
+                }
+
+                sql += where.toString() + " ORDER BY variant_stats.chromosome , variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt ;";
+            }
+
+            System.out.println(sql);
+
+            System.out.println("Start SQL");
+            long start = System.currentTimeMillis();
+            stmt = con.createStatement();
+
+            rs = stmt.executeQuery(sql);
+
+            VariantStats vs;
+            VariantInfo vi = null;
+
+
+            String chr = "";
+            int pos = 0;
+            String ref = "", alt = "";
+
+            System.out.println("End SQL: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
+            System.out.println("Processing");
+
+            while (rs.next()) {
+                if (!rs.getString("chromosome").equals(chr) ||
+                        rs.getInt("position") != pos ||
+                        !rs.getString("allele_ref").equals(ref) ||
+                        !rs.getString("allele_alt").equals(alt)) {
+
+
+                    chr = rs.getString("chromosome");
+                    pos = rs.getInt("position");
+                    ref = rs.getString("allele_ref");
+                    alt = rs.getString("allele_alt");
+
+//                    if (vi != null && filterGenotypes(vi, numSamples) && filterControls(vi, controlsMAFs)) {
+                    if (vi != null) { // Modified by Cristina
+                        list.add(vi);
+                    }
+                    vi = new VariantInfo(chr, pos, ref, alt);
+                    vs = new VariantStats(chr, pos, ref, alt,
+                            rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
+                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel") == 1, rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
+                            rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
+                    vs.setId(rs.getString("id"));
+
+                    // vi.addGenotypes(rs.getString("genotypes"));
+
+                    vi.addStats(vs);
+                    vi.addGenes(rs.getString("genes"));
+                    vi.addConsequenceTypes(rs.getString("consequence_types"));
+                }
+
+                if (rs.getString("key") != null && rs.getString("value") != null) {
+
+                    vi.addControl(rs.getString("key"), rs.getString("value"));
+                }
+
+
+                String sample = rs.getString("sample_name");
+                String gt = rs.getInt("allele_1") + "/" + rs.getInt("allele_2");
+
+                vi.addSammpleGenotype(sample, gt);
+                // vi.addGeneAndConsequenceType(rs.getString("gene_name"), rs.getString("consequence_type_obo"));
+
+            }
+
+//            if (vi != null && filterGenotypes(vi, numSamples) && filterControls(vi, controlsMAFs)) {
+            if (vi != null) { // Modified by Cristina
+                list.add(vi);
+            }
+            stmt.close();
+
+
+            System.out.println("Total: (" + list.size() + ")");
+            System.out.println("End processing: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
+
+            con.close();
+
+        } catch (ClassNotFoundException | SQLException e) {
+            System.err.println("STATS: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+
+//        return list;
+        return new QueryResult();
+    }
+    
+    
+    @Override
+    public List<QueryResult> getAllVariantsByRegionList(List<Region> region, String studyName, QueryOptions options) {
         return null;  // TODO Implementation needed
     }
 
@@ -146,7 +290,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
     @Override
     public List<VariantInfo> getRecords(Map<String, String> options) {
-
         Connection con;
         Statement stmt;
         List<VariantInfo> list = new ArrayList<>(100);
@@ -912,12 +1055,12 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private boolean filterGenotypes(VariantInfo variantInfo, int numSamples) {
-        if (variantInfo.getSampleGenotypes().size() != numSamples) {
-            return false;
-        } else {
-            return true;
-        }
-
+//        if (variantInfo.getSampleGenotypes().size() != numSamples) {
+//            return false;
+//        } else {
+//            return true;
+//        }
+        return variantInfo.getSampleGenotypes().size() == numSamples;
 
     }
 

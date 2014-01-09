@@ -5,7 +5,12 @@ import com.mongodb.*;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -20,8 +25,11 @@ import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
 
 /**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
@@ -167,8 +175,81 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     }
 
     @Override
+    public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, String studyName, QueryOptions options) {
+        List<QueryResult> allResults = new LinkedList<>();
+        for (Region r : regions) {
+            QueryResult queryResult = getAllVariantsByRegion(r, studyName, options);
+            allResults.add(queryResult);
+        }
+        return allResults;
+    }
+    
+    @Override
     public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d", 
+                region.getChromosome(), region.getStart(), region.getEnd()));
+        List<ObjectMap> data = new ArrayList<>();
+        String startRow = buildRowkey(region.getChromosome(), Long.toString(region.getStart()));
+        String stopRow = buildRowkey(region.getChromosome(), Long.toString(region.getEnd()));
+        
+        long startTime = System.currentTimeMillis();
+        
+        long startDbTime = System.currentTimeMillis(); 
+
+        BasicDBObject query = new BasicDBObject("position", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies.studyId", studyName);
+        DBCollection collection = db.getCollection("variants");
+        DBCursor queryResults = collection.find(query);
+        queryResult.setDbTime(System.currentTimeMillis() - startDbTime);
+
+        int resultSize = queryResults.size();
+
+        if (resultSize > histogramMax) { // Need to group results to fit maximum size of the histogram
+            int sumChunkSize = resultSize / histogramMax;
+            int i = 0, j = 0;
+            int featuresCount = 0;
+            ObjectMap item = null;
+
+            for (DBObject result : queryResults) {
+//                featuresCount += result.getInt("features_count");
+//                if (i == 0) {
+//                    item = new ObjectMap("chromosome", result.getString("chromosome"));
+//                    item.put("chunkId", result.getInt("chunk_id"));
+//                    item.put("start", result.getInt("start"));
+//                } else if (i == sumChunkSize - 1 || j == resultSize - 1) {
+//                    if (histogramLogarithm) {
+//                        item.put("featuresCount", (featuresCount > 0) ? Math.log(featuresCount) : 0);
+//                    } else {
+//                        item.put("featuresCount", featuresCount);
+//                    }
+//                    item.put("end", result.getInt("end"));
+//                    data.add(item);
+//                    i = -1;
+//                    featuresCount = 0;
+//                }
+//                j++;
+//                i++;
+            }
+        } else {
+            for (DBObject result : queryResults) {
+//                ObjectMap item = new ObjectMap("chromosome", result.getString("chromosome"));
+//                item.put("chunkId", result.getInt("chunk_id"));
+//                item.put("start", result.getInt("start"));
+//                if (histogramLogarithm) {
+//                    int features_count = result.getInt("features_count");
+//                    result.put("featuresCount", (features_count > 0) ? Math.log(features_count) : 0);
+//                } else {
+//                    item.put("featuresCount", result.getInt("features_count"));
+//                }
+//                item.put("end", result.getInt("end"));
+//                data.add(item);
+            }
+        }
+        
+        queryResult.setResult(data);
+        queryResult.setNumResults(data.size());
+        queryResult.setTime(System.currentTimeMillis() - startTime);
+        
+        return queryResult;
     }
 
     @Override
