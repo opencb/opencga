@@ -95,11 +95,11 @@ public class PublicStorageWSServer extends GenericWSServer {
                     }
                     return createOkResponse(bamResults);
                 case "vcf":
-                    List<String> vcfResults = new ArrayList<>();
+                    List<QueryResult> vcfResults = new ArrayList<>();
                     for (String region : regions) {
                         vcfResults.add(cloudSessionManager.fetchVariationData(objectPath, region, params));
                     }
-                    return createOkResponse(vcfResults.toString());
+                    return createOkResponse(vcfResults);
             }
             
         } catch (Exception e) {
