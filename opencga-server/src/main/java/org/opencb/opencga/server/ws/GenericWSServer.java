@@ -3,22 +3,21 @@ package org.opencb.opencga.server.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.account.CloudSessionManager;
-import org.opencb.opencga.account.io.IOManagementException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import org.opencb.cellbase.core.lib.dbquery.QueryOptions;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.*;
 import org.opencb.commons.containers.QueryResponse;
+import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.account.CloudSessionManager;
+import org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.lib.common.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/")
 public class GenericWSServer {
@@ -156,12 +155,10 @@ public class GenericWSServer {
 
     protected Response createJsonResponse(Object obj) {
         endTime = System.currentTimeMillis() - startTime;
-        QueryResponse queryResponse = new QueryResponse();
-        queryResponse.put("time", endTime);
-        queryResponse.put("version", (params.get("version") != null) ? params.get("version") : null);
-        queryResponse.put("species", (params.get("species") != null) ? params.get("species") : null);
-        queryResponse.put("queryOptions", queryOptions);
-        queryResponse.put("response", obj);
+        QueryResponse queryResponse = new QueryResponse(queryOptions, obj, 
+                (params.get("version") != null) ? params.get("version").get(0) : null,
+                (params.get("species") != null) ? params.get("species").get(0) : null,
+                endTime);
 
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
