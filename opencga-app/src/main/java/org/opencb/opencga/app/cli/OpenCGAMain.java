@@ -1,9 +1,11 @@
 package org.opencb.opencga.app.cli;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.logging.Level;
+import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -18,6 +20,7 @@ import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantDataReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfDataReader;
 import org.opencb.commons.utils.OptionFactory;
+import org.opencb.opencga.lib.auth.OpenCGACredentials;
 import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantEffectRunner;
@@ -111,7 +114,8 @@ public class OpenCGAMain {
     private static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("opencga-index", 
-                "You must specify at least the datatype to store, the file to read from and the storage credentials. Please note that SQLite is the default storage backend.", 
+                "You must specify at least the datatype to store, the file to read from and the storage credentials. " +
+                "Please note that SQLite is the default storage backend.", 
                 options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true);
     }
     
@@ -120,14 +124,18 @@ public class OpenCGAMain {
     }
 
     private static void indexVariants(VariantStudy study, Path filePath, Path pedigreePath, String backend, Path credentialsPath, 
-            boolean includeEffect, boolean includeStats) {
+            boolean includeEffect, boolean includeStats) throws IOException {
         VariantRunner vr = null;
         VariantDataReader reader = new VariantVcfDataReader(filePath.toString());
         PedDataReader pedReader = pedigreePath != null ? new PedFileDataReader(pedigreePath.toString()) : null;
         
         VariantDBWriter writer = null;
+        OpenCGACredentials credentials = null;
+        
         if (backend.equalsIgnoreCase("sqlite")) {
-            writer = new VariantVcfSqliteWriter(credentialsPath.toString()); // TODO Take from inside the file, this is only for testing purposes!
+            Properties properties = new Properties();
+            properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
+            writer = new VariantVcfSqliteWriter(properties.getProperty("db_path"));
         } else if (backend.equalsIgnoreCase("monbase")) {
             writer = new VariantVcfMonbaseDataWriter(study.getName(), "hsapiens", null); // TODO Create real credentials
         }
@@ -136,13 +144,8 @@ public class OpenCGAMain {
         if (includeStats)  { vr = new VariantStatsRunner(study, reader, pedReader, writer, vr); }
         vr = new VariantIndexRunner(study, reader, pedReader, writer, vr);
         
-        System.out.println("START");
-        try {
-            vr.run();
-        } catch (IOException ex) {
-            Logger.getLogger(OpenCGAMain.class.getName()).log(Level.SEVERE, null, ex);
-            System.exit(3);
-        }
-        System.out.println("END");
+        System.out.println("Indexing variants...");
+        vr.run();
+        System.out.println("Variants indexed!");
     }
 }
