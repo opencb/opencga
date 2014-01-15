@@ -20,6 +20,7 @@ import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantDataReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfDataReader;
 import org.opencb.commons.utils.OptionFactory;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.opencb.opencga.lib.auth.OpenCGACredentials;
 import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
@@ -131,13 +132,14 @@ public class OpenCGAMain {
         
         VariantDBWriter writer = null;
         OpenCGACredentials credentials = null;
+        Properties properties = new Properties();
+        properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
         
         if (backend.equalsIgnoreCase("sqlite")) {
-            Properties properties = new Properties();
-            properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-            writer = new VariantVcfSqliteWriter(properties.getProperty("db_path"));
+            writer = new VariantVcfSqliteWriter(properties.getProperty("db_path")); // TODO Use SQLiteCredentials class
         } else if (backend.equalsIgnoreCase("monbase")) {
-            writer = new VariantVcfMonbaseDataWriter(study.getName(), "hsapiens", null); // TODO Create real credentials
+            credentials = new MonbaseCredentials(properties);
+            writer = new VariantVcfMonbaseDataWriter(study.getName(), "hsapiens", (MonbaseCredentials) credentials);
         }
         
         if (includeEffect) { vr = new VariantEffectRunner(study, reader, pedReader, writer, vr); }

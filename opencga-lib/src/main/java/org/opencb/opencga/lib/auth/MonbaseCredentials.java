@@ -35,6 +35,20 @@ public class MonbaseCredentials implements OpenCGACredentials {
         
         check();
     }
+
+    public MonbaseCredentials(Properties properties) {
+        this.hbaseMasterHost = properties.getProperty("hbase_master_host");
+        this.hbaseMasterPort = Integer.parseInt(properties.getProperty("hbase_master_port", "-1"));
+        this.hbaseZookeeperQuorum = properties.getProperty("hbase_zookeeper_quorum");
+        this.hbaseZookeeperClientPort = Integer.parseInt(properties.getProperty("hbase_zookeeper_client_port", "-1"));
+        this.mongoHost = properties.getProperty("mongo_host");
+        this.mongoPort = Integer.parseInt(properties.getProperty("mongo_port", "-1"));
+        this.mongoDbName = properties.getProperty("mongo_db_name");
+        mongoCredentials = MongoCredential.createMongoCRCredential(
+                properties.getProperty("mongo_user"), 
+                mongoDbName, 
+                properties.getProperty("mongo_password", "").toCharArray());
+    }
     
     
     @Override
