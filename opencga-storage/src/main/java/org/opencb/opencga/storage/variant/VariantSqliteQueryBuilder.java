@@ -5,45 +5,297 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.StringUtils;
+import org.opencb.commons.bioformats.feature.Region;
+import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
+import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
+import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.storage.indices.SqliteManager;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//import javax.ws.rs.client.Client;
-//import javax.ws.rs.client.ClientBuilder;
-//import javax.ws.rs.client.WebTarget;
-
 /**
- * Created with IntelliJ IDEA.
- * User: aaleman
- * Date: 10/30/13
- * Time: 12:14 PM
- * To change this template use File | Settings | File Templates.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
+
+    private SqliteCredentials sqliteCredentials;
+    private SqliteManager sqliteManager;
 
     public VariantSqliteQueryBuilder() {
         System.out.println("Variant Query Maker");
     }
 
+    public VariantSqliteQueryBuilder(SqliteCredentials sqliteCredentials) {
+        System.out.println("Variant Query Maker");
+        this.sqliteCredentials = sqliteCredentials;
+        this.sqliteManager = new SqliteManager();
+    }
+
+    @Override
+    public QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
+        Connection con;
+        Statement stmt;
+        List<VariantInfo> list = new ArrayList<>(100);
+
+        String dbName = (String) options.get("db_name");
+        showDb(dbName);
+        try {
+            Class.forName("org.sqlite.JDBC");
+            con = DriverManager.getConnection("jdbc:sqlite:" + dbName);
+
+            List<String> whereClauses = new ArrayList<>(10);
+
+            StringBuilder regionClauses = new StringBuilder();
+            regionClauses.append("( variant_stats.chromosome='").append(region.getChromosome()).append("' AND ");
+            regionClauses.append("variant_stats.position>=").append(String.valueOf(region.getStart())).append(" AND ");
+            regionClauses.append("variant_stats.position<=").append(String.valueOf(region.getStart())).append(" )");
+            regionClauses.append(" ) ");
+            whereClauses.add(regionClauses.toString());
+
+            String sql = "SELECT count(*) as count FROM sample ;";
+
+            stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(sql);
+            int numSamples = 0;
+
+            while (rs.next()) {
+                numSamples = rs.getInt("count");
+            }
+
+            stmt.close();
+
+            String innerJoinVariantSQL = " left join variant_info on variant.id_variant=variant_info.id_variant ";
+            String innerJoinEffectSQL = " inner join variant_effect on variant_effect.chromosome=variant.chromosome AND variant_effect.position=variant.position AND variant_effect.reference_allele=variant.ref AND variant_effect.alternative_allele = variant.alt ";
+
+
+            sql = "SELECT distinct variant.genes,variant.consequence_types, variant.id_variant, variant_info.key, variant_info.value, sample_info.sample_name, sample_info.allele_1, sample_info.allele_2, variant_stats.chromosome ," +
+                    "variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt , variant_stats.id , variant_stats.maf , variant_stats.mgf, " +
+                    "variant_stats.allele_maf , variant_stats.genotype_maf , variant_stats.miss_allele , variant_stats.miss_gt , variant_stats.mendel_err ," +
+                    "variant_stats.is_indel , variant_stats.cases_percent_dominant , variant_stats.controls_percent_dominant , variant_stats.cases_percent_recessive , variant_stats.controls_percent_recessive " + //, variant_stats.genotypes  " +
+                    " FROM variant_stats " +
+                    "inner join variant on variant_stats.chromosome=variant.chromosome AND variant_stats.position=variant.position AND variant_stats.allele_ref=variant.ref AND variant_stats.allele_alt=variant.alt " +
+                    //innerJoinEffectSQL +
+                    "inner join sample_info on variant.id_variant=sample_info.id_variant " +
+                    innerJoinVariantSQL;
+
+            if (whereClauses.size() > 0) {
+                StringBuilder where = new StringBuilder(" where ");
+
+                for (int i = 0; i < whereClauses.size(); i++) {
+                    where.append(whereClauses.get(i));
+                    if (i < whereClauses.size() - 1) {
+                        where.append(" AND ");
+                    }
+                }
+
+                sql += where.toString() + " ORDER BY variant_stats.chromosome , variant_stats.position , variant_stats.allele_ref , variant_stats.allele_alt ;";
+            }
+
+            System.out.println(sql);
+
+            System.out.println("Start SQL");
+            long start = System.currentTimeMillis();
+            stmt = con.createStatement();
+
+            rs = stmt.executeQuery(sql);
+
+            VariantStats vs;
+            VariantInfo vi = null;
+
+
+            String chr = "";
+            int pos = 0;
+            String ref = "", alt = "";
+
+            System.out.println("End SQL: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
+            System.out.println("Processing");
+
+            while (rs.next()) {
+                if (!rs.getString("chromosome").equals(chr) ||
+                        rs.getInt("position") != pos ||
+                        !rs.getString("allele_ref").equals(ref) ||
+                        !rs.getString("allele_alt").equals(alt)) {
+
+
+                    chr = rs.getString("chromosome");
+                    pos = rs.getInt("position");
+                    ref = rs.getString("allele_ref");
+                    alt = rs.getString("allele_alt");
+
+//                    if (vi != null && filterGenotypes(vi, numSamples) && filterControls(vi, controlsMAFs)) {
+                    if (vi != null) { // Modified by Cristina
+                        list.add(vi);
+                    }
+                    vi = new VariantInfo(chr, pos, ref, alt);
+                    vs = new VariantStats(chr, pos, ref, alt,
+                            rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
+                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel") == 1, rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
+                            rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
+                    vs.setId(rs.getString("id"));
+
+                    // vi.addGenotypes(rs.getString("genotypes"));
+
+                    vi.addStats(vs);
+                    vi.addGenes(rs.getString("genes"));
+                    vi.addConsequenceTypes(rs.getString("consequence_types"));
+                }
+
+                if (rs.getString("key") != null && rs.getString("value") != null) {
+
+                    vi.addControl(rs.getString("key"), rs.getString("value"));
+                }
+
+
+                String sample = rs.getString("sample_name");
+                String gt = rs.getInt("allele_1") + "/" + rs.getInt("allele_2");
+
+                vi.addSammpleGenotype(sample, gt);
+                // vi.addGeneAndConsequenceType(rs.getString("gene_name"), rs.getString("consequence_type_obo"));
+
+            }
+
+//            if (vi != null && filterGenotypes(vi, numSamples) && filterControls(vi, controlsMAFs)) {
+            if (vi != null) { // Modified by Cristina
+                list.add(vi);
+            }
+            stmt.close();
+
+
+            System.out.println("Total: (" + list.size() + ")");
+            System.out.println("End processing: " + ((System.currentTimeMillis() - start) / 1000.0) + " s.");
+
+            con.close();
+
+        } catch (ClassNotFoundException | SQLException e) {
+            System.err.println("STATS: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+
+//        return list;
+        return new QueryResult();
+    }
+    
+    
+    @Override
+    public List<QueryResult> getAllVariantsByRegionList(List<Region> region, String studyName, QueryOptions options) {
+        return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult<ObjectMap> getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
+        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d",
+                region.getChromosome(), region.getStart(), region.getEnd())); // TODO Fill metadata
+        List<ObjectMap> data = new ArrayList<>();
+
+        long startTime = System.currentTimeMillis();
+
+        Path metaDir = getMetaDir(sqliteCredentials.getPath());
+        String fileName = sqliteCredentials.getPath().getFileName().toString();
+
+        try {
+            long startDbTime = System.currentTimeMillis();
+            sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
+            System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
+            String queryString = "SELECT * FROM chunk WHERE chromosome='" + region.getChromosome() +
+                    "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
+            List<XObject> queryResults = sqliteManager.query(queryString);
+            sqliteManager.disconnect(true);
+            queryResult.setDbTime(System.currentTimeMillis() - startDbTime);
+
+            int resultSize = queryResults.size();
+
+            if (resultSize > histogramMax) { // Need to group results to fit maximum size of the histogram
+                int sumChunkSize = resultSize / histogramMax;
+                int i = 0, j = 0;
+                int featuresCount = 0;
+                ObjectMap item = null;
+
+                for (XObject result : queryResults) {
+                    featuresCount += result.getInt("features_count");
+                    if (i == 0) {
+                        item = new ObjectMap("chromosome", result.getString("chromosome"));
+                        item.put("chunkId", result.getInt("chunk_id"));
+                        item.put("start", result.getInt("start"));
+                    } else if (i == sumChunkSize - 1 || j == resultSize - 1) {
+                        if (histogramLogarithm) {
+                            item.put("featuresCount", (featuresCount > 0) ? Math.log(featuresCount) : 0);
+                        } else {
+                            item.put("featuresCount", featuresCount);
+                        }
+                        item.put("end", result.getInt("end"));
+                        data.add(item);
+                        i = -1;
+                        featuresCount = 0;
+                    }
+                    j++;
+                    i++;
+                }
+            } else {
+                for (XObject result : queryResults) {
+                    ObjectMap item = new ObjectMap("chromosome", result.getString("chromosome"));
+                    item.put("chunkId", result.getInt("chunk_id"));
+                    item.put("start", result.getInt("start"));
+                    if (histogramLogarithm) {
+                        int features_count = result.getInt("features_count");
+                        result.put("featuresCount", (features_count > 0) ? Math.log(features_count) : 0);
+                    } else {
+                        item.put("featuresCount", result.getInt("features_count"));
+                    }
+                    item.put("end", result.getInt("end"));
+                    data.add(item);
+                }
+            }
+        } catch (ClassNotFoundException | SQLException ex ) {
+            Logger.getLogger(VariantSqliteQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            queryResult.setErrorMsg(ex.getMessage());
+        }
+
+        queryResult.setResult(data);
+        queryResult.setNumResults(data.size());
+        queryResult.setTime(System.currentTimeMillis() - startTime);
+
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult getStatsByVariant(Variant variant, QueryOptions options) {
+        return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options) {
+        return null;  // TODO Implementation needed
+    }
+
+    @Override
+    public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
     @Override
     public List<VariantInfo> getRecords(Map<String, String> options) {
-
         Connection con;
         Statement stmt;
         List<VariantInfo> list = new ArrayList<>(100);
 
         String dbName = options.get("db_name");
         showDb(dbName);
-
         try {
             Class.forName("org.sqlite.JDBC");
             con = DriverManager.getConnection("jdbc:sqlite:" + dbName);
@@ -337,7 +589,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                     vi = new VariantInfo(chr, pos, ref, alt);
                     vs = new VariantStats(chr, pos, ref, alt,
                             rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
-                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
+                            rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel") == 1, rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                             rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
                     vs.setId(rs.getString("id"));
 
@@ -549,7 +801,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
                 vs = new VariantStats(chr, pos, ref, alt,
                         rs.getDouble("maf"), rs.getDouble("mgf"), rs.getString("allele_maf"), rs.getString("genotype_maf"), rs.getInt("miss_allele"),
-                        rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel"), rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
+                        rs.getInt("miss_gt"), rs.getInt("mendel_err"), rs.getInt("is_indel") == 1, rs.getDouble("cases_percent_dominant"), rs.getDouble("controls_percent_dominant"),
                         rs.getDouble("cases_percent_recessive"), rs.getDouble("controls_percent_recessive"));
 
                 list.add(vs);
@@ -713,7 +965,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private String processGeneList(String genes) {
-
         System.out.println("genes = " + genes);
         List<String> list = new ArrayList<>();
 
@@ -796,7 +1047,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private String processConseqType(String conseqType) {
-
         List<String> clauses = new ArrayList<>(10);
 
         String[] cts = conseqType.split(",");
@@ -815,22 +1065,18 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private boolean filterGenotypes(VariantInfo variantInfo, int numSamples) {
-
-        if (variantInfo.getSampleGenotypes().size() != numSamples) {
-            return false;
-        } else {
-            return true;
-        }
-
+//        if (variantInfo.getSampleGenotypes().size() != numSamples) {
+//            return false;
+//        } else {
+//            return true;
+//        }
+        return variantInfo.getSampleGenotypes().size() == numSamples;
 
     }
 
     private Map<String, List<String>> processSamplesGT(Map<String, String> options) {
-
-
         Map<String, List<String>> samplesGenotypes = new LinkedHashMap<>(10);
         List<String> genotypesList;
-
 
         String key, val;
         for (Map.Entry<String, String> entry : options.entrySet()) {
@@ -862,7 +1108,6 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     }
 
     private void processSamplesGT(Map<String, String> options, List<String> whereClauses) {
-
         String key, val;
 
         List<String> auxClauses = new ArrayList<>();
@@ -904,6 +1149,16 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
         }
 
     }
+
+    /* ******************************************
+     *          Path and index checking         *
+     * ******************************************/
+
+    private Path getMetaDir(Path file) {
+        String inputName = file.getFileName().toString();
+        return file.getParent().resolve(".meta_" + inputName);
+    }
+
 
 
 }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.opencb.commons.containers.QueryResult;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
 public class StorageWSServer extends GenericWSServer {
@@ -112,24 +113,40 @@ public class StorageWSServer extends GenericWSServer {
         }
     }
 
-    // TODO for now, only region filter allowed
     @GET
     @Path("/fetch")
-    public Response region(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
-                           @DefaultValue("") @QueryParam("region") String regionStr) {
-
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response fetchData(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
+                            @DefaultValue("") @QueryParam("region") String regionStr) {
         try {
+            // Validate user and object permissions, and retrieve paths
+            java.nio.file.Path objectPath = cloudSessionManager.getObjectPath(accountId, bucketId, objectId);
+            ObjectItem objectItem = cloudSessionManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
+            
             List<String> regions = Splitter.on(',').splitToList(regionStr);
-            List<String> results = new ArrayList<>();
-            for (String region : regions) {
-                results.add(cloudSessionManager.region(accountId, bucketId, objectId, region, params, sessionId));
+            
+            switch (objectItem.getFileFormat().toLowerCase()) {
+                case "bam":
+                    List<QueryResult> bamResults = new ArrayList<>();
+                    for (String region : regions) {
+                        bamResults.add(cloudSessionManager.fetchAlignmentData(objectPath, region, params));
+                    }
+                    return createOkResponse(bamResults);
+                case "vcf":
+//                    List<String> vcfResults = new ArrayList<>();
+                    List<QueryResult> vcfResults = new ArrayList<>();
+                    for (String region : regions) {
+                        vcfResults.add(cloudSessionManager.fetchVariationData(objectPath, region, params));
+                    }
+//                    return createOkResponse(vcfResults.toString());
+                    return createOkResponse(vcfResults);
             }
-            return createOkResponse(results.toString());
         } catch (Exception e) {
             logger.error(e.toString());
-            e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+        
+        return createErrorResponse("Data not found with given arguments");
     }
 
     /**

@@ -14,12 +14,12 @@ public class Config {
     protected static Logger logger = LoggerFactory.getLogger(Config.class);
 
     private static String opencgaHome = System.getenv("OPENCGA_HOME");
-    private static String opencgaLightHome;
+//    private static String opencgaLightHome;
     private static boolean log4jReady = false;
 
     private static Properties accountProperties = null;
     private static Properties analysisProperties = null;
-    private static Properties localServerProperties = null;
+    private static Properties storageProperties = null;
 
     private static long lastPropertyLoad = System.currentTimeMillis();
 
@@ -32,7 +32,7 @@ public class Config {
 
         accountProperties = null;
         analysisProperties = null;
-        localServerProperties = null;
+        storageProperties = null;
 
         log4jReady = false;
 //        LogManager.resetConfiguration();
@@ -60,7 +60,7 @@ public class Config {
             try {
                 accountProperties.load(Files.newInputStream(path));
             } catch (IOException e) {
-                logger.error("failed to load account.properties.");
+                logger.error("Failed to load account.properties: " + e.getMessage());
                 return null;
             }
         }
@@ -75,37 +75,37 @@ public class Config {
             try {
                 analysisProperties.load(Files.newInputStream(path));
             } catch (IOException e) {
-                logger.error("failed to load analysis.properties.");
+                logger.error("Failed to load analysis.properties: " + e.getMessage());
                 return null;
             }
         }
         return analysisProperties;
     }
 
-    public static Properties getLocalServerProperties(String basePath) {
-        opencgaLightHome = basePath;
+    public static Properties getStorageProperties(String basePath) {
+//        opencgaLightHome = basePath;
 
 //		// First time we create the object, a singleton pattern is applied.
-//		if (localServerProperties == null) {
-//			loadProperties(localServerProperties, Paths.get(basePath, "conf", "localserver.properties"));
-//			return localServerProperties;
+//		if (storageProperties == null) {
+//			loadProperties(storageProperties, Paths.get(basePath, "conf", "localserver.properties"));
+//			return storageProperties;
 //		}
 //
 //		// next times we check last time loaded
 //		checkPopertiesStatus();
-//		return localServerProperties;
+//		return storageProperties;
 
-        if (localServerProperties == null) {
-            Path path = Paths.get(basePath, "conf", "localserver.properties");
-            localServerProperties = new Properties();
+        if (storageProperties == null) {
+            Path path = Paths.get(basePath, "conf", "storage.properties");
+            storageProperties = new Properties();
             try {
-                localServerProperties.load(Files.newInputStream(path));
+                storageProperties.load(Files.newInputStream(path));
             } catch (IOException e) {
-                logger.error("failed to load localServer.properties.");
+                logger.error("Failed to load storage.properties: " + e.getMessage());
                 return null;
             }
         }
-        return localServerProperties;
+        return storageProperties;
     }
 
     private static void loadProperties(Properties propertiesToLoad, Path propertiesPath) {
@@ -116,7 +116,7 @@ public class Config {
             propertiesToLoad.clear();
             propertiesToLoad.load(Files.newInputStream(propertiesPath));
         } catch (IOException e) {
-            logger.error("failed to load: " + propertiesPath.toString());
+            logger.error("Failed to load: " + propertiesPath.toString());
             e.printStackTrace();
         }
     }
@@ -125,7 +125,7 @@ public class Config {
         if (System.currentTimeMillis() - lastPropertyLoad > 60000) {
             loadProperties(accountProperties, Paths.get(opencgaHome, "conf", "account.properties"));
             loadProperties(analysisProperties, Paths.get(opencgaHome, "conf", "analysis.properties"));
-            loadProperties(localServerProperties, Paths.get(opencgaLightHome, "conf", "local-server.properties"));
+            loadProperties(storageProperties, Paths.get(opencgaHome, "conf", "storage.properties"));
             lastPropertyLoad = System.currentTimeMillis();
         }
     }

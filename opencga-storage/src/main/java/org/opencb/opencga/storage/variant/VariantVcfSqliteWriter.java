@@ -1,7 +1,10 @@
 package org.opencb.opencga.storage.variant;
 
 import com.google.common.base.Joiner;
+import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.commons.bioformats.feature.Genotype;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.feature.Genotypes;
 import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
@@ -16,6 +19,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.*;
 
 /**
