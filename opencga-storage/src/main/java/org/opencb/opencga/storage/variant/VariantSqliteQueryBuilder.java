@@ -194,7 +194,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
     
     @Override
     public List<QueryResult> getAllVariantsByRegionList(List<Region> region, String studyName, QueryOptions options) {
-        return null;  // TODO Implementation needed
+        return null;  // TODO aaleman: Implementation needed
     }
 
     @Override
@@ -275,17 +275,17 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
 
     @Override
     public QueryResult getStatsByVariant(Variant variant, QueryOptions options) {
-        return null;  // TODO Implementation needed
+        return null;  // TODO aaleman: Implementation needed
     }
 
     @Override
     public QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options) {
-        return null;  // TODO Implementation needed
+        return null;  // TODO aaleman: Implementation needed
     }
 
     @Override
     public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return null;  // TODO aaleman: Implementation needed
     }
 
     @Override
