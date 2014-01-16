@@ -17,10 +17,10 @@ import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfDataReade
 import org.opencb.commons.utils.OptionFactory;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.opencb.opencga.lib.auth.OpenCGACredentials;
+import org.opencb.opencga.storage.variant.VariantIndexRunner;
 import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantEffectRunner;
-import org.opencb.variant.lib.runners.VariantIndexRunner;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.VariantStatsRunner;
 
