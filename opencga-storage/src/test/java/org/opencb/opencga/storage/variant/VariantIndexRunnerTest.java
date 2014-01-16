@@ -13,7 +13,7 @@ import java.util.Arrays;
 /**
  * Created by aaleman on 12/9/13.
  */
-public class OpenCGAVariantIndexRunnerTest extends GenericTest {
+public class VariantIndexRunnerTest extends GenericTest {
 
     private String inputFile = "/home/aaleman/Documents/pruebas/index/small.vcf";
     private String outputFile = "/home/aaleman/Documents/pruebas/index/index.db";
@@ -26,7 +26,7 @@ public class OpenCGAVariantIndexRunnerTest extends GenericTest {
         VariantDataReader reader = new VariantVcfDataReader(inputFile);
         VariantDBWriter writer = new VariantVcfSqliteWriter(outputFile);
 
-        OpenCGAVariantIndexRunner runner = new OpenCGAVariantIndexRunner(study, reader, null, writer);
+        VariantIndexRunner runner = new VariantIndexRunner(study, reader, null, writer);
 
         runner.run();
 

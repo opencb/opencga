@@ -7,12 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.logging.Logger;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedDataReader;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedFileDataReader;
 import org.opencb.commons.bioformats.variant.VariantStudy;
@@ -22,7 +17,7 @@ import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfDataReade
 import org.opencb.commons.utils.OptionFactory;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.opencb.opencga.lib.auth.OpenCGACredentials;
-import org.opencb.opencga.storage.variant.OpenCGAVariantIndexRunner;
+import org.opencb.opencga.storage.variant.VariantIndexRunner;
 import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantEffectRunner;
@@ -139,12 +134,12 @@ public class OpenCGAMain {
             writer = new VariantVcfSqliteWriter(properties.getProperty("db_path")); // TODO Use SQLiteCredentials class
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
-            writer = new VariantVcfMonbaseDataWriter(study.getName(), "hsapiens", (MonbaseCredentials) credentials);
+            writer = new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens", (MonbaseCredentials) credentials);
         }
         
+        vr = new VariantIndexRunner(study, reader, pedReader, writer, vr);
         if (includeEffect) { vr = new VariantEffectRunner(study, reader, pedReader, writer, vr); }
         if (includeStats)  { vr = new VariantStatsRunner(study, reader, pedReader, writer, vr); }
-        vr = new OpenCGAVariantIndexRunner(study, reader, pedReader, writer, vr);
         
         System.out.println("Indexing variants...");
         vr.run();
