@@ -11,18 +11,21 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * Created by aaleman on 12/9/13.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class VariantIndexRunnerTest extends GenericTest {
 
-    private String inputFile = "/home/aaleman/Documents/pruebas/index/small.vcf";
-    private String outputFile = "/home/aaleman/Documents/pruebas/index/index.db";
-    private String pedFile = "/home/aaleman/tmp/file.ped";
+    private String inputFile = getClass().getResource("/variant-test-file.vcf.gz").getFile();
+    private String pedFile = getClass().getResource("/pedigree-test-file.ped").getFile();
+    private String outputFile = "/tmp/sqliteIndexTest.db";
 
     @Test
     public void sqliteIndex() throws IOException {
 
+
         VariantStudy study = new VariantStudy("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
+
         VariantDataReader reader = new VariantVcfDataReader(inputFile);
         VariantDBWriter writer = new VariantVcfSqliteWriter(outputFile);
 

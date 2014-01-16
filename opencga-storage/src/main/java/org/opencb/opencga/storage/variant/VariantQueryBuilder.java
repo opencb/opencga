@@ -13,11 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created with IntelliJ IDEA.
- * User: aaleman
- * Date: 10/30/13
- * Time: 12:14 PM
- * To change this template use File | Settings | File Templates.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public interface VariantQueryBuilder {
 

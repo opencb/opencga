@@ -25,11 +25,7 @@ import java.util.Map;
 import java.util.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: aaleman
- * Date: 10/30/13
- * Time: 3:04 PM
- * To change this template use File | Settings | File Templates.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 

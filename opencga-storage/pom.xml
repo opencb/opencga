@@ -14,6 +14,7 @@
     <packaging>jar</packaging>
     <version>${opencga.version}</version>
 
+
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -85,5 +86,13 @@
             <artifactId>variant-lib</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+    </build>
 
 </project>

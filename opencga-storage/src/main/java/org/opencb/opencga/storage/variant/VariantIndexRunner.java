@@ -12,8 +12,8 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 
 /**
- * @author Alejandro Aleman Ramos
- * @author Cristina Yenyxe Gonzalez Garcia
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class VariantIndexRunner extends VariantRunner {
 
