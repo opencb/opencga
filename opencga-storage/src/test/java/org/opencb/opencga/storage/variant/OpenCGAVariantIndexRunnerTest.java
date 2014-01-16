@@ -26,7 +26,7 @@ public class OpenCGAVariantIndexRunnerTest extends GenericTest {
         VariantDataReader reader = new VariantVcfDataReader(inputFile);
         VariantDBWriter writer = new VariantVcfSqliteWriter(outputFile);
 
-        OpenCGAVariantIndexRunner runner = new OpenCGAVariantIndexRunner(reader, writer, null, study);
+        OpenCGAVariantIndexRunner runner = new OpenCGAVariantIndexRunner(study, reader, null, writer);
 
         runner.run();
 

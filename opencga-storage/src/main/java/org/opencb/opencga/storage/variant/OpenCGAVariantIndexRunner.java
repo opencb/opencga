@@ -6,7 +6,7 @@ import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantDataReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.index.VariantDataWriter;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.Runner;
+import org.opencb.variant.lib.runners.VariantRunner;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,19 +14,20 @@ import java.util.List;
 /**
  * Created by aaleman on 12/9/13.
  */
-public class OpenCGAVariantIndexRunner extends Runner<VariantDataReader, DataWriter, VcfRecord> {
+//public class OpenCGAVariantIndexRunner extends Runner<VariantDataReader, DataWriter, VcfRecord> {
+public class OpenCGAVariantIndexRunner extends VariantRunner {
 
     private PedDataReader pedReader;
     private VariantStudy study;
 
-    public OpenCGAVariantIndexRunner(VariantDataReader reader, DataWriter writer,PedDataReader pedReader, VariantStudy study, Runner prev) {
-        super(reader, writer, prev);
+    public OpenCGAVariantIndexRunner(VariantStudy study, VariantDataReader reader, PedDataReader pedReader, DataWriter writer, VariantRunner prev) {
+        super(study, reader, pedReader, writer, prev);
         this.pedReader = pedReader;
         this.study = study;
     }
 
-    public OpenCGAVariantIndexRunner(VariantDataReader reader, DataWriter writer, PedDataReader pedReader, VariantStudy study) {
-        super(reader, writer);
+    public OpenCGAVariantIndexRunner(VariantStudy study, VariantDataReader reader, PedDataReader pedReader, DataWriter writer) {
+        super(study, reader, pedReader, writer);
         this.pedReader = pedReader;
         this.study = study;
     }
