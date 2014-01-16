@@ -13,6 +13,7 @@ import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.db.SqliteSingletonConnection;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -34,6 +35,19 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     private PreparedStatement pstmt;
     private SqliteSingletonConnection connection;
 
+    private SqliteCredentials credentials;
+
+
+    public VariantVcfSqliteWriter(SqliteCredentials credentials) {
+        if (credentials == null) {
+            throw new IllegalArgumentException("Credentials for accessing the database must be specified");
+        }
+        this.stmt = null;
+        this.pstmt = null;
+        this.createdSampleTable = false;
+        this.credentials = credentials;
+
+    }
 
     public VariantVcfSqliteWriter(String dbName) {
         this.stmt = null;
@@ -436,6 +450,8 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean open() {
+        System.out.println(this.credentials.getPath());
+        this.connection = new SqliteSingletonConnection(this.credentials.getPath().toString());
         return SqliteSingletonConnection.getConnection() != null;
     }
 
