@@ -1,0 +1,5 @@
+#family_ID	sample_ID	parental_ID	maternal_ID	sex	phenotype
+FAM	NA19660	0	0	2	1
+FAM	NA19661	0	0	1	1
+FAM	NA19600	NA19661	NA19660	2	2
+FAM	NA19685	NA19661	NA19660	1	1
