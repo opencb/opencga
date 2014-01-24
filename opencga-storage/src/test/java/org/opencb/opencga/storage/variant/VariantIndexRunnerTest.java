@@ -25,18 +25,17 @@ public class VariantIndexRunnerTest extends GenericTest {
     private String outputFile = "/tmp/sqliteIndexTest.db";
     private VariantStudy study = new VariantStudy("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
 
-//    @Test
-//    public void sqliteIndex() throws IOException {
-//
-//
-//        VariantDataReader reader = new VariantVcfDataReader(inputFile);
-//        VariantDBWriter writer = new VariantVcfSqliteWriter(outputFile);
-//
-//        VariantIndexRunner runner = new VariantIndexRunner(study, reader, null, writer);
-//
-//        runner.run();
-//
-//    }
+    @Test
+    public void sqliteIndex() throws IOException {
+
+        VariantDataReader reader = new VariantVcfDataReader(inputFile);
+        VariantDBWriter writer = new VariantVcfSqliteWriter(outputFile);
+
+        VariantIndexRunner runner = new VariantIndexRunner(study, reader, null, writer);
+
+        runner.run();
+
+    }
 
     @Test
     public void sqliteIndexWithCredentials() throws IllegalOpenCGACredentialsException, IOException {

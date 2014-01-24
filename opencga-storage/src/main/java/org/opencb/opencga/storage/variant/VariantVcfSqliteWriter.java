@@ -49,6 +49,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
     }
 
+    @Deprecated
     public VariantVcfSqliteWriter(String dbName) {
         this.stmt = null;
         this.pstmt = null;
@@ -450,7 +451,6 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean open() {
-        System.out.println(this.credentials.getPath());
         this.connection = new SqliteSingletonConnection(this.credentials.getPath().toString());
         return SqliteSingletonConnection.getConnection() != null;
     }

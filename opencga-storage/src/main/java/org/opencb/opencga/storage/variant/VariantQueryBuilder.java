@@ -62,4 +62,5 @@ public interface VariantQueryBuilder {
 
     @Deprecated
     VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
+
 }
