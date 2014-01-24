@@ -1,6 +1,15 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.commons.bioformats.feature.Genotype;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.utils.stats.*;
+import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
+import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+import org.opencb.opencga.lib.auth.MongoCredentials;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -9,35 +18,17 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.io.hfile.Compression;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.*;
-import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
-
 /**
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
- * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  */
-public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
+public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
 
     private final byte[] infoColumnFamily = "i".getBytes();
     private final byte[] dataColumnFamily = "d".getBytes();
     private String tableName;
     private String studyName;
 
-    private HBaseAdmin admin;
-    private HTable variantTable;
-    private HTable effectTable;
     private Map<String, Put> putMap;
     private Map<String, Put> effectPutMap;
 
@@ -46,10 +37,10 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private DBCollection studyCollection;
     private DBCollection variantCollection;
 
-    private MonbaseCredentials credentials;
+    private MongoCredentials credentials;
 
 
-    public VariantVcfMonbaseDataWriter(String study, String species, MonbaseCredentials credentials) {
+    public VariantVcfMongoDataWriter(String study, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -63,75 +54,29 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     @Override
     public boolean open() {
         try {
-            // HBase configuration
-            Configuration config = HBaseConfiguration.create();
-            config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
-            config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
-            config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-            admin = new HBaseAdmin(config);
-
             // Mongo configuration
             mongoClient = new MongoClient(credentials.getMongoHost());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        } catch (MasterNotRunningException | ZooKeeperConnectionException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
 
-        return admin != null && db != null;
+        return db != null;
     }
 
     @Override
     public boolean pre() {
-        try {
-            // HBase variant table creation (one per species)
-            if (!admin.tableExists(tableName)) {
-                HTableDescriptor newTable = new HTableDescriptor(tableName.getBytes());
-                // Add column family for samples
-                HColumnDescriptor samplesDescriptor = new HColumnDescriptor(dataColumnFamily);
-                samplesDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
-                newTable.addFamily(samplesDescriptor);
-                // Add column family for the raw main columns and statistics
-                HColumnDescriptor statsDescriptor = new HColumnDescriptor(infoColumnFamily);
-                statsDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
-                newTable.addFamily(statsDescriptor);
-                // Create table
-                admin.createTable(newTable);
-            }
-            variantTable = new HTable(admin.getConfiguration(), tableName);
-            variantTable.setAutoFlush(false, true);
+        // Mongo collection creation
+        studyCollection = db.getCollection("studies");
+        variantCollection = db.getCollection("variants");
 
-            // HBase effect table creation (one per species)
-            String tableEffectName = tableName + "effect";
-            if (!admin.tableExists(tableEffectName)) {
-                HTableDescriptor newEffectTable = new HTableDescriptor(tableEffectName.getBytes());
-                // Add column family for effect
-                HColumnDescriptor effectDescriptor = new HColumnDescriptor("e".getBytes());
-                effectDescriptor.setCompressionType(Compression.Algorithm.SNAPPY);
-                newEffectTable.addFamily(effectDescriptor);
-                // Create effect table
-                admin.createTable(newEffectTable);
-            }
-            effectTable = new HTable(admin.getConfiguration(), tableEffectName);
-            effectTable.setAutoFlush(false, true);
-
-            // Mongo collection creation
-            studyCollection = db.getCollection("studies");
-            variantCollection = db.getCollection("variants");
-
-            return variantTable != null && studyCollection != null && effectTable != null && variantCollection != null;
-        } catch (IOException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
+        return variantCollection != null && studyCollection != null;
     }
 
     @Override
     public boolean writeHeader(String string) {
-        return true; //throw new UnsupportedOperationException("Not supported yet.");
+        return true;
     }
 
     @Override
@@ -168,20 +113,23 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 }
             }
 
-            // Insert relationship variant-study in Mongo
-            // TODO Check that this relationship was not established yet
-            BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
-            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
+            // Check that this relationship was not established yet
             BasicDBObject query = new BasicDBObject("position", rowkey);
-            WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
+            query.put("studies.studyId", studyName);
+
+            if (variantCollection.count(query) == 0) {
+                // Insert relationship variant-study in Mongo
+                BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
+                BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
+                BasicDBObject query2 = new BasicDBObject("position", rowkey);
+                WriteResult wr = variantCollection.update(query2, mongoVariant, true, false);
+                if (!wr.getLastError().ok()) {
+                    // TODO If not correct, retry?
+                    return false;
+                }
+
             }
         }
-
-        // Insert into the database
-        save(putMap.values(), variantTable, putMap);
         return true;
     }
 
@@ -199,32 +147,47 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             ArrayList<BasicDBObject> genotypeCounts = new ArrayList<>();
             for (Genotype g : v.getGenotypes()) {
                 BasicDBObject genotype = new BasicDBObject();
-                String count = g.getAllele1() + "/" + g.getAllele2();
+                String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
                 genotype.append(count, g.getCount());
                 genotypeCounts.add(genotype);
             }
 
+
+            //db.variants.aggregate({$match : {position : '01_0000100000'}},
+            //                      {$unwind: "$studies"},
+            //                      { $match : {"studies.studyId": "testStudy1", "studies.stats" : { $exists : true}}})
+
             // Search for already existing study
-            BasicDBObject query = new BasicDBObject("position", rowkey);
-            query.put("studies.studyId", studyName);
+            DBObject match = new BasicDBObject("$match", new BasicDBObject("position", rowkey));
+            DBObject unwind = new BasicDBObject("$unwind", "$studies");
+            DBObject match2_fields = new BasicDBObject("studies.studyId", studyName);
+            match2_fields.put("studies.stats", new BasicDBObject("$exists", true));
+            DBObject match2 = new BasicDBObject("$match", match2_fields);
 
-            // TODO Check that the study already exists (run 'find'), otherwise create it
+            AggregationOutput agg_output = variantCollection.aggregate(match, unwind, match2);
 
-            // Add stats to study
-            BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
-                    "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
-            BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
-            BasicDBObject action = new BasicDBObject("$set", item);
+            if (!agg_output.results().iterator().hasNext()) {
+                // Add stats to study
+                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
+                        "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
+                BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
+                BasicDBObject action = new BasicDBObject("$set", item);
 
-            WriteResult wr = variantCollection.update(query, action, true, false);
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
+                BasicDBObject query = new BasicDBObject("position", rowkey);
+                query.put("studies.studyId", studyName);
+
+                WriteResult wr = variantCollection.update(query, action, true, false);
+                if (!wr.getLastError().ok()) {
+                    // TODO If not correct, retry?
+                    return false;
+                }
+
             }
+
         }
 
         // Save results in HBase
-        save(putMap.values(), variantTable, putMap);
+        save(putMap);
 
         return true;
     }
@@ -272,7 +235,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             positionSet.add(effectProto.getConsequenceTypeObo());
         }
         // Insert in HBase
-        save(effectPutMap.values(), effectTable, effectPutMap);
+        save(effectPutMap);
 
         // TODO Insert in Mongo
         saveEffectMongo(variantCollection, mongoPutMap);
@@ -323,27 +286,12 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean post() {
-        try {
-            variantTable.flushCommits();
-            effectTable.flushCommits();
-        } catch (IOException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
 
         return true;
     }
 
     @Override
     public boolean close() {
-        try {
-            admin.close();
-            variantTable.close();
-            effectTable.close();
-        } catch (IOException e) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, e);
-            return false;
-        }
 
         return true;
     }
@@ -476,13 +424,8 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return chromosome + "_" + position;
     }
 
-    private void save(Collection<Put> puts, HTable table, Map<String, Put> putMap) {
-        try {
-            table.put(new LinkedList(puts));
-            putMap.clear();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private void save(Map<String, Put> putMap) {
+        putMap.clear();
     }
 
     private void saveEffectMongo(DBCollection collection, Map<String, Set<String>> putMap) {
