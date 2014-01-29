@@ -154,6 +154,7 @@ public class OpenCGAMain {
 
         System.out.println("Indexing variants...");
         vr.run();
+        System.out.println(credentials.toString());
         System.out.println("Variants indexed!");
     }
 }

@@ -1,0 +1,30 @@
+package org.opencb.opencga.storage.variant;
+
+option java_outer_classname = "VariantEffectProtos";
+
+message EffectInfo{
+    required string reference = 1;
+    repeated string alternative = 2;
+    required string chromosome = 3;
+    required int32 position = 4;
+    optional string featureId = 5;
+    optional string featureName = 6;
+    optional string featureType = 7;
+    optional string featureBiotype = 8;
+    optional string featureChromosome = 9;
+    optional int32 featureStart = 10;
+    optional int32 featureEnd = 11;
+    optional string featureStrand = 12;
+    optional string snpId = 13;
+    optional string ancestral = 14;
+    optional string geneId = 15;
+    optional string transcriptId = 16;
+    optional string geneName = 17;
+    optional string consequenceType = 18;
+    optional string consequenceTypeObo = 19;
+    optional string consequenceTypeDesc = 20; 
+    optional string consequenceTypeType = 21;
+    optional int32 aaPosition = 22;
+    optional string aminoacidChange = 23;
+    optional string codonChange = 24;
+}
