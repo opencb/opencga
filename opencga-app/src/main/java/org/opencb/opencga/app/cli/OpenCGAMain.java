@@ -138,7 +138,7 @@ public class OpenCGAMain {
             writer = new VariantVcfSqliteWriter(properties.getProperty("db_path")); // TODO Use SQLiteCredentials class
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
-            writer = new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens", (MonbaseCredentials) credentials);
+            writer = new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens-j", (MonbaseCredentials) credentials);
         } else if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
             writer = new VariantVcfMongoDataWriter(study.getName(), "opencga-hspapiens", (MongoCredentials) credentials);

@@ -39,7 +39,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private HTable variantTable;
     private HTable effectTable;
     private Map<String, Put> putMap;
-    private Map<String, Put> effectPutMap;
+    private Map<String, Set<Put>> effectPutMap;
 
     private MongoClient mongoClient;
     private DB db;
@@ -283,10 +283,15 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             //TODO Insert in the map for HBase storage
             Put effectPut = new Put(Bytes.toBytes(rowkey));
             effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-            effectPutMap.put(rowkey, effectPut);
+            Set<Put> putSet = effectPutMap.get(rowkey);
+            if(putSet==null){
+                putSet = new HashSet<>();
+                effectPutMap.put(rowkey, putSet);
+            }
+            putSet.add(effectPut);
 
             // Insert in the map for Mongo storage
-            Set<String> positionSet = mongoPutMap.get(rowkey);
+            Set<String> positionSet = mongoPutMap.get(position);
             if (positionSet == null) {
                 positionSet = new HashSet<>();
                 mongoPutMap.put(position, positionSet);
@@ -294,7 +299,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             positionSet.add(effectProto.getConsequenceTypeObo());
         }
         // Insert in HBase
-        save(effectTable, effectPutMap);
+        saveEffectHBase(effectTable, effectPutMap);
 
         // TODO Insert in Mongo
         saveEffectMongo(variantCollection, mongoPutMap);
@@ -501,6 +506,21 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private void save(HTable table, Map<String, Put> putMap) {
         try {
             table.put(new LinkedList(putMap.values()));
+            putMap.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void saveEffectHBase(HTable table, Map<String, Set<Put>> putMap) {
+        try{
+            List<Put> effectPutList = new LinkedList<>();
+            for (Map.Entry<String, Set<Put>> entry : putMap.entrySet()) {
+                effectPutList.addAll(entry.getValue());
+//                for(Put put : entry.getValue()){
+//                    effectPutList.add(put);
+//                }
+            }
+            table.put(effectPutList);
             putMap.clear();
         } catch (IOException e) {
             e.printStackTrace();
