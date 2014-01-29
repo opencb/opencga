@@ -85,33 +85,6 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
         Put auxPut;
         for (VcfRecord v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            VariantFieldsProtos.VariantInfo info = buildInfoProto(v);
-            byte[] qualdata = (studyName + "_data").getBytes();
-            if (putMap.get(rowkey) != null) {
-                auxPut = putMap.get(rowkey);
-                auxPut.add(infoColumnFamily, qualdata, info.toByteArray());
-                putMap.put(rowkey, auxPut);
-            } else {
-                auxPut = new Put(rowkey.getBytes());
-                auxPut.add(infoColumnFamily, qualdata, info.toByteArray());
-                putMap.put(rowkey, auxPut);
-            }
-
-            for (String s : v.getSampleNames()) {
-                VariantFieldsProtos.VariantSample.Builder sp = VariantFieldsProtos.VariantSample.newBuilder();
-                sp.setSample(v.getSampleRawData(s));
-                VariantFieldsProtos.VariantSample sample = sp.build();
-                byte[] qual = (studyName + "_" + s).getBytes();
-                if (putMap.get(rowkey) != null) {
-                    auxPut = putMap.get(rowkey);
-                    auxPut.add(dataColumnFamily, qual, sample.toByteArray());
-                    putMap.put(rowkey, auxPut);
-                } else {
-                    auxPut = new Put(rowkey.getBytes());
-                    auxPut.add(dataColumnFamily, qual, sample.toByteArray());
-                    putMap.put(rowkey, auxPut);
-                }
-            }
 
             // Check that this relationship was not established yet
             BasicDBObject query = new BasicDBObject("position", rowkey);
@@ -122,6 +95,8 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
                 BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
                 BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
                 BasicDBObject query2 = new BasicDBObject("position", rowkey);
+                query2.put("chr", v.getChromosome()); // TODO aaleman: change this code in the MonBase Version
+                query2.put("pos", v.getPosition());
                 WriteResult wr = variantCollection.update(query2, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {
                     // TODO If not correct, retry?
@@ -130,6 +105,14 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
 
             }
         }
+
+        DBObject indexPosition = new BasicDBObject("position", 1);
+        DBObject indexChrPos = new BasicDBObject("chr", 1);
+        indexChrPos.put("pos", 1);
+
+        variantCollection.ensureIndex(indexPosition);
+        variantCollection.ensureIndex(indexChrPos);
+
         return true;
     }
 
@@ -144,12 +127,10 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
             putMap.put(rowkey, put2);
 
             // Generate genotype counts
-            ArrayList<BasicDBObject> genotypeCounts = new ArrayList<>();
+            BasicDBObject genotypeCounts = new BasicDBObject(); // TODO aaleman: change this code in the MonBase Version
             for (Genotype g : v.getGenotypes()) {
-                BasicDBObject genotype = new BasicDBObject();
                 String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
-                genotype.append(count, g.getCount());
-                genotypeCounts.add(genotype);
+                genotypeCounts.append(count, g.getCount());
             }
 
 
