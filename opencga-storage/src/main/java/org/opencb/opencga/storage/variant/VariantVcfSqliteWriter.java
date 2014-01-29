@@ -1,7 +1,10 @@
 package org.opencb.opencga.storage.variant;
 
 import com.google.common.base.Joiner;
+import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.commons.bioformats.feature.Genotype;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.feature.Genotypes;
 import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
@@ -10,20 +13,20 @@ import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.db.SqliteSingletonConnection;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: aaleman
- * Date: 10/30/13
- * Time: 3:04 PM
- * To change this template use File | Settings | File Templates.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
@@ -32,7 +35,21 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     private PreparedStatement pstmt;
     private SqliteSingletonConnection connection;
 
+    private SqliteCredentials credentials;
 
+
+    public VariantVcfSqliteWriter(SqliteCredentials credentials) {
+        if (credentials == null) {
+            throw new IllegalArgumentException("Credentials for accessing the database must be specified");
+        }
+        this.stmt = null;
+        this.pstmt = null;
+        this.createdSampleTable = false;
+        this.credentials = credentials;
+
+    }
+
+    @Deprecated
     public VariantVcfSqliteWriter(String dbName) {
         this.stmt = null;
         this.pstmt = null;
@@ -434,6 +451,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean open() {
+        this.connection = new SqliteSingletonConnection(this.credentials.getPath().toString());
         return SqliteSingletonConnection.getConnection() != null;
     }
 

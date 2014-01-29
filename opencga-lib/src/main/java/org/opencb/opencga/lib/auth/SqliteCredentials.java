@@ -1,12 +1,12 @@
 package org.opencb.opencga.lib.auth;
 
+import org.opencb.commons.utils.FileUtils;
+
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.opencb.commons.utils.FileUtils;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class SqliteCredentials implements OpenCGACredentials {
@@ -15,19 +15,19 @@ public class SqliteCredentials implements OpenCGACredentials {
 
     public SqliteCredentials(Path path) throws IllegalOpenCGACredentialsException {
         this.path = path;
-        
+
         check();
     }
-    
-    
+
     @Override
     public boolean check() throws IllegalOpenCGACredentialsException {
+
         try {
-            FileUtils.checkFile(path);
+        FileUtils.checkPath(path.getParent(), true);
         } catch (IOException ex) {
             throw new IllegalOpenCGACredentialsException(ex);
         }
-        
+
         return true;
     }
 
@@ -40,5 +40,5 @@ public class SqliteCredentials implements OpenCGACredentials {
     public final Path getPath() {
         return path;
     }
-    
+
 }
