@@ -130,25 +130,27 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
-                                <echo>Deleting from ${installation.dir}</echo><!-- <copy todir="${installation.dir}">
-									<fileset dir="installation" includes="**" /> </copy> -->
+                                <echo>Deleting from ${installation.dir}</echo>
+                                <!-- <copy todir="${installation.dir}">
+                                                                    <fileset dir="installation" includes="**" /> </copy> -->
                                 <exec executable="rm">
-                                    <arg value="-rf" />
-                                    <arg value="${installation.dir}/analysis" />
-                                    <arg value="${installation.dir}/conf" />
-                                    <arg value="${installation.dir}/bin" />
-                                    <arg value="${installation.dir}/libs" />
+                                    <arg value="-rf"/>
+                                    <arg value="${installation.dir}/analysis"/>
+                                    <arg value="${installation.dir}/conf"/>
+                                    <arg value="${installation.dir}/bin"/>
+                                    <arg value="${installation.dir}/libs"/>
                                 </exec>
-                                
-                                <echo>Copying to ${installation.dir}</echo><!-- <copy todir="${installation.dir}">
-									<fileset dir="installation" includes="**" /> </copy> -->
+
+                                <echo>Copying to ${installation.dir}</echo>
+                                <!-- <copy todir="${installation.dir}">
+                                                                    <fileset dir="installation" includes="**" /> </copy> -->
                                 <exec executable="cp">
-                                    <arg value="-r" />
-                                    <arg value="${build.dir}/analysis" />
-                                    <arg value="${build.dir}/conf" />
-                                    <arg value="${build.dir}/bin" />
-                                    <arg value="${build.dir}/libs" />
-                                    <arg value="${installation.dir}" />
+                                    <arg value="-r"/>
+                                    <arg value="${build.dir}/analysis"/>
+                                    <arg value="${build.dir}/conf"/>
+                                    <arg value="${build.dir}/bin"/>
+                                    <arg value="${build.dir}/libs"/>
+                                    <arg value="${installation.dir}"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -158,7 +160,32 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.5</version>
+
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!--<assembleDirectory>target/variant</assembleDirectory>-->
+                    <repositoryName>libs</repositoryName>
+                    <programs>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.cli.OpenCGAMain</mainClass>
+                            <name>opencga.sh</name>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-    
+
 </project>

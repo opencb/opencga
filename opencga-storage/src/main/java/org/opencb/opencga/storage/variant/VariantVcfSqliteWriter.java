@@ -1,34 +1,28 @@
 package org.opencb.opencga.storage.variant;
 
 import com.google.common.base.Joiner;
-import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.feature.Genotypes;
+import org.opencb.commons.bioformats.variant.Variant;
+import org.opencb.commons.bioformats.variant.VariantFactory;
 import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.*;
-import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.*;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @TODO aaleman: Move writeEffect/writeStats/write*... to write(batch)
  */
-public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
+public class VariantVcfSqliteWriter implements VariantWriter {
 
     private boolean createdSampleTable;
     private Statement stmt;
@@ -58,16 +52,11 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeHeader(String s) {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public boolean writeBatch(List<VcfRecord> vcfRecords) {
+    public boolean write(List<Variant> vcfRecords) {
+        System.out.println(vcfRecords);
         String sql, sqlSampleInfo, sqlInfo;
         PreparedStatement pstmtSample, pstmtInfo;
         String sampleName;
-        String sampleData;
         int allele_1, allele_2;
         Genotype g;
         int id;
@@ -79,7 +68,8 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
             try {
                 sql = "INSERT INTO sample (name) VALUES(?);";
                 pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
-                VcfRecord v = vcfRecords.get(0);
+                Variant v = vcfRecords.get(0);
+
                 for (String name : v.getSampleNames()) {
                     pstmt.setString(1, name);
                     pstmt.execute();
@@ -107,28 +97,28 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
             pstmtSample = SqliteSingletonConnection.getConnection().prepareStatement(sqlSampleInfo);
             pstmtInfo = SqliteSingletonConnection.getConnection().prepareStatement(sqlInfo);
 
-            VcfRecord v;
-            String genes, consecuenteTypes, genotypes;
+            String genes, consequenceTypes, genotypes;
             Map<String, Object> polySift;
             for (int i = 0; i < vcfRecords.size(); i++) {
-                v = vcfRecords.get(i);
+                Variant v = vcfRecords.get(i);
+                String info = VariantFactory.getVcfInfo(v);
 
                 pstmt.setString(1, v.getChromosome());
-                pstmt.setInt(2, v.getPosition());
+                pstmt.setLong(2, v.getPosition());
                 pstmt.setString(3, v.getId());
                 pstmt.setString(4, v.getReference());
                 pstmt.setString(5, Joiner.on(",").join(v.getAltAlleles()));
-                pstmt.setDouble(6, (v.getQuality().equals(".") ? 0 : Double.valueOf(v.getQuality())));
-                pstmt.setString(7, v.getFilter());
-                pstmt.setString(8, v.getInfo());
+                pstmt.setDouble(6, (v.getAttribute("QUAL").equals(".") ? 0 : Double.valueOf(v.getAttribute("QUAL"))));
+                pstmt.setString(7, v.getAttribute("FILTER"));
+                pstmt.setString(8, info);
                 pstmt.setString(9, v.getFormat());
 
                 genes = parseGenes(batchEffect.get(i));
-                consecuenteTypes = parseConsequenceTypes(batchEffect.get(i));
+                consequenceTypes = parseConsequenceTypes(batchEffect.get(i));
                 genotypes = parseGenotypes(v);
 
                 pstmt.setString(10, genes);
-                pstmt.setString(11, consecuenteTypes);
+                pstmt.setString(11, consequenceTypes);
                 pstmt.setString(12, genotypes);
                 polySift = parsePolyphenSift(batchEffect.get(i));
 
@@ -143,11 +133,11 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 ResultSet rs = pstmt.getGeneratedKeys();
                 if (rs.next()) {
                     id = rs.getInt(1);
-                    for (Map.Entry<String, String> entry : v.getSampleRawData().entrySet()) {
+                    for (Map.Entry<String, Map<String, String>> entry : v.getSamplesData().entrySet()) {
                         sampleName = entry.getKey();
-                        sampleData = entry.getValue();
+                        Map<String, String> sampleData = entry.getValue();
 
-                        g = v.getSampleGenotype(sampleName);
+                        g = new Genotype(sampleData.get("GT"));
 
                         allele_1 = (g.getAllele1() == null) ? -1 : g.getAllele1();
                         allele_2 = (g.getAllele2() == null) ? -1 : g.getAllele2();
@@ -156,21 +146,28 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                         pstmtSample.setString(2, sampleName);
                         pstmtSample.setInt(3, allele_1);
                         pstmtSample.setInt(4, allele_2);
-                        pstmtSample.setString(5, sampleData);
+                        pstmtSample.setString(5, VariantFactory.getVcfSampleRawData(v, sampleName));
                         pstmtSample.execute();
 
                     }
+                    for (Map.Entry<String, String> entry : v.getAttributes().entrySet()) {
+                        pstmtInfo.setInt(1, id);
+                        pstmtInfo.setString(2, entry.getKey());
+                        pstmtInfo.setString(3, entry.getValue());
+                        pstmtInfo.execute();
 
-                    if (!v.getInfo().equals(".")) {
-                        String[] infoFields = v.getInfo().split(";");
-                        for (String elem : infoFields) {
-                            String[] fields = elem.split("=");
-                            pstmtInfo.setInt(1, id);
-                            pstmtInfo.setString(2, fields[0]);
-                            pstmtInfo.setString(3, fields[1]);
-                            pstmtInfo.execute();
-                        }
                     }
+
+//                    if (!info.equals(".")) {
+//                        String[] infoFields = info.split(";");
+//                        for (String elem : infoFields) {
+//                            String[] fields = elem.split("=");
+//                            pstmtInfo.setInt(1, id);
+//                            pstmtInfo.setString(2, fields[0]);
+//                            pstmtInfo.setString(3, fields[1]);
+//                            pstmtInfo.execute();
+//                        }
+//                    }
                 } else {
                     res = false;
                 }
@@ -211,11 +208,11 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         return null;
     }
 
-    private String parseGenotypes(VcfRecord r) {
+    private String parseGenotypes(Variant variant) {
         List<Genotype> list = new ArrayList<>();
 
-        for (String sample : r.getSampleNames()) {
-            Genotypes.addGenotypeToList(list, r.getSampleGenotype(sample));
+        for (String sample : variant.getSampleNames()) {
+            Genotypes.addGenotypeToList(list, new Genotype(variant.getSampleData(sample, "GT")));
         }
 
         return Joiner.on(",").join(list);
@@ -250,207 +247,209 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         return Joiner.on(",").join(genes);
     }
 
-    @Override
-    public boolean writeVariantEffect(List<VariantEffect> variantEffects) {
+    /*
+        @Override
+        public boolean writeVariantEffect(List<VariantEffect> variantEffects) {
 
-        String sql = "INSERT INTO variant_effect(chromosome	, position , reference_allele , alternative_allele , " +
-                "feature_id , feature_name , feature_type , feature_biotype , feature_chromosome , feature_start , " +
-                "feature_end , feature_strand , snp_id , ancestral , alternative , gene_id , transcript_id , gene_name , " +
-                "consequence_type , consequence_type_obo , consequence_type_desc , consequence_type_type , aa_position , " +
-                "aminoacid_change , codon_change," +
-                "polyphen_score, polyphen_effect, sift_score, sift_effect) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+            String sql = "INSERT INTO variant_effect(chromosome	, position , reference_allele , alternative_allele , " +
+                    "feature_id , feature_name , feature_type , feature_biotype , feature_chromosome , feature_start , " +
+                    "feature_end , feature_strand , snp_id , ancestral , alternative , gene_id , transcript_id , gene_name , " +
+                    "consequence_type , consequence_type_obo , consequence_type_desc , consequence_type_type , aa_position , " +
+                    "aminoacid_change , codon_change," +
+                    "polyphen_score, polyphen_effect, sift_score, sift_effect) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
-        boolean res = true;
+            boolean res = true;
 
-        try {
-            pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
+            try {
+                pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-            for (VariantEffect v : variantEffects) {
-                pstmt.setString(1, v.getChromosome());
-                pstmt.setInt(2, v.getPosition());
-                pstmt.setString(3, v.getReferenceAllele());
-                pstmt.setString(4, v.getAlternativeAllele());
-                pstmt.setString(5, v.getFeatureId());
-                pstmt.setString(6, v.getFeatureName());
-                pstmt.setString(7, v.getFeatureType());
-                pstmt.setString(8, v.getFeatureBiotype());
-                pstmt.setString(9, v.getFeatureChromosome());
-                pstmt.setInt(10, v.getFeatureStart());
-                pstmt.setInt(11, v.getFeatureEnd());
-                pstmt.setString(12, v.getFeatureStrand());
-                pstmt.setString(13, v.getSnpId());
-                pstmt.setString(14, v.getAncestral());
-                pstmt.setString(15, v.getAlternative());
-                pstmt.setString(16, v.getGeneId());
-                pstmt.setString(17, v.getTranscriptId());
-                pstmt.setString(18, v.getGeneName());
-                pstmt.setString(19, v.getConsequenceType());
-                pstmt.setString(20, v.getConsequenceTypeObo());
-                pstmt.setString(21, v.getConsequenceTypeDesc());
-                pstmt.setString(22, v.getConsequenceTypeType());
-                pstmt.setInt(23, v.getAaPosition());
-                pstmt.setString(24, v.getAminoacidChange());
-                pstmt.setString(25, v.getCodonChange());
-                pstmt.setDouble(26, v.getPolyphenScore());
-                pstmt.setInt(27, v.getPolyphenEffect());
-                pstmt.setDouble(28, v.getSiftScore());
-                pstmt.setInt(29, v.getSiftEffect());
+                for (VariantEffect v : variantEffects) {
+                    pstmt.setString(1, v.getChromosome());
+                    pstmt.setInt(2, v.getPosition());
+                    pstmt.setString(3, v.getReferenceAllele());
+                    pstmt.setString(4, v.getAlternativeAllele());
+                    pstmt.setString(5, v.getFeatureId());
+                    pstmt.setString(6, v.getFeatureName());
+                    pstmt.setString(7, v.getFeatureType());
+                    pstmt.setString(8, v.getFeatureBiotype());
+                    pstmt.setString(9, v.getFeatureChromosome());
+                    pstmt.setInt(10, v.getFeatureStart());
+                    pstmt.setInt(11, v.getFeatureEnd());
+                    pstmt.setString(12, v.getFeatureStrand());
+                    pstmt.setString(13, v.getSnpId());
+                    pstmt.setString(14, v.getAncestral());
+                    pstmt.setString(15, v.getAlternative());
+                    pstmt.setString(16, v.getGeneId());
+                    pstmt.setString(17, v.getTranscriptId());
+                    pstmt.setString(18, v.getGeneName());
+                    pstmt.setString(19, v.getConsequenceType());
+                    pstmt.setString(20, v.getConsequenceTypeObo());
+                    pstmt.setString(21, v.getConsequenceTypeDesc());
+                    pstmt.setString(22, v.getConsequenceTypeType());
+                    pstmt.setInt(23, v.getAaPosition());
+                    pstmt.setString(24, v.getAminoacidChange());
+                    pstmt.setString(25, v.getCodonChange());
+                    pstmt.setDouble(26, v.getPolyphenScore());
+                    pstmt.setInt(27, v.getPolyphenEffect());
+                    pstmt.setDouble(28, v.getSiftScore());
+                    pstmt.setInt(29, v.getSiftEffect());
 
-                pstmt.execute();
+                    pstmt.execute();
 
-            }
-            SqliteSingletonConnection.getConnection().commit();
-            pstmt.close();
-        } catch (SQLException e) {
-            System.err.println("VARIANT_EFFECT: " + e.getClass().getName() + ": " + e.getMessage());
-            res = false;
-        }
-        return res;
-    }
-
-    @Override
-    public boolean writeVariantStats(List<VariantStats> vcfVariantStats) {
-        String sql = "INSERT INTO variant_stats (chromosome, position, allele_ref, allele_alt, id, maf, mgf, allele_maf, genotype_maf, miss_allele, miss_gt, mendel_err, is_indel, cases_percent_dominant, controls_percent_dominant, cases_percent_recessive, controls_percent_recessive, genotypes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
-        boolean res = true;
-
-        List<String> genotypes = new ArrayList<>(10);
-
-        try {
-            pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
-
-            for (VariantStats v : vcfVariantStats) {
-                pstmt.setString(1, v.getChromosome());
-                pstmt.setLong(2, v.getPosition());
-                pstmt.setString(3, v.getRefAlleles());
-                pstmt.setString(4, Joiner.on(",").join(v.getAltAlleles()));
-                pstmt.setString(5, v.getId());
-                pstmt.setDouble(6, v.getMaf());
-                pstmt.setDouble(7, v.getMgf());
-                pstmt.setString(8, v.getMafAllele());
-                pstmt.setString(9, v.getMgfAllele());
-                pstmt.setInt(10, v.getMissingAlleles());
-                pstmt.setInt(11, v.getMissingGenotypes());
-                pstmt.setInt(12, v.getMendelinanErrors());
-                pstmt.setInt(13, (v.isIndel() ? 1 : 0));
-                pstmt.setDouble(14, v.getCasesPercentDominant());
-                pstmt.setDouble(15, v.getControlsPercentDominant());
-                pstmt.setDouble(16, v.getCasesPercentRecessive());
-                pstmt.setDouble(17, v.getControlsPercentRecessive());
-
-                for (Genotype g : v.getGenotypes()) {
-                    genotypes.add(g.toString());
                 }
-                pstmt.setString(18, Joiner.on(",").join(genotypes));
-
-                pstmt.execute();
-                genotypes.clear();
-
+                SqliteSingletonConnection.getConnection().commit();
+                pstmt.close();
+            } catch (SQLException e) {
+                System.err.println("VARIANT_EFFECT: " + e.getClass().getName() + ": " + e.getMessage());
+                res = false;
             }
-            SqliteSingletonConnection.getConnection().commit();
-            pstmt.close();
-        } catch (SQLException e) {
-            System.err.println("VARIANT_STATS: " + e.getClass().getName() + ": " + e.getMessage());
-            res = false;
+            return res;
         }
 
+        @Override
+        public boolean writeVariantStats(List<VariantStats> vcfVariantStats) {
+            String sql = "INSERT INTO variant_stats (chromosome, position, allele_ref, allele_alt, id, maf, mgf, allele_maf, genotype_maf, miss_allele, miss_gt, mendel_err, is_indel, cases_percent_dominant, controls_percent_dominant, cases_percent_recessive, controls_percent_recessive, genotypes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+            boolean res = true;
 
-        return res;
-    }
+            List<String> genotypes = new ArrayList<>(10);
 
-    @Override
-    public boolean writeGlobalStats(VariantGlobalStats vcfGlobalStat) {
-        boolean res = true;
-        float titv = 0;
-        float pass = 0;
-        float avg = 0;
-        try {
-            String sql;
-            stmt = SqliteSingletonConnection.getConnection().createStatement();
+            try {
+                pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-            sql = "INSERT INTO global_stats VALUES ('NUM_VARIANTS', 'Number of variants'," + vcfGlobalStat.getVariantsCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_SAMPLES', 'Number of samples'," + vcfGlobalStat.getSamplesCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_BIALLELIC', 'Number of biallelic variants'," + vcfGlobalStat.getBiallelicsCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_MULTIALLELIC', 'Number of multiallelic variants'," + vcfGlobalStat.getMultiallelicsCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_SNPS', 'Number of SNP'," + vcfGlobalStat.getSnpsCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_INDELS', 'Number of indels'," + vcfGlobalStat.getIndelsCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_TRANSITIONS', 'Number of transitions'," + vcfGlobalStat.getTransitionsCount() + ");";
-            stmt.executeUpdate(sql);
-            sql = "INSERT INTO global_stats VALUES ('NUM_TRANSVERSIONS', 'Number of transversions'," + vcfGlobalStat.getTransversionsCount() + ");";
-            stmt.executeUpdate(sql);
-            if (vcfGlobalStat.getTransversionsCount() > 0) {
-                titv = vcfGlobalStat.getTransitionsCount() / (float) vcfGlobalStat.getTransversionsCount();
+                for (VariantStats v : vcfVariantStats) {
+                    pstmt.setString(1, v.getChromosome());
+                    pstmt.setLong(2, v.getPosition());
+                    pstmt.setString(3, v.getRefAlleles());
+                    pstmt.setString(4, Joiner.on(",").join(v.getAltAlleles()));
+                    pstmt.setString(5, v.getId());
+                    pstmt.setDouble(6, v.getMaf());
+                    pstmt.setDouble(7, v.getMgf());
+                    pstmt.setString(8, v.getMafAllele());
+                    pstmt.setString(9, v.getMgfAllele());
+                    pstmt.setInt(10, v.getMissingAlleles());
+                    pstmt.setInt(11, v.getMissingGenotypes());
+                    pstmt.setInt(12, v.getMendelinanErrors());
+                    pstmt.setInt(13, (v.isIndel() ? 1 : 0));
+                    pstmt.setDouble(14, v.getCasesPercentDominant());
+                    pstmt.setDouble(15, v.getControlsPercentDominant());
+                    pstmt.setDouble(16, v.getCasesPercentRecessive());
+                    pstmt.setDouble(17, v.getControlsPercentRecessive());
+
+                    for (Genotype g : v.getGenotypes()) {
+                        genotypes.add(g.toString());
+                    }
+                    pstmt.setString(18, Joiner.on(",").join(genotypes));
+
+                    pstmt.execute();
+                    genotypes.clear();
+
+                }
+                SqliteSingletonConnection.getConnection().commit();
+                pstmt.close();
+            } catch (SQLException e) {
+                System.err.println("VARIANT_STATS: " + e.getClass().getName() + ": " + e.getMessage());
+                res = false;
             }
-            sql = "INSERT INTO global_stats VALUES ('TITV_RATIO', 'Ti/TV ratio'," + titv + ");";
-            stmt.executeUpdate(sql);
-            if (vcfGlobalStat.getVariantsCount() > 0) {
-                pass = vcfGlobalStat.getPassCount() / (float) vcfGlobalStat.getVariantsCount();
-                avg = vcfGlobalStat.getAccumQuality() / (float) vcfGlobalStat.getVariantsCount();
-            }
 
-            sql = "INSERT INTO global_stats VALUES ('PERCENT_PASS', 'Percentage of PASS'," + (pass * 100) + ");";
-            stmt.executeUpdate(sql);
 
-            sql = "INSERT INTO global_stats VALUES ('AVG_QUALITY', 'Average quality'," + avg + ");";
-            stmt.executeUpdate(sql);
-
-            SqliteSingletonConnection.getConnection().commit();
-            stmt.close();
-
-        } catch (SQLException e) {
-            System.err.println("GLOBAL_STATS: " + e.getClass().getName() + ": " + e.getMessage());
-            res = false;
+            return res;
         }
 
-        return res;
-    }
+        @Override
+        public boolean writeGlobalStats(VariantGlobalStats vcfGlobalStat) {
+            boolean res = true;
+            float titv = 0;
+            float pass = 0;
+            float avg = 0;
+            try {
+                String sql;
+                stmt = SqliteSingletonConnection.getConnection().createStatement();
 
-    @Override
-    public boolean writeSampleStats(VariantSampleStats vcfSampleStat) {
-        String sql = "INSERT INTO sample_stats VALUES(?,?,?,?);";
-        VariantSingleSampleStats s;
-        String name;
-        boolean res = true;
-        try {
-            pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_VARIANTS', 'Number of variants'," + vcfGlobalStat.getVariantsCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_SAMPLES', 'Number of samples'," + vcfGlobalStat.getSamplesCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_BIALLELIC', 'Number of biallelic variants'," + vcfGlobalStat.getBiallelicsCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_MULTIALLELIC', 'Number of multiallelic variants'," + vcfGlobalStat.getMultiallelicsCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_SNPS', 'Number of SNP'," + vcfGlobalStat.getSnpsCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_INDELS', 'Number of indels'," + vcfGlobalStat.getIndelsCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_TRANSITIONS', 'Number of transitions'," + vcfGlobalStat.getTransitionsCount() + ");";
+                stmt.executeUpdate(sql);
+                sql = "INSERT INTO global_stats VALUES ('NUM_TRANSVERSIONS', 'Number of transversions'," + vcfGlobalStat.getTransversionsCount() + ");";
+                stmt.executeUpdate(sql);
+                if (vcfGlobalStat.getTransversionsCount() > 0) {
+                    titv = vcfGlobalStat.getTransitionsCount() / (float) vcfGlobalStat.getTransversionsCount();
+                }
+                sql = "INSERT INTO global_stats VALUES ('TITV_RATIO', 'Ti/TV ratio'," + titv + ");";
+                stmt.executeUpdate(sql);
+                if (vcfGlobalStat.getVariantsCount() > 0) {
+                    pass = vcfGlobalStat.getPassCount() / (float) vcfGlobalStat.getVariantsCount();
+                    avg = vcfGlobalStat.getAccumQuality() / (float) vcfGlobalStat.getVariantsCount();
+                }
 
-            for (Map.Entry<String, VariantSingleSampleStats> entry : vcfSampleStat.getSamplesStats().entrySet()) {
-                s = entry.getValue();
-                name = entry.getKey();
+                sql = "INSERT INTO global_stats VALUES ('PERCENT_PASS', 'Percentage of PASS'," + (pass * 100) + ");";
+                stmt.executeUpdate(sql);
 
-                pstmt.setString(1, name);
-                pstmt.setInt(2, s.getMendelianErrors());
-                pstmt.setInt(3, s.getMissingGenotypes());
-                pstmt.setInt(4, s.getHomozygotesNumber());
-                pstmt.execute();
+                sql = "INSERT INTO global_stats VALUES ('AVG_QUALITY', 'Average quality'," + avg + ");";
+                stmt.executeUpdate(sql);
 
+                SqliteSingletonConnection.getConnection().commit();
+                stmt.close();
+
+            } catch (SQLException e) {
+                System.err.println("GLOBAL_STATS: " + e.getClass().getName() + ": " + e.getMessage());
+                res = false;
             }
-            SqliteSingletonConnection.getConnection().commit();
-            pstmt.close();
-        } catch (SQLException e) {
-            System.err.println("SAMPLE_STATS: " + e.getClass().getName() + ": " + e.getMessage());
-            res = false;
+
+            return res;
         }
-        return res;
-    }
 
-    @Override
-    public boolean writeSampleGroupStats(VariantSampleGroupStats vcfSampleGroupStat) throws IOException {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
-    }
+        @Override
+        public boolean writeSampleStats(VariantSampleStats vcfSampleStat) {
+            String sql = "INSERT INTO sample_stats VALUES(?,?,?,?);";
+            VariantSingleSampleStats s;
+            String name;
+            boolean res = true;
+            try {
+                pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql);
 
-    @Override
-    public boolean writeVariantGroupStats(VariantGroupStats vcfVariantGroupStat) throws IOException {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
-    }
+                for (Map.Entry<String, VariantSingleSampleStats> entry : vcfSampleStat.getSamplesStats().entrySet()) {
+                    s = entry.getValue();
+                    name = entry.getKey();
 
+                    pstmt.setString(1, name);
+                    pstmt.setInt(2, s.getMendelianErrors());
+                    pstmt.setInt(3, s.getMissingGenotypes());
+                    pstmt.setInt(4, s.getHomozygotesNumber());
+                    pstmt.execute();
+
+                }
+                SqliteSingletonConnection.getConnection().commit();
+                pstmt.close();
+            } catch (SQLException e) {
+                System.err.println("SAMPLE_STATS: " + e.getClass().getName() + ": " + e.getMessage());
+                res = false;
+            }
+            return res;
+        }
+
+        @Override
+        public boolean writeSampleGroupStats(VariantSampleGroupStats vcfSampleGroupStat) throws IOException {
+            return false;  //To change body of implemented methods use File | Settings | File Templates.
+        }
+
+        @Override
+        public boolean writeVariantGroupStats(VariantGroupStats vcfVariantGroupStat) throws IOException {
+            return false;  //To change body of implemented methods use File | Settings | File Templates.
+        }
+    */
     @Override
     public boolean open() {
+        System.out.println(this.credentials.getPath().toString());
         this.connection = new SqliteSingletonConnection(this.credentials.getPath().toString());
         return SqliteSingletonConnection.getConnection() != null;
     }
@@ -642,7 +641,8 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeStudy(VariantStudy study) {
+    public boolean write(Variant variant) {
         return true;
     }
+
 }

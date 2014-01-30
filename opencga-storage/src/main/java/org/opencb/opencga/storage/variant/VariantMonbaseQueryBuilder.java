@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.variant;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -11,6 +12,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -38,7 +40,7 @@ import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
 
 
 public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
-    
+
     private String tableName;
     private String effectTableName;
     private HBaseAdmin admin;
@@ -50,12 +52,12 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
 
 
-    public VariantMonbaseQueryBuilder(String species, MonbaseCredentials credentials) 
+    public VariantMonbaseQueryBuilder(String species, MonbaseCredentials credentials)
             throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
         this.monbaseCredentials = credentials;
         this.tableName = species;
         this.effectTableName = species + "effect";
-        
+
         // HBase configuration
         Configuration config = HBaseConfiguration.create();
         config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
@@ -68,7 +70,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         db = mongoClient.getDB(credentials.getMongoDbName());
     }
 
-    
+
     @Override
     public QueryResult<Variant> getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
         Long start, end, dbstart, dbend;
@@ -76,7 +78,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         QueryResult<Variant> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
         List<Variant> results = new LinkedList<>();
-        
+
         boolean includeSamples;
         boolean includeStats;
         boolean includeEffects;
@@ -87,7 +89,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         } else {
             includeSamples = options.containsKey("samples") && options.getBoolean("samples");
             includeStats = options.containsKey("stats") && options.getBoolean("stats");
-            includeEffects = options.containsKey("effects") &&  options.getBoolean("effects");
+            includeEffects = options.containsKey("effects") && options.getBoolean("effects");
         }
 
         try {
@@ -98,7 +100,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
             Scan regionScan = new Scan(startRow.getBytes(), stopRow.getBytes());
             ResultScanner scanres = table.getScanner(regionScan);
             dbend = System.currentTimeMillis();
-            queryResult.setDbTime(dbend-dbstart);
+            queryResult.setDbTime(dbend - dbstart);
 
             // Iterate over results and, optionally, their samples and statistics
             for (Result result : scanres) {
@@ -133,8 +135,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                         }
                         resultSampleMap.put(sampleName, singleSampleMap);
                     }
-                    
-                    variant.setSampleData(resultSampleMap);
+
+//                    variant.setSampleData(resultSampleMap); // TODO cgonzalez: check this code
                 }
 
                 // Set stats if requested
@@ -161,7 +163,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                     QueryResult<VariantEffect> queryEffects = getEffectsByVariant(variant, options);
                     variant.setEffect(queryEffects.getResult());
                 }
-                
+
                 results.add(variant);
             }
         } catch (IOException e) {
@@ -170,7 +172,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         queryResult.setResult(results);
         queryResult.setNumResults(results.size());
         end = System.currentTimeMillis();
-        queryResult.setTime(end-start);
+        queryResult.setTime(end - start);
         return queryResult;
     }
 
@@ -183,18 +185,18 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         }
         return allResults;
     }
-    
+
     @Override
     public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
-        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d", 
+        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d",
                 region.getChromosome(), region.getStart(), region.getEnd()));
         List<ObjectMap> data = new ArrayList<>();
         String startRow = buildRowkey(region.getChromosome(), Long.toString(region.getStart()));
         String stopRow = buildRowkey(region.getChromosome(), Long.toString(region.getEnd()));
-        
+
         long startTime = System.currentTimeMillis();
-        
-        long startDbTime = System.currentTimeMillis(); 
+
+        long startDbTime = System.currentTimeMillis();
 
         BasicDBObject query = new BasicDBObject("position", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies.studyId", studyName);
         DBCollection collection = db.getCollection("variants");
@@ -244,11 +246,11 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 //                data.add(item);
             }
         }
-        
+
         queryResult.setResult(data);
         queryResult.setNumResults(data.size());
         queryResult.setTime(System.currentTimeMillis() - startTime);
-        
+
         return queryResult;
     }
 
@@ -289,8 +291,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         dbstart = System.currentTimeMillis();
         DBCursor variantInStudies = collection.find(query);
         dbend = System.currentTimeMillis();
-        queryResult.setDbTime(dbend-dbstart);
-        
+        queryResult.setDbTime(dbend - dbstart);
+
         for (DBObject result : variantInStudies) {
             String[] rowkeyParts = result.get("position").toString().split("_");
             String chromosome = rowkeyParts[0].replaceFirst("^0+(?!$)", "");
@@ -301,7 +303,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
             String alt = StringUtils.join((ArrayList<String>) st.get("alt"), ",");
 
             Variant variant = new Variant(chromosome, position, ref, alt);
-            
+
             // Set stats informations
             if (includeStats) {
                 VariantStats stats = new VariantStats();
@@ -320,9 +322,9 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                 stats.setGenotypes(genotypeCount);
                 variant.setStats(stats);
             }
-            
+
             // TODO Set consequence type names
-            if (includeEffects) { 
+            if (includeEffects) {
                 BasicDBList mongoEffects = (BasicDBList) st.get("effects");
                 if (mongoEffects != null) {
                     for (Object e : mongoEffects) {
@@ -333,14 +335,14 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                     }
                 }
             }
-            
+
             results.add(variant);
         }
 
         queryResult.setResult(results);
         queryResult.setNumResults(results.size());
         end = System.currentTimeMillis();
-        queryResult.setTime(end-start);
+        queryResult.setTime(end - start);
         return queryResult;
     }
 

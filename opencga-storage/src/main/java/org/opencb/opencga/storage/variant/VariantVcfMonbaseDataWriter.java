@@ -1,32 +1,30 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.hfile.Compression;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.Variant;
+import org.opencb.commons.bioformats.variant.VariantFactory;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.*;
-import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
+import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  */
-public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
+public class VariantVcfMonbaseDataWriter implements VariantWriter {
 
     private final byte[] infoColumnFamily = "i".getBytes();
     private final byte[] dataColumnFamily = "d".getBytes();
@@ -128,15 +126,10 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     }
 
     @Override
-    public boolean writeHeader(String string) {
-        return true; //throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
-    public boolean writeBatch(List<VcfRecord> data) {
+    public boolean write(List<Variant> data) {
         // Generate the Put objects
         Put auxPut;
-        for (VcfRecord v : data) {
+        for (Variant v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantInfo info = buildInfoProto(v);
             byte[] qualdata = (studyName + "_data").getBytes();
@@ -152,7 +145,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
 
             for (String s : v.getSampleNames()) {
                 VariantFieldsProtos.VariantSample.Builder sp = VariantFieldsProtos.VariantSample.newBuilder();
-                sp.setSample(v.getSampleRawData(s));
+                sp.setSample(VariantFactory.getVcfSampleRawData(v, s));
                 VariantFieldsProtos.VariantSample sample = sp.build();
                 byte[] qual = (studyName + "_" + s).getBytes();
                 if (putMap.get(rowkey) != null) {
@@ -165,7 +158,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                     putMap.put(rowkey, auxPut);
                 }
             }
-            
+
             // Insert relationship variant-study in Mongo
             // TODO Check that this relationship was not established yet
             BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
@@ -183,142 +176,142 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return true;
     }
 
-    @Override
-    public boolean writeVariantStats(List<VariantStats> data) {
-        for (VariantStats v : data) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
-            byte[] qualifier = (studyName + "_stats").getBytes();
-            Put put2 = new Put(Bytes.toBytes(rowkey));
-            put2.add(infoColumnFamily, qualifier, stats.toByteArray());
-            putMap.put(rowkey, put2);
+    /*  @Override
+      public boolean writeVariantStats(List<VariantStats> data) {
+          for (VariantStats v : data) {
+              String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+              VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
+              byte[] qualifier = (studyName + "_stats").getBytes();
+              Put put2 = new Put(Bytes.toBytes(rowkey));
+              put2.add(infoColumnFamily, qualifier, stats.toByteArray());
+              putMap.put(rowkey, put2);
 
-            // Generate genotype counts
-            ArrayList<BasicDBObject> genotypeCounts = new ArrayList<>();
-            for (Genotype g : v.getGenotypes()) {
-                BasicDBObject genotype = new BasicDBObject();
-                String count = g.getAllele1() + "/" + g.getAllele2();
-                genotype.append(count, g.getCount());
-                genotypeCounts.add(genotype);
-            }
+              // Generate genotype counts
+              ArrayList<BasicDBObject> genotypeCounts = new ArrayList<>();
+              for (Genotype g : v.getGenotypes()) {
+                  BasicDBObject genotype = new BasicDBObject();
+                  String count = g.getAllele1() + "/" + g.getAllele2();
+                  genotype.append(count, g.getCount());
+                  genotypeCounts.add(genotype);
+              }
 
-            // Search for already existing study
-            BasicDBObject query = new BasicDBObject("position", rowkey);
-            query.put("studies.studyId", studyName);
-            
-            // TODO Check that the study already exists (run 'find'), otherwise create it
-            
-            // Add stats to study
-            BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
-                    "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
-            BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
-            BasicDBObject action = new BasicDBObject("$set", item);
+              // Search for already existing study
+              BasicDBObject query = new BasicDBObject("position", rowkey);
+              query.put("studies.studyId", studyName);
 
-            WriteResult wr = variantCollection.update(query, action, true, false);
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
-            }
-        }
+              // TODO Check that the study already exists (run 'find'), otherwise create it
 
-        // Save results in HBase
-        save(putMap.values(), variantTable, putMap);
+              // Add stats to study
+              BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
+                      "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
+              BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
+              BasicDBObject action = new BasicDBObject("$set", item);
 
-        return true;
-    }
+              WriteResult wr = variantCollection.update(query, action, true, false);
+              if (!wr.getLastError().ok()) {
+                  // TODO If not correct, retry?
+                  return false;
+              }
+          }
 
-    @Override
-    public boolean writeGlobalStats(VariantGlobalStats vgs) {
-        return true; //throw new UnsupportedOperationException("Not supported yet.");
-    }
+          // Save results in HBase
+          save(putMap.values(), variantTable, putMap);
 
-    @Override
-    public boolean writeSampleStats(VariantSampleStats vss) {
-        return true; //throw new UnsupportedOperationException("Not supported yet.");
-    }
+          return true;
+      }
 
-    @Override
-    public boolean writeSampleGroupStats(VariantSampleGroupStats vsgs) throws IOException {
-        return true;//throw new UnsupportedOperationException("Not supported yet.");
-    }
+      @Override
+      public boolean writeGlobalStats(VariantGlobalStats vgs) {
+          return true; //throw new UnsupportedOperationException("Not supported yet.");
+      }
 
-    @Override
-    public boolean writeVariantGroupStats(VariantGroupStats vvgs) throws IOException {
-        return true;//throw new UnsupportedOperationException("Not supported yet.");
-    }
+      @Override
+      public boolean writeSampleStats(VariantSampleStats vss) {
+          return true; //throw new UnsupportedOperationException("Not supported yet.");
+      }
 
-    @Override
-    public boolean writeVariantEffect(List<VariantEffect> list) {
-        Map<String, Set<String>> mongoPutMap = new HashMap<>();
-        
-        for (VariantEffect v : list) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
-            String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
-            
-            // TODO Insert in the map for HBase storage
-//            Put effectPut = new Put(Bytes.toBytes(rowkey));
-//            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-//            effectPutMap.put(rowkey, effectPut);
-            
-            // Insert in the map for Mongo storage
-            Set<String> positionSet = mongoPutMap.get(rowkey);
-            if (positionSet == null) { 
-                positionSet = new HashSet<>(); 
-                mongoPutMap.put(rowkey, positionSet);
-            }
-            positionSet.add(effectProto.getConsequenceTypeObo());
-        }
-        // Insert in HBase
-        save(effectPutMap.values(), effectTable, effectPutMap);
-        
-        // TODO Insert in Mongo
-        saveEffectMongo(variantCollection, mongoPutMap);
-        
-        return true;
-    }
+      @Override
+      public boolean writeSampleGroupStats(VariantSampleGroupStats vsgs) throws IOException {
+          return true;//throw new UnsupportedOperationException("Not supported yet.");
+      }
 
-    @Override
-    public boolean writeStudy(VariantStudy study) {
-        String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
-        BasicDBObject studyMongo = new BasicDBObject("name", study.getName())
-                .append("alias", study.getAlias())
-                .append("date", timeStamp)
-                .append("authors", study.getAuthors())
-                .append("samples", study.getSamples())
-                .append("description", study.getDescription())
-                .append("sources", study.getSources());
+      @Override
+      public boolean writeVariantGroupStats(VariantGroupStats vvgs) throws IOException {
+          return true;//throw new UnsupportedOperationException("Not supported yet.");
+      }
 
-        VariantGlobalStats global = study.getStats();
-        if (global != null) {
-            DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
-                    .append("variantsCount", global.getVariantsCount())
-                    .append("snpCount", global.getSnpsCount())
-                    .append("indelCount", global.getIndelsCount())
-                    .append("passCount", global.getPassCount())
-                    .append("transitionsCount", global.getTransitionsCount())
-                    .append("transversionsCount", global.getTransversionsCount())
-                    .append("biallelicsCount", global.getBiallelicsCount())
-                    .append("multiallelicsCount", global.getMultiallelicsCount())
-                    .append("accumulatedQuality", global.getAccumQuality());
-            studyMongo = studyMongo.append("globalStats", globalStats);
-        } else {
-            // TODO Notify?
-        }
+      @Override
+      public boolean writeVariantEffect(List<VariantEffect> list) {
+          Map<String, Set<String>> mongoPutMap = new HashMap<>();
 
-        // TODO Save pedigree information
-        
-        Map<String, String> meta = study.getMetadata();
-        DBObject metadataMongo = new BasicDBObjectBuilder()
-                .add("header", meta.get("variantFileHeader"))
-                .get();
-        studyMongo = studyMongo.append("metadata", metadataMongo);
+          for (VariantEffect v : list) {
+              String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+              VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
+              String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
 
-        DBObject query = new BasicDBObject("name", study.getName());
-        WriteResult wr = studyCollection.update(query, studyMongo, true, false);
-        return wr.getLastError().ok(); // TODO Is this a proper return statement?
-    }
+              // TODO Insert in the map for HBase storage
+  //            Put effectPut = new Put(Bytes.toBytes(rowkey));
+  //            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
+  //            effectPutMap.put(rowkey, effectPut);
 
+              // Insert in the map for Mongo storage
+              Set<String> positionSet = mongoPutMap.get(rowkey);
+              if (positionSet == null) {
+                  positionSet = new HashSet<>();
+                  mongoPutMap.put(rowkey, positionSet);
+              }
+              positionSet.add(effectProto.getConsequenceTypeObo());
+          }
+          // Insert in HBase
+          save(effectPutMap.values(), effectTable, effectPutMap);
+
+          // TODO Insert in Mongo
+          saveEffectMongo(variantCollection, mongoPutMap);
+
+          return true;
+      }
+
+      @Override
+      public boolean writeStudy(VariantStudy study) {
+          String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
+          BasicDBObject studyMongo = new BasicDBObject("name", study.getName())
+                  .append("alias", study.getAlias())
+                  .append("date", timeStamp)
+                  .append("authors", study.getAuthors())
+                  .append("samples", study.getSamples())
+                  .append("description", study.getDescription())
+                  .append("sources", study.getSources());
+
+          VariantGlobalStats global = study.getStats();
+          if (global != null) {
+              DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
+                      .append("variantsCount", global.getVariantsCount())
+                      .append("snpCount", global.getSnpsCount())
+                      .append("indelCount", global.getIndelsCount())
+                      .append("passCount", global.getPassCount())
+                      .append("transitionsCount", global.getTransitionsCount())
+                      .append("transversionsCount", global.getTransversionsCount())
+                      .append("biallelicsCount", global.getBiallelicsCount())
+                      .append("multiallelicsCount", global.getMultiallelicsCount())
+                      .append("accumulatedQuality", global.getAccumQuality());
+              studyMongo = studyMongo.append("globalStats", globalStats);
+          } else {
+              // TODO Notify?
+          }
+
+          // TODO Save pedigree information
+
+          Map<String, String> meta = study.getMetadata();
+          DBObject metadataMongo = new BasicDBObjectBuilder()
+                  .add("header", meta.get("variantFileHeader"))
+                  .get();
+          studyMongo = studyMongo.append("metadata", metadataMongo);
+
+          DBObject query = new BasicDBObject("name", study.getName());
+          WriteResult wr = studyCollection.update(query, studyMongo, true, false);
+          return wr.getLastError().ok(); // TODO Is this a proper return statement?
+      }
+  */
     @Override
     public boolean post() {
         try {
@@ -328,8 +321,13 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
-        
+
         return true;
+    }
+
+    @Override
+    public boolean write(Variant variant) {
+        return false;
     }
 
     @Override
@@ -342,20 +340,20 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, e);
             return false;
         }
-        
+
         return true;
     }
 
     /*
      * ProtocolBuffers objects construction
      */
-    private VariantFieldsProtos.VariantInfo buildInfoProto(VcfRecord v) {
+    private VariantFieldsProtos.VariantInfo buildInfoProto(Variant v) {
         String[] format = parseFormat(v.getFormat());
-        String[] filter = parseFilter(v.getFilter());
-        String[] info = parseInfo(v.getInfo());
+        String[] filter = parseFilter(v.getAttribute("FILTER"));
+        String[] info = parseInfo(VariantFactory.getVcfInfo(v));
         String[] alternate = parseAlternate(v.getAlternate());
         VariantFieldsProtos.VariantInfo.Builder infoBuilder = VariantFieldsProtos.VariantInfo.newBuilder();
-        infoBuilder.setQuality(v.getQuality());
+        infoBuilder.setQuality(v.getAttribute("QUAL"));
         infoBuilder.setReference(v.getReference());
         if (format != null) {
             for (String s : format) {
@@ -482,12 +480,12 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             e.printStackTrace();
         }
     }
-    
+
     private void saveEffectMongo(DBCollection collection, Map<String, Set<String>> putMap) {
         for (Map.Entry<String, Set<String>> entry : putMap.entrySet()) {
             BasicDBObject query = new BasicDBObject("position", entry.getKey());
             query.put("studies.studyId", studyName);
-            
+
             DBObject item = new BasicDBObject("studies.$.effects", entry.getValue());
             BasicDBObject action = new BasicDBObject("$set", item);
 
