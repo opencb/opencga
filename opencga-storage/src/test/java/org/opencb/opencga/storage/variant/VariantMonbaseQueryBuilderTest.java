@@ -96,14 +96,13 @@ public class VariantMonbaseQueryBuilderTest {
                     "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
                     "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
                     "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
+            rec1.setEffect(Arrays.asList(eff1, eff2, eff3));
 
             List<Variant> records = Arrays.asList(rec1, rec2, rec3, rec4, rec5);
-//            List<VariantStats> stats = Arrays.asList(stats1, stats2, stats3, stats4, stats5);
-//            List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
             assertTrue("Table creation could not be performed", writer.pre());
             assertTrue("Variants could not be written", writer.writeBatch(records));
             assertTrue("Stats could not be written", writer.writeVariantStats(records));
-//            assertTrue("Effects could not be written", writer.writeVariantEffect(effects));
+            assertTrue("Effects could not be written", writer.writeVariantEffect(records));
             writer.post();
             // Monbase query builder
             queryBuilder = new VariantMonbaseQueryBuilder(tableName, credentials);
@@ -218,7 +217,6 @@ public class VariantMonbaseQueryBuilderTest {
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
-        // TODO Effect still not inserted 
         for (Variant v : result) {
             switch ((int) v.getPosition()) {
                 case 100000:
@@ -229,7 +227,7 @@ public class VariantMonbaseQueryBuilderTest {
                     assertEquals(0.01, v.getStats().getMaf(), 1e-6);
                     assertEquals(0, v.getStats().getMissingGenotypes());
                     assertNotNull(v.getEffect());
-//                    assertEquals(2, v.getEffect().size());
+                    assertEquals(2, v.getEffect().size());
                     break;
                 case 200000:
                     assertEquals("1", v.getChromosome());
@@ -239,7 +237,7 @@ public class VariantMonbaseQueryBuilderTest {
                     assertEquals(0.05, v.getStats().getMaf(), 1e-6);
                     assertEquals(1, v.getStats().getMissingGenotypes());
                     assertNotNull(v.getEffect());
-//                    assertEquals(1, v.getEffect().size());
+                    assertEquals(1, v.getEffect().size());
                     break;
                 case 300000:
                     assertEquals("1", v.getChromosome());
@@ -249,7 +247,7 @@ public class VariantMonbaseQueryBuilderTest {
                     assertEquals(0.06, v.getStats().getMaf(), 1e-6);
                     assertEquals(1, v.getStats().getMissingGenotypes());
                     assertNotNull(v.getEffect());
-//                    assertEquals(0, v.getEffect().size());
+                    assertEquals(0, v.getEffect().size());
             }
         }
     }

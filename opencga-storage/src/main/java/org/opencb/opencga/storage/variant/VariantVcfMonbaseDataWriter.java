@@ -135,7 +135,8 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
     public boolean write(List<Variant> data) {
         boolean variantsWritten = writeBatch(data);
         boolean statsWritten = writeVariantStats(data);
-        return variantsWritten && statsWritten;
+        boolean effectWritten = writeVariantEffect(data);
+        return variantsWritten && statsWritten && effectWritten;
     }
     
     boolean writeBatch(List<Variant> data) {
@@ -255,28 +256,30 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
       public boolean writeVariantGroupStats(VariantGroupStats vvgs) throws IOException {
           return true;//throw new UnsupportedOperationException("Not supported yet.");
       }
-
-      @Override
-      public boolean writeVariantEffect(List<VariantEffect> list) {
+      */
+    
+    boolean writeVariantEffect(List<Variant> variants) {
           Map<String, Set<String>> mongoPutMap = new HashMap<>();
 
-          for (VariantEffect v : list) {
-              String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-              VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
-              String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
+          for (Variant variant : variants) {
+            for (VariantEffect v : variant.getEffect()) {
+                String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+                VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
+                String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
 
-              // TODO Insert in the map for HBase storage
-  //            Put effectPut = new Put(Bytes.toBytes(rowkey));
-  //            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-  //            effectPutMap.put(rowkey, effectPut);
+                // TODO Insert in the map for HBase storage
+    //            Put effectPut = new Put(Bytes.toBytes(rowkey));
+    //            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
+    //            effectPutMap.put(rowkey, effectPut);
 
-              // Insert in the map for Mongo storage
-              Set<String> positionSet = mongoPutMap.get(rowkey);
-              if (positionSet == null) {
-                  positionSet = new HashSet<>();
-                  mongoPutMap.put(rowkey, positionSet);
-              }
-              positionSet.add(effectProto.getConsequenceTypeObo());
+                // Insert in the map for Mongo storage
+                Set<String> positionSet = mongoPutMap.get(rowkey);
+                if (positionSet == null) {
+                    positionSet = new HashSet<>();
+                    mongoPutMap.put(rowkey, positionSet);
+                }
+                positionSet.add(effectProto.getConsequenceTypeObo());
+            }
           }
           // Insert in HBase
           save(effectPutMap.values(), effectTable, effectPutMap);
@@ -286,7 +289,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
 
           return true;
       }
-
+/*
       @Override
       public boolean writeStudy(VariantStudy study) {
           String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());

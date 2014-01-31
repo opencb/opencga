@@ -1,6 +1,10 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -9,21 +13,15 @@ import org.apache.hadoop.hbase.mapreduce.RowCounter;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.commons.bioformats.variant.Variant;
+import org.opencb.commons.bioformats.variant.VariantFactory;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.util.*;
-
-import static org.junit.Assert.*;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantFactory;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -296,9 +294,13 @@ public class VariantVcfMonbaseDataWriterTest {
                 "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
                 "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
                 "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
-        List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
+//        List<VariantEffect> effects = Arrays.asList(eff1, eff2, eff3);
         
-//        writer.writeVariantEffect(effects);
+        variants.get(0).addEffect(eff1);
+        variants.get(0).addEffect(eff2);
+        variants.get(0).addEffect(eff3);
+        
+        assertTrue(writer.writeVariantEffect(variants));
         writer.post();
         
 //        // TODO Query number of inserted records in HBase
@@ -309,25 +311,25 @@ public class VariantVcfMonbaseDataWriterTest {
 //        Counter counter = job.getCounters().findCounter("org.apache.hadoop.hbase.mapreduce.RowCounter$RowCounterMapper$Counters", "ROWS");
 //        assertEquals("The number of inserted effects is incorrect", 3, counter.getValue());
         
-//        // Query effects inserted in Mongo
-//        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
-//        DB db = mongoClient.getDB(credentials.getMongoDbName());
-//        DBCollection variantsCollection = db.getCollection("variants");
-//        
-//        DBObject query = new BasicDBObject("position", "01_0000100000");
-//        query.put("studies.studyId", studyName);
-//        DBObject returnValues = new BasicDBObject("studies.effects", 1);
-//        DBObject variantsInStudy = variantsCollection.findOne(query, returnValues);
-//        assertNotNull(variantsInStudy);
-//        
-//        BasicDBList studiesDbObject = (BasicDBList) variantsInStudy.get("studies");
-//        DBObject studyObj = (DBObject) studiesDbObject.get(0);
-//        Set<String> effectsObj = new HashSet<>((List<String>) studyObj.get("effects"));
-//        Set<String> oboList = new HashSet<>(Arrays.asList("intron_variant", "5KB_downstream_variant"));
-//        
-//        assertEquals(oboList, effectsObj);
-//        
-//        mongoClient.close();
+        // Query effects inserted in Mongo
+        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+        DB db = mongoClient.getDB(credentials.getMongoDbName());
+        DBCollection variantsCollection = db.getCollection("variants");
+        
+        DBObject query = new BasicDBObject("position", "01_0000100000");
+        query.put("studies.studyId", studyName);
+        DBObject returnValues = new BasicDBObject("studies.effects", 1);
+        DBObject variantsInStudy = variantsCollection.findOne(query, returnValues);
+        assertNotNull(variantsInStudy);
+        
+        BasicDBList studiesDbObject = (BasicDBList) variantsInStudy.get("studies");
+        DBObject studyObj = (DBObject) studiesDbObject.get(0);
+        Set<String> effectsObj = new HashSet<>((List<String>) studyObj.get("effects"));
+        Set<String> oboList = new HashSet<>(Arrays.asList("intron_variant", "5KB_downstream_variant"));
+        
+        assertEquals(oboList, effectsObj);
+        
+        mongoClient.close();
     }
 
 //    @Test
