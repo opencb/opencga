@@ -1,24 +1,25 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.hfile.Compression;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.commons.bioformats.feature.Genotype;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantFactory;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -126,7 +127,18 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
     }
 
     @Override
+    public boolean write(Variant variant) {
+        return write(Arrays.asList(variant));
+    }
+
+    @Override
     public boolean write(List<Variant> data) {
+        boolean variantsWritten = writeBatch(data);
+        boolean statsWritten = writeVariantStats(data);
+        return variantsWritten && statsWritten;
+    }
+    
+    boolean writeBatch(List<Variant> data) {
         // Generate the Put objects
         Put auxPut;
         for (Variant v : data) {
@@ -176,50 +188,54 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         return true;
     }
 
-    /*  @Override
-      public boolean writeVariantStats(List<VariantStats> data) {
-          for (VariantStats v : data) {
-              String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-              VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
-              byte[] qualifier = (studyName + "_stats").getBytes();
-              Put put2 = new Put(Bytes.toBytes(rowkey));
-              put2.add(infoColumnFamily, qualifier, stats.toByteArray());
-              putMap.put(rowkey, put2);
+    boolean writeVariantStats(List<Variant> data) {
+        for (Variant var : data) {
+            VariantStats v = var.getStats();
+            if (v == null) {
+                continue;
+            }
+            
+            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+            VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
+            byte[] qualifier = (studyName + "_stats").getBytes();
+            Put put2 = new Put(Bytes.toBytes(rowkey));
+            put2.add(infoColumnFamily, qualifier, stats.toByteArray());
+            putMap.put(rowkey, put2);
 
-              // Generate genotype counts
-              ArrayList<BasicDBObject> genotypeCounts = new ArrayList<>();
-              for (Genotype g : v.getGenotypes()) {
-                  BasicDBObject genotype = new BasicDBObject();
-                  String count = g.getAllele1() + "/" + g.getAllele2();
-                  genotype.append(count, g.getCount());
-                  genotypeCounts.add(genotype);
-              }
+            // Generate genotype counts
+            ArrayList<BasicDBObject> genotypeCounts = new ArrayList<>();
+            for (Genotype g : v.getGenotypes()) {
+                BasicDBObject genotype = new BasicDBObject();
+                String count = g.getAllele1() + "/" + g.getAllele2();
+                genotype.append(count, g.getCount());
+                genotypeCounts.add(genotype);
+            }
 
-              // Search for already existing study
-              BasicDBObject query = new BasicDBObject("position", rowkey);
-              query.put("studies.studyId", studyName);
+            // Search for already existing study
+            BasicDBObject query = new BasicDBObject("position", rowkey);
+            query.put("studies.studyId", studyName);
 
-              // TODO Check that the study already exists (run 'find'), otherwise create it
+            // TODO Check that the study already exists (run 'find'), otherwise create it
 
-              // Add stats to study
-              BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
-                      "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
-              BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
-              BasicDBObject action = new BasicDBObject("$set", item);
+            // Add stats to study
+            BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
+                    "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
+            BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
+            BasicDBObject action = new BasicDBObject("$set", item);
 
-              WriteResult wr = variantCollection.update(query, action, true, false);
-              if (!wr.getLastError().ok()) {
-                  // TODO If not correct, retry?
-                  return false;
-              }
-          }
+            WriteResult wr = variantCollection.update(query, action, true, false);
+            if (!wr.getLastError().ok()) {
+                // TODO If not correct, retry?
+                return false;
+            }
+        }
 
-          // Save results in HBase
-          save(putMap.values(), variantTable, putMap);
+        // Save results in HBase
+        save(putMap.values(), variantTable, putMap);
 
-          return true;
-      }
-
+        return true;
+    }
+/*
       @Override
       public boolean writeGlobalStats(VariantGlobalStats vgs) {
           return true; //throw new UnsupportedOperationException("Not supported yet.");
@@ -323,11 +339,6 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         }
 
         return true;
-    }
-
-    @Override
-    public boolean write(Variant variant) {
-        return false;
     }
 
     @Override

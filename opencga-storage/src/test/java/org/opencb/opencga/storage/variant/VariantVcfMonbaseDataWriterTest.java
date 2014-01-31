@@ -11,11 +11,8 @@ import org.apache.hadoop.mapreduce.Job;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantGlobalStats;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
-import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
@@ -25,6 +22,8 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import org.opencb.commons.bioformats.variant.Variant;
+import org.opencb.commons.bioformats.variant.VariantFactory;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -36,7 +35,8 @@ public class VariantVcfMonbaseDataWriterTest {
     private static MonbaseCredentials credentials;
     private static Configuration config;
     private static VariantVcfMonbaseDataWriter writer;
-
+    private static List<Variant> variants;
+    
     @BeforeClass
     public static void testConstructorAndOpen() {
         try {
@@ -60,6 +60,34 @@ public class VariantVcfMonbaseDataWriterTest {
         assertNotNull("Monbase writer must be not null", writer);
     }
 
+    @BeforeClass
+    public static void initializeDataToInsert() {
+        List<String> sampleNames = Arrays.asList( "NA001", "NA002", "NA003" );
+        String[] fields1 = new String[] { "1", "100000", "rs1100000", "A", "T,G", "40", "PASS", 
+            "DP=5;AP=10;H2", "GT:DP", "1/1:4", "1/0:2", "0/0:3" };
+        String[] fields2 = new String[] {"1", "200000", "rs1200000", "G", "T", "30", "LowQual", 
+            "DP=2;AP=5", "GT:DP", "1/1:3", "1/1:1", "0/0:5" };
+        String[] fields3 = new String[] {"1", "300000", "rs1300000", "C", "T", "50", "PASS", 
+            "DP=1;AP=6", "GT:DP", "1/0:3", "0/1:1", "0/0:5" };
+        String[] fields4 = new String[] {"2", "100000", "rs2100000", "G", "A", "60", "STD_FILTER", 
+            "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5" };
+        String[] fields5 = new String[] {"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER", 
+            "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5" };
+        Variant rec1 = VariantFactory.createVariantFromVcf(sampleNames, fields1);
+        Variant rec2 = VariantFactory.createVariantFromVcf(sampleNames, fields2);
+        Variant rec3 = VariantFactory.createVariantFromVcf(sampleNames, fields3);
+        Variant rec4 = VariantFactory.createVariantFromVcf(sampleNames, fields4);
+        Variant rec5 = VariantFactory.createVariantFromVcf(sampleNames, fields5);
+        
+//        VariantStats stats1 = new VariantStats("1", 100000, "A", "T,G", 0.01, 0.30, "A", "A/T", 2, 0, 1, true, 0.02, 0.10, 0.30, 0.15);
+//        VariantStats stats2 = new VariantStats("1", 200000, "G", "T", 0.05, 0.20, "T", "T/T", 1, 1, 0, true, 0.05, 0.30, 0.30, 0.10);
+//        rec1.setStats(stats1);
+//        rec2.setStats(stats2);
+        
+        variants = Arrays.asList(rec1, rec2, rec3, rec4, rec5);
+    }
+            
+    
     @Test
     public void testPre() {
         assertTrue("Table creation could not be performed", writer.pre());
@@ -70,22 +98,42 @@ public class VariantVcfMonbaseDataWriterTest {
         HBaseAdmin admin = new HBaseAdmin(config);
         assertTrue(admin.tableExists(tableName));
         // Save 5 records
-        List<String> sampleNames = Arrays.asList( "NA001", "NA002", "NA003" );
-        VcfRecord rec1 = new VcfRecord(new String[] { "1", "100000", "rs1100000", "A", "T,G", "40", "PASS", 
-            "DP=5;AP=10;H2", "GT:DP", "1/1:4", "1/0:2", "0/0:3" }, sampleNames);
-        VcfRecord rec2 = new VcfRecord(new String[] {"1", "200000", "rs1200000", "G", "T", "30", "LowQual", 
-            "DP=2;AP=5", "GT:DP", "1/1:3", "1/1:1", "0/0:5" }, sampleNames);
-        VcfRecord rec3 = new VcfRecord(new String[] {"1", "300000", "rs1300000", "C", "T", "50", "PASS", 
-            "DP=1;AP=6", "GT:DP", "1/0:3", "0/1:1", "0/0:5" }, sampleNames);
-        VcfRecord rec4 = new VcfRecord(new String[] {"2", "100000", "rs2100000", "G", "A", "60", "STD_FILTER", 
-            "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5" }, sampleNames);
-        VcfRecord rec5 = new VcfRecord(new String[] {"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER", 
-            "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5" }, sampleNames);
-
-        List<VcfRecord> records = Arrays.asList(new VcfRecord[]{ rec1, rec2, rec3, rec4, rec5 });
-//        writer.write(records);
+//        List<String> sampleNames = Arrays.asList( "NA001", "NA002", "NA003" );
+//        VcfRecord rec1 = new VcfRecord(new String[] { "1", "100000", "rs1100000", "A", "T,G", "40", "PASS", 
+//            "DP=5;AP=10;H2", "GT:DP", "1/1:4", "1/0:2", "0/0:3" }, sampleNames);
+//        VcfRecord rec2 = new VcfRecord(new String[] {"1", "200000", "rs1200000", "G", "T", "30", "LowQual", 
+//            "DP=2;AP=5", "GT:DP", "1/1:3", "1/1:1", "0/0:5" }, sampleNames);
+//        VcfRecord rec3 = new VcfRecord(new String[] {"1", "300000", "rs1300000", "C", "T", "50", "PASS", 
+//            "DP=1;AP=6", "GT:DP", "1/0:3", "0/1:1", "0/0:5" }, sampleNames);
+//        VcfRecord rec4 = new VcfRecord(new String[] {"2", "100000", "rs2100000", "G", "A", "60", "STD_FILTER", 
+//            "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5" }, sampleNames);
+//        VcfRecord rec5 = new VcfRecord(new String[] {"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER", 
+//            "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5" }, sampleNames);
+//        List<VcfRecord> records = Arrays.asList(new VcfRecord[]{ rec1, rec2, rec3, rec4, rec5 });
+        
+//        String[] fields1 = new String[] { "1", "100000", "rs1100000", "A", "T,G", "40", "PASS", 
+//            "DP=5;AP=10;H2", "GT:DP", "1/1:4", "1/0:2", "0/0:3" };
+//        String[] fields2 = new String[] {"1", "200000", "rs1200000", "G", "T", "30", "LowQual", 
+//            "DP=2;AP=5", "GT:DP", "1/1:3", "1/1:1", "0/0:5" };
+//        String[] fields3 = new String[] {"1", "300000", "rs1300000", "C", "T", "50", "PASS", 
+//            "DP=1;AP=6", "GT:DP", "1/0:3", "0/1:1", "0/0:5" };
+//        String[] fields4 = new String[] {"2", "100000", "rs2100000", "G", "A", "60", "STD_FILTER", 
+//            "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5" };
+//        String[] fields5 = new String[] {"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER", 
+//            "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5" };
+//        Variant rec1 = VariantFactory.createVariantFromVcf(sampleNames, fields1);
+//        Variant rec2 = VariantFactory.createVariantFromVcf(sampleNames, fields2);
+//        Variant rec3 = VariantFactory.createVariantFromVcf(sampleNames, fields3);
+//        Variant rec4 = VariantFactory.createVariantFromVcf(sampleNames, fields4);
+//        Variant rec5 = VariantFactory.createVariantFromVcf(sampleNames, fields5);
+//        
+//        List<Variant> variants = Arrays.asList(rec1, rec2, rec3, rec4, rec5);
+        writer.writeBatch(variants);
         writer.post();
 
+        Variant rec1 = variants.get(0);
+        Variant rec4 = variants.get(3);
+        
         // Query number of inserted records
         Job job = RowCounter.createSubmittableJob(config, new String[] { tableName } );
         job.waitForCompletion(true);
@@ -159,9 +207,15 @@ public class VariantVcfMonbaseDataWriterTest {
     public void testWriteVariantStats() throws UnknownHostException, IOException {
         VariantStats stats1 = new VariantStats("1", 100000, "A", "T,G", 0.01, 0.30, "A", "A/T", 2, 0, 1, true, 0.02, 0.10, 0.30, 0.15);
         VariantStats stats2 = new VariantStats("1", 200000, "G", "T", 0.05, 0.20, "T", "T/T", 1, 1, 0, true, 0.05, 0.30, 0.30, 0.10);
-        List<VariantStats> stats = Arrays.asList(stats1, stats2);
+//        List<VariantStats> stats = Arrays.asList(stats1, stats2);
         
-//        assertTrue(writer.writeVariantStats(stats));
+        variants.get(0).setStats(stats1);
+        variants.get(1).setStats(stats2);
+        
+//        VariantStats stats1 = variants.get(0).getStats();
+//        VariantStats stats2 = variants.get(1).getStats();
+        
+        assertTrue(writer.writeVariantStats(variants));
         writer.post();
         
         // Query studyStats inserted in HBase
@@ -255,60 +309,60 @@ public class VariantVcfMonbaseDataWriterTest {
 //        Counter counter = job.getCounters().findCounter("org.apache.hadoop.hbase.mapreduce.RowCounter$RowCounterMapper$Counters", "ROWS");
 //        assertEquals("The number of inserted effects is incorrect", 3, counter.getValue());
         
-        // Query effects inserted in Mongo
-        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
-        DB db = mongoClient.getDB(credentials.getMongoDbName());
-        DBCollection variantsCollection = db.getCollection("variants");
-        
-        DBObject query = new BasicDBObject("position", "01_0000100000");
-        query.put("studies.studyId", studyName);
-        DBObject returnValues = new BasicDBObject("studies.effects", 1);
-        DBObject variantsInStudy = variantsCollection.findOne(query, returnValues);
-        assertNotNull(variantsInStudy);
-        
-        BasicDBList studiesDbObject = (BasicDBList) variantsInStudy.get("studies");
-        DBObject studyObj = (DBObject) studiesDbObject.get(0);
-        Set<String> effectsObj = new HashSet<>((List<String>) studyObj.get("effects"));
-        Set<String> oboList = new HashSet<>(Arrays.asList("intron_variant", "5KB_downstream_variant"));
-        
-        assertEquals(oboList, effectsObj);
-        
-        mongoClient.close();
+//        // Query effects inserted in Mongo
+//        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+//        DB db = mongoClient.getDB(credentials.getMongoDbName());
+//        DBCollection variantsCollection = db.getCollection("variants");
+//        
+//        DBObject query = new BasicDBObject("position", "01_0000100000");
+//        query.put("studies.studyId", studyName);
+//        DBObject returnValues = new BasicDBObject("studies.effects", 1);
+//        DBObject variantsInStudy = variantsCollection.findOne(query, returnValues);
+//        assertNotNull(variantsInStudy);
+//        
+//        BasicDBList studiesDbObject = (BasicDBList) variantsInStudy.get("studies");
+//        DBObject studyObj = (DBObject) studiesDbObject.get(0);
+//        Set<String> effectsObj = new HashSet<>((List<String>) studyObj.get("effects"));
+//        Set<String> oboList = new HashSet<>(Arrays.asList("intron_variant", "5KB_downstream_variant"));
+//        
+//        assertEquals(oboList, effectsObj);
+//        
+//        mongoClient.close();
     }
 
-    @Test
-    public void testWriteStudy() throws UnknownHostException {
-        VariantStudy study = new VariantStudy(studyName, "s1", "Study created for testing purposes", 
-                Arrays.asList("Cristina", "Alex", "Jesus"), Arrays.asList("vcf", "ped"));
-        VariantGlobalStats studyStats = new VariantGlobalStats();
-        studyStats.setVariantsCount(5);
-        studyStats.setSnpsCount(3);
-        studyStats.setAccumQuality(45.0f);
-        study.setStats(studyStats);
-        
-//        assertTrue(writer.writeStudy(study));
-        writer.post();
-        
-        // Query study inserted in Mongo
-        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
-        DB db = mongoClient.getDB(credentials.getMongoDbName());
-        DBCollection variantsCollection = db.getCollection("studies");
-        
-        DBObject query = new BasicDBObject("name", studyName);
-        DBObject studyObj = variantsCollection.findOne(query);
-        assertNotNull(studyObj);
-        
-        String alias = studyObj.get("alias").toString();
-        List<String> authors = (List<String>) studyObj.get("authors");
-        DBObject stats = (DBObject) studyObj.get("globalStats");
-        int variantsCount = ((Integer) stats.get("variantsCount")).intValue();
-        float accumQuality = ((Double) stats.get("accumulatedQuality")).floatValue();
-        
-        assertEquals(study.getAlias(), alias);
-        assertEquals(study.getAuthors(), authors);
-        assertEquals(studyStats.getVariantsCount(), variantsCount);
-        assertEquals(studyStats.getAccumQuality(), accumQuality, 1e-6);
-    }
+//    @Test
+//    public void testWriteStudy() throws UnknownHostException {
+//        VariantStudy study = new VariantStudy(studyName, "s1", "Study created for testing purposes", 
+//                Arrays.asList("Cristina", "Alex", "Jesus"), Arrays.asList("vcf", "ped"));
+//        VariantGlobalStats studyStats = new VariantGlobalStats();
+//        studyStats.setVariantsCount(5);
+//        studyStats.setSnpsCount(3);
+//        studyStats.setAccumQuality(45.0f);
+//        study.setStats(studyStats);
+//        
+////        assertTrue(writer.writeStudy(study));
+//        writer.post();
+//        
+//        // Query study inserted in Mongo
+//        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+//        DB db = mongoClient.getDB(credentials.getMongoDbName());
+//        DBCollection variantsCollection = db.getCollection("studies");
+//        
+//        DBObject query = new BasicDBObject("name", studyName);
+//        DBObject studyObj = variantsCollection.findOne(query);
+//        assertNotNull(studyObj);
+//        
+//        String alias = studyObj.get("alias").toString();
+//        List<String> authors = (List<String>) studyObj.get("authors");
+//        DBObject stats = (DBObject) studyObj.get("globalStats");
+//        int variantsCount = ((Integer) stats.get("variantsCount")).intValue();
+//        float accumQuality = ((Double) stats.get("accumulatedQuality")).floatValue();
+//        
+//        assertEquals(study.getAlias(), alias);
+//        assertEquals(study.getAuthors(), authors);
+//        assertEquals(studyStats.getVariantsCount(), variantsCount);
+//        assertEquals(studyStats.getAccumQuality(), accumQuality, 1e-6);
+//    }
 
     @AfterClass
     public static void deleteTables() throws IOException {

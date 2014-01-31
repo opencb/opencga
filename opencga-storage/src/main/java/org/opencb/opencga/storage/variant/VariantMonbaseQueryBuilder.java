@@ -2,17 +2,10 @@ package org.opencb.opencga.storage.variant;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
-
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -30,8 +23,6 @@ import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
-import org.opencb.opencga.lib.common.XObject;
-import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
 
 /**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
@@ -133,10 +124,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                         for (int i = 0; i < fields.length; i++) {
                             singleSampleMap.put(fields[i], values[i]);
                         }
-                        resultSampleMap.put(sampleName, singleSampleMap);
+                        variant.addSampleData(sampleName, singleSampleMap);
                     }
-
-//                    variant.setSampleData(resultSampleMap); // TODO cgonzalez: check this code
                 }
 
                 // Set stats if requested
