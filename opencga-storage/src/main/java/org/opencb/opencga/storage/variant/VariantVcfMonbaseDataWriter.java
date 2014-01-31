@@ -71,6 +71,8 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             admin = new HBaseAdmin(config);
 
             // Mongo configuration
+            MongoClientOptions.Builder mongoOptions = MongoClientOptions.builder();
+            mongoOptions.autoConnectRetry(true);
             mongoClient = new MongoClient(credentials.getMongoHost());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
@@ -176,7 +178,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
                 BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
                 BasicDBObject query2 = new BasicDBObject("position", rowkey);
-                query2.put("chr", v.getChromosome()); // TODO aaleman: change this code in the MonBase Version
+                query2.put("chr", v.getChromosome());
                 query2.put("pos", v.getPosition());
                 WriteResult wr = variantCollection.update(query2, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {

@@ -51,7 +51,9 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
     public boolean open() {
         try {
             // Mongo configuration
-            mongoClient = new MongoClient(credentials.getMongoHost());
+            MongoClientOptions.Builder mongoOptions = MongoClientOptions.builder();
+            mongoOptions.autoConnectRetry(true);
+            mongoClient = new MongoClient(credentials.getMongoHost(), mongoOptions.build());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
@@ -91,7 +93,7 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
                 BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
                 BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
                 BasicDBObject query2 = new BasicDBObject("position", rowkey);
-                query2.put("chr", v.getChromosome()); // TODO aaleman: change this code in the MonBase Version
+                query2.put("chr", v.getChromosome()); //
                 query2.put("pos", v.getPosition());
                 WriteResult wr = variantCollection.update(query2, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {
@@ -120,7 +122,7 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
 
 
             // Generate genotype counts
-            BasicDBObject genotypeCounts = new BasicDBObject(); // TODO aaleman: change this code in the MonBase Version
+            BasicDBObject genotypeCounts = new BasicDBObject(); //
             for (Genotype g : v.getGenotypes()) {
                 String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
                 genotypeCounts.append(count, g.getCount());
