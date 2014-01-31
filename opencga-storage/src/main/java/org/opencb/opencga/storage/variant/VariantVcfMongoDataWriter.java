@@ -29,8 +29,6 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
     private String tableName;
     private String studyName;
 
-    private Map<String, Put> putMap;
-    private Map<String, Put> effectPutMap;
 
     private MongoClient mongoClient;
     private DB db;
@@ -46,8 +44,6 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
         }
         this.studyName = study;
         this.tableName = species;
-        this.putMap = new HashMap<>();
-        this.effectPutMap = new HashMap<>();
         this.credentials = credentials;
     }
 
@@ -55,7 +51,9 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
     public boolean open() {
         try {
             // Mongo configuration
-            mongoClient = new MongoClient(credentials.getMongoHost());
+            MongoClientOptions.Builder mongoOptions = MongoClientOptions.builder();
+            mongoOptions.autoConnectRetry(true);
+            mongoClient = new MongoClient(credentials.getMongoHost(), mongoOptions.build());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
@@ -95,7 +93,7 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
                 BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
                 BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
                 BasicDBObject query2 = new BasicDBObject("position", rowkey);
-                query2.put("chr", v.getChromosome()); // TODO aaleman: change this code in the MonBase Version
+                query2.put("chr", v.getChromosome()); //
                 query2.put("pos", v.getPosition());
                 WriteResult wr = variantCollection.update(query2, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {
@@ -120,14 +118,11 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
     public boolean writeVariantStats(List<VariantStats> data) {
         for (VariantStats v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
-            byte[] qualifier = (studyName + "_stats").getBytes();
-            Put put2 = new Put(Bytes.toBytes(rowkey));
-            put2.add(infoColumnFamily, qualifier, stats.toByteArray());
-            putMap.put(rowkey, put2);
+
+
 
             // Generate genotype counts
-            BasicDBObject genotypeCounts = new BasicDBObject(); // TODO aaleman: change this code in the MonBase Version
+            BasicDBObject genotypeCounts = new BasicDBObject(); //
             for (Genotype g : v.getGenotypes()) {
                 String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
                 genotypeCounts.append(count, g.getCount());
@@ -168,7 +163,6 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
         }
 
         // Save results in HBase
-        save(putMap);
 
         return true;
     }
@@ -199,24 +193,15 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
 
         for (VariantEffect v : list) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
-            String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
-
             // TODO Insert in the map for HBase storage
-//            Put effectPut = new Put(Bytes.toBytes(rowkey));
-//            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-//            effectPutMap.put(rowkey, effectPut);
-
             // Insert in the map for Mongo storage
             Set<String> positionSet = mongoPutMap.get(rowkey);
             if (positionSet == null) {
                 positionSet = new HashSet<>();
                 mongoPutMap.put(rowkey, positionSet);
             }
-            positionSet.add(effectProto.getConsequenceTypeObo());
+            positionSet.add(v.getConsequenceTypeObo());
         }
-        // Insert in HBase
-        save(effectPutMap);
 
         // TODO Insert in Mongo
         saveEffectMongo(variantCollection, mongoPutMap);
@@ -277,116 +262,6 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
         return true;
     }
 
-    /*
-     * ProtocolBuffers objects construction
-     */
-    private VariantFieldsProtos.VariantInfo buildInfoProto(VcfRecord v) {
-        String[] format = parseFormat(v.getFormat());
-        String[] filter = parseFilter(v.getFilter());
-        String[] info = parseInfo(v.getInfo());
-        String[] alternate = parseAlternate(v.getAlternate());
-        VariantFieldsProtos.VariantInfo.Builder infoBuilder = VariantFieldsProtos.VariantInfo.newBuilder();
-        infoBuilder.setQuality(v.getQuality());
-        infoBuilder.setReference(v.getReference());
-        if (format != null) {
-            for (String s : format) {
-                infoBuilder.addFormat(s);
-            }
-        }
-        if (alternate != null) {
-            for (String s : alternate) {
-                infoBuilder.addAlternate(s);
-            }
-        }
-        if (filter != null) {
-            for (String s : filter) {
-                infoBuilder.addFilters(s);
-            }
-        }
-        if (info != null) {
-            for (String s : info) {
-                infoBuilder.addInfo(s);
-            }
-        }
-        return infoBuilder.build();
-    }
-
-    private VariantFieldsProtos.VariantStats buildStatsProto(VariantStats v) {
-        VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
-        stats.setNumAlleles(v.getNumAlleles());
-        stats.setMafAllele(v.getMafAllele());
-        stats.setMgfGenotype(v.getMgfAllele());
-        stats.setMaf(v.getMaf());
-        stats.setMgf(v.getMgf());
-        for (int a : v.getAllelesCount()) {
-            stats.addAllelesCount(a);
-        }
-        for (int a : v.getGenotypesCount()) {
-            stats.addGenotypesCount(a);
-        }
-        for (float a : v.getAllelesFreq()) {
-            stats.addAllelesFreq(a);
-        }
-        for (float a : v.getGenotypesFreq()) {
-            stats.addGenotypesFreq(a);
-        }
-        stats.setMissingAlleles(v.getMissingAlleles());
-        stats.setMissingGenotypes(v.getMissingGenotypes());
-        stats.setMendelianErrors(v.getMendelinanErrors());
-        stats.setIsIndel(v.isIndel());
-        stats.setCasesPercentDominant(v.getCasesPercentDominant());
-        stats.setControlsPercentDominant(v.getControlsPercentDominant());
-        stats.setCasesPercentRecessive(v.getCasesPercentRecessive());
-        stats.setControlsPercentRecessive(v.getControlsPercentRecessive());
-        //stats.setHardyWeinberg(v.getHw().getpValue());
-        return stats.build();
-    }
-
-    private VariantEffectProtos.EffectInfo buildEffectProto(VariantEffect v) {
-        VariantEffectProtos.EffectInfo.Builder effect = VariantEffectProtos.EffectInfo.newBuilder();
-        effect.setReference(v.getReferenceAllele());
-        effect.setAlternative(v.getAlternativeAllele());
-        effect.setChromosome(v.getChromosome());
-        effect.setPosition(v.getPosition());
-        effect.setFeatureId(v.getFeatureId());
-        effect.setFeatureName(v.getFeatureName());
-        effect.setFeatureBiotype(v.getFeatureBiotype());
-        effect.setFeatureChromosome(v.getFeatureChromosome());
-        effect.setFeatureStart(v.getFeatureStart());
-        effect.setFeatureEnd(v.getFeatureEnd());
-        effect.setSnpId(v.getSnpId());
-        effect.setAncestral(v.getAncestral());
-        effect.setGeneId(v.getGeneId());
-        effect.setTranscriptId(v.getTranscriptId());
-        effect.setGeneName(v.getGeneName());
-        effect.setConsequenceType(v.getConsequenceType());
-        effect.setConsequenceTypeObo(v.getConsequenceTypeObo());
-        effect.setConsequenceTypeDesc(v.getConsequenceTypeDesc());
-        effect.setConsequenceTypeType(v.getConsequenceTypeType());
-        effect.setAaPosition(v.getAaPosition());
-        effect.setAminoacidChange(v.getAminoacidChange());
-        effect.setCodonChange(v.getCodonChange());
-        return effect.build();
-    }
-
-    /*
-     * Auxiliary functions
-     */
-    private String[] parseFormat(String format) {
-        return format.split(":");
-    }
-
-    private String[] parseFilter(String filter) {
-        return filter.equals(".") ? null : filter.split(";");
-    }
-
-    private String[] parseInfo(String info) {
-        return info.equals(".") ? null : info.split(";");
-    }
-
-    private String[] parseAlternate(String alternate) {
-        return alternate.equals(".") ? null : alternate.split(",");
-    }
 
     private String buildRowkey(String chromosome, String position) {
         if (chromosome.length() > 2) {
@@ -405,9 +280,7 @@ public class VariantVcfMongoDataWriter implements VariantDBWriter<VcfRecord> {
         return chromosome + "_" + position;
     }
 
-    private void save(Map<String, Put> putMap) {
-        putMap.clear();
-    }
+
 
     private void saveEffectMongo(DBCollection collection, Map<String, Set<String>> putMap) {
         for (Map.Entry<String, Set<String>> entry : putMap.entrySet()) {

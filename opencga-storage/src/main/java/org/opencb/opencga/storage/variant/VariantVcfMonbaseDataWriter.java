@@ -39,7 +39,7 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
     private HTable variantTable;
     private HTable effectTable;
     private Map<String, Put> putMap;
-    private Map<String, Put> effectPutMap;
+    private Map<String, Set<Put>> effectPutMap;
 
     private MongoClient mongoClient;
     private DB db;
@@ -71,6 +71,8 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
             admin = new HBaseAdmin(config);
 
             // Mongo configuration
+            MongoClientOptions.Builder mongoOptions = MongoClientOptions.builder();
+            mongoOptions.autoConnectRetry(true);
             mongoClient = new MongoClient(credentials.getMongoHost());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
@@ -167,21 +169,33 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                     putMap.put(rowkey, auxPut);
                 }
             }
-
-            // Insert relationship variant-study in Mongo
-            // TODO Check that this relationship was not established yet
-            BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
-            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
+            //Insert relationship variant-study in Mongo
             BasicDBObject query = new BasicDBObject("position", rowkey);
-            WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
+            query.put("studies.studyId", studyName);
+
+            if (variantCollection.count(query) == 0) {
+                // Insert relationship variant-study in Mongo
+                BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
+                BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
+                BasicDBObject query2 = new BasicDBObject("position", rowkey);
+                query2.put("chr", v.getChromosome());
+                query2.put("pos", v.getPosition());
+                WriteResult wr = variantCollection.update(query2, mongoVariant, true, false);
+                if (!wr.getLastError().ok()) {
+                    // TODO If not correct, retry?
+                    return false;
+                }
+
             }
         }
 
-        // Insert into the database
-        save(putMap.values(), variantTable, putMap);
+        DBObject indexPosition = new BasicDBObject("position", 1);
+        DBObject indexChrPos = new BasicDBObject("chr", 1);
+        indexChrPos.put("pos", 1);
+
+        variantCollection.ensureIndex(indexPosition);
+        variantCollection.ensureIndex(indexChrPos);
+
         return true;
     }
 
@@ -204,28 +218,38 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
                 genotypeCounts.add(genotype);
             }
 
+            //db.variants.aggregate({$match : {position : '01_0000100000'}},
+            //                      {$unwind: "$studies"},
+            //                      { $match : {"studies.studyId": "testStudy1", "studies.stats" : { $exists : true}}})
+
             // Search for already existing study
-            BasicDBObject query = new BasicDBObject("position", rowkey);
-            query.put("studies.studyId", studyName);
+            DBObject match = new BasicDBObject("$match", new BasicDBObject("position", rowkey));
+            DBObject unwind = new BasicDBObject("$unwind", "$studies");
+            DBObject match2_fields = new BasicDBObject("studies.studyId", studyName);
+            match2_fields.put("studies.stats", new BasicDBObject("$exists", true));
+            DBObject match2 = new BasicDBObject("$match", match2_fields);
 
-            // TODO Check that the study already exists (run 'find'), otherwise create it
+            AggregationOutput agg_output = variantCollection.aggregate(match, unwind, match2);
 
-            // Add stats to study
-            BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
-                    "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
-            BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
-            BasicDBObject action = new BasicDBObject("$set", item);
+            if (!agg_output.results().iterator().hasNext()) {
+                // Add stats to study
+                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
+                        "missing", v.getMissingGenotypes()).append("genotypeCount", genotypeCounts);
+                BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
+                BasicDBObject action = new BasicDBObject("$set", item);
 
-            WriteResult wr = variantCollection.update(query, action, true, false);
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
-            }
-        }
+                BasicDBObject query = new BasicDBObject("position", rowkey);
+                query.put("studies.studyId", studyName);
 
+                WriteResult wr = variantCollection.update(query, action, true, false);
+                if (!wr.getLastError().ok()) {
+                    // TODO If not correct, retry?
+                    return false;
+                }
+             }
+         }
         // Save results in HBase
-        save(putMap.values(), variantTable, putMap);
-
+        save(variantTable, putMap);
         return true;
     }
 
@@ -254,25 +278,30 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         Map<String, Set<String>> mongoPutMap = new HashMap<>();
 
         for (VariantEffect v : list) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+            String position = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
-            String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
-
-            // TODO Insert in the map for HBase storage
-//            Put effectPut = new Put(Bytes.toBytes(rowkey));
-//            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-//            effectPutMap.put(rowkey, effectPut);
+            String rowkey = position + ":" + v.getReferenceAllele() + "_" + v.getAlternativeAllele();
+            String qualifier = effectProto.getConsequenceTypeObo();
+            //TODO Insert in the map for HBase storage
+            Put effectPut = new Put(Bytes.toBytes(rowkey));
+            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
+            Set<Put> putSet = effectPutMap.get(rowkey);
+            if(putSet==null){
+                putSet = new HashSet<>();
+                effectPutMap.put(rowkey, putSet);
+            }
+            putSet.add(effectPut);
 
             // Insert in the map for Mongo storage
-            Set<String> positionSet = mongoPutMap.get(rowkey);
+            Set<String> positionSet = mongoPutMap.get(position);
             if (positionSet == null) {
                 positionSet = new HashSet<>();
-                mongoPutMap.put(rowkey, positionSet);
+                mongoPutMap.put(position, positionSet);
             }
             positionSet.add(effectProto.getConsequenceTypeObo());
         }
         // Insert in HBase
-        save(effectPutMap.values(), effectTable, effectPutMap);
+        saveEffectHBase(effectTable, effectPutMap);
 
         // TODO Insert in Mongo
         saveEffectMongo(variantCollection, mongoPutMap);
@@ -476,9 +505,24 @@ public class VariantVcfMonbaseDataWriter implements VariantDBWriter<VcfRecord> {
         return chromosome + "_" + position;
     }
 
-    private void save(Collection<Put> puts, HTable table, Map<String, Put> putMap) {
+    private void save(HTable table, Map<String, Put> putMap) {
         try {
-            table.put(new LinkedList(puts));
+            table.put(new LinkedList(putMap.values()));
+            putMap.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private void saveEffectHBase(HTable table, Map<String, Set<Put>> putMap) {
+        try{
+            List<Put> effectPutList = new LinkedList<>();
+            for (Map.Entry<String, Set<Put>> entry : putMap.entrySet()) {
+                effectPutList.addAll(entry.getValue());
+//                for(Put put : entry.getValue()){
+//                    effectPutList.add(put);
+//                }
+            }
+            table.put(effectPutList);
             putMap.clear();
         } catch (IOException e) {
             e.printStackTrace();
