@@ -138,7 +138,8 @@ public class OpenCGAMain {
         List<Task<Variant>> taskList = new SortedList<>();
 
         if (backend.equalsIgnoreCase("sqlite")) {
-            writers.add(new VariantVcfSqliteWriter(new SqliteCredentials(Paths.get(properties.getProperty("db_path"))))); // TODO Use SQLiteCredentials class
+            credentials = new SqliteCredentials(properties);
+            writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
             writers.add(new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens", (MonbaseCredentials) credentials));

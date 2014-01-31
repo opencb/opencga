@@ -1,22 +1,19 @@
 package org.opencb.opencga.storage.variant;
 
 import com.google.common.base.Joiner;
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.feature.Genotypes;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantFactory;
-import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
-import org.opencb.commons.db.SqliteSingletonConnection;
-import org.opencb.opencga.lib.auth.SqliteCredentials;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import org.opencb.commons.bioformats.feature.Genotype;
+import org.opencb.commons.bioformats.feature.Genotypes;
+import org.opencb.commons.bioformats.variant.Variant;
+import org.opencb.commons.bioformats.variant.VariantFactory;
+import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
+import org.opencb.commons.db.SqliteSingletonConnection;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -26,7 +23,6 @@ public class VariantVcfSqliteWriter implements VariantWriter {
 
     private boolean createdSampleTable;
     private Statement stmt;
-    private PreparedStatement pstmt;
     private SqliteSingletonConnection connection;
 
     private SqliteCredentials credentials;
@@ -37,7 +33,6 @@ public class VariantVcfSqliteWriter implements VariantWriter {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
         this.stmt = null;
-        this.pstmt = null;
         this.createdSampleTable = false;
         this.credentials = credentials;
 
@@ -46,14 +41,12 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     @Deprecated
     public VariantVcfSqliteWriter(String dbName) {
         this.stmt = null;
-        this.pstmt = null;
         this.createdSampleTable = false;
         this.connection = new SqliteSingletonConnection(dbName);
     }
 
     @Override
     public boolean write(List<Variant> vcfRecords) {
-        System.out.println(vcfRecords);
         String sql, sqlSampleInfo, sqlInfo;
         PreparedStatement pstmtSample, pstmtInfo;
         String sampleName;
@@ -61,7 +54,6 @@ public class VariantVcfSqliteWriter implements VariantWriter {
         Genotype g;
         int id;
         boolean res = true;
-        List<List<VariantEffect>> batchEffect;
 
         PreparedStatement pstmt;
         if (!createdSampleTable && vcfRecords.size() > 0) {
@@ -88,9 +80,6 @@ public class VariantVcfSqliteWriter implements VariantWriter {
         sqlSampleInfo = "INSERT INTO sample_info(id_variant, sample_name, allele_1, allele_2, data) VALUES (?,?,?,?,?);";
         sqlInfo = "INSERT INTO variant_info(id_variant, key, value) VALUES (?,?,?);";
 
-
-        batchEffect = EffectCalculator.getEffectPerVariant(vcfRecords);
-
         try {
 
             pstmt = SqliteSingletonConnection.getConnection().prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
@@ -102,6 +91,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
             for (int i = 0; i < vcfRecords.size(); i++) {
                 Variant v = vcfRecords.get(i);
                 String info = VariantFactory.getVcfInfo(v);
+                List<VariantEffect> batchEffect = v.getEffect();
 
                 pstmt.setString(1, v.getChromosome());
                 pstmt.setLong(2, v.getPosition());
@@ -113,14 +103,15 @@ public class VariantVcfSqliteWriter implements VariantWriter {
                 pstmt.setString(8, info);
                 pstmt.setString(9, v.getFormat());
 
-                genes = parseGenes(batchEffect.get(i));
-                consequenceTypes = parseConsequenceTypes(batchEffect.get(i));
+                genes = parseGenes(batchEffect);
+                consequenceTypes = parseConsequenceTypes(batchEffect);
                 genotypes = parseGenotypes(v);
 
                 pstmt.setString(10, genes);
                 pstmt.setString(11, consequenceTypes);
                 pstmt.setString(12, genotypes);
-                polySift = parsePolyphenSift(batchEffect.get(i));
+                polySift = parsePolyphenSift(batchEffect);
+                
 
                 if (polySift != null) {
                     pstmt.setDouble(13, (Double) polySift.get("ps"));
@@ -150,6 +141,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
                         pstmtSample.execute();
 
                     }
+                    
                     for (Map.Entry<String, String> entry : v.getAttributes().entrySet()) {
                         pstmtInfo.setInt(1, id);
                         pstmtInfo.setString(2, entry.getKey());
@@ -187,8 +179,6 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     }
 
     private Map<String, Object> parsePolyphenSift(List<VariantEffect> variantEffects) {
-
-
         double ss, ps;
         int se, pe;
 

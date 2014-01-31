@@ -36,7 +36,7 @@ public class MonbaseCredentials implements OpenCGACredentials {
         check();
     }
 
-    public MonbaseCredentials(Properties properties) {
+    public MonbaseCredentials(Properties properties) throws IllegalOpenCGACredentialsException {
         this.hbaseMasterHost = properties.getProperty("hbase_master_host");
         this.hbaseMasterPort = Integer.parseInt(properties.getProperty("hbase_master_port", "-1"));
         this.hbaseZookeeperQuorum = properties.getProperty("hbase_zookeeper_quorum");
@@ -48,6 +48,7 @@ public class MonbaseCredentials implements OpenCGACredentials {
                 properties.getProperty("mongo_user"), 
                 mongoDbName, 
                 properties.getProperty("mongo_password", "").toCharArray());
+        check();
     }
     
     
