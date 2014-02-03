@@ -48,7 +48,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     @Override
     public boolean write(List<Variant> vcfRecords) {
         String sql, sqlSampleInfo, sqlInfo;
-        PreparedStatement pstmtSample, pstmtInfo;
+        PreparedStatement pstmtSample, pstmtInfo;o
         String sampleName;
         int allele_1, allele_2;
         Genotype g;

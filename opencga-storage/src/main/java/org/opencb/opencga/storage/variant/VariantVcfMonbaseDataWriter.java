@@ -138,7 +138,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         boolean effectWritten = writeVariantEffect(data);
         return variantsWritten && statsWritten && effectWritten;
     }
-    
+
     boolean writeBatch(List<Variant> data) {
         // Generate the Put objects
         Put auxPut;
@@ -195,7 +195,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
             if (v == null) {
                 continue;
             }
-            
+
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
             byte[] qualifier = (studyName + "_stats").getBytes();
@@ -257,7 +257,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
           return true;//throw new UnsupportedOperationException("Not supported yet.");
       }
       */
-    
+
     boolean writeVariantEffect(List<Variant> variants) {
           Map<String, Set<String>> mongoPutMap = new HashMap<>();
 

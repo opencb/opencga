@@ -11,11 +11,9 @@ import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
-import org.opencb.opencga.lib.auth.OpenCGACredentials;
-import org.opencb.opencga.lib.auth.SqliteCredentials;
+import org.opencb.opencga.lib.auth.*;
 import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
+import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
@@ -86,7 +84,8 @@ public class OpenCGAMain {
                 boolean includeEffect = commandLine.hasOption("include-effect");
                 boolean includeStats = commandLine.hasOption("include-stats");
                 Path pedigreePath = commandLine.hasOption("pedigree") ? Paths.get(commandLine.getOptionValue("pedigree")) : null;
-                VariantStudy study = new VariantStudy(studyName, studyName.substring(5), studyName, null, null);
+                String alias = (studyName.length() >= 5) ? studyName.substring(0, 5) : studyName;
+                VariantStudy study = new VariantStudy(studyName, alias, studyName, null, null);
 
                 indexVariants(study, filePath, pedigreePath, backend, credentialsPath, includeEffect, includeStats);
                 break;
@@ -143,6 +142,9 @@ public class OpenCGAMain {
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
             writers.add(new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens", (MonbaseCredentials) credentials));
+        } else if (backend.equalsIgnoreCase("mongo")) {
+            credentials = new MongoCredentials(properties);
+            writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", (MongoCredentials) credentials));
         }
 
 
