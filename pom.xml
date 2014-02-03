@@ -130,7 +130,7 @@
                 <groupId>org.xerial</groupId>
                 <artifactId>sqlite-jdbc</artifactId>
                 <version>3.7.2</version>
-                <scope>provided</scope>
+                <!--<scope>provided</scope>-->
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
@@ -214,6 +214,8 @@
 
     </dependencyManagement>
     <build>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

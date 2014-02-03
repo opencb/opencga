@@ -23,7 +23,7 @@
         "outputParam": "outdir",
         "validParams": [
             {"name":"vcf-file", "description":"Normalized matrix file.", "required":"true"},
-            {"name":"ped-file", "description":"Normalized matrix file.", "required":"true"}
+            {"name":"ped-file", "description":"Normalized matrix file.", "required":"false"}
         ],
         "configAttr": [],
         "testCmd": "",

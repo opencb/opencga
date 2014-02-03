@@ -28,7 +28,7 @@ public class SqliteManager {
     }
 
     public void connect(Path filePath, boolean readOnly) throws ClassNotFoundException, SQLException {
-        Path dbPath = Paths.get(filePath.toString() + ".db");
+        Path dbPath = Paths.get(filePath.toString());
 
         SQLiteConfig config = new SQLiteConfig();
 //        config.setLockingMode(SQLiteConfig.LockingMode.NORMAL);
@@ -243,6 +243,85 @@ public class SqliteManager {
         System.out.println("SQLITE MANAGER Parse to XObject " + (System.currentTimeMillis() - tx) + "ms");
         System.out.println("results size: " + results.size());
         return results;
+    }
+
+    public Iterator<XObject> queryIterator(String queryString) throws SQLException {
+        System.out.println(queryString);
+
+        Iterator<XObject> it = new QueryIterator(queryString);
+
+        return it;
+    }
+
+    private class QueryIterator implements Iterator<XObject> {
+
+        private Statement stmt;
+        private ResultSet rs;
+        private int columnCount;
+        private ResultSetMetaData rsmd;
+        private boolean didNext;
+        private boolean hasNext;
+
+        public QueryIterator(String queryString) throws SQLException {
+
+            stmt = connection.createStatement();
+            rs = stmt.executeQuery(queryString);
+            rsmd = rs.getMetaData();
+            columnCount = rsmd.getColumnCount();
+            didNext = false;
+            hasNext = false;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (!didNext) {
+                try {
+                    hasNext = rs.next();
+                    didNext = true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (!hasNext) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            return hasNext;
+        }
+
+        @Override
+        public XObject next() {
+            XObject row = null;
+            if (!didNext) {
+                try {
+                    rs.next();
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            row = new XObject();
+            try {
+                for (int i = 1; i <= columnCount; i++) {
+                    row.put(rsmd.getColumnName(i), rs.getString(i));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            didNext = false;
+            return row;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+
+        }
     }
 
     private void insertByType(PreparedStatement ps, XObject xObject, XObject columns) throws SQLException {

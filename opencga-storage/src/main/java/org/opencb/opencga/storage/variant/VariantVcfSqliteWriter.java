@@ -1,7 +1,10 @@
 package org.opencb.opencga.storage.variant;
 
 import com.google.common.base.Joiner;
+import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.commons.bioformats.feature.Genotype;
+import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.feature.Genotypes;
 import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
@@ -10,20 +13,20 @@ import org.opencb.commons.bioformats.variant.vcf4.VcfRecord;
 import org.opencb.commons.bioformats.variant.vcf4.effect.EffectCalculator;
 import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
 import org.opencb.commons.db.SqliteSingletonConnection;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
 
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.*;
 
 /**
- * Created with IntelliJ IDEA.
- * User: aaleman
- * Date: 10/30/13
- * Time: 3:04 PM
- * To change this template use File | Settings | File Templates.
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
@@ -32,7 +35,21 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
     private PreparedStatement pstmt;
     private SqliteSingletonConnection connection;
 
+    private SqliteCredentials credentials;
 
+
+    public VariantVcfSqliteWriter(SqliteCredentials credentials) {
+        if (credentials == null) {
+            throw new IllegalArgumentException("Credentials for accessing the database must be specified");
+        }
+        this.stmt = null;
+        this.pstmt = null;
+        this.createdSampleTable = false;
+        this.credentials = credentials;
+
+    }
+
+    @Deprecated
     public VariantVcfSqliteWriter(String dbName) {
         this.stmt = null;
         this.pstmt = null;
@@ -77,7 +94,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
             }
         }
 
-        sql = "INSERT INTO variant (chromosome, position, id, ref, alt, qual, filter, info, format,genes,consequence_types, genotypes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?);";
+        sql = "INSERT INTO variant (chromosome, position, id, ref, alt, qual, filter, info, format,genes,consequence_types, genotypes, polyphen_score, polyphen_effect, sift_score, sift_effect) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         sqlSampleInfo = "INSERT INTO sample_info(id_variant, sample_name, allele_1, allele_2, data) VALUES (?,?,?,?,?);";
         sqlInfo = "INSERT INTO variant_info(id_variant, key, value) VALUES (?,?,?);";
 
@@ -92,6 +109,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
             VcfRecord v;
             String genes, consecuenteTypes, genotypes;
+            Map<String, Object> polySift;
             for (int i = 0; i < vcfRecords.size(); i++) {
                 v = vcfRecords.get(i);
 
@@ -112,6 +130,14 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 pstmt.setString(10, genes);
                 pstmt.setString(11, consecuenteTypes);
                 pstmt.setString(12, genotypes);
+                polySift = parsePolyphenSift(batchEffect.get(i));
+
+                if (polySift != null) {
+                    pstmt.setDouble(13, (Double) polySift.get("ps"));
+                    pstmt.setInt(14, (Integer) polySift.get("pe"));
+                    pstmt.setDouble(15, (Double) polySift.get("ss"));
+                    pstmt.setInt(16, (Integer) polySift.get("se"));
+                }
 
                 pstmt.execute();
                 ResultSet rs = pstmt.getGeneratedKeys();
@@ -163,6 +189,28 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
         return res;
     }
 
+    private Map<String, Object> parsePolyphenSift(List<VariantEffect> variantEffects) {
+
+
+        double ss, ps;
+        int se, pe;
+
+        Map<String, Object> map = new HashMap<>(4);
+
+        for (VariantEffect effect : variantEffects) {
+            if (effect.getAaPosition() != -1) {
+
+                map.put("ss", effect.getSiftScore());
+                map.put("se", effect.getSiftEffect());
+                map.put("ps", effect.getPolyphenScore());
+                map.put("pe", effect.getPolyphenEffect());
+                return map;
+            }
+        }
+
+        return null;
+    }
+
     private String parseGenotypes(VcfRecord r) {
         List<Genotype> list = new ArrayList<>();
 
@@ -209,7 +257,8 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 "feature_id , feature_name , feature_type , feature_biotype , feature_chromosome , feature_start , " +
                 "feature_end , feature_strand , snp_id , ancestral , alternative , gene_id , transcript_id , gene_name , " +
                 "consequence_type , consequence_type_obo , consequence_type_desc , consequence_type_type , aa_position , " +
-                "aminoacid_change , codon_change) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+                "aminoacid_change , codon_change," +
+                "polyphen_score, polyphen_effect, sift_score, sift_effect) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
         boolean res = true;
 
@@ -242,6 +291,10 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 pstmt.setInt(23, v.getAaPosition());
                 pstmt.setString(24, v.getAminoacidChange());
                 pstmt.setString(25, v.getCodonChange());
+                pstmt.setDouble(26, v.getPolyphenScore());
+                pstmt.setInt(27, v.getPolyphenEffect());
+                pstmt.setDouble(28, v.getSiftScore());
+                pstmt.setInt(29, v.getSiftEffect());
 
                 pstmt.execute();
 
@@ -398,6 +451,7 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
 
     @Override
     public boolean open() {
+        this.connection = new SqliteSingletonConnection(this.credentials.getPath().toString());
         return SqliteSingletonConnection.getConnection() != null;
     }
 
@@ -444,7 +498,11 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 "consequence_type_type TEXT, " +
                 "aa_position INT64, " +
                 "aminoacid_change TEXT, " +
-                "codon_change TEXT); ";
+                "codon_change TEXT," +
+                "polyphen_score DOUBLE, " +
+                "polyphen_effect INT," +
+                "sift_score DOUBLE," +
+                "sift_effect INT); ";
 
         String variantTable = "CREATE TABLE IF NOT EXISTS variant (" +
                 "id_variant INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -459,7 +517,11 @@ public class VariantVcfSqliteWriter implements VariantDBWriter<VcfRecord> {
                 "format TEXT, " +
                 "genes TEXT, " +
                 "consequence_types TEXT, " +
-                "genotypes TEXT);";
+                "genotypes TEXT, " +
+                "polyphen_score DOUBLE, " +
+                "polyphen_effect INT," +
+                "sift_score DOUBLE," +
+                "sift_effect INT); ";
 
         String sampleTable = "CREATE TABLE IF NOT EXISTS sample(" +
                 "name TEXT PRIMARY KEY);";
