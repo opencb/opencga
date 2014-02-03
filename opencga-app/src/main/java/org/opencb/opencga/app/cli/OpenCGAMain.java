@@ -52,6 +52,7 @@ public class OpenCGAMain {
         // Variants optional arguments
         options.addOption(OptionFactory.createOption("include-effect", "Save variant effect information (optional)", false, false));
         options.addOption(OptionFactory.createOption("include-stats", "Save statistics information (optional)", false, false));
+        options.addOption(OptionFactory.createOption("include-samples", "Save samples information (optional)", false, false));
         options.addOption(OptionFactory.createOption("pedigree", "File containing pedigree information (in PED format)", false, true));
     }
 
@@ -83,11 +84,12 @@ public class OpenCGAMain {
             case "variants":
                 boolean includeEffect = commandLine.hasOption("include-effect");
                 boolean includeStats = commandLine.hasOption("include-stats");
+                boolean includeSamples = commandLine.hasOption("include-samples");
                 Path pedigreePath = commandLine.hasOption("pedigree") ? Paths.get(commandLine.getOptionValue("pedigree")) : null;
                 String alias = (studyName.length() >= 5) ? studyName.substring(0, 5) : studyName;
                 VariantStudy study = new VariantStudy(studyName, alias, studyName, null, null);
 
-                indexVariants(study, filePath, pedigreePath, backend, credentialsPath, includeEffect, includeStats);
+                indexVariants(study, filePath, pedigreePath, backend, credentialsPath, includeEffect, includeStats, includeSamples);
                 break;
             default:
                 System.out.println("Datatype " + commandLine.getOptionValue("datatype") + " is not supported");
@@ -123,11 +125,13 @@ public class OpenCGAMain {
     }
 
     private static void indexVariants(VariantStudy study, Path filePath, Path pedigreePath, String backend, Path credentialsPath,
-                                      boolean includeEffect, boolean includeStats) throws IOException, IllegalOpenCGACredentialsException {
+                                      boolean includeEffect, boolean includeStats, boolean includeSamples) throws IOException, IllegalOpenCGACredentialsException {
 
         VariantRunner vr = null;
-        VariantReader reader = new VariantVcfReader(filePath.toString());
+        VariantReader reader;
         PedDataReader pedReader = pedigreePath != null ? new PedFileDataReader(pedigreePath.toString()) : null;
+
+        reader = new VariantVcfReader(filePath.toString());
 
         List<VariantWriter> writers = new ArrayList<>();
         OpenCGACredentials credentials;
@@ -145,14 +149,22 @@ public class OpenCGAMain {
         } else if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
             writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", (MongoCredentials) credentials));
+//            writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", (MongoCredentials) credentials));
         }
 
 
         if (includeEffect) {
             taskList.add(new VariantEffectTask());
+
         }
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, study));
+
+        }
+        for (VariantWriter variantWriter : writers) {
+            variantWriter.includeSamples(includeSamples);
+            variantWriter.includeEffect(includeEffect);
+            variantWriter.includeStats(includeStats);
         }
 
         vr = new VariantRunner(study, reader, pedReader, writers, taskList);

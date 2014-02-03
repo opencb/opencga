@@ -1,11 +1,13 @@
 package org.opencb.opencga.storage.variant;
 
 import com.google.common.base.Joiner;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+
 import org.opencb.commons.bioformats.feature.Genotype;
 import org.opencb.commons.bioformats.feature.Genotypes;
 import org.opencb.commons.bioformats.variant.Variant;
@@ -48,7 +50,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     @Override
     public boolean write(List<Variant> vcfRecords) {
         String sql, sqlSampleInfo, sqlInfo;
-        PreparedStatement pstmtSample, pstmtInfo;o
+        PreparedStatement pstmtSample, pstmtInfo;
         String sampleName;
         int allele_1, allele_2;
         Genotype g;
@@ -111,7 +113,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
                 pstmt.setString(11, consequenceTypes);
                 pstmt.setString(12, genotypes);
                 polySift = parsePolyphenSift(batchEffect);
-                
+
 
                 if (polySift != null) {
                     pstmt.setDouble(13, (Double) polySift.get("ps"));
@@ -141,7 +143,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
                         pstmtSample.execute();
 
                     }
-                    
+
                     for (Map.Entry<String, String> entry : v.getAttributes().entrySet()) {
                         pstmtInfo.setInt(1, id);
                         pstmtInfo.setString(2, entry.getKey());
@@ -635,4 +637,18 @@ public class VariantVcfSqliteWriter implements VariantWriter {
         return true;
     }
 
+    @Override
+    public void includeStats(boolean b) {
+
+    }
+
+    @Override
+    public void includeSamples(boolean b) {
+
+    }
+
+    @Override
+    public void includeEffect(boolean b) {
+
+    }
 }
