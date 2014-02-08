@@ -2,10 +2,12 @@ package org.opencb.opencga.storage.variant;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
+
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.*;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;

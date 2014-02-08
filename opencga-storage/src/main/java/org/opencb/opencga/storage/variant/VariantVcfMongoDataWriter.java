@@ -72,6 +72,8 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
 
     private boolean writeBatch(List<Variant> data) {
         // Generate the Put objects
+
+
         for (Variant v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
 
@@ -80,8 +82,9 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
             query.put("studies.studyId", study.getName());
 
             if (variantCollection.count(query) == 0) {
+//                System.out.println("no hay" + rowkey + " - " + v.getChromosome() + " - " + v.getPosition());
                 // Insert relationship variant-study in Mongo
-                BasicDBObject mongoStudy = new BasicDBObject("studyId", study.getName()).append("ref", v.getReference()).append("alt", v.getAltAlleles());
+                BasicDBObject mongoStudy = new BasicDBObject("studyId", study.getName()).append("ref", v.getReference()).append("alt", v.getAltAlleles()).append("snpId", v.getId());
                 BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
                 BasicDBObject query2 = new BasicDBObject("position", rowkey);
                 query2.put("chr", v.getChromosome());
