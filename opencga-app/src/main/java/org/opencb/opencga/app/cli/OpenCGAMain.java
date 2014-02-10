@@ -1,8 +1,8 @@
 package org.opencb.opencga.app.cli;
 
 import org.apache.commons.cli.*;
-import org.opencb.commons.bioformats.pedigree.io.readers.PedDataReader;
-import org.opencb.commons.bioformats.pedigree.io.readers.PedFileDataReader;
+import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
+import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
@@ -129,7 +129,7 @@ public class OpenCGAMain {
 
         VariantRunner vr = null;
         VariantReader reader;
-        PedDataReader pedReader = pedigreePath != null ? new PedFileDataReader(pedigreePath.toString()) : null;
+        PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
         reader = new VariantVcfReader(filePath.toString());
 
