@@ -149,7 +149,6 @@ public class OpenCGAMain {
         } else if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
             writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", (MongoCredentials) credentials));
-//            writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", (MongoCredentials) credentials));
         }
 
 

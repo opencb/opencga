@@ -14,6 +14,7 @@ import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -138,11 +139,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
     }
 
     @Override
-    public List<VariantInfo> getRecords(Map<String, String> options) {
-        return null;
-    }
-
-    @Override
     public List<VariantStats> getRecordsStats(Map<String, String> options) {
         return null;
     }
@@ -155,6 +151,13 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
     @Override
     public VariantAnalysisInfo getAnalysisInfo(Map<String, String> options) {
         return null;
+    }
+
+    @Override
+    public boolean close() {
+
+        mongoClient.close();
+        return true;
     }
 
     private String buildRowkey(String chromosome, String position) {
@@ -173,4 +176,28 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         }
         return chromosome + "_" + position;
     }
+
+    @Override
+    public List<VariantInfo> getRecords(Map<String, String> options) {
+
+        List<VariantInfo> res = new ArrayList<>();
+
+        String studyId = options.get("studyId");
+
+        DBCollection coll = db.getCollection("variants");
+
+        DBObject query = new BasicDBObject("studies.studyId", studyId);
+
+        DBCursor cursor = coll.find(query);
+
+        for (DBObject elem : cursor) {
+
+
+
+        }
+
+
+        return res;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
 }

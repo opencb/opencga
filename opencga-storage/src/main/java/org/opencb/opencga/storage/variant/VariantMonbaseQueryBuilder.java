@@ -2,12 +2,6 @@ package org.opencb.opencga.storage.variant;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
-
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.util.*;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -25,6 +19,11 @@ import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.util.*;
 
 /**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
@@ -615,6 +614,13 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     @Override
     public VariantAnalysisInfo getAnalysisInfo(Map<String, String> options) {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public boolean close() {
+
+        mongoClient.close();
+        return true;
     }
 
     private String buildRowkey(String chromosome, String position) {

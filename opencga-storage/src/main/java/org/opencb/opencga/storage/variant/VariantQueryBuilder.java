@@ -23,9 +23,9 @@ public interface VariantQueryBuilder {
      * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
      * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
      *
-     * @param region The region where variants must be searched
+     * @param region    The region where variants must be searched
      * @param studyName The name of the study where variants are filed
-     * @param options Optional arguments
+     * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
     QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options);
@@ -33,7 +33,6 @@ public interface VariantQueryBuilder {
     List<QueryResult> getAllVariantsByRegionList(List<Region> region, String studyName, QueryOptions options);
 
     QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax);
-
 
 
     QueryResult getStatsByVariant(Variant variant, QueryOptions options);
@@ -62,5 +61,7 @@ public interface VariantQueryBuilder {
 
     @Deprecated
     VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
+
+    public boolean close();
 
 }
