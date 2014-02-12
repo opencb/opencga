@@ -1,6 +1,8 @@
 package org.opencb.opencga.account;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -23,6 +25,16 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.opencb.commons.bioformats.feature.Region;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.lib.auth.SqliteCredentials;
+import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
+import org.opencb.opencga.storage.variant.VariantMonbaseQueryBuilder;
+import org.opencb.opencga.storage.variant.VariantQueryBuilder;
+import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 
 public class CloudSessionManager {
 
@@ -31,8 +43,11 @@ public class CloudSessionManager {
 
     protected static Logger logger = LoggerFactory.getLogger(CloudSessionManager.class);
 
-    private Properties accountProperties;
+    protected static ObjectMapper jsonObjectMapper;
+    protected static ObjectWriter jsonObjectWriter;
 
+    private Properties accountProperties;
+    
     public CloudSessionManager() throws IOException, IOManagementException {
         this(System.getenv("OPENCGA_HOME"));
     }
@@ -46,6 +61,9 @@ public class CloudSessionManager {
             accountManager = new AccountMongoDBManager();
         }
         ioManager = new FileIOManager();
+        
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
     }
 
     /**
@@ -73,10 +91,16 @@ public class CloudSessionManager {
         return ioManager.getTmpPath();
     }
 
+    public ObjectItem getObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId) 
+            throws AccountManagementException, IOException {
+        return accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
+    }
+    
     /**
      * Account methods
      * ***************************
      */
+    
     public void createAccount(String accountId, String password, String name, String email, String sessionIp)
             throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(accountId, "accountId");
@@ -382,37 +406,96 @@ public class CloudSessionManager {
         accountManager.shareObject(accountId, bucketId, objectId, acl, sessionId);
     }
 
-    public String region(String accountId, String bucketId, Path objectId, String regionStr,
-                         Map<String, List<String>> params, String sessionId) throws Exception {
-        System.out.println("(>·_·)>");
-        checkParameter(bucketId, "bucket");
-        checkParameter(accountId, "accountId");
-        checkParameter(sessionId, "sessionId");
-        checkParameter(objectId.toString(), "objectId");
-        checkParameter(regionStr, "regionStr");
+    
+//    public String fetchData(Path objectId, String fileFormat, String regionStr, Map<String, List<String>> params) throws Exception {
+//        checkParameter(objectId.toString(), "objectId");
+//        checkParameter(regionStr, "regionStr");
+//
+//        String result = "";
+//        switch (fileFormat) {
+//            case "bam":
+//                result = fetchAlignmentData(objectId, regionStr, params);
+//                break;
+//            case "vcf":
+//                result = fetchVariationData(objectId, regionStr, params);
+//                break;
+//            default:
+//                throw new IllegalArgumentException("File format " + fileFormat + " not yet supported");
+//        }
+//        
+//        return result;
+//    }
+    
+    public QueryResult fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
+        AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
+        Region region = Region.parseRegion(regionStr);
+        QueryOptions options = new QueryOptions(params, true);
+        QueryResult queryResult = null;
 
-        Path fullFilePath = ioManager.getObjectPath(accountId, bucketId, objectId);
-        ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
-
-        logger.debug(fullFilePath.toString());
-        logger.debug(regionStr);
-
-        String result = "";
-        switch (objectItem.getFileFormat()) {
-            case "bam":
-                BamManager bamManager = new BamManager();
-//                result = bamManager.getByRegion(fullFilePath, regionStr, params);
-                result = bamManager.queryRegion(fullFilePath, regionStr, params);
-                break;
-            case "vcf":
-                VcfManager vcfManager = new VcfManager();
-//                result = vcfManager.getByRegion(fullFilePath, regionStr, params);
-                result = vcfManager.queryRegion(fullFilePath, regionStr, params);
-                break;
-        }
-        return result;
+        boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
+        boolean includeAlignments = params.containsKey("alignments") && Boolean.parseBoolean(params.get("alignments").get(0));
+        boolean includeCoverage = params.containsKey("coverage") && Boolean.parseBoolean(params.get("coverage").get(0));
+        
+        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap> 
+            queryResult = queryBuilder.getAlignmentsHistogramByRegion(region, 
+                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
+            
+        } else if ((includeAlignments && includeCoverage) || 
+                   (!includeAlignments && !includeCoverage)) { // If both or none requested: QueryResult<AlignmentRegion> 
+            queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
+            
+        } else if (includeAlignments) { // Query the alignments themselves: QueryResult<Alignment> 
+            queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+            
+        } else if (includeCoverage) { // Query the alignments' coverage: QueryResult<RegionCoverage>
+            queryResult = queryBuilder.getCoverageByRegion(region, options);
+        } 
+        
+        return queryResult;
     }
+    
+    public QueryResult fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
+//        VcfManager vcfManager = new VcfManager();
+////        result = vcfManager.getByRegion(fullFilePath, regionStr, params);
+//        return vcfManager.queryRegion(objectId, regionStr, params);
+        String species = params.containsKey("species") ? params.get("species").get(0) : "hsapiens";
+        VariantQueryBuilder queryBuilder = 
+                //new VariantMonbaseQueryBuilder(species, 
+                //new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, "variants_" + species, "cgonzalez", "cgonzalez"));
+                new VariantSqliteQueryBuilder(new SqliteCredentials(objectPath));
+        Region region = Region.parseRegion(regionStr);
+        QueryOptions options = new QueryOptions(params, true);
+        QueryResult queryResult = null;
 
+        boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
+        boolean includeVariants = params.containsKey("variants") && Boolean.parseBoolean(params.get("variants").get(0));
+        boolean includeStats = params.containsKey("stats") && Boolean.parseBoolean(params.get("stats").get(0));
+        boolean includeEffects = params.containsKey("effects") && Boolean.parseBoolean(params.get("effects").get(0));
+        String studyName = params.containsKey("study") ? params.get("study").toString() : "";
+        if (studyName.equals("")) { // TODO In the future, it will represent that we want to retrieve info from all studies
+            return new QueryResult(regionStr);
+        }
+        
+        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap> 
+            // TODO
+            queryResult = queryBuilder.getVariantsHistogramByRegion(region, studyName,
+                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
+            
+        } else if (includeVariants) {
+            // TODO in SQLite
+            queryResult = queryBuilder.getAllVariantsByRegion(region, studyName, options);
+        } else if (includeStats && !includeEffects) {
+            
+        } else if (!includeStats && includeEffects) {
+            
+        }
+        
+        return queryResult;
+    }
+    
+    
     public String indexFileObject(String accountId, String bucketId, Path objectId, boolean force, String sessionId) throws Exception {
         ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
         if (objectItem.getStatus().contains("indexer")) {

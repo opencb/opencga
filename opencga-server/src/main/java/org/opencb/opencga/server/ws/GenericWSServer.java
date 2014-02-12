@@ -1,33 +1,44 @@
 package org.opencb.opencga.server.ws;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.account.CloudSessionManager;
-import org.opencb.opencga.account.io.IOManagementException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.*;
+import org.opencb.commons.containers.QueryResponse;
+import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.account.CloudSessionManager;
+import org.opencb.opencga.account.io.IOManagementException;
+import org.opencb.opencga.lib.common.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/")
 public class GenericWSServer {
 
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
     protected static Properties properties;
+    protected static Config config;
 
     protected UriInfo uriInfo;
     protected String accountId;
-    //    protected String sessionId;
     protected String sessionIp;
 
+    // Common input arguments
     protected MultivaluedMap<String, String> params;
+    protected QueryOptions queryOptions;
+    
+    // Common output members
+    protected String outputFormat;
+    protected long startTime;
+    protected long endTime;
+    
     protected static ObjectWriter jsonObjectWriter;
     protected static ObjectMapper jsonObjectMapper;
 
@@ -47,7 +58,6 @@ public class GenericWSServer {
     protected static CloudSessionManager cloudSessionManager;
 
     static {
-
         try {
             cloudSessionManager = new CloudSessionManager();
         } catch (IOException | IOManagementException e) {
@@ -67,9 +77,12 @@ public class GenericWSServer {
     }
 
     public GenericWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-
+        this.startTime = System.currentTimeMillis();
         this.uriInfo = uriInfo;
         this.params = this.uriInfo.getQueryParameters();
+        this.queryOptions = new QueryOptions();
+        parseCommonQueryParameters(this.params);
+        
 //        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";
 //        this.of = (this.params.get("of") != null) ? this.params.get("of").get(0) : "";
         this.sessionIp = httpServletRequest.getRemoteAddr();
@@ -96,6 +109,22 @@ public class GenericWSServer {
         }
     }
 
+    
+    /**
+     * This method parse common query parameters from the URL
+     *
+     * @param multivaluedMap
+     */
+    private void parseCommonQueryParameters(MultivaluedMap<String, String> multivaluedMap) {
+        queryOptions.put("exclude", (multivaluedMap.get("exclude") != null) ? multivaluedMap.get("exclude").get(0) : "");
+        queryOptions.put("include", (multivaluedMap.get("include") != null) ? multivaluedMap.get("include").get(0) : "");
+        queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
+
+        outputFormat = (multivaluedMap.get("of") != null) ? multivaluedMap.get("of").get(0) : "json";
+    }
+
+    
+    
     @GET
     @Path("/echo/{message}")
     public Response echoGet(@PathParam("message") String message) {
@@ -113,8 +142,31 @@ public class GenericWSServer {
         }
     }
 
-    protected Response createOkResponse(Object o) {
-        return buildResponse(Response.ok(o));
+    protected Response createOkResponse(Object obj) {
+        switch (outputFormat.toLowerCase()) {
+            case "json":
+                return createJsonResponse(obj);
+            case "xml":
+                return createOkResponse(obj, MediaType.APPLICATION_XML_TYPE);
+            default:
+                return buildResponse(Response.ok(obj));
+        }
+    }
+
+    protected Response createJsonResponse(Object obj) {
+        endTime = System.currentTimeMillis() - startTime;
+        QueryResponse queryResponse = new QueryResponse(queryOptions, obj, 
+                (params.get("version") != null) ? params.get("version").get(0) : null,
+                (params.get("species") != null) ? params.get("species").get(0) : null,
+                endTime);
+
+        try {
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            logger.error("Error parsing queryResponse object");
+            return null;
+        }
     }
 
     protected Response createOkResponse(Object o1, MediaType o2) {
