@@ -15,11 +15,15 @@
     <version>${opencga.version}</version>
 
     <properties>
-        <installation.dir>build</installation.dir>
-        <dest.installation.dir>/opt/opencga</dest.installation.dir>
+        <build.dir>build</build.dir>
+        <installation.dir>/opt/opencga</installation.dir>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.opencb.variant</groupId>
+            <artifactId>variant-lib</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-lib</artifactId>
@@ -66,6 +70,7 @@
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
+        <finalName>opencga-app</finalName>
 
         <plugins>
             <plugin>
@@ -97,7 +102,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <outputDirectory>${installation.dir}/libs</outputDirectory>
+                    <outputDirectory>${build.dir}/libs</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -112,7 +117,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${installation.dir}/libs</outputDirectory>
+                            <outputDirectory>${build.dir}/libs</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
@@ -125,15 +130,27 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
-                                <echo>Copying to ${dest.installation.dir}</echo><!-- <copy todir="${installation.dir}">
-									<fileset dir="installation" includes="**" /> </copy> -->
+                                <echo>Deleting from ${installation.dir}</echo>
+                                <!-- <copy todir="${installation.dir}">
+                                                                    <fileset dir="installation" includes="**" /> </copy> -->
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${installation.dir}/analysis"/>
+                                    <arg value="${installation.dir}/conf"/>
+                                    <arg value="${installation.dir}/bin"/>
+                                    <arg value="${installation.dir}/libs"/>
+                                </exec>
+
+                                <echo>Copying to ${installation.dir}</echo>
+                                <!-- <copy todir="${installation.dir}">
+                                                                    <fileset dir="installation" includes="**" /> </copy> -->
                                 <exec executable="cp">
-                                    <arg value="-r" />
-                                    <arg value="${installation.dir}/analysis" />
-                                    <arg value="${installation.dir}/conf" />
-                                    <arg value="${installation.dir}/bin" />
-                                    <arg value="${installation.dir}/libs" />
-                                    <arg value="${dest.installation.dir}" />
+                                    <arg value="-r"/>
+                                    <arg value="${build.dir}/analysis"/>
+                                    <arg value="${build.dir}/conf"/>
+                                    <arg value="${build.dir}/bin"/>
+                                    <arg value="${build.dir}/libs"/>
+                                    <arg value="${installation.dir}"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -143,7 +160,32 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>1.5</version>
+
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!--<assembleDirectory>target/variant</assembleDirectory>-->
+                    <repositoryName>libs</repositoryName>
+                    <programs>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.cli.OpenCGAMain</mainClass>
+                            <name>opencga.sh</name>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-    
+
 </project>
