@@ -129,7 +129,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
             studyCollection = db.getCollection("studies");
             variantCollection = db.getCollection("variants");
 
-            return variantTable != null && studyCollection != null && effectTable != null;
+            return variantTable != null && studyCollection != null && effectTable != null && variantCollection != null;
         } catch (IOException ex) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
