@@ -3,6 +3,7 @@ package org.opencb.opencga.server.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +12,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.*;
+
 import org.opencb.commons.containers.QueryResponse;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.account.CloudSessionManager;
 import org.opencb.opencga.account.io.IOManagementException;
@@ -33,12 +37,12 @@ public class GenericWSServer {
     // Common input arguments
     protected MultivaluedMap<String, String> params;
     protected QueryOptions queryOptions;
-    
+
     // Common output members
     protected String outputFormat;
     protected long startTime;
     protected long endTime;
-    
+
     protected static ObjectWriter jsonObjectWriter;
     protected static ObjectMapper jsonObjectMapper;
 
@@ -82,7 +86,7 @@ public class GenericWSServer {
         this.params = this.uriInfo.getQueryParameters();
         this.queryOptions = new QueryOptions();
         parseCommonQueryParameters(this.params);
-        
+
 //        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";
 //        this.of = (this.params.get("of") != null) ? this.params.get("of").get(0) : "";
         this.sessionIp = httpServletRequest.getRemoteAddr();
@@ -109,7 +113,7 @@ public class GenericWSServer {
         }
     }
 
-    
+
     /**
      * This method parse common query parameters from the URL
      *
@@ -123,8 +127,7 @@ public class GenericWSServer {
         outputFormat = (multivaluedMap.get("of") != null) ? multivaluedMap.get("of").get(0) : "json";
     }
 
-    
-    
+
     @GET
     @Path("/echo/{message}")
     public Response echoGet(@PathParam("message") String message) {
@@ -134,12 +137,9 @@ public class GenericWSServer {
     }
 
     protected Response createErrorResponse(Object o) {
-        String objMsg = o.toString();
-        if (objMsg.startsWith("ERROR:")) {
-            return buildResponse(Response.ok("" + o));
-        } else {
-            return buildResponse(Response.ok("ERROR: " + o));
-        }
+        QueryResult<ObjectMap> result = new QueryResult();
+        result.setErrorMsg(o.toString());
+        return createJsonResponse(result);
     }
 
     protected Response createOkResponse(Object obj) {
@@ -155,7 +155,7 @@ public class GenericWSServer {
 
     protected Response createJsonResponse(Object obj) {
         endTime = System.currentTimeMillis() - startTime;
-        QueryResponse queryResponse = new QueryResponse(queryOptions, obj, 
+        QueryResponse queryResponse = new QueryResponse(queryOptions, obj,
                 (params.get("version") != null) ? params.get("version").get(0) : null,
                 (params.get("species") != null) ? params.get("species").get(0) : null,
                 endTime);

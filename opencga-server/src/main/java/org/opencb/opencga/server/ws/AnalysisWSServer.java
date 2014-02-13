@@ -1,7 +1,9 @@
 package org.opencb.opencga.server.ws;
 
+import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.account.beans.Acl;
 import org.opencb.opencga.account.beans.AnalysisPlugin;
+import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
@@ -92,10 +94,10 @@ public class AnalysisWSServer extends GenericWSServer {
         // Create job
         String jobId;
         try {
-            jobId = cloudSessionManager.createJob("", projectId, null, "",
-                    new ArrayList<String>(), "", sessionId);
+            QueryResult<Job> result =  cloudSessionManager.createJob("", projectId, null, "",new ArrayList<String>(), "", sessionId);
+            Job job = result.getResult().get(0);
             String jobFolder = "/tmp/";
-            return createOkResponse(aje.test(jobId, jobFolder));
+            return createOkResponse(aje.test(job.getId(), jobFolder));
         } catch (AccountManagementException | IOManagementException | AnalysisExecutionException e) {
             logger.error(e.toString());
             return createErrorResponse("could not create job.");
@@ -248,16 +250,19 @@ public class AnalysisWSServer extends GenericWSServer {
         }
 
         String jobId;
+        QueryResult<Job> result;
         try {
-            jobId = cloudSessionManager.createJob(jobName, projectId, jobFolder, toolName,
-                    dataList, "", sessionId);
+            result =  cloudSessionManager.createJob(jobName, projectId, jobFolder, toolName, dataList, "", sessionId);
+            Job job = result.getResult().get(0);
+            jobId = job.getId();
         } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not create job.");
         }
 
         if (jobFolder == null) {
-            jobFolder = cloudSessionManager.getJobFolder(accountId, jobId, sessionId);
+            QueryResult<String> resultFolder = cloudSessionManager.getJobFolder(accountId, jobId, sessionId);
+            jobFolder = resultFolder.getResult().get(0);
         } else {
             jobFolder = cloudSessionManager.getAccountPath(accountId).resolve(jobFolder).toString();
         }
@@ -282,6 +287,6 @@ public class AnalysisWSServer extends GenericWSServer {
             return createErrorResponse("execution failed.");
         }
 
-        return createOkResponse(jobId);
+        return createOkResponse(result);
     }
 }
