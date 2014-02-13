@@ -2,6 +2,8 @@ package org.opencb.opencga.account.db;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.cellbase.core.lib.dbquery.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 
 import java.io.IOException;
@@ -16,9 +18,9 @@ public interface AccountManager {
      */
     void createAccount(String accountId, String password, String accountName, String role, String email, Session session) throws AccountManagementException, JsonProcessingException;
 
-    String createAnonymousAccount(String accountId, String password, Session session) throws AccountManagementException, IOException;
+    org.opencb.commons.containers.QueryResult<ObjectMap> createAnonymousAccount(String accountId, String password, Session session) throws AccountManagementException, IOException;
 
-    String login(String accountId, String password, Session session) throws AccountManagementException, IOException;
+    org.opencb.commons.containers.QueryResult<ObjectMap> login(String accountId, String password, Session session) throws AccountManagementException, IOException;
 
     void logout(String accountId, String sessionId) throws AccountManagementException, IOException;
 

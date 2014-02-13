@@ -3,6 +3,7 @@ package org.opencb.opencga.account;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -67,7 +68,7 @@ public class CloudSessionManager {
     }
 
     /**
-     * Getter Path methods
+     * Getter path methods
      * ***************************
      */
 
@@ -121,7 +122,7 @@ public class CloudSessionManager {
 
     }
 
-    public String createAnonymousAccount(String sessionIp) throws AccountManagementException, IOManagementException, IOException {
+    public QueryResult<ObjectMap> createAnonymousAccount(String sessionIp) throws AccountManagementException, IOManagementException, IOException {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
@@ -138,7 +139,7 @@ public class CloudSessionManager {
 
     }
 
-    public String login(String accountId, String password, String sessionIp) throws AccountManagementException, IOException {
+    public QueryResult<ObjectMap> login(String accountId, String password, String sessionIp) throws AccountManagementException, IOException {
         checkParameter(accountId, "accountId");
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");

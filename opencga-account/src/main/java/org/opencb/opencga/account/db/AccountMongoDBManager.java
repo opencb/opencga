@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.MailUtils;
@@ -95,7 +97,7 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public String createAnonymousAccount(String accountId, String password, Session session)
+    public QueryResult<ObjectMap> createAnonymousAccount(String accountId, String password, Session session)
             throws AccountManagementException, IOException {
         createAccount(accountId, password, "anonymous", "anonymous", "anonymous", session);
         // Everything is ok, so we login account
@@ -104,7 +106,7 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public String login(String accountId, String password, Session session) throws AccountManagementException, IOException {
+    public QueryResult<ObjectMap> login(String accountId, String password, Session session) throws AccountManagementException, IOException {
         BasicDBObject query = new BasicDBObject();
         query.put("accountId", accountId);
         query.put("password", password);
@@ -149,12 +151,17 @@ public class AccountMongoDBManager implements AccountManager {
 
             // Now login() returns a JSON object with: sessionId, accountId and
             // bucketId
-            BasicDBObject result = new BasicDBObject("sessionId", session.getId());
-            result.append("accountId", accountId);
-            result.append("bucketId", "default");
 
-            // return session.getId();
-            return result.toString();
+            ObjectMap objectMap = new ObjectMap();
+            objectMap.put("sessionId", session.getId());
+            objectMap.put("accountId", accountId);
+            objectMap.put("bucketId", "default");
+
+            QueryResult<ObjectMap> result = new QueryResult();
+            result.setResult(Arrays.asList(objectMap));
+            result.setNumResults(1);
+
+            return result;
         } else {
             throw new AccountManagementException("account not found");
         }

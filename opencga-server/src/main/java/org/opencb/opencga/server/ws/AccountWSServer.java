@@ -1,5 +1,7 @@
 package org.opencb.opencga.server.ws;
 
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
 
@@ -44,7 +46,7 @@ public class AccountWSServer extends GenericWSServer {
     @Path("/login")
     public Response login(@DefaultValue("") @QueryParam("password") String password) throws IOException {
         try {
-            String res;
+            QueryResult<ObjectMap> res;
             if (accountId.toLowerCase().equals("anonymous")) {
                 res = cloudSessionManager.createAnonymousAccount(sessionIp);
             } else {
