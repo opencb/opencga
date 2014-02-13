@@ -1,5 +1,6 @@
 package org.opencb.opencga.account.db;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -106,14 +107,16 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> login(String accountId, String password, Session session) throws AccountManagementException, IOException {
+    public QueryResult<ObjectMap> login(String accountId, String password, Session session) throws IOException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject();
         query.put("accountId", accountId);
         query.put("password", password);
 
         DBObject obj = userCollection.findOne(query);
         if (obj != null) {
-//            Account account = gson.fromJson(obj.toString(), Account.class);
             Account account = jsonObjectMapper.readValue(obj.toString(), Account.class);
             account.addSession(session);
             List<Session> accountSessionList = account.getSessions();
@@ -143,28 +146,23 @@ public class AccountMongoDBManager implements AccountManager {
 
             if (wr.getLastError().getErrorMessage() == null) {
                 if (wr.getN() != 1) {
-                    throw new AccountManagementException("could not update sessions");
+                    result.setErrorMsg("could not update sessions");
+                } else {
+                    resultObjectMap.put("sessionId", session.getId());
+                    resultObjectMap.put("accountId", accountId);
+                    resultObjectMap.put("bucketId", "default");
+                    result.setResult(Arrays.asList(resultObjectMap));
+                    result.setNumResults(1);
                 }
             } else {
-                throw new AccountManagementException(wr.getLastError().getErrorMessage());
+                result.setErrorMsg(wr.getLastError().getErrorMessage());
             }
 
-            // Now login() returns a JSON object with: sessionId, accountId and
-            // bucketId
 
-            ObjectMap objectMap = new ObjectMap();
-            objectMap.put("sessionId", session.getId());
-            objectMap.put("accountId", accountId);
-            objectMap.put("bucketId", "default");
-
-            QueryResult<ObjectMap> result = new QueryResult();
-            result.setResult(Arrays.asList(objectMap));
-            result.setNumResults(1);
-
-            return result;
         } else {
-            throw new AccountManagementException("account not found");
+            result.setErrorMsg("account not found");
         }
+        return result;
     }
 
     @Override
