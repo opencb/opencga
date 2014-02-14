@@ -6,6 +6,7 @@ import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
+import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.storage.variant.VariantQueryBuilder;
@@ -106,8 +107,8 @@ public class JobAnalysisWSServer extends GenericWSServer {
     @Path("/delete")
     public Response deleteJob() {
         try {
-            cloudSessionManager.deleteJob(accountId, projectId, jobId, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.deleteJob(accountId, projectId, jobId, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());

@@ -44,12 +44,11 @@ var RESULT = {
                         };
                         this.filteredFile = outItem;
                     }
-                    if (outItem.indexOf('.txt', outItem.length - '.txt'.length) !== -1 &&
-                        outItem != 'summary.txt' &&
-                        outItem != 'mutation_phenotypes.txt' &&
-                        outItem != 'snp_phenotypes.txt' &&
-                        outItem != 'all_variants.txt') {
-                        var outTitle = outItem.replace('.txt', '');
+                    if (outItem.indexOf('.json', outItem.length - '.json'.length) !== -1 &&
+                        outItem != 'mutation_phenotypes.json' &&
+                        outItem != 'snp_phenotypes.json' &&
+                        outItem != 'all_variants.json') {
+                        var outTitle = outItem.replace('.json', '');
                         variantsChildren.push({
                             "title": outTitle,
                             "file": outItem,
@@ -59,9 +58,9 @@ var RESULT = {
                         });
                         this.variantFilterFiles[outItem] = outTitle;
                     }
-                    if (outItem == 'mutation_phenotypes.txt' || outItem == 'snp_phenotypes.txt') {
+                    if (outItem == 'mutation_phenotypes.json' || outItem == 'snp_phenotypes.json') {
                         phenotypicChildren.push({
-                            "title": outItem.replace('.txt', ''),
+                            "title": outItem.replace('.json', ''),
                             "file": outItem,
                             "renderers": [
                                 {type: 'file'}

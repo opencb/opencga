@@ -586,7 +586,11 @@ public class CloudSessionManager {
         checkParameter(jobId, "jobId");
         checkParameter(sessionId, "sessionId");
 
-        ioManager.deleteJob(accountId, projectId, jobId);
+        try {
+            ioManager.deleteJob(accountId, projectId, jobId);
+        } catch (IOManagementException e) {
+            logger.info(e.toString());
+        }
         return accountManager.deleteJobFromProject(accountId, projectId, jobId, sessionId);
     }
 
