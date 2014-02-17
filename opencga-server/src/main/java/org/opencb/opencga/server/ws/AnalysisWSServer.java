@@ -94,7 +94,7 @@ public class AnalysisWSServer extends GenericWSServer {
         // Create job
         String jobId;
         try {
-            QueryResult<Job> result =  cloudSessionManager.createJob("", projectId, null, "",new ArrayList<String>(), "", sessionId);
+            QueryResult<Job> result = cloudSessionManager.createJob("", projectId, null, "", new ArrayList<String>(), "", sessionId);
             Job job = result.getResult().get(0);
             String jobFolder = "/tmp/";
             return createOkResponse(aje.test(job.getId(), jobFolder));
@@ -252,7 +252,7 @@ public class AnalysisWSServer extends GenericWSServer {
         String jobId;
         QueryResult<Job> result;
         try {
-            result =  cloudSessionManager.createJob(jobName, projectId, jobFolder, toolName, dataList, "", sessionId);
+            result = cloudSessionManager.createJob(jobName, projectId, jobFolder, toolName, dataList, "", sessionId);
             Job job = result.getResult().get(0);
             jobId = job.getId();
         } catch (AccountManagementException | IOManagementException e) {
@@ -269,6 +269,8 @@ public class AnalysisWSServer extends GenericWSServer {
 
         // Set output param
         params.put(execution.getOutputParam(), Arrays.asList(jobFolder));
+        params.put("jobid", Arrays.asList(jobId));
+
 
         // Create commmand line
         String commandLine = null;
