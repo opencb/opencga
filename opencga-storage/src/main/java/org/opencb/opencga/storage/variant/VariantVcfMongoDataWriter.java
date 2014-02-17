@@ -82,7 +82,6 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
             query.put("studies.studyId", study.getName());
 
             if (variantCollection.count(query) == 0) {
-//                System.out.println("no hay" + rowkey + " - " + v.getChromosome() + " - " + v.getPosition());
                 // Insert relationship variant-study in Mongo
                 BasicDBObject mongoStudy = new BasicDBObject("studyId", study.getName()).append("ref", v.getReference()).append("alt", v.getAltAlleles()).append("snpId", v.getId());
                 BasicDBObject mongoVariant = new BasicDBObject().append("$addToSet", new BasicDBObject("studies", mongoStudy));
@@ -137,6 +136,8 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
                 }
 
 
+            }else{ // update stats
+
             }
         }
 
@@ -180,8 +181,19 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
 
             if (!agg_output.results().iterator().hasNext()) {
                 // Add stats to study
-                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf()).append("alleleMaf", v.getMafAllele()).append(
-                        "missing", v.getMissingGenotypes()).append("genotypeCount", genotypes);
+                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf());
+                mongoStats.append("mgf", v.getMgf());
+                mongoStats.append("alleleMaf", v.getMafAllele());
+                mongoStats.append("genotypeMaf", v.getMgfAllele());
+                mongoStats.append("missAllele", v.getMissingAlleles());
+                mongoStats.append("missGenotypes", v.getMissingGenotypes());
+                mongoStats.append("mendelErr", v.getMendelinanErrors());
+                mongoStats.append("casesPercentDominant", v.getCasesPercentDominant());
+                mongoStats.append("controlsPercentDominant", v.getControlsPercentDominant());
+                mongoStats.append("casesPercentRecessive", v.getCasesPercentRecessive());
+                mongoStats.append("controlsPercentRecessive", v.getControlsPercentRecessive());
+                mongoStats.append("genotypeCount", genotypes);
+
                 BasicDBObject item = new BasicDBObject("studies.$.stats", mongoStats);
                 BasicDBObject action = new BasicDBObject("$set", item);
 

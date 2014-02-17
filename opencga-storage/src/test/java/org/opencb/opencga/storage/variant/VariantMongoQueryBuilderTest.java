@@ -1,28 +1,19 @@
 package org.opencb.opencga.storage.variant;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.DB;
-import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
-import org.junit.*;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.Variant;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.opencb.commons.bioformats.variant.VariantStudy;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
-import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.list.SortedList;
-import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.commons.run.Task;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.variant.lib.runners.VariantRunner;
-import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -35,8 +26,6 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
     private static VariantStudy study = new VariantStudy("testStudy", "testAlias", "testStudy", null, null);
     private static VariantQueryBuilder vqb;
 
-
-    private String userName = "TEST";
 
     @BeforeClass
     public static void initMongo() throws IOException {
@@ -116,11 +105,19 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
     public void testGetRecords() throws Exception {
 
         Map<String, String> opts = new HashMap<>();
-        opts.put("studyId", "TEST5");
+        opts.put("studyId", "FILE1");
+//        opts.put("region_list", "6:1-15021068");
+//        opts.put("sampleGT_D801[]", "1/1,0/1");
+//        opts.put("sampleGT_muestra_B[]", "0/1");
+//        opts.put("conseq_type[]", "non_synonymous_codon,intron_variant");
+//        opts.put("mend_error", "1");
+//        opts.put("option_mend_error", ">=");
+//        opts.put("maf", "0.1");
+//        opts.put("option_maf", "<=");
 
-        List<VariantInfo> records = vqb.getRecords(opts);
+        QueryResult<VariantInfo> records = ((VariantMongoQueryBuilder) vqb).getRecordsMongo(opts);
 
-        System.out.println(records.size());
+        System.out.println(records.getNumResults());
 
 
     }
