@@ -113,8 +113,8 @@ public class JobAnalysisWSServer extends GenericWSServer {
     @Path("/delete")
     public Response deleteJob() {
         try {
-            cloudSessionManager.deleteJob(accountId, projectId, jobId, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.deleteJob(accountId, projectId, jobId, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
