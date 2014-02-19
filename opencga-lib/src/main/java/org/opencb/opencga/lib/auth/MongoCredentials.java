@@ -35,7 +35,6 @@ public class MongoCredentials implements OpenCGACredentials {
                 properties.getProperty("mongo_password", "").toCharArray());
     }
 
-
     @Override
     public boolean check() throws IllegalOpenCGACredentialsException {
         return true;

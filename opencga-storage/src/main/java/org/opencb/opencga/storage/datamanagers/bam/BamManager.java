@@ -140,6 +140,7 @@ public class BamManager {
         //Query .db
         SqliteManager sqliteManager = new SqliteManager();
         sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
+        System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
 
         Boolean histogram = false;
         if (params.get("histogram") != null) {

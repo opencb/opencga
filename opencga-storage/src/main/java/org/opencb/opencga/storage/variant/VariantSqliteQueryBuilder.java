@@ -159,7 +159,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                                 elem.getDouble("cases_percent_recessive"), elem.getDouble("controls_percent_recessive")
                         ));
                     }
-                    if(includeEffects){
+                    if (includeEffects) {
                         VariantEffect ve = new VariantEffect();
                     }
 
@@ -964,6 +964,11 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
         }
 
         return vi;
+    }
+
+    @Override
+    public boolean close() {
+        return true;
     }
 
     private String processGeneList(String genes) {

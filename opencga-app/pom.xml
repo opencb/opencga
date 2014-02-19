@@ -185,7 +185,6 @@
                     </programs>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 

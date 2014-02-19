@@ -3,6 +3,7 @@ package org.opencb.opencga.account;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -25,6 +26,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
+
 import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
@@ -47,7 +49,7 @@ public class CloudSessionManager {
     protected static ObjectWriter jsonObjectWriter;
 
     private Properties accountProperties;
-    
+
     public CloudSessionManager() throws IOException, IOManagementException {
         this(System.getenv("OPENCGA_HOME"));
     }
@@ -61,13 +63,13 @@ public class CloudSessionManager {
             accountManager = new AccountMongoDBManager();
         }
         ioManager = new FileIOManager();
-        
+
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
     }
 
     /**
-     * Getter Path methods
+     * Getter path methods
      * ***************************
      */
 
@@ -91,17 +93,17 @@ public class CloudSessionManager {
         return ioManager.getTmpPath();
     }
 
-    public ObjectItem getObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId) 
+    public ObjectItem getObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId)
             throws AccountManagementException, IOException {
         return accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
     }
-    
+
     /**
      * Account methods
      * ***************************
      */
-    
-    public void createAccount(String accountId, String password, String name, String email, String sessionIp)
+
+    public QueryResult createAccount(String accountId, String password, String name, String email, String sessionIp)
             throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(accountId, "accountId");
         checkParameter(password, "password");
@@ -113,15 +115,14 @@ public class CloudSessionManager {
         ioManager.createAccount(accountId);
 
         try {
-            accountManager.createAccount(accountId, password, name, "user", email, session);
+            return accountManager.createAccount(accountId, password, name, "user", email, session);
         } catch (AccountManagementException e) {
             ioManager.deleteAccount(accountId);
             throw e;
         }
-
     }
 
-    public String createAnonymousAccount(String sessionIp) throws AccountManagementException, IOManagementException, IOException {
+    public QueryResult createAnonymousAccount(String sessionIp) throws AccountManagementException, IOManagementException, IOException {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
@@ -138,7 +139,7 @@ public class CloudSessionManager {
 
     }
 
-    public String login(String accountId, String password, String sessionIp) throws AccountManagementException, IOException {
+    public QueryResult login(String accountId, String password, String sessionIp) throws AccountManagementException, IOException {
         checkParameter(accountId, "accountId");
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");
@@ -146,13 +147,13 @@ public class CloudSessionManager {
         return accountManager.login(accountId, password, session);
     }
 
-    public void logout(String accountId, String sessionId) throws AccountManagementException, IOException {
+    public QueryResult logout(String accountId, String sessionId) throws AccountManagementException, IOException {
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
-        accountManager.logout(accountId, sessionId);
+        return accountManager.logout(accountId, sessionId);
     }
 
-    public void logoutAnonymous(String sessionId) throws AccountManagementException, IOManagementException {
+    public QueryResult logoutAnonymous(String sessionId) throws AccountManagementException, IOManagementException {
         String accountId = "anonymous_" + sessionId;
         System.out.println("-----> el accountId del anonimo es: " + accountId + " y la sesionId: " + sessionId);
 
@@ -161,10 +162,10 @@ public class CloudSessionManager {
 
         // TODO check inconsistency
         ioManager.deleteAccount(accountId);
-        accountManager.logoutAnonymous(accountId, sessionId);
+        return accountManager.logoutAnonymous(accountId, sessionId);
     }
 
-    public void changePassword(String accountId, String password, String nPassword1, String nPassword2, String sessionId)
+    public QueryResult changePassword(String accountId, String password, String nPassword1, String nPassword2, String sessionId)
             throws AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -174,23 +175,23 @@ public class CloudSessionManager {
         if (!nPassword1.equals(nPassword2)) {
             throw new AccountManagementException("the new pass is not the same in both fields");
         }
-        accountManager.changePassword(accountId, sessionId, password, nPassword1, nPassword2);
+        return accountManager.changePassword(accountId, sessionId, password, nPassword1, nPassword2);
     }
 
-    public void changeEmail(String accountId, String nEmail, String sessionId) throws AccountManagementException {
+    public QueryResult changeEmail(String accountId, String nEmail, String sessionId) throws AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
         checkEmail(nEmail);
-        accountManager.changeEmail(accountId, sessionId, nEmail);
+        return accountManager.changeEmail(accountId, sessionId, nEmail);
     }
 
-    public void resetPassword(String accountId, String email) throws AccountManagementException {
+    public QueryResult resetPassword(String accountId, String email) throws AccountManagementException {
         checkParameter(accountId, "accountId");
         checkEmail(email);
-        accountManager.resetPassword(accountId, email);
+        return accountManager.resetPassword(accountId, email);
     }
 
-    public String getAccountInfo(String accountId, String lastActivity, String sessionId)
+    public QueryResult getAccountInfo(String accountId, String lastActivity, String sessionId)
             throws AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -207,11 +208,11 @@ public class CloudSessionManager {
      * Bucket methods
      * ***************************
      */
-    public String getBucketsList(String accountId, String sessionId) throws AccountManagementException, JsonProcessingException {
+    public QueryResult getBucketsList(String accountId, String sessionId) throws AccountManagementException, JsonProcessingException {
         return accountManager.getBucketsList(accountId, sessionId);
     }
 
-    public void createBucket(String accountId, Bucket bucket, String sessionId) throws AccountManagementException,
+    public QueryResult createBucket(String accountId, Bucket bucket, String sessionId) throws AccountManagementException,
             IOManagementException, JsonProcessingException {
         checkParameter(bucket.getName(), "bucketName");
         checkParameter(accountId, "accountId");
@@ -219,21 +220,21 @@ public class CloudSessionManager {
 
         ioManager.createBucket(accountId, bucket.getName());
         try {
-            accountManager.createBucket(accountId, bucket, sessionId);
+            return accountManager.createBucket(accountId, bucket, sessionId);
         } catch (AccountManagementException e) {
             ioManager.deleteBucket(accountId, bucket.getName());
             throw e;
         }
     }
 
-    public void renameBucket(String accountId, String bucketId, String newBucketId, String sessionId) throws AccountManagementException, IOManagementException {
+    public QueryResult renameBucket(String accountId, String bucketId, String newBucketId, String sessionId) throws AccountManagementException, IOManagementException {
         checkParameter(bucketId, "bucketName");
         checkParameter(newBucketId, "newBucketId");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
         ioManager.renameBucket(accountId, bucketId, newBucketId);
         try {
-            accountManager.renameBucket(accountId, bucketId, newBucketId, sessionId);
+            return accountManager.renameBucket(accountId, bucketId, newBucketId, sessionId);
         } catch (AccountManagementException e) {
             ioManager.renameBucket(accountId, newBucketId, bucketId);
             throw e;
@@ -241,8 +242,8 @@ public class CloudSessionManager {
     }
 
 
-    public String createObjectToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                       InputStream fileIs, boolean parents, String sessionId) throws AccountManagementException,
+    public QueryResult createObjectToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
+                                                       InputStream fileIs, boolean parents, String sessionId) throws AccountManagementException,
             IOManagementException, IOException, InterruptedException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
@@ -274,16 +275,16 @@ public class CloudSessionManager {
         objectItem.setFileName(objectId.getFileName().toString());
 
         try {
-            accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
-            return objectId.toString();
+            return accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
+//            return objectId.toString();
         } catch (AccountManagementException e) {
             ioManager.deleteObject(accountId, bucketId, objectId);
             throw e;
         }
     }
 
-    public String createFolderToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                       boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
+    public QueryResult createFolderToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
+                                                       boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -297,15 +298,15 @@ public class CloudSessionManager {
         objectItem.setFileName(objectId.getFileName().toString());
 
         try {
-            accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
-            return objectId.toString();
+            return accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
+//            return objectId.toString();
         } catch (AccountManagementException e) {
             ioManager.deleteObject(bucketId, accountId, objectId);
             throw e;
         }
     }
 
-    public void refreshBucket(final String accountId, final String bucketId, final String sessionId)
+    public QueryResult refreshBucket(final String accountId, final String bucketId, final String sessionId)
             throws AccountManagementException, IOException {
 
         final Path bucketPath = ioManager.getBucketPath(accountId, bucketId);
@@ -383,9 +384,17 @@ public class CloudSessionManager {
         for (ObjectItem objectItem : newObjects) {
             accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
         }
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+        resultObjectMap.put("msg", "bucket refreshed");
+        result.setResult(Arrays.asList(resultObjectMap));
+        result.setNumResults(1);
+
+        return result;
     }
 
-    public void deleteDataFromBucket(String accountId, String bucketId, Path objectId, String sessionId)
+    public QueryResult deleteDataFromBucket(String accountId, String bucketId, Path objectId, String sessionId)
             throws AccountManagementException, IOManagementException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
@@ -393,10 +402,10 @@ public class CloudSessionManager {
         checkParameter(objectId.toString(), "objectId");
 
         objectId = ioManager.deleteObject(accountId, bucketId, objectId);
-        accountManager.deleteObjectFromBucket(accountId, bucketId, objectId, sessionId);
-
+        return accountManager.deleteObjectFromBucket(accountId, bucketId, objectId, sessionId);
     }
 
+    //TODO
     public void shareObject(String accountId, String bucketId, Path objectId, String toAccountId, boolean read,
                             boolean write, boolean execute, String sessionId) throws AccountManagementException {
         checkParameters(accountId, "accountId", bucketId, "bucketId", objectId.toString(), "objectId", toAccountId,
@@ -406,7 +415,7 @@ public class CloudSessionManager {
         accountManager.shareObject(accountId, bucketId, objectId, acl, sessionId);
     }
 
-    
+
 //    public String fetchData(Path objectId, String fileFormat, String regionStr, Map<String, List<String>> params) throws Exception {
 //        checkParameter(objectId.toString(), "objectId");
 //        checkParameter(regionStr, "regionStr");
@@ -425,7 +434,7 @@ public class CloudSessionManager {
 //        
 //        return result;
 //    }
-    
+
     public QueryResult fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
         AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
         Region region = Region.parseRegion(regionStr);
@@ -435,32 +444,32 @@ public class CloudSessionManager {
         boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
         boolean includeAlignments = params.containsKey("alignments") && Boolean.parseBoolean(params.get("alignments").get(0));
         boolean includeCoverage = params.containsKey("coverage") && Boolean.parseBoolean(params.get("coverage").get(0));
-        
+
         if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap> 
-            queryResult = queryBuilder.getAlignmentsHistogramByRegion(region, 
-                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+            queryResult = queryBuilder.getAlignmentsHistogramByRegion(region,
+                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
                     params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-            
-        } else if ((includeAlignments && includeCoverage) || 
-                   (!includeAlignments && !includeCoverage)) { // If both or none requested: QueryResult<AlignmentRegion> 
+
+        } else if ((includeAlignments && includeCoverage) ||
+                (!includeAlignments && !includeCoverage)) { // If both or none requested: QueryResult<AlignmentRegion>
             queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
-            
+
         } else if (includeAlignments) { // Query the alignments themselves: QueryResult<Alignment> 
             queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
-            
+
         } else if (includeCoverage) { // Query the alignments' coverage: QueryResult<RegionCoverage>
             queryResult = queryBuilder.getCoverageByRegion(region, options);
-        } 
-        
+        }
+
         return queryResult;
     }
-    
+
     public QueryResult fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
 //        VcfManager vcfManager = new VcfManager();
 ////        result = vcfManager.getByRegion(fullFilePath, regionStr, params);
 //        return vcfManager.queryRegion(objectId, regionStr, params);
         String species = params.containsKey("species") ? params.get("species").get(0) : "hsapiens";
-        VariantQueryBuilder queryBuilder = 
+        VariantQueryBuilder queryBuilder =
                 //new VariantMonbaseQueryBuilder(species, 
                 //new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, "variants_" + species, "cgonzalez", "cgonzalez"));
                 new VariantSqliteQueryBuilder(new SqliteCredentials(objectPath));
@@ -476,26 +485,26 @@ public class CloudSessionManager {
         if (studyName.equals("")) { // TODO In the future, it will represent that we want to retrieve info from all studies
             return new QueryResult(regionStr);
         }
-        
+
         if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap> 
             // TODO
             queryResult = queryBuilder.getVariantsHistogramByRegion(region, studyName,
-                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false, 
+                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
                     params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-            
+
         } else if (includeVariants) {
             // TODO in SQLite
             queryResult = queryBuilder.getAllVariantsByRegion(region, studyName, options);
         } else if (includeStats && !includeEffects) {
-            
+
         } else if (!includeStats && includeEffects) {
-            
+
         }
-        
+
         return queryResult;
     }
-    
-    
+
+
     public String indexFileObject(String accountId, String bucketId, Path objectId, boolean force, String sessionId) throws Exception {
         ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
         if (objectItem.getStatus().contains("indexer")) {
@@ -543,11 +552,11 @@ public class CloudSessionManager {
      * Project methods
      * ***************************
      */
-    public String getProjectsList(String accountId, String sessionId) throws AccountManagementException {
+    public QueryResult getProjectsList(String accountId, String sessionId) throws AccountManagementException {
         return accountManager.getProjectsList(accountId, sessionId);
     }
 
-    public void createProject(String accountId, Project project, String sessionId) throws AccountManagementException,
+    public QueryResult createProject(String accountId, Project project, String sessionId) throws AccountManagementException,
             IOManagementException, JsonProcessingException {
         checkParameter(project.getId(), "projectName");
         checkParameter(accountId, "accountId");
@@ -555,7 +564,7 @@ public class CloudSessionManager {
 
         ioManager.createProject(accountId, project.getId());
         try {
-            accountManager.createProject(accountId, project, sessionId);
+            return accountManager.createProject(accountId, project, sessionId);
         } catch (AccountManagementException e) {
             ioManager.deleteProject(accountId, project.getId());
             throw e;
@@ -570,15 +579,19 @@ public class CloudSessionManager {
         accountManager.incJobVisites(accountId, jobId, sessionId);
     }
 
-    public void deleteJob(String accountId, String projectId, String jobId, String sessionId)
+    public QueryResult deleteJob(String accountId, String projectId, String jobId, String sessionId)
             throws AccountManagementException, IOManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(projectId, "projectId");
         checkParameter(jobId, "jobId");
         checkParameter(sessionId, "sessionId");
 
-        ioManager.deleteJob(accountId, projectId, jobId);
-        accountManager.deleteJobFromProject(accountId, projectId, jobId, sessionId);
+        try {
+            ioManager.deleteJob(accountId, projectId, jobId);
+        } catch (IOManagementException e) {
+            logger.info(e.toString());
+        }
+        return accountManager.deleteJobFromProject(accountId, projectId, jobId, sessionId);
     }
 
     public String getJobResult(String accountId, String jobId, String sessionId) throws IOException, IOManagementException, AccountManagementException {
@@ -634,8 +647,8 @@ public class CloudSessionManager {
         return ioManager.getJobZipped(jobPath, jobId);
     }
 
-    public String createJob(String jobName, String projectId, String jobFolder, String toolName, List<String> dataList,
-                            String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
+    public QueryResult createJob(String jobName, String projectId, String jobFolder, String toolName, List<String> dataList,
+                                            String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
 
         checkParameter(jobName, "jobName");
         checkParameter(projectId, "projectId");
@@ -656,20 +669,25 @@ public class CloudSessionManager {
         Job job = new Job(jobId, jobName, jobFolder, toolName, Job.QUEUED, commandLine, "", dataList);
 
         try {
-            accountManager.createJob(accountId, projectId, job, sessionId);
+            return accountManager.createJob(accountId, projectId, job, sessionId);
         } catch (AccountManagementException e) {
             if (jobFolderCreated) {
                 ioManager.deleteJob(accountId, projectId, jobId);
             }
             throw e;
         }
-
-        return jobId;
     }
 
-    public String getJobFolder(String accountId, String jobId, String sessionId) throws AccountManagementException, IOException {
+    public QueryResult getJobFolder(String accountId, String jobId, String sessionId) throws AccountManagementException, IOException {
         String projectId = accountManager.getJobProject(accountId, jobId, sessionId).getId();
-        return ioManager.getJobPath(accountId, projectId, null, jobId).toString();
+        String jobFolder = ioManager.getJobPath(accountId, projectId, null, jobId).toString();
+
+
+        QueryResult<String> result = new QueryResult();
+        result.setResult(Arrays.asList(jobFolder));
+        result.setNumResults(1);
+
+        return result;
     }
 
     public List<AnalysisPlugin> getUserAnalysis(String sessionId) throws AccountManagementException, IOException {

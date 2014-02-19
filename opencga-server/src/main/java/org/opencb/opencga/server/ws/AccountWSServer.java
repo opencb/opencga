@@ -1,5 +1,7 @@
 package org.opencb.opencga.server.ws;
 
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
 
@@ -26,14 +28,14 @@ public class AccountWSServer extends GenericWSServer {
     public Response create(@DefaultValue("") @QueryParam("password") String password,
                            @DefaultValue("") @QueryParam("name") String name, @DefaultValue("") @QueryParam("email") String email) throws IOException {
 
-
+        QueryResult result;
         try {
             if (accountId.toLowerCase().equals("anonymous")) {
-                cloudSessionManager.createAnonymousAccount(sessionIp);
+                result = cloudSessionManager.createAnonymousAccount(sessionIp);
             } else {
-                cloudSessionManager.createAccount(accountId, password, name, email, sessionIp);
+                result = cloudSessionManager.createAccount(accountId, password, name, email, sessionIp);
             }
-            return createOkResponse("OK");
+            return createOkResponse(result);
         } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not create the account");
@@ -44,13 +46,13 @@ public class AccountWSServer extends GenericWSServer {
     @Path("/login")
     public Response login(@DefaultValue("") @QueryParam("password") String password) throws IOException {
         try {
-            String res;
+            QueryResult result;
             if (accountId.toLowerCase().equals("anonymous")) {
-                res = cloudSessionManager.createAnonymousAccount(sessionIp);
+                result = cloudSessionManager.createAnonymousAccount(sessionIp);
             } else {
-                res = cloudSessionManager.login(accountId, password, sessionIp);
+                result = cloudSessionManager.login(accountId, password, sessionIp);
             }
-            return createOkResponse(res);
+            return createOkResponse(result);
         } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not login");
@@ -61,12 +63,13 @@ public class AccountWSServer extends GenericWSServer {
     @Path("/logout")
     public Response logout() throws IOException {
         try {
+            QueryResult result;
             if (accountId.toLowerCase().equals("anonymous")) {
-                cloudSessionManager.logoutAnonymous(sessionId);
+                result = cloudSessionManager.logoutAnonymous(sessionId);
             } else {
-                cloudSessionManager.logout(accountId, sessionId);
+                result = cloudSessionManager.logout(accountId, sessionId);
             }
-            return createOkResponse("OK");
+            return createOkResponse(result);
         } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not logout");
@@ -77,8 +80,8 @@ public class AccountWSServer extends GenericWSServer {
     @Path("/info")
     public Response getInfoAccount(@DefaultValue("") @QueryParam("last_activity") String lastActivity) {
         try {
-            String res = cloudSessionManager.getAccountInfo(accountId, lastActivity, sessionId);
-            return createOkResponse(res);
+            QueryResult result = cloudSessionManager.getAccountInfo(accountId, lastActivity, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException e) {
             logger.error(accountId);
             logger.error(e.toString());

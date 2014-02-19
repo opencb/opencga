@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.MailUtils;
@@ -82,20 +84,28 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public void createAccount(String accountId, String password, String accountName, String role, String email,
-                              Session session) throws AccountManagementException, JsonProcessingException {
+    public QueryResult<ObjectMap> createAccount(String accountId, String password, String accountName, String role, String email,
+                                                Session session) throws AccountManagementException, JsonProcessingException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         checkAccountExists(accountId);
         Account account = new Account(accountId, accountName, password, role, email);
         account.setLastActivity(TimeUtils.getTime());
 //        WriteResult wr = userCollection.insert((DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(account)));
         WriteResult wr = userCollection.insert((DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(account)));
+
         if (wr.getLastError().getErrorMessage() != null) {
             throw new AccountManagementException(wr.getLastError().getErrorMessage());
         }
+        resultObjectMap.put("accountId", accountId);
+        result.setResult(Arrays.asList(resultObjectMap));
+        result.setNumResults(1);
+        return result;
     }
 
     @Override
-    public String createAnonymousAccount(String accountId, String password, Session session)
+    public QueryResult<ObjectMap> createAnonymousAccount(String accountId, String password, Session session)
             throws AccountManagementException, IOException {
         createAccount(accountId, password, "anonymous", "anonymous", "anonymous", session);
         // Everything is ok, so we login account
@@ -104,14 +114,16 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public String login(String accountId, String password, Session session) throws AccountManagementException, IOException {
+    public QueryResult<ObjectMap> login(String accountId, String password, Session session) throws IOException, AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject();
         query.put("accountId", accountId);
         query.put("password", password);
 
         DBObject obj = userCollection.findOne(query);
         if (obj != null) {
-//            Account account = gson.fromJson(obj.toString(), Account.class);
             Account account = jsonObjectMapper.readValue(obj.toString(), Account.class);
             account.addSession(session);
             List<Session> accountSessionList = account.getSessions();
@@ -143,21 +155,21 @@ public class AccountMongoDBManager implements AccountManager {
                 if (wr.getN() != 1) {
                     throw new AccountManagementException("could not update sessions");
                 }
+                resultObjectMap.put("sessionId", session.getId());
+                resultObjectMap.put("accountId", accountId);
+                resultObjectMap.put("bucketId", "default");
+                result.setResult(Arrays.asList(resultObjectMap));
+                result.setNumResults(1);
+
             } else {
                 throw new AccountManagementException(wr.getLastError().getErrorMessage());
             }
 
-            // Now login() returns a JSON object with: sessionId, accountId and
-            // bucketId
-            BasicDBObject result = new BasicDBObject("sessionId", session.getId());
-            result.append("accountId", accountId);
-            result.append("bucketId", "default");
 
-            // return session.getId();
-            return result.toString();
         } else {
             throw new AccountManagementException("account not found");
         }
+        return result;
     }
 
     @Override
@@ -184,7 +196,7 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public void logout(String accountId, String sessionId) throws AccountManagementException, IOException {
+    public QueryResult<ObjectMap> logout(String accountId, String sessionId) throws AccountManagementException, IOException {
         Session session = getSession(accountId, sessionId);
         if (session != null) {
             // INSERT DATA OBJECT IN MONGO
@@ -201,19 +213,36 @@ public class AccountMongoDBManager implements AccountManager {
         } else {
             throw new AccountManagementException("logout");
         }
+
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+        resultObjectMap.put("logout", "ok");
+        result.setResult(Arrays.asList(resultObjectMap));
+        result.setNumResults(1);
+        return result;
     }
 
     @Override
-    public void logoutAnonymous(String accountId, String sessionId) {
+    public QueryResult<ObjectMap> logoutAnonymous(String accountId, String sessionId) {
         BasicDBObject query = new BasicDBObject();
         query.put("accountId", accountId);
         query.put("sessions.id", sessionId);
         userCollection.remove(query);
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+        resultObjectMap.put("logout", "ok");
+        result.setResult(Arrays.asList(resultObjectMap));
+        result.setNumResults(1);
+        return result;
     }
 
     @Override
-    public void changePassword(String accountId, String sessionId, String password, String nPassword1, String nPassword2)
+    public QueryResult<ObjectMap> changePassword(String accountId, String sessionId, String password, String nPassword1, String nPassword2)
             throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
 
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
@@ -227,15 +256,21 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not change password with this parameters");
             }
+            resultObjectMap.put("msg", "password changed");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("password changed");
         } else {
             throw new AccountManagementException("could not change password :" + wr.getError());
         }
-
+        return result;
     }
 
     @Override
-    public void changeEmail(String accountId, String sessionId, String nEmail) throws AccountManagementException {
+    public QueryResult<ObjectMap> changeEmail(String accountId, String sessionId, String nEmail) throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
         BasicDBObject fields = new BasicDBObject("email", nEmail);
@@ -247,14 +282,21 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not change email with this parameters");
             }
+            resultObjectMap.put("msg", "email changed");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("email changed");
         } else {
             throw new AccountManagementException("could not change email :" + wr.getError());
         }
+        return result;
     }
 
     @Override
-    public void resetPassword(String accountId, String email) throws AccountManagementException {
+    public QueryResult<ObjectMap> resetPassword(String accountId, String email) throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         String newPassword = StringUtils.randomString(6);
         String sha1Password = null;
         try {
@@ -274,6 +316,9 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not reset password with this parameters");
             }
+            resultObjectMap.put("msg", "password reset");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("password reset");
         } else {
             throw new AccountManagementException("could not reset the password");
@@ -288,11 +333,16 @@ public class AccountMongoDBManager implements AccountManager {
         message.append("Computational Biology Unit at Computational Medicine Institute").append("\n");
 
         MailUtils.sendResetPasswordMail(email, message.toString());
+
+        return result;
     }
 
     @Override
-    public String getAccountInfo(String accountId, String sessionId, String lastActivity)
+    public QueryResult<ObjectMap> getAccountInfo(String accountId, String sessionId, String lastActivity)
             throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject();
         BasicDBObject fields = new BasicDBObject();
         query.put("accountId", accountId);
@@ -313,12 +363,17 @@ public class AccountMongoDBManager implements AccountManager {
         if (item != null) {
             // if has not been modified since last time was call
             if (lastActivity != null && item.get("lastActivity").toString().equals(lastActivity)) {
-                return "{}";
+                result.setResult(Arrays.asList(resultObjectMap));
+                result.setNumResults(1);
+            } else {
+                resultObjectMap.putAll(item.toMap());
+                result.setResult(Arrays.asList(resultObjectMap));
+                result.setNumResults(1);
             }
-            return item.toString();
         } else {
             throw new AccountManagementException("could not get account info with this parameters");
         }
+        return result;
     }
 
     @Override
@@ -342,22 +397,28 @@ public class AccountMongoDBManager implements AccountManager {
      * ***************************
      */
     @Override
-    public String getBucketsList(String accountId, String sessionId) throws AccountManagementException, JsonProcessingException {
+    public QueryResult<ObjectMap> getBucketsList(String accountId, String sessionId) throws AccountManagementException, JsonProcessingException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
 
         DBObject item = userCollection.findOne(query);
         if (item != null) {
-            String bucketsStr = item.get("buckets").toString();
+            resultObjectMap.put("buckets", item.get("buckets"));
             updateMongo("set", new BasicDBObject("accountId", accountId), "lastActivity", TimeUtils.getTimeMillis());
-            return bucketsStr;
         } else {
             throw new AccountManagementException("invalid sessionId");
         }
+        return result;
     }
 
     @Override
-    public void createBucket(String accountId, Bucket bucket, String sessionId) throws AccountManagementException, JsonProcessingException {
+    public QueryResult<ObjectMap> createBucket(String accountId, Bucket bucket, String sessionId) throws AccountManagementException, JsonProcessingException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
 
@@ -371,14 +432,21 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not update database, account not found");
             }
+            resultObjectMap.put("msg", "bucket created");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("bucket created");
         } else {
             throw new AccountManagementException("could not push the bucket");
         }
+        return result;
     }
 
     @Override
-    public void renameBucket(String accountId, String bucketId, String newBucketId, String sessionId) throws AccountManagementException {
+    public QueryResult<ObjectMap> renameBucket(String accountId, String bucketId, String newBucketId, String sessionId) throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         //{accountId:"orange","buckets.id":"a"},{$set:{"buckets.$.name":"b"}}
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
@@ -389,20 +457,26 @@ public class AccountMongoDBManager implements AccountManager {
         item.put("lastActivity", TimeUtils.getTimeMillis());
         BasicDBObject action = new BasicDBObject("$set", item);
 
-        WriteResult result = userCollection.update(query, action);
-        if (result.getLastError().getErrorMessage() == null) {
-            if (result.getN() != 1) {
+        WriteResult wr = userCollection.update(query, action);
+        if (wr.getLastError().getErrorMessage() == null) {
+            if (wr.getN() != 1) {
                 throw new AccountManagementException("could not update database, with this parameters");
             }
+            resultObjectMap.put("msg", "bucket name updated");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("bucket name updated");
         } else {
             throw new AccountManagementException("could not update database");
         }
-
+        return result;
     }
 
     @Override
-    public void deleteBucket(String accountId, String bucketId, String sessionId) throws AccountManagementException {
+    public QueryResult<ObjectMap> deleteBucket(String accountId, String bucketId, String sessionId) throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
 
@@ -417,16 +491,24 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not update database, account not found");
             }
+            resultObjectMap.put("msg", "bucket deleted");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("bucket deleted");
         } else {
             throw new AccountManagementException("could not delete the bucket");
         }
+
+        return result;
     }
 
     @Override
     // accountId, bucketId, objectItem, sessionId
-    public void createObjectToBucket(String accountId, String bucketId, ObjectItem objectItem, String sessionId)
+    public QueryResult<ObjectMap> createObjectToBucket(String accountId, String bucketId, ObjectItem objectItem, String sessionId)
             throws AccountManagementException, JsonProcessingException {
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
 
         // INSERT DATA OBJECT ON MONGO
         BasicDBObject query = new BasicDBObject("accountId", accountId);
@@ -444,17 +526,25 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not update database, with this parameters");
             }
+            resultObjectMap.put("msg", "data object created");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("data object created");
         } else {
             throw new AccountManagementException("could not update database, files will be deleted");
         }
 
+        return result;
+
     }
 
     @Override
-    public void deleteObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId)
+    public QueryResult<ObjectMap> deleteObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId)
             throws AccountManagementException {
         // db.users.update({"accountId":"pako","buckets.id":"default"},{$pull:{"buckets.$.objects":{"id":"hola/como/estas/app.js"}}})
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
         query.put("buckets.id", bucketId.toLowerCase());
@@ -468,15 +558,22 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("deleteObjectFromBucket(): deleting data, with this parameters");
             }
+            resultObjectMap.put("msg", "data object deleted");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("data object deleted");
         } else {
             throw new AccountManagementException("deleteObjectFromBucket(): could not delete data item from database");
         }
+        return result;
     }
 
     @Override
-    public void deleteObjectsFromBucket(String accountId, String bucketId, String sessionId)
+    public QueryResult<ObjectMap> deleteObjectsFromBucket(String accountId, String bucketId, String sessionId)
             throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
         query.put("buckets.id", bucketId.toLowerCase());
@@ -490,40 +587,47 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("deleteObjectsFromBucket(): deleting data, with this parameters");
             }
+            resultObjectMap.put("msg", "all data objects deleted");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("all data objects deleted");
         } else {
             throw new AccountManagementException("deleteObjectsFromBucket(): could not delete data item from database");
         }
+        return result;
     }
 
     @Override
     public ObjectItem getObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId)
             throws AccountManagementException, IOException {
-        BasicDBObject query = new BasicDBObject("accountId", accountId);
+//        db.accounts.aggregate(
+// {"$match":{"accountId":"fsalavert"}},
+// {$unwind: "$buckets"},
+// {"$match":{"buckets.id":"default"}},
+// {$unwind: "$buckets.objects"},
+// {"$match":{"buckets.objects.id":"HG00096.chrom20.ILLUMINA.bwa.GBR.exome.20111114.bam"}},
+// {$project:{"object":"$buckets.objects"}})
 
+        BasicDBObject query = new BasicDBObject("accountId", accountId);
         //TODO remove
         if (!accountId.equalsIgnoreCase("example")) {
             query.put("sessions.id", sessionId);
         }
 //        query.put("sessions.id", sessionId);
 
+        DBObject match = new BasicDBObject("$match", query);
+        DBObject unwind = new BasicDBObject("$unwind", "$buckets");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("buckets.id", bucketId.toLowerCase()));
+        DBObject unwind2 = new BasicDBObject("$unwind", "$buckets.objects");
+        DBObject match3 = new BasicDBObject("$match", new BasicDBObject("buckets.objects.id", objectId.toString()));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("object", "$buckets.objects"));
 
-        query.put("buckets.id", bucketId.toLowerCase());
+        AggregationOutput aggregationOutput = userCollection.aggregate(match, unwind, match2, unwind2, match3, project);
 
-        BasicDBObject bucketData = new BasicDBObject("buckets.$", "1");
-        DBObject obj = userCollection.findOne(query, bucketData);
-        if (obj != null) {
-            Bucket[] buckets = jsonObjectMapper.readValue(obj.get("buckets").toString(), Bucket[].class);
-            List<ObjectItem> dataList = buckets[0].getObjects();
-            ObjectItem objectItem = null;
-            for (int i = 0; i < dataList.size(); i++) {
-                if (dataList.get(i).getId().equals(objectId.toString())) {
-                    objectItem = dataList.get(i);
-                    break;
-                }
-            }
-            if (objectItem != null) {
-//                logger.info(objectItem.getId());
+        if (aggregationOutput != null) {
+            DBObject next = aggregationOutput.results().iterator().next();
+            if (next != null) {
+                ObjectItem objectItem = jsonObjectMapper.readValue(next.get("object").toString(), ObjectItem.class);
                 return objectItem;
             } else {
                 throw new AccountManagementException("data not found");
@@ -564,8 +668,11 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
-    public void setObjectStatus(String accountId, String bucketId, Path objectId, String status, String sessionId) throws AccountManagementException, IOException {
+    public QueryResult<ObjectMap> setObjectStatus(String accountId, String bucketId, Path objectId, String status, String sessionId) throws AccountManagementException, IOException {
         int position = getObjectIndex(accountId, bucketId, objectId, sessionId);
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
 //        ObjectItem objectItem = getObjectFromBucket(accountId, bucketId, objectId, sessionId);
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
@@ -575,15 +682,19 @@ public class AccountMongoDBManager implements AccountManager {
         item.put("lastActivity", TimeUtils.getTimeMillis());
         BasicDBObject action = new BasicDBObject("$set", item);
 
-        WriteResult result = userCollection.update(query, action);
-        if (result.getLastError().getErrorMessage() == null) {
-            if (result.getN() != 1) {
+        WriteResult writeResult = userCollection.update(query, action);
+        if (writeResult.getLastError().getErrorMessage() == null) {
+            if (writeResult.getN() != 1) {
                 throw new AccountManagementException("could not update database, with this parameters");
             }
+            resultObjectMap.put("msg", "object status updated");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("object status updated");
         } else {
             throw new AccountManagementException("could not update database");
         }
+        return result;
     }
 
     public void shareObject(String accountId, String bucketId, Path objectId, Acl acl, String sessionId)
@@ -597,22 +708,29 @@ public class AccountMongoDBManager implements AccountManager {
      */
 
     @Override
-    public String getProjectsList(String accountId, String sessionId) throws AccountManagementException {
+    public QueryResult<ObjectMap> getProjectsList(String accountId, String sessionId) throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
 
         DBObject item = userCollection.findOne(query);
         if (item != null) {
-            String jsonStr = item.get("projects").toString();
-            updateLastActivity(accountId);
-            return jsonStr;
+            resultObjectMap.put("projects", item.get("projects"));
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
         } else {
             throw new AccountManagementException("invalid sessionId");
         }
+        return result;
     }
 
     @Override
-    public void createProject(String accountId, Project project, String sessionId) throws AccountManagementException, JsonProcessingException {
+    public QueryResult<ObjectMap> createProject(String accountId, Project project, String sessionId) throws AccountManagementException, JsonProcessingException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
 
@@ -626,15 +744,21 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("could not update database, account not found");
             }
+            resultObjectMap.put("msg", "project created");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("project created");
         } else {
             throw new AccountManagementException("could not push the project");
         }
+        return result;
     }
 
     @Override
-    public void createJob(String accountId, String projectId, Job job, String sessionId)
+    public QueryResult<Job> createJob(String accountId, String projectId, Job job, String sessionId)
             throws AccountManagementException, JsonProcessingException {
+        QueryResult<Job> result = new QueryResult();
+
         BasicDBObject jobDBObject = (BasicDBObject) JSON.parse(jsonObjectWriter.writeValueAsString(job));
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
@@ -643,21 +767,27 @@ public class AccountMongoDBManager implements AccountManager {
         item.put("projects.$.jobs", jobDBObject);
         BasicDBObject action = new BasicDBObject("$push", item);
         action.put("$set", new BasicDBObject("lastActivity", TimeUtils.getTimeMillis()));
-        WriteResult result = userCollection.update(query, action);
+        WriteResult writeResult = userCollection.update(query, action);
 
-        if (result.getLastError().getErrorMessage() == null) {
-            if (result.getN() != 1) {
+        if (writeResult.getLastError().getErrorMessage() == null) {
+            if (writeResult.getN() != 1) {
                 throw new AccountManagementException("deleting data, with this parameters");
             }
+            result.setResult(Arrays.asList(job));
+            result.setNumResults(1);
             logger.info("createJob(), job created in database");
         } else {
             throw new AccountManagementException("could not create job in database");
         }
+        return result;
     }
 
     @Override
-    public void deleteJobFromProject(String accountId, String projectId, String jobId, String sessionId)
+    public QueryResult<ObjectMap> deleteJobFromProject(String accountId, String projectId, String jobId, String sessionId)
             throws AccountManagementException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
         // db.users.update({"accountId":"paco"},{$pull:{"jobs":{"id":"KIDicL1OpfJ97Cu"}}})
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
@@ -672,32 +802,34 @@ public class AccountMongoDBManager implements AccountManager {
             if (wr.getN() != 1) {
                 throw new AccountManagementException("deleteJobFromProject(): deleting job, with this parameters");
             }
+            resultObjectMap.put("msg", "job deleted");
+            result.setResult(Arrays.asList(resultObjectMap));
+            result.setNumResults(1);
             logger.info("job deleted");
         } else {
             throw new AccountManagementException("deleteJobFromProject(): could not delete job item from database");
         }
+        return result;
     }
 
     @Override
     public Job getJob(String accountId, String jobId, String sessionId) throws AccountManagementException, IOException {
+
         BasicDBObject query = new BasicDBObject("accountId", accountId);
         query.put("sessions.id", sessionId);
-        query.put("projects.jobs.id", jobId);
 
-        BasicDBObject jobObj = new BasicDBObject("projects.$", "1");
-        DBObject obj = userCollection.findOne(query, jobObj);
-        if (obj != null) {
-            Project[] projects = jsonObjectMapper.readValue(obj.get("projects").toString(), Project[].class);
-            List<Job> jobList = projects[0].getJobs();
-            Job job = null;
-            for (int i = 0; i < jobList.size(); i++) {
-                if (jobList.get(i).getId().equals(jobId.toString())) {
-                    job = jobList.get(i);
-                    break;
-                }
-            }
-            logger.info(job.toString());
-            if (job != null) {
+        DBObject match = new BasicDBObject("$match", query);
+        DBObject unwind = new BasicDBObject("$unwind", "$projects");
+        DBObject unwind2 = new BasicDBObject("$unwind", "$projects.jobs");
+        DBObject match3 = new BasicDBObject("$match", new BasicDBObject("projects.jobs.id", jobId.toString()));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("job", "$projects.jobs"));
+
+        AggregationOutput aggregationOutput = userCollection.aggregate(match, unwind, unwind2, match3, project);
+
+        if (aggregationOutput != null) {
+            DBObject next = aggregationOutput.results().iterator().next();
+            if (next != null) {
+                Job job = jsonObjectMapper.readValue(next.get("job").toString(), Job.class);
                 return job;
             } else {
                 throw new AccountManagementException("job not found");

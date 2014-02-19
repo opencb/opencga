@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
 import org.opencb.commons.containers.QueryResult;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
@@ -71,9 +72,8 @@ public class StorageWSServer extends GenericWSServer {
         objectItem.setDescription(description);
 
         try {
-            String res = cloudSessionManager.createObjectToBucket(accountId, bucketId, objectId, objectItem, fileIs,
-                    parents, sessionId);
-            return createOkResponse(res);
+            QueryResult result = cloudSessionManager.createObjectToBucket(accountId, bucketId, objectId, objectItem, fileIs, parents, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
@@ -92,9 +92,8 @@ public class StorageWSServer extends GenericWSServer {
         objectItem.setFileType("dir");
         objectItem.setDate(TimeUtils.getTime());
         try {
-            String res = cloudSessionManager.createFolderToBucket(accountId, bucketId, objectId, objectItem, parents,
-                    sessionId);
-            return createOkResponse(res);
+            QueryResult result =  cloudSessionManager.createFolderToBucket(accountId, bucketId, objectId, objectItem, parents, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
@@ -105,8 +104,8 @@ public class StorageWSServer extends GenericWSServer {
     @Path("/delete")
     public Response deleteData() {
         try {
-            cloudSessionManager.deleteDataFromBucket(accountId, bucketId, objectId, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.deleteDataFromBucket(accountId, bucketId, objectId, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
@@ -117,14 +116,14 @@ public class StorageWSServer extends GenericWSServer {
     @Path("/fetch")
     @Produces(MediaType.APPLICATION_JSON)
     public Response fetchData(@DefaultValue("") @PathParam("objectId") String objectIdFromURL,
-                            @DefaultValue("") @QueryParam("region") String regionStr) {
+                              @DefaultValue("") @QueryParam("region") String regionStr) {
         try {
             // Validate user and object permissions, and retrieve paths
             java.nio.file.Path objectPath = cloudSessionManager.getObjectPath(accountId, bucketId, objectId);
             ObjectItem objectItem = cloudSessionManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
-            
+
             List<String> regions = Splitter.on(',').splitToList(regionStr);
-            
+
             switch (objectItem.getFileFormat().toLowerCase()) {
                 case "bam":
                     List<QueryResult> bamResults = new ArrayList<>();
@@ -145,7 +144,7 @@ public class StorageWSServer extends GenericWSServer {
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
         }
-        
+
         return createErrorResponse("Data not found with given arguments");
     }
 
@@ -228,10 +227,10 @@ public class StorageWSServer extends GenericWSServer {
                     objectItem.setDate(TimeUtils.getTime());
                     objectItem.setDescription("");
 
-                    String res = cloudSessionManager.createObjectToBucket(accountId, bucketId, objectId, objectItem, Files.newInputStream(completedFilePath),
+                    QueryResult result = cloudSessionManager.createObjectToBucket(accountId, bucketId, objectId, objectItem, Files.newInputStream(completedFilePath),
                             false, sessionId);
                     IOUtils.deleteDirectory(completedFilePath);
-                    return createOkResponse(res);
+                    return createOkResponse(result);
                 } catch (Exception e) {
                     logger.error(e.toString());
                     return createErrorResponse(e.getMessage());

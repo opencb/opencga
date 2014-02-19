@@ -4,6 +4,8 @@ import org.opencb.commons.utils.FileUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 
 
 /**
@@ -15,8 +17,11 @@ public class SqliteCredentials implements OpenCGACredentials {
 
     public SqliteCredentials(Path path) throws IllegalOpenCGACredentialsException {
         this.path = path;
-
         check();
+    }
+    
+    public SqliteCredentials(Properties properties) throws IllegalOpenCGACredentialsException {
+        this(Paths.get(properties.getProperty("db_path")));
     }
 
     @Override

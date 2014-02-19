@@ -13,6 +13,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.account.beans.Bucket;
 import org.opencb.opencga.account.beans.Project;
 import org.opencb.opencga.account.db.AccountManagementException;
@@ -36,8 +37,8 @@ public class AdminWSServer extends GenericWSServer {
     @Path("/bucket/list")
     public Response getBucketsList() throws JsonProcessingException {
         try {
-            String res = cloudSessionManager.getBucketsList(accountId, sessionId);
-            return createOkResponse(res);
+            QueryResult result = cloudSessionManager.getBucketsList(accountId, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not get buckets");
@@ -52,9 +53,9 @@ public class AdminWSServer extends GenericWSServer {
         bucket.setOwnerId(accountId);
         bucket.setDescripcion(description);
         try {
-            cloudSessionManager.createBucket(accountId, bucket, sessionId);
-            return createOkResponse("OK");
-        } catch (AccountManagementException | IOManagementException e ) {
+            QueryResult result = cloudSessionManager.createBucket(accountId, bucket, sessionId);
+            return createOkResponse(result);
+        } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not create bucket");
         }
@@ -64,8 +65,8 @@ public class AdminWSServer extends GenericWSServer {
     @Path("/bucket/{bucketId}/refresh")
     public Response refreshBucket(@DefaultValue("") @PathParam("bucketId") String bucketId) {
         try {
-            cloudSessionManager.refreshBucket(accountId, bucketId, sessionId);
-            return createOkResponse("Ok");
+            QueryResult result = cloudSessionManager.refreshBucket(accountId, bucketId, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException | IOException e) {
             logger.error(e.toString());
             return createErrorResponse("could not refresh bucket");
@@ -77,8 +78,8 @@ public class AdminWSServer extends GenericWSServer {
     @Path("/bucket/{bucketId}/rename/{newName}")
     public Response renameBucket(@DefaultValue("") @PathParam("bucketId") String bucketId, @DefaultValue("") @PathParam("newName") String newName) {
         try {
-            cloudSessionManager.renameBucket(accountId, bucketId, newName, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.renameBucket(accountId, bucketId, newName, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not rename bucket");
@@ -123,8 +124,8 @@ public class AdminWSServer extends GenericWSServer {
     @Path("/project/list")
     public Response getProjectsList() {
         try {
-            String res = cloudSessionManager.getProjectsList(accountId, sessionId);
-            return createOkResponse(res);
+            QueryResult result = cloudSessionManager.getProjectsList(accountId, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not get projects list");
@@ -138,8 +139,8 @@ public class AdminWSServer extends GenericWSServer {
         Project project = new Project(projectId);
         project.setOwnerId(accountId);
         try {
-            cloudSessionManager.createProject(accountId, project, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.createProject(accountId, project, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException | IOManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not create project");
@@ -157,8 +158,8 @@ public class AdminWSServer extends GenericWSServer {
                                    @DefaultValue("") @QueryParam("new_password1") String new_password1,
                                    @DefaultValue("") @QueryParam("new_password2") String new_password2) {
         try {
-            cloudSessionManager.changePassword(accountId, old_password, new_password1, new_password2, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.changePassword(accountId, old_password, new_password1, new_password2, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not change password");
@@ -169,8 +170,8 @@ public class AdminWSServer extends GenericWSServer {
     @Path("/profile/reset_password")
     public Response resetPassword(@DefaultValue("") @QueryParam("email") String email) {
         try {
-            cloudSessionManager.resetPassword(accountId, email);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.resetPassword(accountId, email);
+            return createOkResponse(result);
         } catch (AccountManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not reset password");
@@ -181,8 +182,8 @@ public class AdminWSServer extends GenericWSServer {
     @Path("/profile/change_email")
     public Response changeEmail(@DefaultValue("") @QueryParam("new_email") String new_email) {
         try {
-            cloudSessionManager.changeEmail(accountId, new_email, sessionId);
-            return createOkResponse("OK");
+            QueryResult result = cloudSessionManager.changeEmail(accountId, new_email, sessionId);
+            return createOkResponse(result);
         } catch (AccountManagementException e) {
             logger.error(e.toString());
             return createErrorResponse("could not change email");

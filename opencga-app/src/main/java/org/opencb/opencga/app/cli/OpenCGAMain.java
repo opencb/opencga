@@ -1,31 +1,32 @@
 package org.opencb.opencga.app.cli;
 
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
-import java.util.logging.Logger;
-
 import org.apache.commons.cli.*;
-import org.opencb.commons.bioformats.pedigree.io.readers.PedDataReader;
-import org.opencb.commons.bioformats.pedigree.io.readers.PedFileDataReader;
+import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
+import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
+import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantStudy;
-import org.opencb.commons.bioformats.variant.vcf4.io.VariantDBWriter;
-import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantDataReader;
-import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfDataReader;
+import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
+import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
+import org.opencb.commons.containers.list.SortedList;
+import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.lib.auth.OpenCGACredentials;
-import org.opencb.opencga.storage.variant.VariantIndexRunner;
+import org.opencb.opencga.lib.auth.*;
 import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
-import org.opencb.variant.lib.runners.VariantEffectRunner;
 import org.opencb.variant.lib.runners.VariantRunner;
-import org.opencb.variant.lib.runners.VariantStatsRunner;
+import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
+import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
@@ -33,8 +34,6 @@ import org.opencb.variant.lib.runners.VariantStatsRunner;
 public class OpenCGAMain {
 
     private static Options options;
-
-    private Logger logger;
 
     private static void initOptions() {
         options = new Options();
@@ -53,11 +52,12 @@ public class OpenCGAMain {
         // Variants optional arguments
         options.addOption(OptionFactory.createOption("include-effect", "Save variant effect information (optional)", false, false));
         options.addOption(OptionFactory.createOption("include-stats", "Save statistics information (optional)", false, false));
+        options.addOption(OptionFactory.createOption("include-samples", "Save samples information (optional)", false, false));
         options.addOption(OptionFactory.createOption("pedigree", "File containing pedigree information (in PED format)", false, true));
     }
 
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException {
         if (args.length > 0 && (args[0].equals("-h") || args[0].equals("--help"))) {
             printHelp();
             return;
@@ -84,11 +84,12 @@ public class OpenCGAMain {
             case "variants":
                 boolean includeEffect = commandLine.hasOption("include-effect");
                 boolean includeStats = commandLine.hasOption("include-stats");
+                boolean includeSamples = commandLine.hasOption("include-samples");
                 Path pedigreePath = commandLine.hasOption("pedigree") ? Paths.get(commandLine.getOptionValue("pedigree")) : null;
-                String alias = (studyName.length() > 5) ? studyName.substring(5) : studyName;
+                String alias = (studyName.length() >= 5) ? studyName.substring(0, 5) : studyName;
                 VariantStudy study = new VariantStudy(studyName, alias, studyName, null, null);
 
-                indexVariants(study, filePath, pedigreePath, backend, credentialsPath, includeEffect, includeStats);
+                indexVariants(study, filePath, pedigreePath, backend, credentialsPath, includeEffect, includeStats, includeSamples);
                 break;
             default:
                 System.out.println("Datatype " + commandLine.getOptionValue("datatype") + " is not supported");
@@ -124,33 +125,48 @@ public class OpenCGAMain {
     }
 
     private static void indexVariants(VariantStudy study, Path filePath, Path pedigreePath, String backend, Path credentialsPath,
-                                      boolean includeEffect, boolean includeStats) throws IOException {
-        VariantRunner vr = null;
-        VariantDataReader reader = new VariantVcfDataReader(filePath.toString());
-        PedDataReader pedReader = pedigreePath != null ? new PedFileDataReader(pedigreePath.toString()) : null;
+                                      boolean includeEffect, boolean includeStats, boolean includeSamples) throws IOException, IllegalOpenCGACredentialsException {
 
-        VariantDBWriter writer = null;
-        OpenCGACredentials credentials = null;
+        VariantRunner vr = null;
+        VariantReader reader;
+        PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
+
+        reader = new VariantVcfReader(filePath.toString());
+
+        List<VariantWriter> writers = new ArrayList<>();
+        OpenCGACredentials credentials;
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
 
+        List<Task<Variant>> taskList = new SortedList<>();
+
         if (backend.equalsIgnoreCase("sqlite")) {
-            writer = new VariantVcfSqliteWriter(properties.getProperty("db_path")); // TODO Use SQLiteCredentials class
+            credentials = new SqliteCredentials(properties);
+            writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
-            writer = new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens", (MonbaseCredentials) credentials);
+            writers.add(new VariantVcfMonbaseDataWriter(study.getName(), "opencga-hsapiens", (MonbaseCredentials) credentials));
         } else if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
-            writer = new VariantVcfMongoDataWriter(study.getName(), "opencga-hspapiens", (MongoCredentials) credentials);
+            writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", (MongoCredentials) credentials));
         }
 
-        vr = new VariantIndexRunner(study, reader, pedReader, writer, vr);
+
         if (includeEffect) {
-            vr = new VariantEffectRunner(study, reader, pedReader, writer, vr);
+            taskList.add(new VariantEffectTask());
+
         }
         if (includeStats) {
-            vr = new VariantStatsRunner(study, reader, pedReader, writer, vr);
+            taskList.add(new VariantStatsTask(reader, study));
+
         }
+        for (VariantWriter variantWriter : writers) {
+            variantWriter.includeSamples(includeSamples);
+            variantWriter.includeEffect(includeEffect);
+            variantWriter.includeStats(includeStats);
+        }
+
+        vr = new VariantRunner(study, reader, pedReader, writers, taskList);
 
         System.out.println("Indexing variants...");
         vr.run();
