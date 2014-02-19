@@ -1,13 +1,11 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
-
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
@@ -20,14 +18,13 @@ import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantFactory;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  */
-public class VariantVcfMonbaseDataWriter implements VariantWriter {
+public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
 
     private final byte[] infoColumnFamily = "i".getBytes();
     private final byte[] dataColumnFamily = "d".getBytes();
@@ -147,11 +144,12 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
         buildStatsRaw(data);
-        // buildEffectRaw(data);
+        buildEffectRaw(data);
         buildBatchIndex(data);
         return writeBatch(data);
     }
 
+    @Override
     boolean writeBatch(List<Variant> data) {
         // TODO Better error checking! Probably doing more variant-by-variant inserts
         try {
@@ -185,6 +183,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         return true;
     }
     
+    @Override
     boolean buildBatchIndex(List<Variant> data) {
         for (Variant v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
@@ -234,6 +233,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         return true;
     }
     
+    @Override
     boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
@@ -280,6 +280,7 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         return true;
     }
     
+    @Override
     boolean buildStatsRaw(List<Variant> data) {
         for (Variant var : data) {
             VariantStats v = var.getStats();
@@ -301,19 +302,20 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
         return true;
     }
     
+    @Override
     boolean buildEffectRaw(List<Variant> variants) {
-        for (Variant variant : variants) {
-            for (VariantEffect v : variant.getEffect()) {
-                String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-                VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
-                String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
-
-                // TODO Insert in the map for HBase storage
-                //            Put effectPut = new Put(Bytes.toBytes(rowkey));
-                //            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
-                //            effectPutMap.put(rowkey, effectPut);
-            }
-        }
+//        for (Variant variant : variants) {
+//            for (VariantEffect v : variant.getEffect()) {
+//                String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+//                VariantEffectProtos.EffectInfo effectProto = buildEffectProto(v);
+//                String qualifier = v.getReferenceAllele() + "_" + v.getAlternativeAllele();
+//
+//                // TODO Insert in the map for HBase storage
+//                //            Put effectPut = new Put(Bytes.toBytes(rowkey));
+//                //            effectPut.add("e".getBytes(), qualifier.getBytes(), effectProto.toByteArray());
+//                //            effectPutMap.put(rowkey, effectPut);
+//            }
+//        }
 
         return true;
     }
@@ -584,4 +586,5 @@ public class VariantVcfMonbaseDataWriter implements VariantWriter {
     public void includeEffect(boolean b) {
         this.includeEffect = b;
     }
+
 }
