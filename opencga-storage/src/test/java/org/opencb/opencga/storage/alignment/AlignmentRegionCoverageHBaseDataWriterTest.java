@@ -57,7 +57,7 @@ public class AlignmentRegionCoverageHBaseDataWriterTest extends GenericTest {
 
 
         AlignmentRegionCoverageHBaseDataWriter alignmentRegionCoverageHBaseDataWriter =
-                new AlignmentRegionCoverageHBaseDataWriter(config);
+                new AlignmentRegionCoverageHBaseDataWriter(config, tableName);
 
         alignmentRegionCoverageHBaseDataWriter.open();
         alignmentRegionCoverageHBaseDataWriter.pre();
@@ -109,8 +109,7 @@ public class AlignmentRegionCoverageHBaseDataWriterTest extends GenericTest {
 
 
         AlignmentRegionCoverageHBaseDataWriter alignmentRegionCoverageHBaseDataWriter =
-                new AlignmentRegionCoverageHBaseDataWriter(config);
-        alignmentRegionCoverageHBaseDataWriter.setTableName(tableName);
+                new AlignmentRegionCoverageHBaseDataWriter(config, tableName);
         alignmentRegionCoverageHBaseDataWriter.setSample("Sample1");
         alignmentRegionCoverageHBaseDataWriter.setColumnFamilyName("Family1");
 
