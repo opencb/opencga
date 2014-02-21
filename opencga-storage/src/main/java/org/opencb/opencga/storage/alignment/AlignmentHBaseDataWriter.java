@@ -30,9 +30,9 @@ public class AlignmentHBaseDataWriter implements AlignmentDataWriter<SAMRecord,S
     private boolean opened = false;
     private HBaseAdmin admin;
     private HTable table;
-    private String tableName = "bam_test_jj";
-    private String sample = "s1";
-    private String columnFamilyName = "r";
+    private String tableName;
+    private String sample = "s";
+    private String columnFamilyName = "c";
     private int chunkSize;
     private String chunkSizeName;
     private Put put;    //All the records with same rowKey
@@ -43,8 +43,9 @@ public class AlignmentHBaseDataWriter implements AlignmentDataWriter<SAMRecord,S
 
 
 
-    public AlignmentHBaseDataWriter(Configuration config) {
+    public AlignmentHBaseDataWriter(Configuration config, String tableName) {
         this.config = config;
+        this.tableName = tableName;
         this.setChunkSize(1000, "1K");
     }
 
@@ -173,10 +174,10 @@ public class AlignmentHBaseDataWriter implements AlignmentDataWriter<SAMRecord,S
     }
 
     @Override
-    public boolean writeBatch(List<SAMRecord> batch) {
-
+    public boolean write(List<SAMRecord> samRecords) {
         return false;  //To change body of implemented methods use File | Settings | File Templates.
     }
+
 
     @Override
     public boolean writeHeader(SAMFileHeader head) {

@@ -20,7 +20,7 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
-import org.opencb.commons.bioformats.alignment.RegionCoverage;
+import org.opencb.commons.bioformats.alignment.stats.RegionCoverage;
 import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;

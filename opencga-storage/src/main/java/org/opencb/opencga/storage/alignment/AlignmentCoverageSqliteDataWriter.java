@@ -31,7 +31,11 @@ public class AlignmentCoverageSqliteDataWriter implements AlignmentCoverageDataW
     }
 
     @Override
-    public boolean writeBatch(List<AlignmentCoverage> batch) {
+    public boolean write(AlignmentCoverage alignmentCoverage) {
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+    @Override
+    public boolean write(List<AlignmentCoverage> batch) {
 
         boolean res = true;
         String sql = "INSERT INTO coverage (chromosome, start,end,coverage) VALUES(?,?,?,?);";
@@ -119,4 +123,8 @@ public class AlignmentCoverageSqliteDataWriter implements AlignmentCoverageDataW
 
         return res;
     }
+
+
+
+
 }
