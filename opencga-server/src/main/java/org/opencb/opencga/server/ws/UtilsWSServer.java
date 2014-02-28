@@ -1,5 +1,11 @@
 package org.opencb.opencga.server.ws;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.cellbase.core.lib.dbquery.DBObjectMap;
+import org.opencb.cellbase.core.lib.dbquery.QueryResult;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.networks.Layout;
@@ -141,4 +147,63 @@ public class UtilsWSServer extends GenericWSServer {
         return createOkResponse(result);
     }
 
+    @POST
+    @Path("/network/topological-study")
+    public Response topology(@FormParam("sif") String sifData,
+                             @DefaultValue("F") @FormParam("directed") String directed,
+                             @DefaultValue("F") @FormParam("weighted") String weighted) throws IOException {
+
+        String home = Config.getGcsaHome();
+        Properties analysisProperties = Config.getAnalysisProperties();
+        Properties accountProperties = Config.getAccountProperties();
+
+        String scriptName = "topological-study";
+        java.nio.file.Path scriptPath = Paths.get(home, analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), scriptName, scriptName + ".r");
+
+        // creating a random tmp folder
+        String rndStr = StringUtils.randomString(20);
+        java.nio.file.Path randomFolder = Paths.get(accountProperties.getProperty("OPENCGA.TMP.PATH"), rndStr);
+        Files.createDirectory(randomFolder);
+
+        java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
+        java.nio.file.Path outFilePath = randomFolder.resolve("result.local");
+        java.nio.file.Path outFilePath2 = randomFolder.resolve("result.global.json");
+
+        Files.write(inFilePath, sifData.getBytes(), StandardOpenOption.CREATE_NEW);
+
+        String command = "Rscript " + scriptPath.toString() + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
+
+        logger.info(command);
+        DBObjectMap result = new DBObjectMap();
+        try {
+            Process process = Runtime.getRuntime().exec(command);
+            process.waitFor();
+            int exitValue = process.exitValue();
+
+            BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset());
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+                sb.append("\n");
+            }
+            br.close();
+            result.put("local", sb.toString());
+
+            br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset());
+            ObjectMapper mapper = new ObjectMapper();
+            JsonFactory factory = mapper.getFactory();
+            JsonParser jp = factory.createParser(br);
+            JsonNode jsonNode = mapper.readTree(jp);
+            result.put("global", jsonNode);
+
+            br.close();
+
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
+            result.put("error", "could not read result files");
+        }
+
+        return createOkResponse(result);
+    }
 }
