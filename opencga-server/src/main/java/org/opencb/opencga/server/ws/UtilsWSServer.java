@@ -117,13 +117,14 @@ public class UtilsWSServer extends GenericWSServer {
 
         java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
         java.nio.file.Path outFilePath = randomFolder.resolve("result.comm");
+        java.nio.file.Path outFilePath2 = randomFolder.resolve("result.json");
 
         Files.write(inFilePath, sifData.getBytes(), StandardOpenOption.CREATE_NEW);
 
         String command = "Rscript " + scriptPath.toString() + " " + method + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
 
         logger.info(command);
-        String result = "error";
+        DBObjectMap result = new DBObjectMap();
         try {
             Process process = Runtime.getRuntime().exec(command);
             process.waitFor();
@@ -137,11 +138,20 @@ public class UtilsWSServer extends GenericWSServer {
                 sb.append("\n");
             }
             br.close();
-            result = sb.toString();
-        } catch (InterruptedException e) {
+            result.put("attributes", sb.toString());
+
+            br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset());
+            ObjectMapper mapper = new ObjectMapper();
+            JsonFactory factory = mapper.getFactory();
+            JsonParser jp = factory.createParser(br);
+            JsonNode jsonNode = mapper.readTree(jp);
+            result.put("results", jsonNode);
+
+            br.close();
+
+        } catch (InterruptedException | IOException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            result.put("error", "could not read result files");
         }
 
         return createOkResponse(result);
