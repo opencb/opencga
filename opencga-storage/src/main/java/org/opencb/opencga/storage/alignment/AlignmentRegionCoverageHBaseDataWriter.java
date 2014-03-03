@@ -60,13 +60,14 @@ public class AlignmentRegionCoverageHBaseDataWriter implements AlignmentRegionDa
             if(!admin.tableExists(tableName)){
                 HTableDescriptor ht = new HTableDescriptor(tableName);
                 ht.addFamily( new HColumnDescriptor(columnFamilyName));
-                admin.createTable( ht );
+                admin.createTable(ht);
             }
             table = new HTable(admin.getConfiguration(), tableName);
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             return false;
         }
+
         this.opened = true;
 
         return true;
@@ -101,7 +102,7 @@ public class AlignmentRegionCoverageHBaseDataWriter implements AlignmentRegionDa
 
     @Override
     public boolean write(AlignmentRegion alignmentRegion) {
-
+        System.out.println("Write " + alignmentRegion.getStart() + "Elements " + alignmentRegion.getCoverage().getAll().length);
         RegionCoverage regionCoverage = alignmentRegion.getCoverage();
         Put put;    //All the records with same rowKey
 
@@ -144,8 +145,11 @@ public class AlignmentRegionCoverageHBaseDataWriter implements AlignmentRegionDa
 
                 put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(columnName), Bytes.toBytes(value));
                 puts.add(put);
+
             }
         }
+
+        System.out.println("Fin Write");
 
         try {
             table.put(puts);
@@ -155,6 +159,7 @@ public class AlignmentRegionCoverageHBaseDataWriter implements AlignmentRegionDa
             return false;
         }
 
+        System.out.println("Table.Puts");
         return true;
     }
 
