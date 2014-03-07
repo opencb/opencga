@@ -1,10 +1,7 @@
 package org.opencb.opencga.storage.alignment;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
@@ -13,6 +10,7 @@ import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.writers.AlignmentRegionDataWriter;
 import org.opencb.commons.bioformats.alignment.stats.MeanCoverage;
 import org.opencb.commons.bioformats.alignment.stats.RegionCoverage;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -43,6 +41,16 @@ public class AlignmentRegionCoverageHBaseDataWriter implements AlignmentRegionDa
         this.tableName = tableName;
     }
 
+    public AlignmentRegionCoverageHBaseDataWriter(MonbaseCredentials credentials, String tableName) {
+        // HBase configuration
+        config = HBaseConfiguration.create();
+        config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
+        config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
+        config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+
+        this.puts = new LinkedList<>();
+        this.tableName = tableName;
+    }
 
     @Override
     public boolean open() {
