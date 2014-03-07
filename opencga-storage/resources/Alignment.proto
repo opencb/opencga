@@ -1,0 +1,33 @@
+package org.opencb.opencga.storage.alignment;
+option java_outer_classname = "AlignmentProto";
+
+message Difference {
+	enum DifferenceOperator {
+		INSERTION = 1;
+		DELETION = 2;
+		MISMATCH = 3;
+		SKIPPED_REGION = 4;
+		SOFT_CLIPPING = 5;
+		HARD_CLIPPING = 6;
+		PADDING = 7;
+	};
+	required DifferenceOperator operator = 1;
+	required uint32 relativePos = 2;
+	required uint32 length = 3;
+	optional bytes sequence = 4; 
+}
+
+message AlignmentRecord {
+	required string name = 1;
+	required uint32 flags = 2;
+	required uint32 incrementalPos = 3;
+	required uint32 mapq = 4;
+	required string rnext = 5;
+	required sint32 relativePnext = 6;
+	required uint32 len = 7;
+	repeated Difference diffs = 8;
+}
+
+message AlignmentRegion {
+    repeated AlignmentRecord alignmentRecords = 1;
+}
