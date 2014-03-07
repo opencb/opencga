@@ -15,9 +15,9 @@ public final class AlignmentProto {
     boolean hasOperator();
     org.opencb.opencga.storage.alignment.AlignmentProto.Difference.DifferenceOperator getOperator();
     
-    // required uint32 relativePos = 2;
-    boolean hasRelativePos();
-    int getRelativePos();
+    // required uint32 pos = 2;
+    boolean hasPos();
+    int getPos();
     
     // required uint32 length = 3;
     boolean hasLength();
@@ -150,14 +150,14 @@ public final class AlignmentProto {
       return operator_;
     }
     
-    // required uint32 relativePos = 2;
-    public static final int RELATIVEPOS_FIELD_NUMBER = 2;
-    private int relativePos_;
-    public boolean hasRelativePos() {
+    // required uint32 pos = 2;
+    public static final int POS_FIELD_NUMBER = 2;
+    private int pos_;
+    public boolean hasPos() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    public int getRelativePos() {
-      return relativePos_;
+    public int getPos() {
+      return pos_;
     }
     
     // required uint32 length = 3;
@@ -182,7 +182,7 @@ public final class AlignmentProto {
     
     private void initFields() {
       operator_ = org.opencb.opencga.storage.alignment.AlignmentProto.Difference.DifferenceOperator.INSERTION;
-      relativePos_ = 0;
+      pos_ = 0;
       length_ = 0;
       sequence_ = com.google.protobuf.ByteString.EMPTY;
     }
@@ -195,7 +195,7 @@ public final class AlignmentProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasRelativePos()) {
+      if (!hasPos()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -214,7 +214,7 @@ public final class AlignmentProto {
         output.writeEnum(1, operator_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, relativePos_);
+        output.writeUInt32(2, pos_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeUInt32(3, length_);
@@ -237,7 +237,7 @@ public final class AlignmentProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(2, relativePos_);
+          .computeUInt32Size(2, pos_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
@@ -373,7 +373,7 @@ public final class AlignmentProto {
         super.clear();
         operator_ = org.opencb.opencga.storage.alignment.AlignmentProto.Difference.DifferenceOperator.INSERTION;
         bitField0_ = (bitField0_ & ~0x00000001);
-        relativePos_ = 0;
+        pos_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
         length_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -424,7 +424,7 @@ public final class AlignmentProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.relativePos_ = relativePos_;
+        result.pos_ = pos_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
@@ -452,8 +452,8 @@ public final class AlignmentProto {
         if (other.hasOperator()) {
           setOperator(other.getOperator());
         }
-        if (other.hasRelativePos()) {
-          setRelativePos(other.getRelativePos());
+        if (other.hasPos()) {
+          setPos(other.getPos());
         }
         if (other.hasLength()) {
           setLength(other.getLength());
@@ -470,7 +470,7 @@ public final class AlignmentProto {
           
           return false;
         }
-        if (!hasRelativePos()) {
+        if (!hasPos()) {
           
           return false;
         }
@@ -517,7 +517,7 @@ public final class AlignmentProto {
             }
             case 16: {
               bitField0_ |= 0x00000002;
-              relativePos_ = input.readUInt32();
+              pos_ = input.readUInt32();
               break;
             }
             case 24: {
@@ -560,23 +560,23 @@ public final class AlignmentProto {
         return this;
       }
       
-      // required uint32 relativePos = 2;
-      private int relativePos_ ;
-      public boolean hasRelativePos() {
+      // required uint32 pos = 2;
+      private int pos_ ;
+      public boolean hasPos() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public int getRelativePos() {
-        return relativePos_;
+      public int getPos() {
+        return pos_;
       }
-      public Builder setRelativePos(int value) {
+      public Builder setPos(int value) {
         bitField0_ |= 0x00000002;
-        relativePos_ = value;
+        pos_ = value;
         onChanged();
         return this;
       }
-      public Builder clearRelativePos() {
+      public Builder clearPos() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        relativePos_ = 0;
+        pos_ = 0;
         onChanged();
         return this;
       }
@@ -648,9 +648,9 @@ public final class AlignmentProto {
     boolean hasFlags();
     int getFlags();
     
-    // required uint32 incrementalPos = 3;
-    boolean hasIncrementalPos();
-    int getIncrementalPos();
+    // required uint32 pos = 3;
+    boolean hasPos();
+    int getPos();
     
     // required uint32 mapq = 4;
     boolean hasMapq();
@@ -677,6 +677,14 @@ public final class AlignmentProto {
         getDiffsOrBuilderList();
     org.opencb.opencga.storage.alignment.AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
         int index);
+    
+    // required string qualities = 9;
+    boolean hasQualities();
+    String getQualities();
+    
+    // required sint32 inferredInsertSize = 10;
+    boolean hasInferredInsertSize();
+    int getInferredInsertSize();
   }
   public static final class AlignmentRecord extends
       com.google.protobuf.GeneratedMessage
@@ -749,14 +757,14 @@ public final class AlignmentProto {
       return flags_;
     }
     
-    // required uint32 incrementalPos = 3;
-    public static final int INCREMENTALPOS_FIELD_NUMBER = 3;
-    private int incrementalPos_;
-    public boolean hasIncrementalPos() {
+    // required uint32 pos = 3;
+    public static final int POS_FIELD_NUMBER = 3;
+    private int pos_;
+    public boolean hasPos() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    public int getIncrementalPos() {
-      return incrementalPos_;
+    public int getPos() {
+      return pos_;
     }
     
     // required uint32 mapq = 4;
@@ -842,15 +850,59 @@ public final class AlignmentProto {
       return diffs_.get(index);
     }
     
+    // required string qualities = 9;
+    public static final int QUALITIES_FIELD_NUMBER = 9;
+    private java.lang.Object qualities_;
+    public boolean hasQualities() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    public String getQualities() {
+      java.lang.Object ref = qualities_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          qualities_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getQualitiesBytes() {
+      java.lang.Object ref = qualities_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        qualities_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    // required sint32 inferredInsertSize = 10;
+    public static final int INFERREDINSERTSIZE_FIELD_NUMBER = 10;
+    private int inferredInsertSize_;
+    public boolean hasInferredInsertSize() {
+      return ((bitField0_ & 0x00000100) == 0x00000100);
+    }
+    public int getInferredInsertSize() {
+      return inferredInsertSize_;
+    }
+    
     private void initFields() {
       name_ = "";
       flags_ = 0;
-      incrementalPos_ = 0;
+      pos_ = 0;
       mapq_ = 0;
       rnext_ = "";
       relativePnext_ = 0;
       len_ = 0;
       diffs_ = java.util.Collections.emptyList();
+      qualities_ = "";
+      inferredInsertSize_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -865,7 +917,7 @@ public final class AlignmentProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasIncrementalPos()) {
+      if (!hasPos()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -882,6 +934,14 @@ public final class AlignmentProto {
         return false;
       }
       if (!hasLen()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQualities()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasInferredInsertSize()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -905,7 +965,7 @@ public final class AlignmentProto {
         output.writeUInt32(2, flags_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeUInt32(3, incrementalPos_);
+        output.writeUInt32(3, pos_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeUInt32(4, mapq_);
@@ -921,6 +981,12 @@ public final class AlignmentProto {
       }
       for (int i = 0; i < diffs_.size(); i++) {
         output.writeMessage(8, diffs_.get(i));
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeBytes(9, getQualitiesBytes());
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        output.writeSInt32(10, inferredInsertSize_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -941,7 +1007,7 @@ public final class AlignmentProto {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(3, incrementalPos_);
+          .computeUInt32Size(3, pos_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -962,6 +1028,14 @@ public final class AlignmentProto {
       for (int i = 0; i < diffs_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(8, diffs_.get(i));
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(9, getQualitiesBytes());
+      }
+      if (((bitField0_ & 0x00000100) == 0x00000100)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeSInt32Size(10, inferredInsertSize_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1092,7 +1166,7 @@ public final class AlignmentProto {
         bitField0_ = (bitField0_ & ~0x00000001);
         flags_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
-        incrementalPos_ = 0;
+        pos_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
         mapq_ = 0;
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1108,6 +1182,10 @@ public final class AlignmentProto {
         } else {
           diffsBuilder_.clear();
         }
+        qualities_ = "";
+        bitField0_ = (bitField0_ & ~0x00000100);
+        inferredInsertSize_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000200);
         return this;
       }
       
@@ -1157,7 +1235,7 @@ public final class AlignmentProto {
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.incrementalPos_ = incrementalPos_;
+        result.pos_ = pos_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
@@ -1183,6 +1261,14 @@ public final class AlignmentProto {
         } else {
           result.diffs_ = diffsBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        result.qualities_ = qualities_;
+        if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+          to_bitField0_ |= 0x00000100;
+        }
+        result.inferredInsertSize_ = inferredInsertSize_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1205,8 +1291,8 @@ public final class AlignmentProto {
         if (other.hasFlags()) {
           setFlags(other.getFlags());
         }
-        if (other.hasIncrementalPos()) {
-          setIncrementalPos(other.getIncrementalPos());
+        if (other.hasPos()) {
+          setPos(other.getPos());
         }
         if (other.hasMapq()) {
           setMapq(other.getMapq());
@@ -1246,6 +1332,12 @@ public final class AlignmentProto {
             }
           }
         }
+        if (other.hasQualities()) {
+          setQualities(other.getQualities());
+        }
+        if (other.hasInferredInsertSize()) {
+          setInferredInsertSize(other.getInferredInsertSize());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -1259,7 +1351,7 @@ public final class AlignmentProto {
           
           return false;
         }
-        if (!hasIncrementalPos()) {
+        if (!hasPos()) {
           
           return false;
         }
@@ -1276,6 +1368,14 @@ public final class AlignmentProto {
           return false;
         }
         if (!hasLen()) {
+          
+          return false;
+        }
+        if (!hasQualities()) {
+          
+          return false;
+        }
+        if (!hasInferredInsertSize()) {
           
           return false;
         }
@@ -1323,7 +1423,7 @@ public final class AlignmentProto {
             }
             case 24: {
               bitField0_ |= 0x00000004;
-              incrementalPos_ = input.readUInt32();
+              pos_ = input.readUInt32();
               break;
             }
             case 32: {
@@ -1350,6 +1450,16 @@ public final class AlignmentProto {
               org.opencb.opencga.storage.alignment.AlignmentProto.Difference.Builder subBuilder = org.opencb.opencga.storage.alignment.AlignmentProto.Difference.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
               addDiffs(subBuilder.buildPartial());
+              break;
+            }
+            case 74: {
+              bitField0_ |= 0x00000100;
+              qualities_ = input.readBytes();
+              break;
+            }
+            case 80: {
+              bitField0_ |= 0x00000200;
+              inferredInsertSize_ = input.readSInt32();
               break;
             }
           }
@@ -1415,23 +1525,23 @@ public final class AlignmentProto {
         return this;
       }
       
-      // required uint32 incrementalPos = 3;
-      private int incrementalPos_ ;
-      public boolean hasIncrementalPos() {
+      // required uint32 pos = 3;
+      private int pos_ ;
+      public boolean hasPos() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public int getIncrementalPos() {
-        return incrementalPos_;
+      public int getPos() {
+        return pos_;
       }
-      public Builder setIncrementalPos(int value) {
+      public Builder setPos(int value) {
         bitField0_ |= 0x00000004;
-        incrementalPos_ = value;
+        pos_ = value;
         onChanged();
         return this;
       }
-      public Builder clearIncrementalPos() {
+      public Builder clearPos() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        incrementalPos_ = 0;
+        pos_ = 0;
         onChanged();
         return this;
       }
@@ -1719,6 +1829,63 @@ public final class AlignmentProto {
           diffs_ = null;
         }
         return diffsBuilder_;
+      }
+      
+      // required string qualities = 9;
+      private java.lang.Object qualities_ = "";
+      public boolean hasQualities() {
+        return ((bitField0_ & 0x00000100) == 0x00000100);
+      }
+      public String getQualities() {
+        java.lang.Object ref = qualities_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          qualities_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setQualities(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000100;
+        qualities_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearQualities() {
+        bitField0_ = (bitField0_ & ~0x00000100);
+        qualities_ = getDefaultInstance().getQualities();
+        onChanged();
+        return this;
+      }
+      void setQualities(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000100;
+        qualities_ = value;
+        onChanged();
+      }
+      
+      // required sint32 inferredInsertSize = 10;
+      private int inferredInsertSize_ ;
+      public boolean hasInferredInsertSize() {
+        return ((bitField0_ & 0x00000200) == 0x00000200);
+      }
+      public int getInferredInsertSize() {
+        return inferredInsertSize_;
+      }
+      public Builder setInferredInsertSize(int value) {
+        bitField0_ |= 0x00000200;
+        inferredInsertSize_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearInferredInsertSize() {
+        bitField0_ = (bitField0_ & ~0x00000200);
+        inferredInsertSize_ = 0;
+        onChanged();
+        return this;
       }
       
       // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.AlignmentRecord)
@@ -2320,22 +2487,23 @@ public final class AlignmentProto {
   static {
     java.lang.String[] descriptorData = {
       "\n\017Alignment.proto\022$org.opencb.opencga.st" +
-      "orage.alignment\"\243\002\n\nDifference\022U\n\010operat" +
+      "orage.alignment\"\233\002\n\nDifference\022U\n\010operat" +
       "or\030\001 \002(\0162C.org.opencb.opencga.storage.al" +
-      "ignment.Difference.DifferenceOperator\022\023\n" +
-      "\013relativePos\030\002 \002(\r\022\016\n\006length\030\003 \002(\r\022\020\n\010se" +
-      "quence\030\004 \001(\014\"\206\001\n\022DifferenceOperator\022\r\n\tI" +
-      "NSERTION\020\001\022\014\n\010DELETION\020\002\022\014\n\010MISMATCH\020\003\022\022" +
-      "\n\016SKIPPED_REGION\020\004\022\021\n\rSOFT_CLIPPING\020\005\022\021\n" +
-      "\rHARD_CLIPPING\020\006\022\013\n\007PADDING\020\007\"\310\001\n\017Alignm" +
-      "entRecord\022\014\n\004name\030\001 \002(\t\022\r\n\005flags\030\002 \002(\r\022\026",
-      "\n\016incrementalPos\030\003 \002(\r\022\014\n\004mapq\030\004 \002(\r\022\r\n\005" +
-      "rnext\030\005 \002(\t\022\025\n\rrelativePnext\030\006 \002(\021\022\013\n\003le" +
-      "n\030\007 \002(\r\022?\n\005diffs\030\010 \003(\01320.org.opencb.open" +
-      "cga.storage.alignment.Difference\"b\n\017Alig" +
-      "nmentRegion\022O\n\020alignmentRecords\030\001 \003(\01325." +
-      "org.opencb.opencga.storage.alignment.Ali" +
-      "gnmentRecordB\020B\016AlignmentProto"
+      "ignment.Difference.DifferenceOperator\022\013\n" +
+      "\003pos\030\002 \002(\r\022\016\n\006length\030\003 \002(\r\022\020\n\010sequence\030\004" +
+      " \001(\014\"\206\001\n\022DifferenceOperator\022\r\n\tINSERTION" +
+      "\020\001\022\014\n\010DELETION\020\002\022\014\n\010MISMATCH\020\003\022\022\n\016SKIPPE" +
+      "D_REGION\020\004\022\021\n\rSOFT_CLIPPING\020\005\022\021\n\rHARD_CL" +
+      "IPPING\020\006\022\013\n\007PADDING\020\007\"\354\001\n\017AlignmentRecor" +
+      "d\022\014\n\004name\030\001 \002(\t\022\r\n\005flags\030\002 \002(\r\022\013\n\003pos\030\003 ",
+      "\002(\r\022\014\n\004mapq\030\004 \002(\r\022\r\n\005rnext\030\005 \002(\t\022\025\n\rrela" +
+      "tivePnext\030\006 \002(\021\022\013\n\003len\030\007 \002(\r\022?\n\005diffs\030\010 " +
+      "\003(\01320.org.opencb.opencga.storage.alignme" +
+      "nt.Difference\022\021\n\tqualities\030\t \002(\t\022\032\n\022infe" +
+      "rredInsertSize\030\n \002(\021\"b\n\017AlignmentRegion\022" +
+      "O\n\020alignmentRecords\030\001 \003(\01325.org.opencb.o" +
+      "pencga.storage.alignment.AlignmentRecord" +
+      "B\020B\016AlignmentProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -2347,7 +2515,7 @@ public final class AlignmentProto {
           internal_static_org_opencb_opencga_storage_alignment_Difference_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_org_opencb_opencga_storage_alignment_Difference_descriptor,
-              new java.lang.String[] { "Operator", "RelativePos", "Length", "Sequence", },
+              new java.lang.String[] { "Operator", "Pos", "Length", "Sequence", },
               org.opencb.opencga.storage.alignment.AlignmentProto.Difference.class,
               org.opencb.opencga.storage.alignment.AlignmentProto.Difference.Builder.class);
           internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor =
@@ -2355,7 +2523,7 @@ public final class AlignmentProto {
           internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor,
-              new java.lang.String[] { "Name", "Flags", "IncrementalPos", "Mapq", "Rnext", "RelativePnext", "Len", "Diffs", },
+              new java.lang.String[] { "Name", "Flags", "Pos", "Mapq", "Rnext", "RelativePnext", "Len", "Diffs", "Qualities", "InferredInsertSize", },
               org.opencb.opencga.storage.alignment.AlignmentProto.AlignmentRecord.class,
               org.opencb.opencga.storage.alignment.AlignmentProto.AlignmentRecord.Builder.class);
           internal_static_org_opencb_opencga_storage_alignment_AlignmentRegion_descriptor =

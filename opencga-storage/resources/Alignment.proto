@@ -12,7 +12,7 @@ message Difference {
 		PADDING = 7;
 	};
 	required DifferenceOperator operator = 1;
-	required uint32 relativePos = 2;
+	required uint32 pos = 2;
 	required uint32 length = 3;
 	optional bytes sequence = 4; 
 }
@@ -20,12 +20,14 @@ message Difference {
 message AlignmentRecord {
 	required string name = 1;
 	required uint32 flags = 2;
-	required uint32 incrementalPos = 3;
+	required uint32 pos = 3; // position relative to the alignment region
 	required uint32 mapq = 4;
 	required string rnext = 5;
 	required sint32 relativePnext = 6;
 	required uint32 len = 7;
 	repeated Difference diffs = 8;
+	required string qualities = 9;
+	required sint32 inferredInsertSize = 10;
 }
 
 message AlignmentRegion {
