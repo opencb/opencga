@@ -13,7 +13,7 @@ import java.util.List;
  * Time: 11:29 AM
  * To change this template use File | Settings | File Templates.
  */
-public class ProtoToAlignment {
+public class AlignmentProtoHelper { // TODO jj test
 
     public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, int start){
 
