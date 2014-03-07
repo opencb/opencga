@@ -33,3 +33,13 @@ message AlignmentRecord {
 message AlignmentRegion {
     repeated AlignmentRecord alignmentRecords = 1;
 }
+
+
+message Header {
+    message Region {
+        required string chromosomeName = 1;
+        required uint32 maxValue = 2;
+    }
+    repeated Region regions = 1;
+    optional string SamHeader = 2;
+}
