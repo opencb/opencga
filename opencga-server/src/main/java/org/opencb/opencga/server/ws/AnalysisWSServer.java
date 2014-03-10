@@ -16,11 +16,13 @@ import org.opencb.opencga.lib.common.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -266,6 +268,20 @@ public class AnalysisWSServer extends GenericWSServer {
         } else {
             jobFolder = cloudSessionManager.getAccountPath(accountId).resolve(jobFolder).toString();
         }
+
+
+        //create input files from text - inputParamsFromTxt
+        if (execution.getInputParamsFromTxt() != null) {
+            for (InputParam inputParam : execution.getInputParamsFromTxt()) {
+                java.nio.file.Path path = Paths.get(jobFolder, inputParam.getName());
+                List<String> paramInputName = params.get(inputParam.getName());
+                if (paramInputName.size() > 0) {
+                    Files.write(path, paramInputName.get(0).getBytes());
+                    paramInputName.set(0, path.toString());
+                }
+            }
+        }
+
 
         // Set output param
         params.put(execution.getOutputParam(), Arrays.asList(jobFolder));

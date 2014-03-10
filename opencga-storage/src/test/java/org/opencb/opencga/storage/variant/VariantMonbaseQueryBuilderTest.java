@@ -96,13 +96,15 @@ public class VariantMonbaseQueryBuilderTest {
                     "downstream", "lincRNA", "1", 720070, 725070, "1", "", "", "",
                     "ENSG00000242937", "ENST00000434264", "RP11-206L10.7", "SO:0001633",
                     "5KB_downstream_variant", "Within 5 kb downstream of the 3 prime end of a transcript", "feature", -1, "", "");
-            rec1.setEffect(Arrays.asList(eff1, eff2, eff3));
+            rec1.setEffect(Arrays.asList(eff1, eff2));
+            rec2.setEffect(Arrays.asList(eff3));
 
             List<Variant> records = Arrays.asList(rec1, rec2, rec3, rec4, rec5);
             assertTrue("Table creation could not be performed", writer.pre());
-            assertTrue("Variants could not be written", writer.writeBatch(records));
-            assertTrue("Stats could not be written", writer.writeVariantStats(records));
-            assertTrue("Effects could not be written", writer.writeVariantEffect(records));
+            assertTrue("Variants could not be written", writer.write(records));
+//            assertTrue("Variants could not be written", writer.writeBatch(records));
+//            assertTrue("Stats could not be written", writer.writeVariantStats(records));
+//            assertTrue("Effects could not be written", writer.writeVariantEffect(records));
             writer.post();
             // Monbase query builder
             queryBuilder = new VariantMonbaseQueryBuilder(tableName, credentials);
