@@ -35,6 +35,8 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
     private boolean includeEffect;
     private boolean includeSamples;
 
+    private Map<String, Integer> conseqTypes;
+
     public VariantVcfMongoDataWriter(VariantStudy study, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
@@ -45,6 +47,8 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
         this.includeEffect(false);
         this.includeStats(false);
         this.includeSamples(false);
+
+        conseqTypes = new LinkedHashMap<>();
     }
 
     @Override
@@ -111,21 +115,14 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
 
                     BasicDBObject samples = new BasicDBObject();
 
-
                     for (Map.Entry<String, Map<String, String>> entry : v.getSamplesData().entrySet()) {
-
-
                         BasicDBObject sampleData = new BasicDBObject();
                         for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
                             sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
                         }
                         samples.put(entry.getKey(), sampleData);
-
-
                     }
-
                     mongoStudy.put("samples", samples);
-
                 }
 
 
@@ -136,15 +133,17 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
                 }
 
 
-            }else{ // update stats
+            } else { // update stats
 
             }
         }
 
         BasicDBObject indexChrPos = new BasicDBObject("chr", 1);
         indexChrPos.put("pos", 1);
+
         variantCollection.ensureIndex(new BasicDBObject("position", 1));
         variantCollection.ensureIndex(indexChrPos);
+        variantCollection.ensureIndex(new BasicDBObject("studies.studyId", 1));
 
         return true;
     }
@@ -215,6 +214,8 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
 
     private boolean writeVariantEffect(List<Variant> variants) {
         Map<String, Set<String>> mongoPutMap = new HashMap<>();
+        Map<String, Set<String>> genesPutMap = new HashMap<>();
+        int ctCount;
 
         for (Variant variant : variants) {
             for (VariantEffect variantEffect : variant.getEffect()) {
@@ -222,18 +223,47 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
 
                 // Insert in the map for Mongo storage
                 Set<String> positionSet = mongoPutMap.get(rowkey);
+                Set<String> genesSet = genesPutMap.get(rowkey);
+
                 if (positionSet == null) {
                     positionSet = new HashSet<>();
                     mongoPutMap.put(rowkey, positionSet);
                 }
-                positionSet.add(variantEffect.getConsequenceTypeObo());
+
+                if (genesSet == null) {
+                    genesSet = new HashSet<>();
+                    genesPutMap.put(rowkey, genesSet);
+                }
+                if (variantEffect.getConsequenceTypeObo() != null && !variantEffect.getConsequenceTypeObo().equalsIgnoreCase("")) {
+                    positionSet.add(variantEffect.getConsequenceTypeObo());
+                }
+                if (variantEffect.getGeneName() != null && !variantEffect.getGeneName().equalsIgnoreCase("") && variantEffect.getFeatureType() != null && variantEffect.getFeatureType().equalsIgnoreCase("exon")) {
+                    genesSet.add(variantEffect.getGeneName());
+                }
             }
         }
 
         // TODO Insert in Mongo
         saveEffectMongo(mongoPutMap);
+        saveGenesMongo(genesPutMap);
 
         return true;
+    }
+
+    private void saveGenesMongo(Map<String, Set<String>> genesPutMap) {
+
+        for (Map.Entry<String, Set<String>> entry : genesPutMap.entrySet()) {
+            BasicDBObject query = new BasicDBObject("position", entry.getKey());
+            query.put("studies.studyId", study.getName());
+
+            DBObject item = new BasicDBObject("studies.$.genes", entry.getValue());
+            BasicDBObject action = new BasicDBObject("$set", item);
+
+            variantCollection.update(query, action, true, false);
+        }
+        genesPutMap.clear();
+
+
     }
 
     private boolean writeStudy(VariantStudy study) {
@@ -246,6 +276,16 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
                 .append("description", study.getDescription())
                 .append("sources", study.getSources());
 
+
+        BasicDBObject cts = new BasicDBObject();
+
+        System.out.println();
+
+        for (Map.Entry<String, Integer> entry : conseqTypes.entrySet()) {
+            cts.append(entry.getKey(), entry.getValue());
+        }
+
+
         VariantGlobalStats global = study.getStats();
         if (global != null) {
             DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
@@ -257,10 +297,13 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
                     .append("transversionsCount", global.getTransversionsCount())
                     .append("biallelicsCount", global.getBiallelicsCount())
                     .append("multiallelicsCount", global.getMultiallelicsCount())
-                    .append("accumulatedQuality", global.getAccumQuality());
+                    .append("accumulatedQuality", global.getAccumQuality()).append("consequenceTypes", cts);
+
             studyMongo = studyMongo.append("globalStats", globalStats);
         } else {
             // TODO Notify?
+            studyMongo.append("globalStats", new BasicDBObject("consequenceTypes", cts));
+
         }
 
         // TODO Save pedigree information
@@ -273,6 +316,9 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
 
         DBObject query = new BasicDBObject("name", study.getName());
         WriteResult wr = studyCollection.update(query, studyMongo, true, false);
+
+        studyCollection.ensureIndex(new BasicDBObject("name", 1));
+
         return wr.getLastError().ok(); // TODO Is this a proper return statement?
     }
 
@@ -324,6 +370,7 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
     }
 
     private void saveEffectMongo(Map<String, Set<String>> putMap) {
+        int ctCount;
         for (Map.Entry<String, Set<String>> entry : putMap.entrySet()) {
             BasicDBObject query = new BasicDBObject("position", entry.getKey());
             query.put("studies.studyId", study.getName());
@@ -332,7 +379,19 @@ public class VariantVcfMongoDataWriter implements VariantWriter {
             BasicDBObject action = new BasicDBObject("$set", item);
 
             variantCollection.update(query, action, true, false);
+
+            for (String ct : entry.getValue()) {
+                if (conseqTypes.containsKey(ct)) {
+                    ctCount = conseqTypes.get(ct) + 1;
+                } else {
+                    ctCount = 1;
+                }
+                conseqTypes.put(ct, ctCount);
+
+            }
+
         }
+
         putMap.clear();
     }
 

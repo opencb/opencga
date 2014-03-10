@@ -1,10 +1,10 @@
 package org.opencb.opencga.storage.variant;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.apache.commons.lang.mutable.Mutable;
+import org.apache.commons.lang.mutable.MutableInt;
+import org.junit.*;
 import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -32,7 +32,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         properties = new Properties();
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", 27017);
-        properties.put("mongo_db_name", "aleman");
+        properties.put("mongo_db_name", "cibererStudies");
         properties.put("mongo_user", "user");
         properties.put("mongo_password", "pass");
         credentials = new MongoCredentials(properties);
@@ -105,7 +105,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
     public void testGetRecords() throws Exception {
 
         Map<String, String> opts = new HashMap<>();
-        opts.put("studyId", "FILE1");
+        opts.put("studyId", "aaleman_-_XOidGTJMUq1Cr1J");
 //        opts.put("region_list", "6:1-15021068");
 //        opts.put("sampleGT_D801[]", "1/1,0/1");
 //        opts.put("sampleGT_muestra_B[]", "0/1");
@@ -115,9 +115,22 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
 //        opts.put("maf", "0.1");
 //        opts.put("option_maf", "<=");
 
-        QueryResult<VariantInfo> records = ((VariantMongoQueryBuilder) vqb).getRecordsMongo(opts);
+        MutableInt count = new MutableInt(-1);
 
-        System.out.println(records.getNumResults());
+        QueryResult<VariantInfo> records = ((VariantMongoQueryBuilder) vqb).getRecordsMongo(1, 0, 25, count, opts);
+//
+        System.out.println(records.getResult().get(0).getSampleGenotypes());
+    }
+
+    @Test
+    public void testAnalysisInfo() throws Exception {
+
+        QueryResult<VariantAnalysisInfo> res = ((VariantMongoQueryBuilder) vqb).getAnalysisInfo("aaleman_-_XOidGTJMUq1Cr1J");
+        VariantAnalysisInfo vi = res.getResult().get(0);
+
+        System.out.println("vi.getSamples() = " + vi.getSamples());
+        System.out.println("vi.getConsequenceTypes() = " + vi.getConsequenceTypes());
+        System.out.println("vi.getGlobalStats() = " + vi.getGlobalStats());
 
 
     }

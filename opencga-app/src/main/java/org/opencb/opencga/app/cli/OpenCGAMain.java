@@ -14,6 +14,8 @@ import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.annotators.VariantAnnotator;
+import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnotator;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
@@ -25,6 +27,7 @@ import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
+import org.opencb.variant.lib.runners.tasks.VariantAnnotTask;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 
@@ -137,6 +140,9 @@ public class OpenCGAMain {
         OpenCGACredentials credentials;
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
+        
+        List<VariantAnnotator> annots = new ArrayList<>();
+        annots.add(new VariantControlMongoAnnotator());
 
         List<Task<Variant>> taskList = new SortedList<>();
 
@@ -158,6 +164,7 @@ public class OpenCGAMain {
         }
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, study));
+            taskList.add(new VariantAnnotTask(annots, 1000));
 
         }
         for (VariantWriter variantWriter : writers) {

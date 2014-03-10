@@ -2,6 +2,7 @@ package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Joiner;
+import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
@@ -24,10 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 @Path("/account/{accountId}/analysis/job/{jobId}")
 public class JobAnalysisWSServer extends GenericWSServer {
@@ -198,41 +196,59 @@ public class JobAnalysisWSServer extends GenericWSServer {
         return createOkResponse(res);
     }
 
-    @POST
+    //    @Consumes("application/x-www-form-urlencoded")
+    @GET
     @Path("/variantsMongo")
-    @Consumes("application/x-www-form-urlencoded")
-    public Response getVariantsMongo(@DefaultValue("") @QueryParam("filename") String filename, MultivaluedMap<String, String> postParams) {
+    public Response getVariantsMongo() {
         Map<String, String> map = new LinkedHashMap<>();
 
-        for (Map.Entry<String, List<String>> entry : postParams.entrySet()) {
+        UriInfo info = uriInfo;
+
+        MultivaluedMap<String, String> queryParams = info.getQueryParameters();
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
             map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
-//            map.put(entry.getKey(), StringUtils.join(entry.getValue(), ","));
         }
+
+
+        int page = (info.getQueryParameters().containsKey("page")) ? Integer.parseInt(info.getQueryParameters().getFirst("page")) : 1;
+        int start = (info.getQueryParameters().containsKey("start")) ? Integer.parseInt(info.getQueryParameters().getFirst("start")) : 0;
+        int limit = (info.getQueryParameters().containsKey("limit")) ? Integer.parseInt(info.getQueryParameters().getFirst("limit")) : 25;
+        String callback = (info.getQueryParameters().containsKey("callback")) ? info.getQueryParameters().getFirst("callback") : "null";
+
+
+        //map.put("start", start);
 
 
         map.put("studyId", accountId + "_-_" + this.jobId);
 
         System.out.println(map);
+        MutableInt count = new MutableInt(-1);
+
 
         Properties prop = new Properties();
-        prop.put("mongo_host", "aaleman");
+        prop.put("mongo_host", "mem15");
         prop.put("mongo_port", 27017);
         prop.put("mongo_db_name", "cibererStudies");
         prop.put("mongo_user", "user");
         prop.put("mongo_password", "pass");
+
         MongoCredentials credentials = new MongoCredentials(prop);
         VariantQueryBuilder vqm;
         String res = null;
         QueryResult<VariantInfo> queryResult = null;
         try {
             vqm = new VariantMongoQueryBuilder(credentials);
-            queryResult = ((VariantMongoQueryBuilder) vqm).getRecordsMongo(map);
-            res = jsonObjectMapper.writeValueAsString(queryResult);
+            queryResult = ((VariantMongoQueryBuilder) vqm).getRecordsMongo(page, start, limit, count, map);
+
+            queryResult.setNumResults(count.intValue());
+//            res = callback + "(" + jsonObjectMapper.writeValueAsString(queryResult) + ");";
+
+            System.out.println(res);
+
+            vqm.close();
 
 
         } catch (MasterNotRunningException | ZooKeeperConnectionException | UnknownHostException e) {
-            e.printStackTrace();
-        } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
@@ -293,6 +309,44 @@ public class JobAnalysisWSServer extends GenericWSServer {
         }
 
         return createOkResponse(res);
+    }
+
+    @GET
+    @Path("/variantInfoMongo")
+    public Response getAnalysisInfoMongo() {
+
+        String studyId = (accountId + "_-_" + this.jobId);
+
+        Properties prop = new Properties();
+        prop.put("mongo_host", "mem15");
+        prop.put("mongo_port", 27017);
+        prop.put("mongo_db_name", "cibererStudies");
+        prop.put("mongo_user", "user");
+        prop.put("mongo_password", "pass");
+
+        MongoCredentials credentials = new MongoCredentials(prop);
+        VariantQueryBuilder vqm;
+        String res = null;
+        QueryResult<VariantAnalysisInfo> queryResult = null;
+        try {
+            vqm = new VariantMongoQueryBuilder(credentials);
+
+            queryResult = ((VariantMongoQueryBuilder) vqm).getAnalysisInfo(studyId);
+
+            res = jsonObjectMapper.writeValueAsString(queryResult);
+
+            vqm.close();
+
+        } catch (MasterNotRunningException | ZooKeeperConnectionException | UnknownHostException e) {
+            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+
+        return createOkResponse(queryResult);
+
+
     }
 
     @POST
