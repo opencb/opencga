@@ -141,8 +141,8 @@ public class OpenCGAMain {
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
         
-        List<VariantAnnotator> annots = new ArrayList<>();
-        annots.add(new VariantControlMongoAnnotator());
+//        List<VariantAnnotator> annots = new ArrayList<>();
+//        annots.add(new VariantControlMongoAnnotator());
 
         List<Task<Variant>> taskList = new SortedList<>();
 
@@ -164,7 +164,7 @@ public class OpenCGAMain {
         }
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, study));
-            taskList.add(new VariantAnnotTask(annots, 1000));
+//            taskList.add(new VariantAnnotTask(annots, 1000));
 
         }
         for (VariantWriter variantWriter : writers) {
