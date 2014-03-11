@@ -169,7 +169,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
                 String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
                 BasicDBObject mongoStudy = mongoMap.get(rowkey);
                 BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
-                BasicDBObject query = new BasicDBObject("position", rowkey);
+                BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
                 WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {
                     // TODO If not correct, retry?
@@ -189,8 +189,8 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("position", rowkey);
-            query.put("studies.studyId", studyName);
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            query.append("studies.studyId", studyName);
 
             if (variantCollection.count(query) == 0) {
                 // Create relationship variant-study for inserting in Mongo
@@ -230,6 +230,10 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
                 // TODO What if there is the same position already?
             }
         }
+        
+        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("pos", 1));
+        variantCollection.ensureIndex(new BasicDBObject("studies.studyId", 1));
+        
         return true;
     }
     
@@ -239,7 +243,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("position", rowkey);
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
             query.put("studies.studyId", studyName);
 
             if (variantCollection.count(query) == 0) {

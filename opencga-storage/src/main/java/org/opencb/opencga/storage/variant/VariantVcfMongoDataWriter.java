@@ -92,14 +92,15 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
     @Override
     boolean buildBatchRaw(List<Variant> data) {
-
         for (Variant v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
 
-            BasicDBObject mongoStudy = new BasicDBObject("studyId", study.getName()).append("ref", v.getReference()).append("alt", v.getAltAlleles());
+            // Check that this relationship was not established yet
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            query.append("studies.studyId", study.getName());
 
-            if (variantCollection.count(mongoStudy) == 0) {
-
+            if (variantCollection.count(query) == 0) {
+                BasicDBObject mongoStudy = new BasicDBObject("studyId", study.getName()).append("ref", v.getReference()).append("alt", v.getAltAlleles());
 
                 // Attributes
                 if (v.getAttributes().size() > 0) {
@@ -119,7 +120,6 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
                 // Samples
                 if (this.includeSamples && v.getSamplesData().size() > 0) {
-
                     BasicDBObject samples = new BasicDBObject();
 
                     for (Map.Entry<String, Map<String, String>> entry : v.getSamplesData().entrySet()) {
@@ -138,84 +138,14 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 // TODO What if there is the same position already?
                 return false;
             }
-
         }
+        
         return true;
     }
-
-    @Override
-    boolean buildEffectRaw(List<Variant> variants) {
-        for (Variant v : variants) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-
-            BasicDBObject mongoStudy = mongoMap.get(rowkey);
-
-            // Add effects to study
-            if (!v.getEffect().isEmpty()) {
-                Set<String> effectsSet = new HashSet<>();
-                Set<String> genesSet = new HashSet<>();
-
-                for (VariantEffect effect : v.getEffect()) {
-                    effectsSet.add(effect.getConsequenceTypeObo());
-                    addConsequenceType(effect.getConsequenceTypeObo());
-                    if (effect.getFeatureType() != null && effect.getFeatureType().equalsIgnoreCase("exon")) {
-                        genesSet.add(effect.getGeneName());
-                    }
-                }
-                mongoStudy.put("effects", effectsSet);
-                mongoStudy.put("genes", genesSet);
-            }
-
-        }
-
-        return false;
-    }
-
-    private void addConsequenceType(String ct) {
-        int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct) : 1;
-        conseqTypes.put(ct, ctCount);
-    }
-
-    @Override
-    boolean writeBatch(List<Variant> data) {
-
-        for (Variant v : data) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-
-            BasicDBObject mongoStudy = mongoMap.get(rowkey);
-            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
-
-            BasicDBObject query = new BasicDBObject();
-            query.put("chr", v.getChromosome());
-            query.put("pos", v.getPosition());
-
-            WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
-
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
-            }
-            updateIndex();
-        }
-
-        mongoMap.clear();
-
-        return true;
-    }
-
-    private void updateIndex() {
-
-        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("pos", 1));
-        variantCollection.ensureIndex(new BasicDBObject("studies.studyId", 1));
-
-    }
-
 
     @Override
     boolean buildStatsRaw(List<Variant> data) {
-
         for (Variant variant : data) {
-
             VariantStats v = variant.getStats();
             if (v == null) {
                 continue;
@@ -225,7 +155,6 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             BasicDBObject mongoStudy = mongoMap.get(rowkey);
 
             if (!mongoStudy.containsField("stats")) {
-
                 // Generate genotype counts
                 BasicDBObject genotypes = new BasicDBObject();
 
@@ -251,12 +180,65 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             } else {
                 // TODO aaleman: What if there are stats already?
             }
-
         }
 
         return true;
     }
 
+    @Override
+    boolean buildEffectRaw(List<Variant> variants) {
+        for (Variant v : variants) {
+            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+            BasicDBObject mongoStudy = mongoMap.get(rowkey);
+
+            // Add effects to study
+            if (!v.getEffect().isEmpty()) {
+                Set<String> effectsSet = new HashSet<>();
+                Set<String> genesSet = new HashSet<>();
+
+                for (VariantEffect effect : v.getEffect()) {
+                    effectsSet.add(effect.getConsequenceTypeObo());
+                    addConsequenceType(effect.getConsequenceTypeObo());
+                    if (effect.getFeatureType() != null && effect.getFeatureType().equalsIgnoreCase("exon")) {
+                        genesSet.add(effect.getGeneName());
+                    }
+                }
+                mongoStudy.put("effects", effectsSet);
+                mongoStudy.put("genes", genesSet);
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    boolean buildBatchIndex(List<Variant> data) {
+        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("pos", 1));
+        variantCollection.ensureIndex(new BasicDBObject("studies.studyId", 1));
+        return true;
+    }
+
+    @Override
+    boolean writeBatch(List<Variant> data) {
+        for (Variant v : data) {
+            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+
+            BasicDBObject mongoStudy = mongoMap.get(rowkey);
+            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
+
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
+
+            if (!wr.getLastError().ok()) {
+                // TODO If not correct, retry?
+                return false;
+            }
+        }
+
+        mongoMap.clear();
+
+        return true;
+    }
 
     private boolean writeStudy(VariantStudy study) {
         String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
@@ -268,13 +250,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 .append("description", study.getDescription())
                 .append("sources", study.getSources());
 
-
         BasicDBObject cts = new BasicDBObject();
 
         for (Map.Entry<String, Integer> entry : conseqTypes.entrySet()) {
             cts.append(entry.getKey(), entry.getValue());
         }
-
 
         VariantGlobalStats global = study.getStats();
         if (global != null) {
@@ -297,7 +277,6 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         }
 
         // TODO Save pedigree information
-
         Map<String, String> meta = study.getMetadata();
         DBObject metadataMongo = new BasicDBObjectBuilder()
                 .add("header", meta.get("variantFileHeader"))
@@ -314,19 +293,23 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
     @Override
     public boolean post() {
-
         writeStudy(study);
         return true;
     }
 
     @Override
     public boolean close() {
-
+        mongoClient.close();
         return true;
     }
 
     private String buildRowkey(String chromosome, String position) {
         return chromosome + "_" + position;
+    }
+
+    private void addConsequenceType(String ct) {
+        int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct) : 1;
+        conseqTypes.put(ct, ctCount);
     }
 
     @Override
@@ -342,25 +325,6 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     public void includeEffect(boolean b) {
         this.includeEffect = b;
-    }
-
-    @Override
-    boolean buildBatchIndex(List<Variant> data) {
-//        for (Variant variant : data) {
-//
-//            // Check that this relationship was not established yet
-//            String rowkey = buildRowkey(variant.getChromosome(), String.valueOf(variant.getPosition()));
-//            BasicDBObject mongoStudy = mongoMap.get(rowkey);
-//
-//            if (variantCollection.count(mongoStudy) == 0) {
-//                // Create relationship variant-study for inserting in Mongo
-//                mongoMap.put(rowkey, mongoStudy);
-//
-//            } else {
-//                // TODO What if there is the same position already?
-//            }
-//        }
-        return true;
     }
 
 }
