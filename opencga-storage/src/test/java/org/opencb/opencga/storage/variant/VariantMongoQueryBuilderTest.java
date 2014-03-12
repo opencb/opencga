@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.variant;
 import org.apache.commons.lang.mutable.Mutable;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.junit.*;
-import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.containers.QueryResult;
@@ -23,7 +23,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
     private static Properties properties;
     private static String inputFile = VariantVcfMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static MongoCredentials credentials;
-    private static VariantStudy study = new VariantStudy("testStudy", "testAlias", "testStudy", null, null);
+    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
     private static VariantQueryBuilder vqb;
 
 

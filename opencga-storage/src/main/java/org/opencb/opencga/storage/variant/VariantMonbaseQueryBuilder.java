@@ -64,7 +64,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
 
     @Override
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
+    public QueryResult<Variant> getAllVariantsByRegion(Region region, String sourceId, QueryOptions options) {
         Long start, end, dbstart, dbend;
         start = System.currentTimeMillis();
         QueryResult<Variant> queryResult = new QueryResult<>(
@@ -102,7 +102,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
                 // Get basic result fields from Protocol Buffers message
                 NavigableMap<byte[], byte[]> infoMap = result.getFamilyMap("i".getBytes());
-                byte[] byteInfo = infoMap.get((studyName + "_data").getBytes());
+                byte[] byteInfo = infoMap.get((sourceId + "_data").getBytes());
                 VariantFieldsProtos.VariantInfo protoInfo = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
                 String reference = protoInfo.getReference();
                 String alternate = StringUtils.join(protoInfo.getAlternateList(), ",");
@@ -116,7 +116,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
                     // Set samples
                     for (byte[] s : sampleMap.keySet()) {
-                        String sampleName = (new String(s, CHARSET_UTF_8)).replaceAll(studyName + "_", "");
+                        String sampleName = (new String(s, CHARSET_UTF_8)).replaceAll(sourceId + "_", "");
                         VariantFieldsProtos.VariantSample sample = VariantFieldsProtos.VariantSample.parseFrom(sampleMap.get(s));
                         String sample1 = sample.getSample();
                         String[] values = sample1.split(":");
@@ -131,7 +131,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
                 // Set stats if requested
                 if (includeStats) {
-                    byte[] byteStats = infoMap.get((studyName + "_stats").getBytes());
+                    byte[] byteStats = infoMap.get((sourceId + "_stats").getBytes());
                     VariantFieldsProtos.VariantStats protoStats = VariantFieldsProtos.VariantStats.parseFrom(byteStats);
                     VariantStats variantStats = new VariantStats(chromosome, position, reference, alternate,
                             protoStats.getMaf(),
@@ -167,17 +167,17 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     }
 
     @Override
-    public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, String studyName, QueryOptions options) {
+    public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, String sourceId, QueryOptions options) {
         List<QueryResult> allResults = new LinkedList<>();
         for (Region r : regions) {
-            QueryResult queryResult = getAllVariantsByRegion(r, studyName, options);
+            QueryResult queryResult = getAllVariantsByRegion(r, sourceId, options);
             allResults.add(queryResult);
         }
         return allResults;
     }
 
     @Override
-    public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
+    public QueryResult getVariantsHistogramByRegion(Region region, String sourceId, boolean histogramLogarithm, int histogramMax) {
         QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d",
                 region.getChromosome(), region.getStart(), region.getEnd()));
         List<ObjectMap> data = new ArrayList<>();
@@ -188,7 +188,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
         long startDbTime = System.currentTimeMillis();
 
-        BasicDBObject query = new BasicDBObject("position", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies.studyId", studyName);
+        BasicDBObject query = new BasicDBObject("position", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies.studyId", sourceId);
         DBCollection collection = db.getCollection("variants");
         DBCursor queryResults = collection.find(query);
         queryResult.setDbTime(System.currentTimeMillis() - startDbTime);
@@ -259,7 +259,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public QueryResult getSimpleVariantsByRegion(Region region, String studyName, QueryOptions options) {
+    public QueryResult getSimpleVariantsByRegion(Region region, String sourceId, QueryOptions options) {
         Long start, end, dbstart, dbend;
         start = System.currentTimeMillis();
         boolean includeStats;
@@ -276,7 +276,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
         List<Variant> results = new ArrayList<>();
         String startRow = buildRowkey(region.getChromosome(), Long.toString(region.getStart()));
         String stopRow = buildRowkey(region.getChromosome(), Long.toString(region.getEnd()));
-        BasicDBObject query = new BasicDBObject("position", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("studies.studyId", studyName);
+        BasicDBObject query = new BasicDBObject("position", new BasicDBObject("$gte", startRow).append("$lte", stopRow)).append("sources.sourceId", sourceId);
         DBCollection collection = db.getCollection("variants");
         dbstart = System.currentTimeMillis();
         DBCursor variantInStudies = collection.find(query);
@@ -287,7 +287,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
             String[] rowkeyParts = result.get("position").toString().split("_");
             String chromosome = rowkeyParts[0].replaceFirst("^0+(?!$)", "");
             int position = Integer.parseInt(rowkeyParts[1]);
-            BasicDBList studies = (BasicDBList) result.get("studies");
+            BasicDBList studies = (BasicDBList) result.get("sources");
             BasicDBObject st = (BasicDBObject) studies.get(0);
             String ref = (String) st.get("ref");
             String alt = StringUtils.join((ArrayList<String>) st.get("alt"), ",");
