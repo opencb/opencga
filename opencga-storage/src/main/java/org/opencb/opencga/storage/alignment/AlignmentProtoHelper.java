@@ -11,11 +11,12 @@ import java.util.List;
  * User: jmmut
  * Date: 3/7/14
  * Time: 11:29 AM
- * To change this template use File | Settings | File Templates.
+ *
+ * TODO jj: check rnext, pnext, mateAlignmentStart
  */
 public class AlignmentProtoHelper { // TODO jj test
 
-    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, int start){
+    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, long start){
 
         return new Alignment(
                 alignmentRecord.getName(),
@@ -28,7 +29,7 @@ public class AlignmentProtoHelper { // TODO jj test
                 alignmentRecord.getMapq(),
                 alignmentRecord.getQualities(),
                 alignmentRecord.getRnext(),
-                alignmentRecord.getRelativePnext() + start,
+                alignmentRecord.getRelativePnext(),
                 alignmentRecord.getInferredInsertSize(),
                 alignmentRecord.getFlags(),
                 toAlignmentDifference(alignmentRecord.getDiffsList()),
@@ -45,6 +46,8 @@ public class AlignmentProtoHelper { // TODO jj test
                 .setMapq(alignment.getMappingQuality())
                 .setRnext("rnext")
                 .setRelativePnext(alignment.getMateAlignmentStart())
+                .setQualities(alignment.getQualities())
+                .setInferredInsertSize(alignment.getInferredInsertSize())
                 .setLen(alignment.getLength());
 
         for(Alignment.AlignmentDifference alignmentDifference : alignment.getDifferences()){
