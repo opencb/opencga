@@ -24,6 +24,7 @@ import java.util.List;
  * Time: 6:11 PM
  * To change this template use File | Settings | File Templates.
  */
+@Deprecated
 public class AlignmentHBaseDataWriter implements AlignmentDataWriter<SAMRecord,SAMFileHeader> {
 
     private Configuration config;
