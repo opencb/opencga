@@ -43,7 +43,7 @@ public class AlignmentProtoHelper { // TODO jj test
                 .setFlags(alignment.getFlags())
                 .setPos((int) alignment.getStart())   //TODO jj: Real Incremental Pos
                 .setMapq(alignment.getMappingQuality())
-                .setRnext("rnext")
+                .setRnext("rnext")      //TODO jj: FIXME
                 .setRelativePnext(alignment.getMateAlignmentStart())
                 .setLen(alignment.getLength());
 
@@ -117,5 +117,13 @@ public class AlignmentProtoHelper { // TODO jj test
         }
 
         return alignmentDifferenceList;
+    }
+
+
+    public static long getPositionFromRowkey(String rowKey){
+        return Long.valueOf(rowKey.split("_")[1]) << 8;
+    }
+    public static String getChromosomeFromRowkey(String rowKey){
+        return rowKey.split("_")[0];
     }
 }
