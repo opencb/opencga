@@ -76,13 +76,15 @@ public class AlignmentProtoHelper { // TODO jj test
                     break;
             }
 
-            alignmentRecordBuilder.addDiffs(AlignmentProto.Difference.newBuilder()
+            AlignmentProto.Difference.Builder differenceBuilder = AlignmentProto.Difference.newBuilder()
                     .setOperator(operator)
                     .setPos(alignmentDifference.getPos())
-                    .setLength(alignmentDifference.getLength())
-                    .setSequence(ByteString.copyFromUtf8(alignmentDifference.getSeq())) // TODO check this works properly
-                    .build()
-            );
+                    .setLength(alignmentDifference.getLength());
+            if(alignmentDifference.isSequenceStored()){
+                differenceBuilder = differenceBuilder.setSequence(ByteString.copyFromUtf8(alignmentDifference.getSeq())); // TODO check this works properly
+            }
+            alignmentRecordBuilder.addDiffs(differenceBuilder.build());
+
         }
 
         return alignmentRecordBuilder.build();
