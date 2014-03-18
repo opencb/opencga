@@ -213,17 +213,12 @@ public class JobAnalysisWSServer extends GenericWSServer {
         int page = (info.getQueryParameters().containsKey("page")) ? Integer.parseInt(info.getQueryParameters().getFirst("page")) : 1;
         int start = (info.getQueryParameters().containsKey("start")) ? Integer.parseInt(info.getQueryParameters().getFirst("start")) : 0;
         int limit = (info.getQueryParameters().containsKey("limit")) ? Integer.parseInt(info.getQueryParameters().getFirst("limit")) : 25;
-        String callback = (info.getQueryParameters().containsKey("callback")) ? info.getQueryParameters().getFirst("callback") : "null";
-
-
-        //map.put("start", start);
-
+//        String callback = (info.getQueryParameters().containsKey("callback")) ? info.getQueryParameters().getFirst("callback") : "null";
 
         map.put("studyId", accountId + "_-_" + this.jobId);
 
         System.out.println(map);
         MutableInt count = new MutableInt(-1);
-
 
         Properties prop = new Properties();
         prop.put("mongo_host", "mem15");
@@ -241,18 +236,11 @@ public class JobAnalysisWSServer extends GenericWSServer {
             queryResult = ((VariantMongoQueryBuilder) vqm).getRecordsMongo(page, start, limit, count, map);
 
             queryResult.setNumResults(count.intValue());
-//            res = callback + "(" + jsonObjectMapper.writeValueAsString(queryResult) + ");";
-
-            System.out.println(res);
-
             vqm.close();
-
 
         } catch (MasterNotRunningException | ZooKeeperConnectionException | UnknownHostException e) {
             e.printStackTrace();
         }
-
-
         return createOkResponse(queryResult);
     }
 

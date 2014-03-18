@@ -586,35 +586,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                     }
                 }
             }
-
-            //db.variants.aggregate(
-            // {$match:{"studies.studyId":'aaleman_-_XEUcutJWpdqGbCi'}},
-            // {$project:{'studies.studyId':1, 'studies.effects':1}},
-            // {$unwind: '$studies'},
-            // {$match:{'studies.studyId':'aaleman_-_XEUcutJWpdqGbCi'}},
-            // {$unwind: '$studies.effects'},
-            // {$group: {_id:'$studies.effects', count:{$sum:1}}})
-
-//            BasicDBObject match1 = new BasicDBObject("$match", new BasicDBObject("studies.studyId", studyId));
-//            BasicDBObject project = new BasicDBObject("$project", new BasicDBObject("studies.studyId", 1).append("studies.effects", 1));
-//            BasicDBObject unwind1 = new BasicDBObject("$unwind", "$studies");
-//            BasicDBObject match2 = new BasicDBObject("$match", new BasicDBObject("studies.studyId", studyId));
-//            BasicDBObject unwind2 = new BasicDBObject("$unwind", "$studies.effects");
-//            BasicDBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$studies.effects").append("count", new BasicDBObject("$sum", 1)));
-//
-//            collV = db.getCollection("variants");
-
-//            AggregationOutput cts = collV.aggregate(match1, project, unwind1, match2, unwind2, group);
-
-
-//            for (Object elem : cts.results()) {
-//                BasicDBObject bdbo = (BasicDBObject) elem;
-//                vi.addConsequenceType(bdbo.getString("_id"), bdbo.getInt("count"));
-//            }
-//
-            System.out.println("vi.getConsequenceTypes() = " + vi.getConsequenceTypes());
-
-
         }
         qres.setDbTime(System.currentTimeMillis() - dbStart);
 

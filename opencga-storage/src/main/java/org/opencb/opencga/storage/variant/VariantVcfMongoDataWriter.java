@@ -83,11 +83,14 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
-        buildStatsRaw(data);
-        buildEffectRaw(data);
+        if (this.includeStats) {
+            buildStatsRaw(data);
+        }
+        if (this.includeEffect) {
+            buildEffectRaw(data);
+        }
         buildBatchIndex(data);
         return writeBatch(data);
-
     }
 
     @Override
@@ -138,10 +141,9 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             } else {
                 // TODO What if there is the same position already?
                 System.out.println("Variant " + v.getChromosome() + ":" + v.getPosition() + " already found");
-//                return false;
             }
         }
-        
+
         return true;
     }
 
@@ -160,7 +162,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 // TODO It means that the same position was already found in this source, so __for now__ it won't be processed again
                 continue;
             }
-            
+
             if (!mongoStudy.containsField("stats")) {
                 // Generate genotype counts
                 BasicDBObject genotypes = new BasicDBObject();
@@ -202,7 +204,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 // TODO It means that the same position was already found in this source, so __for now__ it won't be processed again
                 continue;
             }
-            
+
             // Add effects to source
             if (!v.getEffect().isEmpty()) {
                 Set<String> effectsSet = new HashSet<>();
@@ -236,12 +238,12 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
 
             BasicDBObject mongoStudy = mongoMap.get(rowkey);
-            
+
             if (mongoStudy == null) {
                 // TODO It means that the same position was already found in this source, so __for now__ it won't be processed again
                 continue;
             }
-            
+
             BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("sources", mongoStudy));
 
             BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
