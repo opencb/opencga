@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
 import org.apache.commons.cli.*;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
@@ -139,9 +140,9 @@ public class OpenCGAMain {
         OpenCGACredentials credentials;
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-        
-//        List<VariantAnnotator> annots = new ArrayList<>();
-//        annots.add(new VariantControlMongoAnnotator());
+
+        List<VariantAnnotator> annots = new ArrayList<>();
+        annots.add(new VariantControlMongoAnnotator());
 
         List<Task<Variant>> taskList = new SortedList<>();
 
@@ -156,15 +157,15 @@ public class OpenCGAMain {
             writers.add(new VariantVcfMongoDataWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
         }
 
-
         if (includeEffect) {
             taskList.add(new VariantEffectTask());
         }
-        
+
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, source));
+            taskList.add(new VariantAnnotTask(annots));
         }
-        
+
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
             variantWriter.includeEffect(includeEffect);

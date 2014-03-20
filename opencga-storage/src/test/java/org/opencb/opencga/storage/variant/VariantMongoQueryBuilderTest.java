@@ -32,7 +32,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         properties = new Properties();
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", 27017);
-        properties.put("mongo_db_name", "cibererStudies");
+        properties.put("mongo_db_name", "test");
         properties.put("mongo_user", "user");
         properties.put("mongo_password", "pass");
         credentials = new MongoCredentials(properties);
@@ -104,34 +104,26 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
     @Test
     public void testGetRecords() throws Exception {
 
-        Map<String, String> opts = new HashMap<>();
-        opts.put("studyId", "aaleman_-_XOidGTJMUq1Cr1J");
-//        opts.put("region_list", "6:1-15021068");
-//        opts.put("sampleGT_D801[]", "1/1,0/1");
-//        opts.put("sampleGT_muestra_B[]", "0/1");
-//        opts.put("conseq_type[]", "non_synonymous_codon,intron_variant");
-//        opts.put("mend_error", "1");
-//        opts.put("option_mend_error", ">=");
-//        opts.put("maf", "0.1");
-//        opts.put("option_maf", "<=");
+        System.out.println("hola");
 
+        Map<String, String> opts = new HashMap<>();
+        opts.put("studyId", "ayuso_-_3Tjnqxn97mgGBgU");
         MutableInt count = new MutableInt(-1);
 
         QueryResult<VariantInfo> records = ((VariantMongoQueryBuilder) vqb).getRecordsMongo(1, 0, 25, count, opts);
 //
-        System.out.println(records.getResult().get(0).getSampleGenotypes());
+        System.out.println(records);
     }
 
     @Test
     public void testAnalysisInfo() throws Exception {
 
-        QueryResult<VariantAnalysisInfo> res = ((VariantMongoQueryBuilder) vqb).getAnalysisInfo("aaleman_-_XOidGTJMUq1Cr1J");
+        QueryResult<VariantAnalysisInfo> res = ((VariantMongoQueryBuilder) vqb).getAnalysisInfo("ayuso_-_3Tjnqxn97mgGBgU");
         VariantAnalysisInfo vi = res.getResult().get(0);
 
         System.out.println("vi.getSamples() = " + vi.getSamples());
         System.out.println("vi.getConsequenceTypes() = " + vi.getConsequenceTypes());
         System.out.println("vi.getGlobalStats() = " + vi.getGlobalStats());
-
 
     }
 }
