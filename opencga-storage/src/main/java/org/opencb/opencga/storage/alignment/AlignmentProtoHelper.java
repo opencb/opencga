@@ -3,8 +3,10 @@ package org.opencb.opencga.storage.alignment;
 import com.google.protobuf.ByteString;
 import org.opencb.commons.bioformats.alignment.Alignment;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created with IntelliJ IDEA.
@@ -15,42 +17,69 @@ import java.util.List;
  * TODO jj: check rnext, pnext, mateAlignmentStart
  */
 public class AlignmentProtoHelper { // TODO jj test
+    /**
+     * @param chunkStart: start of the alignmentRegion.
+     */
+    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, long chunkStart){
 
-    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, long start){
+        Map<String, String> attributes = new HashMap<>();
+        for (AlignmentProto.MyMap.Pair pair: alignmentRecord.getTags().getPairList()) {
+            attributes.put(pair.getKey(), pair.getValue());
+        }
+        LinkedList<Alignment.AlignmentDifference> alignmentDifferences = new LinkedList<>();
+        long offset = toAlignmentDifference(alignmentRecord.getDiffsList(), alignmentDifferences);
+        long unclippedStartOffset = 0;
+        long end = (alignmentRecord.getFlags() & 0x4) > 0 ? 0: alignmentRecord.getPos() + chunkStart + alignmentRecord.getLen() -1 + offset;
+        Alignment.AlignmentDifference alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.get(0): null;
+        if (alignmentDifference != null) {
+            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING && alignmentDifference.getPos() == 0) {
+                unclippedStartOffset = alignmentDifference.getLength();
+            }
+        }
+        int unclippedEndOffset = 0;
+        alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.getLast(): null;
+        if (alignmentDifference != null) {
+            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING
+                    && alignmentDifference.getPos() == alignmentRecord.getLen() - alignmentDifference.getLength()) {
+                unclippedEndOffset = alignmentDifference.getLength();
+            }
+        }
+
 
         return new Alignment(
                 alignmentRecord.getName(),
                 chromosome,
-                start,
-                start + alignmentRecord.getLen(),
-                start,  // FIXME jj <unclipped start> does not always equal to <start>
-                start + alignmentRecord.getLen(),   // FIXME jj same here
+                alignmentRecord.getPos() + chunkStart,
+                end,
+                alignmentRecord.getPos() + chunkStart - unclippedStartOffset,  // FIXME jj <unclipped start> does not always equal to <start>
+                end + unclippedEndOffset,   // FIXME jj same here
                 alignmentRecord.getLen(),
                 alignmentRecord.getMapq(),
                 alignmentRecord.getQualities(),
                 alignmentRecord.getRnext(),
-                alignmentRecord.getRelativePnext(),
+                alignmentRecord.getRelativePnext(), // TODO jj check
                 alignmentRecord.getInferredInsertSize(),
                 alignmentRecord.getFlags(),
-                toAlignmentDifference(alignmentRecord.getDiffsList()),
-                null    // FIXME get real attributes
+                alignmentDifferences,
+                attributes
+                //TODO: ).setReadSequence();
                 );
     }
 
-    public static AlignmentProto.AlignmentRecord toProto(Alignment alignment){
+    public static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long chunkStart){
 
         AlignmentProto.AlignmentRecord.Builder alignmentRecordBuilder = AlignmentProto.AlignmentRecord.newBuilder()
                 .setName(alignment.getName())
                 .setFlags(alignment.getFlags())
-                .setPos((int) alignment.getStart())   //TODO jj: Real Incremental Pos
+                .setPos((int) (alignment.getStart() - chunkStart))   //TODO jj: Real Incremental Pos
                 .setMapq(alignment.getMappingQuality())
-                .setRnext("rnext")
+                .setRnext(alignment.getMateReferenceName())
                 .setRelativePnext(alignment.getMateAlignmentStart())
                 .setQualities(alignment.getQualities())
                 .setInferredInsertSize(alignment.getInferredInsertSize())
                 .setLen(alignment.getLength());
 
-        for(Alignment.AlignmentDifference alignmentDifference : alignment.getDifferences()){
+        for(Alignment.AlignmentDifference alignmentDifference : alignment.getDifferences()){    // alignment differences
             AlignmentProto.Difference.DifferenceOperator operator = AlignmentProto.Difference.DifferenceOperator.MISMATCH;
             switch(alignmentDifference.getOp()){
                 case Alignment.AlignmentDifference.DELETION:
@@ -76,49 +105,71 @@ public class AlignmentProtoHelper { // TODO jj test
                     break;
             }
 
-            alignmentRecordBuilder.addDiffs(AlignmentProto.Difference.newBuilder()
+            AlignmentProto.Difference.Builder differenceBuilder = AlignmentProto.Difference.newBuilder()
                     .setOperator(operator)
                     .setPos(alignmentDifference.getPos())
-                    .setLength(alignmentDifference.getLength())
-                    .setSequence(ByteString.copyFromUtf8(alignmentDifference.getSeq())) // TODO check this works properly
-                    .build()
-            );
+                    .setLength(alignmentDifference.getLength());
+
+            if (alignmentDifference.isSequenceStored()) {
+                differenceBuilder.setSequence(ByteString.copyFromUtf8(alignmentDifference.getSeq()));
+            }
+            alignmentRecordBuilder.addDiffs(differenceBuilder.build());
         }
+
+        AlignmentProto.MyMap.Builder myMapBuilder = AlignmentProto.MyMap.newBuilder();  // alignment attributes
+        Map<String, String> tags = alignment.getAttributes();
+        if (tags != null) {
+            for (Map.Entry<String, String> entry : tags.entrySet()) {
+                myMapBuilder.addPair(AlignmentProto.MyMap.Pair.newBuilder()
+                        .setKey(entry.getKey())
+                        .setValue(entry.getValue()));
+            }
+        }
+        alignmentRecordBuilder.setTags(myMapBuilder);
 
         return alignmentRecordBuilder.build();
     }
 
-    public static List<Alignment.AlignmentDifference> toAlignmentDifference(List<AlignmentProto.Difference> differenceList) {
-        List<Alignment.AlignmentDifference> alignmentDifferenceList = new LinkedList<>();
+    public static  int toAlignmentDifference(List<AlignmentProto.Difference> differenceList, List<Alignment.AlignmentDifference> alignmentDifferenceList) {
+        int offset = 0;
         for (AlignmentProto.Difference difference: differenceList) {
             char operator = AlignmentProto.Difference.DifferenceOperator.MISMATCH_VALUE;
             switch(difference.getOperator().getNumber()) {
                 case AlignmentProto.Difference.DifferenceOperator.DELETION_VALUE:
                     operator = Alignment.AlignmentDifference.DELETION;
+                    offset += difference.getLength();
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.HARD_CLIPPING_VALUE:
-                    operator = Alignment.AlignmentDifference.HARD_CLIPPING;
+                    operator = Alignment.AlignmentDifference.HARD_CLIPPING; // FIXME offset
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.INSERTION_VALUE:
                     operator = Alignment.AlignmentDifference.INSERTION;
+                    offset -= difference.getLength();
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.MISMATCH_VALUE:
                     operator = Alignment.AlignmentDifference.MISMATCH;
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.PADDING_VALUE:
-                    operator = Alignment.AlignmentDifference.PADDING;
+                    operator = Alignment.AlignmentDifference.PADDING; // FIXME offset
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.SKIPPED_REGION_VALUE:
-                    operator = Alignment.AlignmentDifference.SKIPPED_REGION;
+                    operator = Alignment.AlignmentDifference.SKIPPED_REGION; // FIXME offset
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.SOFT_CLIPPING_VALUE:
-                    operator = Alignment.AlignmentDifference.SOFT_CLIPPING;
+                    operator = Alignment.AlignmentDifference.SOFT_CLIPPING; // FIXME offset
+                    offset -= difference.getLength();
                     break;
             }
 
-            alignmentDifferenceList.add(new Alignment.AlignmentDifference(difference.getPos(), operator, String.valueOf(difference.getSequence())));
+
+            String readSequence = difference.hasSequence()? new String(difference.getSequence().toByteArray()): null;
+            if (readSequence == null) {
+                alignmentDifferenceList.add(new Alignment.AlignmentDifference(difference.getPos(), operator, difference.getLength()));
+            } else {
+                alignmentDifferenceList.add(new Alignment.AlignmentDifference(difference.getPos(), operator, readSequence));
+            }
         }
 
-        return alignmentDifferenceList;
+        return offset;
     }
 }

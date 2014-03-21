@@ -139,52 +139,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
                 alignmentRegionBuilder = AlignmentProto.AlignmentRegion.newBuilder();
             }
 
-
-
-            AlignmentProto.AlignmentRecord.Builder alignmentRecordBuilder = AlignmentProto.AlignmentRecord.newBuilder()
-                    .setName(alignment.getName())
-                    .setFlags(alignment.getFlags())
-                    .setIncrementalPos((int)alignment.getStart())   //TODO jj: Real Incremental Pos
-                    .setMapq(alignment.getMappingQuality())
-                    .setRnext("rnext")
-                    .setRelativePnext(0)
-                    .setLen(alignment.getLength());
-
-            for(Alignment.AlignmentDifference alignmentDifference : alignment.getDifferences()){
-                AlignmentProto.Difference.DifferenceOperator operator = AlignmentProto.Difference.DifferenceOperator.MISMATCH;
-                switch(alignmentDifference.getOp()){
-                    case Alignment.AlignmentDifference.DELETION:
-                        operator = AlignmentProto.Difference.DifferenceOperator.DELETION;
-                        break;
-                    case Alignment.AlignmentDifference.HARD_CLIPPING:
-                        operator = AlignmentProto.Difference.DifferenceOperator.HARD_CLIPPING;
-                        break;
-                    case Alignment.AlignmentDifference.INSERTION:
-                        operator = AlignmentProto.Difference.DifferenceOperator.INSERTION;
-                        break;
-                    case Alignment.AlignmentDifference.MISMATCH:
-                        operator = AlignmentProto.Difference.DifferenceOperator.MISMATCH;
-                        break;
-                    case Alignment.AlignmentDifference.PADDING:
-                        operator = AlignmentProto.Difference.DifferenceOperator.PADDING;
-                        break;
-                    case Alignment.AlignmentDifference.SKIPPED_REGION:
-                        operator = AlignmentProto.Difference.DifferenceOperator.SKIPPED_REGION;
-                        break;
-                    case Alignment.AlignmentDifference.SOFT_CLIPPING:
-                        operator = AlignmentProto.Difference.DifferenceOperator.SOFT_CLIPPING;
-                        break;
-
-                }
-                alignmentRecordBuilder.addDiffs(AlignmentProto.Difference.newBuilder()
-                        .setOperator(operator)
-                        .setRelativePos(alignmentDifference.getPos())
-                        .setLength(alignmentDifference.getLength())
-                        .build()
-                );
-            }
-
-            alignmentRegionBuilder.addAlignmentRecords(alignmentRecordBuilder.build());
+            alignmentRegionBuilder.addAlignmentRecords(AlignmentProtoHelper.toProto(alignment, index << 8));
 
         }
 
