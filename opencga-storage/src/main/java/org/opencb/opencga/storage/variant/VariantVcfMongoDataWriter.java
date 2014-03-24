@@ -56,7 +56,8 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     public boolean open() {
         try {
             // Mongo configuration
-            mongoClient = new MongoClient(credentials.getMongoHost());
+            ServerAddress address = new ServerAddress(credentials.getMongoHost(), credentials.getMongoPort());
+            mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
@@ -94,7 +95,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-
+            
             // Check that this relationship was not established yet
             BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
             query.append("sources.sourceId", source.getAlias());

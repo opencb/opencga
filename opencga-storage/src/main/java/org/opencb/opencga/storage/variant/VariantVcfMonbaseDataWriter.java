@@ -78,7 +78,8 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             admin = new HBaseAdmin(config);
 
             // Mongo configuration
-            mongoClient = new MongoClient(credentials.getMongoHost());
+            ServerAddress address = new ServerAddress(credentials.getMongoHost(), credentials.getMongoPort());
+            mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
