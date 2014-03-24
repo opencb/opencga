@@ -14,9 +14,10 @@ import java.util.Map;
  * Date: 3/7/14
  * Time: 11:29 AM
  *
- * TODO jj: check rnext, pnext, mateAlignmentStart
+ * TODO jj: check rnext, pnext, mateAlignmentStart,
+ * TODO jj: check another sam with CIGAR: hard clipping, padding, and skipped region
  */
-public class AlignmentProtoHelper { // TODO jj test
+public class AlignmentProtoHelper {
     /**
      * @param chunkStart: start of the alignmentRegion.
      */
@@ -32,7 +33,8 @@ public class AlignmentProtoHelper { // TODO jj test
         long end = (alignmentRecord.getFlags() & 0x4) > 0 ? 0: alignmentRecord.getPos() + chunkStart + alignmentRecord.getLen() -1 + offset;
         Alignment.AlignmentDifference alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.get(0): null;
         if (alignmentDifference != null) {
-            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING && alignmentDifference.getPos() == 0) {
+            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING
+                    && alignmentDifference.getPos() == 0) { // soft clipping at the  start
                 unclippedStartOffset = alignmentDifference.getLength();
             }
         }
@@ -40,7 +42,7 @@ public class AlignmentProtoHelper { // TODO jj test
         alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.getLast(): null;
         if (alignmentDifference != null) {
             if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING
-                    && alignmentDifference.getPos() == alignmentRecord.getLen() - alignmentDifference.getLength()) {
+                    && alignmentDifference.getPos() != 0 ){ // soft cliping at the end
                 unclippedEndOffset = alignmentDifference.getLength();
             }
         }
@@ -156,7 +158,7 @@ public class AlignmentProtoHelper { // TODO jj test
                     operator = Alignment.AlignmentDifference.SKIPPED_REGION; // FIXME offset
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.SOFT_CLIPPING_VALUE:
-                    operator = Alignment.AlignmentDifference.SOFT_CLIPPING; // FIXME offset
+                    operator = Alignment.AlignmentDifference.SOFT_CLIPPING;
                     offset -= difference.getLength();
                     break;
             }
