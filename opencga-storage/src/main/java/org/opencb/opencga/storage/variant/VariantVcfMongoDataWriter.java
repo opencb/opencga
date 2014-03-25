@@ -94,13 +94,14 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
             // Check if this variant is already stored
-            BasicDBObject mongoVariant = new BasicDBObject("hgvs", v.getHgvs());
+            String rowkey = buildRowkey(v);
+            BasicDBObject mongoVariant = new BasicDBObject("_id", rowkey);
 
             if (variantCollection.count(mongoVariant) == 0) {
-                mongoVariant = getVariantDBObject(v);
-            } else {
+                mongoVariant = getVariantDBObject(v, rowkey);
+            } /*else {
                 System.out.println("Variant " + v.getChromosome() + ":" + v.getStart() + "-" + v.getEnd() + " already found");
-            }
+            }*/
             
             BasicDBList mongoFiles = new BasicDBList();
             BasicDBObject mongoFile = new BasicDBObject("fileName", file.getName()).append("fileId", file.getAlias());
@@ -137,16 +138,26 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
              
             mongoFiles.add(mongoFile);
             mongoVariant.append("files", mongoFiles);
-            mongoMap.put(v.getHgvs(), mongoVariant);
+            mongoMap.put(rowkey, mongoVariant);
         }
 
         return true;
     }
 
-    private BasicDBObject getVariantDBObject(Variant v) {
-        BasicDBObject object = new BasicDBObject("hgvs", v.getHgvs()).append("id", v.getId()).append("type", v.getType().name());
+    private BasicDBObject getVariantDBObject(Variant v, String rowkey) {
+        // Attributes easily calculated
+        BasicDBObject object = new BasicDBObject("_id", rowkey).append("id", v.getId()).append("type", v.getType().name());
         object.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
         object.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
+        
+        // Transform HGVS: Map of lists -> List of map entries
+        BasicDBList hgvs = new BasicDBList();
+        for (Map.Entry<String, List<String>> entry : v.getHgvs().entrySet()) {
+            for (String value : entry.getValue()) {
+                hgvs.add(new BasicDBObject("type", entry.getKey()).append("name", value));
+            }
+        }
+        object.append("hgvs", hgvs);
         
         return object;
     }
@@ -200,7 +211,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildEffectRaw(List<Variant> variants) {
         for (Variant v : variants) {
-            BasicDBObject mongoVariant = mongoMap.get(v.getHgvs());
+            BasicDBObject mongoVariant = mongoMap.get(buildRowkey(v));
 
             if (!mongoVariant.containsField("chr")) {
                 // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
@@ -234,7 +245,6 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildBatchIndex(List<Variant> data) {
         variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
-        variantCollection.ensureIndex(new BasicDBObject("hgvs", 1));
         variantCollection.ensureIndex(new BasicDBObject("files.fileId", 1));
         return true;
     }
@@ -242,8 +252,9 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean writeBatch(List<Variant> data) {
         for (Variant v : data) {
-            BasicDBObject mongoVariant = mongoMap.get(v.getHgvs());
-            BasicDBObject query = new BasicDBObject("hgvs", v.getHgvs());
+            String rowkey = buildRowkey(v);
+            BasicDBObject mongoVariant = mongoMap.get(rowkey);
+            BasicDBObject query = new BasicDBObject("_id", rowkey);
             WriteResult wr;
             
             if (mongoVariant.containsField("chr")) { // Was fully built in this run because it didn't exist, and must be inserted
@@ -333,6 +344,17 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         conseqTypes.put(ct, ctCount);
     }
 
+    private String buildRowkey(Variant v) {
+        StringBuilder builder = new StringBuilder(v.getChromosome());
+        builder.append("_");
+        builder.append(v.getStart());
+        builder.append("_");
+        builder.append(v.getReference());
+        builder.append("_");
+        builder.append(v.getAlternate());
+        return builder.toString();
+    }
+    
     @Override
     public final void includeStats(boolean b) {
         this.includeStats = b;
