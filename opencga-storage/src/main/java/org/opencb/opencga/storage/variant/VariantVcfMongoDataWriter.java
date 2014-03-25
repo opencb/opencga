@@ -45,10 +45,6 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         this.credentials = credentials;
         this.mongoMap = new HashMap<>();
 
-//        this.includeEffect(false);
-        this.includeStats(false);
-        this.includeSamples(false);
-
         conseqTypes = new LinkedHashMap<>();
     }
 
@@ -87,9 +83,9 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         if (this.includeStats) {
             buildStatsRaw(data);
         }
-//        if (this.includeEffect) {
+        if (this.includeEffect) {
             buildEffectRaw(data);
-//        }
+        }
         buildBatchIndex(data);
         return writeBatch(data);
     }
@@ -97,95 +93,105 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
-            // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("hgvs", v.getHgvs());
-            query.append("files.fileId", file.getAlias());
+            // Check if this variant is already stored
+            BasicDBObject mongoVariant = new BasicDBObject("hgvs", v.getHgvs());
 
-            if (variantCollection.count(query) == 0) {
-                BasicDBObject mongoStudy = new BasicDBObject("fileName", file.getName()).append("fileId", file.getAlias());
-                
-                // Attributes
-                if (v.getAttributes().size() > 0) {
-                    BasicDBObject info = null;
-                    for (Map.Entry<String, String> entry : v.getAttributes().entrySet()) {
-                        if (info == null) {
-                            info = new BasicDBObject(entry.getKey(), entry.getValue());
-                        } else {
-                            info.append(entry.getKey(), entry.getValue());
-                        }
-                    }
-
-                    if (info != null) {
-                        mongoStudy.put("attributes", info);
-                    }
-                }
-
-                // Samples
-                if (this.includeSamples && v.getSamplesData().size() > 0) {
-                    BasicDBObject samples = new BasicDBObject();
-
-                    for (Map.Entry<String, Map<String, String>> entry : v.getSamplesData().entrySet()) {
-                        BasicDBObject sampleData = new BasicDBObject();
-                        for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
-                            sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
-                        }
-                        samples.put(entry.getKey(), sampleData);
-                    }
-                    mongoStudy.put("samples", samples);
-                }
-
-                mongoMap.put(v.getHgvs(), mongoStudy);
-
+            if (variantCollection.count(mongoVariant) == 0) {
+                mongoVariant = getVariantDBObject(v);
             } else {
-                // TODO What if there is the same position already?
                 System.out.println("Variant " + v.getChromosome() + ":" + v.getStart() + "-" + v.getEnd() + " already found");
             }
+            
+            BasicDBList mongoFiles = new BasicDBList();
+            BasicDBObject mongoFile = new BasicDBObject("fileName", file.getName()).append("fileId", file.getAlias());
+
+            // Attributes
+            if (v.getAttributes().size() > 0) {
+                BasicDBObject info = null;
+                for (Map.Entry<String, String> entry : v.getAttributes().entrySet()) {
+                    if (info == null) {
+                        info = new BasicDBObject(entry.getKey(), entry.getValue());
+                    } else {
+                        info.append(entry.getKey(), entry.getValue());
+                    }
+                }
+
+                if (info != null) {
+                    mongoFile.put("attributes", info);
+                }
+            }
+
+            // Samples
+            if (this.includeSamples && v.getSamplesData().size() > 0) {
+                BasicDBObject samples = new BasicDBObject();
+
+                for (Map.Entry<String, Map<String, String>> entry : v.getSamplesData().entrySet()) {
+                    BasicDBObject sampleData = new BasicDBObject();
+                    for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
+                        sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
+                    }
+                    samples.put(entry.getKey(), sampleData);
+                }
+                mongoFile.put("samples", samples);
+            }
+             
+            mongoFiles.add(mongoFile);
+            mongoVariant.append("files", mongoFiles);
+            mongoMap.put(v.getHgvs(), mongoVariant);
         }
 
         return true;
     }
 
+    private BasicDBObject getVariantDBObject(Variant v) {
+        BasicDBObject object = new BasicDBObject("hgvs", v.getHgvs()).append("id", v.getId()).append("type", v.getType().name());
+        object.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
+        object.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
+        
+        return object;
+    }
+    
     @Override
     boolean buildStatsRaw(List<Variant> data) {
         for (Variant variant : data) {
-            VariantStats v = variant.getStats();
-            if (v == null) {
-                continue;
-            }
-
-            BasicDBObject mongoStudy = mongoMap.get(variant.getHgvs());
-
-            if (mongoStudy == null) {
-                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
-                continue;
-            }
-
-            if (!mongoStudy.containsField("stats")) {
-                // Generate genotype counts
-                BasicDBObject genotypes = new BasicDBObject();
-
-                for (Genotype g : v.getGenotypes()) {
-                    String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
-                    genotypes.append(count, g.getCount());
-                }
-
-                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf());
-                mongoStats.append("mgf", v.getMgf());
-                mongoStats.append("alleleMaf", v.getMafAllele());
-                mongoStats.append("genotypeMaf", v.getMgfAllele());
-                mongoStats.append("missAllele", v.getMissingAlleles());
-                mongoStats.append("missGenotypes", v.getMissingGenotypes());
-                mongoStats.append("mendelErr", v.getMendelinanErrors());
-                mongoStats.append("casesPercentDominant", v.getCasesPercentDominant());
-                mongoStats.append("controlsPercentDominant", v.getControlsPercentDominant());
-                mongoStats.append("casesPercentRecessive", v.getCasesPercentRecessive());
-                mongoStats.append("controlsPercentRecessive", v.getControlsPercentRecessive());
-                mongoStats.append("genotypeCount", genotypes);
-
-                mongoStudy.put("stats", mongoStats);
-            } else {
-                // TODO aaleman: What if there are stats already?
-            }
+//            VariantStats v = variant.getStats();
+//            if (v == null) {
+//                continue;
+//            }
+//
+//            BasicDBObject mongoStudy = mongoMap.get(variant.getHgvs());
+//
+//            if (mongoStudy == null) {
+//                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
+//                continue;
+//            }
+//
+//            if (!mongoStudy.containsField("stats")) {
+//                // Generate genotype counts
+//                BasicDBObject genotypes = new BasicDBObject();
+//
+//                for (Genotype g : v.getGenotypes()) {
+//                    String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
+//                    genotypes.append(count, g.getCount());
+//                }
+//
+//                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf());
+//                mongoStats.append("mgf", v.getMgf());
+//                mongoStats.append("alleleMaf", v.getMafAllele());
+//                mongoStats.append("genotypeMaf", v.getMgfAllele());
+//                mongoStats.append("missAllele", v.getMissingAlleles());
+//                mongoStats.append("missGenotypes", v.getMissingGenotypes());
+//                mongoStats.append("mendelErr", v.getMendelinanErrors());
+//                mongoStats.append("casesPercentDominant", v.getCasesPercentDominant());
+//                mongoStats.append("controlsPercentDominant", v.getControlsPercentDominant());
+//                mongoStats.append("casesPercentRecessive", v.getCasesPercentRecessive());
+//                mongoStats.append("controlsPercentRecessive", v.getControlsPercentRecessive());
+//                mongoStats.append("genotypeCount", genotypes);
+//
+//                mongoStudy.put("stats", mongoStats);
+//            } else {
+//                // TODO aaleman: What if there are stats already?
+//            }
         }
 
         return true;
@@ -194,34 +200,37 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildEffectRaw(List<Variant> variants) {
         for (Variant v : variants) {
-            BasicDBObject mongoStudy = mongoMap.get(v.getHgvs());
+            BasicDBObject mongoVariant = mongoMap.get(v.getHgvs());
 
-            if (mongoStudy == null) {
+            if (!mongoVariant.containsField("chr")) {
                 // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
                 continue;
             }
 
             // Add effects to file
             if (!v.getEffect().isEmpty()) {
-                Set<String> effectsSet = new HashSet<>();
-                Set<String> genesSet = new HashSet<>();
+                BasicDBList effectsSet = new BasicDBList();
 
                 for (VariantEffect effect : v.getEffect()) {
-                    effectsSet.add(effect.getConsequenceTypeObo());
+                    effectsSet.add(getVariantEffectDBObject(effect));
                     addConsequenceType(effect.getConsequenceTypeObo());
-                    if (effect.getFeatureType() != null && effect.getFeatureType().equalsIgnoreCase("exon")) {
-                        genesSet.add(effect.getGeneName());
-                    }
                 }
                 
-                mongoStudy.put("effects", effectsSet);
-                mongoStudy.put("genes", genesSet);
+                mongoVariant.put("effects", effectsSet);
             }
         }
 
         return false;
     }
 
+    private BasicDBObject getVariantEffectDBObject(VariantEffect effect) {
+        BasicDBObject object = new BasicDBObject("so", effect.getConsequenceTypeObo());
+        if ("exon".equalsIgnoreCase(effect.getFeatureType())) {
+            object.append("geneName", effect.getGeneName());
+        }
+        return object;
+    }
+    
     @Override
     boolean buildBatchIndex(List<Variant> data) {
         variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
@@ -233,21 +242,18 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean writeBatch(List<Variant> data) {
         for (Variant v : data) {
-            BasicDBObject mongoStudy = mongoMap.get(v.getHgvs());
-
-            if (mongoStudy == null) {
-                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
-                continue;
+            BasicDBObject mongoVariant = mongoMap.get(v.getHgvs());
+            BasicDBObject query = new BasicDBObject("hgvs", v.getHgvs());
+            WriteResult wr;
+            
+            if (mongoVariant.containsField("chr")) { // Was fully built in this run because it didn't exist, and must be inserted
+                wr = variantCollection.insert(mongoVariant);
+            } else { // It existed previously, was not fully built in this run and only files need to be updated
+                BasicDBObject file = (BasicDBObject) ((BasicDBList) mongoVariant.get("files")).get(0);
+                BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", file));
+                wr = variantCollection.update(query, changes, true, false);
             }
             
-            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("files", mongoStudy));
-
-            BasicDBObject query = new BasicDBObject("hgvs", v.getHgvs()).append("id", v.getId());
-            query.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
-            query.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
-            query.append("type", v.getType().name());
-            WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
-
             if (!wr.getLastError().ok()) {
                 // TODO If not correct, retry?
                 return false;
