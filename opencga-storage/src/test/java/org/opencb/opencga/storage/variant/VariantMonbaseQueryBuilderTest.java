@@ -9,14 +9,6 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -26,8 +18,16 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import org.opencb.commons.bioformats.variant.VariantFactory;
-import org.opencb.commons.bioformats.variant.VariantSource;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFactory;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.containers.QueryResult;
+import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -57,23 +57,23 @@ public class VariantMonbaseQueryBuilderTest {
             // Monbase writer saves 5 records
             writer = new VariantVcfMonbaseDataWriter(study, tableName, credentials);
             assertTrue(writer.open());
-            List<String> sampleNames = Arrays.asList( "NA001", "NA002", "NA003" );
-            String[] fields1 = new String[] { "1", "100000", "rs1100000", "A", "T,G", "40", "PASS", 
-                "DP=5;AP=10;H2", "GT:DP", "1/1:4", "1/0:2", "0/0:3" };
-            String[] fields2 = new String[] {"1", "200000", "rs1200000", "G", "T", "30", "LowQual", 
-                "DP=2;AP=5", "GT:DP", "1/1:3", "1/1:1", "0/0:5" };
-            String[] fields3 = new String[] {"1", "300000", "rs1300000", "C", "T", "50", "PASS", 
-                "DP=1;AP=6", "GT:DP", "1/0:3", "0/1:1", "0/0:5" };
-            String[] fields4 = new String[] {"2", "100000", "rs2100000", "G", "A", "60", "STD_FILTER", 
-                "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5" };
-            String[] fields5 = new String[] {"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER", 
-                "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5" };
-            Variant rec1 = VariantFactory.createVariantFromVcf(sampleNames, fields1);
-            Variant rec2 = VariantFactory.createVariantFromVcf(sampleNames, fields2);
-            Variant rec3 = VariantFactory.createVariantFromVcf(sampleNames, fields3);
-            Variant rec4 = VariantFactory.createVariantFromVcf(sampleNames, fields4);
-            Variant rec5 = VariantFactory.createVariantFromVcf(sampleNames, fields5);
-        
+            List<String> sampleNames = Arrays.asList("NA001", "NA002", "NA003");
+            String[] fields1 = new String[]{"1", "100000", "rs1100000", "A", "T,G", "40", "PASS",
+                "DP=5;AP=10;H2", "GT:DP", "1/1:4", "1/0:2", "0/0:3"};
+            String[] fields2 = new String[]{"1", "200000", "rs1200000", "G", "T", "30", "LowQual",
+                "DP=2;AP=5", "GT:DP", "1/1:3", "1/1:1", "0/0:5"};
+            String[] fields3 = new String[]{"1", "300000", "rs1300000", "C", "T", "50", "PASS",
+                "DP=1;AP=6", "GT:DP", "1/0:3", "0/1:1", "0/0:5"};
+            String[] fields4 = new String[]{"2", "100000", "rs2100000", "G", "A", "60", "STD_FILTER",
+                "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5"};
+            String[] fields5 = new String[]{"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER",
+                "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5"};
+            Variant rec1 = VariantFactory.createVariantFromVcf(sampleNames, fields1).get(0);
+            Variant rec2 = VariantFactory.createVariantFromVcf(sampleNames, fields2).get(0);
+            Variant rec3 = VariantFactory.createVariantFromVcf(sampleNames, fields3).get(0);
+            Variant rec4 = VariantFactory.createVariantFromVcf(sampleNames, fields4).get(0);
+            Variant rec5 = VariantFactory.createVariantFromVcf(sampleNames, fields5).get(0);
+
             VariantStats stats1 = new VariantStats("1", 100000, "A", "T,G", 0.01, 0.30, "A", "A/T", 2, 0, 1, true, 0.02, 0.10, 0.30, 0.15);
             VariantStats stats2 = new VariantStats("1", 200000, "G", "T", 0.05, 0.20, "T", "T/T", 1, 1, 0, true, 0.05, 0.20, 0.20, 0.10);
             VariantStats stats3 = new VariantStats("1", 300000, "G", "T", 0.06, 0.20, "T", "T/G", 1, 1, 0, true, 0.08, 0.30, 0.30, 0.20);
@@ -84,7 +84,7 @@ public class VariantMonbaseQueryBuilderTest {
             rec3.setStats(stats3);
             rec4.setStats(stats4);
             rec5.setStats(stats5);
-            
+
             VariantEffect eff1 = new VariantEffect("1", 100000, "A", "T", "", "RP11-206L10.6",
                     "intron", "processed_transcript", "1", 714473, 739298, "1", "", "", "",
                     "ENSG00000237491", "ENST00000429505", "RP11-206L10.6", "SO:0001627",
@@ -138,7 +138,7 @@ public class VariantMonbaseQueryBuilderTest {
         Variant var3 = result.get(2);
 
         assertEquals("1", var1.getChromosome());
-        assertEquals(100000, var1.getPosition());
+        assertEquals(100000, var1.getStart());
         assertEquals("T,G", var1.getAlternate());
         assertEquals(3, var1.getSamplesData().size());
         assertNotNull(var1.getStats());
@@ -147,7 +147,7 @@ public class VariantMonbaseQueryBuilderTest {
         assertEquals(sampleNA002, var1.getSampleData("NA002"));
 
         assertEquals("1", var2.getChromosome());
-        assertEquals(200000, var2.getPosition());
+        assertEquals(200000, var2.getStart());
         assertEquals("T", var2.getAlternate());
         assertEquals(3, var2.getSamplesData().size());
         assertNotNull(var2.getStats());
@@ -155,7 +155,7 @@ public class VariantMonbaseQueryBuilderTest {
         assertEquals(1, var2.getStats().getMissingAlleles());
 
         assertEquals("1", var3.getChromosome());
-        assertEquals(300000, var3.getPosition());
+        assertEquals(300000, var3.getStart());
         assertEquals("T", var3.getAlternate());
         assertEquals(3, var3.getSamplesData().size());
         assertNotNull(var3.getStats());
@@ -180,7 +180,7 @@ public class VariantMonbaseQueryBuilderTest {
         sampleNA002.put("DP", "2");
 
         assertEquals("1", var1.getChromosome());
-        assertEquals(100000, var1.getPosition());
+        assertEquals(100000, var1.getStart());
         assertEquals("T,G", var1.getAlternate());
         assertEquals(3, var1.getSamplesData().size());
         assertNull(var1.getStats());
@@ -200,7 +200,7 @@ public class VariantMonbaseQueryBuilderTest {
         Variant var1 = result.get(0);
 
         assertEquals("1", var1.getChromosome());
-        assertEquals(100000, var1.getPosition());
+        assertEquals(100000, var1.getStart());
         assertEquals("T,G", var1.getAlternate());
         assertTrue(var1.getSamplesData().isEmpty());
         assertNotNull(var1.getStats());
@@ -221,7 +221,7 @@ public class VariantMonbaseQueryBuilderTest {
         assertEquals(3, result.size());
 
         for (Variant v : result) {
-            switch ((int) v.getPosition()) {
+            switch ((int) v.getStart()) {
                 case 100000:
                     assertEquals("1", v.getChromosome());
                     assertEquals("T,G", v.getAlternate());

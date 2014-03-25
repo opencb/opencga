@@ -1,12 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantSource;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantGlobalStats;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
 import java.net.UnknownHostException;
@@ -14,6 +8,12 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -21,11 +21,11 @@ import java.util.logging.Logger;
  */
 public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
-    private VariantSource source;
+    private VariantSource file;
 
     private MongoClient mongoClient;
     private DB db;
-    private DBCollection sourcesCollection;
+    private DBCollection filesCollection;
     private DBCollection variantCollection;
     private Map<String, BasicDBObject> mongoMap;
 
@@ -37,15 +37,15 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
     private Map<String, Integer> conseqTypes;
 
-    public VariantVcfMongoDataWriter(VariantSource source, String species, MongoCredentials credentials) {
+    public VariantVcfMongoDataWriter(VariantSource file, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
-        this.source = source;
+        this.file = file;
         this.credentials = credentials;
         this.mongoMap = new HashMap<>();
 
-        this.includeEffect(false);
+//        this.includeEffect(false);
         this.includeStats(false);
         this.includeSamples(false);
 
@@ -70,10 +70,10 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     public boolean pre() {
         // Mongo collection creation
-        sourcesCollection = db.getCollection("sources");
+        filesCollection = db.getCollection("files");
         variantCollection = db.getCollection("variants");
 
-        return variantCollection != null && sourcesCollection != null;
+        return variantCollection != null && filesCollection != null;
     }
 
     @Override
@@ -87,9 +87,9 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         if (this.includeStats) {
             buildStatsRaw(data);
         }
-        if (this.includeEffect) {
+//        if (this.includeEffect) {
             buildEffectRaw(data);
-        }
+//        }
         buildBatchIndex(data);
         return writeBatch(data);
     }
@@ -97,16 +97,13 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
-            query.append("sources.sourceId", source.getAlias());
+            BasicDBObject query = new BasicDBObject("hgvs", v.getHgvs());
+            query.append("files.fileId", file.getAlias());
 
             if (variantCollection.count(query) == 0) {
-                BasicDBObject mongoStudy = new BasicDBObject("sourceName", source.getName()).append("sourceId", source.getAlias());
-                mongoStudy.append("ref", v.getReference()).append("alt", v.getAltAlleles());
-
+                BasicDBObject mongoStudy = new BasicDBObject("fileName", file.getName()).append("fileId", file.getAlias());
+                
                 // Attributes
                 if (v.getAttributes().size() > 0) {
                     BasicDBObject info = null;
@@ -137,11 +134,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                     mongoStudy.put("samples", samples);
                 }
 
-                mongoMap.put(rowkey, mongoStudy);
+                mongoMap.put(v.getHgvs(), mongoStudy);
 
             } else {
                 // TODO What if there is the same position already?
-                System.out.println("Variant " + v.getChromosome() + ":" + v.getPosition() + " already found");
+                System.out.println("Variant " + v.getChromosome() + ":" + v.getStart() + "-" + v.getEnd() + " already found");
             }
         }
 
@@ -156,11 +153,10 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 continue;
             }
 
-            String rowkey = buildRowkey(variant.getChromosome(), String.valueOf(variant.getPosition()));
-            BasicDBObject mongoStudy = mongoMap.get(rowkey);
+            BasicDBObject mongoStudy = mongoMap.get(variant.getHgvs());
 
             if (mongoStudy == null) {
-                // TODO It means that the same position was already found in this source, so __for now__ it won't be processed again
+                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
                 continue;
             }
 
@@ -198,15 +194,14 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildEffectRaw(List<Variant> variants) {
         for (Variant v : variants) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-            BasicDBObject mongoStudy = mongoMap.get(rowkey);
+            BasicDBObject mongoStudy = mongoMap.get(v.getHgvs());
 
             if (mongoStudy == null) {
-                // TODO It means that the same position was already found in this source, so __for now__ it won't be processed again
+                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
                 continue;
             }
 
-            // Add effects to source
+            // Add effects to file
             if (!v.getEffect().isEmpty()) {
                 Set<String> effectsSet = new HashSet<>();
                 Set<String> genesSet = new HashSet<>();
@@ -218,6 +213,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                         genesSet.add(effect.getGeneName());
                     }
                 }
+                
                 mongoStudy.put("effects", effectsSet);
                 mongoStudy.put("genes", genesSet);
             }
@@ -228,26 +224,28 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
     @Override
     boolean buildBatchIndex(List<Variant> data) {
-        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("pos", 1));
-        variantCollection.ensureIndex(new BasicDBObject("sources.sourceId", 1));
+        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
+        variantCollection.ensureIndex(new BasicDBObject("hgvs", 1));
+        variantCollection.ensureIndex(new BasicDBObject("files.fileId", 1));
         return true;
     }
 
     @Override
     boolean writeBatch(List<Variant> data) {
         for (Variant v : data) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
-
-            BasicDBObject mongoStudy = mongoMap.get(rowkey);
+            BasicDBObject mongoStudy = mongoMap.get(v.getHgvs());
 
             if (mongoStudy == null) {
-                // TODO It means that the same position was already found in this source, so __for now__ it won't be processed again
+                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
                 continue;
             }
+            
+            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("files", mongoStudy));
 
-            BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("sources", mongoStudy));
-
-            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            BasicDBObject query = new BasicDBObject("hgvs", v.getHgvs()).append("id", v.getId());
+            query.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
+            query.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
+            query.append("type", v.getType().name());
             WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
 
             if (!wr.getLastError().ok()) {
@@ -269,7 +267,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 .append("authors", study.getAuthors())
                 .append("samples", study.getSamples())
                 .append("description", study.getDescription())
-                .append("sources", study.getSources());
+                .append("files", study.getSources());
 
         BasicDBObject cts = new BasicDBObject();
 
@@ -305,16 +303,16 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         studyMongo = studyMongo.append("metadata", metadataMongo);
 
         DBObject query = new BasicDBObject("name", study.getName());
-        WriteResult wr = sourcesCollection.update(query, studyMongo, true, false);
+        WriteResult wr = filesCollection.update(query, studyMongo, true, false);
 
-        sourcesCollection.ensureIndex(new BasicDBObject("name", 1));
+        filesCollection.ensureIndex(new BasicDBObject("name", 1));
 
         return wr.getLastError().ok(); // TODO Is this a proper return statement?
     }
 
     @Override
     public boolean post() {
-        writeStudy(source);
+        writeStudy(file);
         return true;
     }
 
@@ -324,27 +322,23 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         return true;
     }
 
-    private String buildRowkey(String chromosome, String position) {
-        return chromosome + "_" + position;
-    }
-
     private void addConsequenceType(String ct) {
         int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct) : 1;
         conseqTypes.put(ct, ctCount);
     }
 
     @Override
-    public void includeStats(boolean b) {
+    public final void includeStats(boolean b) {
         this.includeStats = b;
     }
 
     @Override
-    public void includeSamples(boolean b) {
+    public final void includeSamples(boolean b) {
         this.includeSamples = b;
     }
 
     @Override
-    public void includeEffect(boolean b) {
+    public final void includeEffect(boolean b) {
         this.includeEffect = b;
     }
 

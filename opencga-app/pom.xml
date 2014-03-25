@@ -32,6 +32,14 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>formats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>models</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>

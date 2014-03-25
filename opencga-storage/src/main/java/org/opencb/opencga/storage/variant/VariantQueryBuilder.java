@@ -1,16 +1,16 @@
 package org.opencb.opencga.storage.variant;
 
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 
 import java.util.List;
 import java.util.Map;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
+import org.opencb.commons.bioformats.variant.json.VariantInfo;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>

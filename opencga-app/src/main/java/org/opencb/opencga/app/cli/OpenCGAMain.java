@@ -10,15 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import org.apache.commons.cli.*;
-import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
-import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantSource;
-import org.opencb.commons.bioformats.variant.annotators.VariantAnnotator;
-import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnotator;
-import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
-import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
+import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
+import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantReader;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
@@ -27,7 +25,6 @@ import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
-import org.opencb.variant.lib.runners.tasks.VariantAnnotTask;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 
@@ -119,7 +116,7 @@ public class OpenCGAMain {
         formatter.printHelp("opencga-index",
                 "You must specify at least the datatype to store, the file to read from and the storage credentials. " +
                         "Please note that SQLite is the default storage backend.",
-                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true);
+                options, "\nFor more information or reporting a bug, please contact: opencb@googlegroups.com", true);
     }
 
     private static void indexAlignments(String study, Path filePath, String backend, Path credentialsPath, boolean includeCoverage) {

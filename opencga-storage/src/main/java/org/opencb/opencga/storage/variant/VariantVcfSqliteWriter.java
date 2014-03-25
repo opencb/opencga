@@ -7,14 +7,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.feature.Genotypes;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFactory;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.feature.Genotypes;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantFactory;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 
@@ -113,10 +113,10 @@ public class VariantVcfSqliteWriter implements VariantWriter {
                 List<VariantEffect> batchEffect = v.getEffect();
 
                 pstmt.setString(1, v.getChromosome());
-                pstmt.setLong(2, v.getPosition());
+                pstmt.setLong(2, v.getStart());
                 pstmt.setString(3, v.getId());
                 pstmt.setString(4, v.getReference());
-                pstmt.setString(5, Joiner.on(",").join(v.getAltAlleles()));
+                pstmt.setString(5, v.getAlternate());
                 pstmt.setDouble(6, (v.getAttribute("QUAL").equals(".") ? 0 : Double.valueOf(v.getAttribute("QUAL"))));
                 pstmt.setString(7, v.getAttribute("FILTER"));
                 pstmt.setString(8, info);

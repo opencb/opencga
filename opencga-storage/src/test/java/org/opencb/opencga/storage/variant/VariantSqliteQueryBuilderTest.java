@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
 import org.junit.*;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -13,6 +11,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.VariantSource;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>

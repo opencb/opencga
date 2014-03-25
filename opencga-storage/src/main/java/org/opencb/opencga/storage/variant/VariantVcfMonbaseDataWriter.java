@@ -13,12 +13,12 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantFactory;
-import org.opencb.commons.bioformats.variant.VariantSource;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFactory;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 /**
@@ -168,10 +168,10 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             // Insert indexes
             // TODO Track which ones were successful
             for (Variant v : data) {
-                String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+                String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getStart()));
                 BasicDBObject mongoStudy = mongoMap.get(rowkey);
                 BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("sources", mongoStudy));
-                BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+                BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getStart());
                 WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {
                     // TODO If not correct, retry?
@@ -188,16 +188,16 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
     @Override
     boolean buildBatchIndex(List<Variant> data) {
         for (Variant v : data) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getStart()));
             
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getStart());
             query.append("sources.sourceId", source.getAlias());
 
             if (variantCollection.count(query) == 0) {
                 // Create relationship variant-study for inserting in Mongo
                 BasicDBObject mongoStudy = new BasicDBObject("sourceId", source.getAlias()).append("sourceName", source.getName());
-                mongoStudy.append("ref", v.getReference()).append("alt", v.getAltAlleles());
+                mongoStudy.append("ref", v.getReference()).append("alt", v.getAlternate());
                 
                 // Add stats to study
                 VariantStats stats = v.getStats();
@@ -243,10 +243,10 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
     @Override
     boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
-            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
+            String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getStart()));
             
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getStart());
             query.put("sources.sourceId", source.getAlias());
 
             if (variantCollection.count(query) == 0) {

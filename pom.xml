@@ -45,6 +45,16 @@
                 <artifactId>opencga-storage</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>formats</artifactId>
+                <version>0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>models</artifactId>
+                <version>0.1</version>
+            </dependency>
 
             <!-- General dependencies -->
             <dependency>

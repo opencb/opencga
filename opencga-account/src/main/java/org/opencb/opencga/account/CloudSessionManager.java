@@ -26,15 +26,13 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.opencb.biodata.models.feature.Region;
 
-import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantMonbaseQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 

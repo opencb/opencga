@@ -2,25 +2,17 @@ package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.util.*;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.mapreduce.RowCounter;
-import org.apache.hadoop.mapreduce.Counter;
-import org.apache.hadoop.mapreduce.Job;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantFactory;
-import org.opencb.commons.bioformats.variant.VariantSource;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFactory;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
@@ -72,11 +64,11 @@ public class VariantVcfMonbaseDataWriterTest {
             "DP=3;AP=8", "GT:DP", "1/1:3", "1/0:1", "0/0:5" };
         String[] fields5 = new String[] {"3", "200000", "rs3200000", "G", "C", "80", "LowQual;STD_FILTER", 
             "DP=2;AP=6", "GT:DP", "1/0:3", "1/1:1", "0/1:5" };
-        Variant rec1 = VariantFactory.createVariantFromVcf(sampleNames, fields1);
-        Variant rec2 = VariantFactory.createVariantFromVcf(sampleNames, fields2);
-        Variant rec3 = VariantFactory.createVariantFromVcf(sampleNames, fields3);
-        Variant rec4 = VariantFactory.createVariantFromVcf(sampleNames, fields4);
-        Variant rec5 = VariantFactory.createVariantFromVcf(sampleNames, fields5);
+        Variant rec1 = VariantFactory.createVariantFromVcf(sampleNames, fields1).get(0);
+        Variant rec2 = VariantFactory.createVariantFromVcf(sampleNames, fields2).get(0);
+        Variant rec3 = VariantFactory.createVariantFromVcf(sampleNames, fields3).get(0);
+        Variant rec4 = VariantFactory.createVariantFromVcf(sampleNames, fields4).get(0);
+        Variant rec5 = VariantFactory.createVariantFromVcf(sampleNames, fields5).get(0);
         
 //        VariantStats stats1 = new VariantStats("1", 100000, "A", "T,G", 0.01, 0.30, "A", "A/T", 2, 0, 1, true, 0.02, 0.10, 0.30, 0.15);
 //        VariantStats stats2 = new VariantStats("1", 200000, "G", "T", 0.05, 0.20, "T", "T/T", 1, 1, 0, true, 0.05, 0.30, 0.30, 0.10);

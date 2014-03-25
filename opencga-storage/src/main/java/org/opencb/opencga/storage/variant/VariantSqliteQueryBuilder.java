@@ -5,14 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.thrift.generated.Hbase;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
@@ -29,6 +24,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -146,7 +145,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                     ref = elem.getString("ref");
                     alt = elem.getString("alt");
 
-                    variant = new Variant(chr, pos, ref, alt);
+                    variant = new Variant(chr, pos, pos, ref, alt);
 
                     variant.setId(elem.getString("id"));
                     variant.setFormat(elem.getString("format"));
