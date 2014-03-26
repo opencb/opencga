@@ -52,5 +52,5 @@ message Header {
         required uint32 maxValue = 2;
     }
     repeated Region regions = 1;
-    optional string SamHeader = 2;
+    optional bytes SamHeader = 2;
 }

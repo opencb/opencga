@@ -17,6 +17,8 @@ import java.util.List;
  * Time: 6:20 PM
  * To change this template use File | Settings | File Templates.
  */
+
+@Deprecated
 public class AlignmentCoverageSqliteDataWriter implements AlignmentCoverageDataWriter {
 
     private Statement stmt;

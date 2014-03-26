@@ -37,6 +37,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     AlignmentProto.AlignmentRegion.Builder alignmentRegionBuilder;
 
     long index = 0;
+    String chromosome = "";
 
 
 
@@ -107,43 +108,42 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
     @Override
     public boolean post() {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
+        flush();
+        return true;
     }
 
     @Override
     public boolean write(AlignmentRegion alignmentRegion) {
-        Put put = null;    //All the records with same rowKey
-        String rowKey;
-        String value;
 
+        String value;
+        Alignment firstAlignment = alignmentRegion.getAlignments().get(0);
+
+        if(firstAlignment == null){
+            return false;
+        }
 
         if(index == 0){
-            index = alignmentRegion.getStart() >> 8;// start / 256
-            alignmentRegionBuilder = AlignmentProto.AlignmentRegion.newBuilder();
+            init(firstAlignment);
+
+            globalHeader();
+            chromosomeHeader();
+        }
+        if(!chromosome.equals(firstAlignment.getChromosome())){
+            flush();
+            init(firstAlignment);
+            chromosomeHeader();
         }
 
 
         for(Alignment alignment : alignmentRegion.getAlignments()){
-
             if(index < (alignment.getStart() >> 8)){     //create new put() and new rowKey
-                rowKey = alignment.getChromosome() + "_" + String.format("%07d", index);
-                System.out.println("Creamos un Put() con rowKey " + rowKey);
-
-                put = new Put(Bytes.toBytes(rowKey));
-                if(alignmentRegionBuilder != null){
-                    put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), alignmentRegionBuilder.build().toByteArray());
-                }
-                puts.add(put);
-
-                index = alignment.getStart() >> 8;
-                alignmentRegionBuilder = AlignmentProto.AlignmentRegion.newBuilder();
+               flush();
+               init(alignment);
             }
 
             alignmentRegionBuilder.addAlignmentRecords(AlignmentProtoHelper.toProto(alignment, index << 8));
 
         }
-
-
 
 
         try {
@@ -157,6 +157,33 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
         return true;
 
+    }
+
+    private void globalHeader() { //TODO jj:
+        //To change body of created methods use File | Settings | File Templates.
+    }
+
+    private void chromosomeHeader() { //TODO jj:
+        //To change body of created methods use File | Settings | File Templates.
+    }
+
+
+
+    private void init(Alignment alignment){
+        index = alignment.getStart() >> 8;
+        chromosome = alignment.getChromosome();
+        alignmentRegionBuilder = AlignmentProto.AlignmentRegion.newBuilder();
+    }
+
+    private void flush(){
+        String rowKey = chromosome + "_" + String.format("%07d", index);
+        //System.out.println("Creamos un Put() con rowKey " + rowKey);
+
+        Put put = new Put(Bytes.toBytes(rowKey));
+        if(alignmentRegionBuilder != null){
+            put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), alignmentRegionBuilder.build().toByteArray());
+        }
+        puts.add(put);
     }
 
     @Override

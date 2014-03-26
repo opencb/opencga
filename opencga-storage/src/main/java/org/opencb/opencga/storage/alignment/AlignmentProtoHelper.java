@@ -81,7 +81,7 @@ public class AlignmentProtoHelper {
                 .setInferredInsertSize(alignment.getInferredInsertSize())
                 .setLen(alignment.getLength());
 
-        for(Alignment.AlignmentDifference alignmentDifference : alignment.getDifferences()){    // alignment differences
+        for(Alignment.AlignmentDifference alignmentDifference : alignment.getDifferences()){
             AlignmentProto.Difference.DifferenceOperator operator = AlignmentProto.Difference.DifferenceOperator.MISMATCH;
             switch(alignmentDifference.getOp()){
                 case Alignment.AlignmentDifference.DELETION:
@@ -173,5 +173,12 @@ public class AlignmentProtoHelper {
         }
 
         return offset;
+    }
+
+    public static long getPositionFromRowkey(String rowKey){
+        return Long.valueOf(rowKey.split("_")[1]) << 8;
+    }
+    public static String getChromosomeFromRowkey(String rowKey){
+        return rowKey.split("_")[0];
     }
 }
