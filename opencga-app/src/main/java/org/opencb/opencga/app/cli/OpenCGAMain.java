@@ -19,6 +19,7 @@ import org.opencb.commons.bioformats.variant.annotators.VariantAnnotator;
 import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnotator;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantJsonDataWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
@@ -45,7 +46,7 @@ public class OpenCGAMain {
         options.addOption(OptionFactory.createOption("help", "h", "Print this message", false, false));
 
         options.addOption(OptionFactory.createOption("alias", "a", "Unique ID for the file to be uploaded", true, true));
-        options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default) or monbase", false, true));
+        options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default), mongo, monbase, json or json-gzip", false, true));
         options.addOption(OptionFactory.createOption("credentials", "c", "Path to the file where the backend credentials are stored", true, true));
         options.addOption(OptionFactory.createOption("datatype", "d", "Datatype to be stored: alignments (BAM) or variants (VCF)", true, true));
         options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
@@ -120,7 +121,8 @@ public class OpenCGAMain {
         formatter.printHelp("opencga-index",
                 "You must specify at least the datatype to store, the file to read from and the storage credentials. " +
                         "Please note that SQLite is the default storage backend.",
-                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true);
+                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true
+        );
     }
 
     private static void indexAlignments(String study, Path filePath, String backend, Path credentialsPath, boolean includeCoverage) {
@@ -141,9 +143,6 @@ public class OpenCGAMain {
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
 
-        List<VariantAnnotator> annots = new ArrayList<>();
-        annots.add(new VariantControlMongoAnnotator());
-
         List<Task<Variant>> taskList = new SortedList<>();
 
         if (backend.equalsIgnoreCase("sqlite")) {
@@ -155,7 +154,12 @@ public class OpenCGAMain {
         } else if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
             writers.add(new VariantVcfMongoDataWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
+        } else if (backend.equalsIgnoreCase("json")) {
+            writers.add(new VariantJsonDataWriter(source, "out.json"));
+        } else if (backend.equalsIgnoreCase("json-gzip")) {
+            writers.add(new VariantJsonDataWriter(source, "out.json.gz", true));
         }
+
 
         if (includeEffect) {
             taskList.add(new VariantEffectTask());
@@ -163,7 +167,6 @@ public class OpenCGAMain {
 
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, source));
-            taskList.add(new VariantAnnotTask(annots));
         }
 
         for (VariantWriter variantWriter : writers) {
