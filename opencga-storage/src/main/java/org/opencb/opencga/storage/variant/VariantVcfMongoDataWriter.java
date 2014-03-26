@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
@@ -14,6 +17,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.lib.auth.MongoCredentials;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -21,6 +25,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
  */
 public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
+    public static final int CHUNK_SIZE_SMALL = 1000;
+    public static final int CHUNK_SIZE_BIG = 10000;
+    
     private VariantSource file;
 
     private MongoClient mongoClient;
@@ -28,6 +35,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     private DBCollection filesCollection;
     private DBCollection variantCollection;
     private Map<String, BasicDBObject> mongoMap;
+    private Map<String, BasicDBObject> mongoFileMap;
 
     private MongoCredentials credentials;
 
@@ -36,7 +44,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     private boolean includeSamples;
 
     private Map<String, Integer> conseqTypes;
-
+    
     public VariantVcfMongoDataWriter(VariantSource file, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
@@ -44,6 +52,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         this.file = file;
         this.credentials = credentials;
         this.mongoMap = new HashMap<>();
+        this.mongoFileMap = new HashMap<>();
 
         conseqTypes = new LinkedHashMap<>();
     }
@@ -138,7 +147,9 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
              
             mongoFiles.add(mongoFile);
             mongoVariant.append("files", mongoFiles);
+            
             mongoMap.put(rowkey, mongoVariant);
+            mongoFileMap.put(rowkey, mongoFile);
         }
 
         return true;
@@ -149,6 +160,12 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         BasicDBObject object = new BasicDBObject("_id", rowkey).append("id", v.getId()).append("type", v.getType().name());
         object.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
         object.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
+        
+        // ChunkID (1k and 10k)
+        String chunkSmall = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_SMALL + "_" + CHUNK_SIZE_SMALL / 1000 + "k";
+        String chunkBig = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_BIG + "_" + CHUNK_SIZE_BIG / 1000 + "k";
+        BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
+        object.append("chunkId", chunkIds);
         
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
@@ -164,45 +181,35 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     
     @Override
     boolean buildStatsRaw(List<Variant> data) {
-        for (Variant variant : data) {
-//            VariantStats v = variant.getStats();
-//            if (v == null) {
-//                continue;
-//            }
-//
-//            BasicDBObject mongoStudy = mongoMap.get(variant.getHgvs());
-//
-//            if (mongoStudy == null) {
-//                // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
-//                continue;
-//            }
-//
-//            if (!mongoStudy.containsField("stats")) {
-//                // Generate genotype counts
-//                BasicDBObject genotypes = new BasicDBObject();
-//
-//                for (Genotype g : v.getGenotypes()) {
-//                    String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
-//                    genotypes.append(count, g.getCount());
-//                }
-//
-//                BasicDBObject mongoStats = new BasicDBObject("maf", v.getMaf());
-//                mongoStats.append("mgf", v.getMgf());
-//                mongoStats.append("alleleMaf", v.getMafAllele());
-//                mongoStats.append("genotypeMaf", v.getMgfAllele());
-//                mongoStats.append("missAllele", v.getMissingAlleles());
-//                mongoStats.append("missGenotypes", v.getMissingGenotypes());
-//                mongoStats.append("mendelErr", v.getMendelinanErrors());
-//                mongoStats.append("casesPercentDominant", v.getCasesPercentDominant());
-//                mongoStats.append("controlsPercentDominant", v.getControlsPercentDominant());
-//                mongoStats.append("casesPercentRecessive", v.getCasesPercentRecessive());
-//                mongoStats.append("controlsPercentRecessive", v.getControlsPercentRecessive());
-//                mongoStats.append("genotypeCount", genotypes);
-//
-//                mongoStudy.put("stats", mongoStats);
-//            } else {
-//                // TODO aaleman: What if there are stats already?
-//            }
+        for (Variant v : data) {
+            VariantStats vs = v.getStats();
+            if (vs == null) {
+                continue;
+            }
+
+            // Generate genotype counts
+            BasicDBObject genotypes = new BasicDBObject();
+
+            for (Genotype g : vs.getGenotypes()) {
+                String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
+                genotypes.append(count, g.getCount());
+            }
+
+            BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
+            mongoStats.append("mgf", vs.getMgf());
+            mongoStats.append("alleleMaf", vs.getMafAllele());
+            mongoStats.append("genotypeMaf", vs.getMgfAllele());
+            mongoStats.append("missAllele", vs.getMissingAlleles());
+            mongoStats.append("missGenotypes", vs.getMissingGenotypes());
+            mongoStats.append("mendelErr", vs.getMendelinanErrors());
+            mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
+            mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
+            mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
+            mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
+            mongoStats.append("genotypeCount", genotypes);
+
+            BasicDBObject mongoFile = mongoFileMap.get(buildRowkey(v));
+            mongoFile.put("stats", mongoStats);
         }
 
         return true;
@@ -236,7 +243,8 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
     private BasicDBObject getVariantEffectDBObject(VariantEffect effect) {
         BasicDBObject object = new BasicDBObject("so", effect.getConsequenceTypeObo());
-        if ("exon".equalsIgnoreCase(effect.getFeatureType())) {
+        object.append("featureId", effect.getFeatureId());
+        if (effect.getGeneName() != null && !effect.getGeneName().isEmpty()) {
             object.append("geneName", effect.getGeneName());
         }
         return object;
@@ -257,11 +265,12 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             BasicDBObject query = new BasicDBObject("_id", rowkey);
             WriteResult wr;
             
-            if (mongoVariant.containsField("chr")) { // Was fully built in this run because it didn't exist, and must be inserted
+            if (mongoVariant.containsField("chr")) {
+                // Was fully built in this run because it didn't exist, and must be inserted
                 wr = variantCollection.insert(mongoVariant);
             } else { // It existed previously, was not fully built in this run and only files need to be updated
-                BasicDBObject file = (BasicDBObject) ((BasicDBList) mongoVariant.get("files")).get(0);
-                BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", file));
+                BasicDBObject mongoFile = mongoFileMap.get(rowkey);
+                BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
                 wr = variantCollection.update(query, changes, true, false);
             }
             
