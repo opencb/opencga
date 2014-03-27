@@ -10,6 +10,7 @@ import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -181,7 +182,15 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
         Put put = new Put(Bytes.toBytes(rowKey));
         if(alignmentRegionBuilder != null){
-            put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), alignmentRegionBuilder.build().toByteArray());
+            byte[] compress;
+            try {
+                compress = Snappy.compress(alignmentRegionBuilder.build().toByteArray());
+            } catch (IOException e) {
+                System.out.println("this AlignmentProto.AlignmentRegion could not be compressed by snappy");
+                e.printStackTrace();  // TODO jj handle properly
+                return;
+            }
+            put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
         }
         puts.add(put);
     }
