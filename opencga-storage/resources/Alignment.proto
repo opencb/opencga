@@ -2,34 +2,45 @@ package org.opencb.opencga.storage.alignment;
 option java_outer_classname = "AlignmentProto";
 
 message Difference {
-	enum DifferenceOperator {
-		INSERTION = 1;
-		DELETION = 2;
-		MISMATCH = 3;
-		SKIPPED_REGION = 4;
-		SOFT_CLIPPING = 5;
-		HARD_CLIPPING = 6;
-		PADDING = 7;
-	};
-	required DifferenceOperator operator = 1;
-	required uint32 pos = 2;
-	required uint32 length = 3;
-	optional bytes sequence = 4; 
+    enum DifferenceOperator {
+        INSERTION = 1;
+        DELETION = 2;
+        MISMATCH = 3;
+        SKIPPED_REGION = 4;
+        SOFT_CLIPPING = 5;
+        HARD_CLIPPING = 6;
+        PADDING = 7;
+    };
+    required DifferenceOperator operator = 1;
+    required uint32 pos = 2;
+    required uint32 length = 3;
+    optional bytes sequence = 4;
 }
+
+message MyMap {
+    message Pair {
+        required string key = 1;
+        required string value = 2;
+    }
+    repeated Pair pair = 1;
+}
+
 
 message AlignmentRecord {
-	required string name = 1;
-	required uint32 flags = 2;
-	required uint32 pos = 3; // position relative to the alignment region
-	required uint32 mapq = 4;
-	required string rnext = 5;
-	required sint32 relativePnext = 6;
-	required uint32 len = 7;
-	repeated Difference diffs = 8;
-	required string qualities = 9;
-	required sint32 inferredInsertSize = 10;
+    required string name = 1;
+    required uint32 pos = 2; // position relative to the alignment region
+    required uint32 len = 3;
+    required uint32 mapq = 4;
+    required string qualities = 5;
+    required string rnext = 6;
+    required sint32 relativePnext = 7;
+    required sint32 inferredInsertSize = 8;
+    repeated Difference diffs = 9;
+    optional MyMap tags = 10;
+    required uint32 flags = 11;
 }
 
+// TODO unclipped start and end?
 message AlignmentRegion {
     repeated AlignmentRecord alignmentRecords = 1;
 }
