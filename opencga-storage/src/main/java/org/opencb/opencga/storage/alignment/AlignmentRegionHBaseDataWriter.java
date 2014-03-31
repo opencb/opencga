@@ -36,7 +36,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
     AlignmentProto.AlignmentRegion.Builder alignmentRegionBuilder;
 
-    long index = 0;
+    int index = 0;
     String chromosome = "";
 
 
@@ -109,6 +109,14 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     @Override
     public boolean post() {
         flush();
+        try {
+            System.out.println("Puteamos la tabla. " + puts.size());
+            table.put(puts);
+            puts.clear();
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return false;
+        }
         return true;
     }
 
@@ -125,18 +133,21 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         if(index == 0){
             init(firstAlignment);
 
-            globalHeader();
-            chromosomeHeader();
+           // globalHeader();
+           // chromosomeHeader();
         }
+        System.out.println("Chromosome: " + alignmentRegion.getChromosome()
+                + " size: " + alignmentRegion.getAlignments().size()
+                + " last: " + alignmentRegion.getAlignments().get(alignmentRegion.getAlignments().size()-1).getStart());
         if(!chromosome.equals(firstAlignment.getChromosome())){
             flush();
-            init(firstAlignment);
             chromosomeHeader();
+            init(firstAlignment);
         }
 
 
         for(Alignment alignment : alignmentRegion.getAlignments()){
-            if(index < (alignment.getStart() >> 8)){     //create new put() and new rowKey
+            if(index < (alignment.getStart() >> 8)){    //flush and reset
                flush();
                init(alignment);
             }
@@ -161,17 +172,29 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         //To change body of created methods use File | Settings | File Templates.
     }
 
-    private void chromosomeHeader() { //TODO jj:
-        //To change body of created methods use File | Settings | File Templates.
-    }
+    private void chromosomeHeader() { //Write Chromosome header AFTER write and flush all the chromosome
+        //ROW_KEY = header_<chromosome>
+        String rowKey = "header_" + chromosome;
+        System.out.println("Header : " + rowKey);
 
+        Put put = new Put(Bytes.toBytes(rowKey));
+        AlignmentProto.Header.Region.Builder headerBuilder = AlignmentProto.Header.Region.newBuilder()
+                .setChromosomeName(chromosome)
+                .setMaxValue(index);
+        put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), headerBuilder.build().toByteArray());
+
+        puts.add(put);
+
+    }
 
 
     private void init(Alignment alignment){
-        index = alignment.getStart() >> 8;
+        index = (int)(alignment.getStart() >> 8);
         chromosome = alignment.getChromosome();
         alignmentRegionBuilder = AlignmentProto.AlignmentRegion.newBuilder();
     }
+
+
 
     private void flush(){
         String rowKey = chromosome + "_" + String.format("%07d", index);
