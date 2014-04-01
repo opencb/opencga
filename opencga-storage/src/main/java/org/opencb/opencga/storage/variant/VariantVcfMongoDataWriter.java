@@ -73,7 +73,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         try {
             // Mongo configuration
             ServerAddress address = new ServerAddress(credentials.getMongoHost(), credentials.getMongoPort());
-            mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
+            if (credentials.getMongoCredentials() != null) {
+                mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
+            } else {
+                mongoClient = new MongoClient(address);
+            }
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
@@ -268,8 +272,9 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     
     @Override
     boolean buildBatchIndex(List<Variant> data) {
-        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
-        variantCollection.ensureIndex(new BasicDBObject("files.fileId", 1));
+//        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
+        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1));
+        variantCollection.ensureIndex(new BasicDBObject("chunkIds", 1));
         return true;
     }
 

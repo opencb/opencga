@@ -64,7 +64,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
 
     @Override
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, String sourceId, QueryOptions options) {
+    public QueryResult<Variant> getAllVariantsByRegionAndStudy(Region region, String sourceId, QueryOptions options) {
         Long start, end, dbstart, dbend;
         start = System.currentTimeMillis();
         QueryResult<Variant> queryResult = new QueryResult<>(
@@ -171,7 +171,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, String sourceId, QueryOptions options) {
         List<QueryResult> allResults = new LinkedList<>();
         for (Region r : regions) {
-            QueryResult queryResult = getAllVariantsByRegion(r, sourceId, options);
+            QueryResult queryResult = getAllVariantsByRegionAndStudy(r, sourceId, options);
             allResults.add(queryResult);
         }
         return allResults;

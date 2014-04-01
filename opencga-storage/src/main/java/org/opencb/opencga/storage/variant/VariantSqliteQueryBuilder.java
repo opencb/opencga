@@ -58,7 +58,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
      * @return
      */
     @Override
-    public QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
+    public QueryResult getAllVariantsByRegionAndStudy(Region region, String studyName, QueryOptions options) {
 
         Long start, end, dbStart, dbEnd;
         start = System.currentTimeMillis();

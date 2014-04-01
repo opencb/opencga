@@ -70,7 +70,7 @@ public class VariantSqliteQueryBuilderTest extends GenericTest {
         SqliteCredentials sc = new SqliteCredentials(Paths.get(outputFile));
         VariantQueryBuilder vqb = new VariantSqliteQueryBuilder(sc);
 
-        QueryResult qr = vqb.getAllVariantsByRegion(r, "", qo);
+        QueryResult qr = vqb.getAllVariantsByRegionAndStudy(r, "", qo);
         System.out.println(qr);
 
 

@@ -50,7 +50,8 @@ public class VariantWSServer extends GenericWSServer {
                                  @DefaultValue("25") @PathParam("limit") String limit) {
         return null;
     }
-    
+
+/*   
     @GET
     @Path("/variantsMongo")
     public Response getVariantsMongo() {
@@ -109,7 +110,7 @@ public class VariantWSServer extends GenericWSServer {
 
         return createOkResponse(queryResult);
     }
-/*
+    
     @POST
     @Path("/effects")
     @Consumes("application/x-www-form-urlencoded")
