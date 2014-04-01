@@ -1,16 +1,10 @@
 package org.opencb.opencga.storage.variant;
 
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.QueryOptions;
-
 import java.util.List;
-import java.util.Map;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.effect.VariantEffect;
-import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -41,7 +35,7 @@ public interface VariantQueryBuilder {
      */
     QueryResult getAllVariantsByRegionAndStudy(Region region, String studyName, QueryOptions options);
 
-    List<QueryResult> getAllVariantsByRegionList(List<Region> region, String studyName, QueryOptions options);
+    List<QueryResult> getAllVariantsByRegionListAndStudy(List<Region> region, String studyName, QueryOptions options);
 
     QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax);
 

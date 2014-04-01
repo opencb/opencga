@@ -1,106 +1,59 @@
 package org.opencb.opencga.storage.variant;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import com.mongodb.*;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.WebResource;
-import org.apache.commons.lang.mutable.MutableInt;
-import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-
-import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.effect.VariantEffect;
-import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.mongodb.MongoDBCollection;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.lib.auth.MongoCredentials;
 
 /**
- * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
-    private final MongoClient mongoClient;
-    private final DB db;
+    private final MongoDataStoreManager mongoManager;
+    private final MongoDataStore db;
 
     public VariantMongoQueryBuilder(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
-        mongoClient = new MongoClient(credentials.getMongoHost());
-        db = mongoClient.getDB(credentials.getMongoDbName());
+        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
+        db = mongoManager.get(credentials.getMongoDbName());
     }
 
     @Override
     public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
-        Long start, end, dbstart, dbend;
-        start = System.currentTimeMillis();
-        QueryResult<DBObject> queryResult = new QueryResult<>(
-                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
-
         List<String> chunkIds = getChunkIds(region);
-        
-        dbstart = System.currentTimeMillis();
-        dbend = System.currentTimeMillis();
-        queryResult.setDbTime(dbend - dbstart);
+        MongoDBCollection coll = db.getCollection("variants");
 
-        DBCollection coll = db.getCollection("variants");
-
-        // Iterate over results and, optionally, their samples and statistics
         BasicDBObject query = new BasicDBObject("chunkIds", new BasicDBObject("$in", chunkIds));
         query.append("end", new BasicDBObject("$gte", region.getStart())).append("start", new BasicDBObject("$lte", region.getEnd()));
-        List<DBObject> results = coll.find(query).toArray();
+        QueryResult queryResult = coll.find(query, options);
         
-        end = System.currentTimeMillis();
-        queryResult.setDbTime(end - dbstart);
-
-        queryResult.setResult(results);
-        queryResult.setNumResults(results.size());
-        end = System.currentTimeMillis();
-        queryResult.setTime(end - start);
         return queryResult;
     }
 
     @Override
     public QueryResult getAllVariantsByRegionAndStudy(Region region, String studyName, QueryOptions options) {
-        Long start, end, dbstart, dbend;
-        start = System.currentTimeMillis();
-        QueryResult<DBObject> queryResult = new QueryResult<>(
-                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
-
         List<String> chunkIds = getChunkIds(region);
-        
-        dbstart = System.currentTimeMillis();
-        dbend = System.currentTimeMillis();
-        queryResult.setDbTime(dbend - dbstart);
+        MongoDBCollection coll = db.getCollection("variants");
 
-        DBCollection coll = db.getCollection("variants");
-
-        // Iterate over results and, optionally, their samples and statistics
         BasicDBObject query = new BasicDBObject("files.studyId", studyName);
         query.append("chunkIds", new BasicDBObject("$in", chunkIds));
         query.append("end", new BasicDBObject("$gte", region.getStart())).append("start", new BasicDBObject("$lte", region.getEnd()));
-        List<DBObject> results = coll.find(query).toArray();
+        QueryResult queryResult = coll.find(query, options);
         
-        end = System.currentTimeMillis();
-        queryResult.setDbTime(end - dbstart);
-
-        queryResult.setResult(results);
-        queryResult.setNumResults(results.size());
-        end = System.currentTimeMillis();
-        queryResult.setTime(end - start);
         return queryResult;
     }
 
     @Override
-    public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, String studyName, QueryOptions options) {
+    public List<QueryResult> getAllVariantsByRegionListAndStudy(List<Region> regions, String studyName, QueryOptions options) {
         List<QueryResult> allResults = new LinkedList<>();
         for (Region r : regions) {
             QueryResult queryResult = getAllVariantsByRegionAndStudy(r, studyName, options);
@@ -131,7 +84,8 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
     @Override
     public boolean close() {
-        mongoClient.close();
+//        mongoClient.close();
+        
         return true;
     }
 

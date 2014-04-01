@@ -55,6 +55,16 @@
                 <artifactId>models</artifactId>
                 <version>0.1</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-core</artifactId>
+                <version>0.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-mongodb</artifactId>
+                <version>0.1.0</version>
+            </dependency>
 
             <!-- General dependencies -->
             <dependency>

@@ -20,6 +20,14 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-lib</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-mongodb</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>

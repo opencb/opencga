@@ -12,10 +12,9 @@ import static org.junit.Assert.assertEquals;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
@@ -72,29 +71,29 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         
         // Basic queries
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("1:1000000-2000000"), study.getAlias(), null);
-        assertEquals(3, queryResult.getResult().size());
+        assertEquals(3, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("1:10000000-20000000"), study.getAlias(), null);
-        assertEquals(11, queryResult.getResult().size());
+        assertEquals(11, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("3:1-200000000"), study.getAlias(), null);
-        assertEquals(50, queryResult.getResult().size());
+        assertEquals(50, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("X:1-200000000"), study.getAlias(), null);
-        assertEquals(11, queryResult.getResult().size());
+        assertEquals(11, queryResult.getNumResults());
         
         // Exactly in the limits
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238441-7980390"), study.getAlias(), null);
-        assertEquals(5, queryResult.getResult().size());
+        assertEquals(5, queryResult.getNumResults());
         
         // Just inside the limits
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238440-7980391"), study.getAlias(), null);
-        assertEquals(5, queryResult.getResult().size());
+        assertEquals(5, queryResult.getNumResults());
         
         // Just outside the limits
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238441-7980389"), study.getAlias(), null);
-        assertEquals(4, queryResult.getResult().size());
+        assertEquals(4, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238442-7980390"), study.getAlias(), null);
-        assertEquals(4, queryResult.getResult().size());
+        assertEquals(4, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238442-7980389"), study.getAlias(), null);
-        assertEquals(3, queryResult.getResult().size());
+        assertEquals(3, queryResult.getNumResults());
     }
 
 //    @Test
