@@ -84,8 +84,7 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
     @Override
     public boolean close() {
-//        mongoClient.close();
-        
+        db.close();
         return true;
     }
 
