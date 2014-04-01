@@ -41,7 +41,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         db = mongoClient.getDB(credentials.getMongoDbName());
     }
 
-
     @Override
     public QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
         Long start, end, dbstart, dbend;
@@ -53,7 +52,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         boolean includeSamples;
         boolean includeStats;
         boolean includeEffects;
-
 
         if (!options.containsKey("samples") && !options.containsKey("stats") && !options.containsKey("effects")) {
             includeSamples = true;
@@ -76,9 +74,7 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
         DBCollection coll = db.getCollection("variants");
 
-
         // Iterate over results and, optionally, their samples and statistics
-
         DBObject query = new BasicDBObject();
         DBObject match = new BasicDBObject("studies.studyId", studyName);
         query.put("$match", match);
@@ -97,10 +93,7 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         System.out.println(match2);
         AggregationOutput cursor = coll.aggregate(query, unwind, match2);
 
-
         //  db.variants.aggregate({ "$match" : { "studies.studyId" : "test9"}}, { "$unwind" : "$studies"} , { "$match" : { "studies.studyId" : "test9"}} ,{$skip: 900},  {$limit: 5})
-
-
         for (DBObject obj : cursor.results()) {
             results.add(obj);
         }
@@ -203,7 +196,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
         Map<String, List<String>> sampleGenotypes = processSamplesGT(options);
 
-
         System.out.println("map = " + options);
 
         if (options.containsKey("region_list") && !options.get("region_list").equals("")) {
@@ -300,7 +292,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
             cursor = coll.find(query).skip(start).limit(limit);
         }
 
-
         count.setValue(cursor.count());
 
         queryResult.setDbTime(dbStart - System.currentTimeMillis());
@@ -334,10 +325,10 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                     vs.setMaf((float) stats.getDouble("maf"));
                     vs.setMgf((float) stats.getDouble("mgf"));
                     vs.setMafAllele(stats.getString("alleleMaf"));
-                    vs.setMgfAllele(stats.getString("genotypeMaf"));
+                    vs.setMgfGenotype(stats.getString("genotypeMaf"));
                     vs.setMissingAlleles(stats.getInt("missAllele"));
                     vs.setMissingGenotypes(stats.getInt("missGenotypes"));
-                    vs.setMendelinanErrors(stats.getInt("mendelErr"));
+                    vs.setMendelianErrors(stats.getInt("mendelErr"));
                     vs.setCasesPercentDominant((float) stats.getDouble("casesPercentDominant"));
                     vs.setControlsPercentDominant((float) stats.getDouble("controlsPercentDominant"));
                     vs.setCasesPercentRecessive((float) stats.getDouble("casesPercentRecessive"));
@@ -370,7 +361,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                         String genes = Joiner.on(",").join(genesList.iterator());
                         vi.addGenes(genes);
                     }
-
 
                     if (study.containsField("attributes")) {
 
@@ -441,7 +431,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
         }
 
-
         return res;
     }
 
@@ -470,7 +459,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                 break;
         }
 
-
         return res;
     }
 
@@ -484,7 +472,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         ObjectMapper mapper = new ObjectMapper();
 
         String response = webResource.path(genes).path("info").queryParam("of", "json").get(String.class);
-
 
         try {
             JsonNode actualObj = mapper.readTree(response);
@@ -507,7 +494,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
                 }
             }
-
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -538,7 +524,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                     samplesGenotypes.put(sampleName, genotypesList);
                 }
 
-
                 for (int i = 0; i < genotypes.length; i++) {
 
                     genotypesList.add(genotypes[i]);
@@ -550,13 +535,11 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         return samplesGenotypes;
     }
 
-
     public QueryResult<VariantAnalysisInfo> getAnalysisInfo(String studyId) {
 
         long start = System.currentTimeMillis();
         QueryResult<VariantAnalysisInfo> qres = new QueryResult<>();
         VariantAnalysisInfo vi = new VariantAnalysisInfo();
-
 
         DBCollection coll = db.getCollection("studies");
         DBCollection collV = db.getCollection("variants");
@@ -592,9 +575,7 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
         qres.setTime(System.currentTimeMillis() - start);
 
-
         return qres;
-
 
     }
 

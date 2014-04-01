@@ -125,7 +125,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                         for (int i = 0; i < fields.length; i++) {
                             singleSampleMap.put(fields[i], values[i]);
                         }
-                        variant.addSampleData(sampleName, singleSampleMap);
+                        // TODO 
+//                        variant.addSampleData(sampleName, singleSampleMap);
                     }
                 }
 

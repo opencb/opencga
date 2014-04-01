@@ -88,8 +88,6 @@
         <dependency>
             <groupId>org.opencb.biodata</groupId>
             <artifactId>formats</artifactId>
-            <version>0.1</version>
-            <type>jar</type>
         </dependency>
     </dependencies>
 
@@ -99,6 +97,29 @@
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
+        
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                        <excludes>
+                            <exclude>**/VariantVcfSqliteWriter.java</exclude>
+                            <exclude>**/VariantSqliteQueryBuilder.java</exclude>
+                            <exclude>**/VariantVcfMonbaseDataWriter.java</exclude>
+                            <exclude>**/VariantMonbaseQueryBuilder.java</exclude>
+                        </excludes>
+                        <testExcludes>
+                            <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
+                            <exclude>**/VariantVcfMonbaseDataWriterTest.java</exclude>
+                            <exclude>**/VariantMonbaseQueryBuilderTest.java</exclude>
+                        </testExcludes>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

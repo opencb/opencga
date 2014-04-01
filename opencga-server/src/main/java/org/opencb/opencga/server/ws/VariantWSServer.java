@@ -1,10 +1,8 @@
 package org.opencb.opencga.server.ws;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Joiner;
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.nio.file.Paths;
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -12,16 +10,12 @@ import javax.ws.rs.core.*;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import static org.opencb.opencga.server.ws.GenericWSServer.cloudSessionManager;
 import org.opencb.opencga.storage.variant.VariantMongoQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 
 @Path("/account/{accountId}/file/{jobId}")
 public class VariantWSServer extends GenericWSServer {
@@ -115,7 +109,7 @@ public class VariantWSServer extends GenericWSServer {
 
         return createOkResponse(queryResult);
     }
-
+/*
     @POST
     @Path("/effects")
     @Consumes("application/x-www-form-urlencoded")
@@ -184,5 +178,5 @@ public class VariantWSServer extends GenericWSServer {
 
 
     }
-
+*/
 }

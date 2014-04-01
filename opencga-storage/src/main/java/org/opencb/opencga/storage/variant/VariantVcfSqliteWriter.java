@@ -9,7 +9,6 @@ import java.sql.Statement;
 import java.util.*;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.feature.Genotypes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
@@ -212,7 +211,16 @@ public class VariantVcfSqliteWriter implements VariantWriter {
         List<Genotype> list = new ArrayList<>();
 
         for (String sample : variant.getSampleNames()) {
-            Genotypes.addGenotypeToList(list, new Genotype(variant.getSampleData(sample, "GT")));
+            Genotype g = new Genotype(variant.getSampleData(sample, "GT"));
+            int index = list.indexOf(g);
+
+            if (index >= 0) {
+                Genotype auxG = list.get(index);
+                auxG.setCount(auxG.getCount() + 1);
+            } else {
+                g.setCount(g.getCount() + 1);
+                list.add(g);
+            }
         }
 
         return Joiner.on(",").join(list);
@@ -319,16 +327,16 @@ public class VariantVcfSqliteWriter implements VariantWriter {
 
                 pstmt.setString(1, v.getChromosome());
                 pstmt.setLong(2, v.getPosition());
-                pstmt.setString(3, v.getRefAlleles());
+                pstmt.setString(3, v.getRefAllele());
                 pstmt.setString(4, Joiner.on(",").join(v.getAltAlleles()));
                 pstmt.setString(5, v.getId());
                 pstmt.setDouble(6, v.getMaf());
                 pstmt.setDouble(7, v.getMgf());
                 pstmt.setString(8, v.getMafAllele());
-                pstmt.setString(9, v.getMgfAllele());
+                pstmt.setString(9, v.getMgfGenotype());
                 pstmt.setInt(10, v.getMissingAlleles());
                 pstmt.setInt(11, v.getMissingGenotypes());
-                pstmt.setInt(12, v.getMendelinanErrors());
+                pstmt.setInt(12, v.getMendelianErrors());
                 pstmt.setInt(13, (v.isIndel() ? 1 : 0));
                 pstmt.setDouble(14, v.getCasesPercentDominant());
                 pstmt.setDouble(15, v.getControlsPercentDominant());

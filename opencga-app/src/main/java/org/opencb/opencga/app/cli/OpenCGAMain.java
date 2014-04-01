@@ -21,9 +21,9 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
 import org.opencb.opencga.lib.auth.*;
-import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
+//import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
-import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
+//import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
@@ -45,6 +45,7 @@ public class OpenCGAMain {
         options.addOption(OptionFactory.createOption("credentials", "c", "Path to the file where the backend credentials are stored", true, true));
         options.addOption(OptionFactory.createOption("datatype", "d", "Datatype to be stored: alignments (BAM) or variants (VCF)", true, true));
         options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
+        options.addOption(OptionFactory.createOption("outdir", "o", "Directory where output files will be saved (if applies)", false, true));
 
         // Alignments optional arguments
         options.addOption(OptionFactory.createOption("include-coverage", "Save coverage information (optional)", false, false));
@@ -73,6 +74,7 @@ public class OpenCGAMain {
         Path filePath = Paths.get(commandLine.getOptionValue("file"));
         // TODO check filePath exists
         String alias = commandLine.getOptionValue("alias");
+        String outdir = commandLine.getOptionValue("outdir");
 
         // Get arguments for each datatype to store
         switch (commandLine.getOptionValue("datatype").toLowerCase()) {
@@ -130,7 +132,7 @@ public class OpenCGAMain {
         VariantReader reader;
         PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
-        reader = new VariantVcfReader(filePath.toString());
+        reader = new VariantVcfReader(filePath.toString(), filePath.toString(), filePath.toString());
 
         List<VariantWriter> writers = new ArrayList<>();
         OpenCGACredentials credentials;
@@ -142,13 +144,14 @@ public class OpenCGAMain {
 
         List<Task<Variant>> taskList = new SortedList<>();
 
-        if (backend.equalsIgnoreCase("sqlite")) {
+        // TODO Restore when SQLite and Monbase are once again ready!!
+        /*if (backend.equalsIgnoreCase("sqlite")) {
             credentials = new SqliteCredentials(properties);
             writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
             writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));
-        } else if (backend.equalsIgnoreCase("mongo")) {
+        } else*/ if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
             writers.add(new VariantVcfMongoDataWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
         }

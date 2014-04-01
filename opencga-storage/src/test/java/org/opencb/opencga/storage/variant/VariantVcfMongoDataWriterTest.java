@@ -52,7 +52,7 @@ public class VariantVcfMongoDataWriterTest extends GenericTest {
         List<VariantWriter> writers = new ArrayList<>();
 
         VariantReader reader;
-        reader = new VariantVcfReader(inputFile);
+        reader = new VariantVcfReader(inputFile, inputFile, inputFile);
         writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", credentials));
 
         for (VariantWriter vw : writers) {

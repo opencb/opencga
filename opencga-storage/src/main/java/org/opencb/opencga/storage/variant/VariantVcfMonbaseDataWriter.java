@@ -490,7 +490,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
         VariantFieldsProtos.VariantStats.Builder stats = VariantFieldsProtos.VariantStats.newBuilder();
         stats.setNumAlleles(v.getNumAlleles());
         stats.setMafAllele(v.getMafAllele());
-        stats.setMgfGenotype(v.getMgfAllele());
+        stats.setMgfGenotype(v.getMgfGenotype());
         stats.setMaf(v.getMaf());
         stats.setMgf(v.getMgf());
         for (int a : v.getAllelesCount()) {
@@ -507,7 +507,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
         }
         stats.setMissingAlleles(v.getMissingAlleles());
         stats.setMissingGenotypes(v.getMissingGenotypes());
-        stats.setMendelianErrors(v.getMendelinanErrors());
+        stats.setMendelianErrors(v.getMendelianErrors());
         stats.setIsIndel(v.isIndel());
         stats.setCasesPercentDominant(v.getCasesPercentDominant());
         stats.setControlsPercentDominant(v.getControlsPercentDominant());

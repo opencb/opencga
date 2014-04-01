@@ -34,7 +34,7 @@ import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
+//import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 
 public class CloudSessionManager {
 
@@ -462,12 +462,16 @@ public class CloudSessionManager {
         return queryResult;
     }
 
+    
+    public String fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
+        VcfManager vcfManager = new VcfManager();
+        return vcfManager.getByRegion(objectPath, regionStr, params);
+    }
+  
+/*    
     public QueryResult fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-//        VcfManager vcfManager = new VcfManager();
-////        result = vcfManager.getByRegion(fullFilePath, regionStr, params);
-//        return vcfManager.queryRegion(objectId, regionStr, params);
         String species = params.containsKey("species") ? params.get("species").get(0) : "hsapiens";
-        VariantQueryBuilder queryBuilder =
+        VariantQueryBuilder queryBuilder = null;
                 //new VariantMonbaseQueryBuilder(species, 
                 //new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, "variants_" + species, "cgonzalez", "cgonzalez"));
                 new VariantSqliteQueryBuilder(new SqliteCredentials(objectPath));
@@ -501,7 +505,7 @@ public class CloudSessionManager {
 
         return queryResult;
     }
-
+*/
 
     public String indexFileObject(String accountId, String bucketId, Path objectId, boolean force, String sessionId) throws Exception {
         ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);

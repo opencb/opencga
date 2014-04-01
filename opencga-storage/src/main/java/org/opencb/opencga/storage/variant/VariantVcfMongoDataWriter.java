@@ -2,7 +2,9 @@ package org.opencb.opencga.storage.variant;
 
 import com.mongodb.*;
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -11,7 +13,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
@@ -45,6 +49,8 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 
     private Map<String, Integer> conseqTypes;
     
+    private BufferedWriter writer;
+
     public VariantVcfMongoDataWriter(VariantSource file, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
@@ -55,6 +61,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         this.mongoFileMap = new HashMap<>();
 
         conseqTypes = new LinkedHashMap<>();
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(file.getName() + ".json.gz"))));
+        } catch (IOException ex) {
+            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
@@ -113,43 +124,46 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             }*/
             
             BasicDBList mongoFiles = new BasicDBList();
-            BasicDBObject mongoFile = new BasicDBObject("fileName", file.getName()).append("fileId", file.getAlias());
+            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+                BasicDBObject mongoFile = new BasicDBObject("fileName", archiveFile.getFileName()).append("fileId", archiveFile.getFileId());
+                mongoFile.append("studyId", file.getAlias());
 
-            // Attributes
-            if (v.getAttributes().size() > 0) {
-                BasicDBObject info = null;
-                for (Map.Entry<String, String> entry : v.getAttributes().entrySet()) {
-                    if (info == null) {
-                        info = new BasicDBObject(entry.getKey(), entry.getValue());
-                    } else {
-                        info.append(entry.getKey(), entry.getValue());
+                // Attributes
+                if (archiveFile.getAttributes().size() > 0) {
+                    BasicDBObject attrs = null;
+                    for (Map.Entry<String, String> entry : archiveFile.getAttributes().entrySet()) {
+                        if (attrs == null) {
+                            attrs = new BasicDBObject(entry.getKey(), entry.getValue());
+                        } else {
+                            attrs.append(entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    if (attrs != null) {
+                        mongoFile.put("attributes", attrs);
                     }
                 }
 
-                if (info != null) {
-                    mongoFile.put("attributes", info);
-                }
-            }
+                // Samples
+                if (this.includeSamples && archiveFile.getSamplesData().size() > 0) {
+                    BasicDBObject samples = new BasicDBObject();
 
-            // Samples
-            if (this.includeSamples && v.getSamplesData().size() > 0) {
-                BasicDBObject samples = new BasicDBObject();
-
-                for (Map.Entry<String, Map<String, String>> entry : v.getSamplesData().entrySet()) {
-                    BasicDBObject sampleData = new BasicDBObject();
-                    for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
-                        sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
+                    for (Map.Entry<String, Map<String, String>> entry : archiveFile.getSamplesData().entrySet()) {
+                        BasicDBObject sampleData = new BasicDBObject();
+                        for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
+                            sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
+                        }
+                        samples.put(entry.getKey(), sampleData);
                     }
-                    samples.put(entry.getKey(), sampleData);
+                    mongoFile.put("samples", samples);
                 }
-                mongoFile.put("samples", samples);
+
+                mongoFiles.add(mongoFile);
+                mongoFileMap.put(rowkey + "_" + archiveFile.getFileId(), mongoFile);
             }
-             
-            mongoFiles.add(mongoFile);
-            mongoVariant.append("files", mongoFiles);
             
+            mongoVariant.append("files", mongoFiles);
             mongoMap.put(rowkey, mongoVariant);
-            mongoFileMap.put(rowkey, mongoFile);
         }
 
         return true;
@@ -165,7 +179,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         String chunkSmall = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_SMALL + "_" + CHUNK_SIZE_SMALL / 1000 + "k";
         String chunkBig = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_BIG + "_" + CHUNK_SIZE_BIG / 1000 + "k";
         BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
-        object.append("chunkId", chunkIds);
+        object.append("chunkIds", chunkIds);
         
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
@@ -182,34 +196,36 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     boolean buildStatsRaw(List<Variant> data) {
         for (Variant v : data) {
-            VariantStats vs = v.getStats();
-            if (vs == null) {
-                continue;
+            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+                VariantStats vs = archiveFile.getStats();
+                if (vs == null) {
+                    continue;
+                }
+
+                // Generate genotype counts
+                BasicDBObject genotypes = new BasicDBObject();
+
+                for (Genotype g : vs.getGenotypes()) {
+                    String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
+                    genotypes.append(count, g.getCount());
+                }
+
+                BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
+                mongoStats.append("mgf", vs.getMgf());
+                mongoStats.append("alleleMaf", vs.getMafAllele());
+                mongoStats.append("genotypeMaf", vs.getMgfGenotype());
+                mongoStats.append("missAllele", vs.getMissingAlleles());
+                mongoStats.append("missGenotypes", vs.getMissingGenotypes());
+                mongoStats.append("mendelErr", vs.getMendelianErrors());
+                mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
+                mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
+                mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
+                mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
+                mongoStats.append("genotypeCount", genotypes);
+
+                BasicDBObject mongoFile = mongoFileMap.get(buildRowkey(v) + "_" + archiveFile.getFileId());
+                mongoFile.put("stats", mongoStats);
             }
-
-            // Generate genotype counts
-            BasicDBObject genotypes = new BasicDBObject();
-
-            for (Genotype g : vs.getGenotypes()) {
-                String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
-                genotypes.append(count, g.getCount());
-            }
-
-            BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
-            mongoStats.append("mgf", vs.getMgf());
-            mongoStats.append("alleleMaf", vs.getMafAllele());
-            mongoStats.append("genotypeMaf", vs.getMgfAllele());
-            mongoStats.append("missAllele", vs.getMissingAlleles());
-            mongoStats.append("missGenotypes", vs.getMissingGenotypes());
-            mongoStats.append("mendelErr", vs.getMendelinanErrors());
-            mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
-            mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
-            mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
-            mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
-            mongoStats.append("genotypeCount", genotypes);
-
-            BasicDBObject mongoFile = mongoFileMap.get(buildRowkey(v));
-            mongoFile.put("stats", mongoStats);
         }
 
         return true;
@@ -268,19 +284,28 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             if (mongoVariant.containsField("chr")) {
                 // Was fully built in this run because it didn't exist, and must be inserted
                 wr = variantCollection.insert(mongoVariant);
+//                try {
+//                    writer.write(mongoVariant.toString() + "\n") ;
+//                } catch (IOException ex) {
+//                    Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//                }
             } else { // It existed previously, was not fully built in this run and only files need to be updated
-                BasicDBObject mongoFile = mongoFileMap.get(rowkey);
-                BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
-                wr = variantCollection.update(query, changes, true, false);
+                // TODO How to do this efficiently, inserting all files at once?
+                for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+                    BasicDBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
+                    BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
+                    wr = variantCollection.update(query, changes, true, false);
+                }
             }
             
-            if (!wr.getLastError().ok()) {
-                // TODO If not correct, retry?
-                return false;
-            }
+//            if (!wr.getLastError().ok()) {
+//                // TODO If not correct, retry?
+//                return false;
+//            }
         }
 
         mongoMap.clear();
+        mongoFileMap.clear();
 
         return true;
     }
@@ -310,8 +335,8 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                     .append("passCount", global.getPassCount())
                     .append("transitionsCount", global.getTransitionsCount())
                     .append("transversionsCount", global.getTransversionsCount())
-                    .append("biallelicsCount", global.getBiallelicsCount())
-                    .append("multiallelicsCount", global.getMultiallelicsCount())
+//                    .append("biallelicsCount", global.getBiallelicsCount())
+//                    .append("multiallelicsCount", global.getMultiallelicsCount())
                     .append("accumulatedQuality", global.getAccumQuality()).append("consequenceTypes", cts);
 
             studyMongo = studyMongo.append("globalStats", globalStats);
@@ -345,6 +370,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     public boolean close() {
         mongoClient.close();
+        try {
+            writer.close();
+        } catch (IOException ex) {
+            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return true;
     }
 
