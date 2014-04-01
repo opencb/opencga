@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
+@Deprecated
 public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
     private final MongoClient mongoClient;

@@ -13,5 +13,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 public class OpenCGAServer extends ResourceConfig {
     public OpenCGAServer() {
         packages("org.opencb.opencga.server.ws").register(MultiPartFeature.class);
+        packages("org.opencb.opencga.server.ws.storage").register(MultiPartFeature.class);
     }
 }
