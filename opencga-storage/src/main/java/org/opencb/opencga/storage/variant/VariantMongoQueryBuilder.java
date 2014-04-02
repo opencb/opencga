@@ -267,6 +267,14 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
             elemMatch.put("attributes.1000G_maf", new BasicDBObject("$lte", options.get("maf_1000g_controls")));
         }
 
+        if (options.containsKey("maf_evs_controls") && !options.get("maf_evs_controls").equalsIgnoreCase("")) {
+            elemMatch.put("attributes.EVS_maf", new BasicDBObject("$lte", options.get("maf_evs_controls")));
+        }
+
+        if (options.containsKey("maf_bier_controls") && !options.get("maf_bier_controls").equalsIgnoreCase("")) {
+            elemMatch.put("attributes.BIER_maf", new BasicDBObject("$lte", options.get("maf_bier_controls")));
+        }
+
         query.put("sources", new BasicDBObject("$elemMatch", elemMatch));
 
         System.out.println("#############################");
@@ -374,6 +382,12 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                             vi.addControl("EVS_maf", (String) attr.get("EVS_maf"));
                             vi.addControl("EVS_amaf", (String) attr.get("EVS_amaf"));
                             vi.addControl("EVS_gt", (String) attr.get("EVS_gt"));
+                        }
+
+                        if (attr.containsField("BIER_maf")) {
+                            vi.addControl("BIER_maf", (String) attr.get("BIER_maf"));
+                            vi.addControl("BIER_amaf", (String) attr.get("BIER_amaf"));
+                            vi.addControl("BIER_gt", (String) attr.get("BIER_gt"));
                         }
 
                     }
