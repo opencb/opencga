@@ -10,6 +10,7 @@ import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.datamanagers.HBaseManager;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
@@ -21,90 +22,59 @@ import java.util.List;
  * User: jcoll
  * Date: 3/6/14
  * Time: 4:48 PM
- * To change this template use File | Settings | File Templates.
  */
 public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegion> {
 
-    //Too similar to AlignmentRegionCoverageHBaseDataWriter. TODO jj: Common HBase writer class.
-    private Configuration config;
-    private boolean opened = false;
-    private HBaseAdmin admin;
+    private HBaseManager hBaseManager;
     private HTable table;
     private String tableName;
     private String sample = "s";
     private String columnFamilyName = "c";
     private List<Put> puts;
 
-    AlignmentProto.AlignmentRegion.Builder alignmentRegionBuilder;
+    private AlignmentProto.AlignmentRegion.Builder alignmentRegionBuilder;
 
-    int index = 0;
-    String chromosome = "";
+    private int index = 0;
+    private String chromosome = "";
 
 
 
     public AlignmentRegionHBaseDataWriter(MonbaseCredentials credentials, String tableName) {
         // HBase configuration
-        config = HBaseConfiguration.create();
-        config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
-        config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
-        config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+
+        hBaseManager = new HBaseManager(credentials);
 
         this.puts = new LinkedList<>();
         this.tableName = tableName;
     }
 
     public AlignmentRegionHBaseDataWriter(Configuration config, String tableName) {
-        this.config = config;
+        hBaseManager = new HBaseManager(config);
+
         this.puts = new LinkedList<>();
         this.tableName = tableName;
     }
 
     @Override
     public boolean open() {
-        try {
-            admin = new HBaseAdmin(config);
-        } catch (MasterNotRunningException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        } catch (ZooKeeperConnectionException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        }
-
-        try {
-            if(!admin.tableExists(tableName)){
-                HTableDescriptor ht = new HTableDescriptor(tableName);
-                ht.addFamily( new HColumnDescriptor(columnFamilyName));
-                admin.createTable(ht);
-            }
-            table = new HTable(admin.getConfiguration(), tableName);
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        }
-
-        this.opened = true;
+        hBaseManager.connect();
 
         return true;
     }
 
     @Override
     public boolean close() {
-        try {
-            admin.close();
-            table.close();
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        }
 
-        this.opened = false;
+        hBaseManager.disconnect();
+
         return true;
     }
 
     @Override
     public boolean pre() {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
+        table = hBaseManager.createTable(tableName,columnFamilyName);
+
+        return true;
     }
 
     @Override
@@ -115,14 +85,22 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             table.put(puts);
             puts.clear();
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
             return false;
         }
+
+
         return true;
     }
 
     @Override
     public boolean write(AlignmentRegion alignmentRegion) {
+
+        /**
+         * 1º Find BucketLimit
+         * 2º Summarize until the limit
+         * 3º Write untis the limit
+         */
 
         String value;
         Alignment firstAlignment = alignmentRegion.getAlignments().get(0);
@@ -187,6 +165,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), headerBuilder.build().toByteArray());
 
         puts.add(put);
+
+    }
+
+    private void summaryHeader(){
+
 
     }
 
