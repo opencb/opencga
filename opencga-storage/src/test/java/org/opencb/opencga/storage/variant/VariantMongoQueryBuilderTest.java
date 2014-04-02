@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.variant;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import java.io.IOException;
 import java.util.Arrays;
@@ -9,6 +11,8 @@ import java.util.List;
 import java.util.Properties;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
 import org.opencb.biodata.models.feature.Region;
@@ -46,7 +50,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getName());
         VariantVcfMongoDataWriter vdw = new VariantVcfMongoDataWriter(study, "hsapiens", (MongoCredentials) credentials);
         List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
-        VariantRunner vr = new VariantRunner(study, reader, null, writers,  Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
+        VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
         vr.run();
         
         // Initialize query builder
@@ -65,6 +69,37 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         mongoClient.close();
     }
     
+    @Test
+    public void testGetAllVariantsByRegion() {
+        QueryResult queryResult;
+        
+        // Basic queries
+        queryResult = vqb.getAllVariantsByRegion(new Region("1:1000000-2000000"), null);
+        assertEquals(3, queryResult.getNumResults());
+        queryResult = vqb.getAllVariantsByRegion(new Region("1:10000000-20000000"), null);
+        assertEquals(11, queryResult.getNumResults());
+        queryResult = vqb.getAllVariantsByRegion(new Region("3:1-200000000"), null);
+        assertEquals(50, queryResult.getNumResults());
+        queryResult = vqb.getAllVariantsByRegion(new Region("X:1-200000000"), null);
+        assertEquals(11, queryResult.getNumResults());
+        
+        // Exactly in the limits
+        queryResult = vqb.getAllVariantsByRegion(new Region("20:238441-7980390"), null);
+        assertEquals(5, queryResult.getNumResults());
+        
+        // Just inside the limits
+        queryResult = vqb.getAllVariantsByRegion(new Region("20:238440-7980391"), null);
+        assertEquals(5, queryResult.getNumResults());
+        
+        // Just outside the limits
+        queryResult = vqb.getAllVariantsByRegion(new Region("20:238441-7980389"), null);
+        assertEquals(4, queryResult.getNumResults());
+        queryResult = vqb.getAllVariantsByRegion(new Region("20:238442-7980390"), null);
+        assertEquals(4, queryResult.getNumResults());
+        queryResult = vqb.getAllVariantsByRegion(new Region("20:238442-7980389"), null);
+        assertEquals(3, queryResult.getNumResults());
+    }
+
     @Test
     public void testGetAllVariantsByRegionAndStudy() {
         QueryResult queryResult;
@@ -94,8 +129,57 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         assertEquals(4, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238442-7980389"), study.getAlias(), null);
         assertEquals(3, queryResult.getNumResults());
+        
+        // Non-existing study
+        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("1:1000000-2000000"), "FalseStudy", null);
+        assertEquals(0, queryResult.getNumResults());
     }
 
+    @Test
+    public void testGetAllVariantsByGene() {
+        QueryResult queryResult;
+        
+        // Gene present in the dataset
+        queryResult = vqb.getAllVariantsByGene("MIB2", null);
+        assertNotEquals(0, queryResult.getNumResults());
+        List<BasicDBObject> variantsInGene = queryResult.getResult();
+        
+        for (BasicDBObject v : variantsInGene) {
+            assertEquals("1", v.get("chr"));
+        }
+        
+        // Gene not present in the dataset
+        queryResult = vqb.getAllVariantsByGene("NonExistingGene", null);
+        assertEquals(0, queryResult.getNumResults());
+    }
+    
+    @Test
+    public void testGetMostAffectedGenes() {
+        QueryResult queryResult = vqb.getMostAffectedGenes(10, null);
+        assertEquals(10, queryResult.getNumResults());
+        
+        List<DBObject> result = queryResult.getResult();
+        for (int i = 1; i < queryResult.getNumResults(); i++) {
+            DBObject prevObject = result.get(i-1);
+            DBObject object = result.get(i);
+            assertTrue(((int) prevObject.get("count")) >= ((int) object.get("count")));
+        }
+    }
+    
+    
+    @Test
+    public void testGetLeastAffectedGenes() {
+        QueryResult queryResult = vqb.getLeastAffectedGenes(10, null);
+        assertEquals(10, queryResult.getNumResults());
+        
+        List<DBObject> result = queryResult.getResult();
+        for (int i = 1; i < queryResult.getNumResults(); i++) {
+            DBObject prevObject = result.get(i-1);
+            DBObject object = result.get(i);
+            assertTrue(((int) prevObject.get("count")) <= ((int) object.get("count")));
+        }
+    }
+    
 //    @Test
 //    public void testGetRecords() throws Exception {
 //
