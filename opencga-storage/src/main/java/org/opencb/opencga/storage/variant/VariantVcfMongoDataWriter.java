@@ -51,18 +51,18 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     
     private BufferedWriter writer;
 
-    public VariantVcfMongoDataWriter(VariantSource file, String species, MongoCredentials credentials) {
+    public VariantVcfMongoDataWriter(VariantSource source, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
-        this.file = file;
+        this.file = source;
         this.credentials = credentials;
         this.mongoMap = new HashMap<>();
         this.mongoFileMap = new HashMap<>();
 
         conseqTypes = new LinkedHashMap<>();
         try {
-            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(file.getName() + ".json.gz"))));
+            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(source.getName() + ".json.gz"))));
         } catch (IOException ex) {
             Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -104,12 +104,12 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
-        if (this.includeStats) {
+//        if (this.includeStats) {
             buildStatsRaw(data);
-        }
-        if (this.includeEffect) {
+//        }
+//        if (this.includeEffect) {
             buildEffectRaw(data);
-        }
+//        }
         buildBatchIndex(data);
         return writeBatch(data);
     }
@@ -129,7 +129,8 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             
             BasicDBList mongoFiles = new BasicDBList();
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                BasicDBObject mongoFile = new BasicDBObject("fileName", archiveFile.getFileName()).append("fileId", archiveFile.getFileId());
+//                BasicDBObject mongoFile = new BasicDBObject("fileName", archiveFile.getFileName()).append("fileId", archiveFile.getFileId());
+                BasicDBObject mongoFile = new BasicDBObject("fileId", archiveFile.getFileId());
                 mongoFile.append("studyId", file.getAlias());
 
                 // Attributes

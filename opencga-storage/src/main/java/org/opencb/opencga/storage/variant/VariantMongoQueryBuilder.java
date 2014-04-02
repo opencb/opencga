@@ -4,7 +4,6 @@ import com.mongodb.*;
 import java.net.UnknownHostException;
 import java.util.*;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -36,22 +35,35 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
         BasicDBObject query = new BasicDBObject("chunkIds", new BasicDBObject("$in", chunkIds));
         query.append("end", new BasicDBObject("$gte", region.getStart())).append("start", new BasicDBObject("$lte", region.getEnd()));
-        QueryResult queryResult = coll.find(query, options);
-        
-        return queryResult;
+        return coll.find(query, options);
     }
 
     @Override
-    public QueryResult getAllVariantsByRegionAndStudy(Region region, String studyName, QueryOptions options) {
+    public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, QueryOptions options) {
+        List<QueryResult> allResults = new LinkedList<>();
+        for (Region r : regions) {
+            QueryResult queryResult = getAllVariantsByRegion(r, options);
+            allResults.add(queryResult);
+        }
+        return allResults;
+    }
+
+    @Override
+    public QueryResult getAllVariantsByRegionAndStudy(Region region, String studyId, QueryOptions options) {
         List<String> chunkIds = getChunkIds(region);
         MongoDBCollection coll = db.getCollection("variants");
 
-        BasicDBObject query = new BasicDBObject("files.studyId", studyName);
-        query.append("chunkIds", new BasicDBObject("$in", chunkIds));
-        query.append("end", new BasicDBObject("$gte", region.getStart())).append("start", new BasicDBObject("$lte", region.getEnd()));
-        QueryResult queryResult = coll.find(query, options);
+        // Aggregation for filtering when more than one study is present
+        DBObject query = new BasicDBObject("files.studyId", studyId);
+        query.put("chunkIds", new BasicDBObject("$in", chunkIds));
+        query.put("end", new BasicDBObject("$gte", region.getStart()));
+        query.put("start", new BasicDBObject("$lte", region.getEnd()));
         
-        return queryResult;
+        DBObject match = new BasicDBObject("$match", query);
+        DBObject unwind = new BasicDBObject("$unwind", "$files");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("files.studyId", studyId));
+        
+        return coll.aggregate("$effects.geneName", Arrays.asList(match, unwind, match2), options);
     }
 
     @Override
@@ -65,23 +77,39 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
     }
 
     @Override
-    public QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax) {
-        return null;
+    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
+        MongoDBCollection coll = db.getCollection("variants");
+
+        // TODO Should the gene name be a first-order attribute of the variant?
+        BasicDBObject query = new BasicDBObject("effects.geneName", geneName);
+        return coll.find(query, options);
     }
 
     @Override
-    public QueryResult getStatsByVariant(Variant variant, QueryOptions options) {
-        return null;
+    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
+        return getGenesRanking(numGenes, -1, options);
     }
 
     @Override
-    public QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options) {
-        return null;
+    public QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options) {
+        return getGenesRanking(numGenes, 1, options);
     }
 
-    @Override
-    public QueryResult getEffectsByVariant(Variant variant, QueryOptions options) {
-        return null;
+    private QueryResult getGenesRanking(int numGenes, int order, QueryOptions options) {
+        // db.variants.aggregate( {$project : { genes : "$effects.geneName"} },
+        //                        { $unwind : "$genes"},
+        //                        { $group : { _id : "$genes", count: { $sum : 1 } }},
+        //                        { $sort : { "count" : -1 }},
+        //                        { $limit : 10 } )
+        MongoDBCollection coll = db.getCollection("variants");
+        
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$effects.geneName"));
+        DBObject unwind = new BasicDBObject("$unwind", "$genes");
+        DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$genes").append("count", new BasicDBObject( "$sum", 1)));
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
+        DBObject limit = new BasicDBObject("$limit", numGenes);
+        
+        return coll.aggregate("$effects.geneName", Arrays.asList(project, unwind, group, sort, limit), options);
     }
 
     @Override

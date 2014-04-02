@@ -39,8 +39,6 @@ public class VariantVcfMongoDataWriterTest extends GenericTest {
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", "27017");
         properties.put("mongo_db_name", "testIndex");
-        properties.put("mongo_user", "user");
-        properties.put("mongo_password", "pass");
 
         credentials = new MongoCredentials(properties);
 
