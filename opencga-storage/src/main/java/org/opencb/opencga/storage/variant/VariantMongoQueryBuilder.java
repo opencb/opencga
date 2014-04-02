@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.lib.auth.MongoCredentials;
@@ -24,7 +25,8 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
     public VariantMongoQueryBuilder(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        db = mongoManager.get(credentials.getMongoDbName());
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
+        db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
     }
 
     @Override
