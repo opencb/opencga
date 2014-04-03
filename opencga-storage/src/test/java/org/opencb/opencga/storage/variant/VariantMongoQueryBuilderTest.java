@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
+import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBObject;
@@ -30,10 +32,10 @@ import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
  */
 public class VariantMongoQueryBuilderTest extends GenericTest {
 
-    private static String inputFile = VariantVcfMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile = VariantMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "Study for testing purposes", null, null);
     private static MongoCredentials credentials;
-    private static VariantQueryBuilder vqb;
+    private static VariantDBAdaptor vqb;
 
     @BeforeClass
     public static void initialize() throws IOException {
@@ -48,13 +50,13 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         
         // Initialize dataset to query
         VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getName());
-        VariantVcfMongoDataWriter vdw = new VariantVcfMongoDataWriter(study, "hsapiens", (MongoCredentials) credentials);
+        VariantMongoWriter vdw = new VariantMongoWriter(study, "hsapiens", (MongoCredentials) credentials);
         List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
         VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
         vr.run();
         
         // Initialize query builder
-        vqb = new VariantMongoQueryBuilder(credentials);
+        vqb = new VariantMongoDBAdaptor(credentials);
     }
 
     @AfterClass
@@ -196,7 +198,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
 //
 //        MutableInt count = new MutableInt(-1);
 //
-//        QueryResult<VariantInfo> records = ((VariantMongoQueryBuilder) vqb).getRecordsMongo(1, 0, 25, count, opts);
+//        QueryResult<VariantInfo> records = ((VariantMongoDBAdaptor) vqb).getRecordsMongo(1, 0, 25, count, opts);
 ////
 //        System.out.println(records.getResult().get(0).getSampleGenotypes());
 //    }
@@ -204,7 +206,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
 //    @Test
 //    public void testAnalysisInfo() throws Exception {
 //
-//        QueryResult<VariantAnalysisInfo> res = ((VariantMongoQueryBuilder) vqb).getAnalysisInfo("aaleman_-_XOidGTJMUq1Cr1J");
+//        QueryResult<VariantAnalysisInfo> res = ((VariantMongoDBAdaptor) vqb).getAnalysisInfo("aaleman_-_XOidGTJMUq1Cr1J");
 //        VariantAnalysisInfo vi = res.getResult().get(0);
 //
 //        System.out.println("vi.getSamples() = " + vi.getSamples());

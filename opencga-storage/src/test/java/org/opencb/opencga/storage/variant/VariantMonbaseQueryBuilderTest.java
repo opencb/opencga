@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
+import org.opencb.opencga.storage.variant.monbase.VariantMonbaseWriter;
+import org.opencb.opencga.storage.variant.monbase.VariantMonbaseDBAdaptor;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -39,8 +41,8 @@ public class VariantMonbaseQueryBuilderTest {
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
     private static MonbaseCredentials credentials;
     private static org.apache.hadoop.conf.Configuration config;
-    private static VariantVcfMonbaseDataWriter writer;
-    private static VariantMonbaseQueryBuilder queryBuilder;
+    private static VariantMonbaseWriter writer;
+    private static VariantMonbaseDBAdaptor queryBuilder;
 
     @BeforeClass
     public static void testConstructorAndOpen() throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
@@ -55,7 +57,7 @@ public class VariantMonbaseQueryBuilderTest {
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
 
             // Monbase writer saves 5 records
-            writer = new VariantVcfMonbaseDataWriter(study, tableName, credentials);
+            writer = new VariantMonbaseWriter(study, tableName, credentials);
             assertTrue(writer.open());
             List<String> sampleNames = Arrays.asList("NA001", "NA002", "NA003");
             String[] fields1 = new String[]{"1", "100000", "rs1100000", "A", "T,G", "40", "PASS",
@@ -108,7 +110,7 @@ public class VariantMonbaseQueryBuilderTest {
 //            assertTrue("Effects could not be written", writer.writeVariantEffect(records));
             writer.post();
             // Monbase query builder
-            queryBuilder = new VariantMonbaseQueryBuilder(tableName, credentials);
+            queryBuilder = new VariantMonbaseDBAdaptor(tableName, credentials);
         } catch (IllegalOpenCGACredentialsException e) {
             fail(e.getMessage());
         }

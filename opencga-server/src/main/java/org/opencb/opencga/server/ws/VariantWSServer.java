@@ -14,8 +14,8 @@ import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.VariantMongoQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantQueryBuilder;
+import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 @Path("/account/{accountId}/file/{jobId}")
 public class VariantWSServer extends GenericWSServer {
@@ -88,12 +88,12 @@ public class VariantWSServer extends GenericWSServer {
         prop.put("mongo_password", "pass");
 
         MongoCredentials credentials = new MongoCredentials(prop);
-        VariantQueryBuilder vqm;
+        VariantDBAdaptor vqm;
         String res = null;
         QueryResult<VariantInfo> queryResult = null;
         try {
-            vqm = new VariantMongoQueryBuilder(credentials);
-            queryResult = ((VariantMongoQueryBuilder) vqm).getRecordsMongo(page, start, limit, count, map);
+            vqm = new VariantMongoDBAdaptor(credentials);
+            queryResult = ((VariantMongoDBAdaptor) vqm).getRecordsMongo(page, start, limit, count, map);
 
             queryResult.setNumResults(count.intValue());
 //            res = callback + "(" + jsonObjectMapper.writeValueAsString(queryResult) + ");";
@@ -128,7 +128,7 @@ public class VariantWSServer extends GenericWSServer {
         System.out.println("dataPath = " + dataPath.toString());
 
         map.put("db_name", dataPath.toString());
-        VariantQueryBuilder vqm = new VariantSqliteQueryBuilder();
+        VariantDBAdaptor vqm = new VariantSqliteQueryBuilder();
         List<VariantEffect> list = vqm.getEffect(map);
 
 
@@ -156,13 +156,13 @@ public class VariantWSServer extends GenericWSServer {
         prop.put("mongo_password", "pass");
 
         MongoCredentials credentials = new MongoCredentials(prop);
-        VariantQueryBuilder vqm;
+        VariantDBAdaptor vqm;
         String res = null;
         QueryResult<VariantAnalysisInfo> queryResult = null;
         try {
-            vqm = new VariantMongoQueryBuilder(credentials);
+            vqm = new VariantMongoDBAdaptor(credentials);
 
-            queryResult = ((VariantMongoQueryBuilder) vqm).getAnalysisInfo(studyId);
+            queryResult = ((VariantMongoDBAdaptor) vqm).getAnalysisInfo(studyId);
 
             res = jsonObjectMapper.writeValueAsString(queryResult);
 

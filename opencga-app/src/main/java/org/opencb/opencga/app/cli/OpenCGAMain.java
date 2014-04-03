@@ -22,7 +22,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
 import org.opencb.opencga.lib.auth.*;
 //import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
-import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
+import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 //import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
@@ -150,10 +150,10 @@ public class OpenCGAMain {
             writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
-            writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));
+            writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));// TODO Restore when SQLite and Monbase are once again ready!!
         } else*/ if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
-            writers.add(new VariantVcfMongoDataWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
+            writers.add(new VariantMongoWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
         }
 
 

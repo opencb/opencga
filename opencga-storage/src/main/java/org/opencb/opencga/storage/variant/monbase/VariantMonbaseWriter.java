@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.monbase;
 
 import com.mongodb.*;
 import java.io.IOException;
@@ -20,12 +20,15 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.variant.VariantDBWriter;
+import org.opencb.opencga.storage.variant.VariantEffectProtos;
+import org.opencb.opencga.storage.variant.VariantFieldsProtos;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  */
-public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
+public class VariantMonbaseWriter extends VariantDBWriter {
 
     private final byte[] infoColumnFamily = "i".getBytes();
     private final byte[] dataColumnFamily = "d".getBytes();
@@ -51,7 +54,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
     private boolean includeSamples;
 
 
-    public VariantVcfMonbaseDataWriter(VariantSource source, String species, MonbaseCredentials credentials) {
+    public VariantMonbaseWriter(VariantSource source, String species, MonbaseCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -82,10 +85,10 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMonbaseWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         } catch (MasterNotRunningException | ZooKeeperConnectionException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMonbaseWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
 
@@ -132,7 +135,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
 
             return variantTable != null && studyCollection != null && effectTable != null && variantCollection != null;
         } catch (IOException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMonbaseWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
     }
@@ -431,7 +434,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             variantTable.flushCommits();
             effectTable.flushCommits();
         } catch (IOException ex) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMonbaseWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
 
@@ -445,7 +448,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             variantTable.close();
             effectTable.close();
         } catch (IOException e) {
-            Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(VariantMonbaseWriter.class.getName()).log(Level.SEVERE, null, e);
             return false;
         }
 

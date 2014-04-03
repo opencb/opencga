@@ -9,7 +9,7 @@ import org.opencb.datastore.core.QueryResult;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public interface VariantQueryBuilder {
+public interface VariantDBAdaptor {
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information

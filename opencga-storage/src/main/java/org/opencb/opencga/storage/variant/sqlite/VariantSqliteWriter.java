@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.sqlite;
 
 import com.google.common.base.Joiner;
 
@@ -21,7 +21,7 @@ import org.opencb.opencga.lib.auth.SqliteCredentials;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @TODO aaleman: Move writeEffect/writeStats/write*... to write(batch)
  */
-public class VariantVcfSqliteWriter implements VariantWriter {
+public class VariantSqliteWriter implements VariantWriter {
 
     private boolean createdSampleTable;
     private Statement stmt;
@@ -33,7 +33,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     private boolean includeEffect;
 
 
-    public VariantVcfSqliteWriter(SqliteCredentials credentials) {
+    public VariantSqliteWriter(SqliteCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -44,7 +44,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     }
 
     @Deprecated
-    public VariantVcfSqliteWriter(String dbName) {
+    public VariantSqliteWriter(String dbName) {
         this.stmt = null;
         this.createdSampleTable = false;
         this.connection = new SqliteSingletonConnection(dbName);

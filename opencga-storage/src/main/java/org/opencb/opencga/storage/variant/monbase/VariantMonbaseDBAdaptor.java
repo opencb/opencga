@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.monbase;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
@@ -24,14 +24,15 @@ import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-
-/**
+import org.opencb.opencga.storage.variant.VariantEffectProtos;
+import org.opencb.opencga.storage.variant.VariantFieldsProtos;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;/**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 
 
-public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
+public class VariantMonbaseDBAdaptor implements VariantDBAdaptor {
 
     private String tableName;
     private String effectTableName;
@@ -44,7 +45,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
 
 
-    public VariantMonbaseQueryBuilder(String species, MonbaseCredentials credentials)
+    public VariantMonbaseDBAdaptor(String species, MonbaseCredentials credentials)
             throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
         this.monbaseCredentials = credentials;
         this.tableName = species;

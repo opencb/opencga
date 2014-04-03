@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.mongodb;
 
 import com.mongodb.*;
 import java.net.UnknownHostException;
@@ -11,17 +11,18 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
-public class VariantMongoQueryBuilder implements VariantQueryBuilder {
+public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
 
-    public VariantMongoQueryBuilder(MongoCredentials credentials) throws UnknownHostException {
+    public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
@@ -121,8 +122,8 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
     private List<String> getChunkIds(Region region) {
         List<String> chunkIds = new LinkedList<>();
         
-        int chunkSize = (region.getEnd() - region.getStart() > VariantVcfMongoDataWriter.CHUNK_SIZE_BIG) ?
-                VariantVcfMongoDataWriter.CHUNK_SIZE_BIG : VariantVcfMongoDataWriter.CHUNK_SIZE_SMALL;
+        int chunkSize = (region.getEnd() - region.getStart() > VariantMongoWriter.CHUNK_SIZE_BIG) ?
+                VariantMongoWriter.CHUNK_SIZE_BIG : VariantMongoWriter.CHUNK_SIZE_SMALL;
         int ks = chunkSize / 1000;
         int chunkStart = region.getStart() / chunkSize;
         int chunkEnd = region.getEnd() / chunkSize;

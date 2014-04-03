@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.sqlite;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,21 +28,22 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
+public class VariantSqliteDBAdaptor implements VariantDBAdaptor {
 
     private SqliteCredentials sqliteCredentials;
     private SqliteManager sqliteManager;
 
-    public VariantSqliteQueryBuilder() {
+    public VariantSqliteDBAdaptor() {
         System.out.println("Variant Query Maker");
     }
 
-    public VariantSqliteQueryBuilder(SqliteCredentials sqliteCredentials) throws SQLException, ClassNotFoundException {
+    public VariantSqliteDBAdaptor(SqliteCredentials sqliteCredentials) throws SQLException, ClassNotFoundException {
         System.out.println("Variant Query Maker");
         this.sqliteCredentials = sqliteCredentials;
         this.sqliteManager = new SqliteManager();
@@ -264,7 +265,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                 }
             }
         } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(VariantSqliteQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantSqliteDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
 

@@ -10,14 +10,14 @@ import org.opencb.biodata.models.variant.Variant;
  */
 public abstract class VariantDBWriter implements VariantWriter {
     
-    abstract boolean buildBatchRaw(List<Variant> data);
+    protected abstract boolean buildBatchRaw(List<Variant> data);
     
-    abstract boolean buildStatsRaw(List<Variant> data);
+    protected abstract boolean buildStatsRaw(List<Variant> data);
     
-    abstract boolean buildEffectRaw(List<Variant> variants);
+    protected abstract boolean buildEffectRaw(List<Variant> variants);
     
-    abstract boolean buildBatchIndex(List<Variant> data);
+    protected abstract boolean buildBatchIndex(List<Variant> data);
     
-    abstract boolean writeBatch(List<Variant> data);
+    protected abstract boolean writeBatch(List<Variant> data);
     
 }

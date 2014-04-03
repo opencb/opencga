@@ -33,8 +33,7 @@ import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantQueryBuilder;
-//import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 public class CloudSessionManager {
 
@@ -471,7 +470,7 @@ public class CloudSessionManager {
 /*    
     public QueryResult fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
         String species = params.containsKey("species") ? params.get("species").get(0) : "hsapiens";
-        VariantQueryBuilder queryBuilder = null;
+        VariantDBAdaptor queryBuilder = null;
                 //new VariantMonbaseQueryBuilder(species, 
                 //new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, "variants_" + species, "cgonzalez", "cgonzalez"));
                 new VariantSqliteQueryBuilder(new SqliteCredentials(objectPath));

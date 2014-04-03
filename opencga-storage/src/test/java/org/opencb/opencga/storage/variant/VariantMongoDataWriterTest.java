@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
+import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import org.junit.BeforeClass;
@@ -24,10 +25,10 @@ import org.opencb.biodata.models.variant.VariantSource;
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
-public class VariantVcfMongoDataWriterTest extends GenericTest {
+public class VariantMongoDataWriterTest extends GenericTest {
 
     private static Properties properties;
-    private static String inputFile = VariantVcfMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile = VariantMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static MongoCredentials credentials;
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
 
@@ -51,7 +52,7 @@ public class VariantVcfMongoDataWriterTest extends GenericTest {
 
         VariantReader reader;
         reader = new VariantVcfReader(inputFile, inputFile, inputFile);
-        writers.add(new VariantVcfMongoDataWriter(study, "opencga-hsapiens", credentials));
+        writers.add(new VariantMongoWriter(study, "opencga-hsapiens", credentials));
 
         for (VariantWriter vw : writers) {
             vw.includeStats(true);

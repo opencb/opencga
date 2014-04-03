@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.mongodb;
 
 import com.mongodb.*;
 import java.io.BufferedWriter;
@@ -22,12 +22,13 @@ import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.storage.variant.VariantDBWriter;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantVcfMongoDataWriter extends VariantDBWriter {
+public class VariantMongoWriter extends VariantDBWriter {
 
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
@@ -51,7 +52,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     
     private BufferedWriter writer;
 
-    public VariantVcfMongoDataWriter(VariantSource source, String species, MongoCredentials credentials) {
+    public VariantMongoWriter(VariantSource source, String species, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -64,7 +65,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 //        try {
 //            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(source.getName() + ".json.gz"))));
 //        } catch (IOException ex) {
-//            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
 //        }
     }
 
@@ -80,7 +81,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
             }
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
 
@@ -115,7 +116,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     }
 
     @Override
-    boolean buildBatchRaw(List<Variant> data) {
+    protected boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
             // Check if this variant is already stored
             String rowkey = buildRowkey(v);
@@ -199,7 +200,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     }
     
     @Override
-    boolean buildStatsRaw(List<Variant> data) {
+    protected boolean buildStatsRaw(List<Variant> data) {
         for (Variant v : data) {
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
                 VariantStats vs = archiveFile.getStats();
@@ -237,7 +238,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     }
 
     @Override
-    boolean buildEffectRaw(List<Variant> variants) {
+    protected boolean buildEffectRaw(List<Variant> variants) {
         for (Variant v : variants) {
             BasicDBObject mongoVariant = mongoMap.get(buildRowkey(v));
 
@@ -272,7 +273,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     }
     
     @Override
-    boolean buildBatchIndex(List<Variant> data) {
+    protected boolean buildBatchIndex(List<Variant> data) {
 //        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
         variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1));
         variantCollection.ensureIndex(new BasicDBObject("chunkIds", 1));
@@ -280,7 +281,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     }
 
     @Override
-    boolean writeBatch(List<Variant> data) {
+    protected boolean writeBatch(List<Variant> data) {
         for (Variant v : data) {
             String rowkey = buildRowkey(v);
             BasicDBObject mongoVariant = mongoMap.get(rowkey);
@@ -293,7 +294,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 //                try {
 //                    writer.write(mongoVariant.toString() + "\n") ;
 //                } catch (IOException ex) {
-//                    Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
 //                }
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
@@ -379,7 +380,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
 //        try {
 //            writer.close();
 //        } catch (IOException ex) {
-//            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
 //        }
         return true;
     }

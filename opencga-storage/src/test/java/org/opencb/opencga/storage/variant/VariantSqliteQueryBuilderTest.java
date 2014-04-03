@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
+import org.opencb.opencga.storage.variant.sqlite.VariantSqliteDBAdaptor;
 import org.junit.*;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
@@ -68,7 +69,7 @@ public class VariantSqliteQueryBuilderTest extends GenericTest {
         qo.put("effect", false);
 
         SqliteCredentials sc = new SqliteCredentials(Paths.get(outputFile));
-        VariantQueryBuilder vqb = new VariantSqliteQueryBuilder(sc);
+        VariantDBAdaptor vqb = new VariantSqliteDBAdaptor(sc);
 
         QueryResult qr = vqb.getAllVariantsByRegionAndStudy(r, "", qo);
         System.out.println(qr);
