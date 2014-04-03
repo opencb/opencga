@@ -61,11 +61,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
         this.mongoFileMap = new HashMap<>();
 
         conseqTypes = new LinkedHashMap<>();
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(source.getName() + ".json.gz"))));
-        } catch (IOException ex) {
-            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        try {
+//            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(source.getName() + ".json.gz"))));
+//        } catch (IOException ex) {
+//            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//        }
     }
 
     @Override
@@ -376,11 +376,11 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
     @Override
     public boolean close() {
         mongoClient.close();
-        try {
-            writer.close();
-        } catch (IOException ex) {
-            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-        }
+//        try {
+//            writer.close();
+//        } catch (IOException ex) {
+//            Logger.getLogger(VariantVcfMongoDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//        }
         return true;
     }
 
