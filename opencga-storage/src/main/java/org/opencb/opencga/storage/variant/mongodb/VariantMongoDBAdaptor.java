@@ -114,6 +114,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public QueryResult getVariantById(String id, QueryOptions options) {
+        MongoDBCollection coll = db.getCollection("variants");
+
+        BasicDBObject query = new BasicDBObject("id", id);
+        return coll.find(query, options);
+    }
+
+    @Override
+    public List<QueryResult> getVariantsByIdList(List<String> ids, QueryOptions options) {
+        List<QueryResult> allResults = new LinkedList<>();
+        for (String r : ids) {
+            QueryResult queryResult = getVariantById(r, options);
+            allResults.add(queryResult);
+        }
+        return allResults;
+    }
+
+    @Override
     public boolean close() {
         db.close();
         return true;

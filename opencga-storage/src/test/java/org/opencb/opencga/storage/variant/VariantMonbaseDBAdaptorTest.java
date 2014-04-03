@@ -35,7 +35,7 @@ import org.opencb.opencga.lib.auth.MonbaseCredentials;
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  */
-public class VariantMonbaseQueryBuilderTest {
+public class VariantMonbaseDBAdaptorTest {
 
     private static final String tableName = "test_VariantMonbaseQueryBuilderTest";
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);

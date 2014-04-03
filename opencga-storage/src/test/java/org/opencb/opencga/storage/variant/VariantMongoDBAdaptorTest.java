@@ -30,7 +30,7 @@ import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoQueryBuilderTest extends GenericTest {
+public class VariantMongoDBAdaptorTest extends GenericTest {
 
     private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "Study for testing purposes", null, null);
@@ -168,7 +168,6 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         }
     }
     
-    
     @Test
     public void testGetLeastAffectedGenes() {
         QueryResult queryResult = vqb.getLeastAffectedGenes(10, null);
@@ -180,6 +179,19 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
             DBObject object = result.get(i);
             assertTrue(((int) prevObject.get("count")) <= ((int) object.get("count")));
         }
+    }
+    
+    @Test
+    public void testGetVariantById() {
+        QueryResult queryResult;
+        
+        queryResult = vqb.getVariantById("rs1137005", null);
+        assertEquals(1, queryResult.getNumResults());
+        DBObject object = (DBObject) queryResult.getResult().get(0);
+        assertEquals(object.get("start"), 1650807);
+        
+        queryResult = vqb.getVariantById("rs123456789", null);
+        assertEquals(0, queryResult.getNumResults());
     }
     
 //    @Test

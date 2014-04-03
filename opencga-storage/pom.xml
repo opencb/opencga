@@ -123,7 +123,7 @@
                         <testExcludes>
                             <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
                             <exclude>**/VariantMonbaseWriterTest.java</exclude>
-                            <exclude>**/VariantMonbaseQueryBuilderTest.java</exclude>
+                            <exclude>**/VariantMonbaseDBAdaptorTest.java</exclude>
                         </testExcludes>
                 </configuration>
             </plugin>

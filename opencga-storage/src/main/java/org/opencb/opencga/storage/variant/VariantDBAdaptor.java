@@ -49,6 +49,12 @@ public interface VariantDBAdaptor {
     
     QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
 
+    
+    QueryResult getVariantById(String id, QueryOptions options);
+            
+    List<QueryResult> getVariantsByIdList(List<String> ids, QueryOptions options);
+    
+    
 //    QueryResult getStatsByVariant(Variant variant, QueryOptions options);
 
 //    QueryResult getStatsByVariantList(List<Variant> variant, QueryOptions options);
