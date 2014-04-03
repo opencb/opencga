@@ -32,7 +32,7 @@ import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
  */
 public class VariantMongoQueryBuilderTest extends GenericTest {
 
-    private static String inputFile = VariantMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "Study for testing purposes", null, null);
     private static MongoCredentials credentials;
     private static VariantDBAdaptor vqb;

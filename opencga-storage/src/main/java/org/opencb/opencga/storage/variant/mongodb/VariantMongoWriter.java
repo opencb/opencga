@@ -152,6 +152,8 @@ public class VariantMongoWriter extends VariantDBWriter {
 
                 // Samples
                 if (this.includeSamples && archiveFile.getSamplesData().size() > 0) {
+                    mongoFile.append("format", archiveFile.getFormat()); // Useless field if samples are not stored
+                    
                     BasicDBObject samples = new BasicDBObject();
 
                     for (Map.Entry<String, Map<String, String>> entry : archiveFile.getSamplesData().entrySet()) {
@@ -249,14 +251,16 @@ public class VariantMongoWriter extends VariantDBWriter {
 
             // Add effects to file
             if (!v.getEffect().isEmpty()) {
-                BasicDBList effectsSet = new BasicDBList();
+                Set<BasicDBObject> effectsSet = new HashSet<>();
 
                 for (VariantEffect effect : v.getEffect()) {
                     effectsSet.add(getVariantEffectDBObject(effect));
                     addConsequenceType(effect.getConsequenceTypeObo());
                 }
                 
-                mongoVariant.put("effects", effectsSet);
+                BasicDBList effectsList = new BasicDBList();
+                effectsList.addAll(effectsSet);
+                mongoVariant.put("effects", effectsList);
             }
         }
 
