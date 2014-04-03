@@ -115,14 +115,14 @@
                     <source>1.7</source>
                     <target>1.7</target>
                         <excludes>
-                            <exclude>**/VariantVcfSqliteWriter.java</exclude>
-                            <exclude>**/VariantSqliteQueryBuilder.java</exclude>
-                            <exclude>**/VariantVcfMonbaseDataWriter.java</exclude>
-                            <exclude>**/VariantMonbaseQueryBuilder.java</exclude>
+                            <exclude>**/VariantSqliteWriter.java</exclude>
+                            <exclude>**/VariantSqliteDBAdaptor.java</exclude>
+                            <exclude>**/VariantMonbaseWriter.java</exclude>
+                            <exclude>**/VariantMonbaseDBAdaptor.java</exclude>
                         </excludes>
                         <testExcludes>
                             <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
-                            <exclude>**/VariantVcfMonbaseDataWriterTest.java</exclude>
+                            <exclude>**/VariantMonbaseWriterTest.java</exclude>
                             <exclude>**/VariantMonbaseQueryBuilderTest.java</exclude>
                         </testExcludes>
                 </configuration>
