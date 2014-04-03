@@ -55,11 +55,6 @@
                 <artifactId>models</artifactId>
                 <version>0.1</version>
             </dependency>
-            <!--<dependency>-->
-                <!--<groupId>org.opencb.datastore</groupId>-->
-                <!--<artifactId>datastore-core</artifactId>-->
-                <!--<version>0.1.0</version>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.datastore</groupId>
                 <artifactId>datastore-mongodb</artifactId>
@@ -82,12 +77,6 @@
                 <artifactId>slf4j-simple</artifactId>
                 <version>1.7.6</version>
             </dependency>
-            <!--<dependency>-->
-            <!--<groupId>nl.bitwalker</groupId>-->
-            <!--<artifactId>user-agent-util</artifactId>-->
-            <!--<version>1.6</version>-->
-            <!--<scope>compile</scope>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
                 <artifactId>cellbase-core</artifactId>
