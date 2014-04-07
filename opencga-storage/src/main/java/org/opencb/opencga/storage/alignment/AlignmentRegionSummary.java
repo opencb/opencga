@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.alignment;
 
 import org.opencb.commons.bioformats.alignment.Alignment;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -17,37 +14,77 @@ import java.util.Map;
  */
 public class AlignmentRegionSummary {
     //Only can add an Alignment when it's opened.
-    private boolean open = true;
+    private boolean open;
     private int index;
 
     private int defaultFlag;
     private int defaultLen;
     private String defaultRNext;
     private int defaultOverlapped;
-    private List<String> keysList = null;
+    private List<String> keysList;
     private Map<String, Integer> keysMap;
     private Map<Map.Entry<Integer, Object>, Integer> tagsMap;
 
     //Histogram for default values.
-    private Map<Integer, Integer> flagsMap = new HashMap<>();
-    private Map<Integer, Integer> lenMap = new HashMap<>();
-    private Map<String, Integer> rnextMap = new HashMap<>();
+    //Null at closed
+    private Map<Integer, Integer> flagsMap;
+    private Map<Integer, Integer> lenMap;
+    private Map<String, Integer> rnextMap;
 
 
     public AlignmentRegionSummary(int index){
+        this.open = true;
         this.index = index;
+        this.flagsMap = new HashMap<>();
+        this.lenMap = new HashMap<>();
+        this.rnextMap = new HashMap<>();
     }
 
-    public AlignmentRegionSummary(AlignmentProto.Summary summary){
+    public AlignmentRegionSummary(AlignmentProto.Summary summary, int index){
         this.open = false;
-        throw new UnsupportedOperationException();
+
+        this.index = index;
+
+        this.defaultFlag = summary.getDefaultFlag();
+        this.defaultLen = summary.getDefaultLen();
+        this.defaultRNext = summary.getDefaultRNext();
+        this.defaultOverlapped = summary.getDefaultOverlapped();
+
+        String keys = summary.getKeys();
+        this.keysList = new ArrayList<>(keys.length()/2);
+        this.keysMap = new HashMap<>();
+        for(int i = 0; i < keys.length()/2; i++){
+            keysList.set(i, keys.substring(i*2, i*2+2));
+            keysMap.put(keysList.get(i), i);
+        }
+
+        Map.Entry<Integer, Object> tag;
+        Object value = "";
+        this.tagsMap = new HashMap<>();
+        for (AlignmentProto.Summary.Pair pair : summary.getValuesList()) {
+            if(pair.hasAvalue()) {
+                value = pair.getAvalue();
+            } else if(pair.hasFvalue()) {
+                value = pair.getFvalue();
+            } else if(pair.hasIvalue()) {
+                value = pair.getIvalue();
+            } else if(pair.hasZvalue()) {
+                value = pair.getZvalue();
+            }
+            tagsMap.put(new HashMap.SimpleEntry<>(pair.getKey(), value), tagsMap.size());
+        }
+
     }
 
     /**
      * This function can only be called when summary is OPEN.
      */
     public void addAlignment(Alignment alignment){
-
+        if(!open){
+            System.out.println("[ERROR] Alignmentregionsummary.addAlignment() can't be called when is closed!");
+            //TODO jj: Throw exception?
+            return;
+        }
         //FLAG
         {
             Integer f = flagsMap.get(alignment.getFlags());
@@ -156,7 +193,7 @@ public class AlignmentRegionSummary {
                 .setDefaultLen(defaultLen)
                 .setDefaultOverlapped(defaultOverlapped)
                 .setDefaultRNext(defaultRNext)
-                .setKey(keys)
+                .setKeys(keys)
                 .addAllValues(pairArrayList)
                 .build();
 

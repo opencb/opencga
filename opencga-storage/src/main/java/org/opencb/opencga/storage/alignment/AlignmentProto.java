@@ -2684,9 +2684,9 @@ public final class AlignmentProto {
     boolean hasDefaultOverlapped();
     int getDefaultOverlapped();
     
-    // required string key = 8;
-    boolean hasKey();
-    String getKey();
+    // required string keys = 8;
+    boolean hasKeys();
+    String getKeys();
     
     // repeated .org.opencb.opencga.storage.alignment.Summary.Pair values = 9;
     java.util.List<org.opencb.opencga.storage.alignment.AlignmentProto.Summary.Pair> 
@@ -3437,14 +3437,14 @@ public final class AlignmentProto {
       return defaultOverlapped_;
     }
     
-    // required string key = 8;
-    public static final int KEY_FIELD_NUMBER = 8;
-    private java.lang.Object key_;
-    public boolean hasKey() {
+    // required string keys = 8;
+    public static final int KEYS_FIELD_NUMBER = 8;
+    private java.lang.Object keys_;
+    public boolean hasKeys() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
-    public String getKey() {
-      java.lang.Object ref = key_;
+    public String getKeys() {
+      java.lang.Object ref = keys_;
       if (ref instanceof String) {
         return (String) ref;
       } else {
@@ -3452,17 +3452,17 @@ public final class AlignmentProto {
             (com.google.protobuf.ByteString) ref;
         String s = bs.toStringUtf8();
         if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          key_ = s;
+          keys_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getKeyBytes() {
-      java.lang.Object ref = key_;
+    private com.google.protobuf.ByteString getKeysBytes() {
+      java.lang.Object ref = keys_;
       if (ref instanceof String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        key_ = b;
+        keys_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
@@ -3495,7 +3495,7 @@ public final class AlignmentProto {
       defaultLen_ = 0;
       defaultRNext_ = "";
       defaultOverlapped_ = 0;
-      key_ = "";
+      keys_ = "";
       values_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
@@ -3519,7 +3519,7 @@ public final class AlignmentProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasKey()) {
+      if (!hasKeys()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -3549,7 +3549,7 @@ public final class AlignmentProto {
         output.writeUInt32(4, defaultOverlapped_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(8, getKeyBytes());
+        output.writeBytes(8, getKeysBytes());
       }
       for (int i = 0; i < values_.size(); i++) {
         output.writeMessage(9, values_.get(i));
@@ -3581,7 +3581,7 @@ public final class AlignmentProto {
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(8, getKeyBytes());
+          .computeBytesSize(8, getKeysBytes());
       }
       for (int i = 0; i < values_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
@@ -3720,7 +3720,7 @@ public final class AlignmentProto {
         bitField0_ = (bitField0_ & ~0x00000004);
         defaultOverlapped_ = 0;
         bitField0_ = (bitField0_ & ~0x00000008);
-        key_ = "";
+        keys_ = "";
         bitField0_ = (bitField0_ & ~0x00000010);
         if (valuesBuilder_ == null) {
           values_ = java.util.Collections.emptyList();
@@ -3785,7 +3785,7 @@ public final class AlignmentProto {
         if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x00000010;
         }
-        result.key_ = key_;
+        result.keys_ = keys_;
         if (valuesBuilder_ == null) {
           if (((bitField0_ & 0x00000020) == 0x00000020)) {
             values_ = java.util.Collections.unmodifiableList(values_);
@@ -3823,8 +3823,8 @@ public final class AlignmentProto {
         if (other.hasDefaultOverlapped()) {
           setDefaultOverlapped(other.getDefaultOverlapped());
         }
-        if (other.hasKey()) {
-          setKey(other.getKey());
+        if (other.hasKeys()) {
+          setKeys(other.getKeys());
         }
         if (valuesBuilder_ == null) {
           if (!other.values_.isEmpty()) {
@@ -3873,7 +3873,7 @@ public final class AlignmentProto {
           
           return false;
         }
-        if (!hasKey()) {
+        if (!hasKeys()) {
           
           return false;
         }
@@ -3931,7 +3931,7 @@ public final class AlignmentProto {
             }
             case 66: {
               bitField0_ |= 0x00000010;
-              key_ = input.readBytes();
+              keys_ = input.readBytes();
               break;
             }
             case 74: {
@@ -4045,39 +4045,39 @@ public final class AlignmentProto {
         return this;
       }
       
-      // required string key = 8;
-      private java.lang.Object key_ = "";
-      public boolean hasKey() {
+      // required string keys = 8;
+      private java.lang.Object keys_ = "";
+      public boolean hasKeys() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
-      public String getKey() {
-        java.lang.Object ref = key_;
+      public String getKeys() {
+        java.lang.Object ref = keys_;
         if (!(ref instanceof String)) {
           String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          key_ = s;
+          keys_ = s;
           return s;
         } else {
           return (String) ref;
         }
       }
-      public Builder setKey(String value) {
+      public Builder setKeys(String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000010;
-        key_ = value;
+        keys_ = value;
         onChanged();
         return this;
       }
-      public Builder clearKey() {
+      public Builder clearKeys() {
         bitField0_ = (bitField0_ & ~0x00000010);
-        key_ = getDefaultInstance().getKey();
+        keys_ = getDefaultInstance().getKeys();
         onChanged();
         return this;
       }
-      void setKey(com.google.protobuf.ByteString value) {
+      void setKeys(com.google.protobuf.ByteString value) {
         bitField0_ |= 0x00000010;
-        key_ = value;
+        keys_ = value;
         onChanged();
       }
       
@@ -5414,18 +5414,18 @@ public final class AlignmentProto {
       "\001\n\017AlignmentBucket\022\024\n\014summaryIndex\030\001 \002(\r" +
       "\022\022\n\noverlapped\030\002 \001(\r\022O\n\020alignmentRecords" +
       "\030\t \003(\01325.org.opencb.opencga.storage.alig" +
-      "nment.AlignmentRecord\"\211\002\n\007Summary\022\023\n\013def" +
+      "nment.AlignmentRecord\"\212\002\n\007Summary\022\023\n\013def" +
       "aultFlag\030\001 \002(\r\022\022\n\ndefaultLen\030\002 \002(\r\022\024\n\014de",
       "faultRNext\030\003 \002(\t\022\031\n\021defaultOverlapped\030\004 " +
-      "\002(\r\022\013\n\003key\030\010 \002(\t\022B\n\006values\030\t \003(\01322.org.o" +
-      "pencb.opencga.storage.alignment.Summary." +
-      "Pair\032S\n\004Pair\022\013\n\003key\030\001 \002(\r\022\016\n\006avalue\030\002 \001(" +
-      "\t\022\016\n\006ivalue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zva" +
-      "lue\030\005 \001(\t\"\225\001\n\006Header\022D\n\007regions\030\001 \003(\01323." +
-      "org.opencb.opencga.storage.alignment.Hea" +
-      "der.Region\022\021\n\tSamHeader\030\002 \001(\014\0322\n\006Region\022" +
-      "\026\n\016chromosomeName\030\001 \002(\t\022\020\n\010maxValue\030\002 \002(" +
-      "\rB\020B\016AlignmentProto"
+      "\002(\r\022\014\n\004keys\030\010 \002(\t\022B\n\006values\030\t \003(\01322.org." +
+      "opencb.opencga.storage.alignment.Summary" +
+      ".Pair\032S\n\004Pair\022\013\n\003key\030\001 \002(\r\022\016\n\006avalue\030\002 \001" +
+      "(\t\022\016\n\006ivalue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zv" +
+      "alue\030\005 \001(\t\"\225\001\n\006Header\022D\n\007regions\030\001 \003(\01323" +
+      ".org.opencb.opencga.storage.alignment.He" +
+      "ader.Region\022\021\n\tSamHeader\030\002 \001(\014\0322\n\006Region" +
+      "\022\026\n\016chromosomeName\030\001 \002(\t\022\020\n\010maxValue\030\002 \002" +
+      "(\rB\020B\016AlignmentProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5461,7 +5461,7 @@ public final class AlignmentProto {
           internal_static_org_opencb_opencga_storage_alignment_Summary_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor,
-              new java.lang.String[] { "DefaultFlag", "DefaultLen", "DefaultRNext", "DefaultOverlapped", "Key", "Values", },
+              new java.lang.String[] { "DefaultFlag", "DefaultLen", "DefaultRNext", "DefaultOverlapped", "Keys", "Values", },
               org.opencb.opencga.storage.alignment.AlignmentProto.Summary.class,
               org.opencb.opencga.storage.alignment.AlignmentProto.Summary.Builder.class);
           internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_descriptor =

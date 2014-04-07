@@ -99,7 +99,7 @@ public class AlignmentProtoHelper {
 
 
 
-    public List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket){
+    public List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket alignmentBucket){
 
 
         throw new UnsupportedOperationException();
