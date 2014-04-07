@@ -36,6 +36,7 @@ message AlignmentRecord {
     required sint32 relativePnext = 8;
     required sint32 inferredInsertSize = 9;
     repeated Difference diffs = 10;
+    repeated uint32 tags = 11 [packed = true];
 }
 
 message AlignmentBucket {

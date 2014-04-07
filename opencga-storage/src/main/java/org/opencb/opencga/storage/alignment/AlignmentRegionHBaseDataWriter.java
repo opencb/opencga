@@ -10,6 +10,7 @@ import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.datamanagers.HBaseManager;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
@@ -22,14 +23,10 @@ import java.util.List;
  * User: jcoll
  * Date: 3/6/14
  * Time: 4:48 PM
- * To change this template use File | Settings | File Templates.
  */
 public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegion> {
 
-    //Too similar to AlignmentRegionCoverageHBaseDataWriter. TODO jj: Common HBase writer class.
-    private Configuration config;
-    private boolean opened = false;
-    private HBaseAdmin admin;
+    private HBaseManager hBaseManager;
     private HTable table;
     private String tableName;
     private String sample = "s";
@@ -57,72 +54,55 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
     public AlignmentRegionHBaseDataWriter(MonbaseCredentials credentials, String tableName) {
         // HBase configuration
-        config = HBaseConfiguration.create();
-        config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
-        config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
-        config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+
+        hBaseManager = new HBaseManager(credentials);
 
         this.puts = new LinkedList<>();
         this.tableName = tableName;
     }
 
     public AlignmentRegionHBaseDataWriter(Configuration config, String tableName) {
-        this.config = config;
+        hBaseManager = new HBaseManager(config);
+
         this.puts = new LinkedList<>();
         this.tableName = tableName;
     }
 
     @Override
     public boolean open() {
-        try {
-            admin = new HBaseAdmin(config);
-        } catch (MasterNotRunningException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        } catch (ZooKeeperConnectionException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        }
-
-        try {
-            if(!admin.tableExists(tableName)){
-                HTableDescriptor ht = new HTableDescriptor(tableName);
-                ht.addFamily( new HColumnDescriptor(columnFamilyName));
-                admin.createTable(ht);
-            }
-            table = new HTable(admin.getConfiguration(), tableName);
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        }
-
-        this.opened = true;
+        hBaseManager.connect();
 
         return true;
     }
 
     @Override
     public boolean close() {
-        try {
-            admin.close();
-            table.close();
-        } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            return false;
-        }
 
-        this.opened = false;
+        hBaseManager.disconnect();
+
         return true;
     }
 
     @Override
     public boolean pre() {
-        return false;  //To change body of implemented methods use File | Settings | File Templates.
+        table = hBaseManager.createTable(tableName,columnFamilyName);
+
+        return true;
     }
 
     @Override
     public boolean post() {
         flush();
+        try {
+            System.out.println("Puteamos la tabla. " + puts.size());
+            table.put(puts);
+            puts.clear();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+
         return true;
     }
 
@@ -130,11 +110,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     public boolean write(AlignmentRegion alignmentRegion) {
 
         /*
-         * 1ยบ Add remaining alignments from last AR
-         * 2ยบ Take Alignments from tail
-         * 3ยบ Create summary
-         * 4ยบ Create Proto
-         * 5ยบ Write into hbase
+         * 1บ Add remaining alignments from last AR
+         * 2บ Take Alignments from tail
+         * 3บ Create summary
+         * 4บ Create Proto
+         * 5บ Write into hbase
          *
          */
 
@@ -159,11 +139,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             chromosomeHeader();
         }
 
-        //1ยบ Add remaining alignments.
+        //1บ Add remaining alignments.
         List<Alignment> alignments = alignmentsRemain;
         alignments.addAll(alignmentRegion.getAlignments());
 
-        //2ยบ Take alignments from tail.
+        //2บ Take alignments from tail.
         alignmentsRemain = new LinkedList<>();
         Alignment alignmentAux = alignments.remove(alignments.size()-1);    //Remove last
         alignmentsRemain.add(0, alignmentAux);
@@ -177,17 +157,18 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             }
         }
 
-        //3ยบ Create Summary
+        //3บ Create Summary
         currentBucket = alignments.get(0).getStart()/alignmentBucketSize;
         lastOverlappedPosition = alignments.get(0).getUnclippedEnd();
-        AlignmentProtoHelper.Summary summary = new AlignmentProtoHelper.Summary();
+
+        AlignmentRegionSummary summary = new AlignmentRegionSummary();
         for(Alignment alignment : alignments){
             summary.addAlignment(alignment);
             setOverlaps(alignment);
         }
 
 
-        //4ยบ Create Proto
+        //4บ Create Proto
         for(Alignment alignment : alignments){
             if(index < alignment.getStart()/alignmentBucketSize){
                 alignmentBucket = AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary, numBucketsOverlapped.get((int)index));    //TODO:
@@ -199,7 +180,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         }
 
 
-        //5ยบ Write into hbase
+        //5บ Write into hbase
         try {
             System.out.println("Puteamos la tabla. " + puts.size());
             table.put(puts);
