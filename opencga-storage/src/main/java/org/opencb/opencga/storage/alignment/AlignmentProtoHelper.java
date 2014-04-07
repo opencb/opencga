@@ -3,10 +3,7 @@ package org.opencb.opencga.storage.alignment;
 import com.google.protobuf.ByteString;
 import org.opencb.commons.bioformats.alignment.Alignment;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created with IntelliJ IDEA.
@@ -18,8 +15,183 @@ import java.util.Map;
  * TODO jj: check another sam with CIGAR: hard clipping, padding, and skipped region
  */
 public class AlignmentProtoHelper {
+
+    public static class Summary{
+
+        private int index;
+
+        private int defaultFlag;
+        private int defaultLen;
+        private String defaultRNext;
+        private int defaultOverlapped;
+        private Tags tags;
+
+        //Histogram for default values.
+        private Map<Integer, Integer> flagsMap = new HashMap<>();
+        private Map<Integer, Integer> lenMap = new HashMap<>();
+        private Map<String, Integer> rnextMap = new HashMap<>();
+
+        public static class Tags {
+            //fromTags
+            private Map<String, Integer> keysMap = new HashMap<>();
+            private Map<Map.Entry<Integer, Object>, Integer> tagsMap = new HashMap<>();
+
+            //toTags
+            private List<String> keysList = null;
+
+            public Map<String, Object> toTags(int[] tags){
+                throw new UnsupportedOperationException();
+            }
+
+            public String getKeys(){
+                String keys = "";
+                keysList = new ArrayList<String>(keysMap.size());
+
+                for(Map.Entry<String, Integer> entry : keysMap.entrySet()){
+                    keysList.set(entry.getValue(), entry.getKey());
+                }
+                for(String s : keysList){
+                    keys += s;
+                }
+                return keys;
+            }
+
+            public ArrayList<AlignmentProto.Summary.Pair> getAllValues(){
+                ArrayList<AlignmentProto.Summary.Pair> listP = new ArrayList<>(tagsMap.size());
+
+                for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
+                    if(listP.set(entry.getValue(),
+                            AlignmentProto.Summary.Pair.newBuilder()
+                                .setKey(entry.getKey().getKey())
+                                .setAvalue(entry.getKey().getValue().toString())
+                                .build()
+                    ) != null){
+                        System.out.println("[ERROR] Duplicated tag index.");
+                    }
+                }
+                return listP;
+            }
+
+            /**
+             * From a tag map, update the tag list, and return the indices list
+             *
+             * @param tags Map of attributes
+             * @return List of indices
+             */
+            public int[] fromTags(Map<String, Object> tags){
+                int key;
+                Map.Entry<Integer, Object> tag;
+                int[] tagIndices = new int[tags.size()];
+                int tagIndex;
+                int i = 0;
+                for(Map.Entry<String, Object> entry : tags.entrySet()){
+                    if(keysMap.containsKey(entry.getKey())){
+                        keysMap.put(entry.getKey(), key = keysMap.size());
+                    } else {
+                        key = keysMap.get(entry.getKey());
+                    }
+
+                    tag = new AbstractMap.SimpleEntry<>(key, entry.getValue());
+
+                    if(tagsMap.containsKey(tag)){
+                        tagIndex = tagsMap.get(tag);
+                    } else {
+                        tagsMap.put(tag, tagIndex = tagsMap.size());
+                    }
+                    tagIndices[i++] = tagIndex;
+                }
+                return tagIndices;
+            }
+        }
+
+        public Summary(int index){
+            this.index = index;
+        }
+
+        public int[] addAlignment(Alignment alignment){
+
+            {
+                Integer f = flagsMap.get(alignment.getFlags());
+                f = f==null?1:f+1;
+                flagsMap.put(alignment.getFlags(), f);
+            } {
+                Integer l = lenMap.get(alignment.getLength());
+                l = l==null?1:l+1;
+                    lenMap.put(alignment.getLength(), l);
+            } {
+                Integer rn = rnextMap.get(alignment.getLength());
+                rn = rn==null?1:rn+1;
+                rnextMap.put(alignment.getMateReferenceName(), rn);
+            }
+
+            return tags.fromTags(alignment.getAttributes());
+
+
+        }
+
+        public static Summary fromProto(AlignmentProto.Summary summary){
+            throw new UnsupportedOperationException();
+        }
+        public AlignmentProto.Summary toProto( Summary summary){
+
+            return AlignmentProto.Summary.newBuilder()
+                    .setDefaultFlag(defaultFlag)
+                    .setDefaultLen(defaultLen)
+                    .setDefaultOverlapped(defaultOverlapped)
+                    .setDefaultRNext(defaultRNext)
+                    .setKey(tags.getKeys())
+                    .addAllValues(tags.getAllValues())
+                    .build();
+
+        }
+
+
+    }
+
+    public static class AlignmentBucket{
+
+        public AlignmentProto.AlignmentBucket toProto(List<Alignment> alignments){
+
+
+        }
+
+
+    }
+
+    public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, Summary summary){
+
+    //TODO:
+        AlignmentProtoHelper.Summary summary = new AlignmentProtoHelper.Summary();
+        int[][] tags = new int[alignments.size()][];
+
+        Iterator<Alignment> iterator = alignments.iterator();
+        for(int i = 0; i < alignments.size(); i++){
+            tags[i] = summary.addAlignment(iterator.next());
+        }
+
+        AlignmentProto.AlignmentBucket.Builder alignmentBucketBuilder = AlignmentProto.AlignmentBucket.newBuilder();
+
+        iterator = alignments.iterator();
+        for(int i = 0; i < alignments.size(); i++){
+            alignmentBucketBuilder.addAlignmentRecords(AlignmentProtoHelper.toProto(iterator.next(), , ))
+        }
+
+        return alignmentBucketBuilder.build();
+    }
+    public List<Alignment> alignments fromAlignmentBucketProto(AlignmentProto.AlignmentBucket){
+
+
+        throw new UnsupportedOperationException();
+    }
+
+
+
     /**
-     * @param chunkStart: start of the alignmentRegion.
+     *
+     * @param alignmentRecord
+     * @param chromosome
+     * @param chunkStart start of the alignmentRegion.
+     * @return
      */
     public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, long chunkStart){
 
@@ -68,6 +240,14 @@ public class AlignmentProtoHelper {
                 );
     }
 
+
+    /**
+     *
+     *
+     * @param alignment
+     * @param chunkStart
+     * @return
+     */
     public static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long chunkStart){
 
         AlignmentProto.AlignmentRecord.Builder alignmentRecordBuilder = AlignmentProto.AlignmentRecord.newBuilder()

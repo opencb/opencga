@@ -1,5 +1,13 @@
+
+/**
+ *
+ *
+ * protoc --java_out ../src/main/java/ Alignment.proto
+ */
+
 package org.opencb.opencga.storage.alignment;
 option java_outer_classname = "AlignmentProto";
+
 
 message Difference {
     enum DifferenceOperator {
@@ -11,40 +19,63 @@ message Difference {
         HARD_CLIPPING = 6;
         PADDING = 7;
     };
-    required DifferenceOperator operator = 1;
-    required uint32 pos = 2;
-    required uint32 length = 3;
-    optional bytes sequence = 4;
+    required DifferenceOperator operator = 1;       //TODO: Default op? Summary, Bucket or Alignment level?
+    optional uint32 pos = 2;     //If missing, starts at the end of the last difference.
+    optional uint32 length = 3;  //If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+    optional bytes sequence = 4; //If missing, take from the reference sequence.
 }
-
-message MyMap {
-    message Pair {
-        required string key = 1;
-        required string value = 2;
-    }
-    repeated Pair pair = 1;
-}
-
 
 message AlignmentRecord {
     required string name = 1;
     required uint32 pos = 2; // position relative to the alignment region
-    required uint32 len = 3;
-    required uint32 mapq = 4;
-    required string qualities = 5;
-    required string rnext = 6;
-    required sint32 relativePnext = 7;
-    required sint32 inferredInsertSize = 8;
-    repeated Difference diffs = 9;
-    optional MyMap tags = 10;
-    required uint32 flags = 11;
+    optional uint32 flags = 3;
+    optional uint32 len = 4;
+    required uint32 mapq = 5;
+    required string qualities = 6;
+    optional string rnext = 7;
+    required sint32 relativePnext = 8;
+    required sint32 inferredInsertSize = 9;
+    repeated Difference diffs = 10;
 }
 
-// TODO unclipped start and end?
-message AlignmentRegion {
-    repeated AlignmentRecord alignmentRecords = 1;
+message AlignmentBucket {
+    required uint32 summaryIndex = 1;
+    optional uint32 overlapped = 2;
+
+    repeated AlignmentRecord alignmentRecords = 9;
 }
 
+message Summary{
+    message Pair {
+        required uint32 key = 1;
+
+        /*
+         *   TYPES:
+         *   A [!-~] Printable character
+         *   i [-+]?[0-9]+ Singed 32-bit integer
+         *   f [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)? Single-precision
+         *   oating number
+         *   Z [ !-~]+ Printable string, including space
+         *   H [0-9A-F]+ Byte array in the Hex format2
+         *   B [cCsSiIf](,[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+ Integer or numeric array
+         */
+
+        optional string avalue = 2;
+        optional sint32 ivalue = 3;
+        optional float fvalue = 4;
+        optional string zvalue = 5;
+
+    }
+
+    required uint32 defaultFlag = 1;
+    required uint32 defaultLen = 2;
+    required string defaultRNext = 3;
+    required uint32 defaultOverlapped = 4;
+
+    required string key = 8;    //Concatenated tags.
+    repeated Pair values = 9;
+
+}
 
 message Header {
     message Region {
