@@ -32,9 +32,16 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     private String columnFamilyName = "c";
     private List<Put> puts;
 
-    private AlignmentProto.AlignmentRegion.Builder alignmentRegionBuilder;
 
-    private int index = 0;
+    private int alignmentBucketSize = 256;
+
+    //
+
+    List<Alignment> alignmentsRemain = new LinkedList<>();
+    List<Alignment> alignmentBucketList;
+    private AlignmentProto.AlignmentBucket alignmentBucket;
+    //private AlignmentProtoHelper.Summary summary;
+    private long index = 0;
     private String chromosome = "";
 
 
@@ -96,10 +103,13 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     @Override
     public boolean write(AlignmentRegion alignmentRegion) {
 
-        /**
-         * 1º Find BucketLimit
-         * 2º Summarize until the limit
-         * 3º Write untis the limit
+        /*
+         * 1º Add remaining alignments from last AR
+         * 2º Take Alignments from tail
+         * 3º Create summary
+         * 4º Create Proto
+         * 5º Write into hbase
+         *
          */
 
         String value;
@@ -109,33 +119,58 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             return false;
         }
 
+        //First alignment. Init and writes headers
         if(index == 0){
             init(firstAlignment);
 
-           // globalHeader();
-           // chromosomeHeader();
+            globalHeader();
+            chromosomeHeader();
         }
-        System.out.println("Chromosome: " + alignmentRegion.getChromosome()
-                + " size: " + alignmentRegion.getAlignments().size()
-                + " last: " + alignmentRegion.getAlignments().get(alignmentRegion.getAlignments().size()-1).getStart());
+        //Changes chromosome. Flush, init and write chromosomeHeader.
         if(!chromosome.equals(firstAlignment.getChromosome())){
             flush();
-            chromosomeHeader();
             init(firstAlignment);
+            chromosomeHeader();
         }
 
+        //1º Add remaining alignments.
+        List<Alignment> alignments = alignmentsRemain;
+        alignments.addAll(alignmentRegion.getAlignments());
 
-        for(Alignment alignment : alignmentRegion.getAlignments()){
-            if(index < (alignment.getStart() >> 8)){    //flush and reset
-               flush();
-               init(alignment);
+        //2º Take alignments from tail.
+        alignmentsRemain = new LinkedList<>();
+        Alignment alignmentAux = alignments.remove(alignments.size()-1);    //Remove last
+        alignmentsRemain.add(0, alignmentAux);
+        long lastBucket = alignmentAux.getStart()/alignmentBucketSize;
+
+        while(alignments.size() != 0){
+            if(alignments.get(alignments.size()).getStart()/alignmentBucketSize != lastBucket){
+                break;
+            } else {
+                alignmentsRemain.add(0, alignments.remove(alignments.size() - 1));    //Remove last
             }
+        }
 
-            alignmentRegionBuilder.addAlignmentRecords(AlignmentProtoHelper.toProto(alignment, index << 8));
-
+        //3º Create Summary
+        AlignmentProtoHelper.Summary summary = new AlignmentProtoHelper.Summary();
+        for(Alignment alignment : alignments){
+            summary.addAlignment(alignment);
         }
 
 
+        //4º Create Proto
+        for(Alignment alignment : alignments){
+            if(index < alignment.getStart()/alignmentBucketSize){
+                alignmentBucket = AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary);    //TODO:
+                flush();
+                init(alignment);
+
+            }
+            alignmentBucketList.add(alignment);
+        }
+
+
+        //5º Write into hbase
         try {
             System.out.println("Puteamos la tabla. " + puts.size());
             table.put(puts);
@@ -153,44 +188,25 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         //To change body of created methods use File | Settings | File Templates.
     }
 
-    private void chromosomeHeader() { //Write Chromosome header AFTER write and flush all the chromosome
-        //ROW_KEY = header_<chromosome>
-        String rowKey = "header_" + chromosome;
-        System.out.println("Header : " + rowKey);
-
-        Put put = new Put(Bytes.toBytes(rowKey));
-        AlignmentProto.Header.Region.Builder headerBuilder = AlignmentProto.Header.Region.newBuilder()
-                .setChromosomeName(chromosome)
-                .setMaxValue(index);
-        put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), headerBuilder.build().toByteArray());
-
-        puts.add(put);
-
+    private void chromosomeHeader() { //TODO jj:
+        //To change body of created methods use File | Settings | File Templates.
     }
-
-    private void summaryHeader(){
-
-
-    }
-
 
     private void init(Alignment alignment){
-        index = (int)(alignment.getStart() >> 8);
+        index = alignment.getStart() / alignmentBucketSize;
         chromosome = alignment.getChromosome();
-        alignmentRegionBuilder = AlignmentProto.AlignmentRegion.newBuilder();
+        alignmentBucketList = new LinkedList<>();
     }
-
-
 
     private void flush(){
         String rowKey = chromosome + "_" + String.format("%07d", index);
         //System.out.println("Creamos un Put() con rowKey " + rowKey);
 
         Put put = new Put(Bytes.toBytes(rowKey));
-        if(alignmentRegionBuilder != null){
+        if(alignmentBucket != null){
             byte[] compress;
             try {
-                compress = Snappy.compress(alignmentRegionBuilder.build().toByteArray());
+                compress = Snappy.compress(alignmentBucket.toByteArray());
             } catch (IOException e) {
                 System.out.println("this AlignmentProto.AlignmentRegion could not be compressed by snappy");
                 e.printStackTrace();  // TODO jj handle properly
