@@ -13,6 +13,7 @@ import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,6 +47,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     //private AlignmentProtoHelper.Summary summary;
     private long index = 0;
     private String chromosome = "";
+
+    // alignments overlapped along several buckets
+    private ArrayList<Integer> numBucketsOverlapped = new ArrayList<>(100);
+    private long lastOverlappedPosition = 0;
+    private long currentBucket = 0;
 
 
 
@@ -124,11 +130,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     public boolean write(AlignmentRegion alignmentRegion) {
 
         /*
-         * 1บ Add remaining alignments from last AR
-         * 2บ Take Alignments from tail
-         * 3บ Create summary
-         * 4บ Create Proto
-         * 5บ Write into hbase
+         * 1ยบ Add remaining alignments from last AR
+         * 2ยบ Take Alignments from tail
+         * 3ยบ Create summary
+         * 4ยบ Create Proto
+         * 5ยบ Write into hbase
          *
          */
 
@@ -153,11 +159,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             chromosomeHeader();
         }
 
-        //1บ Add remaining alignments.
+        //1ยบ Add remaining alignments.
         List<Alignment> alignments = alignmentsRemain;
         alignments.addAll(alignmentRegion.getAlignments());
 
-        //2บ Take alignments from tail.
+        //2ยบ Take alignments from tail.
         alignmentsRemain = new LinkedList<>();
         Alignment alignmentAux = alignments.remove(alignments.size()-1);    //Remove last
         alignmentsRemain.add(0, alignmentAux);
@@ -171,17 +177,20 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             }
         }
 
-        //3บ Create Summary
+        //3ยบ Create Summary
+        currentBucket = alignments.get(0).getStart()/alignmentBucketSize;
+        lastOverlappedPosition = alignments.get(0).getUnclippedEnd();
         AlignmentProtoHelper.Summary summary = new AlignmentProtoHelper.Summary();
         for(Alignment alignment : alignments){
             summary.addAlignment(alignment);
+            setOverlaps(alignment);
         }
 
 
-        //4บ Create Proto
+        //4ยบ Create Proto
         for(Alignment alignment : alignments){
             if(index < alignment.getStart()/alignmentBucketSize){
-                alignmentBucket = AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary);    //TODO:
+                alignmentBucket = AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary, numBucketsOverlapped.get((int)index));    //TODO:
                 flush();
                 init(alignment);
 
@@ -190,7 +199,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         }
 
 
-        //5บ Write into hbase
+        //5ยบ Write into hbase
         try {
             System.out.println("Puteamos la tabla. " + puts.size());
             table.put(puts);
@@ -235,6 +244,25 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
         }
         puts.add(put);
+    }
+
+    /**
+     * Updates the array of overlaps.
+     * An overlap of 2 in bucket 7 means that some alignment in
+     * bucket 7-2=5 is long enough to end in bucket 7.
+     */
+    private void setOverlaps(Alignment alignment) { // TODO jj: test
+        if (alignment.getStart() / alignmentBucketSize > currentBucket) {   // finished this bucket
+            for (int i = 0; i <= lastOverlappedPosition/alignmentBucketSize - currentBucket; i++) { // write bucket overlaps
+                int previousOverlap = numBucketsOverlapped.get((int) currentBucket + i);    // get overlap already stored
+                if (previousOverlap < i) {
+                    numBucketsOverlapped.set((int) currentBucket + i, i);
+                }
+            }
+            currentBucket = alignment.getStart() / alignmentBucketSize;
+            lastOverlappedPosition = alignment.getUnclippedEnd();
+        }
+        lastOverlappedPosition = ((lastOverlappedPosition > alignment.getUnclippedEnd()) ? lastOverlappedPosition : alignment.getUnclippedEnd()); // max
     }
 
     @Override
