@@ -34,13 +34,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<String> chunkIds = getChunkIds(region);
         MongoDBCollection coll = db.getCollection("variants");
 
-        BasicDBObject query = new BasicDBObject("chunkIds", new BasicDBObject("$in", chunkIds));
-        query.append("end", new BasicDBObject("$gte", region.getStart())).append("start", new BasicDBObject("$lte", region.getEnd()));
-        if (options.containsKey("type")) {
-            query.putAll(getVariantTypeFilter(options.getString("type")));
+        QueryBuilder qb = QueryBuilder.start("chunkIds").in(chunkIds);
+        qb.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        if (options != null) {
+            if (options.containsKey("type")) {
+                getVariantTypeFilter(options.getString("type"), qb);
+            }
         }
         
-        return coll.find(query, options);
+        return coll.find(qb.get(), options);
     }
 
     @Override
@@ -59,15 +61,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         MongoDBCollection coll = db.getCollection("variants");
 
         // Aggregation for filtering when more than one study is present
-        DBObject query = new BasicDBObject("files.studyId", studyId);
-        query.put("chunkIds", new BasicDBObject("$in", chunkIds));
-        query.put("end", new BasicDBObject("$gte", region.getStart()));
-        query.put("start", new BasicDBObject("$lte", region.getEnd()));
-        if (options.containsKey("type")) {
-            query.putAll(getVariantTypeFilter(options.getString("type")));
+        QueryBuilder qb = QueryBuilder.start("files.studyId").is(studyId);
+        qb.and("chunkIds").in(chunkIds).and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        if (options != null) {
+            if (options.containsKey("type")) {
+                getVariantTypeFilter(options.getString("type"), qb);
+            }
         }
         
-        DBObject match = new BasicDBObject("$match", query);
+        DBObject match = new BasicDBObject("$match", qb.get());
         DBObject unwind = new BasicDBObject("$unwind", "$files");
         DBObject match2 = new BasicDBObject("$match", new BasicDBObject("files.studyId", studyId));
         
@@ -89,11 +91,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         MongoDBCollection coll = db.getCollection("variants");
 
         // TODO Should the gene name be a first-order attribute of the variant?
-        BasicDBObject query = new BasicDBObject("effects.geneName", geneName);
-        if (options.containsKey("type")) {
-            query.putAll(getVariantTypeFilter(options.getString("type")));
+        QueryBuilder qb = QueryBuilder.start("effects.geneName").is(geneName);
+        if (options != null) {
+            if (options.containsKey("type")) {
+                getVariantTypeFilter(options.getString("type"), qb);
+            }
         }
-        return coll.find(query, options);
+        return coll.find(qb.get(), options);
     }
 
     @Override
@@ -114,20 +118,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         //                        { $limit : 10 } )
         MongoDBCollection coll = db.getCollection("variants");
         
-        DBObject query = new BasicDBObject();
-        if (options.containsKey("type")) {
-            query.put("$match", getVariantTypeFilter(options.getString("type")));
-        } else {
-            query.put("$match", new BasicDBObject());
+        QueryBuilder qb = QueryBuilder.start();
+        if (options != null) {
+            if (options.containsKey("type")) {
+                getVariantTypeFilter(options.getString("type"), qb);
+            }
         }
         
+        DBObject match = new BasicDBObject("$match", qb.get());
         DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$effects.geneName"));
         DBObject unwind = new BasicDBObject("$unwind", "$genes");
         DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$genes").append("count", new BasicDBObject( "$sum", 1)));
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", numGenes);
         
-        return coll.aggregate("$effects.geneName", Arrays.asList(query, project, unwind, group, sort, limit), options);
+        return coll.aggregate("$effects.geneName", Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
     @Override
@@ -173,6 +178,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     private DBObject getVariantTypeFilter(String type) {
         return new BasicDBObject("type", type.toUpperCase());
+    }
+    
+    private QueryBuilder getVariantTypeFilter(String type, QueryBuilder builder) {
+        return builder.and("type").is(type.toUpperCase());
     }
     
 //    @Override
