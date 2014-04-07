@@ -152,7 +152,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         }
 
         //3º Create Summary
-        AlignmentProtoHelper.Summary summary = new AlignmentProtoHelper.Summary();
+        AlignmentRegionSummary summary = new AlignmentRegionSummary();
         for(Alignment alignment : alignments){
             summary.addAlignment(alignment);
         }

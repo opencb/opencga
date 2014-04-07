@@ -669,6 +669,11 @@ public final class AlignmentProto {
         getDiffsOrBuilderList();
     org.opencb.opencga.storage.alignment.AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
         int index);
+    
+    // repeated uint32 tags = 11 [packed = true];
+    java.util.List<java.lang.Integer> getTagsList();
+    int getTagsCount();
+    int getTags(int index);
   }
   public static final class AlignmentRecord extends
       com.google.protobuf.GeneratedMessage
@@ -876,6 +881,21 @@ public final class AlignmentProto {
       return diffs_.get(index);
     }
     
+    // repeated uint32 tags = 11 [packed = true];
+    public static final int TAGS_FIELD_NUMBER = 11;
+    private java.util.List<java.lang.Integer> tags_;
+    public java.util.List<java.lang.Integer>
+        getTagsList() {
+      return tags_;
+    }
+    public int getTagsCount() {
+      return tags_.size();
+    }
+    public int getTags(int index) {
+      return tags_.get(index);
+    }
+    private int tagsMemoizedSerializedSize = -1;
+    
     private void initFields() {
       name_ = "";
       pos_ = 0;
@@ -887,6 +907,7 @@ public final class AlignmentProto {
       relativePnext_ = 0;
       inferredInsertSize_ = 0;
       diffs_ = java.util.Collections.emptyList();
+      tags_ = java.util.Collections.emptyList();;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -960,6 +981,13 @@ public final class AlignmentProto {
       for (int i = 0; i < diffs_.size(); i++) {
         output.writeMessage(10, diffs_.get(i));
       }
+      if (getTagsList().size() > 0) {
+        output.writeRawVarint32(90);
+        output.writeRawVarint32(tagsMemoizedSerializedSize);
+      }
+      for (int i = 0; i < tags_.size(); i++) {
+        output.writeUInt32NoTag(tags_.get(i));
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -1008,6 +1036,20 @@ public final class AlignmentProto {
       for (int i = 0; i < diffs_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(10, diffs_.get(i));
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < tags_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeUInt32SizeNoTag(tags_.get(i));
+        }
+        size += dataSize;
+        if (!getTagsList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        tagsMemoizedSerializedSize = dataSize;
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1158,6 +1200,8 @@ public final class AlignmentProto {
         } else {
           diffsBuilder_.clear();
         }
+        tags_ = java.util.Collections.emptyList();;
+        bitField0_ = (bitField0_ & ~0x00000400);
         return this;
       }
       
@@ -1241,6 +1285,11 @@ public final class AlignmentProto {
         } else {
           result.diffs_ = diffsBuilder_.build();
         }
+        if (((bitField0_ & 0x00000400) == 0x00000400)) {
+          tags_ = java.util.Collections.unmodifiableList(tags_);
+          bitField0_ = (bitField0_ & ~0x00000400);
+        }
+        result.tags_ = tags_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1309,6 +1358,16 @@ public final class AlignmentProto {
               diffsBuilder_.addAllMessages(other.diffs_);
             }
           }
+        }
+        if (!other.tags_.isEmpty()) {
+          if (tags_.isEmpty()) {
+            tags_ = other.tags_;
+            bitField0_ = (bitField0_ & ~0x00000400);
+          } else {
+            ensureTagsIsMutable();
+            tags_.addAll(other.tags_);
+          }
+          onChanged();
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1420,6 +1479,20 @@ public final class AlignmentProto {
               org.opencb.opencga.storage.alignment.AlignmentProto.Difference.Builder subBuilder = org.opencb.opencga.storage.alignment.AlignmentProto.Difference.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
               addDiffs(subBuilder.buildPartial());
+              break;
+            }
+            case 88: {
+              ensureTagsIsMutable();
+              tags_.add(input.readUInt32());
+              break;
+            }
+            case 90: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              while (input.getBytesUntilLimit() > 0) {
+                addTags(input.readUInt32());
+              }
+              input.popLimit(limit);
               break;
             }
           }
@@ -1846,6 +1919,51 @@ public final class AlignmentProto {
           diffs_ = null;
         }
         return diffsBuilder_;
+      }
+      
+      // repeated uint32 tags = 11 [packed = true];
+      private java.util.List<java.lang.Integer> tags_ = java.util.Collections.emptyList();;
+      private void ensureTagsIsMutable() {
+        if (!((bitField0_ & 0x00000400) == 0x00000400)) {
+          tags_ = new java.util.ArrayList<java.lang.Integer>(tags_);
+          bitField0_ |= 0x00000400;
+         }
+      }
+      public java.util.List<java.lang.Integer>
+          getTagsList() {
+        return java.util.Collections.unmodifiableList(tags_);
+      }
+      public int getTagsCount() {
+        return tags_.size();
+      }
+      public int getTags(int index) {
+        return tags_.get(index);
+      }
+      public Builder setTags(
+          int index, int value) {
+        ensureTagsIsMutable();
+        tags_.set(index, value);
+        onChanged();
+        return this;
+      }
+      public Builder addTags(int value) {
+        ensureTagsIsMutable();
+        tags_.add(value);
+        onChanged();
+        return this;
+      }
+      public Builder addAllTags(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureTagsIsMutable();
+        super.addAll(values, tags_);
+        onChanged();
+        return this;
+      }
+      public Builder clearTags() {
+        tags_ = java.util.Collections.emptyList();;
+        bitField0_ = (bitField0_ & ~0x00000400);
+        onChanged();
+        return this;
       }
       
       // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.AlignmentRecord)
@@ -5286,28 +5404,28 @@ public final class AlignmentProto {
       " \001(\014\"\206\001\n\022DifferenceOperator\022\r\n\tINSERTION" +
       "\020\001\022\014\n\010DELETION\020\002\022\014\n\010MISMATCH\020\003\022\022\n\016SKIPPE" +
       "D_REGION\020\004\022\021\n\rSOFT_CLIPPING\020\005\022\021\n\rHARD_CL" +
-      "IPPING\020\006\022\013\n\007PADDING\020\007\"\354\001\n\017AlignmentRecor" +
+      "IPPING\020\006\022\013\n\007PADDING\020\007\"\376\001\n\017AlignmentRecor" +
       "d\022\014\n\004name\030\001 \002(\t\022\013\n\003pos\030\002 \002(\r\022\r\n\005flags\030\003 ",
       "\001(\r\022\013\n\003len\030\004 \001(\r\022\014\n\004mapq\030\005 \002(\r\022\021\n\tqualit" +
       "ies\030\006 \002(\t\022\r\n\005rnext\030\007 \001(\t\022\025\n\rrelativePnex" +
       "t\030\010 \002(\021\022\032\n\022inferredInsertSize\030\t \002(\021\022?\n\005d" +
       "iffs\030\n \003(\01320.org.opencb.opencga.storage." +
-      "alignment.Difference\"\214\001\n\017AlignmentBucket" +
-      "\022\024\n\014summaryIndex\030\001 \002(\r\022\022\n\noverlapped\030\002 \001" +
-      "(\r\022O\n\020alignmentRecords\030\t \003(\01325.org.openc" +
-      "b.opencga.storage.alignment.AlignmentRec" +
-      "ord\"\211\002\n\007Summary\022\023\n\013defaultFlag\030\001 \002(\r\022\022\n\n" +
-      "defaultLen\030\002 \002(\r\022\024\n\014defaultRNext\030\003 \002(\t\022\031",
-      "\n\021defaultOverlapped\030\004 \002(\r\022\013\n\003key\030\010 \002(\t\022B" +
-      "\n\006values\030\t \003(\01322.org.opencb.opencga.stor" +
-      "age.alignment.Summary.Pair\032S\n\004Pair\022\013\n\003ke" +
-      "y\030\001 \002(\r\022\016\n\006avalue\030\002 \001(\t\022\016\n\006ivalue\030\003 \001(\021\022" +
-      "\016\n\006fvalue\030\004 \001(\002\022\016\n\006zvalue\030\005 \001(\t\"\225\001\n\006Head" +
-      "er\022D\n\007regions\030\001 \003(\01323.org.opencb.opencga" +
-      ".storage.alignment.Header.Region\022\021\n\tSamH" +
-      "eader\030\002 \001(\014\0322\n\006Region\022\026\n\016chromosomeName\030" +
-      "\001 \002(\t\022\020\n\010maxValue\030\002 \002(\rB\020B\016AlignmentProt" +
-      "o"
+      "alignment.Difference\022\020\n\004tags\030\013 \003(\rB\002\020\001\"\214" +
+      "\001\n\017AlignmentBucket\022\024\n\014summaryIndex\030\001 \002(\r" +
+      "\022\022\n\noverlapped\030\002 \001(\r\022O\n\020alignmentRecords" +
+      "\030\t \003(\01325.org.opencb.opencga.storage.alig" +
+      "nment.AlignmentRecord\"\211\002\n\007Summary\022\023\n\013def" +
+      "aultFlag\030\001 \002(\r\022\022\n\ndefaultLen\030\002 \002(\r\022\024\n\014de",
+      "faultRNext\030\003 \002(\t\022\031\n\021defaultOverlapped\030\004 " +
+      "\002(\r\022\013\n\003key\030\010 \002(\t\022B\n\006values\030\t \003(\01322.org.o" +
+      "pencb.opencga.storage.alignment.Summary." +
+      "Pair\032S\n\004Pair\022\013\n\003key\030\001 \002(\r\022\016\n\006avalue\030\002 \001(" +
+      "\t\022\016\n\006ivalue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zva" +
+      "lue\030\005 \001(\t\"\225\001\n\006Header\022D\n\007regions\030\001 \003(\01323." +
+      "org.opencb.opencga.storage.alignment.Hea" +
+      "der.Region\022\021\n\tSamHeader\030\002 \001(\014\0322\n\006Region\022" +
+      "\026\n\016chromosomeName\030\001 \002(\t\022\020\n\010maxValue\030\002 \002(" +
+      "\rB\020B\016AlignmentProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5327,7 +5445,7 @@ public final class AlignmentProto {
           internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor,
-              new java.lang.String[] { "Name", "Pos", "Flags", "Len", "Mapq", "Qualities", "Rnext", "RelativePnext", "InferredInsertSize", "Diffs", },
+              new java.lang.String[] { "Name", "Pos", "Flags", "Len", "Mapq", "Qualities", "Rnext", "RelativePnext", "InferredInsertSize", "Diffs", "Tags", },
               org.opencb.opencga.storage.alignment.AlignmentProto.AlignmentRecord.class,
               org.opencb.opencga.storage.alignment.AlignmentProto.AlignmentRecord.Builder.class);
           internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_descriptor =
