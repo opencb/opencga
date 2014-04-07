@@ -2,8 +2,11 @@ package org.opencb.opencga.storage.alignment;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.*;
+import org.junit.*;
 import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
+import org.opencb.commons.bioformats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.commons.test.GenericTest;
 
@@ -21,6 +24,10 @@ public class AlignmentProtoHelperTest extends GenericTest {
     @Test
     public void protoAndUnproto () {
 
+//        String bam20 = getClass().getResource("/chrom20.bam").getFile();
+//        AlignmentBamDataReader alignmentBamDataReader = new AlignmentBamDataReader(bam20);
+//        alignmentBamDataReader.open();
+//        alignmentBamDataReader.pre();
         String shortSam = getClass().getResource("/small.sam").getFile();
         AlignmentSamDataReader alignmentSamDataReader = new AlignmentSamDataReader(shortSam);
         alignmentSamDataReader.open();
@@ -28,24 +35,30 @@ public class AlignmentProtoHelperTest extends GenericTest {
         Alignment alignment1;
         Alignment alignment2;
 
-        for (int i = 0; i < 900; i++) {
+        for (int i = 0; i < 100000; i++) {
+//            alignment1 = alignmentBamDataReader.read();
             alignment1 = alignmentSamDataReader.read();
             if (alignment1 != null) {
                 alignment2 = AlignmentProtoHelper.toAlignment(AlignmentProtoHelper.toProto(alignment1, alignment1.getStart()/256*256), alignment1.getChromosome(), alignment1.getStart()/256*256);
 
                 if(!printEquals(alignment1, alignment2)) {
                     System.out.println("failed alignment nº: " + i);
+                    fail();
                 }
             } else {
                 System.out.println("the read gave null, ending reading...");
-                break;
+                fail();
+//                break;
             }
         }
 
         alignmentSamDataReader.post();
         alignmentSamDataReader.close();
+//        alignmentBamDataReader.post();
+//        alignmentBamDataReader.close();
         System.out.println("protoAndUnproto finished!");
     }
+
     public boolean printEquals (Alignment alignment1, Alignment alignment2){
         boolean areEqual = true;
 
