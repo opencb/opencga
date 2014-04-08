@@ -292,7 +292,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                 continue;
             }
             
-            Map<String, String> attributes = new HashMap<>();
+            Map<String, Object> attributes = new HashMap<>();
             for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
                 attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
             }

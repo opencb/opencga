@@ -10,7 +10,7 @@ import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentDataReader;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
-import org.opencb.commons.bioformats.alignment.stats.AlignmentCoverageCalculatorTask;
+import org.opencb.commons.bioformats.alignment.tasks.AlignmentCoverageCalculatorTask;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;

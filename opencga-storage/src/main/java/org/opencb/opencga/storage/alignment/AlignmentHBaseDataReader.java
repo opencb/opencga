@@ -133,7 +133,7 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
             case 2:     //Parse another AlignmentProto.AlignmentRegion from byte[]
                 if(keyValueIterator.hasNext()){
                     try {
-                        alignmentRecordIterator = AlignmentProto.AlignmentRegion.parseFrom((keyValue = keyValueIterator.next()).getValue()).getAlignmentRecordsList().iterator();
+                        alignmentRecordIterator = AlignmentProto.AlignmentBucket.parseFrom((keyValue = keyValueIterator.next()).getValue()).getAlignmentRecordsList().iterator();
                     } catch (InvalidProtocolBufferException e) {
                         e.printStackTrace();
                         return null;
@@ -142,7 +142,8 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
             case 3:     //ProtoToAlignment
                 String chromosome = AlignmentProtoHelper.getChromosomeFromRowkey(Bytes.toString(keyValue.getRow()));
                 long pos = AlignmentProtoHelper.getPositionFromRowkey(Bytes.toString(keyValue.getRow()));
-                alignment = AlignmentProtoHelper.toAlignment(alignmentRecordIterator.next(), chromosome, (int)pos);
+                //alignment = AlignmentProtoHelper.toAlignment(alignmentRecordIterator.next(), chromosome, (int)pos);
+                //TODO jj: Adapt to new schema
         }
 
         return alignment;

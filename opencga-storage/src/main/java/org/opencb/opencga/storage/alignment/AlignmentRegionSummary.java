@@ -39,6 +39,10 @@ public class AlignmentRegionSummary {
         this.flagsMap = new HashMap<>();
         this.lenMap = new HashMap<>();
         this.rnextMap = new HashMap<>();
+        this.keysMap = new HashMap<>();
+        this.keysList = new ArrayList<>();
+        this.tagsMap = new HashMap<>();
+
     }
 
     public AlignmentRegionSummary(AlignmentProto.Summary summary, int index){
@@ -111,19 +115,24 @@ public class AlignmentRegionSummary {
         int key;
         Map.Entry<Integer, Object> tag;
         for(Map.Entry<String, Object> entry : alignment.getAttributes().entrySet()){
+
+            System.out.println(4 + " " + entry.getKey() + " " + keysMap);
             //Update key map
-            if(keysMap.containsKey(entry.getKey())){
+            if(!keysMap.containsKey(entry.getKey())){
+                System.out.println("No lo contenemos. Lo creamos " + keysMap.size());
                 keysMap.put(entry.getKey(), key = keysMap.size());
             } else {
                 key = keysMap.get(entry.getKey());
             }
 
+            System.out.println(4 + " " + entry.getValue());
             //Add new map
             tag = new HashMap.SimpleEntry<>(key, entry.getValue());
 
             if(!tagsMap.containsKey(tag)){
                 tagsMap.put(tag, tagsMap.size());
             }
+            System.out.println("fin");
         }
 
     }
@@ -152,18 +161,23 @@ public class AlignmentRegionSummary {
                 defaultRNext = entry.getKey();
             }
         }
-
+        System.out.println("flag " + defaultFlag);
+        System.out.println("len " + defaultLen);
+        System.out.println("rnext " + defaultRNext);
 
         keysList = new ArrayList<>(keysMap.size());
         for(Map.Entry<String, Integer> entry : keysMap.entrySet()){
+            System.out.println(entry.getKey() + " " + entry.getValue());
             keysList.set(entry.getValue(), entry.getKey());
         }
+        System.out.println("Terminamos");
 
         tagsList = new ArrayList<>(tagsMap.size());
         for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
             tagsList.set(entry.getValue(), entry.getKey());
-        }
 
+        }
+        System.out.println("Terminamos");
 
         open = false;
         flagsMap = null;

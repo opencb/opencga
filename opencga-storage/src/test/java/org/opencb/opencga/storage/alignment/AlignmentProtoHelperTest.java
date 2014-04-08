@@ -17,10 +17,9 @@ import java.util.Arrays;
  * To change this template use File | Settings | File Templates.
  */
 public class AlignmentProtoHelperTest extends GenericTest {
-    @Ignore
+
     @Test
     public void protoAndUnproto () {
-
         String shortSam = getClass().getResource("/small.sam").getFile();
         AlignmentSamDataReader alignmentSamDataReader = new AlignmentSamDataReader(shortSam);
         alignmentSamDataReader.open();
@@ -32,10 +31,16 @@ public class AlignmentProtoHelperTest extends GenericTest {
 
         for (int i = 0; i < 900; i++) {
             alignment1 = alignmentSamDataReader.read();
+            System.out.println("Leemos alignment " + i);
             if (alignment1 != null) {
+                System.out.println("Creamos el summary");
                 summary = new AlignmentRegionSummary(2);
+                System.out.println("Lo llenamos");
                 summary.addAlignment(alignment1);
+                System.out.println("Cerramos el summary");
                 summary.close();
+                System.out.println(summary.getDefaultLen());
+
                 alignment2 = AlignmentProtoHelper.toAlignment(AlignmentProtoHelper.toProto(alignment1, alignment1.getStart()/256*256, summary), summary, alignment1.getChromosome(), alignment1.getStart()/256*256);
 
                 if(!printEquals(alignment1, alignment2)) {

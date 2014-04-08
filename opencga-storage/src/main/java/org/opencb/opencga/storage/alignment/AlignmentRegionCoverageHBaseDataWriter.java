@@ -10,6 +10,7 @@ import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.writers.AlignmentRegionDataWriter;
 import org.opencb.commons.bioformats.alignment.stats.MeanCoverage;
 import org.opencb.commons.bioformats.alignment.stats.RegionCoverage;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.List;
  * Time: 4:58 PM
  * To change this template use File | Settings | File Templates.
  */
-public class AlignmentRegionCoverageHBaseDataWriter implements AlignmentRegionDataWriter {
+public class AlignmentRegionCoverageHBaseDataWriter implements DataWriter<AlignmentRegion> {
 
     private Configuration config;
     private boolean opened = false;
