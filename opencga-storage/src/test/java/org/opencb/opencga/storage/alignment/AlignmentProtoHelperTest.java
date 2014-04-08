@@ -28,10 +28,15 @@ public class AlignmentProtoHelperTest extends GenericTest {
         Alignment alignment1;
         Alignment alignment2;
 
+        AlignmentRegionSummary summary;
+
         for (int i = 0; i < 900; i++) {
             alignment1 = alignmentSamDataReader.read();
             if (alignment1 != null) {
-                alignment2 = AlignmentProtoHelper.toAlignment(AlignmentProtoHelper.toProto(alignment1, alignment1.getStart()/256*256), alignment1.getChromosome(), alignment1.getStart()/256*256);
+                summary = new AlignmentRegionSummary(2);
+                summary.addAlignment(alignment1);
+                summary.close();
+                alignment2 = AlignmentProtoHelper.toAlignment(AlignmentProtoHelper.toProto(alignment1, alignment1.getStart()/256*256, summary), summary, alignment1.getChromosome(), alignment1.getStart()/256*256);
 
                 if(!printEquals(alignment1, alignment2)) {
                     System.out.println("failed alignment nº: " + i);

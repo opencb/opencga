@@ -18,7 +18,8 @@ public class AlignmentProtoHelper {
 
 
     public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentRegionSummary summary, long bucketStart){
-
+        if(alignments.isEmpty())
+            return null;
         AlignmentProto.AlignmentBucket.Builder alignmentBucketBuilder = AlignmentProto.AlignmentBucket.newBuilder();
         long prevStart = bucketStart;
 
@@ -30,7 +31,7 @@ public class AlignmentProtoHelper {
         return alignmentBucketBuilder.build();
     }
 
-    private static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long prevStart, AlignmentRegionSummary summary){
+    public static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long prevStart, AlignmentRegionSummary summary){
         AlignmentProto.AlignmentRecord.Builder alignmentRecordBuilder = AlignmentProto.AlignmentRecord.newBuilder()
                 .setName(alignment.getName())
                 .setPos((int) (alignment.getStart() - prevStart))
