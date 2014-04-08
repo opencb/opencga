@@ -23,6 +23,7 @@ public class AlignmentRegionSummary {
     private int defaultOverlapped;
     private List<String> keysList;
     private Map<String, Integer> keysMap;
+    private List<Map.Entry<Integer, Object>> tagsList;
     private Map<Map.Entry<Integer, Object>, Integer> tagsMap;
 
     //Histogram for default values.
@@ -154,10 +155,15 @@ public class AlignmentRegionSummary {
 
 
         keysList = new ArrayList<>(keysMap.size());
-
         for(Map.Entry<String, Integer> entry : keysMap.entrySet()){
             keysList.set(entry.getValue(), entry.getKey());
         }
+
+        tagsList = new ArrayList<>(tagsMap.size());
+        for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
+            tagsList.set(entry.getValue(), entry.getKey());
+        }
+
 
         open = false;
         flagsMap = null;
@@ -218,6 +224,17 @@ public class AlignmentRegionSummary {
 
         return indexTagList;
     }
+
+    public Map<String, Object> getTagsFromList(List<Integer> indexTagList){
+        Map<String, Object> tags = new HashMap<>();
+
+        for(Integer i : indexTagList) {
+            tags.put(keysList.get(tagsList.get(i).getKey()), tagsList.get(i).getValue());
+        }
+
+        return tags;
+    }
+
 
     /**
      * This function can only be called when summary is CLOSED.
