@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 import org.opencb.commons.bioformats.variant.VariantFactory;
+import org.opencb.commons.bioformats.variant.VariantSource;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -35,7 +36,7 @@ import org.opencb.commons.bioformats.variant.VariantFactory;
 public class VariantMonbaseQueryBuilderTest {
 
     private static final String tableName = "test_VariantMonbaseQueryBuilderTest";
-    private static final String studyName = "testStudy";
+    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
     private static MonbaseCredentials credentials;
     private static org.apache.hadoop.conf.Configuration config;
     private static VariantVcfMonbaseDataWriter writer;
@@ -54,7 +55,7 @@ public class VariantMonbaseQueryBuilderTest {
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
 
             // Monbase writer saves 5 records
-            writer = new VariantVcfMonbaseDataWriter(studyName, tableName, credentials);
+            writer = new VariantVcfMonbaseDataWriter(study, tableName, credentials);
             assertTrue(writer.open());
             List<String> sampleNames = Arrays.asList( "NA001", "NA002", "NA003" );
             String[] fields1 = new String[] { "1", "100000", "rs1100000", "A", "T,G", "40", "PASS", 
@@ -124,7 +125,7 @@ public class VariantMonbaseQueryBuilderTest {
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
         options.put("samples", true);
-        QueryResult queryResult = queryBuilder.getAllVariantsByRegion(region, studyName, options);
+        QueryResult queryResult = queryBuilder.getAllVariantsByRegion(region, study.getAlias(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
@@ -169,7 +170,7 @@ public class VariantMonbaseQueryBuilderTest {
         Region region = new Region("1", 0, 100000000);
         QueryOptions options = new QueryOptions();
         options.put("samples", true);
-        QueryResult queryResult = queryBuilder.getAllVariantsByRegion(region, studyName, options);
+        QueryResult queryResult = queryBuilder.getAllVariantsByRegion(region, study.getAlias(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
@@ -192,7 +193,7 @@ public class VariantMonbaseQueryBuilderTest {
         Region region = new Region("1", 0, 100000000);
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
-        QueryResult queryResult = queryBuilder.getAllVariantsByRegion(region, studyName, options);
+        QueryResult queryResult = queryBuilder.getAllVariantsByRegion(region, study.getAlias(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
@@ -215,7 +216,7 @@ public class VariantMonbaseQueryBuilderTest {
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
         options.put("effects", true);
-        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, studyName, options);
+        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, study.getAlias(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 

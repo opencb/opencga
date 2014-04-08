@@ -18,6 +18,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantFactory;
+import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
@@ -29,7 +30,7 @@ import org.opencb.opencga.lib.auth.MonbaseCredentials;
 public class VariantVcfMonbaseDataWriterTest {
 
     private static final String tableName = "test_VariantVcfMonbaseDataWriterTest";
-    private static final String studyName = "testStudy";
+    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
     private static MonbaseCredentials credentials;
     private static Configuration config;
     private static VariantVcfMonbaseDataWriter writer;
@@ -48,7 +49,7 @@ public class VariantVcfMonbaseDataWriterTest {
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
 
             // Monbase writer
-            writer = new VariantVcfMonbaseDataWriter(studyName, tableName, credentials);
+            writer = new VariantVcfMonbaseDataWriter(study, tableName, credentials);
             assertTrue(writer.open());
         } catch (IllegalOpenCGACredentialsException e) {
             fail(e.getMessage());
