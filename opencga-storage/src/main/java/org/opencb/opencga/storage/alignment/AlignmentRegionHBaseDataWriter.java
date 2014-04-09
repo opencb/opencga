@@ -179,7 +179,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         List<Alignment> alignmentBucketList = new LinkedList<>();
         for(Alignment alignment : alignments){
             if(index < alignment.getStart()/alignmentBucketSize){
-                putBucket(AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary, index*alignmentBucketSize), numBucketsOverlapped.get((int)index));
+                putBucket(AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary, index*alignmentBucketSize, numBucketsOverlapped.get((int)index)));
                 index = alignment.getStart() / alignmentBucketSize;
                 chromosome = alignment.getChromosome();
             }

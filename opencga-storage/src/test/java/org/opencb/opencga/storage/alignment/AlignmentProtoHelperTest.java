@@ -61,7 +61,7 @@ public class AlignmentProtoHelperTest extends GenericTest {
     }
 
 
-
+/*
     @Test
     public void protoAndUnproto2 () {
 
@@ -99,7 +99,7 @@ public class AlignmentProtoHelperTest extends GenericTest {
 //        alignmentBamDataReader.close();
         System.out.println("protoAndUnproto finished!");
     }
-
+*/
     public boolean printEquals (Alignment alignment1, Alignment alignment2){
         boolean areEqual = true;
 

@@ -17,10 +17,11 @@ import java.util.*;
 public class AlignmentProtoHelper {
 
 
-    public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentRegionSummary summary, long bucketStart){
+    public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentRegionSummary summary, long bucketStart, int overlapped){
         if(alignments.isEmpty())
             return null;
         AlignmentProto.AlignmentBucket.Builder alignmentBucketBuilder = AlignmentProto.AlignmentBucket.newBuilder();
+        alignmentBucketBuilder.setOverlapped(overlapped);
         long prevStart = bucketStart;
 
         for(Alignment alignment : alignments){
