@@ -32,7 +32,7 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
         properties = new Properties();
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", 27017);
-        properties.put("mongo_db_name", "test");
+        properties.put("mongo_db_name", "cibererStudies");
         properties.put("mongo_user", "user");
         properties.put("mongo_password", "pass");
         credentials = new MongoCredentials(properties);
@@ -104,17 +104,21 @@ public class VariantMongoQueryBuilderTest extends GenericTest {
     @Test
     public void testGetRecords() throws Exception {
 
-        System.out.println("hola");
-
         Map<String, String> opts = new HashMap<>();
-        opts.put("studyId", "ayuso_-_3Tjnqxn97mgGBgU");
+        opts.put("studyId", "aaleman_-_gRG1m4J84GjLlzi");
+        opts.put("maf_1000g_controls", "0.1");
+        opts.put("miss_gt", "0");
+        opts.put("option_miss_gt", "=");
+        opts.put("conseq_type", "non_synonymous_codon");
         MutableInt count = new MutableInt(-1);
 
         QueryResult<VariantInfo> records = ((VariantMongoQueryBuilder) vqb).getRecordsMongo(1, 0, 25, count, opts);
 //
+        System.out.println(count.getValue());
         System.out.println(records);
     }
 
+    @Ignore
     @Test
     public void testAnalysisInfo() throws Exception {
 

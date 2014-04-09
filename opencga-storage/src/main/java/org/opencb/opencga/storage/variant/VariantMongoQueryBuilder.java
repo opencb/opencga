@@ -185,7 +185,7 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         String sourceId = options.get("studyId");
         DBCollection coll = db.getCollection("variants");
 
-        DBObject elemMatch = new BasicDBObject("sourceId", sourceId);
+        BasicDBObject elemMatch = new BasicDBObject("sourceId", sourceId);
         DBObject query = new BasicDBObject();
         BasicDBList orList = new BasicDBList();
 
@@ -263,16 +263,35 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
             elemMatch.put("stats.missGenotypes", missGt);
         }
 
+        BasicDBList andControls = new BasicDBList();
+
         if (options.containsKey("maf_1000g_controls") && !options.get("maf_1000g_controls").equalsIgnoreCase("")) {
-            elemMatch.put("attributes.1000G_maf", new BasicDBObject("$lte", options.get("maf_1000g_controls")));
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.1000G_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.1000G_maf", new BasicDBObject("$lte", options.get("maf_1000g_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
         }
 
         if (options.containsKey("maf_evs_controls") && !options.get("maf_evs_controls").equalsIgnoreCase("")) {
-            elemMatch.put("attributes.EVS_maf", new BasicDBObject("$lte", options.get("maf_evs_controls")));
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.EVS_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.EVS_maf", new BasicDBObject("$lte", options.get("maf_evs_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
+
         }
 
         if (options.containsKey("maf_bier_controls") && !options.get("maf_bier_controls").equalsIgnoreCase("")) {
-            elemMatch.put("attributes.BIER_maf", new BasicDBObject("$lte", options.get("maf_bier_controls")));
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.BIER_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.BIER_maf", new BasicDBObject("$lte", options.get("maf_bier_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
+        }
+
+        if (andControls.size() > 0) {
+            elemMatch.append("$and", andControls);
         }
 
         query.put("sources", new BasicDBObject("$elemMatch", elemMatch));
