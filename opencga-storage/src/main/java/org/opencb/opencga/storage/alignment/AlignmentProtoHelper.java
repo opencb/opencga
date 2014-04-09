@@ -22,6 +22,7 @@ public class AlignmentProtoHelper {
             return null;
         AlignmentProto.AlignmentBucket.Builder alignmentBucketBuilder = AlignmentProto.AlignmentBucket.newBuilder();
         alignmentBucketBuilder.setOverlapped(overlapped);
+        alignmentBucketBuilder.setSummaryIndex(summary.getIndex());
         long prevStart = bucketStart;
 
         for(Alignment alignment : alignments){
@@ -101,7 +102,7 @@ public class AlignmentProtoHelper {
 
 
 
-    public List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket alignmentBucket, AlignmentRegionSummary summary, String chromosome, long bucketStart){
+    public static List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket alignmentBucket, AlignmentRegionSummary summary, String chromosome, long bucketStart){
 
         if(alignmentBucket.getSummaryIndex() != summary.getIndex()){
             System.out.println("[ERROR] Summary doesn't match!"); //TODO jj: Throw exception?
@@ -133,10 +134,10 @@ public class AlignmentProtoHelper {
         long unclippedStart = start;
         long unclippedEnd = end;
 
-        if(alignmentDifferences.get(0).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
+        if(!alignmentDifferences.isEmpty() && alignmentDifferences.get(0).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
             unclippedStart -= alignmentDifferences.get(0).getLength();
         }
-        if(alignmentDifferences.get(alignmentDifferences.size()-1).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
+        if(!alignmentDifferences.isEmpty() && alignmentDifferences.get(alignmentDifferences.size()-1).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
             unclippedEnd += alignmentDifferences.get(alignmentDifferences.size()-1).getLength();
         }
 

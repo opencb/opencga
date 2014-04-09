@@ -5,12 +5,14 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.*;
 import org.opencb.commons.bioformats.alignment.Alignment;
+import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.commons.test.GenericTest;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 
 /**
  * Created with IntelliJ IDEA.
@@ -20,6 +22,76 @@ import java.util.Arrays;
  * To change this template use File | Settings | File Templates.
  */
 public class AlignmentProtoHelperTest extends GenericTest {
+    @Ignore
+    @Test
+    public void AlignmentBucketProtoAndUnproto () {
+        String shortSam = getClass().getResource("/small.sam").getFile();
+        AlignmentSamDataReader alignmentSamDataReader = new AlignmentSamDataReader(shortSam);
+        AlignmentRegionDataReader alignmentRegionDataReader = new AlignmentRegionDataReader(alignmentSamDataReader, 1000);
+        AlignmentRegion alignmentRegion;
+        AlignmentRegionSummary summary;
+        int bucketSize = 256;
+        long firstAlignmentStart;
+        long firstBucketStart;
+        long nextBucketStart;
+
+        alignmentRegionDataReader.open();
+        alignmentRegionDataReader.pre();
+
+        alignmentRegion = alignmentRegionDataReader.read();
+        System.out.println("Leemos alignmentRegion ");
+
+
+        System.out.println("Creamos el summary");
+        firstAlignmentStart = alignmentRegion.getAlignments().get(0).getStart();
+        firstBucketStart = (firstAlignmentStart / bucketSize) * bucketSize;
+        summary = new AlignmentRegionSummary((int)firstAlignmentStart / bucketSize);
+        System.out.println("Lo llenamos");
+        for (Alignment alignment : alignmentRegion.getAlignments()) {
+            summary.addAlignment(alignment);
+        }
+        System.out.println("Cerramos el summary");
+        summary.close();
+        System.out.println(summary.getDefaultLen());
+
+
+        // split all alignments in buckets. then build bucketProto from bucket alignments
+        LinkedList<AlignmentProto.AlignmentBucket> alignmentBucketList = new LinkedList<>();
+        LinkedList<Alignment> alignmentList = new LinkedList<>();
+        nextBucketStart = firstBucketStart + bucketSize;
+        for (Alignment alignment : alignmentRegion.getAlignments()) {
+            if (alignment.getStart() >= nextBucketStart) {
+                alignmentBucketList.add(AlignmentProtoHelper.toAlignmentBucketProto(alignmentList, summary, nextBucketStart - bucketSize, 0));
+                nextBucketStart += bucketSize;
+                alignmentList = new LinkedList<>();
+            }
+            alignmentList.add(alignment);
+        }
+
+        alignmentBucketList.add(AlignmentProtoHelper.toAlignmentBucketProto(alignmentList, summary, nextBucketStart - bucketSize, 0));
+        // Unproto
+
+        nextBucketStart = firstBucketStart;
+        alignmentList = new LinkedList<>(); // to unproto-ed alignments
+        for (AlignmentProto.AlignmentBucket alignmentBucket : alignmentBucketList) {
+            alignmentList.addAll(AlignmentProtoHelper.fromAlignmentBucketProto(alignmentBucket, summary, "20", nextBucketStart));
+            nextBucketStart += bucketSize;
+        }
+
+
+        System.out.println("alignmentRegion size = " + alignmentRegion.getAlignments().size());
+        System.out.println("alignmentList size = " + alignmentList.size());
+        for (int i = 0; i < alignmentRegion.getAlignments().size(); i++) {
+            if (!alignmentRegion.getAlignments().get(i).equals(alignmentList.get(i))) {
+                System.out.println("failed alignment nº: " + i);
+            }
+        }
+
+        alignmentSamDataReader.post();
+        alignmentSamDataReader.close();
+        System.out.println("protoAndUnproto finished!");
+    }
+
     @Ignore
     @Test
     public void protoAndUnproto1 () {
