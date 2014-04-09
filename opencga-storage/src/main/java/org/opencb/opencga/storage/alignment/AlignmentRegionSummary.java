@@ -117,28 +117,25 @@ public class AlignmentRegionSummary {
         Map.Entry<Integer, Object> tag;
         for(Map.Entry<String, Object> entry : alignment.getAttributes().entrySet()){
 
-            System.out.println(4 + " " + entry.getKey() + " " + keysMap);
             //Update key map
             if(!keysMap.containsKey(entry.getKey())){
-                System.out.println("No lo contenemos. Lo creamos " + keysMap.size());
                 keysMap.put(entry.getKey(), key = keysMap.size());
             } else {
                 key = keysMap.get(entry.getKey());
             }
 
-            System.out.println(4 + " " + entry.getValue());
             //Add new map
             tag = new HashMap.SimpleEntry<>(key, entry.getValue());
 
             if(!tagsMap.containsKey(tag)){
                 tagsMap.put(tag, tagsMap.size());
             }
-            System.out.println("fin");
         }
 
     }
 
     public void printHistogram(){
+        System.out.println("AlignmentRegionSummary [" + index + "] Histogram");
         System.out.println("Default Flag Map");
         for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
             System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
@@ -239,14 +236,13 @@ public class AlignmentRegionSummary {
      */
     public ArrayList<Integer> getIndexTagList(Map<String, Object> alignmentTags){
         ArrayList<Integer> indexTagList = new ArrayList<>(alignmentTags.size());
-        int i = 0;
 
         int key;
         Map.Entry<Integer, Object> tag;
         for(Map.Entry<String, Object> entry : alignmentTags.entrySet()){
             key = keysMap.get(entry.getKey());
             tag = new HashMap.SimpleEntry<>(key, entry.getValue());
-            indexTagList.set(i++, tagsMap.get(tag));
+            indexTagList.add(tagsMap.get(tag));
         }
 
         return indexTagList;
