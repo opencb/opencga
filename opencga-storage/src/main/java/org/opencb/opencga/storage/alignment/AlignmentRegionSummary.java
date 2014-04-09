@@ -211,7 +211,6 @@ public class AlignmentRegionSummary {
         for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
             tagsArray[entry.getValue()] = entry.getKey();
         }
-        System.out.println("Terminamos");
 
         open = false;
         flagsMap = null;

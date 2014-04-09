@@ -38,7 +38,7 @@ public class AlignmentProtoHelper {
                 .setName(alignment.getName())
                 .setPos((int) (alignment.getStart() - prevStart))
                 .setMapq(alignment.getMappingQuality())
-                .setRelativePnext(alignment.getMateAlignmentStart())
+                .setRelativePnext((int)(alignment.getMateAlignmentStart() - alignment.getStart()))
                 .setQualities(alignment.getQualities())
                 .setInferredInsertSize(alignment.getInferredInsertSize());
 
@@ -128,9 +128,9 @@ public class AlignmentProtoHelper {
         List<Alignment.AlignmentDifference> alignmentDifferences = new LinkedList<>();
         int offset = toAlignmentDifference(alignmentProto.getDiffsList(), alignmentDifferences);
 
-
+        int length = alignmentProto.hasLen() ? alignmentProto.getLen() : summary.getDefaultLen();
         long start = alignmentProto.getPos() + prevStart;
-        long end   = start + offset - 1;
+        long end   = start + offset + length - 1;
         long unclippedStart = start;
         long unclippedEnd = end;
 
@@ -150,7 +150,7 @@ public class AlignmentProtoHelper {
         alignment.setEnd(end);
         alignment.setUnclippedStart(unclippedStart);
         alignment.setUnclippedEnd(unclippedEnd);
-        alignment.setLength(alignmentProto.hasLen() ? alignmentProto.getLen() : summary.getDefaultLen());                     //Optiona. Get from Summary
+        alignment.setLength(length);                                                                                         //Optiona. Get from Summary
         alignment.setMappingQuality(alignmentProto.getMapq());
         alignment.setQualities(alignmentProto.getQualities());
         alignment.setMateAlignmentStart((int) (alignmentProto.getRelativePnext() + start));
