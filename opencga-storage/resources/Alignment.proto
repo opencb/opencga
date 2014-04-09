@@ -73,7 +73,7 @@ message Summary{
     required string defaultRNext = 3;
     required uint32 defaultOverlapped = 4;
 
-    required string key = 8;    //Concatenated tags.
+    required string keys = 8;    //Concatenated tags.
     repeated Pair values = 9;
 
 }

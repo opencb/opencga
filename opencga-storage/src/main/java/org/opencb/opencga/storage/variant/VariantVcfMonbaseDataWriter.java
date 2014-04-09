@@ -16,6 +16,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.bioformats.feature.Genotype;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantFactory;
+import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
 import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
@@ -29,7 +30,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
     private final byte[] infoColumnFamily = "i".getBytes();
     private final byte[] dataColumnFamily = "d".getBytes();
     private String tableName;
-    private String studyName;
+    private VariantSource source;
 
     private HBaseAdmin admin;
     private HTable variantTable;
@@ -50,11 +51,11 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
     private boolean includeSamples;
 
 
-    public VariantVcfMonbaseDataWriter(String study, String species, MonbaseCredentials credentials) {
+    public VariantVcfMonbaseDataWriter(VariantSource source, String species, MonbaseCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
-        this.studyName = study;
+        this.source = source;
         this.tableName = species;
         this.putMap = new HashMap<>();
         this.effectPutMap = new HashMap<>();
@@ -77,7 +78,8 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             admin = new HBaseAdmin(config);
 
             // Mongo configuration
-            mongoClient = new MongoClient(credentials.getMongoHost());
+            ServerAddress address = new ServerAddress(credentials.getMongoHost(), credentials.getMongoPort());
+            mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantVcfMonbaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
@@ -125,7 +127,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             effectTable.setAutoFlush(false, true);
 
             // Mongo collection creation
-            studyCollection = db.getCollection("studies");
+            studyCollection = db.getCollection("sources");
             variantCollection = db.getCollection("variants");
 
             return variantTable != null && studyCollection != null && effectTable != null && variantCollection != null;
@@ -168,8 +170,8 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             for (Variant v : data) {
                 String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
                 BasicDBObject mongoStudy = mongoMap.get(rowkey);
-                BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("studies", mongoStudy));
-                BasicDBObject query = new BasicDBObject("position", rowkey);
+                BasicDBObject mongoVariant = new BasicDBObject().append("$push", new BasicDBObject("sources", mongoStudy));
+                BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
                 WriteResult wr = variantCollection.update(query, mongoVariant, true, false);
                 if (!wr.getLastError().ok()) {
                     // TODO If not correct, retry?
@@ -189,12 +191,13 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("position", rowkey);
-            query.put("studies.studyId", studyName);
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            query.append("sources.sourceId", source.getAlias());
 
             if (variantCollection.count(query) == 0) {
                 // Create relationship variant-study for inserting in Mongo
-                BasicDBObject mongoStudy = new BasicDBObject("studyId", studyName).append("ref", v.getReference()).append("alt", v.getAltAlleles());
+                BasicDBObject mongoStudy = new BasicDBObject("sourceId", source.getAlias()).append("sourceName", source.getName());
+                mongoStudy.append("ref", v.getReference()).append("alt", v.getAltAlleles());
                 
                 // Add stats to study
                 VariantStats stats = v.getStats();
@@ -230,6 +233,10 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
                 // TODO What if there is the same position already?
             }
         }
+        
+        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("pos", 1));
+        variantCollection.ensureIndex(new BasicDBObject("sources.sourceId", 1));
+        
         return true;
     }
     
@@ -239,14 +246,15 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             
             // Check that this relationship was not established yet
-            BasicDBObject query = new BasicDBObject("position", rowkey);
-            query.put("studies.studyId", studyName);
+            BasicDBObject query = new BasicDBObject("chr", v.getChromosome()).append("pos", v.getPosition());
+            query.put("sources.sourceId", source.getAlias());
 
             if (variantCollection.count(query) == 0) {
                 // Create raw data for inserting in HBase
                 Put auxPut;
                 VariantFieldsProtos.VariantInfo info = buildInfoProto(v);
-                byte[] qualdata = (studyName + "_data").getBytes();
+                String prefix = source.getAlias();
+                byte[] qualdata = (prefix + "_data").getBytes();
                 if (putMap.get(rowkey) != null) {
                     auxPut = putMap.get(rowkey);
                     auxPut.add(infoColumnFamily, qualdata, info.toByteArray());
@@ -261,7 +269,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
                     VariantFieldsProtos.VariantSample.Builder sp = VariantFieldsProtos.VariantSample.newBuilder();
                     sp.setSample(VariantFactory.getVcfSampleRawData(v, s));
                     VariantFieldsProtos.VariantSample sample = sp.build();
-                    byte[] qual = (studyName + "_" + s).getBytes();
+                    byte[] qual = (prefix + "_" + s).getBytes();
                     if (putMap.get(rowkey) != null) {
                         auxPut = putMap.get(rowkey);
                         auxPut.add(dataColumnFamily, qual, sample.toByteArray());
@@ -290,7 +298,7 @@ public class VariantVcfMonbaseDataWriter extends VariantDBWriter {
 
             String rowkey = buildRowkey(v.getChromosome(), String.valueOf(v.getPosition()));
             VariantFieldsProtos.VariantStats stats = buildStatsProto(v);
-            byte[] qualifier = (studyName + "_stats").getBytes();
+            byte[] qualifier = (source.getAlias() + "_stats").getBytes();
             Put put2 = putMap.get(rowkey); // Modify existing Put object
             if (put2 == null) {
                 put2 = new Put(Bytes.toBytes(rowkey));

@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.alignment;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -39,9 +37,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     //
 
     List<Alignment> alignmentsRemain = new LinkedList<>();
-    List<Alignment> alignmentBucketList;
-    private AlignmentProto.AlignmentBucket alignmentBucket;
-    //private AlignmentProtoHelper.Summary summary;
+    private int summaryIndex = 0;
     private long index = 0;
     private String chromosome = "";
 
@@ -92,7 +88,6 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
     @Override
     public boolean post() {
-        flush();
         try {
             System.out.println("Puteamos la tabla. " + puts.size());
             table.put(puts);
@@ -110,11 +105,11 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     public boolean write(AlignmentRegion alignmentRegion) {
 
         /*
-         * 1บ Add remaining alignments from last AR
-         * 2บ Take Alignments from tail
-         * 3บ Create summary
-         * 4บ Create Proto
-         * 5บ Write into hbase
+         * 1ยบ Add remaining alignments from last AR
+         * 2ยบ Take Alignments from tail
+         * 3ยบ Create summary
+         * 4ยบ Create Proto
+         * 5ยบ Write into hbase
          *
          */
 
@@ -127,23 +122,33 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
         //First alignment. Init and writes headers
         if(index == 0){
-            init(firstAlignment);
+            index = firstAlignment.getStart() / alignmentBucketSize;
+            chromosome = firstAlignment.getChromosome();
 
             globalHeader();
             chromosomeHeader();
         }
-        //Changes chromosome. Flush, init and write chromosomeHeader.
+        //Changes chromosome. init and write chromosomeHeader.
         if(!chromosome.equals(firstAlignment.getChromosome())){
-            flush();
-            init(firstAlignment);
+            //TODO: CUIDAOOOO!!! SI cambiamos de cromosoma, que hacemos con los ultimos??
+            //TODO: A LIARLA! THIS IS PARCHEEE!
+            alignmentsRemain.clear();
+            //FIXME! jj! MISSING ALIGNMENTS!
+            //TODO FIXME!!
+            //FIXME PLEASE!!
+            index = firstAlignment.getStart() / alignmentBucketSize;
+            chromosome = firstAlignment.getChromosome();
+            summaryIndex = 0;       //Set to 0, only if the summary rowkey has the chromosome.
             chromosomeHeader();
         }
+        firstAlignment = null;  //Don't needed anymore.
 
-        //1บ Add remaining alignments.
+
+        //1ยบ Add remaining alignments.
         List<Alignment> alignments = alignmentsRemain;
         alignments.addAll(alignmentRegion.getAlignments());
 
-        //2บ Take alignments from tail.
+        //2ยบ Take alignments from tail.
         alignmentsRemain = new LinkedList<>();
         Alignment alignmentAux = alignments.remove(alignments.size()-1);    //Remove last
         alignmentsRemain.add(0, alignmentAux);
@@ -157,30 +162,32 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             }
         }
 
-        //3บ Create Summary
+        //3ยบ Create Summary
         currentBucket = alignments.get(0).getStart()/alignmentBucketSize;
         lastOverlappedPosition = alignments.get(0).getUnclippedEnd();
 
-        AlignmentRegionSummary summary = new AlignmentRegionSummary();
+        AlignmentRegionSummary summary = new AlignmentRegionSummary(summaryIndex);
         for(Alignment alignment : alignments){
             summary.addAlignment(alignment);
             setOverlaps(alignment);
         }
+        summary.close();
+        putSummary(summary);
+        summaryIndex++;
 
-
-        //4บ Create Proto
+        //4ยบ Create Proto
+        List<Alignment> alignmentBucketList = new LinkedList<>();
         for(Alignment alignment : alignments){
             if(index < alignment.getStart()/alignmentBucketSize){
-                alignmentBucket = AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary, numBucketsOverlapped.get((int)index));    //TODO:
-                flush();
-                init(alignment);
-
+                putBucket(AlignmentProtoHelper.toAlignmentBucketProto(alignmentBucketList, summary, index*alignmentBucketSize), numBucketsOverlapped.get((int)index));
+                index = alignment.getStart() / alignmentBucketSize;
+                chromosome = alignment.getChromosome();
             }
             alignmentBucketList.add(alignment);
         }
 
 
-        //5บ Write into hbase
+        //5ยบ Write into hbase
         try {
             System.out.println("Puteamos la tabla. " + puts.size());
             table.put(puts);
@@ -202,28 +209,42 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         //To change body of created methods use File | Settings | File Templates.
     }
 
-    private void init(Alignment alignment){
-        index = alignment.getStart() / alignmentBucketSize;
-        chromosome = alignment.getChromosome();
-        alignmentBucketList = new LinkedList<>();
+
+    private void putSummary(AlignmentRegionSummary summary){
+        String rowKey = "S_" + chromosome + "_" + index;
+
+        Put put = new Put(Bytes.toBytes(rowKey));
+        byte[] compress;
+        try {
+            compress = Snappy.compress(summary.toProto().toByteArray());
+        } catch (IOException e) {
+            System.out.println("this AlignmentProto.Summary could not be compressed by snappy");
+            e.printStackTrace();  // TODO jj handle properly
+            return;
+        }
+        put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
+
+        puts.add(put);
     }
 
-    private void flush(){
+    private void putBucket(AlignmentProto.AlignmentBucket alignmentBucket){
+        if(alignmentBucket == null)
+            return;
+
         String rowKey = chromosome + "_" + String.format("%07d", index);
         //System.out.println("Creamos un Put() con rowKey " + rowKey);
 
         Put put = new Put(Bytes.toBytes(rowKey));
-        if(alignmentBucket != null){
-            byte[] compress;
-            try {
-                compress = Snappy.compress(alignmentBucket.toByteArray());
-            } catch (IOException e) {
-                System.out.println("this AlignmentProto.AlignmentRegion could not be compressed by snappy");
-                e.printStackTrace();  // TODO jj handle properly
-                return;
-            }
-            put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
+        byte[] compress;
+        try {
+            compress = Snappy.compress(alignmentBucket.toByteArray());
+        } catch (IOException e) {
+            System.out.println("this AlignmentProto.AlignmentBucket could not be compressed by snappy");
+            e.printStackTrace();  // TODO jj handle properly
+            return;
         }
+        put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
+
         puts.add(put);
     }
 

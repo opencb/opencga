@@ -22,7 +22,48 @@ import java.util.Arrays;
 public class AlignmentProtoHelperTest extends GenericTest {
     @Ignore
     @Test
-    public void protoAndUnproto () {
+    public void protoAndUnproto1 () {
+        String shortSam = getClass().getResource("/small.sam").getFile();
+        AlignmentSamDataReader alignmentSamDataReader = new AlignmentSamDataReader(shortSam);
+        alignmentSamDataReader.open();
+        alignmentSamDataReader.pre();
+        Alignment alignment1;
+        Alignment alignment2;
+
+        AlignmentRegionSummary summary;
+
+        for (int i = 0; i < 900; i++) {
+            alignment1 = alignmentSamDataReader.read();
+            System.out.println("Leemos alignment " + i);
+            if (alignment1 != null) {
+                System.out.println("Creamos el summary");
+                summary = new AlignmentRegionSummary(2);
+                System.out.println("Lo llenamos");
+                summary.addAlignment(alignment1);
+                System.out.println("Cerramos el summary");
+                summary.close();
+                System.out.println(summary.getDefaultLen());
+
+                alignment2 = AlignmentProtoHelper.toAlignment(AlignmentProtoHelper.toProto(alignment1, alignment1.getStart()/256*256, summary), summary, alignment1.getChromosome(), alignment1.getStart()/256*256);
+
+                if(!printEquals(alignment1, alignment2)) {
+                    System.out.println("failed alignment nº: " + i);
+                }
+            } else {
+                System.out.println("the read gave null, ending reading...");
+                break;
+            }
+        }
+
+        alignmentSamDataReader.post();
+        alignmentSamDataReader.close();
+        System.out.println("protoAndUnproto finished!");
+    }
+
+
+
+    @Test
+    public void protoAndUnproto2 () {
 
 //        String bam20 = getClass().getResource("/chrom20.bam").getFile();
 //        AlignmentBamDataReader alignmentBamDataReader = new AlignmentBamDataReader(bam20);

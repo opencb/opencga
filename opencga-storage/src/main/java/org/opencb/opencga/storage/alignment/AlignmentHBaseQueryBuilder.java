@@ -41,7 +41,9 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
 
     @Override
     public QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options) {
+/*
         manager.connect();
+
         HTable table = manager.createTable(tableName, columnFamilyName);
 
         QueryResult<Alignment> queryResult = new QueryResult<>();
@@ -81,6 +83,9 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
 
         manager.disconnect();
         return queryResult;
+
+    */
+        return null;
     }
 
     @Override

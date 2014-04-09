@@ -5,7 +5,7 @@ import com.mongodb.MongoClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
@@ -29,7 +29,7 @@ public class VariantVcfMongoDataWriterTest extends GenericTest {
     private static Properties properties;
     private static String inputFile = VariantVcfMongoDataWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static MongoCredentials credentials;
-    private static VariantStudy study = new VariantStudy("testStudy", "testAlias", "testStudy", null, null);
+    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
 
 
     @BeforeClass

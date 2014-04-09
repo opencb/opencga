@@ -18,7 +18,8 @@ public class AlignmentProtoHelper {
 
 
     public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentRegionSummary summary, long bucketStart){
-
+        if(alignments.isEmpty())
+            return null;
         AlignmentProto.AlignmentBucket.Builder alignmentBucketBuilder = AlignmentProto.AlignmentBucket.newBuilder();
         long prevStart = bucketStart;
 
@@ -30,7 +31,7 @@ public class AlignmentProtoHelper {
         return alignmentBucketBuilder.build();
     }
 
-    private static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long prevStart, AlignmentRegionSummary summary){
+    public static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long prevStart, AlignmentRegionSummary summary){
         AlignmentProto.AlignmentRecord.Builder alignmentRecordBuilder = AlignmentProto.AlignmentRecord.newBuilder()
                 .setName(alignment.getName())
                 .setPos((int) (alignment.getStart() - prevStart))
@@ -99,31 +100,80 @@ public class AlignmentProtoHelper {
 
 
 
-    public List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket){
+    public List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket alignmentBucket, AlignmentRegionSummary summary, String chromosome, long bucketStart){
 
+        if(alignmentBucket.getSummaryIndex() != summary.getIndex()){
+            System.out.println("[ERROR] Summary doesn't match!"); //TODO jj: Throw exception?
+        }
 
-        throw new UnsupportedOperationException();
+        List<Alignment> alignments = new LinkedList<>();
+        long prevStart = bucketStart;
+        Alignment alignment;
+
+        for(AlignmentProto.AlignmentRecord  alignmentRecord : alignmentBucket.getAlignmentRecordsList()){
+            alignments.add(alignment = toAlignment(alignmentRecord, summary, chromosome, prevStart));
+            prevStart = alignment.getStart();
+        }
+
+        return alignments;
     }
 
 
 
-    /**
-     *
-     * @param alignmentRecord
-     * @param chromosome
-     * @param chunkStart start of the alignmentRegion.
-     * @return
-     */
-    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentRecord, String chromosome, long chunkStart){
+    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentProto, AlignmentRegionSummary summary, String chromosome, long prevStart){
 
-        Map<String, String> attributes = new HashMap<>();
-        for (AlignmentProto.MyMap.Pair pair: alignmentRecord.getTags().getPairList()) {
+
+        List<Alignment.AlignmentDifference> alignmentDifferences = new LinkedList<>();
+        int offset = toAlignmentDifference(alignmentProto.getDiffsList(), alignmentDifferences);
+
+
+        long start = alignmentProto.getPos() + prevStart;
+        long end   = start + offset - 1;
+        long unclippedStart = start;
+        long unclippedEnd = end;
+
+        if(alignmentDifferences.get(0).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
+            unclippedStart -= alignmentDifferences.get(0).getLength();
+        }
+        if(alignmentDifferences.get(alignmentDifferences.size()-1).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
+            unclippedEnd += alignmentDifferences.get(alignmentDifferences.size()-1).getLength();
+        }
+
+        Alignment alignment = new Alignment();
+
+
+        alignment.setName(alignmentProto.getName());
+        alignment.setChromosome(chromosome);
+        alignment.setStart(start);
+        alignment.setEnd(end);
+        alignment.setUnclippedStart(unclippedStart);
+        alignment.setUnclippedEnd(unclippedEnd);
+        alignment.setLength(alignmentProto.hasLen() ? alignmentProto.getLen() : summary.getDefaultLen());                     //Optiona. Get from Summary
+        alignment.setMappingQuality(alignmentProto.getMapq());
+        alignment.setQualities(alignmentProto.getQualities());
+        alignment.setMateAlignmentStart((int) (alignmentProto.getRelativePnext() + start));
+        alignment.setMateReferenceName(alignmentProto.hasRnext() ? alignmentProto.getRnext() : summary.getDefaultRNext());    //Optiona. Get from Summary
+        alignment.setInferredInsertSize(alignmentProto.getInferredInsertSize());
+        alignment.setFlags(alignmentProto.hasFlags() ? alignmentProto.getFlags() : summary.getDefaultFlag());                 //Optiona. Get from Summary
+        alignment.setDifferences(alignmentDifferences);
+        alignment.setAttributes(summary.getTagsFromList(alignmentProto.getTagsList()));
+
+
+
+        return alignment;
+
+
+
+
+
+/*        Map<String, String> attributes = new HashMap<>();
+        for (AlignmentProto.MyMap.Pair pair: alignmentProto.getTags().getPairList()) {
             attributes.put(pair.getKey(), pair.getValue());
         }
         LinkedList<Alignment.AlignmentDifference> alignmentDifferences = new LinkedList<>();
-        long offset = toAlignmentDifference(alignmentRecord.getDiffsList(), alignmentDifferences);
+        long offset = toAlignmentDifference(alignmentProto.getDiffsList(), alignmentDifferences);
         long unclippedStartOffset = 0;
-        long end = (alignmentRecord.getFlags() & 0x4) > 0 ? 0: alignmentRecord.getPos() + chunkStart + alignmentRecord.getLen() -1 + offset;
+        long end = (alignmentProto.getFlags() & 0x4) > 0 ? 0: alignmentProto.getPos() + chunkStart + alignmentProto.getLen() - 1 + offset;
         Alignment.AlignmentDifference alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.get(0): null;
         if (alignmentDifference != null) {
             if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING
@@ -140,46 +190,55 @@ public class AlignmentProtoHelper {
             }
         }
 
+*/
+    }
 
-        return new Alignment(
-                alignmentRecord.getName(),
-                chromosome,
-                alignmentRecord.getPos() + chunkStart,
-                end,
-                alignmentRecord.getPos() + chunkStart - unclippedStartOffset,  // FIXME jj <unclipped start> does not always equal to <start>
-                end + unclippedEndOffset,   // FIXME jj same here
-                alignmentRecord.getLen(),
-                alignmentRecord.getMapq(),
-                alignmentRecord.getQualities(),
-                alignmentRecord.getRnext(),
-                alignmentRecord.getRelativePnext(), // TODO jj check
-                alignmentRecord.getInferredInsertSize(),
-                alignmentRecord.getFlags(),
-                alignmentDifferences,
-                attributes
-                //TODO: ).setReadSequence();
-                );
+    /* Compression Core. UNIMPLEMENTED!
+     *
+        000  A
+        001  C
+        010  G
+        011  T
+        100  N
+        101
+        110
+        111  END
+
+     */
+    private static String uncompressSeq(ByteString seq){
+        //String readSequence = difference.hasSequence()? new String(difference.getSequence().toByteArray()): null;
+
+        throw new UnsupportedOperationException();
     }
 
 
-
+    private static ByteString compressSeq(String seq){
+        throw new UnsupportedOperationException();
+    }
 
 
     public static  int toAlignmentDifference(List<AlignmentProto.Difference> differenceList, List<Alignment.AlignmentDifference> alignmentDifferenceList) {
         int offset = 0;
+        int prevPos = 0;
         for (AlignmentProto.Difference difference: differenceList) {
+
+            int pos = difference.hasPos() ? difference.getPos() : prevPos;                          //If miss, prev position.
+            prevPos = pos;  //update prev position.
+            String seq = difference.hasSequence()? new String(difference.getSequence().toByteArray()) : null;  //If miss, null
+            int len = difference.hasLength()?difference.getLength() : seq!=null ? seq.length() : 1; //If miss, seq.length. If miss too, 1.
             char operator = AlignmentProto.Difference.DifferenceOperator.MISMATCH_VALUE;
+
             switch(difference.getOperator().getNumber()) {
                 case AlignmentProto.Difference.DifferenceOperator.DELETION_VALUE:
                     operator = Alignment.AlignmentDifference.DELETION;
-                    offset += difference.getLength();
+                    offset += len;
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.HARD_CLIPPING_VALUE:
                     operator = Alignment.AlignmentDifference.HARD_CLIPPING; // FIXME offset
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.INSERTION_VALUE:
                     operator = Alignment.AlignmentDifference.INSERTION;
-                    offset -= difference.getLength();
+                    offset -= len;
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.MISMATCH_VALUE:
                     operator = Alignment.AlignmentDifference.MISMATCH;
@@ -192,17 +251,12 @@ public class AlignmentProtoHelper {
                     break;
                 case AlignmentProto.Difference.DifferenceOperator.SOFT_CLIPPING_VALUE:
                     operator = Alignment.AlignmentDifference.SOFT_CLIPPING;
-                    offset -= difference.getLength();
+                    offset -= len;
                     break;
             }
 
+            alignmentDifferenceList.add(new Alignment.AlignmentDifference(pos, operator, seq, len));
 
-            String readSequence = difference.hasSequence()? new String(difference.getSequence().toByteArray()): null;
-            if (readSequence == null) {
-                alignmentDifferenceList.add(new Alignment.AlignmentDifference(difference.getPos(), operator, difference.getLength()));
-            } else {
-                alignmentDifferenceList.add(new Alignment.AlignmentDifference(difference.getPos(), operator, readSequence));
-            }
         }
 
         return offset;

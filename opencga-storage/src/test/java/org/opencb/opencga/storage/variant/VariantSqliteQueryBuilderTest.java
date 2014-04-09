@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.variant;
 
 import org.junit.*;
 import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -23,7 +23,7 @@ public class VariantSqliteQueryBuilderTest extends GenericTest {
     private static String inputFile = "/tmp/file.vcf";
     private static String pedFile = VariantSqliteQueryBuilderTest.class.getResource("/pedigree-test-file.ped").getFile();
     private static String outputFile = "/tmp/sqliteIndexTest.db";
-    private static VariantStudy study = new VariantStudy("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
+    private static VariantSource study = new VariantSource("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
 
     @BeforeClass
     public static void createDB() throws IOException, IllegalOpenCGACredentialsException {

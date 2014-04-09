@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
 import org.junit.Test;
-import org.opencb.commons.bioformats.variant.VariantStudy;
+import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
@@ -23,7 +23,7 @@ public class VariantIndexRunnerTest extends GenericTest {
     private String inputFile = getClass().getResource("/variant-test-file.vcf.gz").getFile();
     private String pedFile = getClass().getResource("/pedigree-test-file.ped").getFile();
     private String outputFile = "/tmp/sqliteIndexTest.db";
-    private VariantStudy study = new VariantStudy("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
+    private VariantSource study = new VariantSource("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
 
     @Test
     public void sqliteIndex() throws IOException {
@@ -40,7 +40,7 @@ public class VariantIndexRunnerTest extends GenericTest {
     @Test
     public void sqliteIndexWithCredentials() throws IllegalOpenCGACredentialsException, IOException {
 
-        VariantStudy study = new VariantStudy("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
+        VariantSource study = new VariantSource("study1", "s1", "Study 1", Arrays.asList("Alejandro", "Cristina"), Arrays.asList(inputFile, pedFile));
 
         Path path = Paths.get(outputFile);
 
