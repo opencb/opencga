@@ -21,9 +21,9 @@ public class AlignmentRegionSummary {
     private int defaultLen;
     private String defaultRNext;
     private int defaultOverlapped;
-    private List<String> keysList;
+    private String[] keysArray;
     private Map<String, Integer> keysMap;
-    private List<Map.Entry<Integer, Object>> tagsList;
+    private Map.Entry<Integer, Object>[] tagsArray;
     private Map<Map.Entry<Integer, Object>, Integer> tagsMap;
 
     //Histogram for default values.
@@ -40,8 +40,9 @@ public class AlignmentRegionSummary {
         this.lenMap = new HashMap<>();
         this.rnextMap = new HashMap<>();
         this.keysMap = new HashMap<>();
-        this.keysList = new ArrayList<>();
+        this.keysArray = null;
         this.tagsMap = new HashMap<>();
+        this.tagsArray = null;
 
     }
 
@@ -56,11 +57,11 @@ public class AlignmentRegionSummary {
         this.defaultOverlapped = summary.getDefaultOverlapped();
 
         String keys = summary.getKeys();
-        this.keysList = new ArrayList<>(keys.length()/2);
+        this.keysArray = new String[keys.length()/2];
         this.keysMap = new HashMap<>();
         for(int i = 0; i < keys.length()/2; i++){
-            keysList.set(i, keys.substring(i*2, i*2+2));
-            keysMap.put(keysList.get(i), i);
+            keysArray[i] = keys.substring(i*2, i*2+2);
+            keysMap.put(keysArray[i], i);
         }
 
         Map.Entry<Integer, Object> tag;
@@ -106,7 +107,7 @@ public class AlignmentRegionSummary {
 
         //MateReferenceName
         {
-            Integer rn = rnextMap.get(alignment.getLength());
+            Integer rn = rnextMap.get(alignment.getMateReferenceName());
             rn = rn==null?1:rn+1;
             rnextMap.put(alignment.getMateReferenceName(), rn);
         }
@@ -137,6 +138,23 @@ public class AlignmentRegionSummary {
 
     }
 
+    public void printHistogram(){
+        System.out.println("Default Flag Map");
+        for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
+            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+        }
+
+        System.out.println("\nDefault Length Map");
+        for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
+            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+        }
+
+        System.out.println("\nDefault RNext Map");
+        for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
+            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+        }
+    }
+
     public void close(){
         int maxFlags = 0;
         for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
@@ -161,21 +179,16 @@ public class AlignmentRegionSummary {
                 defaultRNext = entry.getKey();
             }
         }
-        System.out.println("flag " + defaultFlag);
-        System.out.println("len " + defaultLen);
-        System.out.println("rnext " + defaultRNext);
 
-        keysList = new ArrayList<>(keysMap.size());
+
+        keysArray = new String[keysMap.size()];
         for(Map.Entry<String, Integer> entry : keysMap.entrySet()){
-            System.out.println(entry.getKey() + " " + entry.getValue());
-            keysList.set(entry.getValue(), entry.getKey());
+            keysArray[entry.getValue()] = entry.getKey();
         }
-        System.out.println("Terminamos");
 
-        tagsList = new ArrayList<>(tagsMap.size());
+        tagsArray = new Map.Entry[tagsMap.size()];
         for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
-            tagsList.set(entry.getValue(), entry.getKey());
-
+            tagsArray[entry.getValue()] = entry.getKey();
         }
         System.out.println("Terminamos");
 
@@ -192,7 +205,7 @@ public class AlignmentRegionSummary {
 
         String keys = "";
 
-        for(String s : keysList){
+        for(String s : keysArray){
             keys+=s;
         }
 
@@ -243,7 +256,7 @@ public class AlignmentRegionSummary {
         Map<String, Object> tags = new HashMap<>();
 
         for(Integer i : indexTagList) {
-            tags.put(keysList.get(tagsList.get(i).getKey()), tagsList.get(i).getValue());
+            tags.put(keysArray[tagsArray[i].getKey()], tagsArray[i].getValue());
         }
 
         return tags;
