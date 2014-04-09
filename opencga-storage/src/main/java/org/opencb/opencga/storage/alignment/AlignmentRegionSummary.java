@@ -20,7 +20,7 @@ public class AlignmentRegionSummary {
     private int defaultFlag;
     private int defaultLen;
     private String defaultRNext;
-    private int defaultOverlapped;
+    private int defaultOverlappedBucket;
     private String[] keysArray;
     private Map<String, Integer> keysMap;
     private Map.Entry<Integer, Object>[] tagsArray;
@@ -31,6 +31,7 @@ public class AlignmentRegionSummary {
     private Map<Integer, Integer> flagsMap;
     private Map<Integer, Integer> lenMap;
     private Map<String, Integer> rnextMap;
+    private Map<Integer, Integer> overlapMap;
 
 
     public AlignmentRegionSummary(int index){
@@ -39,6 +40,8 @@ public class AlignmentRegionSummary {
         this.flagsMap = new HashMap<>();
         this.lenMap = new HashMap<>();
         this.rnextMap = new HashMap<>();
+        this.overlapMap = new HashMap<>();
+
         this.keysMap = new HashMap<>();
         this.keysArray = null;
         this.tagsMap = new HashMap<>();
@@ -54,7 +57,7 @@ public class AlignmentRegionSummary {
         this.defaultFlag = summary.getDefaultFlag();
         this.defaultLen = summary.getDefaultLen();
         this.defaultRNext = summary.getDefaultRNext();
-        this.defaultOverlapped = summary.getDefaultOverlapped();
+        this.defaultOverlappedBucket = summary.getDefaultOverlapped();
 
         String keys = summary.getKeys();
         this.keysArray = new String[keys.length()/2];
@@ -80,6 +83,15 @@ public class AlignmentRegionSummary {
             tagsMap.put(new HashMap.SimpleEntry<>(pair.getKey(), value), tagsMap.size());
         }
 
+    }
+
+    /**
+     * This function can only be called when summary is OPEN.
+     */
+    public void addOverlappedBucket(int overlapped){
+        Integer f = overlapMap.get(overlapped);
+        f = f==null?1:f+1;
+        overlapMap.put(overlapped,f);
     }
 
     /**
@@ -150,6 +162,11 @@ public class AlignmentRegionSummary {
         for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
             System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
         }
+
+        System.out.println("\nDefault OverlappedBucket Map");
+        for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
+            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+        }
     }
 
     public void close(){
@@ -177,6 +194,13 @@ public class AlignmentRegionSummary {
             }
         }
 
+        int maxOverlap = 0;
+        for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
+            if(entry.getValue() > maxOverlap){
+                maxOverlap = entry.getValue();
+                defaultOverlappedBucket = entry.getKey();
+            }
+        }
 
         keysArray = new String[keysMap.size()];
         for(Map.Entry<String, Integer> entry : keysMap.entrySet()){
@@ -193,6 +217,7 @@ public class AlignmentRegionSummary {
         flagsMap = null;
         lenMap = null;
         rnextMap = null;
+        overlapMap = null;
     }
 
     /**
@@ -221,7 +246,7 @@ public class AlignmentRegionSummary {
         return AlignmentProto.Summary.newBuilder()
                 .setDefaultFlag(defaultFlag)
                 .setDefaultLen(defaultLen)
-                .setDefaultOverlapped(defaultOverlapped)
+                .setDefaultOverlapped(defaultOverlappedBucket)
                 .setDefaultRNext(defaultRNext)
                 .setKeys(keys)
                 .addAllValues(pairArrayList)
@@ -263,7 +288,7 @@ public class AlignmentRegionSummary {
      * This function can only be called when summary is CLOSED.
      */
     public int getDefaultOverlapped() {
-        return defaultOverlapped;
+        return defaultOverlappedBucket;
     }
 
     /**
