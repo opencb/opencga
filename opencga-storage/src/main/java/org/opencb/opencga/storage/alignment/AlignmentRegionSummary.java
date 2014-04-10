@@ -70,6 +70,7 @@ public class AlignmentRegionSummary {
         Map.Entry<Integer, Object> tag;
         Object value = "";
         this.tagsMap = new HashMap<>();
+        this.tagsArray = new Map.Entry[summary.getValuesCount()];
         for (AlignmentProto.Summary.Pair pair : summary.getValuesList()) {
             if(pair.hasAvalue()) {
                 value = pair.getAvalue();
@@ -80,7 +81,9 @@ public class AlignmentRegionSummary {
             } else if(pair.hasZvalue()) {
                 value = pair.getZvalue();
             }
-            tagsMap.put(new HashMap.SimpleEntry<>(pair.getKey(), value), tagsMap.size());
+            AbstractMap.SimpleEntry<Integer, Object> entry = new HashMap.SimpleEntry<>(pair.getKey(), value);
+            tagsArray[tagsMap.size()] = entry;
+            tagsMap.put(entry, tagsMap.size());
         }
 
     }
@@ -230,16 +233,16 @@ public class AlignmentRegionSummary {
             keys+=s;
         }
 
-        ArrayList<AlignmentProto.Summary.Pair> pairArrayList = new ArrayList<>(tagsMap.size());
+        AlignmentProto.Summary.Pair[] pairsArray = new AlignmentProto.Summary.Pair[tagsMap.size()];
         for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
-            if(pairArrayList.set(entry.getValue(),
-                    AlignmentProto.Summary.Pair.newBuilder()
-                            .setKey(entry.getKey().getKey())
-                            .setAvalue(entry.getKey().getValue().toString())
-                            .build()
-            ) != null){
+            if(pairsArray[entry.getValue()] != null){
                 System.out.println("[ERROR] Duplicated tag index.");
             }
+            pairsArray[entry.getValue()] = AlignmentProto.Summary.Pair.newBuilder()
+                            .setKey(entry.getKey().getKey())
+                            .setAvalue(entry.getKey().getValue().toString())
+                            .build();
+
         }
 
         return AlignmentProto.Summary.newBuilder()
@@ -248,7 +251,7 @@ public class AlignmentRegionSummary {
                 .setDefaultOverlapped(defaultOverlappedBucket)
                 .setDefaultRNext(defaultRNext)
                 .setKeys(keys)
-                .addAllValues(pairArrayList)
+                .addAllValues(Arrays.asList(pairsArray))
                 .build();
 
     }

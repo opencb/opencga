@@ -163,36 +163,6 @@ public class AlignmentProtoHelper {
 
 
         return alignment;
-
-
-
-
-
-/*        Map<String, String> attributes = new HashMap<>();
-        for (AlignmentProto.MyMap.Pair pair: alignmentProto.getTags().getPairList()) {
-            attributes.put(pair.getKey(), pair.getValue());
-        }
-        LinkedList<Alignment.AlignmentDifference> alignmentDifferences = new LinkedList<>();
-        long offset = toAlignmentDifference(alignmentProto.getDiffsList(), alignmentDifferences);
-        long unclippedStartOffset = 0;
-        long end = (alignmentProto.getFlags() & 0x4) > 0 ? 0: alignmentProto.getPos() + chunkStart + alignmentProto.getLen() - 1 + offset;
-        Alignment.AlignmentDifference alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.get(0): null;
-        if (alignmentDifference != null) {
-            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING
-                    && alignmentDifference.getPos() == 0) { // soft clipping at the  start
-                unclippedStartOffset = alignmentDifference.getLength();
-            }
-        }
-        int unclippedEndOffset = 0;
-        alignmentDifference = alignmentDifferences.size() > 0? alignmentDifferences.getLast(): null;
-        if (alignmentDifference != null) {
-            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING
-                    && alignmentDifference.getPos() != 0 ){ // soft cliping at the end
-                unclippedEndOffset = alignmentDifference.getLength();
-            }
-        }
-
-*/
     }
 
     /* Compression Core. UNIMPLEMENTED!
@@ -264,8 +234,8 @@ public class AlignmentProtoHelper {
         return offset;
     }
 
-    public static long getPositionFromRowkey(String rowKey){
-        return Long.valueOf(rowKey.split("_")[1]) << 8;
+    public static long getPositionFromRowkey(String rowKey, int bucketSize){
+        return Long.valueOf(rowKey.split("_")[1]) * bucketSize;
     }
     public static String getChromosomeFromRowkey(String rowKey){
         return rowKey.split("_")[0];

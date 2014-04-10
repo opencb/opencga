@@ -149,6 +149,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         if(alignmentsRemain.isEmpty()){ //Only empty when starts new chromosome.
             currentBucket = alignmentRegion.getAlignments().get(0).getStart() / alignmentBucketSize;
             numBucketsOverlapped.clear();
+            numBucketsOverlapped.add(0);    //First bucket has 0 overlapped;
             bucketsOverlappedStart = currentBucket;
         } else {
             currentBucket = alignmentsRemain.get(0).getStart();
@@ -245,10 +246,10 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         Alignment alignmentAux = alignments.remove(alignments.size()-1);    //Remove last
         alignmentsRemain.add(0, alignmentAux);
         long firstBucket = alignments.get(0).getStart()/alignmentBucketSize;
-        long lastBucket = alignmentAux.getStart()/alignmentBucketSize;
+        long lastBucket = (alignmentAux.getStart()+alignmentBucketSize-1)/alignmentBucketSize;
 
         while(alignments.size() != 0){
-            if(alignments.get(alignments.size()).getStart()/alignmentBucketSize != lastBucket){
+            if(alignments.get(alignments.size()-1).getStart()/alignmentBucketSize != lastBucket){
                 break;
             } else {
                 alignmentsRemain.add(0, alignments.remove(alignments.size() - 1));    //Remove last
@@ -264,6 +265,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             if(alignment.getStart() > bucketEnd){
                 i++;
                 alignmentBuckets[i] = new LinkedList<Alignment>();
+                bucketEnd+=alignmentBucketSize;
             }
             alignmentBuckets[i].add(alignment);
         }

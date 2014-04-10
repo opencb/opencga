@@ -35,6 +35,8 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
     private Iterator<Result> resultIterator = null;
     private long position = 0;
 
+    private int bucketSize = 256;   //FIXME jj: HARDCODE
+
     private KeyValue keyValue;
 
     private AlignmentProto.Header protoHeader;
@@ -141,7 +143,7 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
                 }
             case 3:     //ProtoToAlignment
                 String chromosome = AlignmentProtoHelper.getChromosomeFromRowkey(Bytes.toString(keyValue.getRow()));
-                long pos = AlignmentProtoHelper.getPositionFromRowkey(Bytes.toString(keyValue.getRow()));
+                long pos = AlignmentProtoHelper.getPositionFromRowkey(Bytes.toString(keyValue.getRow()), bucketSize);
                 //alignment = AlignmentProtoHelper.toAlignment(alignmentRecordIterator.next(), chromosome, (int)pos);
                 //TODO jj: Adapt to new schema
         }

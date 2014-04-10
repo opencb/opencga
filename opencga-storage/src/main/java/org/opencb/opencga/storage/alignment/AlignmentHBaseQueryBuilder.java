@@ -14,8 +14,12 @@ import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.opencb.opencga.storage.datamanagers.HBaseManager;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created with IntelliJ IDEA.
@@ -41,16 +45,18 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
 
     @Override
     public QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options) {
-/*
+
         manager.connect();
 
         HTable table = manager.createTable(tableName, columnFamilyName);
 
         QueryResult<Alignment> queryResult = new QueryResult<>();
 
-        String startRow = region.getChromosome() + "_" + String.format("%07d", region.getStart() >> 8);
-        String endRow = region.getChromosome() + "_" + String.format("%07d", region.getEnd() >> 8);
+        int bucketSize = 256;   //FIXME: HARDCODE!
+        String startRow = region.getChromosome() + "_" + String.format("%07d", region.getStart() / bucketSize);
+        String endRow = region.getChromosome() + "_" + String.format("%07d", region.getEnd() / bucketSize);
 
+        System.out.println("Scaning from " + startRow + " to " + endRow);
         Scan scan = new Scan(Bytes.toBytes(startRow), Bytes.toBytes(endRow));
 
         ResultScanner resultScanner;
@@ -62,20 +68,37 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
             return null;
         }
 
+        Map<Integer, AlignmentRegionSummary> summaryMap = new HashMap<>();
+
         for(Result result : resultScanner){
             for(KeyValue keyValue : result.list()){
-                //System.out.println("Qualifier : " + keyValue.getKeyString() + " : Value : " + Bytes.toString(keyValue.getValue()));
+                System.out.println("Qualifier : " + keyValue.getKeyString() + " : Value : "/* + Bytes.toString(keyValue.getValue())*/);
 
-                AlignmentProto.AlignmentRegion alignmentRegion = null;
+                AlignmentProto.AlignmentBucket alignmentBucket = null;
                 try {
-                    alignmentRegion = AlignmentProto.AlignmentRegion.parseFrom(keyValue.getValue());
+                    alignmentBucket = AlignmentProto.AlignmentBucket.parseFrom(Snappy.uncompress(keyValue.getValue()));
                 } catch (InvalidProtocolBufferException e) {
                     e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
                     continue;
+                } catch (IOException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                    continue;
                 }
-                long pos = AlignmentProtoHelper.getPositionFromRowkey(Bytes.toString(keyValue.getRow()));
-                for(AlignmentProto.AlignmentRecord alignmentRecord : alignmentRegion.getAlignmentRecordsList()){
-                    Alignment alignment = AlignmentProtoHelper.toAlignment(alignmentRecord, region.getChromosome(), (int) pos);
+
+                System.out.println("Tenemos un bucket!");
+                AlignmentRegionSummary summary;
+                if(!summaryMap.containsKey(alignmentBucket.getSummaryIndex())) {
+                    summaryMap.put(alignmentBucket.getSummaryIndex(), getRegionSummary(region.getChromosome(), alignmentBucket.getSummaryIndex()));
+                }
+                summary = summaryMap.get(alignmentBucket.getSummaryIndex());
+
+
+                long pos = AlignmentProtoHelper.getPositionFromRowkey(Bytes.toString(keyValue.getRow()), bucketSize);
+                List<Alignment> alignmentList = AlignmentProtoHelper.fromAlignmentBucketProto(alignmentBucket, summary, region.getChromosome(), pos);
+
+                System.out.println("Los tenemos!!");
+
+                for(Alignment alignment : alignmentList){
                     queryResult.addResult(alignment);
                 }
             }
@@ -84,8 +107,37 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
         manager.disconnect();
         return queryResult;
 
-    */
-        return null;
+
+        //return null;
+    }
+
+    private AlignmentRegionSummary getRegionSummary(String chromosome, int index){
+        manager.connect();
+
+        HTable table = manager.createTable(tableName, columnFamilyName);
+
+        Scan scan = new Scan(Bytes.toBytes("S_"+chromosome+index));
+
+        ResultScanner resultScanner;
+        try {
+            resultScanner = table.getScanner(scan);
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            System.err.println("[ERROR] -- Bad query");
+            return null;
+        }
+        AlignmentRegionSummary summary = null;
+        for(Result result : resultScanner){
+            for(KeyValue keyValue : result.list()){
+                System.out.println("Qualifier : " + keyValue.getKeyString() );
+                try {
+                    summary = new AlignmentRegionSummary( AlignmentProto.Summary.parseFrom(Snappy.uncompress(keyValue.getValue())), index);
+                } catch (IOException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+            }
+        }
+        return summary;
     }
 
     @Override

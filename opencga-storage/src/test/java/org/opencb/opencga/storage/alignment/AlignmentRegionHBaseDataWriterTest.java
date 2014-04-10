@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.alignment;
 
+import net.sf.samtools.SAMFileHeader;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.junit.Test;
 import org.opencb.commons.bioformats.alignment.Alignment;
@@ -7,12 +9,15 @@ import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentDataReader;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
+import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataWriter;
 import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -24,14 +29,14 @@ import org.opencb.opencga.lib.auth.MonbaseCredentials;
 public class AlignmentRegionHBaseDataWriterTest extends GenericTest {
 
     String smallSam = getClass().getResource("/small.sam").getFile();
-    String chrom20Sam = getClass().getResource("/chrom20.bam").getFile();
-    String usedFile = chrom20Sam;
+  //  String chrom20Sam = getClass().getResource("/chrom20.bam").getFile();
+    String usedFile = smallSam;
 
     @Test
     public void samToHbaseTest () {
         String tableName = "alignmentRegion_test_snappy_jj";
         MonbaseCredentials credentials = null;
-        org.apache.hadoop.conf.Configuration config;
+        Configuration config;
 
         // Credentials for the query builder
         try {
@@ -57,6 +62,8 @@ public class AlignmentRegionHBaseDataWriterTest extends GenericTest {
         alignmentRegionDataReader.open();
         alignmentRegionDataReader.pre();
 
+        SAMFileHeader header = (SAMFileHeader) alignmentDataReader.getHeader();
+
         alignmentRegionHBaseDataWriter.open();
         alignmentRegionHBaseDataWriter.pre();
 
@@ -74,6 +81,53 @@ public class AlignmentRegionHBaseDataWriterTest extends GenericTest {
 
         alignmentRegionHBaseDataWriter.post();
         alignmentRegionHBaseDataWriter.close();
+
+
+
+
+
+
+
+
+
+
+
+
+        // HBase configuration with the active credentials
+
+        AlignmentHBaseQueryBuilder alignmentHBaseQueryBuilder = new AlignmentHBaseQueryBuilder(config, tableName);
+
+        //alignmentHBaseQueryBuilder.setColumnFamilyName("Family1");
+
+
+        Region region = new Region("20", 60000, 76177);
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResult queryResult = alignmentHBaseQueryBuilder.getAllAlignmentsByRegion(region, queryOptions);
+
+        System.out.println("QueryResult size: " + queryResult.getResult().size());
+        for(Object object : queryResult.getResult()){
+            Alignment alignment =  ((Alignment) object);
+            System.out.println(alignment.getName() + " : " + alignment.getStart() + " " + alignment.getEnd());
+        }
+        List<Alignment> alignments = queryResult.getResult();
+
+
+        AlignmentSamDataWriter alignmentSamDataWriter = new AlignmentSamDataWriter("/tmp/salida.sam", header);
+
+        alignmentSamDataWriter.open();
+        alignmentSamDataWriter.pre();
+
+        alignmentSamDataWriter.write(alignments);
+
+        alignmentSamDataWriter.post();
+        alignmentSamDataWriter.close();
+
+
+        System.out.println("Tadaaaaaaa");
+
+
+
+
     }
 
     @Test
