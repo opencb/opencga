@@ -73,7 +73,7 @@ public class AlignmentRegionSummary {
         this.tagsArray = new Map.Entry[summary.getValuesCount()];
         for (AlignmentProto.Summary.Pair pair : summary.getValuesList()) {
             if(pair.hasAvalue()) {
-                value = pair.getAvalue();
+                value = (char) pair.getAvalue();
             } else if(pair.hasFvalue()) {
                 value = pair.getFvalue();
             } else if(pair.hasIvalue()) {
@@ -238,9 +238,20 @@ public class AlignmentRegionSummary {
             if(pairsArray[entry.getValue()] != null){
                 System.out.println("[ERROR] Duplicated tag index.");
             }
-            pairsArray[entry.getValue()] = AlignmentProto.Summary.Pair.newBuilder()
+
+            AlignmentProto.Summary.Pair.Builder builder = AlignmentProto.Summary.Pair.newBuilder();
+            if (entry.getKey().getValue() instanceof Integer) {
+                builder.setIvalue((Integer) entry.getKey().getValue());
+            } else if (entry.getKey().getValue() instanceof Float) {
+                builder.setFvalue((Float) entry.getKey().getValue());
+            } else if (entry.getKey().getValue() instanceof Character) {
+                builder.setAvalue((Character) entry.getKey().getValue());
+            } else { //if (entry.getKey().getValue() instanceof String) {
+                builder.setZvalue((String) entry.getKey().getValue());
+            }
+
+            pairsArray[entry.getValue()] = builder
                             .setKey(entry.getKey().getKey())
-                            .setAvalue(entry.getKey().getValue().toString())
                             .build();
 
         }

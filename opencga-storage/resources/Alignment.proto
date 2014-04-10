@@ -61,7 +61,7 @@ message Summary{
          *   B [cCsSiIf](,[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+ Integer or numeric array
          */
 
-        optional string avalue = 2;
+        optional uint32 avalue = 2;
         optional sint32 ivalue = 3;
         optional float fvalue = 4;
         optional string zvalue = 5;

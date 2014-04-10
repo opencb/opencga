@@ -2733,9 +2733,9 @@ public final class AlignmentProto {
       boolean hasKey();
       int getKey();
       
-      // optional string avalue = 2;
+      // optional uint32 avalue = 2;
       boolean hasAvalue();
-      String getAvalue();
+      int getAvalue();
       
       // optional sint32 ivalue = 3;
       boolean hasIvalue();
@@ -2788,36 +2788,14 @@ public final class AlignmentProto {
         return key_;
       }
       
-      // optional string avalue = 2;
+      // optional uint32 avalue = 2;
       public static final int AVALUE_FIELD_NUMBER = 2;
-      private java.lang.Object avalue_;
+      private int avalue_;
       public boolean hasAvalue() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public String getAvalue() {
-        java.lang.Object ref = avalue_;
-        if (ref instanceof String) {
-          return (String) ref;
-        } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
-          String s = bs.toStringUtf8();
-          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-            avalue_ = s;
-          }
-          return s;
-        }
-      }
-      private com.google.protobuf.ByteString getAvalueBytes() {
-        java.lang.Object ref = avalue_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-          avalue_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
+      public int getAvalue() {
+        return avalue_;
       }
       
       // optional sint32 ivalue = 3;
@@ -2874,7 +2852,7 @@ public final class AlignmentProto {
       
       private void initFields() {
         key_ = 0;
-        avalue_ = "";
+        avalue_ = 0;
         ivalue_ = 0;
         fvalue_ = 0F;
         zvalue_ = "";
@@ -2899,7 +2877,7 @@ public final class AlignmentProto {
           output.writeUInt32(1, key_);
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeBytes(2, getAvalueBytes());
+          output.writeUInt32(2, avalue_);
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           output.writeSInt32(3, ivalue_);
@@ -2925,7 +2903,7 @@ public final class AlignmentProto {
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
           size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(2, getAvalueBytes());
+            .computeUInt32Size(2, avalue_);
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
           size += com.google.protobuf.CodedOutputStream
@@ -3065,7 +3043,7 @@ public final class AlignmentProto {
           super.clear();
           key_ = 0;
           bitField0_ = (bitField0_ & ~0x00000001);
-          avalue_ = "";
+          avalue_ = 0;
           bitField0_ = (bitField0_ & ~0x00000002);
           ivalue_ = 0;
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -3202,9 +3180,9 @@ public final class AlignmentProto {
                 key_ = input.readUInt32();
                 break;
               }
-              case 18: {
+              case 16: {
                 bitField0_ |= 0x00000002;
-                avalue_ = input.readBytes();
+                avalue_ = input.readUInt32();
                 break;
               }
               case 24: {
@@ -3249,40 +3227,25 @@ public final class AlignmentProto {
           return this;
         }
         
-        // optional string avalue = 2;
-        private java.lang.Object avalue_ = "";
+        // optional uint32 avalue = 2;
+        private int avalue_ ;
         public boolean hasAvalue() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
-        public String getAvalue() {
-          java.lang.Object ref = avalue_;
-          if (!(ref instanceof String)) {
-            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-            avalue_ = s;
-            return s;
-          } else {
-            return (String) ref;
-          }
+        public int getAvalue() {
+          return avalue_;
         }
-        public Builder setAvalue(String value) {
-          if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+        public Builder setAvalue(int value) {
+          bitField0_ |= 0x00000002;
           avalue_ = value;
           onChanged();
           return this;
         }
         public Builder clearAvalue() {
           bitField0_ = (bitField0_ & ~0x00000002);
-          avalue_ = getDefaultInstance().getAvalue();
+          avalue_ = 0;
           onChanged();
           return this;
-        }
-        void setAvalue(com.google.protobuf.ByteString value) {
-          bitField0_ |= 0x00000002;
-          avalue_ = value;
-          onChanged();
         }
         
         // optional sint32 ivalue = 3;
@@ -5420,7 +5383,7 @@ public final class AlignmentProto {
       "\002(\r\022\014\n\004keys\030\010 \002(\t\022B\n\006values\030\t \003(\01322.org." +
       "opencb.opencga.storage.alignment.Summary" +
       ".Pair\032S\n\004Pair\022\013\n\003key\030\001 \002(\r\022\016\n\006avalue\030\002 \001" +
-      "(\t\022\016\n\006ivalue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zv" +
+      "(\r\022\016\n\006ivalue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zv" +
       "alue\030\005 \001(\t\"\225\001\n\006Header\022D\n\007regions\030\001 \003(\01323" +
       ".org.opencb.opencga.storage.alignment.He" +
       "ader.Region\022\021\n\tSamHeader\030\002 \001(\014\0322\n\006Region" +
