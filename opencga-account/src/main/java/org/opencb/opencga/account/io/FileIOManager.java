@@ -104,20 +104,23 @@ public class FileIOManager implements IOManager {
      * ***************************
      */
     public void createAccount(String accountId) throws IOManagementException {
-
+//        System.out.println("TEST ERROR "+ accountId);
         // get Java 7 Path object, concatenate home and account
         Path accountPath = Paths.get(accountHomePath, accountId);
 
         // If account folder not exist is created
         if (!Files.exists(accountPath)) {
             try {
-                Files.createDirectory(accountPath);
+                Path p =  Files.createDirectory(accountPath);
+//                System.out.println("TEST ERROR: " + p.toString());
             } catch (IOException e) {
+//                System.out.println("TEST ERROR IOException:  "+ e.toString());
                 throw new IOManagementException("IOException" + e.toString());
             }
         }
 
-        logger.info("createAccount(): Creating account folder: " + accountHomePath);
+        logger.info(accountId+" createAccount(): Creating account folder: " + accountHomePath);
+//        System.out.println(accountId + " createAccount(): Creating account folder: " + accountHomePath);
         if (Files.exists(accountPath) && Files.isDirectory(accountPath) && Files.isWritable(accountPath)) {
 
             try {
@@ -130,12 +133,15 @@ public class FileIOManager implements IOManager {
                 try {
                     IOUtils.deleteDirectory(accountPath);
                 } catch (IOException e1) {
+//                    System.out.println("TEST ERROR IOException:  "+ e1.toString());
                     throw new IOManagementException("IOException: " + e1.toString());
                 }
+//                System.out.println("TEST ERROR IOException:  "+ e.toString());
                 throw new IOManagementException("IOException: " + e.toString());
             }
 
         } else {
+//            System.out.println("TEST ERROR The account folder has not been created");
             throw new IOManagementException("ERROR: The account folder has not been created ");
         }
 
@@ -144,7 +150,9 @@ public class FileIOManager implements IOManager {
     public void deleteAccount(String accountId) throws IOManagementException {
         Path accountPath = Paths.get(accountHomePath, accountId);
         try {
-            IOUtils.deleteDirectory(accountPath);
+            if(Files.exists(accountPath)){
+                IOUtils.deleteDirectory(accountPath);
+            }
         } catch (IOException e1) {
             throw new IOManagementException("IOException: " + e1.toString());
         }

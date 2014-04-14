@@ -1,15 +1,6 @@
 package org.opencb.opencga.app.cli;
 
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
 import org.apache.commons.cli.*;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
@@ -31,6 +22,15 @@ import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantAnnotTask;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
@@ -120,7 +120,8 @@ public class OpenCGAMain {
         formatter.printHelp("opencga-index",
                 "You must specify at least the datatype to store, the file to read from and the storage credentials. " +
                         "Please note that SQLite is the default storage backend.",
-                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true);
+                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true
+        );
     }
 
     private static void indexAlignments(String study, Path filePath, String backend, Path credentialsPath, boolean includeCoverage) {
@@ -130,7 +131,7 @@ public class OpenCGAMain {
     private static void indexVariants(VariantSource source, Path filePath, Path pedigreePath, String backend, Path credentialsPath,
                                       boolean includeEffect, boolean includeStats, boolean includeSamples) throws IOException, IllegalOpenCGACredentialsException {
 
-        VariantRunner vr = null;
+        VariantRunner vr;
         VariantReader reader;
         PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
