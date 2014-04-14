@@ -33,6 +33,10 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
     HBaseManager manager;
     String tableName, columnFamilyName = null;
 
+    public void connect(){
+        manager.connect();
+    }
+
     public AlignmentHBaseQueryBuilder(MonbaseCredentials credentials, String tableName) {
         manager = new HBaseManager(credentials);
         this.tableName = tableName;
@@ -45,8 +49,11 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
 
     @Override
     public QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options) {
-
-        manager.connect();
+        boolean wasOpened = true;
+        if(!manager.isOpened()){
+            manager.connect();
+            wasOpened = false;
+        }
 
         HTable table = manager.createTable(tableName, columnFamilyName);
 
@@ -72,7 +79,7 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
 
         for(Result result : resultScanner){
             for(KeyValue keyValue : result.list()){
-                System.out.println("Qualifier : " + keyValue.getKeyString() + " : Value : "/* + Bytes.toString(keyValue.getValue())*/);
+                //System.out.println("Qualifier : " + keyValue.getKeyString() + " : Value : "/* + Bytes.toString(keyValue.getValue())*/);
 
                 AlignmentProto.AlignmentBucket alignmentBucket = null;
                 try {
@@ -85,10 +92,10 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
                     continue;
                 }
 
-                System.out.println("Tenemos un bucket!");
+                //System.out.println("Tenemos un bucket!");
                 AlignmentRegionSummary summary;
                 if(!summaryMap.containsKey(alignmentBucket.getSummaryIndex())) {
-                    summaryMap.put(alignmentBucket.getSummaryIndex(), getRegionSummary(region.getChromosome(), alignmentBucket.getSummaryIndex()));
+                    summaryMap.put(alignmentBucket.getSummaryIndex(), getRegionSummary(region.getChromosome(), alignmentBucket.getSummaryIndex(), table));
                 }
                 summary = summaryMap.get(alignmentBucket.getSummaryIndex());
 
@@ -96,7 +103,7 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
                 long pos = AlignmentProtoHelper.getPositionFromRowkey(Bytes.toString(keyValue.getRow()), bucketSize);
                 List<Alignment> alignmentList = AlignmentProtoHelper.fromAlignmentBucketProto(alignmentBucket, summary, region.getChromosome(), pos);
 
-                System.out.println("Los tenemos!!");
+                //System.out.println("Los tenemos!!");
 
                 for(Alignment alignment : alignmentList){
                     queryResult.addResult(alignment);
@@ -104,19 +111,23 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
             }
         }
 
-        manager.disconnect();
+        if(!wasOpened){
+            manager.disconnect();
+        }
         return queryResult;
 
 
         //return null;
     }
 
-    private AlignmentRegionSummary getRegionSummary(String chromosome, int index){
-        manager.connect();
+    private AlignmentRegionSummary getRegionSummary(String chromosome, int index,HTable table){
+       // manager.connect();
 
-        HTable table = manager.createTable(tableName, columnFamilyName);
+       // HTable table = manager.createTable(tableName, columnFamilyName);
 
-        Scan scan = new Scan(Bytes.toBytes("S_"+chromosome+index));
+        Scan scan = new Scan(
+                Bytes.toBytes(AlignmentProtoHelper.getSummaryRowkey(chromosome, index)) ,
+                Bytes.toBytes(AlignmentProtoHelper.getSummaryRowkey(chromosome, index+1)));
 
         ResultScanner resultScanner;
         try {
@@ -129,7 +140,7 @@ public class AlignmentHBaseQueryBuilder implements AlignmentQueryBuilder {
         AlignmentRegionSummary summary = null;
         for(Result result : resultScanner){
             for(KeyValue keyValue : result.list()){
-                System.out.println("Qualifier : " + keyValue.getKeyString() );
+                //System.out.println("Qualifier : " + keyValue.getKeyString() );
                 try {
                     summary = new AlignmentRegionSummary( AlignmentProto.Summary.parseFrom(Snappy.uncompress(keyValue.getValue())), index);
                 } catch (IOException e) {

@@ -4,6 +4,9 @@ import org.opencb.commons.bioformats.alignment.Alignment;
 
 import java.util.*;
 
+/*
+ * TODO: Make a builder
+ */
 
 /**
  * Created with IntelliJ IDEA.
@@ -290,12 +293,15 @@ public class AlignmentRegionSummary {
         Map<String, Object> tags = new HashMap<>();
 
         for(Integer i : indexTagList) {
-            tags.put(keysArray[tagsArray[i].getKey()], tagsArray[i].getValue());
+            try {
+                tags.put(keysArray[tagsArray[i].getKey()], tagsArray[i].getValue());
+            } catch (ArrayIndexOutOfBoundsException ex){
+                System.out.println("Error? summary.getTagsFromList()");
+            }
         }
 
         return tags;
     }
-
 
     /**
      * This function can only be called when summary is CLOSED.
