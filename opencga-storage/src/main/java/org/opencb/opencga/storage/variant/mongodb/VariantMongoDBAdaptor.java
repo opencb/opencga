@@ -31,11 +31,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
-        List<String> chunkIds = getChunkIds(region);
         MongoDBCollection coll = db.getCollection("variants");
-
-        QueryBuilder qb = QueryBuilder.start("chunkIds").in(chunkIds);
-        qb.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        
+        QueryBuilder qb = QueryBuilder.start();
+        getRegionFilter(region, qb);
+        
         if (options != null) {
             if (options.containsKey("type")) {
                 getVariantTypeFilter(options.getString("type"), qb);
@@ -56,13 +56,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllVariantsByRegionAndStudy(Region region, String studyId, QueryOptions options) {
-        List<String> chunkIds = getChunkIds(region);
+    public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyId, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("variants");
 
         // Aggregation for filtering when more than one study is present
-        QueryBuilder qb = QueryBuilder.start("files.studyId").is(studyId);
-        qb.and("chunkIds").in(chunkIds).and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        QueryBuilder qb = QueryBuilder.start("files.studyId").in(studyId);
+        getRegionFilter(region, qb);
+        
         if (options != null) {
             if (options.containsKey("type")) {
                 getVariantTypeFilter(options.getString("type"), qb);
@@ -71,20 +71,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         
         DBObject match = new BasicDBObject("$match", qb.get());
         DBObject unwind = new BasicDBObject("$unwind", "$files");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("files.studyId", studyId));
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("files.studyId", new BasicDBObject("$in", studyId)));
         
-        return coll.aggregate("$effects.geneName", Arrays.asList(match, unwind, match2), options);
+        return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
     }
 
-    @Override
-    public List<QueryResult> getAllVariantsByRegionListAndStudy(List<Region> regions, String studyName, QueryOptions options) {
-        List<QueryResult> allResults = new LinkedList<>();
-        for (Region r : regions) {
-            QueryResult queryResult = getAllVariantsByRegionAndStudy(r, studyName, options);
-            allResults.add(queryResult);
-        }
-        return allResults;
-    }
 
     @Override
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
@@ -176,8 +167,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return chunkIds;
     }
     
-    private DBObject getVariantTypeFilter(String type) {
-        return new BasicDBObject("type", type.toUpperCase());
+    private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
+        List<String> chunkIds = getChunkIds(region);
+        builder.and("chunkIds").in(chunkIds);
+        builder.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        return builder;
     }
     
     private QueryBuilder getVariantTypeFilter(String type, QueryBuilder builder) {

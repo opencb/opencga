@@ -107,33 +107,33 @@ public class VariantMongoDBAdaptorTest extends GenericTest {
         QueryResult queryResult;
         
         // Basic queries
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("1:1000000-2000000"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("1:1000000-2000000"), Arrays.asList(study.getAlias()), null);
         assertEquals(3, queryResult.getNumResults());
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("1:10000000-20000000"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("1:10000000-20000000"), Arrays.asList(study.getAlias()), null);
         assertEquals(11, queryResult.getNumResults());
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("3:1-200000000"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("3:1-200000000"), Arrays.asList(study.getAlias()), null);
         assertEquals(50, queryResult.getNumResults());
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("X:1-200000000"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("X:1-200000000"), Arrays.asList(study.getAlias()), null);
         assertEquals(11, queryResult.getNumResults());
         
         // Exactly in the limits
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238441-7980390"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("20:238441-7980390"), Arrays.asList(study.getAlias()), null);
         assertEquals(5, queryResult.getNumResults());
         
         // Just inside the limits
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238440-7980391"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("20:238440-7980391"), Arrays.asList(study.getAlias()), null);
         assertEquals(5, queryResult.getNumResults());
         
         // Just outside the limits
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238441-7980389"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("20:238441-7980389"), Arrays.asList(study.getAlias()), null);
         assertEquals(4, queryResult.getNumResults());
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238442-7980390"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("20:238442-7980390"), Arrays.asList(study.getAlias()), null);
         assertEquals(4, queryResult.getNumResults());
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("20:238442-7980389"), study.getAlias(), null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("20:238442-7980389"), Arrays.asList(study.getAlias()), null);
         assertEquals(3, queryResult.getNumResults());
         
         // Non-existing study
-        queryResult = vqb.getAllVariantsByRegionAndStudy(new Region("1:1000000-2000000"), "FalseStudy", null);
+        queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("1:1000000-2000000"), Arrays.asList("FalseStudy"), null);
         assertEquals(0, queryResult.getNumResults());
     }
 

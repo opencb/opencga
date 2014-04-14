@@ -26,18 +26,16 @@ public interface VariantDBAdaptor {
 
     
     /**
-     * Given a genomic region and a study name, it retrieves a set of variants and, optionally, all the information
+     * Given a genomic region and studies IDs, it retrieves a set of variants and, optionally, all the information
      * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
      * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
      *
      * @param region    The region where variants must be searched
-     * @param studyId   The identifier of the study where variants are filed
+     * @param studyIds   The identifier of the studies where variants are classified
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    QueryResult getAllVariantsByRegionAndStudy(Region region, String studyId, QueryOptions options);
-
-    List<QueryResult> getAllVariantsByRegionListAndStudy(List<Region> regions, String studyName, QueryOptions options);
+    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
 
     
 //    QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax);
