@@ -18,6 +18,8 @@ public interface AccountManager {
      */
     org.opencb.commons.containers.QueryResult<ObjectMap> createAccount(String accountId, String password, String accountName, String role, String email, Session session) throws AccountManagementException, JsonProcessingException;
 
+    org.opencb.commons.containers.QueryResult<ObjectMap> deleteAccount(String accountId) throws AccountManagementException, JsonProcessingException;
+
     org.opencb.commons.containers.QueryResult<ObjectMap> createAnonymousAccount(String accountId, String password, Session session) throws AccountManagementException, IOException;
 
     org.opencb.commons.containers.QueryResult<ObjectMap> login(String accountId, String password, Session session) throws AccountManagementException, IOException;

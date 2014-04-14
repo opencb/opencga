@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantMonbaseQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantQueryBuilder;
 import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
+import sun.security.provider.SHA;
 
 public class CloudSessionManager {
 
@@ -126,11 +127,15 @@ public class CloudSessionManager {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
-        String password = StringUtils.randomString(10);
+        String password = StringUtils.randomString(53);
         String accountId = "anonymous_" + password;
 
+
+        ioManager.deleteAccount(accountId);
         ioManager.createAccount(accountId);
+
         try {
+            accountManager.deleteAccount(accountId);
             return accountManager.createAnonymousAccount(accountId, password, session);
         } catch (AccountManagementException e) {
             ioManager.deleteAccount(accountId);
@@ -243,7 +248,7 @@ public class CloudSessionManager {
 
 
     public QueryResult createObjectToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                                       InputStream fileIs, boolean parents, String sessionId) throws AccountManagementException,
+                                            InputStream fileIs, boolean parents, String sessionId) throws AccountManagementException,
             IOManagementException, IOException, InterruptedException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
@@ -284,7 +289,7 @@ public class CloudSessionManager {
     }
 
     public QueryResult createFolderToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                                       boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
+                                            boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -648,7 +653,7 @@ public class CloudSessionManager {
     }
 
     public QueryResult createJob(String jobName, String projectId, String jobFolder, String toolName, List<String> dataList,
-                                            String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
+                                 String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
 
         checkParameter(jobName, "jobName");
         checkParameter(projectId, "projectId");

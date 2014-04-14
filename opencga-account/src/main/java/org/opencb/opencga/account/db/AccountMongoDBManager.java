@@ -103,6 +103,24 @@ public class AccountMongoDBManager implements AccountManager {
         result.setNumResults(1);
         return result;
     }
+    @Override
+    public QueryResult<ObjectMap> deleteAccount(String accountId) throws AccountManagementException, JsonProcessingException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("accountId", accountId);
+
+        WriteResult wr = userCollection.remove(query);
+
+        if (wr.getLastError().getErrorMessage() != null) {
+            throw new AccountManagementException(wr.getLastError().getErrorMessage());
+        }
+        resultObjectMap.put("accountId", accountId);
+        result.setResult(Arrays.asList(resultObjectMap));
+        result.setNumResults(1);
+        return result;
+    }
 
     @Override
     public QueryResult<ObjectMap> createAnonymousAccount(String accountId, String password, Session session)

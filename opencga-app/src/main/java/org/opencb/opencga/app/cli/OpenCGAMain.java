@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
 import org.apache.commons.cli.*;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
@@ -27,9 +28,6 @@ import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
-import org.opencb.variant.lib.runners.tasks.VariantAnnotTask;
-import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
-import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
@@ -119,7 +117,8 @@ public class OpenCGAMain {
         formatter.printHelp("opencga-index",
                 "You must specify at least the datatype to store, the file to read from and the storage credentials. " +
                         "Please note that SQLite is the default storage backend.",
-                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true);
+                options, "\nFor more information or reporting a bug, please contact: imedina@cipf.es", true
+        );
     }
 
     private static void indexAlignments(String study, Path filePath, String backend, Path credentialsPath, boolean includeCoverage) {
@@ -139,7 +138,7 @@ public class OpenCGAMain {
         OpenCGACredentials credentials;
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-        
+
 //        List<VariantAnnotator> annots = new ArrayList<>();
 //        annots.add(new VariantControlMongoAnnotator());
 
@@ -158,23 +157,23 @@ public class OpenCGAMain {
 
 
         if (includeEffect) {
-            taskList.add(new VariantEffectTask());
+//            taskList.add(new VariantEffectTask());
         }
-        
+
         if (includeStats) {
-            taskList.add(new VariantStatsTask(reader, source));
+//            taskList.add(new VariantStatsTask(reader, source));
         }
-        
+
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
             variantWriter.includeEffect(includeEffect);
             variantWriter.includeStats(includeStats);
         }
 
-        vr = new VariantRunner(source, reader, pedReader, writers, taskList);
+//        vr = new VariantRunner(source, reader, pedReader, writers, taskList);
 
         System.out.println("Indexing variants...");
-        vr.run();
+//        vr.run();
         System.out.println("Variants indexed!");
     }
 }
