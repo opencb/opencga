@@ -18,8 +18,15 @@ public class AlignmentProtoHelper {
 
 
     public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentRegionSummary summary, long bucketStart, int overlapped){
-        if(alignments.isEmpty())
-            return null;
+        if(alignments == null || alignments.isEmpty()){
+            if(overlapped != 0){
+                if(alignments == null){
+                    alignments = new LinkedList<Alignment>();
+                }
+            } else {
+                return null;
+            }
+        }
         AlignmentProto.AlignmentBucket.Builder alignmentBucketBuilder = AlignmentProto.AlignmentBucket.newBuilder();
         alignmentBucketBuilder.setOverlapped(overlapped);
         alignmentBucketBuilder.setSummaryIndex(summary.getIndex());
