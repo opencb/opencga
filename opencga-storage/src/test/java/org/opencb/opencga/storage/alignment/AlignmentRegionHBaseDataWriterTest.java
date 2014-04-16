@@ -8,6 +8,7 @@ import org.opencb.commons.bioformats.alignment.Alignment;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentDataReader;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
+import org.opencb.commons.bioformats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataWriter;
 import org.opencb.commons.bioformats.feature.Region;
@@ -163,6 +164,56 @@ public class AlignmentRegionHBaseDataWriterTest extends GenericTest {
             System.out.println("    pnext: " + alignment.getMateAlignmentStart());
         }
 
+    }
+
+    @Test
+    public void removeBQ (){
+        usedFile = getClass().getResource("/chrom20.bam").getFile();
+        String tableName = "alignmentRegion_with_BQ_jj";
+        MonbaseCredentials credentials = null;
+        Configuration config;
+
+        // Credentials for the query builder
+        try {
+            credentials = new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, tableName, "cgonzalez", "cgonzalez");
+        } catch (IllegalOpenCGACredentialsException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+        // HBase configuration with the active credentials
+        config = HBaseConfiguration.create();
+        config.set("hbase.master", credentials.getHbaseMasterHost() + ":" + credentials.getHbaseMasterPort());
+        config.set("hbase.zookeeper.quorum", credentials.getHbaseZookeeperQuorum());
+        config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+
+        //Reader
+        AlignmentDataReader alignmentDataReader = new AlignmentBamDataReader(usedFile);
+        AlignmentRegionDataReader alignmentRegionDataReader = new AlignmentRegionDataReader(alignmentDataReader,8000,100000);
+        //Writer
+        AlignmentRegionHBaseDataWriter alignmentRegionHBaseDataWriter =
+                new AlignmentRegionHBaseDataWriter(credentials, tableName);
+
+        // end setup. start stuff
+        alignmentRegionDataReader.open();
+        alignmentRegionDataReader.pre();
+
+        alignmentRegionHBaseDataWriter.open();
+        alignmentRegionHBaseDataWriter.pre();
+
+        AlignmentRegion alignmentRegion = alignmentRegionDataReader.read();
+        int i = 0;
+        while (alignmentRegion != null) {
+            alignmentRegionHBaseDataWriter.write(alignmentRegion);
+            i++;
+            alignmentRegion = alignmentRegionDataReader.read();
+        }
+        System.out.println("written " + i + " AlignmentRegions in HBase");
+
+        alignmentRegionDataReader.post();
+        alignmentRegionDataReader.close();
+
+        alignmentRegionHBaseDataWriter.post();
+        alignmentRegionHBaseDataWriter.close();
     }
 
 }
