@@ -21,6 +21,7 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
 import org.opencb.opencga.lib.auth.*;
+import org.opencb.opencga.storage.variant.json.VariantJsonWriter;
 //import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 //import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
@@ -40,11 +41,13 @@ public class OpenCGAMain {
 
         options.addOption(OptionFactory.createOption("help", "h", "Print this message", false, false));
 
+        options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
         options.addOption(OptionFactory.createOption("alias", "a", "Unique ID for the file to be uploaded", true, true));
+        options.addOption(OptionFactory.createOption("study", "s", "Unique ID for the study where the file is classified", true, true));
+        
         options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default) or monbase", false, true));
         options.addOption(OptionFactory.createOption("credentials", "c", "Path to the file where the backend credentials are stored", true, true));
         options.addOption(OptionFactory.createOption("datatype", "d", "Datatype to be stored: alignments (BAM) or variants (VCF)", true, true));
-        options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
         options.addOption(OptionFactory.createOption("outdir", "o", "Directory where output files will be saved (if applies)", false, true));
 
         // Alignments optional arguments
@@ -126,7 +129,8 @@ public class OpenCGAMain {
     }
 
     private static void indexVariants(VariantSource source, Path filePath, Path pedigreePath, String backend, Path credentialsPath,
-                                      boolean includeEffect, boolean includeStats, boolean includeSamples) throws IOException, IllegalOpenCGACredentialsException {
+                                      boolean includeEffect, boolean includeStats, boolean includeSamples) 
+            throws IOException, IllegalOpenCGACredentialsException {
 
         VariantRunner vr = null;
         VariantReader reader;
@@ -145,16 +149,19 @@ public class OpenCGAMain {
         List<Task<Variant>> taskList = new SortedList<>();
 
         // TODO Restore when SQLite and Monbase are once again ready!!
-        /*if (backend.equalsIgnoreCase("sqlite")) {
+        if (backend.equalsIgnoreCase("mongo")) {
+            credentials = new MongoCredentials(properties);
+            writers.add(new VariantMongoWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
+        } else if (backend.equalsIgnoreCase("json")) {
+//            credentials = new MongoCredentials(properties);
+            writers.add(new VariantJsonWriter(source, "opencga-hsapiens"));
+        }/* else if (backend.equalsIgnoreCase("sqlite")) {
             credentials = new SqliteCredentials(properties);
             writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
         } else if (backend.equalsIgnoreCase("monbase")) {
             credentials = new MonbaseCredentials(properties);
             writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));// TODO Restore when SQLite and Monbase are once again ready!!
-        } else*/ if (backend.equalsIgnoreCase("mongo")) {
-            credentials = new MongoCredentials(properties);
-            writers.add(new VariantMongoWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
-        }
+        } */ 
 
 
         if (includeEffect) {
