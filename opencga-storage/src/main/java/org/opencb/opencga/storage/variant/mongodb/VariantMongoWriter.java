@@ -105,12 +105,12 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
-//        if (this.includeStats) {
+        if (this.includeStats) {
             buildStatsRaw(data);
-//        }
-//        if (this.includeEffect) {
+        }
+        if (this.includeEffect) {
             buildEffectRaw(data);
-//        }
+        }
         buildBatchIndex(data);
         return writeBatch(data);
     }
@@ -214,8 +214,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 BasicDBObject genotypes = new BasicDBObject();
 
                 for (Genotype g : vs.getGenotypes()) {
-                    String count = (g.getAllele1() == null ? -1 : g.getAllele1()) + "/" + (g.getAllele2() == null ? -1 : g.getAllele2());
-                    genotypes.append(count, g.getCount());
+                    genotypes.append(g.getGenotype(), g.getCount());
                 }
 
                 BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
