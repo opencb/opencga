@@ -10,6 +10,8 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,21 +29,24 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 public class VariantJsonWriter implements VariantWriter {
     
     private VariantSource source;
+    private Path outdir;
     
     protected ObjectMapper jsonObjectMapper;
     protected ObjectWriter jsonObjectWriter;
     private BufferedWriter writer;
 
     
-    public VariantJsonWriter(VariantSource source, String species) {
+    public VariantJsonWriter(VariantSource source, Path outdir) {
         this.source = source;
+        this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath(); 
         this.jsonObjectMapper = new ObjectMapper();
     }
 
     @Override
     public boolean open() {
         try {
-            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(source.getName() + ".json.gz"))));
+            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(
+                    Paths.get(outdir.toString(), source.getFilename()).toAbsolutePath().toString() + ".json.gz"))));
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;

@@ -52,7 +52,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     private BufferedWriter writer;
 
-    public VariantMongoWriter(VariantSource source, String species, MongoCredentials credentials) {
+    public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -322,7 +322,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     private boolean writeStudy(VariantSource study) {
         String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
-        BasicDBObject studyMongo = new BasicDBObject("name", study.getName())
+        BasicDBObject studyMongo = new BasicDBObject("name", study.getFilename())
                 .append("alias", study.getAlias())
                 .append("date", timeStamp)
                 .append("authors", study.getAuthors())
@@ -363,7 +363,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 .get();
         studyMongo = studyMongo.append("metadata", metadataMongo);
 
-        DBObject query = new BasicDBObject("name", study.getName());
+        DBObject query = new BasicDBObject("name", study.getFilename());
         WriteResult wr = filesCollection.update(query, studyMongo, true, false);
 
         filesCollection.ensureIndex(new BasicDBObject("name", 1));

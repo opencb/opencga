@@ -30,7 +30,8 @@ public class VariantMongoWriterTest extends GenericTest {
     private static Properties properties;
     private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static MongoCredentials credentials;
-    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
+    private static VariantSource study1 = new VariantSource("testFilename", "testAlias", "testStudy1", "test description", null, null);
+    private static VariantSource study2 = new VariantSource("testFilename", "testAlias2", "testStudy2", "test description", null, null);
 
 
     @BeforeClass
@@ -52,7 +53,7 @@ public class VariantMongoWriterTest extends GenericTest {
 
         VariantReader reader;
         reader = new VariantVcfReader(inputFile, inputFile, inputFile);
-        writers.add(new VariantMongoWriter(study, "opencga-hsapiens", credentials));
+        writers.add(new VariantMongoWriter(study1, credentials));
 
         for (VariantWriter vw : writers) {
             vw.includeStats(true);
@@ -60,14 +61,14 @@ public class VariantMongoWriterTest extends GenericTest {
 //            vw.includeEffect(true);
         }
 
-        taskList.add(new VariantStatsTask(reader, study));
+        taskList.add(new VariantStatsTask(reader, study1));
 //        taskList.add(new VariantEffectTask());
 
 
-        VariantRunner vr = new VariantRunner(study, reader, null, writers, taskList);
+        VariantRunner vr = new VariantRunner(study1, reader, null, writers, taskList);
         vr.run();
 
-        study.setName("testStudy2");
+        vr = new VariantRunner(study2, reader, null, writers, taskList);
         vr.run();
 
 

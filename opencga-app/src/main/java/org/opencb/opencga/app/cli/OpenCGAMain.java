@@ -77,7 +77,8 @@ public class OpenCGAMain {
         Path filePath = Paths.get(commandLine.getOptionValue("file"));
         // TODO check filePath exists
         String alias = commandLine.getOptionValue("alias");
-        String outdir = commandLine.getOptionValue("outdir");
+        String study = commandLine.getOptionValue("study");
+        Path outdir = commandLine.hasOption("outdir") ? Paths.get(commandLine.getOptionValue("outdir")) : null;
 
         // Get arguments for each datatype to store
         switch (commandLine.getOptionValue("datatype").toLowerCase()) {
@@ -91,9 +92,9 @@ public class OpenCGAMain {
                 boolean includeStats = commandLine.hasOption("include-stats");
                 boolean includeSamples = commandLine.hasOption("include-samples");
                 Path pedigreePath = commandLine.hasOption("pedigree") ? Paths.get(commandLine.getOptionValue("pedigree")) : null;
-                VariantSource source = new VariantSource(filePath.getFileName().toString(), alias, filePath.getFileName().toString(), null, null);
+                VariantSource source = new VariantSource(filePath.getFileName().toString(), alias, study, study, null, null);
 
-                indexVariants(source, filePath, pedigreePath, backend, credentialsPath, includeEffect, includeStats, includeSamples);
+                indexVariants(source, filePath, pedigreePath, outdir, backend, credentialsPath, includeEffect, includeStats, includeSamples);
                 break;
             default:
                 System.out.println("Datatype " + commandLine.getOptionValue("datatype") + " is not supported");
@@ -128,15 +129,15 @@ public class OpenCGAMain {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private static void indexVariants(VariantSource source, Path filePath, Path pedigreePath, String backend, Path credentialsPath,
-                                      boolean includeEffect, boolean includeStats, boolean includeSamples) 
+    private static void indexVariants(VariantSource source, Path filePath, Path pedigreePath, Path outdir, String backend, 
+                                      Path credentialsPath,boolean includeEffect, boolean includeStats, boolean includeSamples) 
             throws IOException, IllegalOpenCGACredentialsException {
 
         VariantRunner vr = null;
         VariantReader reader;
         PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
-        reader = new VariantVcfReader(filePath.toString(), filePath.toString(), filePath.toString());
+        reader = new VariantVcfReader(filePath.toAbsolutePath().toString(), source.getAlias(), source.getStudy());
 
         List<VariantWriter> writers = new ArrayList<>();
         OpenCGACredentials credentials;
@@ -151,10 +152,10 @@ public class OpenCGAMain {
         // TODO Restore when SQLite and Monbase are once again ready!!
         if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
-            writers.add(new VariantMongoWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
+            writers.add(new VariantMongoWriter(source, (MongoCredentials) credentials));
         } else if (backend.equalsIgnoreCase("json")) {
 //            credentials = new MongoCredentials(properties);
-            writers.add(new VariantJsonWriter(source, "opencga-hsapiens"));
+            writers.add(new VariantJsonWriter(source, outdir));
         }/* else if (backend.equalsIgnoreCase("sqlite")) {
             credentials = new SqliteCredentials(properties);
             writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));

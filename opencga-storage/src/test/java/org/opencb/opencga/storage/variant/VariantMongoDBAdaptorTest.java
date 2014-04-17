@@ -33,7 +33,7 @@ import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 public class VariantMongoDBAdaptorTest extends GenericTest {
 
     private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
-    private static VariantSource study = new VariantSource("testStudy", "testAlias", "Study for testing purposes", null, null);
+    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", "Study for testing purposes", null, null);
     private static MongoCredentials credentials;
     private static VariantDBAdaptor vqb;
 
@@ -49,8 +49,8 @@ public class VariantMongoDBAdaptorTest extends GenericTest {
         credentials = new MongoCredentials(properties);
         
         // Initialize dataset to query
-        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getName());
-        VariantMongoWriter vdw = new VariantMongoWriter(study, "hsapiens", (MongoCredentials) credentials);
+        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFilename());
+        VariantMongoWriter vdw = new VariantMongoWriter(study, (MongoCredentials) credentials);
         List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
         VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
         vr.run();

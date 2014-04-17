@@ -9,6 +9,8 @@ import java.util.Set;
  */
 public abstract class ArchivedVariantFileJsonMixin {
     
+    @JsonIgnore public abstract String getFileName();
+    
     @JsonIgnore public abstract Set<String> getSampleNames();
             
 }

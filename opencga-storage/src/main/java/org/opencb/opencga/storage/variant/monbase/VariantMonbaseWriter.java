@@ -199,7 +199,7 @@ public class VariantMonbaseWriter extends VariantDBWriter {
 
             if (variantCollection.count(query) == 0) {
                 // Create relationship variant-study for inserting in Mongo
-                BasicDBObject mongoStudy = new BasicDBObject("sourceId", source.getAlias()).append("sourceName", source.getName());
+                BasicDBObject mongoStudy = new BasicDBObject("sourceId", source.getAlias()).append("sourceName", source.getFilename());
                 mongoStudy.append("ref", v.getReference()).append("alt", v.getAlternate());
                 
                 // Add stats to study
