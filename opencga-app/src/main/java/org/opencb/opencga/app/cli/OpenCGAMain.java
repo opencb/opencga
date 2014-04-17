@@ -142,9 +142,6 @@ public class OpenCGAMain {
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
 
-        List<VariantAnnotator> annots = new ArrayList<>();
-        annots.add(new VariantControlMongoAnnotator());
-
         List<Task<Variant>> taskList = new SortedList<>();
 
         if (backend.equalsIgnoreCase("sqlite")) {
@@ -164,7 +161,6 @@ public class OpenCGAMain {
 
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, source));
-            taskList.add(new VariantAnnotTask(annots));
         }
 
         for (VariantWriter variantWriter : writers) {
