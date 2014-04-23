@@ -1,11 +1,8 @@
 package org.opencb.opencga.storage.variant.json;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,15 +28,20 @@ public class VariantJsonWriter implements VariantWriter {
     private VariantSource source;
     private Path outdir;
     
+    protected JsonFactory factory;
     protected ObjectMapper jsonObjectMapper;
-    protected ObjectWriter jsonObjectWriter;
+    protected JsonGenerator generator;
+    
     private BufferedWriter writer;
 
+    private long numVariantsWritten;
     
     public VariantJsonWriter(VariantSource source, Path outdir) {
         this.source = source;
         this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath(); 
-        this.jsonObjectMapper = new ObjectMapper();
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+        this.numVariantsWritten = 0;
     }
 
     @Override
@@ -56,16 +58,16 @@ public class VariantJsonWriter implements VariantWriter {
 
     @Override
     public boolean pre() {
-        jsonObjectMapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
         jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
         
-        String[] ignorableFieldNames = { "sampleNames", "indel", "snp", "altAlleles" };  
-        FilterProvider filters = new SimpleFilterProvider().addFilter("filter properties by name",   
-              SimpleBeanPropertyFilter.serializeAllExcept(ignorableFieldNames));
-        
-        jsonObjectWriter = jsonObjectMapper.writer();
-        jsonObjectWriter.with(filters);
+        try {
+            generator = factory.createGenerator(writer);
+            generator.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+        } catch (IOException ex) {
+            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        }
         
         return true;
     }
@@ -73,7 +75,8 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean write(Variant variant) {
         try {
-            writer.write(jsonObjectWriter.writeValueAsString(variant) + "\n");
+            generator.writeObject(variant);
+            generator.writeRaw('\n');
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
             return false;
@@ -85,12 +88,26 @@ public class VariantJsonWriter implements VariantWriter {
     public boolean write(List<Variant> batch) {
         for (Variant variant : batch) {
             try {
-                writer.write(jsonObjectWriter.writeValueAsString(variant) + "\n");
+                generator.writeObject(variant);
+                generator.writeRaw('\n');
             } catch (IOException ex) {
                 Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
                 return false;
             }
         }
+        
+        try {
+            generator.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        }
+        
+        numVariantsWritten += batch.size();
+        Variant lastVariantInBatch = batch.get(batch.size()-1);
+        Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
+                new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
+        
         return true;
     }
 
@@ -102,7 +119,7 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean close() {
         try {
-            writer.close();
+            generator.close();
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
