@@ -9,8 +9,10 @@ import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
+import org.opencb.commons.bioformats.alignment.tasks.AlignmentRegionCompactorTask;
 import org.opencb.commons.test.GenericTest;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -38,21 +40,30 @@ public class AlignmentProtoHelperTest extends GenericTest {
         alignmentRegionDataReader.open();
         alignmentRegionDataReader.pre();
 
+        System.out.println("Reading alignmentRegion... ");
         alignmentRegion = alignmentRegionDataReader.read();
-        System.out.println("Leemos alignmentRegion ");
 
+        System.out.println("making task...");
+        AlignmentRegionCompactorTask alignmentRegionCompactorTask = new AlignmentRegionCompactorTask();
+        LinkedList<AlignmentRegion> alignmentRegionList  = new LinkedList<AlignmentRegion>();
+        alignmentRegionList.add(alignmentRegion);
+        try {
+            alignmentRegionCompactorTask.apply(alignmentRegionList);
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
 
-        System.out.println("Creamos el summary");
+        System.out.println("creating el summary");
         firstAlignmentStart = alignmentRegion.getAlignments().get(0).getStart();
         firstBucketStart = (firstAlignmentStart / bucketSize) * bucketSize;
         summary = new AlignmentRegionSummary((int)firstAlignmentStart / bucketSize);
-        System.out.println("Lo llenamos");
+        System.out.println("filling summary");
         for (Alignment alignment : alignmentRegion.getAlignments()) {
             summary.addAlignment(alignment);
         }
-        System.out.println("Cerramos el summary");
+        System.out.println("closing el summary");
         summary.close();
-        System.out.println(summary.getDefaultLen());
+        //System.out.println(summary.getDefaultLen());
 
 
         // split all alignments in buckets. then build bucketProto from bucket alignments
@@ -79,11 +90,12 @@ public class AlignmentProtoHelperTest extends GenericTest {
         }
 
 
-        System.out.println("alignmentRegion size = " + alignmentRegion.getAlignments().size());
-        System.out.println("alignmentList size = " + alignmentList.size());
+//        System.out.println("alignmentRegion size = " + alignmentRegion.getAlignments().size());
+//        System.out.println("alignmentList size = " + alignmentList.size());
         for (int i = 0; i < alignmentRegion.getAlignments().size(); i++) {
             if (!alignmentRegion.getAlignments().get(i).equals(alignmentList.get(i))) {
                 System.out.println("failed alignment nº: " + i);
+                printEquals(alignmentRegion.getAlignments().get(i), alignmentList.get(i));
             }
         }
 
@@ -106,13 +118,13 @@ public class AlignmentProtoHelperTest extends GenericTest {
 
         for (int i = 0; i < 900; i++) {
             alignment1 = alignmentSamDataReader.read();
-            System.out.println("Leemos alignment " + i);
+            System.out.println("Reading alignment " + i);
             if (alignment1 != null) {
-                System.out.println("Creamos el summary");
+                System.out.println("Creating the summary");
                 summary = new AlignmentRegionSummary(2);
-                System.out.println("Lo llenamos");
+                System.out.println("filling summary");
                 summary.addAlignment(alignment1);
-                System.out.println("Cerramos el summary");
+                System.out.println("Closing the summary");
                 summary.close();
                 System.out.println(summary.getDefaultLen());
 
@@ -176,6 +188,56 @@ public class AlignmentProtoHelperTest extends GenericTest {
         boolean areEqual = true;
 
         if (!alignment1.equals(alignment2)){
+            if ((alignment1.getFlags() | Alignment.SEGMENTS_PROPERLY_ALIGNED | Alignment.SEQUENCE_REVERSE_COMPLEMENTED | Alignment.SECONDARY_ALIGNMENT |Alignment.SUPPLEMENTARY_ALIGNMENT)
+                != (alignment2.getFlags() | Alignment.SEGMENTS_PROPERLY_ALIGNED | Alignment.SEQUENCE_REVERSE_COMPLEMENTED | Alignment.SECONDARY_ALIGNMENT |Alignment.SUPPLEMENTARY_ALIGNMENT)) {
+            return false;
+        }
+            if ((alignment1.getFlags() & Alignment.SEGMENT_UNMAPPED) == 0) {    // segment NOT unmapped
+                if (!(alignment1.getStart() == alignment2.getStart())) {
+                    areEqual = false;
+                    System.out.println("Start is not equal: " + alignment1.getStart() + ", " + alignment2.getStart());
+                }
+                if (!(alignment1.getEnd() == alignment2.getEnd())) {
+                    areEqual = false;
+                    System.out.println("End is not equal: " + alignment1.getEnd() + " != " + alignment2.getEnd());
+                }
+                if (!(alignment1.getUnclippedStart() == alignment2.getUnclippedStart())) {
+                    areEqual = false;
+                    System.out.println("Unclipped Start is not equal: " + alignment1.getUnclippedStart() + " != " + alignment2.getUnclippedStart());
+                }
+                if (!(alignment1.getUnclippedEnd() == alignment2.getUnclippedEnd())) {
+                    areEqual = false;
+                    System.out.println("Unclipped End is not equal: " + alignment1.getUnclippedEnd() + " != " + alignment2.getUnclippedEnd());
+                }
+                if (!(alignment1.getMateReferenceName() == alignment2.getMateReferenceName())) {
+                    areEqual = false;
+                    System.out.println("MateReferenceName is not equal");
+                }
+                if (alignment1.getDifferences() == null) {
+                    if (alignment2.getDifferences() != null) {
+                        areEqual = false;
+                        System.out.println(" origin Differences is null and dest is not null");
+                    }
+                } else {
+                    if (alignment2.getDifferences() == null) {
+                        areEqual = false;
+                        System.out.println("origin Differences is not null and dest is null");
+                    } else {
+                        if (!alignment1.getDifferences().equals(alignment2.getDifferences())) {
+                            areEqual = false;
+                            System.out.println("Differences is not equal");
+                        }
+                    }
+                }
+                if (!(alignment1.getMappingQuality() == alignment2.getMappingQuality())) {
+                    areEqual = false;
+                    System.out.println("MappingQuality is not equal");
+                }
+                if (!(alignment1.getFlags() == alignment2.getFlags())) {
+                    areEqual = false;
+                    System.out.println("flags is not equal");
+                }
+            }
             if (!alignment1.getName().equals(alignment2.getName())) {
                 areEqual = false;
                 System.out.println("name is not equal");
@@ -185,44 +247,20 @@ public class AlignmentProtoHelperTest extends GenericTest {
                 areEqual = false;
                 System.out.println("chromosome is not equal");
             }
-            if (!(alignment1.getStart() == alignment2.getStart())) {
-                areEqual = false;
-                System.out.println("Start is not equal: " + alignment1.getStart() + ", " + alignment2.getStart());
-            }
-            if (!(alignment1.getEnd() == alignment2.getEnd())) {
-                areEqual = false;
-                System.out.println("End is not equal");
-            }
-            if (!(alignment1.getUnclippedStart() == alignment2.getUnclippedStart())) {
-                areEqual = false;
-                System.out.println("Unclipped Start is not equal");
-            }
-            if (!(alignment1.getUnclippedEnd() == alignment2.getUnclippedEnd())) {
-                areEqual = false;
-                System.out.println("Unclipped End is not equal: " + alignment1.getUnclippedEnd() + " != " + alignment2.getUnclippedEnd());
-            }
             if (!(alignment1.getLength() == alignment2.getLength())) {
                 areEqual = false;
                 System.out.println("Length is not equal");
             }
-            if (!(alignment1.getMappingQuality() == alignment2.getMappingQuality())) {
-                areEqual = false;
-                System.out.println("MappingQuality is not equal");
-            }
             if (!alignment1.getQualities().equals(alignment2.getQualities())) {
                 areEqual = false;
                 System.out.println("qualities is not equal");
-            }
-            if (!(alignment1.getMateReferenceName() == alignment2.getMateReferenceName())) {
-                areEqual = false;
-                System.out.println("MateReferenceName is not equal");
             }
             if (!(alignment1.getMateAlignmentStart() == alignment2.getMateAlignmentStart())) {
                 areEqual = false;
                 System.out.println("MateAlignmentStart not equal");
             }
 
-/*
+///*
             if (alignment1.getReadSequence() == null ^ alignment2.getReadSequence() == null) { // only one is null
                 areEqual = false;
                 System.out.println("only one sequence is null: " + (alignment1.getReadSequence() == null) + ", " + (alignment2.getReadSequence() == null));
@@ -231,7 +269,7 @@ public class AlignmentProtoHelperTest extends GenericTest {
                 System.out.println(alignment1.getReadSequence());
                 System.out.println(alignment2.getReadSequence());
             }
-*/
+/**/
 
             if (alignment1.getAttributes() == null) {
                 if (alignment2.getAttributes() != null) {
@@ -248,28 +286,6 @@ public class AlignmentProtoHelperTest extends GenericTest {
                         System.out.println("Attributes is not equal");
                     }
                 }
-            }
-
-            if (alignment1.getDifferences() == null) {
-                if (alignment2.getDifferences() != null) {
-                    areEqual = false;
-                    System.out.println(" origin Differences is null and dest is not null");
-                }
-            } else {
-                if (alignment2.getDifferences() == null) {
-                    areEqual = false;
-                    System.out.println("origin Differences is not null and dest is null");
-                } else {
-                    if (!alignment1.getDifferences().equals(alignment2.getDifferences())) {
-                        areEqual = false;
-                        System.out.println("Differences is not equal");
-                    }
-                }
-            }
-
-            if (!(alignment1.getFlags() == alignment2.getFlags())) {
-                areEqual = false;
-                System.out.println("flags is not equal");
             }
         }
         if (!areEqual) {

@@ -141,11 +141,18 @@ public class AlignmentProtoHelper {
         long unclippedStart = start;
         long unclippedEnd = end;
 
-        if(!alignmentDifferences.isEmpty() && alignmentDifferences.get(0).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
-            unclippedStart -= alignmentDifferences.get(0).getLength();
+        if(!alignmentDifferences.isEmpty()) {   // amend unclipped start
+            Alignment.AlignmentDifference alignmentDifference = alignmentDifferences.get(0);
+            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING && alignmentDifference.getPos() == 0){
+                unclippedStart -= alignmentDifference.getLength();
+            }
         }
-        if(!alignmentDifferences.isEmpty() && alignmentDifferences.get(alignmentDifferences.size()-1).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
-            unclippedEnd += alignmentDifferences.get(alignmentDifferences.size()-1).getLength();
+
+        if(!alignmentDifferences.isEmpty()) {   // amend unclipped end
+            Alignment.AlignmentDifference alignmentDifference = alignmentDifferences.get(alignmentDifferences.size()-1);
+            if (alignmentDifference.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING && alignmentDifference.getPos() != 0){
+                unclippedEnd += alignmentDifference.getLength();
+            }
         }
 
         Alignment alignment = new Alignment();
