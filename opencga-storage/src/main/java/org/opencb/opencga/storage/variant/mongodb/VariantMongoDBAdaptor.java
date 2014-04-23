@@ -35,12 +35,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         
         QueryBuilder qb = QueryBuilder.start();
         getRegionFilter(region, qb);
-        
-        if (options != null) {
-            if (options.containsKey("type")) {
-                getVariantTypeFilter(options.getString("type"), qb);
-            }
-        }
+        parseQueryOptions(options, qb);
         
         return coll.find(qb.get(), options);
     }
@@ -62,12 +57,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Aggregation for filtering when more than one study is present
         QueryBuilder qb = QueryBuilder.start("files.studyId").in(studyId);
         getRegionFilter(region, qb);
-        
-        if (options != null) {
-            if (options.containsKey("type")) {
-                getVariantTypeFilter(options.getString("type"), qb);
-            }
-        }
+        parseQueryOptions(options, qb);
         
         DBObject match = new BasicDBObject("$match", qb.get());
         DBObject unwind = new BasicDBObject("$unwind", "$files");
@@ -83,11 +73,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // TODO Should the gene name be a first-order attribute of the variant?
         QueryBuilder qb = QueryBuilder.start("effects.geneName").is(geneName);
-        if (options != null) {
-            if (options.containsKey("type")) {
-                getVariantTypeFilter(options.getString("type"), qb);
-            }
-        }
+        parseQueryOptions(options, qb);
         return coll.find(qb.get(), options);
     }
 
@@ -110,11 +96,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         MongoDBCollection coll = db.getCollection("variants");
         
         QueryBuilder qb = QueryBuilder.start();
-        if (options != null) {
-            if (options.containsKey("type")) {
-                getVariantTypeFilter(options.getString("type"), qb);
-            }
-        }
+        parseQueryOptions(options, qb);
         
         DBObject match = new BasicDBObject("$match", qb.get());
         DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$effects.geneName"));
@@ -150,6 +132,50 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return true;
     }
 
+    
+    private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
+        if (options != null) {
+            if (options.containsKey("region")) {
+                getRegionFilter(Region.parseRegion(options.getString("region")), builder);
+            }
+            
+            if (options.containsKey("type")) {
+                getVariantTypeFilter(options.getString("type"), builder);
+            }
+            
+            if (options.containsKey("reference")) {
+                getReferenceFilter(options.getString("reference"), builder);
+            }
+            
+            if (options.containsKey("alternate")) {
+                getAlternateFilter(options.getString("alternate"), builder);
+            }
+            
+        }
+        
+        return builder;
+    }
+    
+    private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
+        List<String> chunkIds = getChunkIds(region);
+        builder.and("chunkIds").in(chunkIds);
+        builder.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        return builder;
+    }
+    
+    private QueryBuilder getReferenceFilter(String reference, QueryBuilder builder) {
+        return builder.and("ref").is(reference);
+    }
+    
+    private QueryBuilder getAlternateFilter(String alternate, QueryBuilder builder) {
+        return builder.and("alt").is(alternate);
+    }
+    
+    private QueryBuilder getVariantTypeFilter(String type, QueryBuilder builder) {
+        return builder.and("type").is(type.toUpperCase());
+    }
+    
+    
     private List<String> getChunkIds(Region region) {
         List<String> chunkIds = new LinkedList<>();
         
@@ -165,17 +191,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         
         return chunkIds;
-    }
-    
-    private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
-        List<String> chunkIds = getChunkIds(region);
-        builder.and("chunkIds").in(chunkIds);
-        builder.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
-        return builder;
-    }
-    
-    private QueryBuilder getVariantTypeFilter(String type, QueryBuilder builder) {
-        return builder.and("type").is(type.toUpperCase());
     }
     
 //    @Override
