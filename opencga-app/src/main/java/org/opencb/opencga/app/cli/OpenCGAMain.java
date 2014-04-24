@@ -10,6 +10,7 @@ import org.opencb.commons.bioformats.variant.annotators.VariantAnnotator;
 import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnotator;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantJsonDataWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
@@ -45,7 +46,7 @@ public class OpenCGAMain {
         options.addOption(OptionFactory.createOption("help", "h", "Print this message", false, false));
 
         options.addOption(OptionFactory.createOption("alias", "a", "Unique ID for the file to be uploaded", true, true));
-        options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default) or monbase", false, true));
+        options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default), mongo, monbase, json or json-gzip", false, true));
         options.addOption(OptionFactory.createOption("credentials", "c", "Path to the file where the backend credentials are stored", true, true));
         options.addOption(OptionFactory.createOption("datatype", "d", "Datatype to be stored: alignments (BAM) or variants (VCF)", true, true));
         options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
@@ -153,7 +154,12 @@ public class OpenCGAMain {
         } else if (backend.equalsIgnoreCase("mongo")) {
             credentials = new MongoCredentials(properties);
             writers.add(new VariantVcfMongoDataWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
+        } else if (backend.equalsIgnoreCase("json")) {
+            writers.add(new VariantJsonDataWriter(source, "out.json"));
+        } else if (backend.equalsIgnoreCase("json-gzip")) {
+            writers.add(new VariantJsonDataWriter(source, "out.json.gz", true));
         }
+
 
         if (includeEffect) {
             taskList.add(new VariantEffectTask());
