@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
 import java.util.List;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
 
 /**

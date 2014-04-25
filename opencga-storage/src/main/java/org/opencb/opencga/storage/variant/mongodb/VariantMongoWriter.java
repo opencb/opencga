@@ -50,8 +50,6 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     private Map<String, Integer> conseqTypes;
     
-    private BufferedWriter writer;
-
     public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
@@ -62,11 +60,6 @@ public class VariantMongoWriter extends VariantDBWriter {
         this.mongoFileMap = new HashMap<>();
 
         conseqTypes = new LinkedHashMap<>();
-//        try {
-//            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(source.getName() + ".json.gz"))));
-//        } catch (IOException ex) {
-//            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
-//        }
     }
 
     @Override
@@ -294,11 +287,6 @@ public class VariantMongoWriter extends VariantDBWriter {
             if (mongoVariant.containsField("chr")) {
                 // Was fully built in this run because it didn't exist, and must be inserted
                 wr = variantCollection.insert(mongoVariant);
-//                try {
-//                    writer.write(mongoVariant.toString() + "\n") ;
-//                } catch (IOException ex) {
-//                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
-//                }
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
                 for (ArchivedVariantFile archiveFile : v.getFiles().values()) {

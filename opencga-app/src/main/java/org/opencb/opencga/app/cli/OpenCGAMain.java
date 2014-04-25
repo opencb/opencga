@@ -12,15 +12,16 @@ import java.util.Properties;
 import org.apache.commons.cli.*;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantReader;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.OptionFactory;
 import org.opencb.opencga.lib.auth.*;
+import org.opencb.opencga.storage.variant.json.VariantJsonReader;
 import org.opencb.opencga.storage.variant.json.VariantJsonWriter;
 //import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
@@ -133,11 +134,16 @@ public class OpenCGAMain {
                                       Path credentialsPath,boolean includeEffect, boolean includeStats, boolean includeSamples) 
             throws IOException, IllegalOpenCGACredentialsException {
 
-        VariantRunner vr = null;
         VariantReader reader;
         PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
-        reader = new VariantVcfReader(filePath.toAbsolutePath().toString(), source.getAlias(), source.getStudy());
+        if (source.getFilename().endsWith(".vcf") || source.getFilename().endsWith(".vcf.gz")) {
+            reader = new VariantVcfReader(filePath.toAbsolutePath().toString(), source.getAlias(), source.getStudy());
+        } else if (source.getFilename().endsWith(".json") || source.getFilename().endsWith(".json.gz")) {
+            reader = new VariantJsonReader(filePath.toAbsolutePath().toString());
+        } else {
+            throw new IOException("Variants input file format not supported");
+        }
 
         List<VariantWriter> writers = new ArrayList<>();
         OpenCGACredentials credentials;
@@ -165,12 +171,15 @@ public class OpenCGAMain {
         } */ 
 
 
-        if (includeEffect) {
-            taskList.add(new VariantEffectTask());
-        }
-        
-        if (includeStats) {
-            taskList.add(new VariantStatsTask(reader, source));
+        // If a JSON file is provided, then stats and effects do not need to be recalculated
+        if (!source.getFilename().endsWith(".json") && !source.getFilename().endsWith(".json.gz")) {
+            if (includeEffect) {
+                taskList.add(new VariantEffectTask());
+            }
+
+            if (includeStats) {
+                taskList.add(new VariantStatsTask(reader, source));
+            }
         }
         
         for (VariantWriter variantWriter : writers) {
@@ -179,7 +188,7 @@ public class OpenCGAMain {
             variantWriter.includeStats(includeStats);
         }
 
-        vr = new VariantRunner(source, reader, pedReader, writers, taskList);
+        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
 
         System.out.println("Indexing variants...");
         vr.run();

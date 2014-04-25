@@ -3,17 +3,17 @@ package org.opencb.opencga.storage.variant.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantWriter;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -31,8 +31,7 @@ public class VariantJsonWriter implements VariantWriter {
     protected JsonFactory factory;
     protected ObjectMapper jsonObjectMapper;
     protected JsonGenerator generator;
-    
-    private BufferedWriter writer;
+    private OutputStream stream;
 
     private long numVariantsWritten;
     
@@ -47,8 +46,8 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean open() {
         try {
-            writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(
-                    Paths.get(outdir.toString(), source.getFilename()).toAbsolutePath().toString() + ".json.gz"))));
+            stream = new GZIPOutputStream(new FileOutputStream(
+                    Paths.get(outdir.toString(), source.getFilename()).toAbsolutePath().toString() + ".json.gz"));
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -59,11 +58,11 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean pre() {
         jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
         
         try {
-            generator = factory.createGenerator(writer);
-            generator.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+            generator = factory.createGenerator(stream);
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -90,17 +89,11 @@ public class VariantJsonWriter implements VariantWriter {
             try {
                 generator.writeObject(variant);
                 generator.writeRaw('\n');
+                System.out.println(variant.getChromosome() + ":" + variant.getStart());
             } catch (IOException ex) {
                 Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
                 return false;
             }
-        }
-        
-        try {
-            generator.flush();
-        } catch (IOException ex) {
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
         }
         
         numVariantsWritten += batch.size();
@@ -113,6 +106,13 @@ public class VariantJsonWriter implements VariantWriter {
 
     @Override
     public boolean post() {
+        try {
+            stream.flush();
+            generator.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        }
         return true;
     }
 
