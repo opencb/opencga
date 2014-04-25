@@ -89,7 +89,6 @@ public class VariantJsonWriter implements VariantWriter {
             try {
                 generator.writeObject(variant);
                 generator.writeRaw('\n');
-                System.out.println(variant.getChromosome() + ":" + variant.getStart());
             } catch (IOException ex) {
                 Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
                 return false;

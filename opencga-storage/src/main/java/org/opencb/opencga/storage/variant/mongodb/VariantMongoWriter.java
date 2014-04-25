@@ -123,9 +123,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             
             BasicDBList mongoFiles = new BasicDBList();
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-//                BasicDBObject mongoFile = new BasicDBObject("fileName", archiveFile.getFileName()).append("fileId", archiveFile.getFileId());
-                BasicDBObject mongoFile = new BasicDBObject("fileId", archiveFile.getFileId());
-                mongoFile.append("studyId", file.getAlias());
+                BasicDBObject mongoFile = new BasicDBObject("fileId", archiveFile.getFileId()).append("studyId", archiveFile.getStudyId());
 
                 // Attributes
                 if (archiveFile.getAttributes().size() > 0) {
@@ -206,8 +204,8 @@ public class VariantMongoWriter extends VariantDBWriter {
                 // Generate genotype counts
                 BasicDBObject genotypes = new BasicDBObject();
 
-                for (Genotype g : vs.getGenotypes()) {
-                    genotypes.append(g.getGenotype(), g.getCount());
+                for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
+                    genotypes.append(g.getKey().toString(), g.getValue());
                 }
 
                 BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
@@ -217,10 +215,10 @@ public class VariantMongoWriter extends VariantDBWriter {
                 mongoStats.append("missAllele", vs.getMissingAlleles());
                 mongoStats.append("missGenotypes", vs.getMissingGenotypes());
                 mongoStats.append("mendelErr", vs.getMendelianErrors());
-                mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
-                mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
-                mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
-                mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
+//                mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
+//                mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
+//                mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
+//                mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
                 mongoStats.append("genotypeCount", genotypes);
 
                 BasicDBObject mongoFile = mongoFileMap.get(buildRowkey(v) + "_" + archiveFile.getFileId());

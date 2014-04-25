@@ -131,7 +131,7 @@ public class OpenCGAMain {
     }
 
     private static void indexVariants(VariantSource source, Path filePath, Path pedigreePath, Path outdir, String backend, 
-                                      Path credentialsPath,boolean includeEffect, boolean includeStats, boolean includeSamples) 
+                                      Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples) 
             throws IOException, IllegalOpenCGACredentialsException {
 
         VariantReader reader;
