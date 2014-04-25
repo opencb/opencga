@@ -514,7 +514,6 @@ public class FileIOManager implements IOManager {
     /****/
     private List<String> getAvoidingFiles() {
         List<String> avoidingFiles = new ArrayList<String>();
-        avoidingFiles.add("result.xml");
         avoidingFiles.add("cli.txt");
         avoidingFiles.add("form.txt");
         avoidingFiles.add("input_params.txt");
