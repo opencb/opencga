@@ -151,6 +151,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getAlternateFilter(options.getString("alternate"), builder);
             }
             
+            if (options.containsKey("effect")) {
+                getEffectFilter(options.getListAs("effect", String.class), builder);
+            }
         }
         
         return builder;
@@ -175,6 +178,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder.and("type").is(type.toUpperCase());
     }
     
+    private QueryBuilder getEffectFilter(List<String> effects, QueryBuilder builder) {
+        return builder.and("effects.so").in(effects);
+    }
     
     private List<String> getChunkIds(Region region) {
         List<String> chunkIds = new LinkedList<>();
