@@ -71,7 +71,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("variants");
 
-        QueryBuilder qb = QueryBuilder.start("genes").all(Arrays.asList(geneName));
+        QueryBuilder qb = QueryBuilder.start("geneNames").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
         return coll.find(qb.get(), options);
     }
@@ -98,7 +98,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQueryOptions(options, qb);
         
         DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$genes"));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$geneNames"));
         DBObject unwind = new BasicDBObject("$unwind", "$genes");
         DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$genes").append("count", new BasicDBObject( "$sum", 1)));
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending

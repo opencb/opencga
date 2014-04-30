@@ -259,7 +259,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             
             BasicDBList genesList = new BasicDBList();
             genesList.addAll(genesSet);
-            mongoVariant.put("genes", genesList);
+            mongoVariant.put("geneNames", genesList);
         }
 
         return false;
