@@ -1,19 +1,11 @@
 package org.opencb.opencga.storage.variant.mongodb;
 
 import com.mongodb.*;
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.GZIPOutputStream;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
@@ -21,6 +13,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.storage.variant.VariantDBWriter;
 
@@ -239,19 +232,30 @@ public class VariantMongoWriter extends VariantDBWriter {
                 continue;
             }
 
+            // Add gene names to the variant
+            Set<String> genesSet = new HashSet<>();
+            
             // Add effects to file
             if (!v.getEffect().isEmpty()) {
                 Set<BasicDBObject> effectsSet = new HashSet<>();
 
                 for (VariantEffect effect : v.getEffect()) {
-                    effectsSet.add(getVariantEffectDBObject(effect));
+                    BasicDBObject object = getVariantEffectDBObject(effect);
+                    effectsSet.add(object);
                     addConsequenceType(effect.getConsequenceTypeObo());
+                    if (object.containsField("geneName")) {
+                        genesSet.add(object.get("geneName").toString());
+                    }
                 }
                 
                 BasicDBList effectsList = new BasicDBList();
                 effectsList.addAll(effectsSet);
                 mongoVariant.put("effects", effectsList);
             }
+            
+            BasicDBList genesList = new BasicDBList();
+            genesList.addAll(genesSet);
+            mongoVariant.put("genes", genesList);
         }
 
         return false;
@@ -269,7 +273,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
 //        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
-        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1));
+        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "fileStudy");
         variantCollection.ensureIndex(new BasicDBObject("chunkIds", 1));
         return true;
     }
@@ -285,19 +289,26 @@ public class VariantMongoWriter extends VariantDBWriter {
             if (mongoVariant.containsField("chr")) {
                 // Was fully built in this run because it didn't exist, and must be inserted
                 wr = variantCollection.insert(mongoVariant);
+                
+                if (!wr.getLastError().ok()) {
+                    // TODO If not correct, retry?
+                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                }
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
                 for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
                     BasicDBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
-                    BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
+//                    BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
+                    BasicDBObject changes = new BasicDBObject().append("$addToSet", new BasicDBObject("files", mongoFile));
+                    
                     wr = variantCollection.update(query, changes, true, false);
+                    if (!wr.getLastError().ok()) {
+                        // TODO If not correct, retry?
+                        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                    }
                 }
             }
             
-//            if (!wr.getLastError().ok()) {
-//                // TODO If not correct, retry?
-//                return false;
-//            }
         }
 
         mongoMap.clear();
@@ -366,11 +377,6 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     public boolean close() {
         mongoClient.close();
-//        try {
-//            writer.close();
-//        } catch (IOException ex) {
-//            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
-//        }
         return true;
     }
 
@@ -384,9 +390,20 @@ public class VariantMongoWriter extends VariantDBWriter {
         builder.append("_");
         builder.append(v.getStart());
         builder.append("_");
-        builder.append(v.getReference());
+        if (v.getReference().length() < Variant.SV_THRESHOLD) {
+            builder.append(v.getReference());
+        } else {
+            builder.append(new String(CryptoUtils.encryptSha1(v.getReference())));
+        }
+        
         builder.append("_");
-        builder.append(v.getAlternate());
+        
+        if (v.getAlternate().length() < Variant.SV_THRESHOLD) {
+            builder.append(v.getAlternate());
+        } else {
+            builder.append(new String(CryptoUtils.encryptSha1(v.getAlternate())));
+        }
+            
         return builder.toString();
     }
     
