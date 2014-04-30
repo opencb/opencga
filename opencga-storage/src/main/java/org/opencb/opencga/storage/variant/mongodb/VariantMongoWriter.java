@@ -43,6 +43,9 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     private Map<String, Integer> conseqTypes;
     
+    private long numVariantsWritten;
+    
+    
     public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
@@ -53,6 +56,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         this.mongoFileMap = new HashMap<>();
 
         conseqTypes = new LinkedHashMap<>();
+        numVariantsWritten = 0;
     }
 
     @Override
@@ -279,8 +283,8 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     @Override
-    protected boolean writeBatch(List<Variant> data) {
-        for (Variant v : data) {
+    protected boolean writeBatch(List<Variant> batch) {
+        for (Variant v : batch) {
             String rowkey = buildRowkey(v);
             BasicDBObject mongoVariant = mongoMap.get(rowkey);
             BasicDBObject query = new BasicDBObject("_id", rowkey);
@@ -314,6 +318,11 @@ public class VariantMongoWriter extends VariantDBWriter {
         mongoMap.clear();
         mongoFileMap.clear();
 
+        numVariantsWritten += batch.size();
+        Variant lastVariantInBatch = batch.get(batch.size()-1);
+        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
+                new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
+        
         return true;
     }
 
