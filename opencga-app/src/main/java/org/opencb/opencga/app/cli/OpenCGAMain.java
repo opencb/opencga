@@ -11,6 +11,7 @@ import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnot
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantJsonDataWriter;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantTabFileDataWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
@@ -158,8 +159,9 @@ public class OpenCGAMain {
             writers.add(new VariantJsonDataWriter(source, "out.json"));
         } else if (backend.equalsIgnoreCase("json-gzip")) {
             writers.add(new VariantJsonDataWriter(source, "out.json.gz", true));
+        } else if (backend.equalsIgnoreCase("tab-file")) {
+            writers.add(new VariantTabFileDataWriter(source, filePath.getFileName().toString() + ".tab"));
         }
-
 
         if (includeEffect) {
             taskList.add(new VariantEffectTask());
