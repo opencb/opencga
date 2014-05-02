@@ -254,4 +254,14 @@ public class AlignmentProtoHelper {
     public static String getChromosomeFromRowkey(String rowKey){
         return rowKey.split("_")[0];
     }
+
+    public static String getBucketRowkey(String chromosome, long start, int bucketSize){
+        return getBucketRowkey(chromosome, start/bucketSize);
+    }
+    public static String getBucketRowkey(String chromosome, long bucketIndex){
+        return chromosome + "_" + String.format("%07d", bucketIndex);
+    }
+    public static String getSummaryRowkey(String chromosome, int index){
+        return  "S_" + chromosome + "_" + String.format("%05d", index);
+    }
 }

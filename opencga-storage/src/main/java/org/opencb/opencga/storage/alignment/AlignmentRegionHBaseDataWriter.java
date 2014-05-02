@@ -206,7 +206,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
 
     private void putSummary(AlignmentRegionSummary summary){
-        String rowKey = "S_" + chromosome + "_" + summary.getIndex();
+        String rowKey = AlignmentProtoHelper.getSummaryRowkey(chromosome, summary.getIndex());
 
         Put put = new Put(Bytes.toBytes(rowKey));
         byte[] compress;
@@ -226,7 +226,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         if(alignmentBucket == null)
             return;
 
-        String rowKey = chromosome + "_" + String.format("%07d", index);
+        String rowKey = AlignmentProtoHelper.getBucketRowkey(chromosome,index);
         //System.out.println("Creamos un Put() con rowKey " + rowKey);
 
         Put put = new Put(Bytes.toBytes(rowKey));
@@ -303,21 +303,23 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
      */
     private AlignmentRegionSummary createSummary(List<Alignment>[] alignmentBuckets){
 
+        //4º Create Summary
+
+        AlignmentRegionSummary summary = new AlignmentRegionSummary(summaryIndex++);
+
         int i = 0;
         // 4.1
         while(alignmentBuckets[i] == null){
             i++;
             if(i > alignmentBuckets.length){
-                System.out.println("TODO! FIXME! PAINFULL!! AlignmentRegionHBaseDataWriter.createSummary(List<Alignment>[] alignmentBuckets)");
-                AlignmentRegionSummary summary = new AlignmentRegionSummary(summaryIndex);    //Empty Summary
-                summary.close();
+                System.out.println("TODO! FIXME! PAINFULL!! AlignmentRegionHBaseDataWriter.createSummary(List<Alignment>[] alignmentBuckets) is empty");
+                summary.close();  //Empty Summary
                 return summary;
             }
         }
         long currentBucket = alignmentBuckets[i].get(0).getStart()/alignmentBucketSize; // first bucket not null
         long lastOverlappedPosition = alignmentBuckets[i].get(0).getUnclippedEnd();
 
-        AlignmentRegionSummary summary = new AlignmentRegionSummary(summaryIndex);
 
         //4.2
         System.out.println("creating summary for: alignmentBuckets.length " + alignmentBuckets.length);
