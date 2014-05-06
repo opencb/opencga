@@ -292,12 +292,20 @@ public class VariantMongoWriter extends VariantDBWriter {
             
             if (mongoVariant.containsField("chr")) {
                 // Was fully built in this run because it didn't exist, and must be inserted
-                wr = variantCollection.insert(mongoVariant);
-                
-                if (!wr.getLastError().ok()) {
-                    // TODO If not correct, retry?
-                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                try {
+                    wr = variantCollection.insert(mongoVariant);
+                    if (!wr.getLastError().ok()) {
+                        // TODO If not correct, retry?
+                        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                    }
+                } catch(MongoInternalException ex) {
+                    System.out.println(v);
+                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
+                } catch(MongoException.DuplicateKey ex) {
+                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
+                            "Duplicated entry: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
+                
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
                 for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
