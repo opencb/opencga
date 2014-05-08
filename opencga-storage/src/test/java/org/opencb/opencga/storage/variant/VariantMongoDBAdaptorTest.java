@@ -30,7 +30,7 @@ import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoDBAdaptorTest extends GenericTest {
+public class VariantMongoDBAdaptorTest {//extends GenericTest {
 
     private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", "Study for testing purposes", null, null);
@@ -174,6 +174,7 @@ public class VariantMongoDBAdaptorTest extends GenericTest {
     public void testGetLeastAffectedGenes() {
         QueryResult queryResult = vqb.getLeastAffectedGenes(10, null);
         assertEquals(10, queryResult.getNumResults());
+        System.out.println(Arrays.deepToString(queryResult.getResult().toArray()));
         
         List<DBObject> result = queryResult.getResult();
         for (int i = 1; i < queryResult.getNumResults(); i++) {
@@ -182,6 +183,35 @@ public class VariantMongoDBAdaptorTest extends GenericTest {
             assertTrue(((int) prevObject.get("count")) <= ((int) object.get("count")));
         }
     }
+    
+    @Test
+    public void testGetTopConsequenceTypes() {
+        QueryResult queryResult = vqb.getTopConsequenceTypes(5, null);
+        assertEquals(5, queryResult.getNumResults());
+        System.out.println(Arrays.deepToString(queryResult.getResult().toArray()));
+        
+        List<DBObject> result = queryResult.getResult();
+        for (int i = 1; i < queryResult.getNumResults(); i++) {
+            DBObject prevObject = result.get(i-1);
+            DBObject object = result.get(i);
+            assertTrue(((int) prevObject.get("count")) >= ((int) object.get("count")));
+        }
+    }
+    
+    @Test
+    public void testGetBottomConsequenceTypes() {
+        QueryResult queryResult = vqb.getBottomConsequenceTypes(5, null);
+        assertEquals(5, queryResult.getNumResults());
+        System.out.println(Arrays.deepToString(queryResult.getResult().toArray()));
+        
+        List<DBObject> result = queryResult.getResult();
+        for (int i = 1; i < queryResult.getNumResults(); i++) {
+            DBObject prevObject = result.get(i-1);
+            DBObject object = result.get(i);
+            assertTrue(((int) prevObject.get("count")) <= ((int) object.get("count")));
+        }
+    }
+    
     
     @Test
     public void testGetVariantById() {

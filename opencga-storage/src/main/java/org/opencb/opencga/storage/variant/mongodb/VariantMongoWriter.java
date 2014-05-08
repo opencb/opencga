@@ -171,11 +171,15 @@ public class VariantMongoWriter extends VariantDBWriter {
         object.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
         object.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
         
+        // Internal fields used for query optimization (dictionary named "_at")
+        BasicDBObject _at = new BasicDBObject();
+        object.append("_at", _at);
+        
         // ChunkID (1k and 10k)
         String chunkSmall = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_SMALL + "_" + CHUNK_SIZE_SMALL / 1000 + "k";
         String chunkBig = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_BIG + "_" + CHUNK_SIZE_BIG / 1000 + "k";
         BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
-        object.append("chunkIds", chunkIds);
+        _at.append("chunkIds", chunkIds);
         
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
@@ -236,8 +240,8 @@ public class VariantMongoWriter extends VariantDBWriter {
                 continue;
             }
 
-            // Add gene names to the variant
             Set<String> genesSet = new HashSet<>();
+            Set<String> soSet = new HashSet<>();
             
             // Add effects to file
             if (!v.getEffect().isEmpty()) {
@@ -247,6 +251,8 @@ public class VariantMongoWriter extends VariantDBWriter {
                     BasicDBObject object = getVariantEffectDBObject(effect);
                     effectsSet.add(object);
                     addConsequenceType(effect.getConsequenceTypeObo());
+                    
+                    soSet.add(object.get("so").toString());
                     if (object.containsField("geneName")) {
                         genesSet.add(object.get("geneName").toString());
                     }
@@ -257,9 +263,16 @@ public class VariantMongoWriter extends VariantDBWriter {
                 mongoVariant.put("effects", effectsList);
             }
             
-            BasicDBList genesList = new BasicDBList();
-            genesList.addAll(genesSet);
-            mongoVariant.put("geneNames", genesList);
+            // Add gene fields directly to the variant, for query optimization purposes
+            BasicDBObject _at = (BasicDBObject) mongoVariant.get("_at");
+            if (!genesSet.isEmpty()) {
+                BasicDBList genesList = new BasicDBList(); genesList.addAll(genesSet);
+                _at.append("gn", genesList);
+            }
+            if (!soSet.isEmpty()) {
+                BasicDBList soList = new BasicDBList(); soList.addAll(soSet);
+                _at.append("ct", soList);
+            }
         }
 
         return false;

@@ -15,7 +15,6 @@ import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
- * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
@@ -71,7 +70,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("variants");
 
-        QueryBuilder qb = QueryBuilder.start("geneNames").all(Arrays.asList(geneName));
+        QueryBuilder qb = QueryBuilder.start("_at.gn").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
         return coll.find(qb.get(), options);
     }
@@ -87,7 +86,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult getGenesRanking(int numGenes, int order, QueryOptions options) {
-        // db.variants.aggregate( {$project : { genes : "$effects.geneName"} },
+        // db.variants.aggregate( {$project : { genes : "$_at.gn"} },
         //                        { $unwind : "$genes"},
         //                        { $group : { _id : "$genes", count: { $sum : 1 } }},
         //                        { $sort : { "count" : -1 }},
@@ -98,7 +97,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQueryOptions(options, qb);
         
         DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$geneNames"));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("genes", "$_at.gn"));
         DBObject unwind = new BasicDBObject("$unwind", "$genes");
         DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$genes").append("count", new BasicDBObject( "$sum", 1)));
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
@@ -107,6 +106,34 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return coll.aggregate("$effects.geneName", Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
+    
+    @Override
+    public QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
+        return getConsequenceTypesRanking(numConsequenceTypes, -1, options);
+    }
+
+    @Override
+    public QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
+        return getConsequenceTypesRanking(numConsequenceTypes, 1, options);
+    }
+
+    private QueryResult getConsequenceTypesRanking(int numConsequenceTypes, int order, QueryOptions options) {
+        MongoDBCollection coll = db.getCollection("variants");
+        
+        QueryBuilder qb = QueryBuilder.start();
+        parseQueryOptions(options, qb);
+        
+        DBObject match = new BasicDBObject("$match", qb.get());
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("so", "$_at.ct"));
+        DBObject unwind = new BasicDBObject("$unwind", "$so");
+        DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$so").append("count", new BasicDBObject( "$sum", 1)));
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
+        DBObject limit = new BasicDBObject("$limit", numConsequenceTypes);
+        
+        return coll.aggregate("$effects.so", Arrays.asList(match, project, unwind, group, sort, limit), options);
+    }
+    
+    
     @Override
     public QueryResult getVariantById(String id, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("variants");
@@ -160,7 +187,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
         List<String> chunkIds = getChunkIds(region);
-        builder.and("chunkIds").in(chunkIds);
+        builder.and("_at.chunkIds").in(chunkIds);
         builder.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
         return builder;
     }

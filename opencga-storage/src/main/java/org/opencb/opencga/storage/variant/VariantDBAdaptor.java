@@ -53,6 +53,10 @@ public interface VariantDBAdaptor {
     List<QueryResult> getVariantsByIdList(List<String> ids, QueryOptions options);
     
     
+    QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
+    
+    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
+    
 //    QueryResult getStatsByVariant(Variant variant, QueryOptions options);
 
 //    QueryResult getStatsByVariantList(List<Variant> variant, QueryOptions options);
