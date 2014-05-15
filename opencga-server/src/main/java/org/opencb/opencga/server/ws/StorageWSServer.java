@@ -40,6 +40,7 @@ public class StorageWSServer extends GenericWSServer {
         super(uriInfo, httpServletRequest);
         this.accountId = accountId;
         this.bucketId = bucketId;
+        objectId = objectId.replaceAll("\\s+","_");
         this.objectId = StringUtils.parseObjectId(objectId);
     }
 
