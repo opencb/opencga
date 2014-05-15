@@ -81,10 +81,10 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         // Iterate over results and, optionally, their samples and statistics
 
         DBObject query = new BasicDBObject();
-        DBObject match = new BasicDBObject("studies.studyId", studyName);
+        DBObject match = new BasicDBObject("sources.sourceId", studyName);
         query.put("$match", match);
-        DBObject unwind = new BasicDBObject("$unwind", "$studies");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("studies.studyId", studyName));
+        DBObject unwind = new BasicDBObject("$unwind", "$sources");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("sources.studyId", studyName));
         // db.variants.aggregate(
 //        {$match: {'studies.studyId': 'ale'}},
 //        {$project: {"studies.effects":1,'studies.studyId':1 }},
@@ -168,19 +168,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
     }
 
     private String buildRowkey(String chromosome, String position) {
-        if (chromosome.length() > 2) {
-            if (chromosome.substring(0, 2).equals("chr")) {
-                chromosome = chromosome.substring(2);
-            }
-        }
-        if (chromosome.length() < 2) {
-            chromosome = "0" + chromosome;
-        }
-        if (position.length() < 10) {
-            while (position.length() < 10) {
-                position = "0" + position;
-            }
-        }
         return chromosome + "_" + position;
     }
 
@@ -195,10 +182,10 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         QueryResult<VariantInfo> queryResult = new QueryResult<>();
 
         List<VariantInfo> res = new ArrayList<>();
-        String studyId = options.get("studyId");
+        String sourceId = options.get("studyId");
         DBCollection coll = db.getCollection("variants");
 
-        DBObject elemMatch = new BasicDBObject("studyId", studyId);
+        BasicDBObject elemMatch = new BasicDBObject("sourceId", sourceId);
         DBObject query = new BasicDBObject();
         BasicDBList orList = new BasicDBList();
 
@@ -276,11 +263,54 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
             elemMatch.put("stats.missGenotypes", missGt);
         }
 
+        BasicDBList andControls = new BasicDBList();
+
         if (options.containsKey("maf_1000g_controls") && !options.get("maf_1000g_controls").equalsIgnoreCase("")) {
-            elemMatch.put("attributes.1000G_maf", new BasicDBObject("$lte", options.get("maf_1000g_controls")));
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.1000G_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.1000G_maf", new BasicDBObject("$lte", options.get("maf_1000g_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
         }
 
-        query.put("studies", new BasicDBObject("$elemMatch", elemMatch));
+        if (options.containsKey("maf_1000g_afr_controls") && !options.get("maf_1000g_afr_controls").equalsIgnoreCase("")) {
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.1000G_AFR_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.1000G_AFR_maf", new BasicDBObject("$lte", options.get("maf_1000g_afr_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
+        }
+
+        if (options.containsKey("maf_1000g_asi_controls") && !options.get("maf_1000g_asi_controls").equalsIgnoreCase("")) {
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.1000G_ASI_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.1000G_ASI_maf", new BasicDBObject("$lte", options.get("maf_1000g_asi_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
+        }
+
+        if (options.containsKey("maf_evs_controls") && !options.get("maf_evs_controls").equalsIgnoreCase("")) {
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.EVS_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.EVS_maf", new BasicDBObject("$lte", options.get("maf_evs_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
+
+        }
+
+        if (options.containsKey("maf_bier_controls") && !options.get("maf_bier_controls").equalsIgnoreCase("")) {
+            BasicDBList or = new BasicDBList();
+            or.add(new BasicDBObject("attributes.BIER_maf", new BasicDBObject("$exists", false)));
+            or.add(new BasicDBObject("attributes.BIER_maf", new BasicDBObject("$lte", options.get("maf_bier_controls"))));
+
+            andControls.add(new BasicDBObject("$or", or));
+        }
+
+        if (andControls.size() > 0) {
+            elemMatch.append("$and", andControls);
+        }
+
+        query.put("sources", new BasicDBObject("$elemMatch", elemMatch));
 
         System.out.println("#############################");
         System.out.println(query);
@@ -293,14 +323,10 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
 
         if (options.containsKey("sort")) {
             sort = getQuerySort(options.get("sort"));
-
-            System.out.println(sort);
-
             cursor = coll.find(query).sort(sort).skip(start).limit(limit);
         } else {
             cursor = coll.find(query).skip(start).limit(limit);
         }
-
 
         count.setValue(cursor.count());
 
@@ -318,13 +344,13 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
             vi.setChromosome(chr);
             vi.setPosition(pos);
 
-            BasicDBList studies = (BasicDBList) elem.get("studies");
+            BasicDBList studies = (BasicDBList) elem.get("sources");
 
             Iterator<Object> it = studies.iterator();
             while (it.hasNext()) {
                 BasicDBObject study = (BasicDBObject) it.next();
 
-                if (study.getString("studyId").equalsIgnoreCase(studyId)) {
+                if (study.getString("sourceId").equalsIgnoreCase(sourceId)) {
 
                     BasicDBObject stats = (BasicDBObject) study.get("stats");
 
@@ -372,7 +398,6 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                         vi.addGenes(genes);
                     }
 
-
                     if (study.containsField("attributes")) {
 
                         BasicDBObject attr = (BasicDBObject) study.get("attributes");
@@ -383,10 +408,50 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                             vi.addControl("1000G_gt", (String) attr.get("1000G_gt"));
                         }
 
+                        if (attr.containsField("1000G_ASI_maf")) {
+                            vi.addControl("1000G-ASI_maf", (String) attr.get("1000G_ASI_maf"));
+                            vi.addControl("1000G-ASI_amaf", (String) attr.get("1000G_ASI_amaf"));
+                            vi.addControl("1000G-ASI_gt", (String) attr.get("1000G_ASI_gt"));
+                        }
+
+                        if (attr.containsField("1000G_AFR_maf")) {
+                            vi.addControl("1000G-AFR_maf", (String) attr.get("1000G_AFR_maf"));
+                            vi.addControl("1000G-AFR_amaf", (String) attr.get("1000G_AFR_amaf"));
+                            vi.addControl("1000G-AFR_gt", (String) attr.get("1000G_AFR_gt"));
+                        }
+
+                        if (attr.containsField("1000G_AME_maf")) {
+                            vi.addControl("1000G-AME_maf", (String) attr.get("1000G_AME_maf"));
+                            vi.addControl("1000G-AME_amaf", (String) attr.get("1000G_AME_amaf"));
+                            vi.addControl("1000G-AME_gt", (String) attr.get("1000G_AME_gt"));
+                        }
+
+                        if (attr.containsField("1000G_EUR_maf")) {
+                            vi.addControl("1000G-EUR_maf", (String) attr.get("1000G_EUR_maf"));
+                            vi.addControl("1000G-EUR_amaf", (String) attr.get("1000G_EUR_amaf"));
+                            vi.addControl("1000G-EUR_gt", (String) attr.get("1000G_EUR_gt"));
+                        }
+
                         if (attr.containsField("EVS_maf")) {
                             vi.addControl("EVS_maf", (String) attr.get("EVS_maf"));
                             vi.addControl("EVS_amaf", (String) attr.get("EVS_amaf"));
                             vi.addControl("EVS_gt", (String) attr.get("EVS_gt"));
+                        }
+
+                        if (attr.containsField("BIER_maf")) {
+                            vi.addControl("BIER_maf", (String) attr.get("BIER_maf"));
+                            vi.addControl("BIER_amaf", (String) attr.get("BIER_amaf"));
+                            vi.addControl("BIER_gt", (String) attr.get("BIER_gt"));
+                        }
+
+                        if (attr.containsField("PolyphenScore")) {
+                            vi.setPolyphen_score(Double.parseDouble(attr.getString("PolyphenScore")));
+                            vi.setPolyphen_effect(Integer.parseInt(attr.getString("PolyphenEffect")));
+                        }
+
+                        if (attr.containsField("SIFTScore")) {
+                            vi.setSift_score(Double.parseDouble(attr.getString("SIFTScore")));
+                            vi.setSift_effect(Integer.parseInt(attr.getString("SIFTEffect")));
                         }
 
                     }
@@ -430,13 +495,19 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
                     res.put("pos", dir);
                     break;
                 case "snpid":
-                    res.put("studies.snpId", dir);
+                    res.put("sources.snpId", dir);
                     break;
                 case "consecuente_types":
-                    res.put("studies.effects", dir);
+                    res.put("sources.effects", dir);
                     break;
                 case "genes":
-                    res.put("studies.genes.1", dir);
+                    res.put("sources.genes.1", dir);
+                    break;
+                case "polyphen_score":
+                    res.put("sources.attributes.PolyphenScore", dir);
+                    break;
+                case "sift_score":
+                    res.put("sources.attributes.SIFTScore", dir);
                     break;
             }
 
@@ -559,11 +630,11 @@ public class VariantMongoQueryBuilder implements VariantQueryBuilder {
         VariantAnalysisInfo vi = new VariantAnalysisInfo();
 
 
-        DBCollection coll = db.getCollection("studies");
+        DBCollection coll = db.getCollection("sources");
         DBCollection collV = db.getCollection("variants");
 
         long dbStart = System.currentTimeMillis();
-        DBObject study = coll.findOne(new BasicDBObject("name", studyId));
+        DBObject study = coll.findOne(new BasicDBObject("alias", studyId));
 
         if (study != null) {
             Iterator<Object> it = ((BasicDBList) study.get("samples")).iterator();

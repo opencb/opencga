@@ -304,7 +304,7 @@ public class VariantVcfMongoDataWriter extends VariantDBWriter {
                 .get();
         studyMongo = studyMongo.append("metadata", metadataMongo);
 
-        DBObject query = new BasicDBObject("name", study.getName());
+        DBObject query = new BasicDBObject("alias", study.getAlias());
         WriteResult wr = sourcesCollection.update(query, studyMongo, true, false);
 
         sourcesCollection.ensureIndex(new BasicDBObject("name", 1));

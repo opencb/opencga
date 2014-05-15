@@ -19,6 +19,8 @@ import org.opencb.commons.bioformats.variant.annotators.VariantAnnotator;
 import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnotator;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantJsonDataWriter;
+import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantTabFileDataWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
@@ -28,6 +30,17 @@ import org.opencb.opencga.storage.variant.VariantVcfMonbaseDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfMongoDataWriter;
 import org.opencb.opencga.storage.variant.VariantVcfSqliteWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
+import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
+import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
@@ -42,7 +55,7 @@ public class OpenCGAMain {
         options.addOption(OptionFactory.createOption("help", "h", "Print this message", false, false));
 
         options.addOption(OptionFactory.createOption("alias", "a", "Unique ID for the file to be uploaded", true, true));
-        options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default) or monbase", false, true));
+        options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default), mongo, monbase, json or json-gzip", false, true));
         options.addOption(OptionFactory.createOption("credentials", "c", "Path to the file where the backend credentials are stored", true, true));
         options.addOption(OptionFactory.createOption("datatype", "d", "Datatype to be stored: alignments (BAM) or variants (VCF)", true, true));
         options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
@@ -128,7 +141,7 @@ public class OpenCGAMain {
     private static void indexVariants(VariantSource source, Path filePath, Path pedigreePath, String backend, Path credentialsPath,
                                       boolean includeEffect, boolean includeStats, boolean includeSamples) throws IOException, IllegalOpenCGACredentialsException {
 
-        VariantRunner vr = null;
+        VariantRunner vr;
         VariantReader reader;
         PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
@@ -138,9 +151,6 @@ public class OpenCGAMain {
         OpenCGACredentials credentials;
         Properties properties = new Properties();
         properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-
-//        List<VariantAnnotator> annots = new ArrayList<>();
-//        annots.add(new VariantControlMongoAnnotator());
 
         List<Task<Variant>> taskList = new SortedList<>();
 
@@ -154,14 +164,20 @@ public class OpenCGAMain {
             credentials = new MongoCredentials(properties);
             writers.add(new VariantVcfMongoDataWriter(source, "opencga-hsapiens", (MongoCredentials) credentials));
         }
-
+//       else if (backend.equalsIgnoreCase("json")) {
+//            writers.add(new VariantJsonDataWriter(source, "out.json"));
+//        } else if (backend.equalsIgnoreCase("json-gzip")) {
+//            writers.add(new VariantJsonDataWriter(source, "out.json.gz", true));
+//        } else if (backend.equalsIgnoreCase("tab-file")) {
+//            writers.add(new VariantTabFileDataWriter(source, filePath.getFileName().toString() + ".tab"));
+//        }
 
         if (includeEffect) {
-//            taskList.add(new VariantEffectTask());
+            taskList.add(new VariantEffectTask());
         }
 
         if (includeStats) {
-//            taskList.add(new VariantStatsTask(reader, source));
+            taskList.add(new VariantStatsTask(reader, source));
         }
 
         for (VariantWriter variantWriter : writers) {
@@ -170,10 +186,10 @@ public class OpenCGAMain {
             variantWriter.includeStats(includeStats);
         }
 
-//        vr = new VariantRunner(source, reader, pedReader, writers, taskList);
+        vr = new VariantRunner(source, reader, pedReader, writers, taskList);
 
         System.out.println("Indexing variants...");
-//        vr.run();
+        vr.run();
         System.out.println("Variants indexed!");
     }
 }
