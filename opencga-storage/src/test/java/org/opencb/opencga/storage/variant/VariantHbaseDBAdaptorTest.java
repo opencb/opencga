@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
-import org.opencb.opencga.storage.variant.monbase.VariantMonbaseWriter;
-import org.opencb.opencga.storage.variant.monbase.VariantMonbaseDBAdaptor;
+import org.opencb.opencga.storage.variant.monbase.VariantHbaseWriter;
+import org.opencb.opencga.storage.variant.monbase.VariantHbaseDBAdaptor;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -35,14 +35,14 @@ import org.opencb.opencga.lib.auth.MonbaseCredentials;
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  */
-public class VariantMonbaseDBAdaptorTest {
+public class VariantHbaseDBAdaptorTest {
 
     private static final String tableName = "test_VariantMonbaseQueryBuilderTest";
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
     private static MonbaseCredentials credentials;
     private static org.apache.hadoop.conf.Configuration config;
-    private static VariantMonbaseWriter writer;
-    private static VariantMonbaseDBAdaptor queryBuilder;
+    private static VariantHbaseWriter writer;
+    private static VariantHbaseDBAdaptor queryBuilder;
 
     @BeforeClass
     public static void testConstructorAndOpen() throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
@@ -57,7 +57,7 @@ public class VariantMonbaseDBAdaptorTest {
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
 
             // Monbase writer saves 5 records
-            writer = new VariantMonbaseWriter(study, tableName, credentials);
+            writer = new VariantHbaseWriter(study, tableName, credentials);
             assertTrue(writer.open());
             List<String> sampleNames = Arrays.asList("NA001", "NA002", "NA003");
             String[] fields1 = new String[]{"1", "100000", "rs1100000", "A", "T,G", "40", "PASS",
@@ -110,7 +110,7 @@ public class VariantMonbaseDBAdaptorTest {
 //            assertTrue("Effects could not be written", writer.writeVariantEffect(records));
             writer.post();
             // Monbase query builder
-            queryBuilder = new VariantMonbaseDBAdaptor(tableName, credentials);
+            queryBuilder = new VariantHbaseDBAdaptor(tableName, credentials);
         } catch (IllegalOpenCGACredentialsException e) {
             fail(e.getMessage());
         }

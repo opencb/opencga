@@ -70,7 +70,6 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>2.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -117,13 +116,13 @@
                         <excludes>
                             <exclude>**/VariantSqliteWriter.java</exclude>
                             <exclude>**/VariantSqliteDBAdaptor.java</exclude>
-                            <exclude>**/VariantMonbaseWriter.java</exclude>
-                            <exclude>**/VariantMonbaseDBAdaptor.java</exclude>
+                            <!--<exclude>**/VariantHbaseWriter.java</exclude>-->
+                            <exclude>**/VariantHbaseDBAdaptor.java</exclude>
                         </excludes>
                         <testExcludes>
                             <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
-                            <exclude>**/VariantMonbaseWriterTest.java</exclude>
-                            <exclude>**/VariantMonbaseDBAdaptorTest.java</exclude>
+                            <exclude>**/VariantHbaseWriterTest.java</exclude>
+                            <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
                         </testExcludes>
                 </configuration>
             </plugin>

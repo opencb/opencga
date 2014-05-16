@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
-import org.opencb.opencga.storage.variant.monbase.VariantMonbaseWriter;
+import org.opencb.opencga.storage.variant.monbase.VariantHbaseWriter;
 import com.mongodb.*;
 import java.io.IOException;
 import java.util.*;
@@ -20,13 +20,13 @@ import org.opencb.opencga.lib.auth.MonbaseCredentials;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public class VariantMonbaseWriterTest {
+public class VariantHbaseWriterTest {
 
     private static final String tableName = "test_VariantVcfMonbaseDataWriterTest";
     private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", null, null);
     private static MonbaseCredentials credentials;
     private static Configuration config;
-    private static VariantMonbaseWriter writer;
+    private static VariantHbaseWriter writer;
     private static List<Variant> variants;
     
     @BeforeClass
@@ -42,7 +42,7 @@ public class VariantMonbaseWriterTest {
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
 
             // Monbase writer
-            writer = new VariantMonbaseWriter(study, tableName, credentials);
+            writer = new VariantHbaseWriter(study, tableName, credentials);
             assertTrue(writer.open());
         } catch (IllegalOpenCGACredentialsException e) {
             fail(e.getMessage());

@@ -47,6 +47,11 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     
     public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
+        this(source, credentials, false, false, false);
+    }
+
+    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, 
+            boolean includeSamples, boolean includeStats, boolean includeEffect) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -57,6 +62,10 @@ public class VariantMongoWriter extends VariantDBWriter {
 
         conseqTypes = new LinkedHashMap<>();
         numVariantsWritten = 0;
+        
+        this.includeSamples = includeSamples;
+        this.includeStats = includeStats;
+        this.includeEffect = includeEffect;
     }
 
     @Override
@@ -289,9 +298,8 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
-//        variantCollection.ensureIndex(new BasicDBObject("chr", 1).append("start", 1));
-        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "fileStudy");
-        variantCollection.ensureIndex(new BasicDBObject("chunkIds", 1));
+        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "fileAndStudy");
+        variantCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
         return true;
     }
 
@@ -316,7 +324,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
                 } catch(MongoException.DuplicateKey ex) {
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
-                            "Duplicated entry: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
+                            "Variant already existed: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
                 
             } else { // It existed previously, was not fully built in this run and only files need to be updated

@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.variant.VariantDBAdaptor;/**
  */
 
 
-public class VariantMonbaseDBAdaptor implements VariantDBAdaptor {
+public class VariantHbaseDBAdaptor implements VariantDBAdaptor {
 
     private String tableName;
     private String effectTableName;
@@ -45,7 +45,7 @@ public class VariantMonbaseDBAdaptor implements VariantDBAdaptor {
     public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
 
 
-    public VariantMonbaseDBAdaptor(String species, MonbaseCredentials credentials)
+    public VariantHbaseDBAdaptor(String species, MonbaseCredentials credentials)
             throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
         this.monbaseCredentials = credentials;
         this.tableName = species;
