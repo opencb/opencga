@@ -643,8 +643,9 @@ public class AccountMongoDBManager implements AccountManager {
         AggregationOutput aggregationOutput = userCollection.aggregate(match, unwind, match2, unwind2, match3, project);
 
         if (aggregationOutput != null) {
-            DBObject next = aggregationOutput.results().iterator().next();
-            if (next != null) {
+            Iterator<DBObject> it = aggregationOutput.results().iterator();
+            if(it.hasNext()){
+                DBObject next = it.next();
                 ObjectItem objectItem = jsonObjectMapper.readValue(next.get("object").toString(), ObjectItem.class);
                 return objectItem;
             } else {
