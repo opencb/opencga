@@ -1,26 +1,13 @@
 package org.opencb.opencga.app.cli;
 
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
 import org.apache.commons.cli.*;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreePedReader;
 import org.opencb.commons.bioformats.pedigree.io.readers.PedigreeReader;
 import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.VariantSource;
-import org.opencb.commons.bioformats.variant.annotators.VariantAnnotator;
-import org.opencb.commons.bioformats.variant.annotators.VariantControlMongoAnnotator;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantReader;
 import org.opencb.commons.bioformats.variant.vcf4.io.readers.VariantVcfReader;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantJsonDataWriter;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantTabFileDataWriter;
 import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
