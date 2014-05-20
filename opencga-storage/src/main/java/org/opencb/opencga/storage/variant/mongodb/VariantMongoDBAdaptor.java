@@ -20,6 +20,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
+    
 
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
@@ -154,7 +155,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public boolean close() {
-        db.close();
+        mongoManager.close(db.getDatabaseName());
         return true;
     }
 
