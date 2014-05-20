@@ -300,6 +300,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     protected boolean buildBatchIndex(List<Variant> data) {
         variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "fileAndStudy");
         variantCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
+        variantCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
         return true;
     }
 
