@@ -127,7 +127,7 @@ public class VariantHbaseDBAdaptorTest {
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
         options.put("samples", true);
-        QueryResult queryResult = queryBuilder.getAllVariantsByRegionAndStudy(region, study.getAlias(), options);
+        QueryResult queryResult = queryBuilder.getAllVariantsByRegionAndStudy(region, study.getFileId(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
@@ -172,7 +172,7 @@ public class VariantHbaseDBAdaptorTest {
         Region region = new Region("1", 0, 100000000);
         QueryOptions options = new QueryOptions();
         options.put("samples", true);
-        QueryResult queryResult = queryBuilder.getAllVariantsByRegionAndStudy(region, study.getAlias(), options);
+        QueryResult queryResult = queryBuilder.getAllVariantsByRegionAndStudy(region, study.getFileId(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
@@ -195,7 +195,7 @@ public class VariantHbaseDBAdaptorTest {
         Region region = new Region("1", 0, 100000000);
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
-        QueryResult queryResult = queryBuilder.getAllVariantsByRegionAndStudy(region, study.getAlias(), options);
+        QueryResult queryResult = queryBuilder.getAllVariantsByRegionAndStudy(region, study.getFileId(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 
@@ -218,7 +218,7 @@ public class VariantHbaseDBAdaptorTest {
         QueryOptions options = new QueryOptions();
         options.put("stats", true);
         options.put("effects", true);
-        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, study.getAlias(), options);
+        QueryResult queryResult = queryBuilder.getSimpleVariantsByRegion(region, study.getFileId(), options);
         List<Variant> result = queryResult.getResult();
         assertEquals(3, result.size());
 

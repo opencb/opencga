@@ -151,7 +151,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 }
 
                 // Samples
-                if (this.includeSamples && archiveFile.getSamplesData().size() > 0 && archiveFile.getFileId().equals(file.getAlias())) {
+                if (this.includeSamples && archiveFile.getSamplesData().size() > 0 && archiveFile.getFileId().equals(file.getFileId())) {
                     mongoFile.append("format", archiveFile.getFormat()); // Useless field if genotypeCodes are not stored
                     
                     // First time a variant is loaded, the list of samples is populated. 
@@ -303,7 +303,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
-        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "fileAndStudy");
+        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "studyAndFile");
         variantCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
         variantCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
         return true;
@@ -361,15 +361,16 @@ public class VariantMongoWriter extends VariantDBWriter {
         return true;
     }
 
-    private boolean writeStudy(VariantSource study) {
+    private boolean writeSourceSummary(VariantSource source) {
         String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
-        BasicDBObject studyMongo = new BasicDBObject("name", study.getFilename())
-                .append("alias", study.getAlias())
+        BasicDBObject studyMongo = new BasicDBObject("name", source.getFileName())
+                .append("alias", source.getFileId())
                 .append("date", timeStamp)
-                .append("authors", study.getAuthors())
-                .append("samples", study.getSamples())
-                .append("description", study.getDescription())
-                .append("files", study.getSources());
+//                .append("authors", source.getAuthors())
+                .append("samples", source.getSamplesPosition())
+//                .append("description", source.getDescription())
+//                .append("files", source.getSources())
+                ;
 
         BasicDBObject cts = new BasicDBObject();
 
@@ -377,7 +378,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             cts.append(entry.getKey(), entry.getValue());
         }
 
-        VariantGlobalStats global = study.getStats();
+        VariantGlobalStats global = source.getStats();
         if (global != null) {
             DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
                     .append("variantsCount", global.getVariantsCount())
@@ -388,7 +389,8 @@ public class VariantMongoWriter extends VariantDBWriter {
                     .append("transversionsCount", global.getTransversionsCount())
 //                    .append("biallelicsCount", global.getBiallelicsCount())
 //                    .append("multiallelicsCount", global.getMultiallelicsCount())
-                    .append("accumulatedQuality", global.getAccumQuality()).append("consequenceTypes", cts);
+                    .append("accumulatedQuality", global.getAccumulatedQuality())
+                    .append("consequenceTypes", cts);
 
             studyMongo = studyMongo.append("globalStats", globalStats);
         } else {
@@ -398,13 +400,13 @@ public class VariantMongoWriter extends VariantDBWriter {
         }
 
         // TODO Save pedigree information
-        Map<String, String> meta = study.getMetadata();
+        Map<String, String> meta = source.getMetadata();
         DBObject metadataMongo = new BasicDBObjectBuilder()
                 .add("header", meta.get("variantFileHeader"))
                 .get();
         studyMongo = studyMongo.append("metadata", metadataMongo);
 
-        DBObject query = new BasicDBObject("name", study.getFilename());
+        DBObject query = new BasicDBObject("name", source.getFileName());
         WriteResult wr = filesCollection.update(query, studyMongo, true, false);
 
         filesCollection.ensureIndex(new BasicDBObject("name", 1));
@@ -414,7 +416,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     @Override
     public boolean post() {
-        writeStudy(file);
+        writeSourceSummary(file);
         return true;
     }
 

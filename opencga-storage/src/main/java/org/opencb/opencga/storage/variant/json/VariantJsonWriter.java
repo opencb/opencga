@@ -30,8 +30,12 @@ public class VariantJsonWriter implements VariantWriter {
     
     protected JsonFactory factory;
     protected ObjectMapper jsonObjectMapper;
-    protected JsonGenerator generator;
-    private OutputStream stream;
+    
+    protected JsonGenerator variantsGenerator;
+    protected JsonGenerator fileGenerator;
+    
+    private OutputStream variantsStream;
+    private OutputStream fileStream;
 
     private long numVariantsWritten;
     
@@ -46,8 +50,10 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean open() {
         try {
-            stream = new GZIPOutputStream(new FileOutputStream(
-                    Paths.get(outdir.toString(), source.getFilename()).toAbsolutePath().toString() + ".json.gz"));
+            variantsStream = new GZIPOutputStream(new FileOutputStream(
+                    Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString() + ".variants.json.gz"));
+            fileStream = new GZIPOutputStream(new FileOutputStream(
+                    Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString() + ".file.json.gz"));
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -60,11 +66,14 @@ public class VariantJsonWriter implements VariantWriter {
         jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
         
         try {
-            generator = factory.createGenerator(stream);
+            variantsGenerator = factory.createGenerator(variantsStream);
+            fileGenerator = factory.createGenerator(fileStream);
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
+            close();
             return false;
         }
         
@@ -74,10 +83,11 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean write(Variant variant) {
         try {
-            generator.writeObject(variant);
-            generator.writeRaw('\n');
+            variantsGenerator.writeObject(variant);
+            variantsGenerator.writeRaw('\n');
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
+            close();
             return false;
         }
         return true;
@@ -87,10 +97,11 @@ public class VariantJsonWriter implements VariantWriter {
     public boolean write(List<Variant> batch) {
         for (Variant variant : batch) {
             try {
-                generator.writeObject(variant);
-                generator.writeRaw('\n');
+                variantsGenerator.writeObject(variant);
+                variantsGenerator.writeRaw('\n');
             } catch (IOException ex) {
                 Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
+            close();
                 return false;
             }
         }
@@ -106,10 +117,15 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean post() {
         try {
-            stream.flush();
-            generator.flush();
+            variantsStream.flush();
+            variantsGenerator.flush();
+            
+            fileGenerator.writeObject(source);
+            fileStream.flush();
+            fileGenerator.flush();
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
+            close();
             return false;
         }
         return true;
@@ -118,7 +134,8 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean close() {
         try {
-            generator.close();
+            variantsGenerator.close();
+            fileGenerator.close();
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;

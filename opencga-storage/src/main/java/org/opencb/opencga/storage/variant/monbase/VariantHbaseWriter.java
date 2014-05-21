@@ -197,7 +197,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
 
                 // Create raw data for inserting in HBase
                 for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                    String prefix = source.getStudy() + "_" + source.getAlias();
+                    String prefix = source.getStudyId() + "_" + source.getFileId();
 
                     // Check that this variant IN THIS FILE was not stored yet
                     // (look for the column containing the file fields)
@@ -257,7 +257,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
                 String rowkey = buildRowkey(v);
                 Put put2 = putMap.get(rowkey);
                 if (put2 != null) { // This variant is not being processed
-                    String prefix = source.getStudy() + "_" + source.getAlias();
+                    String prefix = source.getStudyId() + "_" + source.getFileId();
                     byte[] qualifier = Bytes.toBytes(prefix + "_stats");
                     put2.add(dataColumnFamily, qualifier, stats.toByteArray());
                 }
@@ -358,7 +358,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
         
         builder.setPassedFilters(v.hasPassedFilters());
         
-        builder.setQuality(v.getQual());
+        builder.setQuality(v.getQuality());
         
         builder.setNumSamples(v.getNumSamples());
         

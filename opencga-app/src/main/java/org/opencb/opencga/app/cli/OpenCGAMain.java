@@ -44,15 +44,16 @@ public class OpenCGAMain {
 
         options.addOption(OptionFactory.createOption("file", "f", "File to save in the selected backend", true, true));
         options.addOption(OptionFactory.createOption("alias", "a", "Unique ID for the file to be uploaded", true, true));
-        options.addOption(OptionFactory.createOption("study", "s", "Unique ID for the study where the file is classified", true, true));
+        options.addOption(OptionFactory.createOption("study", "s", "Full name of the study where the file is classified", true, true));
+        options.addOption(OptionFactory.createOption("study-alias", "Unique ID for the study where the file is classified", true, true));
         
         options.addOption(OptionFactory.createOption("backend", "b", "Storage to save files into: sqlite (default) or monbase", false, true));
         options.addOption(OptionFactory.createOption("credentials", "c", "Path to the file where the backend credentials are stored", true, true));
         options.addOption(OptionFactory.createOption("datatype", "d", "Datatype to be stored: alignments (BAM) or variants (VCF)", true, true));
         options.addOption(OptionFactory.createOption("outdir", "o", "Directory where output files will be saved (if applies)", false, true));
 
-        // Alignments optional arguments
-        options.addOption(OptionFactory.createOption("include-coverage", "Save coverage information (optional)", false, false));
+//        // Alignments optional arguments
+//        options.addOption(OptionFactory.createOption("include-coverage", "Save coverage information (optional)", false, false));
 
         // Variants optional arguments
         options.addOption(OptionFactory.createOption("include-effect", "Save variant effect information (optional)", false, false));
@@ -77,8 +78,9 @@ public class OpenCGAMain {
         Path credentialsPath = Paths.get(commandLine.getOptionValue("credentials"));
         Path filePath = Paths.get(commandLine.getOptionValue("file"));
         // TODO check filePath exists
-        String alias = commandLine.getOptionValue("alias");
+        String fileId = commandLine.getOptionValue("alias");
         String study = commandLine.getOptionValue("study");
+        String studyId = commandLine.getOptionValue("study-alias");
         Path outdir = commandLine.hasOption("outdir") ? Paths.get(commandLine.getOptionValue("outdir")) : null;
 
         // Get arguments for each datatype to store
@@ -86,14 +88,14 @@ public class OpenCGAMain {
             case "alignments":
                 boolean includeCoverage = commandLine.hasOption("include-coverage");
                 // TODO
-                indexAlignments(alias, filePath, backend, credentialsPath, includeCoverage);
+                indexAlignments(fileId, filePath, backend, credentialsPath, includeCoverage);
                 break;
             case "variants":
                 boolean includeEffect = commandLine.hasOption("include-effect");
                 boolean includeStats = commandLine.hasOption("include-stats");
                 boolean includeSamples = commandLine.hasOption("include-samples");
                 Path pedigreePath = commandLine.hasOption("pedigree") ? Paths.get(commandLine.getOptionValue("pedigree")) : null;
-                VariantSource source = new VariantSource(filePath.getFileName().toString(), alias, study, study, null, null);
+                VariantSource source = new VariantSource(filePath.getFileName().toString(), fileId, study, studyId);
 
                 indexVariants(source, filePath, pedigreePath, outdir, backend, credentialsPath, includeEffect, includeStats, includeSamples);
                 break;
@@ -137,9 +139,9 @@ public class OpenCGAMain {
         VariantReader reader;
         PedigreeReader pedReader = pedigreePath != null ? new PedigreePedReader(pedigreePath.toString()) : null;
 
-        if (source.getFilename().endsWith(".vcf") || source.getFilename().endsWith(".vcf.gz")) {
-            reader = new VariantVcfReader(filePath.toAbsolutePath().toString(), source.getAlias(), source.getStudy());
-        } else if (source.getFilename().endsWith(".json") || source.getFilename().endsWith(".json.gz")) {
+        if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
+            reader = new VariantVcfReader(filePath.toAbsolutePath().toString(), source.getFileId(), source.getStudyId());
+        } else if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
             reader = new VariantJsonReader(filePath.toAbsolutePath().toString());
         } else {
             throw new IOException("Variants input file format not supported");
@@ -172,7 +174,7 @@ public class OpenCGAMain {
 
 
         // If a JSON file is provided, then stats and effects do not need to be recalculated
-        if (!source.getFilename().endsWith(".json") && !source.getFilename().endsWith(".json.gz")) {
+        if (!source.getFileName().endsWith(".json") && !source.getFileName().endsWith(".json.gz")) {
             if (includeEffect) {
                 taskList.add(new VariantEffectTask());
             }
