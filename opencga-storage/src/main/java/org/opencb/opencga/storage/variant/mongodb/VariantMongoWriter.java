@@ -41,6 +41,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     private boolean includeEffect;
     private boolean includeSamples;
 
+    private List<String> samples;
     private Map<String, Integer> conseqTypes;
     
     private long numVariantsWritten;
@@ -60,12 +61,14 @@ public class VariantMongoWriter extends VariantDBWriter {
         this.mongoMap = new HashMap<>();
         this.mongoFileMap = new HashMap<>();
 
-        conseqTypes = new LinkedHashMap<>();
-        numVariantsWritten = 0;
-        
         this.includeSamples = includeSamples;
         this.includeStats = includeStats;
         this.includeEffect = includeEffect;
+        
+        conseqTypes = new LinkedHashMap<>();
+        samples = new ArrayList<>();
+        numVariantsWritten = 0;
+        
     }
 
     @Override
@@ -148,19 +151,21 @@ public class VariantMongoWriter extends VariantDBWriter {
                 }
 
                 // Samples
-                if (this.includeSamples && archiveFile.getSamplesData().size() > 0) {
-                    mongoFile.append("format", archiveFile.getFormat()); // Useless field if samples are not stored
+                if (this.includeSamples && archiveFile.getSamplesData().size() > 0 && archiveFile.getFileId().equals(file.getAlias())) {
+                    mongoFile.append("format", archiveFile.getFormat()); // Useless field if genotypeCodes are not stored
                     
-                    BasicDBObject samples = new BasicDBObject();
-
-                    for (Map.Entry<String, Map<String, String>> entry : archiveFile.getSamplesData().entrySet()) {
-                        BasicDBObject sampleData = new BasicDBObject();
-                        for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
-                            sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
-                        }
-                        samples.put(entry.getKey(), sampleData);
+                    // First time a variant is loaded, the list of samples is populated. 
+                    // This guarantees that samples are loaded only once to keep order among variants
+                    if (samples.isEmpty()) {
+                        samples.addAll(archiveFile.getSampleNames());
                     }
-                    mongoFile.put("samples", samples);
+                    
+                    BasicDBList genotypeCodes = new BasicDBList();
+                    for (String sampleName : samples) {
+                        String genotype = archiveFile.getSampleData(sampleName, "GT");
+                        genotypeCodes.add(new Genotype(genotype).encode());
+                    }
+                    mongoFile.put("samples", genotypeCodes);
                 }
 
                 mongoFiles.add(mongoFile);
