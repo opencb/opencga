@@ -362,15 +362,12 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private boolean writeSourceSummary(VariantSource source) {
-        String timeStamp = new SimpleDateFormat("dd/mm/yyyy").format(Calendar.getInstance().getTime());
-        BasicDBObject studyMongo = new BasicDBObject("name", source.getFileName())
-                .append("alias", source.getFileId())
-                .append("date", timeStamp)
-//                .append("authors", source.getAuthors())
-                .append("samples", source.getSamplesPosition())
-//                .append("description", source.getDescription())
-//                .append("files", source.getSources())
-                ;
+        BasicDBObject studyMongo = new BasicDBObject("fileName", source.getFileName())
+                .append("fileId", source.getFileId())
+                .append("studyName", source.getStudyName())
+                .append("studyId", source.getStudyId())
+                .append("date", Calendar.getInstance().getTime())
+                .append("samples", source.getSamplesPosition());
 
         BasicDBObject cts = new BasicDBObject();
 
@@ -390,6 +387,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 //                    .append("biallelicsCount", global.getBiallelicsCount())
 //                    .append("multiallelicsCount", global.getMultiallelicsCount())
                     .append("accumulatedQuality", global.getAccumulatedQuality())
+                    .append("meanQuality", (float) global.getAccumulatedQuality() / global.getVariantsCount())
                     .append("consequenceTypes", cts);
 
             studyMongo = studyMongo.append("globalStats", globalStats);

@@ -24,19 +24,19 @@ import org.opencb.biodata.models.variant.VariantSource;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoWriterTest extends GenericTest {
+public class VariantMongoWriterTest {
 
     private static Properties properties;
     private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static MongoCredentials credentials;
-    private static VariantSource study1 = new VariantSource("testFilename", "testAlias", "testStudy1", "test description", null, null);
-    private static VariantSource study2 = new VariantSource("testFilename", "testAlias2", "testStudy2", "test description", null, null);
+    private static VariantSource study1 = new VariantSource(inputFile, "testAlias", "testStudy1", "Test Study #1");
+    private static VariantSource study2 = new VariantSource(inputFile, "testAlias2", "testStudy2", "Test Study #2");
 
 
     @BeforeClass
     public static void initMongo() throws IOException {
-
         properties = new Properties();
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", "27017");
@@ -51,8 +51,7 @@ public class VariantMongoWriterTest extends GenericTest {
         List<Task<Variant>> taskList = new SortedList<>();
         List<VariantWriter> writers = new ArrayList<>();
 
-        VariantReader reader;
-        reader = new VariantVcfReader(inputFile, inputFile, inputFile);
+        VariantReader reader = new VariantVcfReader(study1, inputFile);
         writers.add(new VariantMongoWriter(study1, credentials));
 
         for (VariantWriter vw : writers) {
@@ -68,6 +67,7 @@ public class VariantMongoWriterTest extends GenericTest {
         VariantRunner vr = new VariantRunner(study1, reader, null, writers, taskList);
         vr.run();
 
+        reader = new VariantVcfReader(study2, inputFile);
         vr = new VariantRunner(study2, reader, null, writers, taskList);
         vr.run();
 

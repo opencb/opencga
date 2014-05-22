@@ -19,7 +19,6 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.variant.lib.runners.VariantRunner;
@@ -30,10 +29,10 @@ import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoDBAdaptorTest {//extends GenericTest {
+public class VariantMongoDBAdaptorTest {
 
     private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
-    private static VariantSource study = new VariantSource("testStudy", "testAlias", "testStudy", "Study for testing purposes", null, null);
+    private static VariantSource study = new VariantSource(inputFile, "testAlias", "testStudy", "Study for testing purposes");
     private static MongoCredentials credentials;
     private static VariantDBAdaptor vqb;
 
@@ -49,7 +48,8 @@ public class VariantMongoDBAdaptorTest {//extends GenericTest {
         credentials = new MongoCredentials(properties);
         
         // Initialize dataset to query
-        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFileName());
+//        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFileName());
+        VariantVcfReader reader = new VariantVcfReader(study, inputFile);
         VariantMongoWriter vdw = new VariantMongoWriter(study, (MongoCredentials) credentials);
         vdw.includeEffect(true); vdw.includeSamples(true); vdw.includeStats(true);
         List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
