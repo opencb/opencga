@@ -407,8 +407,6 @@ public class VariantMongoWriter extends VariantDBWriter {
         DBObject query = new BasicDBObject("name", source.getFileName());
         WriteResult wr = filesCollection.update(query, studyMongo, true, false);
 
-        filesCollection.ensureIndex(new BasicDBObject("name", 1));
-
         return wr.getLastError().ok(); // TODO Is this a proper return statement?
     }
 
