@@ -43,8 +43,6 @@ public class VariantMongoDBAdaptorTest {
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", "27017");
         properties.put("mongo_db_name", "VariantMongoQueryBuilderTest_db");
-//        properties.put("mongo_user", "user");
-//        properties.put("mongo_password", "pass");
         credentials = new MongoCredentials(properties);
         
         // Initialize dataset to query

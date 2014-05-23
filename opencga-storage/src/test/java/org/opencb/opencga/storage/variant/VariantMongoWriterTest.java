@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import org.junit.AfterClass;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -34,24 +35,32 @@ public class VariantMongoWriterTest {
     private static VariantSource study1 = new VariantSource(inputFile, "testAlias", "testStudy1", "Test Study #1");
     private static VariantSource study2 = new VariantSource(inputFile, "testAlias2", "testStudy2", "Test Study #2");
 
-
     @BeforeClass
-    public static void initMongo() throws IOException {
+    public static void setUp() throws IOException {
         properties = new Properties();
         properties.put("mongo_host", "localhost");
         properties.put("mongo_port", "27017");
-        properties.put("mongo_db_name", "testIndex");
+        properties.put("mongo_db_name", "VariantMongoWriterTest_db");
 
         credentials = new MongoCredentials(properties);
+    }
 
-        MongoClient mc = new MongoClient(credentials.getMongoHost());
-        DB db = mc.getDB(credentials.getMongoDbName());
+    @AfterClass
+    public static void shutdown() throws Exception {
+        // Delete Mongo collection
+        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+        DB db = mongoClient.getDB(credentials.getMongoDbName());
         db.dropDatabase();
+        mongoClient.close();
+    }
+
+    @Test
+    public void test() throws IOException {
+        VariantReader reader = new VariantVcfReader(study1, inputFile);
 
         List<Task<Variant>> taskList = new SortedList<>();
         List<VariantWriter> writers = new ArrayList<>();
 
-        VariantReader reader = new VariantVcfReader(study1, inputFile);
         writers.add(new VariantMongoWriter(study1, credentials));
 
         for (VariantWriter vw : writers) {
@@ -63,20 +72,11 @@ public class VariantMongoWriterTest {
         taskList.add(new VariantStatsTask(reader, study1));
 //        taskList.add(new VariantEffectTask());
 
-
         VariantRunner vr = new VariantRunner(study1, reader, null, writers, taskList);
         vr.run();
 
         reader = new VariantVcfReader(study2, inputFile);
         vr = new VariantRunner(study2, reader, null, writers, taskList);
         vr.run();
-
-
-    }
-
-    @Test
-    public void testName() throws Exception {
-
-
     }
 }

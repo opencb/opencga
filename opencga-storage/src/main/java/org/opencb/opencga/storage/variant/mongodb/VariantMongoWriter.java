@@ -163,7 +163,9 @@ public class VariantMongoWriter extends VariantDBWriter {
                     BasicDBList genotypeCodes = new BasicDBList();
                     for (String sampleName : samples) {
                         String genotype = archiveFile.getSampleData(sampleName, "GT");
-                        genotypeCodes.add(new Genotype(genotype).encode());
+                        if (genotype != null) {
+                            genotypeCodes.add(new Genotype(genotype).encode());
+                        }
                     }
                     mongoFile.put("samples", genotypeCodes);
                 }
