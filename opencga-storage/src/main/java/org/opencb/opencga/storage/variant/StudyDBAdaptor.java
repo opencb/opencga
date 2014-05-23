@@ -11,7 +11,7 @@ public interface StudyDBAdaptor {
     
     QueryResult listStudies();
     
-    QueryResult getAllSourcesByStudy(String studyName, QueryOptions options);
+    QueryResult getStudyNameById(String studyId, QueryOptions options);
     
     QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options);
     

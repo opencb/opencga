@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.variant.mongodb;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.QueryBuilder;
 import java.net.UnknownHostException;
 import org.opencb.datastore.core.QueryOptions;
@@ -35,13 +36,17 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllSourcesByStudy(String studyName, QueryOptions options) {
+    public QueryResult getStudyNameById(String studyId, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("files");
         QueryBuilder qb = QueryBuilder.start();
-        getStudyFilter(studyName, qb);
+        qb.or(new BasicDBObject("studyName", studyId), new BasicDBObject("studyId", studyId));
 //        parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options);
+        BasicDBObject returnFields = new BasicDBObject("studyId", 1).append("_id", 0);
+        
+        options.add("limit", 1);
+        
+        return coll.find(qb.get(), returnFields, options);
     }
 
     @Override
