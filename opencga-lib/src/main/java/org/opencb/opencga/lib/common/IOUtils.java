@@ -55,6 +55,50 @@ public class IOUtils {
         return lines;
     }
 
+    public static InputStream headOffset(Path path, int offsetLine, int numLines) throws IOException {
+        BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset());
+        StringBuilder sb = new StringBuilder();
+
+        int cont = 0;
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (cont >= offsetLine && cont < numLines) {
+                sb.append(line + "\n");
+            } else {
+                break;
+            }
+            cont++;
+        }
+        br.close();
+
+        InputStream inputStream = new ByteArrayInputStream(sb.toString().getBytes());
+        return inputStream;
+    }
+
+    public static InputStream grepFile(Path path, String pattern, boolean ignoreCase, boolean multi) throws IOException {
+        BufferedReader br = Files.newBufferedReader(path, Charset.defaultCharset());
+        StringBuilder sb = new StringBuilder();
+        Pattern pat;
+        if (ignoreCase) {
+            pat = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE);
+        } else {
+            pat = Pattern.compile(pattern);
+        }
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (pat.matcher(line).matches()) {
+                sb.append(line + "\n");
+                if (!multi) {
+                    break;
+                }
+            }
+        }
+        br.close();
+        InputStream inputStream = new ByteArrayInputStream(sb.toString().getBytes());
+        return inputStream;
+    }
+
+
     public static void prependString(Path filePath, String text) throws IOException {
         Path tempPath = Paths.get(filePath + ".prepend.tmp");
         text = text.concat(System.lineSeparator());
@@ -133,7 +177,7 @@ public class IOUtils {
         Path destParent = dest.getParentFile().toPath();
 
 //        FileUtils.checkDirectory(dest.getParentFile(), true); //
-        if(Files.exists(destParent)){
+        if (Files.exists(destParent)) {
             // /mnt/commons/test/job.zip ---> ¿/mnt/commons/test exists?
             BufferedInputStream origin = null;
             int BUFFER_SIZE = 1024;

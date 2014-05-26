@@ -59,17 +59,20 @@ public class JobAnalysisWSServer extends GenericWSServer {
     @GET
     @Path("/table")
     public Response table(@DefaultValue("") @QueryParam("filename") String filename,
-                          @DefaultValue("") @QueryParam("start") String start, @DefaultValue("") @QueryParam("limit") String limit,
+                          @DefaultValue("") @QueryParam("page") String page, @DefaultValue("") @QueryParam("limit") String limit,
                           @DefaultValue("") @QueryParam("colNames") String colNames,
                           @DefaultValue("") @QueryParam("colVisibility") String colVisibility,
                           @DefaultValue("") @QueryParam("callback") String callback,
                           @QueryParam("sort") @DefaultValue("false") String sort) {
 
         try {
-            String res = cloudSessionManager.getFileTableFromJob(accountId, jobId, filename, start, limit, colNames,
+            int start = (Integer.parseInt(page) - 1) * Integer.parseInt(limit);
+
+            String res = cloudSessionManager.getFileTableFromJob(accountId, jobId, filename, String.valueOf(start), limit, colNames,
                     colVisibility, callback, sort, sessionId);
             return createOkResponse(res, MediaType.valueOf("text/javascript"));
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
         }
@@ -94,6 +97,25 @@ public class JobAnalysisWSServer extends GenericWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
+    @GET
+    @Path("/grep")
+    public Response grepJobFile(
+
+            @DefaultValue(".*") @QueryParam("pattern") String pattern,
+            @DefaultValue("false") @QueryParam("ignoreCase") boolean ignoreCase,
+            @DefaultValue("true") @QueryParam("multi") boolean multi,
+            @DefaultValue("") @QueryParam("filename") String filename) {
+
+        try {
+            DataInputStream is = cloudSessionManager.getGrepFileFromJob(accountId, jobId, filename, pattern, ignoreCase, multi, sessionId);
+            return createOkResponse(is, MediaType.APPLICATION_OCTET_STREAM_TYPE, filename);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
 
     @GET
     @Path("/status")

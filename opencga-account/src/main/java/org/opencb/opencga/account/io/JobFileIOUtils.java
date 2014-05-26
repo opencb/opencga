@@ -25,7 +25,6 @@ public class JobFileIOUtils implements IOManager {
     public static String getSenchaTable(Path jobFile, String filename, String start, String limit, String colNames,
                                         String colVisibility, String callback, String sort) throws IOManagementException, IOException {
 
-
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
 
@@ -119,7 +118,7 @@ public class JobFileIOUtils implements IOManager {
             stringBuilder.append(callback + "({\"total\":\"" + totalCount + "\",\"items\":[");
             for (int j = 0; j < orderedRowIndices.length; j++) {
                 if (j >= first && j < end) {
-                    fields = dataFile.get(orderedRowIndices[j]).split("\t");
+                    fields = dataFile.get(orderedRowIndices[j]).split("\\t+");
                     stringBuilder.append("{");
                     for (int i = 0; i < fields.length; i++) {
                         if (Integer.parseInt(colvisibilityArray[i].toString()) == 1) {
@@ -146,7 +145,7 @@ public class JobFileIOUtils implements IOManager {
             while ((line = br.readLine()) != null) {
                 if (!line.startsWith("#")) {
                     if (numLine >= first && numLine < end) {
-                        fields = line.split("\t");
+                        fields = line.split("\\t+");
                         stringBuilder.append("{");
                         logger.info("PAKO::length: " + fields.length);
                         for (int i = 0; i < fields.length; i++) {
