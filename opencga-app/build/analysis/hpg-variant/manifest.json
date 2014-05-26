@@ -118,6 +118,8 @@
             	               {"name":"vcf-file", "description":"VCF file used as input.", "required":"true"},
             	               {"name":"ped-file", "description":"PED file used as input.", "required":"false"},
             	               {"name":"db", "description":"Save statistics to sqlite", "required":"false"},
+            	               {"name":"variable", "description":"Name for the variable field", "required":"false"},
+            	               {"name":"variable-group", "description":"Sequence of variable groups", "required":"false"},
             	               {"name":"variants", "description":"Get statistics about variants, both per variant and per file (default)."},
             	               {"name":"samples", "description":"Get statistics about samples."}
     	             ],

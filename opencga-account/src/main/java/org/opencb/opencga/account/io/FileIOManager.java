@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -111,7 +112,7 @@ public class FileIOManager implements IOManager {
         // If account folder not exist is created
         if (!Files.exists(accountPath)) {
             try {
-                Path p =  Files.createDirectory(accountPath);
+                Path p = Files.createDirectory(accountPath);
 //                System.out.println("TEST ERROR: " + p.toString());
             } catch (IOException e) {
 //                System.out.println("TEST ERROR IOException:  "+ e.toString());
@@ -119,7 +120,7 @@ public class FileIOManager implements IOManager {
             }
         }
 
-        logger.info(accountId+" createAccount(): Creating account folder: " + accountHomePath);
+        logger.info(accountId + " createAccount(): Creating account folder: " + accountHomePath);
 //        System.out.println(accountId + " createAccount(): Creating account folder: " + accountHomePath);
         if (Files.exists(accountPath) && Files.isDirectory(accountPath) && Files.isWritable(accountPath)) {
 
@@ -150,7 +151,7 @@ public class FileIOManager implements IOManager {
     public void deleteAccount(String accountId) throws IOManagementException {
         Path accountPath = Paths.get(accountHomePath, accountId);
         try {
-            if(Files.exists(accountPath)){
+            if (Files.exists(accountPath)) {
                 IOUtils.deleteDirectory(accountPath);
             }
         } catch (IOException e1) {
@@ -299,6 +300,7 @@ public class FileIOManager implements IOManager {
         }
     }
 
+
     /**
      * *****************
      * <p/>
@@ -414,6 +416,50 @@ public class FileIOManager implements IOManager {
 //        }
 //    }
 
+    public DataInputStream getFileObject(String accountId, String bucketId, Path objectId, String startString, String limitString) throws IOManagementException,
+            IOException {
+
+        int limit;
+        try {
+            limit = Integer.parseInt(limitString);
+        } catch (NumberFormatException e) {
+            limit = -1;
+        }
+        int start;
+        try {
+            start = Integer.parseInt(startString);
+        } catch (NumberFormatException e) {
+            start = -1;
+        }
+
+        Path objectPath = getObjectPath(accountId, bucketId, objectId);
+        if (Files.isRegularFile(objectPath)) {
+
+            DataInputStream is;
+            if (start == -1 && limit == -1) {
+                is = new DataInputStream(Files.newInputStream(objectPath));
+                return is;
+            } else {
+                is = new DataInputStream(IOUtils.headOffset(objectPath, start, limit));
+            }
+            return is;
+        } else {
+            throw new IOManagementException("Not a regular file: " + objectPath.toAbsolutePath().toString());
+        }
+
+    }
+
+    public DataInputStream getGrepFileObject(String accountId, String bucketId, Path objectId, String pattern, boolean ignoreCase, boolean multi) throws IOManagementException,
+            IOException {
+        Path objectPath = getObjectPath(accountId, bucketId, objectId);
+        if (Files.isRegularFile(objectPath)) {
+            return new DataInputStream(IOUtils.grepFile(objectPath, pattern, ignoreCase, multi));
+        } else {
+            throw new IOManagementException("Not a regular file: " + objectPath.toAbsolutePath().toString());
+        }
+    }
+
+
     public String getFileTableFromJob(Path jobPath, String filename, String start, String limit, String colNames,
                                       String colVisibility, String callback, String sort) throws IOManagementException, IOException {
         Path jobFile = jobPath.resolve(filename);
@@ -464,6 +510,18 @@ public class FileIOManager implements IOManager {
             return is;
         }
     }
+
+    public DataInputStream getGrepFileFromJob(Path jobPath, String filename, String pattern, boolean ignoreCase, boolean multi) throws IOManagementException,
+            IOException {
+
+        Path filePath = jobPath.resolve(filename);
+        if (Files.isRegularFile(filePath)) {
+            return new DataInputStream(IOUtils.grepFile(filePath, pattern, ignoreCase, multi));
+        } else {
+            throw new IOManagementException("Not a regular file: " + filePath.toAbsolutePath().toString());
+        }
+    }
+
 
     public InputStream getJobZipped(Path jobPath, String jobId) throws IOManagementException, IOException {
         String zipName = jobId + ".zip";

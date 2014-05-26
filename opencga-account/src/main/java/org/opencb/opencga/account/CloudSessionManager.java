@@ -410,6 +410,30 @@ public class CloudSessionManager {
         return accountManager.deleteObjectFromBucket(accountId, bucketId, objectId, sessionId);
     }
 
+    public DataInputStream getFileObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId, String start, String limit)
+            throws IOManagementException, IOException, AccountManagementException {
+        checkParameter(bucketId, "bucket");
+        checkParameter(accountId, "accountId");
+        checkParameter(sessionId, "sessionId");
+        checkParameter(objectId.toString(), "objectId");
+        checkParameter(start, "start");
+        checkParameter(limit, "limit");
+
+        return ioManager.getFileObject(accountId, bucketId, objectId, start, limit);
+    }
+
+    public DataInputStream getGrepFileObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
+            throws IOManagementException, IOException, AccountManagementException {
+        checkParameter(bucketId, "bucket");
+        checkParameter(accountId, "accountId");
+        checkParameter(sessionId, "sessionId");
+        checkParameter(objectId.toString(), "objectId");
+        checkParameter(pattern, "pattern");
+
+        return ioManager.getGrepFileObject(accountId, bucketId, objectId, pattern, ignoreCase, multi);
+    }
+
+
     //TODO
     public void shareObject(String accountId, String bucketId, Path objectId, String toAccountId, boolean read,
                             boolean write, boolean execute, String sessionId) throws AccountManagementException {
@@ -639,6 +663,21 @@ public class CloudSessionManager {
         return ioManager.getFileFromJob(jobPath, filename, zip);
     }
 
+
+    public DataInputStream getGrepFileFromJob(String accountId, String jobId, String filename, String pattern, boolean ignoreCase, boolean multi, String sessionId)
+            throws IOManagementException, IOException, AccountManagementException {
+        checkParameter(accountId, "accountId");
+        checkParameter(jobId, "jobId");
+        checkParameter(filename, "filename");
+        checkParameter(pattern, "pattern");
+        checkParameter(sessionId, "sessionId");
+
+
+        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+
+        return ioManager.getGrepFileFromJob(jobPath, filename,  pattern, ignoreCase, multi);
+    }
+
     public InputStream getJobZipped(String accountId, String jobId, String sessionId) throws IOManagementException,
             IOException, AccountManagementException {
         checkParameter(accountId, "accountId");
@@ -750,6 +789,5 @@ public class CloudSessionManager {
             throw new AccountManagementException("region '" + name + "' is not valid");
         }
     }
-
 
 }

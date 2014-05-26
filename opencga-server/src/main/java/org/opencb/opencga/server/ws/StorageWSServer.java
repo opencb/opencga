@@ -15,6 +15,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
@@ -40,7 +41,7 @@ public class StorageWSServer extends GenericWSServer {
         super(uriInfo, httpServletRequest);
         this.accountId = accountId;
         this.bucketId = bucketId;
-        objectId = objectId.replaceAll("\\s+","_");
+        objectId = objectId.replaceAll("\\s+", "_");
         this.objectId = StringUtils.parseObjectId(objectId);
     }
 
@@ -87,13 +88,43 @@ public class StorageWSServer extends GenericWSServer {
      */
 
     @GET
+    @Path("/poll")
+    public Response pollObjectFile(
+            @DefaultValue("") @QueryParam("start") String start, @DefaultValue("") @QueryParam("limit") String limit) {
+        try {
+            DataInputStream is = cloudSessionManager.getFileObjectFromBucket(accountId, bucketId, objectId, sessionId, start, limit);
+            String name = objectId.getFileName().toString();
+            return createOkResponse(is, MediaType.APPLICATION_OCTET_STREAM_TYPE, name);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/grep")
+    public Response pollObjectGrepFile(
+            @DefaultValue(".*") @QueryParam("pattern") String pattern,
+            @DefaultValue("false") @QueryParam("ignoreCase") boolean ignoreCase,
+            @DefaultValue("true") @QueryParam("multi") boolean multi) {
+        try {
+            DataInputStream is = cloudSessionManager.getGrepFileObjectFromBucket(accountId, bucketId, objectId, sessionId, pattern, ignoreCase, multi);
+            String name = objectId.getFileName().toString();
+            return createOkResponse(is, MediaType.APPLICATION_OCTET_STREAM_TYPE, name);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/create_directory")
     public Response createDirectory(@DefaultValue("false") @QueryParam("parents") boolean parents) {
         ObjectItem objectItem = new ObjectItem(null, null, null);
         objectItem.setFileType("dir");
         objectItem.setDate(TimeUtils.getTime());
         try {
-            QueryResult result =  cloudSessionManager.createFolderToBucket(accountId, bucketId, objectId, objectItem, parents, sessionId);
+            QueryResult result = cloudSessionManager.createFolderToBucket(accountId, bucketId, objectId, objectItem, parents, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             logger.error(e.toString());
