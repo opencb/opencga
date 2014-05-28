@@ -175,7 +175,43 @@
     	             ],
     	             "configAttr": [],
     	             "testCmd": ""
-	             }
+	             },
+                 {
+            "id": "epistasis",
+            "name": "Variant Epistasis",
+            "executable": "bin/vcf-epi.py",
+            "inputParams": [{"name":"vcf-file", "dataType":"vcf"}, {"name":"ped-file", "dataType":"ped"}],
+            "inputParamsFromTxt": [{"name":"vcf-file-txt", "dataType":"vcf"}, {"name":"ped-file-txt", "dataType":"ped"}],
+            "outputParam": "outdir",
+            "validParams": [
+                {"name": "vcf-file",    "description": "VCF file used as input.", "required":"true"},
+                {"name": "ped-file",    "description": "PED file used as input.", "required":"true"},
+                {"name": "alleles",     "description": "Filter: by number of alleles"},
+                {"name": "coverage",    "description": "Filter: by minimum coverage"},
+                {"name": "quality",     "description": "Filter: by minimum quality"},
+                {"name": "maf",         "description": "Filter: by MAF (minimum allele frequency, decimal like 0.01)"},
+                {"name": "missing",     "description": "Filter: by maximum missing values (decimal like 0.1)"},
+                {"name": "gene",        "description": "Filter: by a comma-separated list of genes"},
+                {"name": "region",      "description": "Filter: by a list of regions (chr1:start1-end1,chr2:start2-end2...)"},
+                {"name": "region-file", "description": "Filter: by a list of regions (read from a GFF file)"},
+                {"name": "region-type", "description": "Filter: by type of region (used along with the 'region-file' argument)"},
+                {"name": "snp",         "description": "Filter: by being a SNP or not (include/exclude)"},
+                {"name": "indel",       "description": "Filter: by being an indel or not, counting characters in REF and ALT (include/exclude)"},
+                {"name": "inh-dom",     "description": "Filter: by percentage of samples following dominant inheritance pattern (decimal like 0.1)"},
+                {"name": "inh-rec",     "description": "Filter: by percentage of samples following recessive inheritance pattern (decimal like 0.1)"},
+                {"name": "order",       "description": "Number of SNPs to be combined at the same time" },
+                {"name": "num-folds",   "description": "Number of folds in a k-fold cross-validation" },
+                {"name": "num-cv-runs", "description": "Number of times the k-fold cross-validation process is run" },
+                {"name": "rank-size",   "description": "Number of best models saved" },
+                {"name": "eval-subset", "description": "Whether to used training (default) or testing partitions when evaluating the best models" },
+                {"name": "eval-mode",   "description": "Whether to rank risky combinations by their CV-C or CV-A (values can be 'count' or 'accu')" },
+                {"name": "stride",      "description": "Number of SNPs per block partition of the dataset" }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+
+
 	],
     "examples": [
                 {
