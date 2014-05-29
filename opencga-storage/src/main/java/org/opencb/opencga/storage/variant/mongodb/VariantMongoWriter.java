@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.variant.mongodb;
 
 import com.mongodb.*;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.variant.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -102,11 +102,11 @@ public class VariantJsonReader implements VariantReader {
     }
 
     @Override
-    public Variant read() {
+    public List<Variant> read() {
         try {
             if (variantsParser.nextToken() != null) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
-                return variant;
+                return Arrays.asList(variant);
             }
         } catch (IOException ex) {
             Logger.getLogger(VariantVcfReader.class.getName()).log(Level.SEVERE, null, ex);
