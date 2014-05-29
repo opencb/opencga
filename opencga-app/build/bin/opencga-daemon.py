@@ -1,4 +1,4 @@
-# !/usr/bin/python -u
+#! /usr/bin/python -u
 
 import sys, time, os, commands, datetime, xml.dom.minidom as xml
 from pymongo import MongoClient
@@ -203,7 +203,7 @@ def updateJobStatus(job, position, status):
 
     print(status)
     if status == "finished":
-        status, outputFiles = commands.getstatusoutput("ls -r " + outdir + " | grep -v result.xml | grep -v sge_err.log | grep -v sge_out.log")
+        statusCommand, outputFiles = commands.getstatusoutput("ls -r " + outdir + " | grep -v result.xml | grep -v sge_err.log | grep -v sge_out.log")
     elif status == "queue_error" or status == "execution_error":
         outputFiles = "sge_err.log\nsge_out.log"
 

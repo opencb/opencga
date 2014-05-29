@@ -154,6 +154,19 @@ public class JobAnalysisWSServer extends GenericWSServer {
     }
 
     @GET
+    @Path("/info")
+    public Response increaseJobVisites() {
+        try {
+            Job job = cloudSessionManager.getJob(accountId, jobId, sessionId);
+            cloudSessionManager.incJobVisites(accountId, jobId, sessionId);
+            return createOkResponse(job);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return createErrorResponse("can not get increase job visites.");
+        }
+    }
+
+    @GET
     @Path("/result.js")
     public Response getResult() {
         try {
