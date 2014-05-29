@@ -93,6 +93,17 @@ public class VariantJsonReader implements VariantReader {
             variantsParser = factory.createParser(variantsStream);
             globalParser = factory.createParser(globalStream);
             // TODO Optimizations for memory management?
+            
+            // Read global JSON file and copy its info into the already available VariantSource object
+            VariantSource readSource = globalParser.readValueAs(VariantSource.class);
+            source.setFileName(readSource.getFileName());
+            source.setFileId(readSource.getFileId());
+            source.setStudyName(readSource.getStudyName());
+            source.setStudyId(readSource.getStudyId());
+            source.setMetadata(readSource.getMetadata());
+            source.setPedigree(readSource.getPedigree());
+            source.setSamplesPosition(readSource.getSamplesPosition());
+            source.setStats(readSource.getStats());
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -133,20 +144,6 @@ public class VariantJsonReader implements VariantReader {
     
     @Override
     public boolean post() {
-        try {
-            // Read global JSON file and copy its info into the already available VariantSource object
-            VariantSource readSource = globalParser.readValueAs(VariantSource.class);
-            source.setFileName(readSource.getFileName());
-            source.setFileId(readSource.getFileId());
-            source.setStudyName(readSource.getStudyName());
-            source.setStudyId(readSource.getStudyId());
-            source.setMetadata(readSource.getMetadata());
-            source.setPedigree(readSource.getPedigree());
-            source.setSamplesPosition(readSource.getSamplesPosition());
-            source.setStats(readSource.getStats());
-        } catch (IOException ex) {
-            Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
-        }
         return true;
     }
 

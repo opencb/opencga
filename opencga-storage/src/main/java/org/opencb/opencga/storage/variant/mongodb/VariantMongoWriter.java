@@ -29,8 +29,12 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     private MongoClient mongoClient;
     private DB db;
+    
+    private String filesCollectionName;
+    private String variantsCollectionName;
     private DBCollection filesCollection;
-    private DBCollection variantCollection;
+    private DBCollection variantsCollection;
+    
     private Map<String, BasicDBObject> mongoMap;
     private Map<String, BasicDBObject> mongoFileMap;
 
@@ -45,18 +49,24 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     private long numVariantsWritten;
     
-    
     public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
-        this(source, credentials, false, false, false);
+        this(source, credentials, "variants", "files");
+    }
+    
+    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
+        this(source, credentials, variantsCollection, filesCollection, false, false, false);
     }
 
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, 
+    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
             boolean includeSamples, boolean includeStats, boolean includeEffect) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
         this.file = source;
         this.credentials = credentials;
+        this.filesCollectionName = filesCollection;
+        this.variantsCollectionName = variantsCollection;
+        
         this.mongoMap = new HashMap<>();
         this.mongoFileMap = new HashMap<>();
 
@@ -92,10 +102,10 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     public boolean pre() {
         // Mongo collection creation
-        filesCollection = db.getCollection("files");
-        variantCollection = db.getCollection("variants");
+        filesCollection = db.getCollection(filesCollectionName);
+        variantsCollection = db.getCollection(variantsCollectionName);
 
-        return variantCollection != null && filesCollection != null;
+        return variantsCollection != null && filesCollection != null;
     }
 
     @Override
@@ -123,7 +133,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             String rowkey = buildRowkey(v);
             BasicDBObject mongoVariant = new BasicDBObject("_id", rowkey);
 
-            if (variantCollection.count(mongoVariant) == 0) {
+            if (variantsCollection.count(mongoVariant) == 0) {
                 mongoVariant = getVariantDBObject(v, rowkey);
             } /*else {
                 System.out.println("Variant " + v.getChromosome() + ":" + v.getStart() + "-" + v.getEnd() + " already found");
@@ -304,9 +314,9 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
-        variantCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "studyAndFile");
-        variantCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
-        variantCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
+        variantsCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "studyAndFile");
+        variantsCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
+        variantsCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
         return true;
     }
 
@@ -321,7 +331,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             if (mongoVariant.containsField("chr")) {
                 // Was fully built in this run because it didn't exist, and must be inserted
                 try {
-                    wr = variantCollection.insert(mongoVariant);
+                    wr = variantsCollection.insert(mongoVariant);
                     if (!wr.getLastError().ok()) {
                         // TODO If not correct, retry?
                         Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
@@ -341,7 +351,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 //                    BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
                     BasicDBObject changes = new BasicDBObject().append("$addToSet", new BasicDBObject("files", mongoFile));
                     
-                    wr = variantCollection.update(query, changes, true, false);
+                    wr = variantsCollection.update(query, changes, true, false);
                     if (!wr.getLastError().ok()) {
                         // TODO If not correct, retry?
                         Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());

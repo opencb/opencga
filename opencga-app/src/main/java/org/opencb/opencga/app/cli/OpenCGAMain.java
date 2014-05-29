@@ -114,7 +114,9 @@ public class OpenCGAMain {
             Properties properties = new Properties();
             properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
             OpenCGACredentials credentials = new MongoCredentials(properties);
-            writers.add(new VariantMongoWriter(source, (MongoCredentials) credentials));
+            writers.add(new VariantMongoWriter(source, (MongoCredentials) credentials, 
+                    properties.getProperty("collection_variants", "variants"),
+                    properties.getProperty("collection_files", "files")));
         } else if (backend.equalsIgnoreCase("json")) {
 //            credentials = new MongoCredentials(properties);
             writers.add(new VariantJsonWriter(source, outdir));
