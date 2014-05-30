@@ -206,6 +206,68 @@ var RESULT = {
             }
         }
     },
+    "hpg-variant.vcf-split": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                        summaryChildren.push(
+                            {
+                            "title": "Split",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.vcf-annot": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                        summaryChildren.push(
+                            {
+                            "title": "Annot",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
     "hpg-variant.vcf-filter": {
         "layout": {
             "title": "Job results",
