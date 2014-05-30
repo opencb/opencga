@@ -5,6 +5,7 @@ import com.google.common.base.Joiner;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
@@ -56,20 +57,46 @@ public class JobAnalysisWSServer extends GenericWSServer {
         }
     }
 
+
+    @OPTIONS
+    @Path("/table")
+    public Response tableGet() {
+        return createOkResponse("");
+    }
+
+
+    @POST
+    @Consumes("application/x-www-form-urlencoded")
+    @Path("/table")
+    public Response tablePost(@DefaultValue("") @QueryParam("filename") String filename,
+                              @DefaultValue("") @FormParam("page") String page,
+                              @DefaultValue("") @FormParam("limit") String limit,
+                              @DefaultValue("") @FormParam("colNames") String colNames,
+                              @DefaultValue("") @FormParam("colVisibility") String colVisibility,
+                              @DefaultValue("false") @QueryParam("sort") String sort) {
+
+        return table(filename, page, limit, colNames, colVisibility, sort);
+    }
+
+
     @GET
     @Path("/table")
-    public Response table(@DefaultValue("") @QueryParam("filename") String filename,
-                          @DefaultValue("") @QueryParam("page") String page, @DefaultValue("") @QueryParam("limit") String limit,
-                          @DefaultValue("") @QueryParam("colNames") String colNames,
-                          @DefaultValue("") @QueryParam("colVisibility") String colVisibility,
-                          @DefaultValue("") @QueryParam("callback") String callback,
-                          @QueryParam("sort") @DefaultValue("false") String sort) {
+    public Response tableGet(@DefaultValue("") @QueryParam("filename") String filename,
+                             @DefaultValue("") @QueryParam("page") String page,
+                             @DefaultValue("") @QueryParam("limit") String limit,
+                             @DefaultValue("") @QueryParam("colNames") String colNames,
+                             @DefaultValue("") @QueryParam("colVisibility") String colVisibility,
+                             @DefaultValue("false") @QueryParam("sort") String sort) {
 
+        return table(filename, page, limit, colNames, colVisibility, sort);
+    }
+
+    private Response table(String filename, String page, String limit, String colNames, String colVisibility, String sort) {
         try {
             int start = (Integer.parseInt(page) - 1) * Integer.parseInt(limit);
 
             String res = cloudSessionManager.getFileTableFromJob(accountId, jobId, filename, String.valueOf(start), limit, colNames,
-                    colVisibility, callback, sort, sessionId);
+                    colVisibility, sort, sessionId);
             return createOkResponse(res, MediaType.valueOf("text/javascript"));
         } catch (Exception e) {
             e.printStackTrace();
@@ -77,6 +104,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
 
     @GET
     @Path("/poll")
