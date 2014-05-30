@@ -129,7 +129,7 @@
 	             {
 	            	 "id": "gwas-assoc",
 	            	 "name": "Variant GWAS",
-	            	 "executable": "bin/hpg-var-gwas assoc",
+	            	 "executable": "bin/hpg-var-gwas.py assoc",
 	            	 "inputParams": [{"name":"vcf-file", "dataType":"vcf"}, {"name":"ped-file", "dataType":"ped"}],
 	            	 "inputParamsFromTxt": [{"name":"vcf-file-txt", "dataType":"vcf"}, {"name":"ped-file-txt", "dataType":"ped"}],
 	            	 "outputParam": "outdir",
@@ -155,7 +155,7 @@
 	             {
 	            	 "id": "gwas-tdt",
 	            	 "name": "Variant GWAS",
-	            	 "executable": "bin/hpg-var-gwas tdt",
+	            	 "executable": "bin/hpg-var-gwas.py tdt",
 	            	 "inputParams": [{"name":"vcf-file", "dataType":"vcf"}, {"name":"ped-file", "dataType":"ped"}],
 	            	 "inputParamsFromTxt": [{"name":"vcf-file-txt", "dataType":"vcf"}, {"name":"ped-file-txt", "dataType":"ped"}],
 	            	 "outputParam": "outdir",
