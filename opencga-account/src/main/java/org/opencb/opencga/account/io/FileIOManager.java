@@ -461,9 +461,9 @@ public class FileIOManager implements IOManager {
 
 
     public String getFileTableFromJob(Path jobPath, String filename, String start, String limit, String colNames,
-                                      String colVisibility, String callback, String sort) throws IOManagementException, IOException {
+                                      String colVisibility, String sort) throws IOManagementException, IOException {
         Path jobFile = jobPath.resolve(filename);
-        return JobFileIOUtils.getSenchaTable(jobFile, filename, start, limit, colNames, colVisibility, callback, sort);
+        return JobFileIOUtils.getSenchaTable(jobFile, filename, start, limit, colNames, colVisibility, sort);
     }
 
     public DataInputStream getFileFromJob(Path jobPath, String filename, String zip) throws IOManagementException,

@@ -640,7 +640,7 @@ public class CloudSessionManager {
     }
 
     public String getFileTableFromJob(String accountId, String jobId, String filename, String start, String limit,
-                                      String colNames, String colVisibility, String callback, String sort, String sessionId)
+                                      String colNames, String colVisibility, String sort, String sessionId)
             throws IOManagementException, IOException, AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(jobId, "jobId");
@@ -648,7 +648,7 @@ public class CloudSessionManager {
 
         Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 
-        return ioManager.getFileTableFromJob(jobPath, filename, start, limit, colNames, colVisibility, callback, sort);
+        return ioManager.getFileTableFromJob(jobPath, filename, start, limit, colNames, colVisibility, sort);
     }
 
     public DataInputStream getFileFromJob(String accountId, String jobId, String filename, String zip, String sessionId)
