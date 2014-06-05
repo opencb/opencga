@@ -148,6 +148,13 @@ public class CloudSessionManager {
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
+
+        try {
+            ioManager.createAccount(accountId);
+        } catch (IOManagementException e) {
+            ;
+        }
+
         return accountManager.login(accountId, password, session);
     }
 

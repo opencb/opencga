@@ -131,18 +131,6 @@ public class FileIOManager implements IOManager {
                 createProject(accountId, "default");
                 Files.createDirectory(Paths.get(accountHomePath, accountId, FileIOManager.ANALYSIS_FOLDER));
             } catch (IOException e) {
-                try {
-                    System.out.println("******************************************");
-                    System.out.println("******************************************");
-                    System.out.println("createAccount DELETING DIRECTORY");
-                    System.out.println("******************************************");
-                    System.out.println("******************************************");
-                    IOUtils.deleteDirectory(accountPath);
-                } catch (IOException e1) {
-//                    System.out.println("TEST ERROR IOException:  "+ e1.toString());
-                    throw new IOManagementException("IOException: " + e1.toString());
-                }
-//                System.out.println("TEST ERROR IOException:  "+ e.toString());
                 throw new IOManagementException("IOException: " + e.toString());
             }
 
