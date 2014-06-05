@@ -5,7 +5,6 @@ import com.google.common.base.Joiner;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
@@ -26,7 +25,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 @Path("/account/{accountId}/analysis/job/{jobId}")
 public class JobAnalysisWSServer extends GenericWSServer {
@@ -259,6 +261,12 @@ public class JobAnalysisWSServer extends GenericWSServer {
         return createOkResponse(res);
     }
 
+    @OPTIONS
+    @Path("/variantsMongo")
+    public Response getVariantsMongoOptions() {
+        return createOkResponse("");
+    }
+
     //    @Consumes("application/x-www-form-urlencoded")
     @GET
     @Path("/variantsMongo")
@@ -271,7 +279,6 @@ public class JobAnalysisWSServer extends GenericWSServer {
         for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
             map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
         }
-
 
         int page = (info.getQueryParameters().containsKey("page")) ? Integer.parseInt(info.getQueryParameters().getFirst("page")) : 1;
         int start = (info.getQueryParameters().containsKey("start")) ? Integer.parseInt(info.getQueryParameters().getFirst("start")) : 0;
@@ -305,6 +312,12 @@ public class JobAnalysisWSServer extends GenericWSServer {
             e.printStackTrace();
         }
         return createOkResponse(queryResult);
+    }
+
+    @POST
+    @Path("/variantsMongo")
+    public Response getVariantsMongoPOST() {
+        return getVariantsMongo();
     }
 
     @POST
