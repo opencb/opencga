@@ -113,11 +113,10 @@ public class CloudSessionManager {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
-        ioManager.createAccount(accountId);
-
         try {
+            ioManager.createAccount(accountId);
             return accountManager.createAccount(accountId, password, name, "user", email, session);
-        } catch (AccountManagementException e) {
+        } catch (IOManagementException | AccountManagementException e) {
             ioManager.deleteAccount(accountId);
             throw e;
         }
@@ -675,7 +674,7 @@ public class CloudSessionManager {
 
         Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 
-        return ioManager.getGrepFileFromJob(jobPath, filename,  pattern, ignoreCase, multi);
+        return ioManager.getGrepFileFromJob(jobPath, filename, pattern, ignoreCase, multi);
     }
 
     public InputStream getJobZipped(String accountId, String jobId, String sessionId) throws IOManagementException,
