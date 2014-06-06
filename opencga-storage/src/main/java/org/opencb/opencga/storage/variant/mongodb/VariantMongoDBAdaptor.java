@@ -181,6 +181,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (options.containsKey("effect")) {
                 getEffectFilter(options.getListAs("effect", String.class), builder);
             }
+            
+            if (options.containsKey("studies")) {
+                getStudyFilter(options.getListAs("studies", String.class), builder);
+            }
         }
         
         return builder;
@@ -207,6 +211,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     private QueryBuilder getEffectFilter(List<String> effects, QueryBuilder builder) {
         return builder.and("effects.so").in(effects);
+    }
+    
+    private QueryBuilder getStudyFilter(List<String> studies, QueryBuilder builder) {
+        return builder.and("files.studyId").in(studies);
     }
     
     private List<String> getChunkIds(Region region) {
