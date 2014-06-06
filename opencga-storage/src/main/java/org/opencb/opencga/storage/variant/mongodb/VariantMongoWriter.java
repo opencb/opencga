@@ -317,6 +317,9 @@ public class VariantMongoWriter extends VariantDBWriter {
         variantsCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "studyAndFile");
         variantsCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
         variantsCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
+        variantsCollection.ensureIndex(new BasicDBObject("_at.ct", 1));
+        variantsCollection.ensureIndex(new BasicDBObject("id", 1));
+        variantsCollection.ensureIndex(new BasicDBObject("chr", 1));
         return true;
     }
 
