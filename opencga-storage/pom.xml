@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.2.0</version>
+        <version>0.3.0</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -19,6 +19,14 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-lib</artifactId>
+        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.datastore</groupId>-->
+            <!--<artifactId>datastore-core</artifactId>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-mongodb</artifactId>
         </dependency>
 
         <dependency>
@@ -62,7 +70,6 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>2.4.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -79,11 +86,15 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>2.4.1</version>
+            <version>2.7</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.variant</groupId>
             <artifactId>variant-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>formats</artifactId>
         </dependency>
     </dependencies>
 
@@ -93,6 +104,29 @@
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
+        
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                        <excludes>
+                            <exclude>**/VariantSqliteWriter.java</exclude>
+                            <exclude>**/VariantSqliteDBAdaptor.java</exclude>
+                            <!--<exclude>**/VariantHbaseWriter.java</exclude>-->
+                            <exclude>**/VariantHbaseDBAdaptor.java</exclude>
+                        </excludes>
+                        <testExcludes>
+                            <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
+                            <exclude>**/VariantHbaseWriterTest.java</exclude>
+                            <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
+                        </testExcludes>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

@@ -38,6 +38,9 @@ local.properties
 .settings/
 .loadpath
 
+# NetBeans
+nb*.xml
+
 # External tool builders
 .externalToolBuilders/
 
