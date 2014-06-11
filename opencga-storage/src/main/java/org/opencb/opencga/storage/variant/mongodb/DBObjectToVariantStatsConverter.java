@@ -1,9 +1,8 @@
 package org.opencb.opencga.storage.variant.mongodb;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import java.util.Iterator;
+import java.util.Map;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -36,13 +35,9 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<DBO
         stats.setMissingGenotypes((int) object.get("missGenotypes"));
         stats.setMendelianErrors((int) object.get("mendelErr"));
         
-//        for (Map.Entry<Genotype, Integer> g : stats.getGenotypesCount().entrySet()) {
-//            genotypes.append(g.getKey().toString(), g.getValue());
-//        }
-        
         BasicDBObject genotypes = (BasicDBObject) object.get("genotypeCount");
-        for (Object o : genotypes.entrySet()) {
-            BasicDBObject gtCount = (BasicDBObject) o;
+        for (Map.Entry<String, Object> o : genotypes.entrySet()) {
+            stats.addGenotype(new Genotype(o.getKey()), (int) o.getValue());
         }
         
         return stats;
