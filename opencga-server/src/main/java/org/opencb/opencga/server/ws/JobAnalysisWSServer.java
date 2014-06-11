@@ -1,21 +1,8 @@
 package org.opencb.opencga.server.ws;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Joiner;
-import org.apache.commons.lang.mutable.MutableInt;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.account.beans.Job;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.VariantMongoQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -23,9 +10,6 @@ import javax.ws.rs.core.*;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.UnknownHostException;
-import java.nio.file.Paths;
-import java.util.*;
 
 @Path("/account/{accountId}/analysis/job/{jobId}")
 public class JobAnalysisWSServer extends GenericWSServer {
@@ -56,24 +40,54 @@ public class JobAnalysisWSServer extends GenericWSServer {
         }
     }
 
+
+    @OPTIONS
+    @Path("/table")
+    public Response tableGet() {
+        return createOkResponse("");
+    }
+
+
+    @POST
+    @Consumes("application/x-www-form-urlencoded")
+    @Path("/table")
+    public Response tablePost(@DefaultValue("") @QueryParam("filename") String filename,
+                              @DefaultValue("") @FormParam("page") String page,
+                              @DefaultValue("") @FormParam("limit") String limit,
+                              @DefaultValue("") @FormParam("colNames") String colNames,
+                              @DefaultValue("") @FormParam("colVisibility") String colVisibility,
+                              @DefaultValue("false") @QueryParam("sort") String sort) {
+
+        return table(filename, page, limit, colNames, colVisibility, sort);
+    }
+
+
     @GET
     @Path("/table")
-    public Response table(@DefaultValue("") @QueryParam("filename") String filename,
-                          @DefaultValue("") @QueryParam("start") String start, @DefaultValue("") @QueryParam("limit") String limit,
-                          @DefaultValue("") @QueryParam("colNames") String colNames,
-                          @DefaultValue("") @QueryParam("colVisibility") String colVisibility,
-                          @DefaultValue("") @QueryParam("callback") String callback,
-                          @QueryParam("sort") @DefaultValue("false") String sort) {
+    public Response tableGet(@DefaultValue("") @QueryParam("filename") String filename,
+                             @DefaultValue("") @QueryParam("page") String page,
+                             @DefaultValue("") @QueryParam("limit") String limit,
+                             @DefaultValue("") @QueryParam("colNames") String colNames,
+                             @DefaultValue("") @QueryParam("colVisibility") String colVisibility,
+                             @DefaultValue("false") @QueryParam("sort") String sort) {
 
+        return table(filename, page, limit, colNames, colVisibility, sort);
+    }
+
+    private Response table(String filename, String page, String limit, String colNames, String colVisibility, String sort) {
         try {
-            String res = cloudSessionManager.getFileTableFromJob(accountId, jobId, filename, start, limit, colNames,
-                    colVisibility, callback, sort, sessionId);
+            int start = (Integer.parseInt(page) - 1) * Integer.parseInt(limit);
+
+            String res = cloudSessionManager.getFileTableFromJob(accountId, jobId, filename, String.valueOf(start), limit, colNames,
+                    colVisibility, sort, sessionId);
             return createOkResponse(res, MediaType.valueOf("text/javascript"));
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error(e.toString());
             return createErrorResponse(e.getMessage());
         }
     }
+
 
     @GET
     @Path("/poll")
@@ -94,6 +108,25 @@ public class JobAnalysisWSServer extends GenericWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
+    @GET
+    @Path("/grep")
+    public Response grepJobFile(
+
+            @DefaultValue(".*") @QueryParam("pattern") String pattern,
+            @DefaultValue("false") @QueryParam("ignoreCase") boolean ignoreCase,
+            @DefaultValue("true") @QueryParam("multi") boolean multi,
+            @DefaultValue("") @QueryParam("filename") String filename) {
+
+        try {
+            DataInputStream is = cloudSessionManager.getGrepFileFromJob(accountId, jobId, filename, pattern, ignoreCase, multi, sessionId);
+            return createOkResponse(is, MediaType.APPLICATION_OCTET_STREAM_TYPE, filename);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
 
     @GET
     @Path("/status")
@@ -132,6 +165,19 @@ public class JobAnalysisWSServer extends GenericWSServer {
     }
 
     @GET
+    @Path("/info")
+    public Response increaseJobVisites() {
+        try {
+            Job job = cloudSessionManager.getJob(accountId, jobId, sessionId);
+            cloudSessionManager.incJobVisites(accountId, jobId, sessionId);
+            return createOkResponse(job);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            return createErrorResponse("can not get increase job visites.");
+        }
+    }
+
+    @GET
     @Path("/result.js")
     public Response getResult() {
         try {
@@ -161,7 +207,7 @@ public class JobAnalysisWSServer extends GenericWSServer {
             return createErrorResponse("can not get result json.");
         }
     }
-
+/*
     // TODO Find place for this webservices
     //VARIANT EXPLORER WS
     @POST
@@ -196,6 +242,12 @@ public class JobAnalysisWSServer extends GenericWSServer {
         return createOkResponse(res);
     }
 
+    @OPTIONS
+    @Path("/variantsMongo")
+    public Response getVariantsMongoOptions() {
+        return createOkResponse("");
+    }
+
     //    @Consumes("application/x-www-form-urlencoded")
     @GET
     @Path("/variantsMongo")
@@ -208,7 +260,6 @@ public class JobAnalysisWSServer extends GenericWSServer {
         for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
             map.put(entry.getKey(), Joiner.on(",").join(entry.getValue()));
         }
-
 
         int page = (info.getQueryParameters().containsKey("page")) ? Integer.parseInt(info.getQueryParameters().getFirst("page")) : 1;
         int start = (info.getQueryParameters().containsKey("start")) ? Integer.parseInt(info.getQueryParameters().getFirst("start")) : 0;
@@ -242,6 +293,12 @@ public class JobAnalysisWSServer extends GenericWSServer {
             e.printStackTrace();
         }
         return createOkResponse(queryResult);
+    }
+
+    @POST
+    @Path("/variantsMongo")
+    public Response getVariantsMongoPOST() {
+        return getVariantsMongo();
     }
 
     @POST
@@ -367,5 +424,5 @@ public class JobAnalysisWSServer extends GenericWSServer {
         }
         return createOkResponse(res);
     }
-
+*/
 }

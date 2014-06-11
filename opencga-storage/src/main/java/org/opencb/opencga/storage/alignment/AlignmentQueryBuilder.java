@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.alignment;
 
-import org.opencb.commons.bioformats.feature.Region;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 

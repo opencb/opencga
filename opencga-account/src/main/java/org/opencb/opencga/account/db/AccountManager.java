@@ -16,7 +16,11 @@ public interface AccountManager {
      * Account methods ···
      * ***************************
      */
+    boolean checkAccountCredentials(String accountId, String sessionId);
+
     org.opencb.commons.containers.QueryResult<ObjectMap> createAccount(String accountId, String password, String accountName, String role, String email, Session session) throws AccountManagementException, JsonProcessingException;
+
+    org.opencb.commons.containers.QueryResult<ObjectMap> deleteAccount(String accountId) throws AccountManagementException, JsonProcessingException;
 
     org.opencb.commons.containers.QueryResult<ObjectMap> createAnonymousAccount(String accountId, String password, Session session) throws AccountManagementException, IOException;
 

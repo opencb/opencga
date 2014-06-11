@@ -113,8 +113,54 @@ var RESULT = {
         "layout": {
             "title": "Job results",
             "children": function () {
+                var stats_samples_table = {
+                    name: "Stats Samples Table",
+                    colNames: ["Sample", "MissGT", "Mendel.Err."],
+                    colTypes: ["string", "int", "int"],
+                    colVisibility: [1, 1, 1],
+                    colOrder: [0, 1, 2]
+                };
 
                 var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                    if (outItem.indexOf('.stats-samples', outItem.length - '.stats-samples'.length) !== -1) {
+                        summaryChildren.push(
+                            {
+                            "title": "Stats Samples",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'grid', tableLayout:stats_samples_table}
+                            ]
+                        });
+
+                    }else if (outItem.indexOf('.stats-summary', outItem.length - '.stats-summary'.length) !== -1) {
+                        summaryChildren.push(
+                            {
+                            "title": "Stats Summary",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'table'}
+                            ]
+                        });
+
+                    }else if (outItem.indexOf('.stats-variants', outItem.length - '.stats-variants'.length) !== -1) {
+                        summaryChildren.push(
+                            {
+                            "title": "Stats Variants",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'}
+                            ]
+                        });
+                    }
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
                 children.push({title: 'Variant Stats Widget', children: [
                     {
                         "title": 'Variant Stats Widget',
@@ -123,6 +169,161 @@ var RESULT = {
                         ]
                     }
                 ]});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.vcf-merge": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                        summaryChildren.push(
+                            {
+                            "title": "Merge",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.vcf-split": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                        summaryChildren.push(
+                            {
+                            "title": "Split",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.vcf-annot": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                        summaryChildren.push(
+                            {
+                            "title": "Annot",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.vcf-filter": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                        summaryChildren.push(
+                            {
+                            "title": "Filter",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
+                return children;
+            },
+            "sortOutputItems": function (a, b) {
+            }
+        }
+    },
+    "hpg-variant.gwas": {
+        "layout": {
+            "title": "Job results",
+            "children": function () {
+
+
+
+                var children = [];
+                /*  SUMMARY */
+                var summaryChildren = [];
+                for (var i = 0, leni = this.outputItems.length; i < leni; i++) {
+                    var outItem = this.outputItems[i];
+                    summaryChildren.push(
+                        {
+                            "title": "Filter",
+                            "file": outItem,
+                            "renderers": [
+                                {type: 'file'},
+                                {type: 'vcf-grid'}
+                            ]
+                        });
+
+                }
+
+                children.push({title: 'Summary', children: summaryChildren});
                 return children;
             },
             "sortOutputItems": function (a, b) {

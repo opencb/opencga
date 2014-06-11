@@ -1,8 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
+import org.opencb.opencga.storage.variant.sqlite.VariantSqliteDBAdaptor;
 import org.junit.*;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.VariantSource;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -13,6 +12,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.VariantSource;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -68,9 +69,9 @@ public class VariantSqliteQueryBuilderTest extends GenericTest {
         qo.put("effect", false);
 
         SqliteCredentials sc = new SqliteCredentials(Paths.get(outputFile));
-        VariantQueryBuilder vqb = new VariantSqliteQueryBuilder(sc);
+        VariantDBAdaptor vqb = new VariantSqliteDBAdaptor(sc);
 
-        QueryResult qr = vqb.getAllVariantsByRegion(r, "", qo);
+        QueryResult qr = vqb.getAllVariantsByRegionAndStudy(r, "", qo);
         System.out.println(qr);
 
 
