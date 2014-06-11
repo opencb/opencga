@@ -26,17 +26,13 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.opencb.biodata.models.feature.Region;
 
-import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantMonbaseQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantQueryBuilder;
-import org.opencb.opencga.storage.variant.VariantSqliteQueryBuilder;
 
 public class CloudSessionManager {
 
@@ -112,11 +108,10 @@ public class CloudSessionManager {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
-        ioManager.createAccount(accountId);
-
         try {
+            ioManager.createAccount(accountId);
             return accountManager.createAccount(accountId, password, name, "user", email, session);
-        } catch (AccountManagementException e) {
+        } catch (IOManagementException | AccountManagementException e) {
             ioManager.deleteAccount(accountId);
             throw e;
         }
@@ -126,11 +121,15 @@ public class CloudSessionManager {
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
-        String password = StringUtils.randomString(10);
+        String password = StringUtils.randomString(53);
         String accountId = "anonymous_" + password;
 
+
+        ioManager.deleteAccount(accountId);
         ioManager.createAccount(accountId);
+
         try {
+            accountManager.deleteAccount(accountId);
             return accountManager.createAnonymousAccount(accountId, password, session);
         } catch (AccountManagementException e) {
             ioManager.deleteAccount(accountId);
@@ -144,6 +143,13 @@ public class CloudSessionManager {
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
+
+        try {
+            ioManager.createAccount(accountId);
+        } catch (IOManagementException e) {
+            ;
+        }
+
         return accountManager.login(accountId, password, session);
     }
 
@@ -243,7 +249,7 @@ public class CloudSessionManager {
 
 
     public QueryResult createObjectToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                                       InputStream fileIs, boolean parents, String sessionId) throws AccountManagementException,
+                                            InputStream fileIs, boolean parents, String sessionId) throws AccountManagementException,
             IOManagementException, IOException, InterruptedException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
@@ -284,7 +290,7 @@ public class CloudSessionManager {
     }
 
     public QueryResult createFolderToBucket(String accountId, String bucketId, Path objectId, ObjectItem objectItem,
-                                                       boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
+                                            boolean parents, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
         checkParameter(bucketId, "bucket");
         checkParameter(accountId, "accountId");
         checkParameter(sessionId, "sessionId");
@@ -405,6 +411,30 @@ public class CloudSessionManager {
         return accountManager.deleteObjectFromBucket(accountId, bucketId, objectId, sessionId);
     }
 
+    public DataInputStream getFileObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId, String start, String limit)
+            throws IOManagementException, IOException, AccountManagementException {
+        checkParameter(bucketId, "bucket");
+        checkParameter(accountId, "accountId");
+        checkParameter(sessionId, "sessionId");
+        checkParameter(objectId.toString(), "objectId");
+        checkParameter(start, "start");
+        checkParameter(limit, "limit");
+
+        return ioManager.getFileObject(accountId, bucketId, objectId, start, limit);
+    }
+
+    public DataInputStream getGrepFileObjectFromBucket(String accountId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
+            throws IOManagementException, IOException, AccountManagementException {
+        checkParameter(bucketId, "bucket");
+        checkParameter(accountId, "accountId");
+        checkParameter(sessionId, "sessionId");
+        checkParameter(objectId.toString(), "objectId");
+        checkParameter(pattern, "pattern");
+
+        return ioManager.getGrepFileObject(accountId, bucketId, objectId, pattern, ignoreCase, multi);
+    }
+
+
     //TODO
     public void shareObject(String accountId, String bucketId, Path objectId, String toAccountId, boolean read,
                             boolean write, boolean execute, String sessionId) throws AccountManagementException {
@@ -464,12 +494,16 @@ public class CloudSessionManager {
         return queryResult;
     }
 
+    
+    public String fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
+        VcfManager vcfManager = new VcfManager();
+        return vcfManager.getByRegion(objectPath, regionStr, params);
+    }
+  
+/*    
     public QueryResult fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-//        VcfManager vcfManager = new VcfManager();
-////        result = vcfManager.getByRegion(fullFilePath, regionStr, params);
-//        return vcfManager.queryRegion(objectId, regionStr, params);
         String species = params.containsKey("species") ? params.get("species").get(0) : "hsapiens";
-        VariantQueryBuilder queryBuilder =
+        VariantDBAdaptor queryBuilder = null;
                 //new VariantMonbaseQueryBuilder(species, 
                 //new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, "variants_" + species, "cgonzalez", "cgonzalez"));
                 new VariantSqliteQueryBuilder(new SqliteCredentials(objectPath));
@@ -503,7 +537,7 @@ public class CloudSessionManager {
 
         return queryResult;
     }
-
+*/
 
     public String indexFileObject(String accountId, String bucketId, Path objectId, boolean force, String sessionId) throws Exception {
         ObjectItem objectItem = accountManager.getObjectFromBucket(accountId, bucketId, objectId, sessionId);
@@ -611,7 +645,7 @@ public class CloudSessionManager {
     }
 
     public String getFileTableFromJob(String accountId, String jobId, String filename, String start, String limit,
-                                      String colNames, String colVisibility, String callback, String sort, String sessionId)
+                                      String colNames, String colVisibility, String sort, String sessionId)
             throws IOManagementException, IOException, AccountManagementException {
         checkParameter(accountId, "accountId");
         checkParameter(jobId, "jobId");
@@ -619,7 +653,7 @@ public class CloudSessionManager {
 
         Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 
-        return ioManager.getFileTableFromJob(jobPath, filename, start, limit, colNames, colVisibility, callback, sort);
+        return ioManager.getFileTableFromJob(jobPath, filename, start, limit, colNames, colVisibility, sort);
     }
 
     public DataInputStream getFileFromJob(String accountId, String jobId, String filename, String zip, String sessionId)
@@ -632,6 +666,21 @@ public class CloudSessionManager {
         Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 
         return ioManager.getFileFromJob(jobPath, filename, zip);
+    }
+
+
+    public DataInputStream getGrepFileFromJob(String accountId, String jobId, String filename, String pattern, boolean ignoreCase, boolean multi, String sessionId)
+            throws IOManagementException, IOException, AccountManagementException {
+        checkParameter(accountId, "accountId");
+        checkParameter(jobId, "jobId");
+        checkParameter(filename, "filename");
+        checkParameter(pattern, "pattern");
+        checkParameter(sessionId, "sessionId");
+
+
+        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+
+        return ioManager.getGrepFileFromJob(jobPath, filename, pattern, ignoreCase, multi);
     }
 
     public InputStream getJobZipped(String accountId, String jobId, String sessionId) throws IOManagementException,
@@ -648,7 +697,7 @@ public class CloudSessionManager {
     }
 
     public QueryResult createJob(String jobName, String projectId, String jobFolder, String toolName, List<String> dataList,
-                                            String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
+                                 String commandLine, String sessionId) throws AccountManagementException, IOManagementException, JsonProcessingException {
 
         checkParameter(jobName, "jobName");
         checkParameter(projectId, "projectId");
@@ -745,6 +794,5 @@ public class CloudSessionManager {
             throw new AccountManagementException("region '" + name + "' is not valid");
         }
     }
-
 
 }

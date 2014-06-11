@@ -446,6 +446,15 @@ var RESULT = {
                                 ]
                             };
                             break;
+                        case '.RData':
+                            item = {
+                                'title': 'SVM Best model',
+                                'file': outItem,
+                                "renderers": [
+                                    {type: 'file'}
+                                ]
+                            };
+                            break;
                         default :
                             item = {
                                 'title': '',

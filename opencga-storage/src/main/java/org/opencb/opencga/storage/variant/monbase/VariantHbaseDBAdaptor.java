@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.monbase;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;
@@ -8,13 +8,6 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.*;
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
@@ -24,14 +17,22 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.*;
-
-/**
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
+import org.opencb.commons.bioformats.variant.json.VariantInfo;
+import org.opencb.opencga.storage.variant.VariantEffectProtos;
+import org.opencb.opencga.storage.variant.VariantFieldsProtos;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;/**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 
 
-public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
+public class VariantHbaseDBAdaptor implements VariantDBAdaptor {
 
     private String tableName;
     private String effectTableName;
@@ -44,7 +45,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     public static final Charset CHARSET_UTF_8 = Charset.forName("UTF-8");
 
 
-    public VariantMonbaseQueryBuilder(String species, MonbaseCredentials credentials)
+    public VariantHbaseDBAdaptor(String species, MonbaseCredentials credentials)
             throws MasterNotRunningException, ZooKeeperConnectionException, UnknownHostException {
         this.monbaseCredentials = credentials;
         this.tableName = species;
@@ -64,7 +65,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
 
 
     @Override
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, String sourceId, QueryOptions options) {
+    public QueryResult<Variant> getAllVariantsByRegionAndStudy(Region region, String sourceId, QueryOptions options) {
         Long start, end, dbstart, dbend;
         start = System.currentTimeMillis();
         QueryResult<Variant> queryResult = new QueryResult<>(
@@ -107,7 +108,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                 String reference = protoInfo.getReference();
                 String alternate = StringUtils.join(protoInfo.getAlternateList(), ",");
                 String format = StringUtils.join(protoInfo.getFormatList(), ":");
-                Variant variant = new Variant(chromosome, position, reference, alternate);
+                Variant variant = new Variant(chromosome, position, position, reference, alternate);
 
                 // Set samples if requested
                 if (includeSamples) {
@@ -125,7 +126,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                         for (int i = 0; i < fields.length; i++) {
                             singleSampleMap.put(fields[i], values[i]);
                         }
-                        variant.addSampleData(sampleName, singleSampleMap);
+                        // TODO 
+//                        variant.addSampleData(sampleName, singleSampleMap);
                     }
                 }
 
@@ -170,7 +172,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
     public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, String sourceId, QueryOptions options) {
         List<QueryResult> allResults = new LinkedList<>();
         for (Region r : regions) {
-            QueryResult queryResult = getAllVariantsByRegion(r, sourceId, options);
+            QueryResult queryResult = getAllVariantsByRegionAndStudy(r, sourceId, options);
             allResults.add(queryResult);
         }
         return allResults;
@@ -292,7 +294,8 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
             String ref = (String) st.get("ref");
             String alt = StringUtils.join((ArrayList<String>) st.get("alt"), ",");
 
-            Variant variant = new Variant(chromosome, position, ref, alt);
+            // TODO Needs rework
+            Variant variant = new Variant(chromosome, position, position, ref, alt);
 
             // Set stats informations
             if (includeStats) {
@@ -514,7 +517,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                 VariantFieldsProtos.VariantInfo info = VariantFieldsProtos.VariantInfo.parseFrom(byteInfo);
                 String alternate = StringUtils.join(info.getAlternateList(), ", ");
                 String reference = info.getReference();
-                Variant partialResult = new Variant(chr, Integer.parseInt(inner_position), reference, alternate);
+                Variant partialResult = new Variant(chr, Integer.parseInt(inner_position), Integer.parseInt(inner_position), reference, alternate);
                 String format = StringUtils.join(info.getFormatList(), ":");
                 NavigableMap<byte[], byte[]> sampleMap = r.getFamilyMap("d".getBytes());
                 Map<String, Map<String, String>> resultSampleMap = new HashMap<>();
@@ -558,7 +561,7 @@ public class VariantMonbaseQueryBuilder implements VariantQueryBuilder {
                     VariantEffectProtos.EffectInfo effectInfo = VariantEffectProtos.EffectInfo.parseFrom(effectMap.get(s.getBytes()));
                     VariantEffect variantEffect = new VariantEffect(
                             partialResult.getChromosome(),
-                            (int) partialResult.getPosition(),
+                            (int) partialResult.getStart(),
                             partialResult.getReference(),
                             partialResult.getAlternate(),
                             effectInfo.getFeatureId(),

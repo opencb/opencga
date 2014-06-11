@@ -48,6 +48,7 @@ public class AccountWSServer extends GenericWSServer {
         try {
             QueryResult result;
             if (accountId.toLowerCase().equals("anonymous")) {
+                System.out.println("TEST ERROR accountId = " + accountId);
                 result = cloudSessionManager.createAnonymousAccount(sessionIp);
             } else {
                 result = cloudSessionManager.login(accountId, password, sessionIp);

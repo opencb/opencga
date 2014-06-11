@@ -213,7 +213,8 @@ public class AnalysisWSServer extends GenericWSServer {
 
         String jobFolder = null;
         if (params.containsKey("outdir")) {
-            jobFolder = "buckets:" + params.get("outdir").get(0);
+//            jobFolder = "buckets:" + params.get("outdir").get(0);
+            jobFolder = params.get("outdir").get(0);
             jobFolder = StringUtils.parseObjectId(jobFolder).toString();
             params.remove("outdir");
         }
@@ -275,9 +276,11 @@ public class AnalysisWSServer extends GenericWSServer {
             for (InputParam inputParam : execution.getInputParamsFromTxt()) {
                 java.nio.file.Path path = Paths.get(jobFolder, inputParam.getName());
                 List<String> paramInputName = params.get(inputParam.getName());
-                if (paramInputName.size() > 0) {
+                if (paramInputName != null && paramInputName.size() > 0) {
                     Files.write(path, paramInputName.get(0).getBytes());
                     paramInputName.set(0, path.toString());
+                    //the "-text" suffix param will be removed to replace the input parameter, so text content will be mandatory over bucket path parameter.
+                    params.put(inputParam.getName().replace("-text", ""), paramInputName);
                 }
             }
         }
