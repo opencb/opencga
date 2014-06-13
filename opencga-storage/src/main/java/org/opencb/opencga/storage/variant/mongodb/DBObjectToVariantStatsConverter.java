@@ -11,20 +11,11 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<DBObject, VariantStats> {
+public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<VariantStats, DBObject> {
 
     @Override
-    public VariantStats convert(DBObject object) {
-        /*
-        BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
-                mongoStats.append("mgf", vs.getMgf());
-                mongoStats.append("alleleMaf", vs.getMafAllele());
-                mongoStats.append("genotypeMaf", vs.getMgfGenotype());
-                mongoStats.append("missAllele", vs.getMissingAlleles());
-                mongoStats.append("missGenotypes", vs.getMissingGenotypes());
-                mongoStats.append("mendelErr", vs.getMendelianErrors());
-                mongoStats.append("genotypeCount", genotypes);
-        */
+    public VariantStats convertToDataModelType(DBObject object) {
+        // Basic fields
         VariantStats stats = new VariantStats();
         stats.setMaf(((Double) object.get("maf")).floatValue());
         stats.setMgf(((Double) object.get("mgf")).floatValue());
@@ -35,12 +26,33 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<DBO
         stats.setMissingGenotypes((int) object.get("missGenotypes"));
         stats.setMendelianErrors((int) object.get("mendelErr"));
         
+        // Genotype counts
         BasicDBObject genotypes = (BasicDBObject) object.get("genotypeCount");
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
             stats.addGenotype(new Genotype(o.getKey()), (int) o.getValue());
         }
         
         return stats;
+    }
+
+    @Override
+    public DBObject convertToStorageType(VariantStats vs) {
+        // Basic fields
+        BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
+        mongoStats.append("mgf", vs.getMgf());
+        mongoStats.append("alleleMaf", vs.getMafAllele());
+        mongoStats.append("genotypeMaf", vs.getMgfGenotype());
+        mongoStats.append("missAllele", vs.getMissingAlleles());
+        mongoStats.append("missGenotypes", vs.getMissingGenotypes());
+        mongoStats.append("mendelErr", vs.getMendelianErrors());
+        
+        // Genotype counts
+        BasicDBObject genotypes = new BasicDBObject();
+        for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
+            genotypes.append(g.getKey().toString(), g.getValue());
+        }
+        mongoStats.append("genotypeCount", genotypes);
+        return mongoStats;
     }
     
 }

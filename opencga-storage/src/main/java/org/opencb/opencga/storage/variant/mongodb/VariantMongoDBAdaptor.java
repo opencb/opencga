@@ -20,13 +20,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    
+    private final DBObjectToVariantConverter variantConverter;
 
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        variantConverter = new DBObjectToVariantConverter();
     }
 
     @Override
@@ -37,7 +38,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         getRegionFilter(region, qb);
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options);
+        return coll.find(qb.get(), options, variantConverter);
     }
 
     @Override
@@ -73,7 +74,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         QueryBuilder qb = QueryBuilder.start("_at.gn").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
-        return coll.find(qb.get(), options);
+        return coll.find(qb.get(), options, variantConverter);
     }
 
     @Override
@@ -140,7 +141,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         MongoDBCollection coll = db.getCollection("variants");
 
         BasicDBObject query = new BasicDBObject("id", id);
-        return coll.find(query, options);
+        return coll.find(query, options, variantConverter);
     }
 
     @Override

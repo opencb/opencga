@@ -35,8 +35,8 @@ public class VariantMongoWriter extends VariantDBWriter {
     private DBCollection filesCollection;
     private DBCollection variantsCollection;
     
-    private Map<String, BasicDBObject> mongoMap;
-    private Map<String, BasicDBObject> mongoFileMap;
+    private Map<String, DBObject> mongoMap;
+    private Map<String, DBObject> mongoFileMap;
 
     private MongoCredentials credentials;
 
@@ -46,6 +46,11 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     private List<String> samples;
     private Map<String, Integer> conseqTypes;
+    
+    private DBObjectToVariantConverter variantConverter;
+    private DBObjectToVariantStatsConverter statsConverter;
+    private DBObjectToVariantSourceConverter sourceConverter;
+    private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
     
     private long numVariantsWritten;
     
@@ -76,8 +81,15 @@ public class VariantMongoWriter extends VariantDBWriter {
         
         conseqTypes = new LinkedHashMap<>();
         samples = new ArrayList<>();
-        numVariantsWritten = 0;
         
+        sourceConverter = new DBObjectToVariantSourceConverter();
+        statsConverter = new DBObjectToVariantStatsConverter();
+        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+                this.includeSamples ? samples : null,
+                this.includeStats ? statsConverter : null);
+        variantConverter = new DBObjectToVariantConverter();
+        
+        numVariantsWritten = 0;
     }
 
     @Override
@@ -116,9 +128,9 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
-        if (this.includeStats) {
-            buildStatsRaw(data);
-        }
+//        if (this.includeStats) {
+//            buildStatsRaw(data);
+//        }
         if (this.includeEffect) {
             buildEffectRaw(data);
         }
@@ -130,60 +142,67 @@ public class VariantMongoWriter extends VariantDBWriter {
     protected boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
             // Check if this variant is already stored
-            String rowkey = buildRowkey(v);
-            BasicDBObject mongoVariant = new BasicDBObject("_id", rowkey);
+//            String rowkey = buildRowkey(v);
+            String rowkey = variantConverter.buildStorageId(v);
+            DBObject mongoVariant = new BasicDBObject("_id", rowkey);
 
             if (variantsCollection.count(mongoVariant) == 0) {
-                mongoVariant = getVariantDBObject(v, rowkey);
+//                mongoVariant = getVariantDBObject(v, rowkey);
+                mongoVariant = variantConverter.convertToStorageType(v);
             } /*else {
                 System.out.println("Variant " + v.getChromosome() + ":" + v.getStart() + "-" + v.getEnd() + " already found");
             }*/
             
             BasicDBList mongoFiles = new BasicDBList();
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                BasicDBObject mongoFile = new BasicDBObject("fileId", archiveFile.getFileId()).append("studyId", archiveFile.getStudyId());
-
-                // Attributes
-                if (archiveFile.getAttributes().size() > 0) {
-                    BasicDBObject attrs = null;
-                    for (Map.Entry<String, String> entry : archiveFile.getAttributes().entrySet()) {
-                        if (attrs == null) {
-                            attrs = new BasicDBObject(entry.getKey(), entry.getValue());
-                        } else {
-                            attrs.append(entry.getKey(), entry.getValue());
-                        }
-                    }
-
-                    if (attrs != null) {
-                        mongoFile.put("attributes", attrs);
-                    }
+                if (!archiveFile.getFileId().equals(file.getFileId())) {
+                    continue;
                 }
-
-                // Samples
-                if (this.includeSamples && archiveFile.getSamplesData().size() > 0 && archiveFile.getFileId().equals(file.getFileId())) {
-                    mongoFile.append("format", archiveFile.getFormat()); // Useless field if genotypeCodes are not stored
-                    
+                
+                if (this.includeSamples && samples.isEmpty() && archiveFile.getSamplesData().size() > 0) {
                     // First time a variant is loaded, the list of samples is populated. 
                     // This guarantees that samples are loaded only once to keep order among variants
-                    if (samples.isEmpty()) {
-                        samples.addAll(archiveFile.getSampleNames());
-                    }
-                    
-                    BasicDBList genotypeCodes = new BasicDBList();
-                    for (String sampleName : samples) {
-                        String genotype = archiveFile.getSampleData(sampleName, "GT");
-                        if (genotype != null) {
-                            genotypeCodes.add(new Genotype(genotype).encode());
-                        }
-                    }
-                    mongoFile.put("samples", genotypeCodes);
+                    samples.addAll(archiveFile.getSampleNames());
                 }
+                
+                DBObject mongoFile = archivedVariantFileConverter.convertToStorageType(archiveFile);
+//                BasicDBObject mongoFile = new BasicDBObject("fileId", archiveFile.getFileId()).append("studyId", archiveFile.getStudyId());
+//
+//                // Attributes
+//                if (archiveFile.getAttributes().size() > 0) {
+//                    BasicDBObject attrs = null;
+//                    for (Map.Entry<String, String> entry : archiveFile.getAttributes().entrySet()) {
+//                        if (attrs == null) {
+//                            attrs = new BasicDBObject(entry.getKey(), entry.getValue());
+//                        } else {
+//                            attrs.append(entry.getKey(), entry.getValue());
+//                        }
+//                    }
+//
+//                    if (attrs != null) {
+//                        mongoFile.put("attributes", attrs);
+//                    }
+//                }
+//
+//                // Samples
+//                if (this.includeSamples && archiveFile.getSamplesData().size() > 0) {
+//                    mongoFile.append("format", archiveFile.getFormat()); // Useless field if genotypeCodes are not stored
+//                    
+//                    BasicDBList genotypeCodes = new BasicDBList();
+//                    for (String sampleName : samples) {
+//                        String genotype = archiveFile.getSampleData(sampleName, "GT");
+//                        if (genotype != null) {
+//                            genotypeCodes.add(new Genotype(genotype).encode());
+//                        }
+//                    }
+//                    mongoFile.put("samples", genotypeCodes);
+//                }
 
                 mongoFiles.add(mongoFile);
                 mongoFileMap.put(rowkey + "_" + archiveFile.getFileId(), mongoFile);
             }
             
-            mongoVariant.append("files", mongoFiles);
+            mongoVariant.put("files", mongoFiles);
             mongoMap.put(rowkey, mongoVariant);
         }
 
@@ -223,32 +242,38 @@ public class VariantMongoWriter extends VariantDBWriter {
         for (Variant v : data) {
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
                 VariantStats vs = archiveFile.getStats();
-                if (vs == null) {
-                    continue;
+                if (vs != null) {
+//                    BasicDBObject mongoFile = mongoFileMap.get(buildRowkey(v) + "_" + archiveFile.getFileId());
+                    DBObject mongoFile = mongoFileMap.get(variantConverter.buildStorageId(v) + "_" + archiveFile.getFileId());
+                    mongoFile.put("stats", statsConverter.convertToStorageType(vs));
                 }
-
-                // Generate genotype counts
-                BasicDBObject genotypes = new BasicDBObject();
-
-                for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
-                    genotypes.append(g.getKey().toString(), g.getValue());
-                }
-
-                BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
-                mongoStats.append("mgf", vs.getMgf());
-                mongoStats.append("alleleMaf", vs.getMafAllele());
-                mongoStats.append("genotypeMaf", vs.getMgfGenotype());
-                mongoStats.append("missAllele", vs.getMissingAlleles());
-                mongoStats.append("missGenotypes", vs.getMissingGenotypes());
-                mongoStats.append("mendelErr", vs.getMendelianErrors());
-//                mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
-//                mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
-//                mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
-//                mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
-                mongoStats.append("genotypeCount", genotypes);
-
-                BasicDBObject mongoFile = mongoFileMap.get(buildRowkey(v) + "_" + archiveFile.getFileId());
-                mongoFile.put("stats", mongoStats);
+                
+//                if (vs == null) {
+//                    continue;
+//                }
+//
+//                // Generate genotype counts
+//                BasicDBObject genotypes = new BasicDBObject();
+//
+//                for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
+//                    genotypes.append(g.getKey().toString(), g.getValue());
+//                }
+//
+//                BasicDBObject mongoStats = new BasicDBObject("maf", vs.getMaf());
+//                mongoStats.append("mgf", vs.getMgf());
+//                mongoStats.append("alleleMaf", vs.getMafAllele());
+//                mongoStats.append("genotypeMaf", vs.getMgfGenotype());
+//                mongoStats.append("missAllele", vs.getMissingAlleles());
+//                mongoStats.append("missGenotypes", vs.getMissingGenotypes());
+//                mongoStats.append("mendelErr", vs.getMendelianErrors());
+////                mongoStats.append("casesPercentDominant", vs.getCasesPercentDominant());
+////                mongoStats.append("controlsPercentDominant", vs.getControlsPercentDominant());
+////                mongoStats.append("casesPercentRecessive", vs.getCasesPercentRecessive());
+////                mongoStats.append("controlsPercentRecessive", vs.getControlsPercentRecessive());
+//                mongoStats.append("genotypeCount", genotypes);
+//
+//                BasicDBObject mongoFile = mongoFileMap.get(buildStorageId(v) + "_" + archiveFile.getFileId());
+//                mongoFile.put("stats", mongStats);
             }
         }
 
@@ -258,7 +283,8 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     protected boolean buildEffectRaw(List<Variant> variants) {
         for (Variant v : variants) {
-            BasicDBObject mongoVariant = mongoMap.get(buildRowkey(v));
+//            BasicDBObject mongoVariant = mongoMap.get(buildRowkey(v));
+            DBObject mongoVariant = mongoMap.get(variantConverter.buildStorageId(v));
 
             if (!mongoVariant.containsField("chr")) {
                 // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
@@ -326,9 +352,10 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     protected boolean writeBatch(List<Variant> batch) {
         for (Variant v : batch) {
-            String rowkey = buildRowkey(v);
-            BasicDBObject mongoVariant = mongoMap.get(rowkey);
-            BasicDBObject query = new BasicDBObject("_id", rowkey);
+//            String rowkey = buildRowkey(v);
+            String rowkey = variantConverter.buildStorageId(v);
+            DBObject mongoVariant = mongoMap.get(rowkey);
+            DBObject query = new BasicDBObject("_id", rowkey);
             WriteResult wr;
             
             if (mongoVariant.containsField("chr")) {
@@ -350,7 +377,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
                 for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                    BasicDBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
+                    DBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
 //                    BasicDBObject changes = new BasicDBObject().append("$push", new BasicDBObject("files", mongoFile));
                     BasicDBObject changes = new BasicDBObject().append("$addToSet", new BasicDBObject("files", mongoFile));
                     
@@ -376,49 +403,50 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private boolean writeSourceSummary(VariantSource source) {
-        BasicDBObject studyMongo = new BasicDBObject("fileName", source.getFileName())
-                .append("fileId", source.getFileId())
-                .append("studyName", source.getStudyName())
-                .append("studyId", source.getStudyId())
-                .append("date", Calendar.getInstance().getTime())
-                .append("samples", source.getSamplesPosition());
+        DBObject studyMongo = sourceConverter.convertToStorageType(source);
+//        BasicDBObject studyMongo = new BasicDBObject("fileName", source.getFileName())
+//                .append("fileId", source.getFileId())
+//                .append("studyName", source.getStudyName())
+//                .append("studyId", source.getStudyId())
+//                .append("date", Calendar.getInstance().getTime())
+//                .append("samples", source.getSamplesPosition());
+//
+//        BasicDBObject cts = new BasicDBObject();
+//
+//        for (Map.Entry<String, Integer> entry : conseqTypes.entrySet()) {
+//            cts.append(entry.getKey(), entry.getValue());
+//        }
+//
+//        VariantGlobalStats global = source.getStats();
+//        if (global != null) {
+//            DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
+//                    .append("variantsCount", global.getVariantsCount())
+//                    .append("snpCount", global.getSnpsCount())
+//                    .append("indelCount", global.getIndelsCount())
+//                    .append("passCount", global.getPassCount())
+//                    .append("transitionsCount", global.getTransitionsCount())
+//                    .append("transversionsCount", global.getTransversionsCount())
+////                    .append("biallelicsCount", global.getBiallelicsCount())
+////                    .append("multiallelicsCount", global.getMultiallelicsCount())
+//                    .append("accumulatedQuality", global.getAccumulatedQuality())
+//                    .append("meanQuality", (float) global.getAccumulatedQuality() / global.getVariantsCount())
+//                    .append("consequenceTypes", cts);
+//
+//            studyMongo = studyMongo.append("globalStats", globalStats);
+//        } else {
+//            // TODO Notify?
+//            studyMongo.append("globalStats", new BasicDBObject("consequenceTypes", cts));
+//
+//        }
+//
+//        // TODO Save pedigree information
+//        Map<String, String> meta = source.getMetadata();
+//        DBObject metadataMongo = new BasicDBObjectBuilder()
+//                .add("header", meta.get("variantFileHeader"))
+//                .get();
+//        studyMongo = studyMongo.append("metadata", metadataMongo);
 
-        BasicDBObject cts = new BasicDBObject();
-
-        for (Map.Entry<String, Integer> entry : conseqTypes.entrySet()) {
-            cts.append(entry.getKey(), entry.getValue());
-        }
-
-        VariantGlobalStats global = source.getStats();
-        if (global != null) {
-            DBObject globalStats = new BasicDBObject("samplesCount", global.getSamplesCount())
-                    .append("variantsCount", global.getVariantsCount())
-                    .append("snpCount", global.getSnpsCount())
-                    .append("indelCount", global.getIndelsCount())
-                    .append("passCount", global.getPassCount())
-                    .append("transitionsCount", global.getTransitionsCount())
-                    .append("transversionsCount", global.getTransversionsCount())
-//                    .append("biallelicsCount", global.getBiallelicsCount())
-//                    .append("multiallelicsCount", global.getMultiallelicsCount())
-                    .append("accumulatedQuality", global.getAccumulatedQuality())
-                    .append("meanQuality", (float) global.getAccumulatedQuality() / global.getVariantsCount())
-                    .append("consequenceTypes", cts);
-
-            studyMongo = studyMongo.append("globalStats", globalStats);
-        } else {
-            // TODO Notify?
-            studyMongo.append("globalStats", new BasicDBObject("consequenceTypes", cts));
-
-        }
-
-        // TODO Save pedigree information
-        Map<String, String> meta = source.getMetadata();
-        DBObject metadataMongo = new BasicDBObjectBuilder()
-                .add("header", meta.get("variantFileHeader"))
-                .get();
-        studyMongo = studyMongo.append("metadata", metadataMongo);
-
-        DBObject query = new BasicDBObject("name", source.getFileName());
+        DBObject query = new BasicDBObject("fileName", source.getFileName());
         WriteResult wr = filesCollection.update(query, studyMongo, true, false);
 
         return wr.getLastError().ok(); // TODO Is this a proper return statement?
@@ -441,27 +469,27 @@ public class VariantMongoWriter extends VariantDBWriter {
         conseqTypes.put(ct, ctCount);
     }
 
-    private String buildRowkey(Variant v) {
-        StringBuilder builder = new StringBuilder(v.getChromosome());
-        builder.append("_");
-        builder.append(v.getStart());
-        builder.append("_");
-        if (v.getReference().length() < Variant.SV_THRESHOLD) {
-            builder.append(v.getReference());
-        } else {
-            builder.append(new String(CryptoUtils.encryptSha1(v.getReference())));
-        }
-        
-        builder.append("_");
-        
-        if (v.getAlternate().length() < Variant.SV_THRESHOLD) {
-            builder.append(v.getAlternate());
-        } else {
-            builder.append(new String(CryptoUtils.encryptSha1(v.getAlternate())));
-        }
-            
-        return builder.toString();
-    }
+//    private String buildRowkey(Variant v) {
+//        StringBuilder builder = new StringBuilder(v.getChromosome());
+//        builder.append("_");
+//        builder.append(v.getStart());
+//        builder.append("_");
+//        if (v.getReference().length() < Variant.SV_THRESHOLD) {
+//            builder.append(v.getReference());
+//        } else {
+//            builder.append(new String(CryptoUtils.encryptSha1(v.getReference())));
+//        }
+//        
+//        builder.append("_");
+//        
+//        if (v.getAlternate().length() < Variant.SV_THRESHOLD) {
+//            builder.append(v.getAlternate());
+//        } else {
+//            builder.append(new String(CryptoUtils.encryptSha1(v.getAlternate())));
+//        }
+//            
+//        return builder.toString();
+//    }
     
     @Override
     public final void includeStats(boolean b) {

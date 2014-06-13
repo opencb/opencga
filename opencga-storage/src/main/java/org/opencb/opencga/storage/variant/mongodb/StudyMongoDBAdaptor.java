@@ -20,19 +20,20 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    
+    private final DBObjectToVariantSourceConverter variantSourceConverter;
 
     public StudyMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        variantSourceConverter = new DBObjectToVariantSourceConverter();
     }
 
     @Override
     public QueryResult listStudies() {
         MongoDBCollection coll = db.getCollection("files");
-        return coll.distinct("studyName");
+        return coll.distinct("studyName", null);
     }
 
     @Override
@@ -46,7 +47,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         
         options.add("limit", 1);
         
-        return coll.find(qb.get(), returnFields, options);
+        return coll.find(qb.get(), options, null, returnFields);
     }
 
     @Override
@@ -56,7 +57,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         getStudyIdFilter(studyId, qb);
 //        parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options);
+        return coll.find(qb.get(), options, variantSourceConverter);
     }
 
     

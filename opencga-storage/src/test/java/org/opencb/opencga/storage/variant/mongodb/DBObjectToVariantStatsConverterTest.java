@@ -34,7 +34,7 @@ public class DBObjectToVariantStatsConverterTest {
     @Test
     public void testConvert() {
         DBObjectToVariantStatsConverter converter = new DBObjectToVariantStatsConverter();
-        VariantStats stats = converter.convert(mongoStats);
+        VariantStats stats = converter.convertToDataModelType(mongoStats);
         
         assertEquals((double) mongoStats.get("maf"), stats.getMaf(), 1e-6);
         assertEquals((double) mongoStats.get("mgf"), stats.getMgf(), 1e-6);
