@@ -27,7 +27,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
-        variantConverter = new DBObjectToVariantConverter();
+        variantConverter = new DBObjectToVariantConverter(new DBObjectToArchivedVariantFileConverter(null, new DBObjectToVariantStatsConverter()));
     }
 
     @Override

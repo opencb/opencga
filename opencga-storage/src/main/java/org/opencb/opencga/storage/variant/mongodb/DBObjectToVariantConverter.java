@@ -3,8 +3,8 @@ package org.opencb.opencga.storage.variant.mongodb;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
@@ -42,7 +42,28 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     
     @Override
     public Variant convertToDataModelType(DBObject object) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Variant variant = new Variant((String) object.get("chr"), (int) object.get("start"), (int) object.get("end"), 
+                (String) object.get("ref"), (String) object.get("alt"));
+        variant.setId((String) object.get("id"));
+        
+        // Transform HGVS: List of map entries -> Map of lists
+        BasicDBList mongoHgvs = (BasicDBList) object.get("hgvs");
+        for (Object o : mongoHgvs) {
+            DBObject dbo = (DBObject) o;
+            variant.addHgvs((String) dbo.get("type"), (String) dbo.get("name"));
+        }
+        
+        // Files
+        if (archivedVariantFileConverter != null) {
+            BasicDBList mongoFiles = (BasicDBList) object.get("files");
+            if (mongoFiles != null) {
+                for (Object o : mongoFiles) {
+                    DBObject dbo = (DBObject) o;
+                    variant.addFile(archivedVariantFileConverter.convertToDataModelType(dbo));
+                }
+            }
+        }
+        return variant;
     }
 
     @Override
@@ -64,7 +85,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
-        for (Map.Entry<String, List<String>> entry : object.getHgvs().entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : object.getHgvs().entrySet()) {
             for (String value : entry.getValue()) {
                 hgvs.add(new BasicDBObject("type", entry.getKey()).append("name", value));
             }

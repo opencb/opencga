@@ -51,9 +51,12 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         if (object.containsField("attributes")) {
             file.setAttributes(((DBObject) object.get("attributes")).toMap());
         }
+        if (object.containsField("format")) {
+            file.setFormat((String) object.get("format"));
+        }
         
         // Samples
-        if (object.containsField("samples")) {
+        if (object.containsField("samples") && samples != null) {
             BasicDBList genotypes = (BasicDBList) object.get("samples");
             
             Iterator<String> samplesIterator = samples.iterator();
