@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant.monbase;
+package org.opencb.opencga.storage.variant.hbase;
 
 import java.io.IOException;
 import java.util.*;

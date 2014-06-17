@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant.monbase;
+package org.opencb.opencga.storage.variant.hbase;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.*;

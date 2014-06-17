@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
-import org.opencb.opencga.storage.variant.monbase.VariantHbaseWriter;
+import org.opencb.opencga.storage.variant.hbase.VariantHbaseWriter;
 import com.mongodb.*;
 import java.io.IOException;
 import java.util.*;
