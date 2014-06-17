@@ -208,7 +208,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
-        for (Map.Entry<String, List<String>> entry : v.getHgvs().entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : v.getHgvs().entrySet()) {
             for (String value : entry.getValue()) {
                 hgvs.add(new BasicDBObject("type", entry.getKey()).append("name", value));
             }
