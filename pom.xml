@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -17,8 +17,43 @@
         <module>opencga-server</module>
     </modules>
 
+    <mailingLists>
+        <mailingList>
+            <name>OpenCB Mailing List</name>
+            <archive>https://groups.google.com/forum/#!forum/opencb</archive>
+            <post>opencb@googlegroups.com</post>
+        </mailingList>
+    </mailingLists>
+    
+    <developers>
+        <developer>
+            <id>imedina</id>
+            <name>Nacho</name>
+            <email>imedina@ebi.ac.uk</email>
+        </developer>
+        <developer>
+            <id>frasator</id>
+            <name>Francisco</name>
+            <email>fsalavert@cipf.es</email>
+        </developer>
+        <developer>
+            <id>aaleman</id>
+            <name>Alejandro</name>
+            <email>aaleman@cipf.es</email>
+        </developer>
+        <developer>
+            <id>cyenyxe</id>
+            <name>Cristina</name>
+            <email>cyenyxe@ebi.ac.uk</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/opencb/opencga</url>
+    </scm>
+
     <properties>
-        <opencga.version>0.2.0</opencga.version>
+        <opencga.version>0.3.0</opencga.version>
         <java.version>1.7</java.version>
     </properties>
 
@@ -50,24 +85,23 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>15.0</version>
+                <version>16.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>2.5.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>1.7.5</version>
+                <version>1.7.6</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
-                <version>1.7.5</version>
+                <version>1.7.6</version>
             </dependency>
-            <!--<dependency>-->
-            <!--<groupId>nl.bitwalker</groupId>-->
-            <!--<artifactId>user-agent-util</artifactId>-->
-            <!--<version>1.6</version>-->
-            <!--<scope>compile</scope>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
                 <artifactId>cellbase-core</artifactId>
@@ -81,14 +115,29 @@
                 <scope>compile</scope>
             </dependency>
             <dependency>
-                <groupId>commons-cli</groupId>
-                <artifactId>commons-cli</artifactId>
-                <version>1.2</version>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>formats</artifactId>
+                <version>0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>models</artifactId>
+                <version>0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-mongodb</artifactId>
+                <version>0.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>1.30</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongo-java-driver</artifactId>
-                <version>2.11.3</version>
+                <version>2.11.4</version>
             </dependency>
             <!--<dependency>-->
             <!--<groupId>net.sf</groupId>-->
@@ -109,7 +158,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.2.2</version>
+                <version>2.3.2</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
@@ -151,17 +200,17 @@
             <dependency>
                 <groupId>org.opencb.variant</groupId>
                 <artifactId>variant-lib</artifactId>
-                <version>1.0.0</version>
+                <version>1.1.0</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>bioformats</artifactId>
-                <version>1.0.0</version>
+                <version>2.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>
-                <version>1.0.0</version>
+                <version>2.0.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hadoop</groupId>

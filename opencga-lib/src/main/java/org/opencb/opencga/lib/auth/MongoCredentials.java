@@ -12,7 +12,7 @@ public class MongoCredentials implements OpenCGACredentials {
     private final String mongoHost;
     private final int mongoPort;
     private final String mongoDbName;
-    private final MongoCredential mongoCredentials;
+    private MongoCredential mongoCredentials;
 
 
     public MongoCredentials(String mongoHost, int mongoPort, String mongoDbName, String mongoUser, String mongoPassword)
@@ -20,7 +20,9 @@ public class MongoCredentials implements OpenCGACredentials {
         this.mongoHost = mongoHost;
         this.mongoPort = mongoPort;
         this.mongoDbName = mongoDbName;
-        mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
+        if (mongoUser != null && mongoPassword != null) {
+            mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
+        }
 
         check();
     }
@@ -29,10 +31,11 @@ public class MongoCredentials implements OpenCGACredentials {
         this.mongoHost = properties.getProperty("mongo_host");
         this.mongoPort = Integer.parseInt(properties.getProperty("mongo_port", "-1"));
         this.mongoDbName = properties.getProperty("mongo_db_name");
-        mongoCredentials = MongoCredential.createMongoCRCredential(
-                properties.getProperty("mongo_user"),
-                mongoDbName,
-                properties.getProperty("mongo_password", "").toCharArray());
+        String mongoUser = properties.getProperty("mongo_user", null);
+        String mongoPassword = properties.getProperty("mongo_password", null);
+        if (mongoUser != null && mongoPassword != null) {
+            mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
+        }
     }
 
     @Override

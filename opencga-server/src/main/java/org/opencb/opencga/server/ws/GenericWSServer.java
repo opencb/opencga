@@ -178,6 +178,6 @@ public class GenericWSServer {
     }
 
     private Response buildResponse(ResponseBuilder responseBuilder) {
-        return responseBuilder.header("Access-Control-Allow-Origin", "*").build();
+        return responseBuilder.header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "x-requested-with, content-type").build();
     }
 }

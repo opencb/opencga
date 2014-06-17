@@ -84,6 +84,20 @@ public class AccountMongoDBManager implements AccountManager {
     }
 
     @Override
+    public boolean checkAccountCredentials(String accountId, String sessionId) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("accountId", accountId);
+        query.put("sessions.id", sessionId);
+        DBObject obj = userCollection.findOne(query);
+        if (obj != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    @Override
     public QueryResult<ObjectMap> createAccount(String accountId, String password, String accountName, String role, String email,
                                                 Session session) throws AccountManagementException, JsonProcessingException {
         ObjectMap resultObjectMap = new ObjectMap();
@@ -94,6 +108,25 @@ public class AccountMongoDBManager implements AccountManager {
         account.setLastActivity(TimeUtils.getTime());
 //        WriteResult wr = userCollection.insert((DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(account)));
         WriteResult wr = userCollection.insert((DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(account)));
+
+        if (wr.getLastError().getErrorMessage() != null) {
+            throw new AccountManagementException(wr.getLastError().getErrorMessage());
+        }
+        resultObjectMap.put("accountId", accountId);
+        result.setResult(Arrays.asList(resultObjectMap));
+        result.setNumResults(1);
+        return result;
+    }
+
+    @Override
+    public QueryResult<ObjectMap> deleteAccount(String accountId) throws AccountManagementException, JsonProcessingException {
+        ObjectMap resultObjectMap = new ObjectMap();
+        QueryResult<ObjectMap> result = new QueryResult();
+
+        BasicDBObject query = new BasicDBObject();
+        query.put("accountId", accountId);
+
+        WriteResult wr = userCollection.remove(query);
 
         if (wr.getLastError().getErrorMessage() != null) {
             throw new AccountManagementException(wr.getLastError().getErrorMessage());
@@ -625,8 +658,9 @@ public class AccountMongoDBManager implements AccountManager {
         AggregationOutput aggregationOutput = userCollection.aggregate(match, unwind, match2, unwind2, match3, project);
 
         if (aggregationOutput != null) {
-            DBObject next = aggregationOutput.results().iterator().next();
-            if (next != null) {
+            Iterator<DBObject> it = aggregationOutput.results().iterator();
+            if (it.hasNext()) {
+                DBObject next = it.next();
                 ObjectItem objectItem = jsonObjectMapper.readValue(next.get("object").toString(), ObjectItem.class);
                 return objectItem;
             } else {

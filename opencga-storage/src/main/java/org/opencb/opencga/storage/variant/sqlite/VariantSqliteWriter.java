@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.sqlite;
 
 import com.google.common.base.Joiner;
 
@@ -7,14 +7,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFactory;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 
-import org.opencb.commons.bioformats.feature.Genotype;
-import org.opencb.commons.bioformats.feature.Genotypes;
-import org.opencb.commons.bioformats.variant.Variant;
-import org.opencb.commons.bioformats.variant.VariantFactory;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
-import org.opencb.commons.bioformats.variant.vcf4.io.writers.VariantWriter;
 import org.opencb.commons.db.SqliteSingletonConnection;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 
@@ -22,7 +21,7 @@ import org.opencb.opencga.lib.auth.SqliteCredentials;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @TODO aaleman: Move writeEffect/writeStats/write*... to write(batch)
  */
-public class VariantVcfSqliteWriter implements VariantWriter {
+public class VariantSqliteWriter implements VariantWriter {
 
     private boolean createdSampleTable;
     private Statement stmt;
@@ -34,7 +33,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     private boolean includeEffect;
 
 
-    public VariantVcfSqliteWriter(SqliteCredentials credentials) {
+    public VariantSqliteWriter(SqliteCredentials credentials) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -45,7 +44,7 @@ public class VariantVcfSqliteWriter implements VariantWriter {
     }
 
     @Deprecated
-    public VariantVcfSqliteWriter(String dbName) {
+    public VariantSqliteWriter(String dbName) {
         this.stmt = null;
         this.createdSampleTable = false;
         this.connection = new SqliteSingletonConnection(dbName);
@@ -113,10 +112,10 @@ public class VariantVcfSqliteWriter implements VariantWriter {
                 List<VariantEffect> batchEffect = v.getEffect();
 
                 pstmt.setString(1, v.getChromosome());
-                pstmt.setLong(2, v.getPosition());
+                pstmt.setLong(2, v.getStart());
                 pstmt.setString(3, v.getId());
                 pstmt.setString(4, v.getReference());
-                pstmt.setString(5, Joiner.on(",").join(v.getAltAlleles()));
+                pstmt.setString(5, v.getAlternate());
                 pstmt.setDouble(6, (v.getAttribute("QUAL").equals(".") ? 0 : Double.valueOf(v.getAttribute("QUAL"))));
                 pstmt.setString(7, v.getAttribute("FILTER"));
                 pstmt.setString(8, info);
@@ -212,7 +211,16 @@ public class VariantVcfSqliteWriter implements VariantWriter {
         List<Genotype> list = new ArrayList<>();
 
         for (String sample : variant.getSampleNames()) {
-            Genotypes.addGenotypeToList(list, new Genotype(variant.getSampleData(sample, "GT")));
+            Genotype g = new Genotype(variant.getSampleData(sample, "GT"));
+            int index = list.indexOf(g);
+
+            if (index >= 0) {
+                Genotype auxG = list.get(index);
+                auxG.setCount(auxG.getCount() + 1);
+            } else {
+                g.setCount(g.getCount() + 1);
+                list.add(g);
+            }
         }
 
         return Joiner.on(",").join(list);
@@ -319,16 +327,16 @@ public class VariantVcfSqliteWriter implements VariantWriter {
 
                 pstmt.setString(1, v.getChromosome());
                 pstmt.setLong(2, v.getPosition());
-                pstmt.setString(3, v.getRefAlleles());
+                pstmt.setString(3, v.getRefAllele());
                 pstmt.setString(4, Joiner.on(",").join(v.getAltAlleles()));
                 pstmt.setString(5, v.getId());
                 pstmt.setDouble(6, v.getMaf());
                 pstmt.setDouble(7, v.getMgf());
                 pstmt.setString(8, v.getMafAllele());
-                pstmt.setString(9, v.getMgfAllele());
+                pstmt.setString(9, v.getMgfGenotype());
                 pstmt.setInt(10, v.getMissingAlleles());
                 pstmt.setInt(11, v.getMissingGenotypes());
-                pstmt.setInt(12, v.getMendelinanErrors());
+                pstmt.setInt(12, v.getMendelianErrors());
                 pstmt.setInt(13, (v.isIndel() ? 1 : 0));
                 pstmt.setDouble(14, v.getCasesPercentDominant());
                 pstmt.setDouble(15, v.getControlsPercentDominant());

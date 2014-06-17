@@ -23,8 +23,7 @@ public class JobFileIOUtils implements IOManager {
     protected static ObjectWriter jsonObjectWriter;
 
     public static String getSenchaTable(Path jobFile, String filename, String start, String limit, String colNames,
-                                        String colVisibility, String callback, String sort) throws IOManagementException, IOException {
-
+                                        String colVisibility, String sort) throws IOManagementException, IOException {
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
@@ -116,10 +115,10 @@ public class JobFileIOUtils implements IOManager {
             int[] orderedRowIndices = ArrayUtils.order(numbers, decreasing);
 
             String[] fields;
-            stringBuilder.append(callback + "({\"total\":\"" + totalCount + "\",\"items\":[");
+            stringBuilder.append("{\"total\":\"" + totalCount + "\",\"items\":[");
             for (int j = 0; j < orderedRowIndices.length; j++) {
                 if (j >= first && j < end) {
-                    fields = dataFile.get(orderedRowIndices[j]).split("\t");
+                    fields = dataFile.get(orderedRowIndices[j]).split("\\t+");
                     stringBuilder.append("{");
                     for (int i = 0; i < fields.length; i++) {
                         if (Integer.parseInt(colvisibilityArray[i].toString()) == 1) {
@@ -134,7 +133,7 @@ public class JobFileIOUtils implements IOManager {
                     }
                 }
             }
-            stringBuilder.append("]});");
+            stringBuilder.append("]}");
 
         } else {// END SORT
 
@@ -142,11 +141,11 @@ public class JobFileIOUtils implements IOManager {
             String line = null;
             String[] fields;
             BufferedReader br = Files.newBufferedReader(jobFile, Charset.defaultCharset());
-            stringBuilder.append(callback + "({\"total\":\"" + totalCount + "\",\"items\":[");
+            stringBuilder.append("{\"total\":\"" + totalCount + "\",\"items\":[");
             while ((line = br.readLine()) != null) {
                 if (!line.startsWith("#")) {
                     if (numLine >= first && numLine < end) {
-                        fields = line.split("\t");
+                        fields = line.split("\\t+");
                         stringBuilder.append("{");
                         logger.info("PAKO::length: " + fields.length);
                         for (int i = 0; i < fields.length; i++) {
@@ -165,7 +164,7 @@ public class JobFileIOUtils implements IOManager {
                 }
             }
             br.close();
-            stringBuilder.append("]});");
+            stringBuilder.append("]}");
         }
         return stringBuilder.toString();
     }

@@ -1,18 +1,13 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.sqlite;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.thrift.generated.Hbase;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.Variant;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantControl;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.bioformats.variant.utils.effect.VariantEffect;
-import org.opencb.commons.bioformats.variant.utils.stats.VariantStats;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
@@ -29,21 +24,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
+public class VariantSqliteDBAdaptor implements VariantDBAdaptor {
 
     private SqliteCredentials sqliteCredentials;
     private SqliteManager sqliteManager;
 
-    public VariantSqliteQueryBuilder() {
+    public VariantSqliteDBAdaptor() {
         System.out.println("Variant Query Maker");
     }
 
-    public VariantSqliteQueryBuilder(SqliteCredentials sqliteCredentials) throws SQLException, ClassNotFoundException {
+    public VariantSqliteDBAdaptor(SqliteCredentials sqliteCredentials) throws SQLException, ClassNotFoundException {
         System.out.println("Variant Query Maker");
         this.sqliteCredentials = sqliteCredentials;
         this.sqliteManager = new SqliteManager();
@@ -59,7 +59,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
      * @return
      */
     @Override
-    public QueryResult getAllVariantsByRegion(Region region, String studyName, QueryOptions options) {
+    public QueryResult getAllVariantsByRegionAndStudy(Region region, String studyName, QueryOptions options) {
 
         Long start, end, dbStart, dbEnd;
         start = System.currentTimeMillis();
@@ -146,7 +146,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                     ref = elem.getString("ref");
                     alt = elem.getString("alt");
 
-                    variant = new Variant(chr, pos, ref, alt);
+                    variant = new Variant(chr, pos, pos, ref, alt);
 
                     variant.setId(elem.getString("id"));
                     variant.setFormat(elem.getString("format"));
@@ -265,7 +265,7 @@ public class VariantSqliteQueryBuilder implements VariantQueryBuilder {
                 }
             }
         } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(VariantSqliteQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantSqliteDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
 
