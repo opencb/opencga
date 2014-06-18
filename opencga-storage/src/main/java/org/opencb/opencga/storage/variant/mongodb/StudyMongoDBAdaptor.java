@@ -5,9 +5,11 @@ import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -51,17 +53,50 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     }
     
     @Override
-    public QueryResult getStudyNameById(String studyId, QueryOptions options) {
+    public QueryResult findStudyNameOrStudyId(String study, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("files");
         QueryBuilder qb = QueryBuilder.start();
-        qb.or(new BasicDBObject("studyName", studyId), new BasicDBObject("studyId", studyId));
+        qb.or(new BasicDBObject("studyName", study), new BasicDBObject("studyId", study));
 //        parseQueryOptions(options, qb);
         
-        BasicDBObject returnFields = new BasicDBObject("studyId", 1).append("_id", 0);
+        DBObject returnFields = new BasicDBObject("studyId", 1).append("_id", 0);
         
         options.add("limit", 1);
         
         return coll.find(qb.get(), options, null, returnFields);
+    }
+
+    @Override
+    public QueryResult getStudyById(String studyId, QueryOptions options) {
+        // db.variants.aggregate( { $match : { "studyId" : "abc" } }, 
+        //                        { $project : { _id : 0, studyId : 1, studyName : 1 } }, 
+        //                        { $group : {
+        //                              _id : { studyId : "$studyId", studyName : "$studyName"}, 
+        //                              numSources : { $sum : 1} 
+        //                        }} )
+        MongoDBCollection coll = db.getCollection("files");
+        
+        QueryBuilder qb = QueryBuilder.start();
+        getStudyIdFilter(studyId, qb);
+        
+        DBObject match = new BasicDBObject("$match", qb.get());
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("_id", 0).append("studyId", 1).append("studyName", 1));
+        DBObject group = new BasicDBObject("$group", 
+                new BasicDBObject("_id", new BasicDBObject("studyId", "$studyId").append("studyName", "$studyName"))
+                .append("numFiles", new BasicDBObject("$sum", 1)));
+        
+        
+        QueryResult aggregationResult = coll.aggregate("$studyInfo", Arrays.asList(match, project, group), options);
+        Iterable<DBObject> results = aggregationResult.getResult();
+        DBObject dbo = results.iterator().next();
+        DBObject dboId = (DBObject) dbo.get("_id");
+        
+        DBObject outputDbo = new BasicDBObject("studyId", dboId.get("studyId")).append("studyName", dboId.get("studyName")).append("numFiles", dbo.get("numFiles"));
+        QueryResult transformedResult = new QueryResult(aggregationResult.getId(), aggregationResult.getDBTime(), 
+                aggregationResult.getNumResults(), aggregationResult.getNumTotalResults(), 
+                aggregationResult.getWarning(), aggregationResult.getError(), 
+                DBObject.class, Arrays.asList(outputDbo));
+        return transformedResult;
     }
 
     @Override
@@ -119,8 +154,8 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
             String key = dbo.get("studyId").toString() + "_" + dbo.get("fileId").toString();
-            List value = (List) dbo.get("samples");
-            samplesInSources.put(key, value);
+            DBObject value = (DBObject) dbo.get("samples");
+            samplesInSources.put(key, new ArrayList<>(value.toMap().keySet()));
         }
         
         return queryResult;
@@ -128,13 +163,14 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     
     private void populateSamplesInSourcesQueryResult(String fileId, String studyId, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(1);
-        samples.add(samplesInSources.get("studyId" + "_" + "fileId"));
-        queryResult.setResult(samples);
+        List<String> samplesInSource = samplesInSources.get(studyId + "_" + fileId);
 
-        if (samples.isEmpty()) {
+        if (samplesInSource == null || samplesInSource.isEmpty()) {
             queryResult.setWarning("Source " + fileId + " in study " + studyId + " not found");
             queryResult.setNumTotalResults(0);
         } else {
+            samples.add(samplesInSource);
+            queryResult.setResult(samples);
             queryResult.setNumTotalResults(1);
         }
     }

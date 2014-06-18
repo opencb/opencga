@@ -3,13 +3,18 @@ package org.opencb.opencga.storage.variant.mongodb;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.storage.variant.StudyDBAdaptor;
 
 /**
  * 
@@ -17,20 +22,25 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  */
 public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConverter<ArchivedVariantFile, DBObject> {
 
+    private boolean includeSamples;
+    
     private List<String> samples;
     
     private DBObjectToVariantStatsConverter statsConverter;
+    private StudyDBAdaptor studyDbAdaptor;
 
     /**
      * Create a converter between ArchivedVariantFile and DBObject entities when 
-     * there is no need to provide a list of samples.
+     * there is no need to provide a list of samples nor statistics.
      */
     public DBObjectToArchivedVariantFileConverter() {
-        this(null, null);
+        this.includeSamples = false;
+        this.samples = null;
+        this.statsConverter = null;
     }
     
     /**
-     * Create a converter between ArchivedVariantFile and DBObject entities. A 
+     * Create a converter from ArchivedVariantFile to DBObject entities. A 
      * list of samples and a statistics converter may be provided in case those 
      * should be processed during the conversion.
      * 
@@ -42,10 +52,36 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         this.statsConverter = statsConverter;
     }
     
+    /**
+     * Create a converter from DBObject to ArchivedVariantFile entities. A 
+     * list of samples and a statistics converter may be provided in case those 
+     * should be processed during the conversion.
+     * 
+     * If samples are to be included, their names must have been previously 
+     * stored in the database and the connection parameters must be provided.
+     * 
+     * @param includeSamples Whether to include samples or not
+     * @param statsConverter The object used to convert the file statistics
+     * @param credentials Parameters for connecting to the database
+     */
+    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, DBObjectToVariantStatsConverter statsConverter, MongoCredentials credentials) {
+        this.includeSamples = includeSamples;
+        if (this.includeSamples) {
+            try {
+                this.studyDbAdaptor = new StudyMongoDBAdaptor(credentials);
+            } catch (UnknownHostException ex) {
+                Logger.getLogger(DBObjectToArchivedVariantFileConverter.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        this.statsConverter = statsConverter;
+    }
+    
     
     @Override
     public ArchivedVariantFile convertToDataModelType(DBObject object) {
-        ArchivedVariantFile file = new ArchivedVariantFile((String) object.get("fileName"), (String) object.get("fileId"), (String) object.get("studyId"));
+        String fileId = (String) object.get("fileId");
+        String studyId = (String) object.get("studyId");
+        ArchivedVariantFile file = new ArchivedVariantFile((String) object.get("fileName"), fileId, studyId);
         
         // Attributes
         if (object.containsField("attributes")) {
@@ -56,11 +92,12 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         }
         
         // Samples
-        if (object.containsField("samples") && samples != null) {
+        if (includeSamples && object.containsField("samples")) {
             BasicDBList genotypes = (BasicDBList) object.get("samples");
-            
+            samples = (List<String>) studyDbAdaptor.getSamplesBySource(fileId, studyId, null).getResult().get(0);
             Iterator<String> samplesIterator = samples.iterator();
             Iterator<Object> genotypesIterator = genotypes.iterator();
+            
             while (samplesIterator.hasNext() && genotypesIterator.hasNext()) {
                 String sampleName = samplesIterator.next();
                 Genotype gt = Genotype.decode((int) genotypesIterator.next());

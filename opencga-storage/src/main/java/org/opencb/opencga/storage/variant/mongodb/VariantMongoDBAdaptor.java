@@ -21,13 +21,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
+    private final DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
 
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
-        variantConverter = new DBObjectToVariantConverter(new DBObjectToArchivedVariantFileConverter(null, new DBObjectToVariantStatsConverter()));
+        
+        // Converters from DBObject to Java classes
+        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, new DBObjectToVariantStatsConverter(), credentials);
+        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }
 
     @Override
