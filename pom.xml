@@ -17,6 +17,41 @@
         <module>opencga-server</module>
     </modules>
 
+    <mailingLists>
+        <mailingList>
+            <name>OpenCB Mailing List</name>
+            <archive>https://groups.google.com/forum/#!forum/opencb</archive>
+            <post>opencb@googlegroups.com</post>
+        </mailingList>
+    </mailingLists>
+    
+    <developers>
+        <developer>
+            <id>imedina</id>
+            <name>Nacho</name>
+            <email>imedina@ebi.ac.uk</email>
+        </developer>
+        <developer>
+            <id>frasator</id>
+            <name>Francisco</name>
+            <email>fsalavert@cipf.es</email>
+        </developer>
+        <developer>
+            <id>aaleman</id>
+            <name>Alejandro</name>
+            <email>aaleman@cipf.es</email>
+        </developer>
+        <developer>
+            <id>cyenyxe</id>
+            <name>Cristina</name>
+            <email>cyenyxe@ebi.ac.uk</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/opencb/opencga</url>
+    </scm>
+
     <properties>
         <opencga.version>0.3.0</opencga.version>
         <java.version>1.7</java.version>
