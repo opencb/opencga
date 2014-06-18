@@ -11,9 +11,13 @@ public interface StudyDBAdaptor {
     
     QueryResult listStudies();
     
+    QueryResult getNumberOfSources();
+    
     QueryResult getStudyNameById(String studyId, QueryOptions options);
     
     QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options);
+    
+    QueryResult getSamplesBySource(String fileId, String studyId, QueryOptions options);
     
     public boolean close();
 

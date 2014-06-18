@@ -161,7 +161,8 @@ public class VariantMongoWriter extends VariantDBWriter {
                 
                 if (this.includeSamples && samples.isEmpty() && archiveFile.getSamplesData().size() > 0) {
                     // First time a variant is loaded, the list of samples is populated. 
-                    // This guarantees that samples are loaded only once to keep order among variants
+                    // This guarantees that samples are loaded only once to keep order among variants,
+                    // and that they are loaded before needed by the ArchivedVariantFileConverter
                     samples.addAll(archiveFile.getSampleNames());
                 }
                 
@@ -209,33 +210,33 @@ public class VariantMongoWriter extends VariantDBWriter {
         return true;
     }
 
-    private BasicDBObject getVariantDBObject(Variant v, String rowkey) {
-        // Attributes easily calculated
-        BasicDBObject object = new BasicDBObject("_id", rowkey).append("id", v.getId()).append("type", v.getType().name());
-        object.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
-        object.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
-        
-        // Internal fields used for query optimization (dictionary named "_at")
-        BasicDBObject _at = new BasicDBObject();
-        object.append("_at", _at);
-        
-        // ChunkID (1k and 10k)
-        String chunkSmall = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_SMALL + "_" + CHUNK_SIZE_SMALL / 1000 + "k";
-        String chunkBig = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_BIG + "_" + CHUNK_SIZE_BIG / 1000 + "k";
-        BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
-        _at.append("chunkIds", chunkIds);
-        
-        // Transform HGVS: Map of lists -> List of map entries
-        BasicDBList hgvs = new BasicDBList();
-        for (Map.Entry<String, Set<String>> entry : v.getHgvs().entrySet()) {
-            for (String value : entry.getValue()) {
-                hgvs.add(new BasicDBObject("type", entry.getKey()).append("name", value));
-            }
-        }
-        object.append("hgvs", hgvs);
-        
-        return object;
-    }
+//    private BasicDBObject getVariantDBObject(Variant v, String rowkey) {
+//        // Attributes easily calculated
+//        BasicDBObject object = new BasicDBObject("_id", rowkey).append("id", v.getId()).append("type", v.getType().name());
+//        object.append("chr", v.getChromosome()).append("start", v.getStart()).append("end", v.getStart());
+//        object.append("length", v.getLength()).append("ref", v.getReference()).append("alt", v.getAlternate());
+//        
+//        // Internal fields used for query optimization (dictionary named "_at")
+//        BasicDBObject _at = new BasicDBObject();
+//        object.append("_at", _at);
+//        
+//        // ChunkID (1k and 10k)
+//        String chunkSmall = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_SMALL + "_" + CHUNK_SIZE_SMALL / 1000 + "k";
+//        String chunkBig = v.getChromosome() + "_" + v.getStart() / CHUNK_SIZE_BIG + "_" + CHUNK_SIZE_BIG / 1000 + "k";
+//        BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
+//        _at.append("chunkIds", chunkIds);
+//        
+//        // Transform HGVS: Map of lists -> List of map entries
+//        BasicDBList hgvs = new BasicDBList();
+//        for (Map.Entry<String, Set<String>> entry : v.getHgvs().entrySet()) {
+//            for (String value : entry.getValue()) {
+//                hgvs.add(new BasicDBObject("type", entry.getKey()).append("name", value));
+//            }
+//        }
+//        object.append("hgvs", hgvs);
+//        
+//        return object;
+//    }
     
     @Override
     protected boolean buildStatsRaw(List<Variant> data) {
