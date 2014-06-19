@@ -1,7 +1,8 @@
-package org.opencb.opencga.storage.alignment;
+package org.opencb.opencga.storage.alignment.proto;
 
 import com.google.protobuf.ByteString;
-import org.opencb.commons.bioformats.alignment.Alignment;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.opencga.storage.alignment.AlignmentRegionSummary;
 
 import java.util.*;
 
@@ -21,7 +22,7 @@ public class AlignmentProtoHelper {
         if(alignments == null || alignments.isEmpty()){
             if(overlapped != 0){
                 if(alignments == null){
-                    alignments = new LinkedList<Alignment>();
+                    alignments = new LinkedList<>();
                 }
             } else {
                 return null;

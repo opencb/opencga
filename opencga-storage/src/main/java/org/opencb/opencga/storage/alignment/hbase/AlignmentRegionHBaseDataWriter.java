@@ -1,13 +1,16 @@
-package org.opencb.opencga.storage.alignment;
+package org.opencb.opencga.storage.alignment.hbase;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.alignment.Alignment;
-import org.opencb.commons.bioformats.alignment.AlignmentRegion;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProto;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProtoHelper;
+import org.opencb.opencga.storage.alignment.AlignmentRegionSummary;
 import org.opencb.opencga.storage.datamanagers.HBaseManager;
 import org.xerial.snappy.Snappy;
 

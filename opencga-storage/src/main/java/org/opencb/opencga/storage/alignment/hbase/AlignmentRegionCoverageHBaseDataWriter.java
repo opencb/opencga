@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.alignment;
+package org.opencb.opencga.storage.alignment.hbase;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;

@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.alignment;
 
-import org.opencb.commons.bioformats.alignment.Alignment;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProto;
 
 import java.util.*;
 

@@ -4,12 +4,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.*;
-import org.opencb.commons.bioformats.alignment.Alignment;
-import org.opencb.commons.bioformats.alignment.AlignmentRegion;
-import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
-import org.opencb.commons.bioformats.alignment.sam.io.AlignmentBamDataReader;
-import org.opencb.commons.bioformats.alignment.sam.io.AlignmentSamDataReader;
+import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
+import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProto;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProtoHelper;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -38,7 +40,7 @@ public class AlignmentProtoHelperTest extends GenericTest {
         alignmentRegionDataReader.open();
         alignmentRegionDataReader.pre();
 
-        alignmentRegion = alignmentRegionDataReader.read();
+        alignmentRegion = alignmentRegionDataReader.readElem();
         System.out.println("Leemos alignmentRegion ");
 
 
@@ -105,7 +107,7 @@ public class AlignmentProtoHelperTest extends GenericTest {
         AlignmentRegionSummary summary;
 
         for (int i = 0; i < 900; i++) {
-            alignment1 = alignmentSamDataReader.read();
+            alignment1 = alignmentSamDataReader.readElem();
             System.out.println("Leemos alignment " + i);
             if (alignment1 != null) {
                 System.out.println("Creamos el summary");

@@ -1,10 +1,10 @@
 package org.opencb.opencga.storage.alignment;
 
-import net.sf.samtools.SAMFileHeader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.junit.Test;
 import org.opencb.commons.bioformats.alignment.Alignment;
+import org.opencb.commons.bioformats.alignment.AlignmentHeader;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentDataReader;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentRegionDataReader;
@@ -16,6 +16,8 @@ import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.alignment.hbase.AlignmentHBaseQueryBuilder;
+import org.opencb.opencga.storage.alignment.hbase.AlignmentRegionHBaseDataWriter;
 
 import java.util.List;
 
@@ -62,7 +64,8 @@ public class AlignmentRegionHBaseDataWriterTest extends GenericTest {
         alignmentRegionDataReader.open();
         alignmentRegionDataReader.pre();
 
-        SAMFileHeader header = (SAMFileHeader) alignmentDataReader.getHeader();
+        //SAMFileHeader header = (SAMFileHeader) alignmentDataReader.getHeader();
+        AlignmentHeader header = alignmentDataReader.getHeader();
 
         alignmentRegionHBaseDataWriter.open();
         alignmentRegionHBaseDataWriter.pre();

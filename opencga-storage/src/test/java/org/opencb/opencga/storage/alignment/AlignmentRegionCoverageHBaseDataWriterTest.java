@@ -1,10 +1,6 @@
 package org.opencb.opencga.storage.alignment;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.bioformats.alignment.AlignmentRegion;
 import org.opencb.commons.bioformats.alignment.io.readers.AlignmentDataReader;
@@ -17,6 +13,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.alignment.hbase.AlignmentRegionCoverageHBaseDataWriter;
 
 import java.io.IOException;
 import java.util.LinkedList;

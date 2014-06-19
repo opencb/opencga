@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.alignment;
+package org.opencb.opencga.storage.alignment.hbase;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.conf.Configuration;
@@ -8,12 +8,16 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.commons.bioformats.alignment.Alignment;
-import org.opencb.commons.io.DataReader;
+import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProto;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProtoHelper;
 import org.opencb.opencga.storage.datamanagers.HBaseManager;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,7 +29,7 @@ import java.util.List;
  * Time: 6:54 PM
  * To change this template use File | Settings | File Templates.
  */
-public class AlignmentHBaseDataReader implements DataReader<Alignment> {
+public class AlignmentHBaseDataReader implements AlignmentDataReader<Alignment> {
 
     private HBaseManager hBaseManager;
     String tableName, columnFamilyName;
@@ -97,7 +101,11 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
     }
 
     @Override
-    public Alignment read() {
+    public List<Alignment> read(){
+        return Arrays.asList(readElem());
+    }
+
+    public Alignment readElem() {
         Alignment alignment = null;
         int state;
 
@@ -159,12 +167,18 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
 //        }
         Alignment alignment;
         for(int i = 0; i < batchSize; i++){
-            alignment = read();
+            alignment = readElem();
             if(alignment != null){
                 alignmentList.add(alignment);
             }
         }
         return alignmentList;
+    }
+
+    @Override
+    public AlignmentHeader getHeader() {
+        //TODO
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     public String getColumnFamilyName() {
@@ -182,4 +196,5 @@ public class AlignmentHBaseDataReader implements DataReader<Alignment> {
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
+
 }
