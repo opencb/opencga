@@ -119,9 +119,6 @@ public class VariantMongoWriter extends VariantDBWriter {
     @Override
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
-//        if (this.includeStats) {
-//            buildStatsRaw(data);
-//        }
         if (this.includeEffect) {
             buildEffectRaw(data);
         }
@@ -164,11 +161,6 @@ public class VariantMongoWriter extends VariantDBWriter {
             mongoMap.put(rowkey, mongoVariant);
         }
 
-        return true;
-    }
-
-    @Override
-    protected boolean buildStatsRaw(List<Variant> data) {
         return true;
     }
 
