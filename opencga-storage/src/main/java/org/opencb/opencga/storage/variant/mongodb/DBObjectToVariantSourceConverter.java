@@ -84,7 +84,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         
         // Metadata
         Map<String, String> meta = object.getMetadata();
-        DBObject metadataMongo = new BasicDBObjectBuilder().add("header", meta.get("variantFileHeader")).get();
+        DBObject metadataMongo = new BasicDBObject("header", meta.get("variantFileHeader"));
         studyMongo = studyMongo.append("metadata", metadataMongo);
         
         return studyMongo;
