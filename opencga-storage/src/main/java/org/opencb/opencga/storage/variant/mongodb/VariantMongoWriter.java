@@ -82,12 +82,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         conseqTypes = new LinkedHashMap<>();
         samples = new ArrayList<>();
         
-        sourceConverter = new DBObjectToVariantSourceConverter();
-        statsConverter = new DBObjectToVariantStatsConverter();
-        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
-                this.includeSamples ? samples : null,
-                this.includeStats ? statsConverter : null);
-        variantConverter = new DBObjectToVariantConverter();
+        setConverters(this.includeStats, this.includeSamples, this.includeEffect);
         
         numVariantsWritten = 0;
     }
@@ -494,17 +489,28 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     @Override
     public final void includeStats(boolean b) {
-        this.includeStats = b;
+        includeStats = b;
+        setConverters(includeStats, includeSamples, includeEffect);
     }
 
     @Override
     public final void includeSamples(boolean b) {
-        this.includeSamples = b;
+        includeSamples = b;
+        setConverters(includeStats, includeSamples, includeEffect);
     }
 
     @Override
     public final void includeEffect(boolean b) {
-        this.includeEffect = b;
+        includeEffect = b;
+        setConverters(includeStats, includeSamples, includeEffect);
     }
 
+    private void setConverters(boolean includeStats, boolean includeSamples, boolean includeEffect) {
+        sourceConverter = new DBObjectToVariantSourceConverter();
+        statsConverter = new DBObjectToVariantStatsConverter();
+        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+                includeSamples ? samples : null,
+                includeStats ? statsConverter : null);
+        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
+    }
 }
