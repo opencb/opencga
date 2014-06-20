@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.variant.mongodb;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import java.util.Calendar;
 import java.util.Map;
