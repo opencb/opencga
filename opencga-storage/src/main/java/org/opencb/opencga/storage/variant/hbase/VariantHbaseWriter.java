@@ -14,10 +14,10 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.protobuf.VariantProtos;
@@ -51,6 +51,8 @@ public class VariantHbaseWriter extends VariantDBWriter {
     private boolean includeEffect;
     private boolean includeSamples;
 
+    private VariantStatsToHbaseConverter statsConverter;
+    
 
     public VariantHbaseWriter(VariantSource source, String species, MonbaseCredentials credentials) {
         this(source, species, credentials, false, false, false);
@@ -70,6 +72,10 @@ public class VariantHbaseWriter extends VariantDBWriter {
         this.includeSamples = includeSamples;
         this.includeStats = includeStats;
         this.includeEffect = includeEffect;
+        
+        if (this.includeStats) {
+            statsConverter = new VariantStatsToHbaseConverter();
+        }
     }
     
     
@@ -139,9 +145,6 @@ public class VariantHbaseWriter extends VariantDBWriter {
     @Override
     public boolean write(List<Variant> data) {
         buildBatchRaw(data);
-        if (this.includeStats) {
-            buildStatsRaw(data);
-        }
         if (this.includeEffect) {
             buildEffectRaw(data);
         }
@@ -232,10 +235,16 @@ public class VariantHbaseWriter extends VariantDBWriter {
                     if (includeSamples) {
                         for (String s : archiveFile.getSampleNames()) {
                             VariantProtos.VariantSample.Builder sp = VariantProtos.VariantSample.newBuilder();
-                            sp.setSample(VariantFactory.getVcfSampleRawData(v, archiveFile.getFileId(), s));
+                            sp.setSample(VcfUtils.getJoinedSampleFields(v, archiveFile.getFileId(), s));
                             byte[] qualifier = Bytes.toBytes(prefix + "_" + s);
                             auxPut.add(dataColumnFamily, qualifier, sp.build().toByteArray());
                         }
+                    }
+                    
+                    if (includeStats) {
+                        VariantStatsProtos.VariantStats protoStats = statsConverter.convertToStorageType(archiveFile.getStats());
+                        byte[] qualifier = Bytes.toBytes(prefix + "_stats");
+                        auxPut.add(dataColumnFamily, qualifier, protoStats.toByteArray());
                     }
                 }
             } else {
@@ -247,25 +256,25 @@ public class VariantHbaseWriter extends VariantDBWriter {
         return true;
     }
     
-    @Override
-    protected boolean buildStatsRaw(List<Variant> data) {
-        for (Variant v : data) {
-            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                VariantStats s = archiveFile.getStats();
-                VariantStatsProtos.VariantStats stats = buildStatsProto(s);
-                
-                String rowkey = buildRowkey(v);
-                Put put2 = putMap.get(rowkey);
-                if (put2 != null) { // This variant is not being processed
-                    String prefix = source.getStudyId() + "_" + source.getFileId();
-                    byte[] qualifier = Bytes.toBytes(prefix + "_stats");
-                    put2.add(dataColumnFamily, qualifier, stats.toByteArray());
-                }
-            }
-        }
-
-        return true;
-    }
+//    @Override
+//    protected boolean buildStatsRaw(List<Variant> data) {
+//        for (Variant v : data) {
+//            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+//                VariantStats s = archiveFile.getStats();
+//                VariantStatsProtos.VariantStats stats = buildStatsProto(s);
+//                
+//                String rowkey = buildRowkey(v);
+//                Put put2 = putMap.get(rowkey);
+//                if (put2 != null) { // This variant is not being processed
+//                    String prefix = source.getStudyId() + "_" + source.getFileId();
+//                    byte[] qualifier = Bytes.toBytes(prefix + "_stats");
+//                    put2.add(dataColumnFamily, qualifier, stats.toByteArray());
+//                }
+//            }
+//        }
+//
+//        return true;
+//    }
     
     @Override
     protected boolean buildEffectRaw(List<Variant> variants) {
