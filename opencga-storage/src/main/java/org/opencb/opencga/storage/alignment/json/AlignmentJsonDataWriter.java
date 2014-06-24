@@ -5,10 +5,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataWriter;
-import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
-import org.opencb.commons.containers.map.ObjectMap;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -28,9 +26,9 @@ import java.util.zip.GZIPOutputStream;
  */
 public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, AlignmentHeader> {
 
-    private int alignmentsPerLine = 10;
-    private String filename;
-    private Path outdir;
+    private final String alignmentFilename;
+    private final String headerFilename;
+    private final boolean gzip;
     private boolean append = false;
 
     private AlignmentDataReader<Alignment> reader;
@@ -40,23 +38,29 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     private OutputStream alignmentOutputStream;
     private OutputStream headerOutputStream;
 
-    protected JsonGenerator alignmentsGenerator;
-    protected JsonGenerator headerGenerator;
-   // private ObjectMap objectMap;
-    private int alignmentsCount = 0;
-    private boolean gzip = true;
+    private JsonGenerator alignmentsGenerator;
+    private JsonGenerator headerGenerator;
+    //private ObjectMap objectMap;
+    //private int alignmentsCount = 0;
+    //private int alignmentsPerLine = 1;
 
 
-    public AlignmentJsonDataWriter(AlignmentDataReader<Alignment> reader, String filename) {
-        this(reader, filename, null);
-    }
-
-    public AlignmentJsonDataWriter(AlignmentDataReader<Alignment> reader, String filename, Path outdir) {
-        this.filename = filename;
-        this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath();
+    public AlignmentJsonDataWriter(AlignmentDataReader<Alignment> reader, String alignmentFilename, String headerFilename) {
+        this.alignmentFilename = alignmentFilename;
+        this.headerFilename = headerFilename;
         this.reader = reader;
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
+        this.gzip = alignmentFilename.endsWith(".gz");
+    }
+
+    public AlignmentJsonDataWriter(AlignmentDataReader<Alignment> reader, String baseFilename, boolean gzip) {
+        this.alignmentFilename  = baseFilename + ".alignments" + (gzip ? ".json.gz" : ".json");
+        this.headerFilename     = baseFilename + ".header"     + (gzip ? ".json.gz" : ".json");
+        this.reader = reader;
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+        this.gzip = gzip;
     }
 
 
@@ -80,14 +84,9 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     @Override
     public boolean open() {
         try {
-
-            String extension = gzip? ".json.gz" : ".json";
-
-            alignmentOutputStream = new FileOutputStream(
-                            Paths.get(outdir.toString(), filename).toAbsolutePath().toString() + ".alignments" + extension , append);
-            headerOutputStream    = new FileOutputStream(
-                            Paths.get(outdir.toString(), filename).toAbsolutePath().toString() + ".header" + extension , append);
-
+            
+            alignmentOutputStream = new FileOutputStream(alignmentFilename , append);
+            headerOutputStream    = new FileOutputStream(headerFilename, append);
 
             if(gzip){
                 alignmentOutputStream   = new GZIPOutputStream(alignmentOutputStream);
@@ -107,6 +106,8 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
 
     @Override
     public boolean pre() {
+        jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(Alignment.class, AlignmentJsonMixin.class);
         try {
             alignmentsGenerator = factory.createGenerator(alignmentOutputStream);
             headerGenerator = factory.createGenerator(headerOutputStream);
@@ -116,8 +117,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
             return false;
         }
 
-        AlignmentHeader header = reader.getHeader();
-        return writeHeader(header);
+        return true;
     }
 
     @Override
@@ -125,6 +125,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
 
         try {
             alignmentsGenerator.writeObject(elem);
+            alignmentsGenerator.writeRaw('\n');
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             return false;
@@ -133,20 +134,18 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
 
         //objectMap.put(String.valueOf(alignmentsCount), elem);
 
-        alignmentsCount++;
-
-        if(alignmentsCount == alignmentsPerLine){
-            alignmentsCount = 0;
-            try {
-
-                alignmentsGenerator.writeRaw('\n');
-                //alignmentOutputStream.write((objectMap.toJson() + "\n").getBytes());
-                //objectMap.clear();
-            } catch (IOException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-                return false;
-            }
-        }
+//        alignmentsCount++;
+//        if(alignmentsCount == alignmentsPerLine){
+//            alignmentsCount = 0;
+//            try {
+//                alignmentsGenerator.writeRaw('\n');
+//                //alignmentOutputStream.write((objectMap.toJson() + "\n").getBytes());
+//                //objectMap.clear();
+//            } catch (IOException e) {
+//                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//                return false;
+//            }
+//        }
         return true;
     }
 
@@ -163,6 +162,9 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     @Override
      public boolean post() {
         //TODO: Write Summary
+        AlignmentHeader header = reader.getHeader();
+        writeHeader(header);
+        
         try {
             alignmentOutputStream.flush();
             alignmentsGenerator.flush();
@@ -177,6 +179,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     public boolean close() {
         try {
             alignmentOutputStream.close();
+            headerOutputStream.close();
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             return false;
@@ -185,25 +188,6 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     }
 
 
-
-
-
-
-    public int getAlignmentsPerLine() {
-        return alignmentsPerLine;
-    }
-
-    public void setAlignmentsPerLine(int alignmentsPerLine) {
-        this.alignmentsPerLine = alignmentsPerLine;
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
-    }
 
     public boolean isAppend() {
         return append;
@@ -218,7 +202,4 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
         return gzip;
     }
 
-    public void setGzip(boolean gzip) {
-        this.gzip = gzip;
-    }
 }

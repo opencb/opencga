@@ -27,29 +27,31 @@ import java.util.zip.GZIPInputStream;
  */
 public class AlignmentJsonDataReader implements AlignmentDataReader<Alignment>{
 
-    private String alignmentFilename;
-    private String globalFilename;
-
-    private Path dir;
-    //private Path globalPath;
-
-    protected JsonFactory factory;
-    protected ObjectMapper jsonObjectMapper;
+    private final String alignmentFilename;
+    private final String headerFilename;
+    private final boolean gzip;
+    private final JsonFactory factory;
+    private final ObjectMapper jsonObjectMapper;
     private JsonParser alignmentsParser;
- //   private JsonParser globalParser;
+    private JsonParser headerParser;
 
     private InputStream alignmentsStream;
- //   private InputStream globalStream;
+    private InputStream headerStream;
 
     private AlignmentHeader alignmentHeader;
 
-    public AlignmentJsonDataReader(String alignmentFilename) {
-        this(alignmentFilename, null);
+    
+    public AlignmentJsonDataReader(String baseFilename , boolean gzip) {
+        this(baseFilename+(gzip?".alignments.json.gz":".alignments.json"), baseFilename+(gzip?".header.json.gz":".header.json"));
     }
+    
 
-    public AlignmentJsonDataReader(String alignmentFilename, Path dir) {
+    public AlignmentJsonDataReader(String alignmentFilename, String headerFilename) {
         this.alignmentFilename = alignmentFilename;
-        this.dir = (dir != null) ? dir : Paths.get("").toAbsolutePath(); ;
+        this.headerFilename = headerFilename;
+        this.gzip = alignmentFilename.endsWith(".gz");
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
     }
 
     @Override
@@ -61,12 +63,13 @@ public class AlignmentJsonDataReader implements AlignmentDataReader<Alignment>{
     public boolean open() {
 
         try {
-            new FileInputStream(dir.toFile());
+            
+            alignmentsStream = new FileInputStream(alignmentFilename);
+            headerStream = new FileInputStream(headerFilename);
 
-            alignmentsStream = new FileInputStream(Paths.get(dir.toString(), alignmentFilename).toAbsolutePath().toString());
-
-            if (alignmentFilename.endsWith(".gz")) {
+            if (gzip) {
                 alignmentsStream = new GZIPInputStream(alignmentsStream);
+                headerStream = new GZIPInputStream(headerStream);
             }
 
         } catch (IOException e) {
@@ -79,11 +82,15 @@ public class AlignmentJsonDataReader implements AlignmentDataReader<Alignment>{
 
     @Override
     public boolean pre() {
-
+        jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(Alignment.class, AlignmentJsonMixin.class);
         try {
             alignmentsParser = factory.createParser(alignmentsStream);
+            headerParser = factory.createParser(headerStream);
+            
+            alignmentHeader = headerParser.readValueAs(AlignmentHeader.class);
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
             close();
             return false;
         }
@@ -116,6 +123,9 @@ public class AlignmentJsonDataReader implements AlignmentDataReader<Alignment>{
         Alignment elem;
         for (int i = 0; i < batchSize ; i++) {
             elem = readElem();
+            if(elem == null){
+                break;
+            }
             listRecords.add(elem);
         }
         return listRecords;
