@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.variant.hbase;
 
 import java.util.Map;
+import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantStatsProtos;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -71,6 +72,7 @@ public class VariantStatsToHbaseConverter implements ComplexTypeConverter<Varian
 //            builder.setHardyWeinberg(effect.getHw().getpValue());
         }
         
+        Put p = new Put(builder.build().toByteArray());
         return builder.build();
     }
     

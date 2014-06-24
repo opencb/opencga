@@ -33,7 +33,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
      * the files the variant was read from can be provided in case those 
      * should be processed during the conversion.
      * 
-     * @param archivedVariantFileConverter The mongoVariant used to convert the files
+     * @param archivedVariantFileConverter The object used to convert the files
      */
     public DBObjectToVariantConverter(DBObjectToArchivedVariantFileConverter archivedVariantFileConverter) {
         this.archivedVariantFileConverter = archivedVariantFileConverter;
