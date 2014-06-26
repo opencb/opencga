@@ -327,7 +327,9 @@ public class VariantMongoWriter extends VariantDBWriter {
         archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);
-        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
+        // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
+//        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
+        variantConverter = new DBObjectToVariantConverter();
     }
     
     private void addConsequenceType(String ct) {
