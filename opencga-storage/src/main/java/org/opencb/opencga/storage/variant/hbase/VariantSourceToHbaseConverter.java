@@ -31,6 +31,12 @@ public class VariantSourceToHbaseConverter implements ComplexTypeConverter<Varia
     
     public final static byte[] METADATA_COLUMN = Bytes.toBytes("metadata");
     
+    /**
+     * Not-going-to-be-used row key, just necessary to satisfy HBase API.
+     */
+    private static byte[] rowkey = Bytes.toBytes("ArchivedVariantFileToHbaseConverter");
+    
+    
     @Override
     public VariantSource convertToDataModelType(Put object) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -39,7 +45,7 @@ public class VariantSourceToHbaseConverter implements ComplexTypeConverter<Varia
     @Override
     public Put convertToStorageType(VariantSource object) {
         // TODO Implementation pending
-        Put put = new Put();
+        Put put = new Put(rowkey);
         put.add(COLUMN_FAMILY, FILENAME_COLUMN, Bytes.toBytes(object.getFileName()));
         put.add(COLUMN_FAMILY, FILEID_COLUMN, Bytes.toBytes(object.getFileId()));
         put.add(COLUMN_FAMILY, STUDYNAME_COLUMN, Bytes.toBytes(object.getStudyName()));

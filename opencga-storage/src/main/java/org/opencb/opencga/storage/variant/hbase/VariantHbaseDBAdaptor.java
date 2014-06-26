@@ -8,9 +8,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.*;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.ObjectMap;
-import org.opencb.commons.containers.map.QueryOptions;
+
 import org.opencb.opencga.lib.auth.MonbaseCredentials;
 
 import java.io.IOException;
@@ -24,9 +22,14 @@ import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.bioformats.variant.json.VariantAnalysisInfo;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.variant.VariantEffectProtos;
 import org.opencb.opencga.storage.variant.VariantFieldsProtos;
-import org.opencb.opencga.storage.variant.VariantDBAdaptor;/**
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
+
+/**
  * @author Jesus Rodriguez <jesusrodrc@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */

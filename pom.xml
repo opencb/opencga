@@ -215,12 +215,12 @@
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-core</artifactId>
-                <version>0.20.2</version>
+                <version>1.2.1</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase</artifactId>
-                <version>0.94.6.1</version>
+                <artifactId>hbase-common</artifactId>
+                <version>0.98.3-hadoop2</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
@@ -263,6 +263,11 @@
                         <artifactId>slf4j-log4j12</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-client</artifactId>
+                <version>0.98.3-hadoop2</version>
             </dependency>
         </dependencies>
 

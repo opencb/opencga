@@ -12,7 +12,7 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.hfile.Compression;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.feature.Genotype;
@@ -89,6 +89,9 @@ public class VariantHbaseWriter extends VariantDBWriter {
             config.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
             admin = new HBaseAdmin(config);
         } catch (MasterNotRunningException | ZooKeeperConnectionException ex) {
+            Logger.getLogger(VariantHbaseWriter.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        } catch (IOException ex) {
             Logger.getLogger(VariantHbaseWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
