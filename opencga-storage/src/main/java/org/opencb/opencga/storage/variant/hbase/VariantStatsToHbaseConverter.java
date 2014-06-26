@@ -49,6 +49,8 @@ public class VariantStatsToHbaseConverter implements ComplexTypeConverter<Varian
         // MAF and MGF
         builder.setMaf(object.getMaf());
         builder.setMgf(object.getMgf());
+        builder.setMafAllele(object.getMafAllele());
+        builder.setMgfGenotype(object.getMgfGenotype());
         
         // Miscellaneous
         builder.setPassedFilters(object.hasPassedFilters());

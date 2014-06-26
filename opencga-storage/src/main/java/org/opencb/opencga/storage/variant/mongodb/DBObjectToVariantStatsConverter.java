@@ -24,7 +24,6 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         
         stats.setMissingAlleles((int) object.get("missAllele"));
         stats.setMissingGenotypes((int) object.get("missGenotypes"));
-        stats.setMendelianErrors((int) object.get("mendelErr"));
         
         // Genotype counts
         BasicDBObject genotypes = (BasicDBObject) object.get("genotypeCount");
@@ -44,7 +43,6 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         mongoStats.append("genotypeMaf", vs.getMgfGenotype());
         mongoStats.append("missAllele", vs.getMissingAlleles());
         mongoStats.append("missGenotypes", vs.getMissingGenotypes());
-        mongoStats.append("mendelErr", vs.getMendelianErrors());
         
         // Genotype counts
         BasicDBObject genotypes = new BasicDBObject();
