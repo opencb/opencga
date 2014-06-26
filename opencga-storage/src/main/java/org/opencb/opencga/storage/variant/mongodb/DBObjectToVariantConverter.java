@@ -18,6 +18,20 @@ import static org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter.CHUN
  */
 public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant, DBObject> {
 
+    public final static String CHROMOSOME_FIELD = "chr";
+    public final static String START_FIELD = "start";
+    public final static String END_FIELD = "end";
+    public final static String LENGTH_FIELD = "len";
+    public final static String REFERENCE_FIELD = "ref";
+    public final static String ALTERNATE_FIELD = "alt";
+    public final static String ID_FIELD = "id";
+    
+    public final static String HGVS_FIELD = "hgvs";
+    public final static String TYPE_FIELD = "type";
+    public final static String NAME_FIELD = "name";
+    public final static String FILES_FIELD = "files";
+    
+    
     private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
 
     /**
@@ -42,20 +56,20 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     
     @Override
     public Variant convertToDataModelType(DBObject object) {
-        Variant variant = new Variant((String) object.get("chr"), (int) object.get("start"), (int) object.get("end"), 
-                (String) object.get("ref"), (String) object.get("alt"));
-        variant.setId((String) object.get("id"));
+        Variant variant = new Variant((String) object.get(CHROMOSOME_FIELD), (int) object.get(START_FIELD), (int) object.get(END_FIELD), 
+                (String) object.get(REFERENCE_FIELD), (String) object.get(ALTERNATE_FIELD));
+        variant.setId((String) object.get(ID_FIELD));
         
         // Transform HGVS: List of map entries -> Map of lists
-        BasicDBList mongoHgvs = (BasicDBList) object.get("hgvs");
+        BasicDBList mongoHgvs = (BasicDBList) object.get(HGVS_FIELD);
         for (Object o : mongoHgvs) {
             DBObject dbo = (DBObject) o;
-            variant.addHgvs((String) dbo.get("type"), (String) dbo.get("name"));
+            variant.addHgvs((String) dbo.get(TYPE_FIELD), (String) dbo.get(NAME_FIELD));
         }
         
         // Files
         if (archivedVariantFileConverter != null) {
-            BasicDBList mongoFiles = (BasicDBList) object.get("files");
+            BasicDBList mongoFiles = (BasicDBList) object.get(FILES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
@@ -69,9 +83,9 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     @Override
     public DBObject convertToStorageType(Variant object) {
         // Attributes easily calculated
-        BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object)).append("id", object.getId()).append("type", object.getType().name());
-        mongoVariant.append("chr", object.getChromosome()).append("start", object.getStart()).append("end", object.getStart());
-        mongoVariant.append("length", object.getLength()).append("ref", object.getReference()).append("alt", object.getAlternate());
+        BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object)).append(ID_FIELD, object.getId()).append(TYPE_FIELD, object.getType().name());
+        mongoVariant.append(CHROMOSOME_FIELD, object.getChromosome()).append(START_FIELD, object.getStart()).append(END_FIELD, object.getStart());
+        mongoVariant.append(LENGTH_FIELD, object.getLength()).append(REFERENCE_FIELD, object.getReference()).append(ALTERNATE_FIELD, object.getAlternate());
         
         // Internal fields used for query optimization (dictionary named "_at")
         BasicDBObject _at = new BasicDBObject();
@@ -87,10 +101,10 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         BasicDBList hgvs = new BasicDBList();
         for (Map.Entry<String, Set<String>> entry : object.getHgvs().entrySet()) {
             for (String value : entry.getValue()) {
-                hgvs.add(new BasicDBObject("type", entry.getKey()).append("name", value));
+                hgvs.add(new BasicDBObject(TYPE_FIELD, entry.getKey()).append(NAME_FIELD, value));
             }
         }
-        mongoVariant.append("hgvs", hgvs);
+        mongoVariant.append(HGVS_FIELD, hgvs);
         
         // Files
         if (archivedVariantFileConverter != null) {
@@ -98,7 +112,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             for (ArchivedVariantFile archiveFile : object.getFiles().values()) {
                 mongoFiles.add(archivedVariantFileConverter.convertToStorageType(archiveFile));
             }
-            mongoVariant.append("files", mongoFiles);
+            mongoVariant.append(FILES_FIELD, mongoFiles);
         }
         
         // TODO Effects
