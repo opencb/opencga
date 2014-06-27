@@ -23,7 +23,6 @@ import org.opencb.opencga.storage.variant.StudyDBAdaptor;
 public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConverter<ArchivedVariantFile, DBObject> {
 
     public final static String FILEID_FIELD = "fid";
-    public final static String FILENAME_FIELD = "fname";
     public final static String STUDYID_FIELD = "sid";
     public final static String ATTRIBUTES_FIELD = "attrs";
     public final static String FORMAT_FIELD = "fm";
@@ -90,7 +89,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     public ArchivedVariantFile convertToDataModelType(DBObject object) {
         String fileId = (String) object.get(FILEID_FIELD);
         String studyId = (String) object.get(STUDYID_FIELD);
-        ArchivedVariantFile file = new ArchivedVariantFile((String) object.get(FILENAME_FIELD), fileId, studyId);
+        ArchivedVariantFile file = new ArchivedVariantFile(fileId, studyId);
         
         // Attributes
         if (object.containsField(ATTRIBUTES_FIELD)) {
@@ -158,7 +157,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         }
         
         // Statistics
-        if (statsConverter != null) {
+        if (statsConverter != null && object.getStats() != null) {
             mongoFile.put(STATS_FIELD, statsConverter.convertToStorageType(object.getStats()));
         }
         
