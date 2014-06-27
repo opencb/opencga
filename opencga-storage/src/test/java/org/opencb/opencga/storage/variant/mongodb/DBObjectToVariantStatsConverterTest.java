@@ -17,7 +17,7 @@ public class DBObjectToVariantStatsConverterTest {
     private static VariantStats stats;
     
     @BeforeClass
-    public static void setUp() {
+    public static void setUpClass() {
         mongoStats = new BasicDBObject(DBObjectToVariantStatsConverter.MAF_FIELD, 0.1);
         mongoStats.append(DBObjectToVariantStatsConverter.MGF_FIELD, 0.01);
         mongoStats.append(DBObjectToVariantStatsConverter.MAFALLELE_FIELD, "A");

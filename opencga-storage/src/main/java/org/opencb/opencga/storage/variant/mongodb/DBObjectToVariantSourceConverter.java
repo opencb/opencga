@@ -38,11 +38,10 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     @Override
     public VariantSource convertToDataModelType(DBObject object) {
         VariantSource source = new VariantSource((String) object.get(FILENAME_FIELD), (String) object.get(FILEID_FIELD),
-                (String) object.get(STUDYNAME_FIELD), (String) object.get(STUDYID_FIELD));
+                (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD));
         
         // Samples
-        BasicDBObject samplesPosition = (BasicDBObject) object.get(SAMPLES_FIELD);
-        source.setSamplesPosition(samplesPosition.toMap());
+        source.setSamplesPosition((Map) object.get(SAMPLES_FIELD));
         
         // Statistics
         DBObject statsObject = (DBObject) object.get(STATS_FIELD);
@@ -54,7 +53,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
         stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
         stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
-        stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+        stats.setMeanQuality((Float) statsObject.get(MEANQUALITY_FIELD));
         source.setStats(stats);
         
         // Metadata
@@ -91,13 +90,9 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                     .append(NUMPASSFILTERS_FIELD, global.getPassCount())
                     .append(NUMTRANSITIONS_FIELD, global.getTransitionsCount())
                     .append(NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
-//                    .append("accumulatedQuality", stats.getAccumulatedQuality())
                     .append(MEANQUALITY_FIELD, (float) global.getMeanQuality());
-//                    globalStats.append("consequenceTypes", cts);
 
             studyMongo = studyMongo.append(STATS_FIELD, globalStats);
-//        } else {
-//            studyMongo.append(STATS_FIELD, new BasicDBObject("consequenceTypes", cts));
         }
 
         // TODO Save pedigree information
