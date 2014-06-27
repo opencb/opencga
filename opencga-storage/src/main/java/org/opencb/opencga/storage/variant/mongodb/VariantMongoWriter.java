@@ -157,7 +157,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 mongoFileMap.put(rowkey + "_" + archiveFile.getFileId(), mongoFile);
             }
             
-            mongoVariant.put("files", mongoFiles);
+            mongoVariant.put(DBObjectToVariantConverter.FILES_FIELD, mongoFiles);
             mongoMap.put(rowkey, mongoVariant);
         }
 
@@ -169,7 +169,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         for (Variant v : variants) {
             DBObject mongoVariant = mongoMap.get(variantConverter.buildStorageId(v));
 
-            if (!mongoVariant.containsField("chr")) {
+            if (!mongoVariant.containsField(DBObjectToVariantConverter.CHROMOSOME_FIELD)) {
                 // TODO It means that the same position was already found in this file, so __for now__ it won't be processed again
                 continue;
             }
@@ -223,12 +223,13 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
-        variantsCollection.ensureIndex(new BasicDBObject("files.studyId", 1).append("files.fileId", 1), "studyAndFile");
         variantsCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
         variantsCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
         variantsCollection.ensureIndex(new BasicDBObject("_at.ct", 1));
-        variantsCollection.ensureIndex(new BasicDBObject("id", 1));
-        variantsCollection.ensureIndex(new BasicDBObject("chr", 1));
+        variantsCollection.ensureIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
+        variantsCollection.ensureIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
+        variantsCollection.ensureIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD, 1)
+                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.FILEID_FIELD, 1), "studyAndFile");
         return true;
     }
 
@@ -240,7 +241,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             DBObject query = new BasicDBObject("_id", rowkey);
             WriteResult wr;
             
-            if (mongoVariant.containsField("chr")) {
+            if (mongoVariant.containsField(DBObjectToVariantConverter.CHROMOSOME_FIELD)) {
                 // Was fully built in this run because it didn't exist, and must be inserted
                 try {
                     wr = variantsCollection.insert(mongoVariant);
@@ -260,7 +261,8 @@ public class VariantMongoWriter extends VariantDBWriter {
                 // TODO How to do this efficiently, inserting all files at once?
                 for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
                     DBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
-                    BasicDBObject changes = new BasicDBObject().append("$addToSet", new BasicDBObject("files", mongoFile));
+                    BasicDBObject changes = new BasicDBObject().append("$addToSet", 
+                            new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, mongoFile));
                     
                     wr = variantsCollection.update(query, changes, true, false);
                     if (!wr.getLastError().ok()) {
@@ -285,7 +287,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     private boolean writeSourceSummary(VariantSource source) {
         DBObject studyMongo = sourceConverter.convertToStorageType(source);
-        DBObject query = new BasicDBObject("fileName", source.getFileName());
+        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILENAME_FIELD, source.getFileName());
         WriteResult wr = filesCollection.update(query, studyMongo, true, false);
 
         return wr.getLastError().ok(); // TODO Is this a proper return statement?

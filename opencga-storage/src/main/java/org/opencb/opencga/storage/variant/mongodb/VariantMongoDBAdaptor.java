@@ -60,13 +60,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         MongoDBCollection coll = db.getCollection("variants");
 
         // Aggregation for filtering when more than one study is present
-        QueryBuilder qb = QueryBuilder.start("files.studyId").in(studyId);
+        QueryBuilder qb = QueryBuilder.start(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD).in(studyId);
         getRegionFilter(region, qb);
         parseQueryOptions(options, qb);
         
         DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject unwind = new BasicDBObject("$unwind", "$files");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("files.studyId", new BasicDBObject("$in", studyId)));
+        DBObject unwind = new BasicDBObject("$unwind", "$" + DBObjectToVariantConverter.FILES_FIELD);
+        DBObject match2 = new BasicDBObject("$match", 
+                new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD, 
+                        new BasicDBObject("$in", studyId)));
         
         return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
     }
@@ -144,7 +146,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult getVariantById(String id, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("variants");
 
-        BasicDBObject query = new BasicDBObject("id", id);
+        BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
         return coll.find(query, options, variantConverter);
     }
 
@@ -198,28 +200,29 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
         List<String> chunkIds = getChunkIds(region);
         builder.and("_at.chunkIds").in(chunkIds);
-        builder.and("end").greaterThanEquals(region.getStart()).and("start").lessThanEquals(region.getEnd());
+        builder.and(DBObjectToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
+        builder.and(DBObjectToVariantConverter.START_FIELD).lessThanEquals(region.getEnd());
         return builder;
     }
     
     private QueryBuilder getReferenceFilter(String reference, QueryBuilder builder) {
-        return builder.and("ref").is(reference);
+        return builder.and(DBObjectToVariantConverter.REFERENCE_FIELD).is(reference);
     }
     
     private QueryBuilder getAlternateFilter(String alternate, QueryBuilder builder) {
-        return builder.and("alt").is(alternate);
+        return builder.and(DBObjectToVariantConverter.ALTERNATE_FIELD).is(alternate);
     }
     
     private QueryBuilder getVariantTypeFilter(String type, QueryBuilder builder) {
-        return builder.and("type").is(type.toUpperCase());
+        return builder.and(DBObjectToVariantConverter.TYPE_FIELD).is(type.toUpperCase());
     }
     
     private QueryBuilder getEffectFilter(List<String> effects, QueryBuilder builder) {
-        return builder.and("effects.so").in(effects);
+        return builder.and(DBObjectToVariantConverter.EFFECTS_FIELD + "." + DBObjectToVariantConverter.SOTERM_FIELD).in(effects);
     }
     
     private QueryBuilder getStudyFilter(List<String> studies, QueryBuilder builder) {
-        return builder.and("files.studyId").in(studies);
+        return builder.and(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD).in(studies);
     }
     
     private List<String> getChunkIds(Region region) {

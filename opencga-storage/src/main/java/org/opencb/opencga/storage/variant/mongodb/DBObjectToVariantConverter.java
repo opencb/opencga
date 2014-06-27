@@ -29,7 +29,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String HGVS_FIELD = "hgvs";
     public final static String TYPE_FIELD = "type";
     public final static String NAME_FIELD = "name";
+    
     public final static String FILES_FIELD = "files";
+    
+    public final static String EFFECTS_FIELD = "effs";
+    public final static String SOTERM_FIELD = "so";
+    public final static String GENE_FIELD = "gene";
     
     
     private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
