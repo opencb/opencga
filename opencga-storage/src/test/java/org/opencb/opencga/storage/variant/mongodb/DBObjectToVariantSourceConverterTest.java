@@ -17,6 +17,7 @@ import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 public class DBObjectToVariantSourceConverterTest {
     
     private static BasicDBObject mongoSource;
+    
     private static VariantSource source;
     
     
@@ -47,7 +48,7 @@ public class DBObjectToVariantSourceConverterTest {
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, source.getSamplesPosition());
         // TODO Pending how to manage the consequence type ranking (calculate during reading?)
         
-        DBObject globalStats = new BasicDBObject(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD, global.getSamplesCount())
+        DBObject mongoStats = new BasicDBObject(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD, global.getSamplesCount())
                 .append(DBObjectToVariantSourceConverter.NUMVARIANTS_FIELD, global.getVariantsCount())
                 .append(DBObjectToVariantSourceConverter.NUMSNPS_FIELD, global.getSnpsCount())
                 .append(DBObjectToVariantSourceConverter.NUMINDELS_FIELD, global.getIndelsCount())
@@ -56,7 +57,7 @@ public class DBObjectToVariantSourceConverterTest {
                 .append(DBObjectToVariantSourceConverter.NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
                 .append(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD, (float) global.getMeanQuality());
 
-        mongoSource = mongoSource.append(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats);
+        mongoSource = mongoSource.append(DBObjectToVariantSourceConverter.STATS_FIELD, mongoStats);
 
         // TODO Save pedigree information
         
@@ -70,6 +71,28 @@ public class DBObjectToVariantSourceConverterTest {
     public void testConvertToDataModelType() {
         DBObjectToVariantSourceConverter converter = new DBObjectToVariantSourceConverter();
         DBObject converted = converter.convertToStorageType(source);
+       
+        assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.FILENAME_FIELD), converted.get(DBObjectToVariantSourceConverter.FILENAME_FIELD));
+        assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.FILEID_FIELD), converted.get(DBObjectToVariantSourceConverter.FILEID_FIELD));
+        assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.STUDYNAME_FIELD), converted.get(DBObjectToVariantSourceConverter.STUDYNAME_FIELD));
+        assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.STUDYID_FIELD), converted.get(DBObjectToVariantSourceConverter.STUDYID_FIELD));
+        // Exclude the date
+        assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD), converted.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD));
+        
+        DBObject convertedStats = (DBObject) converted.get(DBObjectToVariantSourceConverter.STATS_FIELD);
+        DBObject expectedStats = (DBObject) converted.get(DBObjectToVariantSourceConverter.STATS_FIELD);
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMVARIANTS_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMVARIANTS_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMSNPS_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMSNPS_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMINDELS_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMINDELS_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMPASSFILTERS_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMPASSFILTERS_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMTRANSITIONS_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMTRANSITIONS_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.NUMTRANSVERSIONS_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.NUMTRANSVERSIONS_FIELD));
+        assertEquals(expectedStats.get(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD), convertedStats.get(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD));
+        
+        DBObject convertedMetadata = (DBObject) converted.get(DBObjectToVariantSourceConverter.METADATA_FIELD);
+        DBObject expectedMetadata = (DBObject) converted.get(DBObjectToVariantSourceConverter.METADATA_FIELD);
+        assertEquals(expectedMetadata.get(DBObjectToVariantSourceConverter.HEADER_FIELD), convertedMetadata.get(DBObjectToVariantSourceConverter.HEADER_FIELD));
     }
 
     @Test
