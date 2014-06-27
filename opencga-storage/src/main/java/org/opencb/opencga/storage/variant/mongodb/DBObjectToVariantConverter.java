@@ -88,9 +88,15 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     @Override
     public DBObject convertToStorageType(Variant object) {
         // Attributes easily calculated
-        BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object)).append(ID_FIELD, object.getId()).append(TYPE_FIELD, object.getType().name());
-        mongoVariant.append(CHROMOSOME_FIELD, object.getChromosome()).append(START_FIELD, object.getStart()).append(END_FIELD, object.getStart());
-        mongoVariant.append(LENGTH_FIELD, object.getLength()).append(REFERENCE_FIELD, object.getReference()).append(ALTERNATE_FIELD, object.getAlternate());
+        BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object))
+                .append(ID_FIELD, object.getId())
+                .append(TYPE_FIELD, object.getType().name())
+                .append(CHROMOSOME_FIELD, object.getChromosome())
+                .append(START_FIELD, object.getStart())
+                .append(END_FIELD, object.getStart())
+                .append(LENGTH_FIELD, object.getLength())
+                .append(REFERENCE_FIELD, object.getReference())
+                .append(ALTERNATE_FIELD, object.getAlternate());
         
         // Internal fields used for query optimization (dictionary named "_at")
         BasicDBObject _at = new BasicDBObject();
