@@ -120,7 +120,7 @@
                         <excludes>
                             <exclude>**/VariantSqliteWriter.java</exclude>
                             <exclude>**/VariantSqliteDBAdaptor.java</exclude>
-                            <!--<exclude>**/VariantHbaseWriter.java</exclude>-->
+                            <exclude>**/VariantHbaseWriter.java</exclude>
                             <exclude>**/VariantHbaseDBAdaptor.java</exclude>
                         </excludes>
                         <testExcludes>

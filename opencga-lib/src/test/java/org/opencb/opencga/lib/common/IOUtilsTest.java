@@ -7,17 +7,17 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.*;
-
 public class IOUtilsTest {
+
+    private static String inputFile = IOUtilsTest.class.getResource("/file.txt").getFile();
 
     @Test
     public void testHeadOffset() throws Exception {
 
-        InputStream is = IOUtils.headOffset(Paths.get("/home/fsalavert/file.txt"), 0, 1);
+        InputStream is = IOUtils.headOffset(Paths.get(inputFile), 0, 1);
         BufferedReader in = new BufferedReader(new InputStreamReader(is));
         String inputLine;
-        while ((inputLine = in.readLine()) != null){
+        while ((inputLine = in.readLine()) != null) {
             System.out.println(inputLine);
         }
         in.close();
@@ -27,11 +27,11 @@ public class IOUtilsTest {
     @Test
     public void testGrepFile() throws Exception {
 
-//        InputStream is = IOUtils.grepFile(Paths.get("/home/fsalavert/file.txt"), "^#a.*", false, false);
-        InputStream is = IOUtils.grepFile(Paths.get("/home/fsalavert/file.txt"), ".*", false, true);
+//        InputStream is = IOUtils.grepFile(Paths.get(inputFile), "^#a.*", false, false);
+        InputStream is = IOUtils.grepFile(Paths.get(inputFile), ".*", false, true);
         BufferedReader in = new BufferedReader(new InputStreamReader(is));
         String inputLine;
-        while ((inputLine = in.readLine()) != null){
+        while ((inputLine = in.readLine()) != null) {
             System.out.println(inputLine);
         }
         in.close();
