@@ -92,7 +92,6 @@ public class DBObjectToVariantConverterTest {
 
     @Test
     public void testConvertToStorageTypeWithFiles() {
-        // TODO 
         ArchivedVariantFile file = new ArchivedVariantFile("f1", "s1");
         file.addAttribute("QUAL", "0.01");
         file.addAttribute("AN", "2");
