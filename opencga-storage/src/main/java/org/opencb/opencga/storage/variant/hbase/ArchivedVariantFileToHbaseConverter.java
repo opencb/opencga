@@ -35,9 +35,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
      * there is no need to provide a list of samples nor statistics.
      */
     public ArchivedVariantFileToHbaseConverter() {
-        this.includeSamples = false;
-        this.samples = null;
-        this.statsConverter = null;
+        this(null, null);
     }
 
     /**
@@ -50,7 +48,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
      */
     public ArchivedVariantFileToHbaseConverter(List<String> samples, VariantStatsToHbaseConverter statsConverter) {
         this.samples = samples;
-        this.includeSamples = samples != null && !samples.isEmpty();
+        this.includeSamples = samples != null;
         this.statsConverter = statsConverter;
     }
 
