@@ -192,6 +192,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (options.containsKey("studies")) {
                 getStudyFilter(options.getListAs("studies", String.class), builder);
             }
+            
+            if (options.containsKey("maf") && options.containsKey("opMaf")) {
+                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
+            }
+            
+            if (options.containsKey("missingAlleles") && options.containsKey("opMissingAlleles")) {
+                getMissingAllelesFilter(options.getInt("missingAlleles"), ComparisonOperator.fromString(options.getString("opMissingAlleles")), builder);
+            }
+            
+            if (options.containsKey("missingGenotypes") && options.containsKey("opMissingGenotypes")) {
+                getMissingGenotypesFilter(options.getInt("missingGenotypes"), ComparisonOperator.fromString(options.getString("opMissingGenotypes")), builder);
+            }
+            
         }
         
         return builder;
@@ -225,6 +238,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder.and(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD).in(studies);
     }
     
+    private QueryBuilder getMafFilter(float maf, ComparisonOperator op, QueryBuilder builder) {
+        return op.apply(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STATS_FIELD 
+                + "." + DBObjectToVariantStatsConverter.MAF_FIELD, maf, builder);
+    }
+
+    private QueryBuilder getMissingAllelesFilter(int missingAlleles, ComparisonOperator op, QueryBuilder builder) {
+        return op.apply(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STATS_FIELD 
+                + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD, missingAlleles, builder);
+    }
+
+    private QueryBuilder getMissingGenotypesFilter(int missingGenotypes, ComparisonOperator op, QueryBuilder builder) {
+        return op.apply(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STATS_FIELD 
+                + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, missingGenotypes, builder);
+    }
+
+    
+    /* *******************
+     * Auxiliary methods *
+     * *******************/
+    
     private List<String> getChunkIds(Region region) {
         List<String> chunkIds = new LinkedList<>();
         
@@ -240,6 +273,81 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         
         return chunkIds;
+    }
+    
+    
+    /* *******************
+     *  Auxiliary types  *
+     * *******************/
+    
+    private enum ComparisonOperator {
+        LT("<") {
+            @Override
+            QueryBuilder apply(String key, Object value, QueryBuilder builder) {
+                return builder.and(key).lessThan(value);
+            }
+        },
+        
+        LTE("<=") {
+            @Override
+            QueryBuilder apply(String key, Object value, QueryBuilder builder) {
+                return builder.and(key).lessThanEquals(value);
+            }
+        },
+        
+        GT(">") {
+            @Override
+            QueryBuilder apply(String key, Object value, QueryBuilder builder) {
+                return builder.and(key).greaterThan(value);
+            }
+        },
+        
+        GTE(">=") {
+            @Override
+            QueryBuilder apply(String key, Object value, QueryBuilder builder) {
+                return builder.and(key).greaterThanEquals(value);
+            }
+        },
+        
+        EQ("=") {
+            @Override
+            QueryBuilder apply(String key, Object value, QueryBuilder builder) {
+                return builder.and(key).is(value);
+            }
+        },
+        
+        NEQ("=/=") {
+            @Override
+            QueryBuilder apply(String key, Object value, QueryBuilder builder) {
+                return builder.and(key).notEquals(value);
+            }
+        };
+
+        private final String symbol;
+        
+        private ComparisonOperator(String symbol) {
+            this.symbol = symbol;
+        }
+
+        @Override
+        public String toString() {
+            return symbol;
+        }
+        
+        abstract QueryBuilder apply(String key, Object value, QueryBuilder builder);
+        
+        // Returns Operation for string, or null if string is invalid
+        private static final Map<String, ComparisonOperator> stringToEnum = new HashMap<>();
+        static { // Initialize map from constant name to enum constant
+            for (ComparisonOperator op : values()) {
+                stringToEnum.put(op.toString(), op);
+            }
+        }
+
+        public static ComparisonOperator fromString(String symbol) {
+            return stringToEnum.get(symbol);
+        }
+
     }
     
 //    @Override
