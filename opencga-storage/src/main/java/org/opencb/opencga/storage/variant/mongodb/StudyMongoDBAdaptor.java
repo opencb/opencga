@@ -91,10 +91,9 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         DBObject dboId = (DBObject) dbo.get("_id");
         
         DBObject outputDbo = new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, dboId.get(DBObjectToVariantSourceConverter.STUDYID_FIELD)).append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, dboId.get(DBObjectToVariantSourceConverter.STUDYNAME_FIELD)).append("numFiles", dbo.get("numFiles"));
-        QueryResult transformedResult = new QueryResult(aggregationResult.getId(), aggregationResult.getDBTime(), 
+        QueryResult transformedResult = new QueryResult(aggregationResult.getId(), aggregationResult.getDbTime(), 
                 aggregationResult.getNumResults(), aggregationResult.getNumTotalResults(), 
-                aggregationResult.getWarning(), aggregationResult.getError(), 
-                DBObject.class, Arrays.asList(outputDbo));
+                aggregationResult.getWarningMsg(), aggregationResult.getErrorMsg(), Arrays.asList(outputDbo));
         return transformedResult;
     }
 
@@ -168,7 +167,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         List<String> samplesInSource = samplesInSources.get(studyId + "_" + fileId);
 
         if (samplesInSource == null || samplesInSource.isEmpty()) {
-            queryResult.setWarning("Source " + fileId + " in study " + studyId + " not found");
+            queryResult.setWarningMsg("Source " + fileId + " in study " + studyId + " not found");
             queryResult.setNumTotalResults(0);
         } else {
             samples.add(samplesInSource);
