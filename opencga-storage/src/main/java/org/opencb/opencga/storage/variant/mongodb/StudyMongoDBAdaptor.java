@@ -46,7 +46,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     }
 
     @Override
-    public QueryResult getNumberOfSources() {
+    public QueryResult countSources() {
         MongoDBCollection coll = db.getCollection("files");
         return coll.count();
     }
@@ -110,9 +110,9 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     @Override
     public QueryResult getSamplesBySource(String fileId, String studyId, QueryOptions options) {
-        if (samplesInSources.size() != (long) getNumberOfSources().getResult().get(0)) {
+        if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
-                if (samplesInSources.size() != (long) getNumberOfSources().getResult().get(0)) {
+                if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
                     QueryResult queryResult = populateSamplesInSources();
                     populateSamplesInSourcesQueryResult(fileId, studyId, queryResult);
                     return queryResult;
