@@ -238,7 +238,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
                     if (includeSamples) {
                         for (String s : archiveFile.getSampleNames()) {
                             VariantProtos.VariantSample.Builder sp = VariantProtos.VariantSample.newBuilder();
-                            sp.setSample(VcfUtils.getJoinedSampleFields(v, archiveFile.getFileId(), s));
+                            sp.setSample(VcfUtils.getJoinedSampleFields(v, archiveFile, s));
                             byte[] qualifier = Bytes.toBytes(prefix + "_" + s);
                             auxPut.add(dataColumnFamily, qualifier, sp.build().toByteArray());
                         }
