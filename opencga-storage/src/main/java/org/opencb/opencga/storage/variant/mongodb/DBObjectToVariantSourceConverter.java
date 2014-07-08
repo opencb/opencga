@@ -53,7 +53,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
         stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
         stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
-        stats.setMeanQuality((Float) statsObject.get(MEANQUALITY_FIELD));
+        stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
         source.setStats(stats);
         
         // Metadata

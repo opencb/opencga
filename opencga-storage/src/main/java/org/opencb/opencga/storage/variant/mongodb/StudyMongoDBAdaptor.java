@@ -79,9 +79,12 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         getStudyIdFilter(studyId, qb);
         
         DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("_id", 0).append(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1).append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, 1));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("_id", 0)
+                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1)
+                .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, 1));
         DBObject group = new BasicDBObject("$group", 
-                new BasicDBObject("_id", new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, "$studyId").append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, "$studyName"))
+                new BasicDBObject("_id", new BasicDBObject("studyId", "$" + DBObjectToVariantSourceConverter.STUDYID_FIELD)
+                        .append("studyName", "$" + DBObjectToVariantSourceConverter.STUDYNAME_FIELD))
                 .append("numFiles", new BasicDBObject("$sum", 1)));
         
         
@@ -90,7 +93,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         DBObject dbo = results.iterator().next();
         DBObject dboId = (DBObject) dbo.get("_id");
         
-        DBObject outputDbo = new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, dboId.get(DBObjectToVariantSourceConverter.STUDYID_FIELD)).append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, dboId.get(DBObjectToVariantSourceConverter.STUDYNAME_FIELD)).append("numFiles", dbo.get("numFiles"));
+        DBObject outputDbo = new BasicDBObject("studyId", dboId.get("studyId")).append("studyName", dboId.get("studyName")).append("numFiles", dbo.get("numFiles"));
         QueryResult transformedResult = new QueryResult(aggregationResult.getId(), aggregationResult.getDbTime(), 
                 aggregationResult.getNumResults(), aggregationResult.getNumTotalResults(), 
                 aggregationResult.getWarningMsg(), aggregationResult.getErrorMsg(), Arrays.asList(outputDbo));
