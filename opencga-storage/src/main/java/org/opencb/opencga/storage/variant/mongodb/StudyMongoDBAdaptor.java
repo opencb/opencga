@@ -41,8 +41,21 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     @Override
     public QueryResult listStudies() {
+//        db.files.aggregate( { $project : { _id : 0, sid : 1, sname : 1 } },
+//                    { $group : { _id : { studyId : "$sid", studyName : "$sname"} }}, 
+//                    { $project : { "studyId" : "$_id.studyId", "studyName" : "$_id.studyName", "_id" : 0 }} )
         MongoDBCollection coll = db.getCollection("files");
-        return coll.distinct(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, null);
+        DBObject project1 = new BasicDBObject("$project", new BasicDBObject("_id", 0)
+                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1)
+                .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, 1));
+        DBObject group = new BasicDBObject("$group", 
+                new BasicDBObject("_id", new BasicDBObject("studyId", "$" + DBObjectToVariantSourceConverter.STUDYID_FIELD)
+                        .append("studyName", "$" + DBObjectToVariantSourceConverter.STUDYNAME_FIELD)));
+        DBObject project2 = new BasicDBObject("$project", new BasicDBObject("studyId", "$_id.studyId")
+                .append("studyName", "$_id.studyName")
+                .append("_id", 0));
+        
+        return coll.aggregate("$studyList", Arrays.asList(project1, group, project2), null);
     }
 
     @Override
@@ -67,12 +80,12 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     @Override
     public QueryResult getStudyById(String studyId, QueryOptions options) {
-        // db.variants.aggregate( { $match : { "studyId" : "abc" } }, 
-        //                        { $project : { _id : 0, studyId : 1, studyName : 1 } }, 
-        //                        { $group : {
-        //                              _id : { studyId : "$studyId", studyName : "$studyName"}, 
-        //                              numSources : { $sum : 1} 
-        //                        }} )
+        // db.files.aggregate( { $match : { "studyId" : "abc" } }, 
+        //                     { $project : { _id : 0, studyId : 1, studyName : 1 } }, 
+        //                     { $group : {
+        //                           _id : { studyId : "$studyId", studyName : "$studyName"}, 
+        //                           numSources : { $sum : 1} 
+        //                     }} )
         MongoDBCollection coll = db.getCollection("files");
         
         QueryBuilder qb = QueryBuilder.start();
