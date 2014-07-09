@@ -90,7 +90,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                     .append(NUMPASSFILTERS_FIELD, global.getPassCount())
                     .append(NUMTRANSITIONS_FIELD, global.getTransitionsCount())
                     .append(NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
-                    .append(MEANQUALITY_FIELD, (float) global.getMeanQuality());
+                    .append(MEANQUALITY_FIELD, (double) global.getMeanQuality());
 
             studyMongo = studyMongo.append(STATS_FIELD, globalStats);
         }

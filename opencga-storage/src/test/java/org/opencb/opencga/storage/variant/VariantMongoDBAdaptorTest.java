@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.variant;
 
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;

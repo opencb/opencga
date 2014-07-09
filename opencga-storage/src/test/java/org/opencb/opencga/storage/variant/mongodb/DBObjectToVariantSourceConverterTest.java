@@ -55,7 +55,7 @@ public class DBObjectToVariantSourceConverterTest {
                 .append(DBObjectToVariantSourceConverter.NUMPASSFILTERS_FIELD, global.getPassCount())
                 .append(DBObjectToVariantSourceConverter.NUMTRANSITIONS_FIELD, global.getTransitionsCount())
                 .append(DBObjectToVariantSourceConverter.NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
-                .append(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD, (float) global.getMeanQuality());
+                .append(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD, (double) global.getMeanQuality());
 
         mongoSource = mongoSource.append(DBObjectToVariantSourceConverter.STATS_FIELD, mongoStats);
 

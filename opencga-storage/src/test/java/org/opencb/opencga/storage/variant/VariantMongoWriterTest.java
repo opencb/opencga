@@ -7,7 +7,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
-import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
