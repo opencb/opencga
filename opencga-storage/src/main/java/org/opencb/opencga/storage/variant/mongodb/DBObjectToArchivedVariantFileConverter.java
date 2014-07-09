@@ -15,6 +15,7 @@ import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.storage.variant.StudyDBAdaptor;
+import org.opencb.opencga.storage.variant.VariantSourceDBAdaptor;
 
 /**
  * 
@@ -35,7 +36,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     private List<String> samples;
     
     private DBObjectToVariantStatsConverter statsConverter;
-    private StudyDBAdaptor studyDbAdaptor;
+    private VariantSourceDBAdaptor sourceDbAdaptor;
 
     /**
      * Create a converter between ArchivedVariantFile and DBObject entities when 
@@ -76,7 +77,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         this.includeSamples = includeSamples;
         if (this.includeSamples) {
             try {
-                this.studyDbAdaptor = new StudyMongoDBAdaptor(credentials);
+                this.sourceDbAdaptor = new VariantSourceMongoDBAdaptor(credentials);
             } catch (UnknownHostException ex) {
                 Logger.getLogger(DBObjectToArchivedVariantFileConverter.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -102,7 +103,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         // Samples
         if (includeSamples && object.containsField(SAMPLES_FIELD)) {
             BasicDBList genotypes = (BasicDBList) object.get(SAMPLES_FIELD);
-            samples = (List<String>) studyDbAdaptor.getSamplesBySource(fileId, studyId, null).getResult().get(0);
+            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(fileId, studyId, null).getResult().get(0);
             Iterator<String> samplesIterator = samples.iterator();
             Iterator<Object> genotypesIterator = genotypes.iterator();
             
