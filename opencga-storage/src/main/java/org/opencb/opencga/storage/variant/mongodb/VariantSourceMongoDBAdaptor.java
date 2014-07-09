@@ -43,6 +43,15 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         MongoDBCollection coll = db.getCollection("files");
         return coll.count();
     }
+
+    @Override
+    public QueryResult getAllSources(QueryOptions options) {
+        MongoDBCollection coll = db.getCollection("files");
+        QueryBuilder qb = QueryBuilder.start();
+//        parseQueryOptions(options, qb);
+        
+        return coll.find(qb.get(), options, variantSourceConverter);
+    }
     
     @Override
     public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
