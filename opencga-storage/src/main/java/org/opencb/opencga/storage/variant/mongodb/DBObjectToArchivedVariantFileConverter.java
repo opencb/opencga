@@ -4,6 +4,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -14,7 +15,6 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.StudyDBAdaptor;
 import org.opencb.opencga.storage.variant.VariantSourceDBAdaptor;
 
 /**
@@ -143,18 +143,54 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
             }
         }
 
-        // Samples
+        // Samples are stored in a map, classified by their genotype
+        // The most common genotype will be marked as "default" and the specific
+        // positions where it is shown will not be stored. Example from 1000G:
+        // "def" : 100,       
+        // "101" : [ 41, 311, 342, 358, 881, 898, 903 ],
+        // "110" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         if (samples != null && !samples.isEmpty()) {
             mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
 
-            BasicDBList genotypeCodes = new BasicDBList();
+            Map<Integer, List<Integer>> genotypeCodes = new HashMap<>();
+            int i = 0;
+            
+            // Classify samples by genotype
             for (String sampleName : samples) {
                 String genotype = object.getSampleData(sampleName, "GT");
                 if (genotype != null) {
-                    genotypeCodes.add(new Genotype(genotype).encode());
+                    Genotype g = new Genotype(genotype);
+                    int encoding = g.encode();
+                    List<Integer> samplesWithGenotype = genotypeCodes.get(encoding);
+                    if (samplesWithGenotype == null) {
+                        samplesWithGenotype = new ArrayList<>();
+                        genotypeCodes.put(encoding, samplesWithGenotype);
+                    }
+                    samplesWithGenotype.add(i);
+                }
+                i++;
+            }
+            
+            // Get the most common genotype
+            Map.Entry<Integer, List<Integer>> longestList = null;
+            for (Map.Entry<Integer, List<Integer>> entry : genotypeCodes.entrySet()) {
+                List<Integer> genotypeList = entry.getValue();
+                if (longestList == null || genotypeList.size() > longestList.getValue().size()) {
+                    longestList = entry;
                 }
             }
-            mongoFile.put(SAMPLES_FIELD, genotypeCodes);
+            
+            // Create the map to store in Mongo
+            BasicDBObject mongoGenotypeCodes = new BasicDBObject();
+            for (Map.Entry<Integer, List<Integer>> entry : genotypeCodes.entrySet()) {
+                if (entry.getKey().equals(longestList.getKey())) {
+                    mongoGenotypeCodes.append("def", entry.getKey());
+                } else {
+                    mongoGenotypeCodes.append(String.valueOf(entry.getKey()), entry.getValue());
+                }
+            }
+            
+            mongoFile.put(SAMPLES_FIELD, mongoGenotypeCodes);
         }
         
         // Statistics
