@@ -152,7 +152,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         if (samples != null && !samples.isEmpty()) {
             mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
 
-            Map<Integer, List<Integer>> genotypeCodes = new HashMap<>();
+            Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
             int i = 0;
             
             // Classify samples by genotype
@@ -160,11 +160,10 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
                 String genotype = object.getSampleData(sampleName, "GT");
                 if (genotype != null) {
                     Genotype g = new Genotype(genotype);
-                    int encoding = g.encode();
-                    List<Integer> samplesWithGenotype = genotypeCodes.get(encoding);
+                    List<Integer> samplesWithGenotype = genotypeCodes.get(g);
                     if (samplesWithGenotype == null) {
                         samplesWithGenotype = new ArrayList<>();
-                        genotypeCodes.put(encoding, samplesWithGenotype);
+                        genotypeCodes.put(g, samplesWithGenotype);
                     }
                     samplesWithGenotype.add(i);
                 }
@@ -172,8 +171,8 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
             }
             
             // Get the most common genotype
-            Map.Entry<Integer, List<Integer>> longestList = null;
-            for (Map.Entry<Integer, List<Integer>> entry : genotypeCodes.entrySet()) {
+            Map.Entry<Genotype, List<Integer>> longestList = null;
+            for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
                 List<Integer> genotypeList = entry.getValue();
                 if (longestList == null || genotypeList.size() > longestList.getValue().size()) {
                     longestList = entry;
@@ -182,11 +181,11 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
             
             // Create the map to store in Mongo
             BasicDBObject mongoGenotypeCodes = new BasicDBObject();
-            for (Map.Entry<Integer, List<Integer>> entry : genotypeCodes.entrySet()) {
+            for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
                 if (entry.getKey().equals(longestList.getKey())) {
-                    mongoGenotypeCodes.append("def", entry.getKey());
+                    mongoGenotypeCodes.append("def", entry.getKey().toString());
                 } else {
-                    mongoGenotypeCodes.append(String.valueOf(entry.getKey()), entry.getValue());
+                    mongoGenotypeCodes.append(entry.getKey().toString(), entry.getValue());
                 }
             }
             
