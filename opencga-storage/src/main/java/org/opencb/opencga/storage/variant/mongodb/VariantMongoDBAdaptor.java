@@ -73,6 +73,105 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
     }
 
+    @Override
+    public QueryResult getVariantsHistogramByRegion(Region region, QueryOptions options) {
+        // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }}, 
+        //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]}, 20000] } ] }, 
+        //                                  totalCount: {$sum: 1}}})
+        MongoDBCollection coll = db.getCollection("variants");
+        
+        int interval = options.getInt("interval", 20000);
+
+        BasicDBObject start = new BasicDBObject("$gt", region.getStart());
+        start.append("$lt", region.getEnd());
+
+        BasicDBList andArr = new BasicDBList();
+        andArr.add(new BasicDBObject("chromosome", region.getChromosome()));
+        andArr.add(new BasicDBObject("start", start));
+
+        DBObject match = new BasicDBObject("$match", new BasicDBObject("$and", andArr));
+
+
+        BasicDBList divide1 = new BasicDBList();
+        divide1.add("$start");
+        divide1.add(interval);
+
+        BasicDBList divide2 = new BasicDBList();
+        divide2.add(new BasicDBObject("$mod", divide1));
+        divide2.add(interval);
+
+        BasicDBList subtractList = new BasicDBList();
+        subtractList.add(new BasicDBObject("$divide", divide1));
+        subtractList.add(new BasicDBObject("$divide", divide2));
+
+
+        BasicDBObject substract = new BasicDBObject("$subtract", subtractList);
+
+        DBObject totalCount = new BasicDBObject("$sum", 1);
+
+        BasicDBObject g = new BasicDBObject("_id", substract);
+        g.append("features_count", totalCount);
+        DBObject group = new BasicDBObject("$group", g);
+
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("_id", 1));
+
+//        logger.info("getAllIntervalFrequencies - (>·_·)>");
+        System.out.println(options.toString());
+
+        System.out.println(match.toString());
+        System.out.println(group.toString());
+        System.out.println(sort.toString());
+
+        QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
+
+//        System.out.println(output.getCommand());
+
+        Map<Long, DBObject> ids = new HashMap<>();
+//        for (DBObject intervalObj : output.results()) {
+        for (DBObject intervalObj : (List<DBObject>) output.getResult()) {
+            Long _id = Math.round((Double) intervalObj.get("_id"));//is double
+
+            DBObject intervalVisited = ids.get(_id);
+            if (intervalVisited == null) {
+                intervalObj.put("_id", _id);
+                intervalObj.put("start", getChunkStart(_id.intValue(), interval));
+                intervalObj.put("end", getChunkEnd(_id.intValue(), interval));
+                intervalObj.put("chromosome", region.getChromosome());
+                intervalObj.put("features_count", Math.log((int) intervalObj.get("features_count")));
+                ids.put(_id, intervalObj);
+            } else {
+                Double sum = (Double) intervalVisited.get("features_count") + Math.log((int) intervalObj.get("features_count"));
+                intervalVisited.put("features_count", sum.intValue());
+            }
+        }
+
+        /****/
+        BasicDBList resultList = new BasicDBList();
+        int firstChunkId = getChunkId(region.getStart(), interval);
+        int lastChunkId = getChunkId(region.getEnd(), interval);
+        DBObject intervalObj;
+        for (int chunkId = firstChunkId; chunkId <= lastChunkId; chunkId++) {
+            intervalObj = ids.get((long) chunkId);
+            if (intervalObj == null) {
+                intervalObj = new BasicDBObject();
+                intervalObj.put("_id", chunkId);
+                intervalObj.put("start", getChunkStart(chunkId, interval));
+                intervalObj.put("end", getChunkEnd(chunkId, interval));
+                intervalObj.put("chromosome", region.getChromosome());
+                intervalObj.put("features_count", 0);
+            }
+            resultList.add(intervalObj);
+        }
+        /****/
+
+        QueryResult queryResult = new QueryResult();
+        queryResult.setResult(resultList);
+        queryResult.setId(region.toString());
+        queryResult.setResultType("frequencies");
+
+        return queryResult;
+    }
+    
 
     @Override
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
@@ -94,7 +193,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult getGenesRanking(int numGenes, int order, QueryOptions options) {
-        // db.variants.aggregate( {$project : { genes : "$_at.gn"} },
+        // db.variants.aggregate( { $project : { genes : "$_at.gn"} },
         //                        { $unwind : "$genes"},
         //                        { $group : { _id : "$genes", count: { $sum : 1 } }},
         //                        { $sort : { "count" : -1 }},
@@ -275,6 +374,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return chunkIds;
     }
     
+    private int getChunkId(int position, int chunksize) {
+        return position / chunksize;
+    }
+    
+    private int getChunkStart(int id, int chunksize) {
+        return (id == 0) ? 1 : id * chunksize;
+    }
+
+    private int getChunkEnd(int id, int chunksize) {
+        return (id * chunksize) + chunksize - 1;
+    }
     
     /* *******************
      *  Auxiliary types  *
