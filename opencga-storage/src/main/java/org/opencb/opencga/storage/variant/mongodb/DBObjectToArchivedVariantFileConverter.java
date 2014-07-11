@@ -1,12 +1,10 @@
 package org.opencb.opencga.storage.variant.mongodb;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -14,6 +12,7 @@ import java.util.logging.Logger;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.storage.variant.VariantSourceDBAdaptor;
 
@@ -102,17 +101,39 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         
         // Samples
         if (includeSamples && object.containsField(SAMPLES_FIELD)) {
-            BasicDBList genotypes = (BasicDBList) object.get(SAMPLES_FIELD);
+            BasicDBObject mongoGenotypes = (BasicDBObject) object.get(SAMPLES_FIELD);
             samples = (List<String>) sourceDbAdaptor.getSamplesBySource(fileId, studyId, null).getResult().get(0);
-            Iterator<String> samplesIterator = samples.iterator();
-            Iterator<Object> genotypesIterator = genotypes.iterator();
+            int numSamples = samples.size();
             
-            while (samplesIterator.hasNext() && genotypesIterator.hasNext()) {
-                String sampleName = samplesIterator.next();
-                Genotype gt = Genotype.decode((int) genotypesIterator.next());
+            // An array of genotypes is initialized with the most common one
+            Genotype[] genotypes = new Genotype[numSamples];
+            String mostCommonGtString = mongoGenotypes.getString("def");
+            Genotype mostCommongGt = new Genotype(mostCommonGtString);
+            for (int i = 0; i < numSamples; i++) {
+                genotypes[i] = mostCommongGt;
+            }
+            
+            // Loop through the non-most commmon genotypes, and set their value
+            // in the position specified in the array, such as:
+            // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
+            // genotypes[41], genotypes[311], etc, will be set to "0|1"
+            for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
+                if (!dbo.getKey().equals("def")) {
+                    Genotype gt = new Genotype(dbo.getKey());
+                    for (int position : (List<Integer>) dbo.getValue()) {
+                        genotypes[position] = gt;
+                    }
+                }
+            }
+            
+            // Add the samples to the Java object, combining the data structures
+            // with the samples' names and the genotypes
+            int i = 0;
+            for (String sample : samples) {
                 Map<String, String> sampleData = new HashMap<>();
-                sampleData.put("GT", gt.toString());
-                file.addSampleData(sampleName, sampleData);
+                sampleData.put("GT", genotypes[i].toString());
+                file.addSampleData(sample, sampleData);
+                i++;
             }
         }
         
@@ -143,12 +164,12 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
             }
         }
 
-        // Samples are stored in a map, classified by their genotype
+        // Samples are stored in a map, classified by their genotype.
         // The most common genotype will be marked as "default" and the specific
         // positions where it is shown will not be stored. Example from 1000G:
-        // "def" : 100,       
-        // "101" : [ 41, 311, 342, 358, 881, 898, 903 ],
-        // "110" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
+        // "def" : 0|0,       
+        // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
+        // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         if (samples != null && !samples.isEmpty()) {
             mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
 
