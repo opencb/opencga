@@ -4,13 +4,13 @@ import com.google.common.collect.Lists;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
@@ -72,13 +72,9 @@ public class DBObjectToVariantConverterTest {
         mongoFile.append(DBObjectToArchivedVariantFileConverter.ATTRIBUTES_FIELD, 
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
         mongoFile.append(DBObjectToArchivedVariantFileConverter.FORMAT_FIELD, file.getFormat());
-        BasicDBList genotypeCodes = new BasicDBList();
-        for (String sampleName : file.getSampleNames()) {
-            String genotype = file.getSampleData(sampleName, "GT");
-            if (genotype != null) {
-                genotypeCodes.add(new Genotype(genotype).encode());
-            }
-        }
+        BasicDBObject genotypeCodes = new BasicDBObject();
+        genotypeCodes.append("def", "0/0");
+        genotypeCodes.append("0/1", Arrays.asList(1));
         mongoFile.append(DBObjectToArchivedVariantFileConverter.SAMPLES_FIELD, genotypeCodes);
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
@@ -113,13 +109,9 @@ public class DBObjectToVariantConverterTest {
         mongoFile.append(DBObjectToArchivedVariantFileConverter.ATTRIBUTES_FIELD, 
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
         mongoFile.append(DBObjectToArchivedVariantFileConverter.FORMAT_FIELD, file.getFormat());
-        BasicDBList genotypeCodes = new BasicDBList();
-        for (String sampleName : file.getSampleNames()) {
-            String genotype = file.getSampleData(sampleName, "GT");
-            if (genotype != null) {
-                genotypeCodes.add(new Genotype(genotype).encode());
-            }
-        }
+        BasicDBObject genotypeCodes = new BasicDBObject();
+        genotypeCodes.append("def", "0/0");
+        genotypeCodes.append("0/1", Arrays.asList(1));
         mongoFile.append(DBObjectToArchivedVariantFileConverter.SAMPLES_FIELD, genotypeCodes);
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
