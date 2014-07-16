@@ -14,6 +14,7 @@ public class OptionsParser {
 //    private Options options;
     private JCommander jcommander;
     
+    private CommandCreateAccessions accessions;
     private CommandTransformVariants transform;
     private CommandLoadVariants load;
 
@@ -24,7 +25,12 @@ public class OptionsParser {
     }
     
     interface Command {}
-    
+          
+    @Parameters(commandNames = { "create-accessions" }, commandDescription = "Creates accession IDs for an input file")
+    class CommandCreateAccessions implements Command {
+        
+    }
+            
     @Parameters(commandNames = { "transform-variants" }, commandDescription = "Generates a data model from an input file")
     class CommandTransformVariants implements Command {
         

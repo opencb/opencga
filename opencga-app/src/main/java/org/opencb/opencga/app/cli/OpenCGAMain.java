@@ -49,7 +49,8 @@ public class OpenCGAMain {
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException {
         OptionsParser parser = new OptionsParser();
-        if (args.length > 0 && (args[0].equals("-h") || args[0].equals("--help"))) {
+        // If no arguments are provided, or -h/--help is the first argument, the usage is shown
+        if (args.length == 0 || args[0].equals("-h") || args[0].equals("--help")) {
             System.out.println(parser.usage());
             return;
         }
@@ -57,6 +58,9 @@ public class OpenCGAMain {
         Command command = null;
         try {
             switch (parser.parse(args)) {
+                case "create-accessions":
+                    
+                    break;
                 case "load-variants":
                     command = parser.getLoad();
                     break;
