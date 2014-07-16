@@ -103,7 +103,7 @@ public class OpenCGAMain {
 
             if (aggregated != null) {
                 includeStats = false;
-                switch (aggregated) {
+                switch (aggregated.toLowerCase()) {
                     case "basic":
                         reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
                         break;

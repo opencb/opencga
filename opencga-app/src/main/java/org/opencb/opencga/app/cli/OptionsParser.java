@@ -7,10 +7,10 @@ import com.beust.jcommander.Parameters;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
+ * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class OptionsParser {
 
-    //    private Options options;
     private JCommander jcommander;
 
     private CommandTransformVariants transform;
@@ -55,7 +55,7 @@ public class OptionsParser {
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated Vcf File (optional)", arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         String aggregated;
 
     }
