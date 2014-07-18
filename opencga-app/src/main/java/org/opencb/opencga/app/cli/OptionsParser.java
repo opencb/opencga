@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -11,15 +12,15 @@ import com.beust.jcommander.Parameters;
  */
 public class OptionsParser {
     
-//    private Options options;
-    private JCommander jcommander;
+    private final JCommander jcommander;
     
-    private CommandCreateAccessions accessions;
-    private CommandTransformVariants transform;
-    private CommandLoadVariants load;
+    private final CommandCreateAccessions accessions;
+    private final CommandTransformVariants transform;
+    private final CommandLoadVariants load;
 
     public OptionsParser() {
         jcommander = new JCommander();
+        jcommander.addCommand(accessions = new CommandCreateAccessions());
         jcommander.addCommand(transform = new CommandTransformVariants());
         jcommander.addCommand(load = new CommandLoadVariants());
     }
@@ -29,8 +30,32 @@ public class OptionsParser {
     @Parameters(commandNames = { "create-accessions" }, commandDescription = "Creates accession IDs for an input file")
     class CommandCreateAccessions implements Command {
         
-    }
+        @Parameter(names = { "-i", "--input" }, description = "File to annotation with accession IDs", required = true, arity = 1)
+        String input;
+        
+        @Parameter(names = { "-p", "--prefix" }, description = "Accession IDs prefix", arity = 1)
+        String prefix;
+        
+        @Parameter(names = { "-s", "--study-alias" }, description = "Unique ID for the study where the file is classified (used for prefixes)", 
+                required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
+        String studyId;
+        
+        @Parameter(names = { "-o", "--outdir" }, description = "Directory where the output file will be saved", arity = 1)
+        String outdir;
+        
+        class StudyIdValidator implements IValueValidator<String> {
+
+            @Override
+            public void validate(String name, String value) throws ParameterException {
+                if (value.length() < 6) {
+                    throw new ParameterException("The study ID must be at least 6 characters long");
+                }
+            }
             
+        }
+    }
+    
+    
     @Parameters(commandNames = { "transform-variants" }, commandDescription = "Generates a data model from an input file")
     class CommandTransformVariants implements Command {
         
@@ -60,8 +85,9 @@ public class OptionsParser {
         
         @Parameter(names = { "--include-stats" }, description = "Save statistics information (optional)")
         boolean includeStats = false;
-        
+
     }
+    
     
     @Parameters(commandNames = { "load-variants" }, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadVariants implements Command {
@@ -97,12 +123,16 @@ public class OptionsParser {
         return builder.toString();
     }
 
-    CommandTransformVariants getTransform() {
-        return transform;
+    CommandCreateAccessions getAccessionsCommand() {
+        return accessions;
     }
 
-    CommandLoadVariants getLoad() {
+    CommandLoadVariants getLoadCommand() {
         return load;
     }
     
+    CommandTransformVariants getTransformCommand() {
+        return transform;
+    }
+
 }
