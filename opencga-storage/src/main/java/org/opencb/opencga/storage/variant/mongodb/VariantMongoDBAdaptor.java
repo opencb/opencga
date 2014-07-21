@@ -268,39 +268,43 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
         if (options != null) {
-            if (options.containsKey("region")) {
+            if (options.containsKey("region") && !options.getString("region").isEmpty()) {
                 getRegionFilter(Region.parseRegion(options.getString("region")), builder);
             }
             
-            if (options.containsKey("type")) {
+            if (options.containsKey("type") && !options.getString("type").isEmpty()) {
                 getVariantTypeFilter(options.getString("type"), builder);
             }
             
-            if (options.containsKey("reference")) {
+            if (options.containsKey("reference") && !options.getString("reference").isEmpty()) {
                 getReferenceFilter(options.getString("reference"), builder);
             }
             
-            if (options.containsKey("alternate")) {
+            if (options.containsKey("alternate") && !options.getString("alternate").isEmpty()) {
                 getAlternateFilter(options.getString("alternate"), builder);
             }
             
-            if (options.containsKey("effect")) {
+            if (options.containsKey("effect") && !options.getList("effect").isEmpty() && !options.getListAs("effect", String.class).get(0).isEmpty()) {
                 getEffectFilter(options.getListAs("effect", String.class), builder);
             }
             
-            if (options.containsKey("studies")) {
+            if (options.containsKey("studies") && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+                System.out.println("# studies = " + options.getList("studies").size());
                 getStudyFilter(options.getListAs("studies", String.class), builder);
             }
             
-            if (options.containsKey("maf") && options.containsKey("opMaf")) {
+            if (options.containsKey("maf") && options.containsKey("opMaf")
+                    && options.getFloat("maf") >= 0 && !options.getString("opMaf").isEmpty()) {
                 getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
             }
             
-            if (options.containsKey("missingAlleles") && options.containsKey("opMissingAlleles")) {
+            if (options.containsKey("missingAlleles") && options.containsKey("opMissingAlleles")
+                    && options.getInt("missingAlleles") >= 0 && !options.getString("opMissingAlleles").isEmpty()) {
                 getMissingAllelesFilter(options.getInt("missingAlleles"), ComparisonOperator.fromString(options.getString("opMissingAlleles")), builder);
             }
             
-            if (options.containsKey("missingGenotypes") && options.containsKey("opMissingGenotypes")) {
+            if (options.containsKey("missingGenotypes") && options.containsKey("opMissingGenotypes")
+                    && options.getInt("missingGenotypes") >= 0 && !options.getString("opMissingGenotypes").isEmpty()) {
                 getMissingGenotypesFilter(options.getInt("missingGenotypes"), ComparisonOperator.fromString(options.getString("opMissingGenotypes")), builder);
             }
             
