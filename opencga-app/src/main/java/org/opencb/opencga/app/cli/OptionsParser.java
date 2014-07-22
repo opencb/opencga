@@ -40,6 +40,9 @@ public class OptionsParser {
                 required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
         String studyId;
         
+        @Parameter(names = { "-r", "--resume-from-accession" }, description = "Starting point to generate accessions (will not be included)", arity = 1)
+        String resumeFromAccession;
+        
         @Parameter(names = { "-o", "--outdir" }, description = "Directory where the output file will be saved", arity = 1)
         String outdir;
         

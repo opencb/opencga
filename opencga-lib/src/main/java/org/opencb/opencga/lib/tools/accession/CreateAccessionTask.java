@@ -24,6 +24,7 @@ public class CreateAccessionTask extends Task<VcfRecord> {
         'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'
     };
 
+    private VariantSource source;
     private String globalPrefix;
     private String studyPrefix;
 
@@ -33,16 +34,21 @@ public class CreateAccessionTask extends Task<VcfRecord> {
     private CombinationIterator<Character> iterator;
     private VariantVcfFactory variantFactory;
 
-    public CreateAccessionTask(String globalPrefix, String studyPrefix) {
-        this(globalPrefix, studyPrefix, 0);
+    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix) {
+        this(source, globalPrefix, studyPrefix, 0);
     }
 
-    public CreateAccessionTask(String globalPrefix, String studyPrefix, int priority) {
-        this(globalPrefix, studyPrefix, null, priority);
+    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix, int priority) {
+        this(source, globalPrefix, studyPrefix, null, priority);
     }
 
-    public CreateAccessionTask(String globalPrefix, String studyPrefix, String lastAccession, int priority) {
+    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix, String lastAccession) {
+        this(source, globalPrefix, studyPrefix, lastAccession, 0);
+    }
+    
+    public CreateAccessionTask(VariantSource source, String globalPrefix, String studyPrefix, String lastAccession, int priority) {
         super(priority);
+        this.source = source;
         this.globalPrefix = globalPrefix != null ? globalPrefix : "";
         this.studyPrefix = studyPrefix;
         this.lastAccession = lastAccession;
@@ -59,7 +65,7 @@ public class CreateAccessionTask extends Task<VcfRecord> {
     @Override
     public boolean apply(List<VcfRecord> batch) throws IOException {
         for (VcfRecord record : batch) {
-            List<Variant> variants = variantFactory.create(new VariantSource(null, "create-accession", studyPrefix, studyPrefix), record.toString());
+            List<Variant> variants = variantFactory.create(source, record.toString());
             StringBuilder allAccessionsInRecord = new StringBuilder();
             for (Variant v : variants) {
                 Map<Variant.VariantType, String> variantAccession = currentAccessions.get(getKey(v));

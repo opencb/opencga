@@ -79,7 +79,7 @@ public class OpenCGAMain {
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
             
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
-            createAccessionIds(variantsPath, source, c.prefix, outdir);
+            createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
             
         } else if (command instanceof CommandLoadVariants) {
             CommandLoadVariants c = (CommandLoadVariants) command;
@@ -103,7 +103,7 @@ public class OpenCGAMain {
     }
 
     
-    private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, Path outdir) throws IOException {
+    private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, String fromAccession, Path outdir) throws IOException {
         String studyId = source.getStudyId();
         String studyPrefix = studyId.substring(studyId.length() - 6);
         VcfRawReader reader = new VcfRawReader(variantsPath.toString());
@@ -112,7 +112,7 @@ public class OpenCGAMain {
         writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsPath.getFileName() + ".out"));
         
         List<Task<VcfRecord>> taskList = new ArrayList<>();
-        taskList.add(new CreateAccessionTask(globalPrefix, studyPrefix));
+        taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));
         
         Runner vr = new Runner(reader, writers, taskList);
         

@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Based on code from Ryan Stansifer (http://cs.fit.edu/~ryan/java/programs/combinations/Permute-java.html)
@@ -35,10 +36,10 @@ public class CombinationIterator<T> implements Iterator {
         size = elements.length;
         output = (T[]) Array.newInstance(elements.getClass().getComponentType(), combinationSize);
         permutationIdxs = new int[combinationSize];
-        for (int i = 0; i < combinationSize-1; i++) {
-            permutationIdxs[i] = 0;
+        List<T> elementsAsList = Arrays.asList(this.elements);
+        for (int i = 0; i < combinationSize; i++) {
+            permutationIdxs[i] = elementsAsList.indexOf(lastPermutation[i]);
         }
-        permutationIdxs[combinationSize-1] = -1;
     }
 
     @Override
