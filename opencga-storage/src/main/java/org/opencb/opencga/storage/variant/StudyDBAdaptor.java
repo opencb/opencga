@@ -9,6 +9,8 @@ import org.opencb.datastore.core.QueryResult;
  */
 public interface StudyDBAdaptor {
     
+    QueryResult getAllStudies(QueryOptions options);
+    
     QueryResult listStudies();
     
     QueryResult findStudyNameOrStudyId(String studyId, QueryOptions options);

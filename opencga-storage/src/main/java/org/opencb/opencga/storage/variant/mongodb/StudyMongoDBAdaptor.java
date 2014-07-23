@@ -50,6 +50,11 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     }
 
     @Override
+    public QueryResult getAllStudies(QueryOptions options) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    @Override
     public QueryResult findStudyNameOrStudyId(String study, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("files");
         QueryBuilder qb = QueryBuilder.start();
@@ -111,5 +116,5 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     private QueryBuilder getStudyIdFilter(String id, QueryBuilder builder) {
         return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).is(id);
     }
-    
+
 }
