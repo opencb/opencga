@@ -86,8 +86,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         start.append("$lt", region.getEnd());
 
         BasicDBList andArr = new BasicDBList();
-        andArr.add(new BasicDBObject("chromosome", region.getChromosome()));
-        andArr.add(new BasicDBObject("start", start));
+        andArr.add(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome()));
+        andArr.add(new BasicDBObject(DBObjectToVariantConverter.START_FIELD, start));
 
         DBObject match = new BasicDBObject("$match", new BasicDBObject("$and", andArr));
 
@@ -122,12 +122,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         System.out.println(group.toString());
         System.out.println(sort.toString());
 
+        long dbTimeStart = System.currentTimeMillis();
         QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
+        long dbTimeEnd = System.currentTimeMillis();
 
 //        System.out.println(output.getCommand());
 
         Map<Long, DBObject> ids = new HashMap<>();
-//        for (DBObject intervalObj : output.results()) {
+        // Create DBObject for intervals with features inside them
         for (DBObject intervalObj : (List<DBObject>) output.getResult()) {
             Long _id = Math.round((Double) intervalObj.get("_id"));//is double
 
@@ -145,7 +147,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        /****/
+        // Create DBObject for intervals without features inside them
         BasicDBList resultList = new BasicDBList();
         int firstChunkId = getChunkId(region.getStart(), interval);
         int lastChunkId = getChunkId(region.getEnd(), interval);
@@ -162,12 +164,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
             resultList.add(intervalObj);
         }
-        /****/
 
-        QueryResult queryResult = new QueryResult();
-        queryResult.setResult(resultList);
-        queryResult.setId(region.toString());
-        queryResult.setResultType("frequencies");
+        QueryResult queryResult = new QueryResult(region.toString(), ((Long) (dbTimeEnd - dbTimeStart)).intValue(), 
+                resultList.size(), resultList.size(), null, null, resultList);
 
         return queryResult;
     }
