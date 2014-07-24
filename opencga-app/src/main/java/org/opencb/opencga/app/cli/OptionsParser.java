@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.IValueValidator;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
@@ -10,22 +11,54 @@ import com.beust.jcommander.Parameters;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
 public class OptionsParser {
-
-    private JCommander jcommander;
-
-    private CommandTransformVariants transform;
-    private CommandLoadVariants load;
+    private final JCommander jcommander;
+    
+    private final CommandCreateAccessions accessions;
+    private final CommandTransformVariants transform;
+    private final CommandLoadVariants load;
 
     public OptionsParser() {
         jcommander = new JCommander();
+        jcommander.addCommand(accessions = new CommandCreateAccessions());
         jcommander.addCommand(transform = new CommandTransformVariants());
         jcommander.addCommand(load = new CommandLoadVariants());
     }
+    
+    interface Command {}
+          
+    @Parameters(commandNames = { "create-accessions" }, commandDescription = "Creates accession IDs for an input file")
+    class CommandCreateAccessions implements Command {
+        
+        @Parameter(names = { "-i", "--input" }, description = "File to annotation with accession IDs", required = true, arity = 1)
+        String input;
+        
+        @Parameter(names = { "-p", "--prefix" }, description = "Accession IDs prefix", arity = 1)
+        String prefix;
+        
+        @Parameter(names = { "-s", "--study-alias" }, description = "Unique ID for the study where the file is classified (used for prefixes)", 
+                required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
+        String studyId;
+        
+        @Parameter(names = { "-r", "--resume-from-accession" }, description = "Starting point to generate accessions (will not be included)", arity = 1)
+        String resumeFromAccession;
+        
+        @Parameter(names = { "-o", "--outdir" }, description = "Directory where the output file will be saved", arity = 1)
+        String outdir;
+        
+        class StudyIdValidator implements IValueValidator<String> {
 
-    interface Command {
+            @Override
+            public void validate(String name, String value) throws ParameterException {
+                if (value.length() < 6) {
+                    throw new ParameterException("The study ID must be at least 6 characters long");
+                }
+            }
+            
+        }
     }
-
-    @Parameters(commandNames = {"transform-variants"}, commandDescription = "Generates a data model from an input file")
+    
+    
+    @Parameters(commandNames = { "transform-variants" }, commandDescription = "Generates a data model from an input file")
     class CommandTransformVariants implements Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to transform into the OpenCGA data model", required = true, arity = 1)
@@ -94,12 +127,16 @@ public class OptionsParser {
         return builder.toString();
     }
 
-    CommandTransformVariants getTransform() {
-        return transform;
+    CommandCreateAccessions getAccessionsCommand() {
+        return accessions;
     }
 
-    CommandLoadVariants getLoad() {
+    CommandLoadVariants getLoadCommand() {
         return load;
+    }
+    
+    CommandTransformVariants getTransformCommand() {
+        return transform;
     }
 
 }
