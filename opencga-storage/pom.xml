@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.3.0</version>
+        <version>0.3.1</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -72,12 +72,12 @@
             <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-core</artifactId>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase</artifactId>
+            <artifactId>hbase-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
@@ -116,7 +116,7 @@
                         <excludes>
                             <exclude>**/VariantSqliteWriter.java</exclude>
                             <exclude>**/VariantSqliteDBAdaptor.java</exclude>
-                            <!--<exclude>**/VariantHbaseWriter.java</exclude>-->
+                            <exclude>**/VariantHbaseWriter.java</exclude>
                             <exclude>**/VariantHbaseDBAdaptor.java</exclude>
                         </excludes>
                         <testExcludes>

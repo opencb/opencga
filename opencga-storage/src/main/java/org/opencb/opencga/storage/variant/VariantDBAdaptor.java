@@ -38,7 +38,7 @@ public interface VariantDBAdaptor {
     QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
 
     
-//    QueryResult getVariantsHistogramByRegion(Region region, String studyName, boolean histogramLogarithm, int histogramMax);
+    QueryResult getVariantsHistogramByRegion(Region region, QueryOptions options);
 
     
     QueryResult getAllVariantsByGene(String geneName, QueryOptions options);

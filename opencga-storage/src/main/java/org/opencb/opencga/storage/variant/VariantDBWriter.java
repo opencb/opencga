@@ -12,8 +12,6 @@ public abstract class VariantDBWriter implements VariantWriter {
     
     protected abstract boolean buildBatchRaw(List<Variant> data);
     
-    protected abstract boolean buildStatsRaw(List<Variant> data);
-    
     protected abstract boolean buildEffectRaw(List<Variant> variants);
     
     protected abstract boolean buildBatchIndex(List<Variant> data);
