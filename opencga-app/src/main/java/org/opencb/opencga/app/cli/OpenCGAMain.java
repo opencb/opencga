@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli;
 
 
 import com.beust.jcommander.ParameterException;
+import com.google.common.io.Files;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -110,7 +111,8 @@ public class OpenCGAMain {
         VcfRawReader reader = new VcfRawReader(variantsPath.toString());
         
         List<DataWriter> writers = new ArrayList<>();
-        writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsPath.getFileName() + ".out"));
+        String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
+        writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
         
         List<Task<VcfRecord>> taskList = new ArrayList<>();
         taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));

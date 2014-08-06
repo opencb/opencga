@@ -25,10 +25,9 @@ public class CombinationIterator<T> implements Iterator {
         size = elements.length;
         output = (T[]) Array.newInstance(elements.getClass().getComponentType(), combinationSize);
         permutationIdxs = new int[combinationSize];
-        for (int i = 0; i < combinationSize-1; i++) {
+        for (int i = 0; i < combinationSize; i++) {
             permutationIdxs[i] = 0;
         }
-        permutationIdxs[combinationSize-1] = -1;
     }
     
     public CombinationIterator(int combinationSize, T[] elements, T[] lastPermutation) {
