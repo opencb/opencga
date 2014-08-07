@@ -1,10 +1,13 @@
 package org.opencb.opencga.storage.alignment.proto;
 
 import com.google.protobuf.ByteString;
-import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.opencga.storage.alignment.AlignmentRegionSummary;
 
 import java.util.*;
+import org.opencb.biodata.formats.alignment.AlignmentFactory;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.Alignment.AlignmentDifference;
+import org.opencb.biodata.models.alignment.AlignmentHeader;
+import org.opencb.opencga.storage.alignment.AlignmentSummary;
 
 /**
  * Created with IntelliJ IDEA.
@@ -18,7 +21,7 @@ import java.util.*;
 public class AlignmentProtoHelper {
 
 
-    public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentRegionSummary summary, long bucketStart, int overlapped){
+    public static AlignmentProto.AlignmentBucket toAlignmentBucketProto(List<Alignment> alignments, AlignmentSummary summary, long bucketStart, int overlapped){
         if(alignments == null || alignments.isEmpty()){
             if(overlapped != 0){
                 if(alignments == null){
@@ -34,14 +37,14 @@ public class AlignmentProtoHelper {
         long prevStart = bucketStart;
 
         for(Alignment alignment : alignments){
-            alignmentBucketBuilder.addAlignmentRecords(AlignmentProtoHelper.toProto(alignment,prevStart, summary));
+            alignmentBucketBuilder.addAlignmentRecords(AlignmentProtoHelper.toAlignmentProto(alignment,prevStart, summary));
             prevStart = alignment.getStart();
         }
 
         return alignmentBucketBuilder.build();
     }
 
-    public static AlignmentProto.AlignmentRecord toProto(Alignment alignment, long prevStart, AlignmentRegionSummary summary){
+    public static AlignmentProto.AlignmentRecord toAlignmentProto(Alignment alignment, long prevStart, AlignmentSummary summary){
         AlignmentProto.AlignmentRecord.Builder alignmentRecordBuilder = AlignmentProto.AlignmentRecord.newBuilder()
                 .setName(alignment.getName())
                 .setPos((int) (alignment.getStart() - prevStart))
@@ -108,9 +111,7 @@ public class AlignmentProtoHelper {
         return alignmentRecordBuilder.build();
     }
 
-
-
-    public static List<Alignment> fromAlignmentBucketProto(AlignmentProto.AlignmentBucket alignmentBucket, AlignmentRegionSummary summary, String chromosome, long bucketStart){
+    public static List<Alignment> toAlignmentList(AlignmentProto.AlignmentBucket alignmentBucket, AlignmentSummary summary, String chromosome, long bucketStart){
 
         if(alignmentBucket.getSummaryIndex() != summary.getIndex()){
             System.out.println("[ERROR] Summary doesn't match!"); //TODO jj: Throw exception?
@@ -128,9 +129,7 @@ public class AlignmentProtoHelper {
         return alignments;
     }
 
-
-
-    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentProto, AlignmentRegionSummary summary, String chromosome, long prevStart){
+    public static Alignment toAlignment(AlignmentProto.AlignmentRecord alignmentProto, AlignmentSummary summary, String chromosome, long prevStart){
 
 
         List<Alignment.AlignmentDifference> alignmentDifferences = new LinkedList<>();
@@ -142,13 +141,19 @@ public class AlignmentProtoHelper {
         long unclippedStart = start;
         long unclippedEnd = end;
 
-        if(!alignmentDifferences.isEmpty() && alignmentDifferences.get(0).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
-            unclippedStart -= alignmentDifferences.get(0).getLength();
+        
+        if(!alignmentDifferences.isEmpty()){
+            AlignmentDifference diff;
+            diff = alignmentDifferences.get(0);
+            if(diff.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING && diff.getPos() == 0){
+                unclippedStart -= diff.getLength();
+            }
+            diff = alignmentDifferences.get(alignmentDifferences.size() - 1);
+            if(diff.getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING 
+                    && diff.getPos() != 0){
+                unclippedEnd += diff.getLength();
+            }
         }
-        if(!alignmentDifferences.isEmpty() && alignmentDifferences.get(alignmentDifferences.size()-1).getOp() == Alignment.AlignmentDifference.SOFT_CLIPPING){
-            unclippedEnd += alignmentDifferences.get(alignmentDifferences.size()-1).getLength();
-        }
-
         Alignment alignment = new Alignment();
 
 
@@ -172,30 +177,6 @@ public class AlignmentProtoHelper {
 
         return alignment;
     }
-
-    /* Compression Core. UNIMPLEMENTED!
-     *
-        000  A
-        001  C
-        010  G
-        011  T
-        100  N
-        101
-        110
-        111  END
-
-     */
-    private static String uncompressSeq(ByteString seq){
-        //String readSequence = difference.hasSequence()? new String(difference.getSequence().toByteArray()): null;
-
-        throw new UnsupportedOperationException();
-    }
-
-
-    private static ByteString compressSeq(String seq){
-        throw new UnsupportedOperationException();
-    }
-
 
     public static  int toAlignmentDifference(List<AlignmentProto.Difference> differenceList, List<Alignment.AlignmentDifference> alignmentDifferenceList) {
         int offset = 0;
@@ -242,20 +223,29 @@ public class AlignmentProtoHelper {
         return offset;
     }
 
-    public static long getPositionFromRowkey(String rowKey, int bucketSize){
-        return Long.valueOf(rowKey.split("_")[1]) * bucketSize;
+    
+    
+    
+    /**
+     * Compression Core. UNIMPLEMENTED!
+     *
+        000  A
+        001  C
+        010  G
+        011  T
+        100  N
+        101
+        110
+        111  END
+
+     **/
+    private static String uncompressSeq(ByteString seq){
+        //String readSequence = difference.hasSequence()? new String(difference.getSequence().toByteArray()): null;
+
+        throw new UnsupportedOperationException();
     }
-    public static String getChromosomeFromRowkey(String rowKey){
-        return rowKey.split("_")[0];
+    private static ByteString compressSeq(String seq){
+        throw new UnsupportedOperationException();
     }
 
-    public static String getBucketRowkey(String chromosome, long start, int bucketSize){
-        return getBucketRowkey(chromosome, start/bucketSize);
-    }
-    public static String getBucketRowkey(String chromosome, long bucketIndex){
-        return chromosome + "_" + String.format("%07d", bucketIndex);
-    }
-    public static String getSummaryRowkey(String chromosome, int index){
-        return  "S_" + chromosome + "_" + String.format("%05d", index);
-    }
 }

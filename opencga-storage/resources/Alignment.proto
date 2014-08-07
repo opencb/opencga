@@ -5,7 +5,7 @@
  * protoc --java_out ../src/main/java/ Alignment.proto
  */
 
-package org.opencb.opencga.storage.alignment;
+package org.opencb.opencga.storage.alignment.proto;
 option java_outer_classname = "AlignmentProto";
 
 
@@ -79,10 +79,22 @@ message Summary{
 }
 
 message Header {
-    message Region {
-        required string chromosomeName = 1;
-        required uint32 maxValue = 2;
-    }
-    repeated Region regions = 1;
-    optional bytes SamHeader = 2;
+
+    required uint32 bucketSize = 2;
+    optional bytes SamHeader = 3;
+}
+
+
+
+message MeanCoverage {
+    required float coverage = 1;
+}
+
+
+message Coverage {
+    repeated uint32 all = 1[packed = true];
+    repeated uint32 a = 2[packed = true];
+    repeated uint32 c = 3[packed = true];
+    repeated uint32 g = 4[packed = true];
+    repeated uint32 t = 5[packed = true];
 }

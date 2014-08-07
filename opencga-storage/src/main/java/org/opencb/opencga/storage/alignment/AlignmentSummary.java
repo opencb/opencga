@@ -16,10 +16,10 @@ import java.util.*;
  * Time: 7:36 PM
  * To change this template use File | Settings | File Templates.
  */
-public class AlignmentRegionSummary {
+public class AlignmentSummary {
     //Only can add an Alignment when it's opened.
     private boolean open;
-    private int index;
+    final private int index;
 
     private int defaultFlag;
     private int defaultLen;
@@ -30,21 +30,170 @@ public class AlignmentRegionSummary {
     private Map.Entry<Integer, Object>[] tagsArray;
     private Map<Map.Entry<Integer, Object>, Integer> tagsMap;
 
-    //Histogram for default values.
-    //Null at closed
-    private Map<Integer, Integer> flagsMap;
-    private Map<Integer, Integer> lenMap;
-    private Map<String, Integer> rnextMap;
-    private Map<Integer, Integer> overlapMap;
+    
 
+    public static class AlignmentRegionSummaryBuilder{
+        final private AlignmentSummary summary;
 
-    public AlignmentRegionSummary(int index){
+        //Histogram for default values.
+        final private Map<Integer, Integer> flagsMap;
+        final private Map<Integer, Integer> lenMap;
+        final private Map<String, Integer> rnextMap;
+        final private Map<Integer, Integer> overlapMap;
+        
+        public AlignmentRegionSummaryBuilder(int index){
+            summary = new AlignmentSummary(index);
+            
+            this.flagsMap = new HashMap<>();
+            this.lenMap = new HashMap<>();
+            this.rnextMap = new HashMap<>();
+            this.overlapMap = new HashMap<>();
+        }
+        
+        /**
+         * This function can only be called when summary is OPEN.
+         * @param overlapped
+         * @return builder
+         */
+        public AlignmentRegionSummaryBuilder addOverlappedBucket(int overlapped){
+            Integer f = overlapMap.get(overlapped);
+            f = f==null?1:f+1;
+            overlapMap.put(overlapped,f);
+            return this;
+        }
+
+        /**
+         * This function can only be called when summary is OPEN.
+         * @param alignment
+         * @return builder
+         */
+        public AlignmentRegionSummaryBuilder addAlignment(Alignment alignment){
+            if(!summary.open){
+                System.out.println("[ERROR] Alignmentregionsummary.addAlignment() can't be called when is closed!");
+                //TODO jj: Throw exception?
+                return this;
+            }
+            //FLAG
+            {
+                Integer f = flagsMap.get(alignment.getFlags());
+                f = f==null?1:f+1;
+                flagsMap.put(alignment.getFlags(), f);
+            }
+
+            //LENGTH
+            {
+                Integer l = lenMap.get(alignment.getLength());
+                l = l==null?1:l+1;
+                lenMap.put(alignment.getLength(), l);
+            }
+
+            //MateReferenceName
+            {
+                Integer rn = rnextMap.get(alignment.getMateReferenceName());
+                rn = rn==null?1:rn+1;
+                rnextMap.put(alignment.getMateReferenceName(), rn);
+            }
+
+            //Tags / Attributes
+            int key;
+            Map.Entry<Integer, Object> tag;
+            for(Map.Entry<String, Object> entry : alignment.getAttributes().entrySet()){
+
+                //Update key map
+                if(!summary.keysMap.containsKey(entry.getKey())){
+                    summary.keysMap.put(entry.getKey(), key = summary.keysMap.size());
+                } else {
+                    key = summary.keysMap.get(entry.getKey());
+                }
+
+                //Add new map
+                tag = new HashMap.SimpleEntry<>(key, entry.getValue());
+
+                if(!summary.tagsMap.containsKey(tag)){
+                    summary.tagsMap.put(tag, summary.tagsMap.size());
+                }
+            }
+            return this;
+        }
+        public AlignmentSummary build(){
+            if(summary.open == false){
+                return summary;
+            }
+            int maxFlags = 0;
+            for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
+                if(entry.getValue() > maxFlags){
+                    maxFlags = entry.getValue();
+                    summary.defaultFlag = entry.getKey();
+                }
+            }
+
+            int maxLen = 0;
+            for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
+                if(entry.getValue() > maxLen){
+                    maxLen = entry.getValue();
+                    summary.defaultLen = entry.getKey();
+                }
+            }
+
+            int maxRNext = 0;
+            for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
+                if(entry.getValue() > maxRNext){
+                    maxRNext = entry.getValue();
+                    summary.defaultRNext = entry.getKey();
+                }
+            }
+
+            int maxOverlap = 0;
+            for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
+                if(entry.getValue() > maxOverlap){
+                    maxOverlap = entry.getValue();
+                    summary.defaultOverlappedBucket = entry.getKey();
+                }
+            }
+
+            summary.keysArray = new String[summary.keysMap.size()];
+            for(Map.Entry<String, Integer> entry : summary.keysMap.entrySet()){
+                summary.keysArray[entry.getValue()] = entry.getKey();
+            }
+
+            summary.tagsArray = new Map.Entry[summary.tagsMap.size()];
+            for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : summary.tagsMap.entrySet()){
+                summary.tagsArray[entry.getValue()] = entry.getKey();
+            }
+
+            summary.open = false;
+            
+            return summary;
+        }
+
+        public void printHistogram(){
+            System.out.println("AlignmentRegionSummary [" + summary.index + "] Histogram");
+            System.out.println("Default Flag Map");
+            for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
+                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            }
+
+            System.out.println("\nDefault Length Map");
+            for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
+                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            }
+
+            System.out.println("\nDefault RNext Map");
+            for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
+                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            }
+
+            System.out.println("\nDefault OverlappedBucket Map");
+            for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
+                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            }
+        }
+
+    }
+    
+    private AlignmentSummary(int index){
         this.open = true;
         this.index = index;
-        this.flagsMap = new HashMap<>();
-        this.lenMap = new HashMap<>();
-        this.rnextMap = new HashMap<>();
-        this.overlapMap = new HashMap<>();
 
         this.keysMap = new HashMap<>();
         this.keysArray = null;
@@ -53,7 +202,7 @@ public class AlignmentRegionSummary {
 
     }
 
-    public AlignmentRegionSummary(AlignmentProto.Summary summary, int index){
+    public AlignmentSummary(AlignmentProto.Summary summary, int index){
         this.open = false;
 
         this.index = index;
@@ -90,140 +239,6 @@ public class AlignmentRegionSummary {
             tagsMap.put(entry, tagsMap.size());
         }
 
-    }
-
-    /**
-     * This function can only be called when summary is OPEN.
-     */
-    public void addOverlappedBucket(int overlapped){
-        Integer f = overlapMap.get(overlapped);
-        f = f==null?1:f+1;
-        overlapMap.put(overlapped,f);
-    }
-
-    /**
-     * This function can only be called when summary is OPEN.
-     */
-    public void addAlignment(Alignment alignment){
-        if(!open){
-            System.out.println("[ERROR] Alignmentregionsummary.addAlignment() can't be called when is closed!");
-            //TODO jj: Throw exception?
-            return;
-        }
-        //FLAG
-        {
-            Integer f = flagsMap.get(alignment.getFlags());
-            f = f==null?1:f+1;
-            flagsMap.put(alignment.getFlags(), f);
-        }
-
-        //LENGTH
-        {
-            Integer l = lenMap.get(alignment.getLength());
-            l = l==null?1:l+1;
-            lenMap.put(alignment.getLength(), l);
-        }
-
-        //MateReferenceName
-        {
-            Integer rn = rnextMap.get(alignment.getMateReferenceName());
-            rn = rn==null?1:rn+1;
-            rnextMap.put(alignment.getMateReferenceName(), rn);
-        }
-
-        //Tags / Attributes
-        int key;
-        Map.Entry<Integer, Object> tag;
-        for(Map.Entry<String, Object> entry : alignment.getAttributes().entrySet()){
-
-            //Update key map
-            if(!keysMap.containsKey(entry.getKey())){
-                keysMap.put(entry.getKey(), key = keysMap.size());
-            } else {
-                key = keysMap.get(entry.getKey());
-            }
-
-            //Add new map
-            tag = new HashMap.SimpleEntry<>(key, entry.getValue());
-
-            if(!tagsMap.containsKey(tag)){
-                tagsMap.put(tag, tagsMap.size());
-            }
-        }
-
-    }
-
-    public void printHistogram(){
-        System.out.println("AlignmentRegionSummary [" + index + "] Histogram");
-        System.out.println("Default Flag Map");
-        for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
-            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
-        }
-
-        System.out.println("\nDefault Length Map");
-        for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
-            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
-        }
-
-        System.out.println("\nDefault RNext Map");
-        for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
-            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
-        }
-
-        System.out.println("\nDefault OverlappedBucket Map");
-        for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
-            System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
-        }
-    }
-
-    public void close(){
-        int maxFlags = 0;
-        for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
-            if(entry.getValue() > maxFlags){
-                maxFlags = entry.getValue();
-                defaultFlag = entry.getKey();
-            }
-        }
-
-        int maxLen = 0;
-        for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
-            if(entry.getValue() > maxLen){
-                maxLen = entry.getValue();
-                defaultLen = entry.getKey();
-            }
-        }
-
-        int maxRNext = 0;
-        for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
-            if(entry.getValue() > maxRNext){
-                maxRNext = entry.getValue();
-                defaultRNext = entry.getKey();
-            }
-        }
-
-        int maxOverlap = 0;
-        for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
-            if(entry.getValue() > maxOverlap){
-                maxOverlap = entry.getValue();
-                defaultOverlappedBucket = entry.getKey();
-            }
-        }
-
-        keysArray = new String[keysMap.size()];
-        for(Map.Entry<String, Integer> entry : keysMap.entrySet()){
-            keysArray[entry.getValue()] = entry.getKey();
-        }
-
-        tagsArray = new Map.Entry[tagsMap.size()];
-        for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
-            tagsArray[entry.getValue()] = entry.getKey();
-        }
-
-        open = false;
-        flagsMap = null;
-        lenMap = null;
-        rnextMap = null;
-        overlapMap = null;
     }
 
     /**
@@ -296,7 +311,7 @@ public class AlignmentRegionSummary {
         for(Integer i : indexTagList) {
             try {
                 tags.put(keysArray[tagsArray[i].getKey()], tagsArray[i].getValue());
-            } catch (ArrayIndexOutOfBoundsException ex){
+            } catch (ArrayIndexOutOfBoundsException      ex){
                 System.out.println("Error? summary.getTagsFromList()");
             }
         }

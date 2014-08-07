@@ -3,8 +3,6 @@
 
 package org.opencb.opencga.storage.alignment.proto;
 
-import com.google.protobuf.AbstractMessage;
-
 public final class AlignmentProto {
   private AlignmentProto() {}
   public static void registerAllExtensions(
@@ -12,487 +10,133 @@ public final class AlignmentProto {
   }
   public interface DifferenceOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
-    // required .org.opencb.opencga.storage.alignment.Difference.DifferenceOperator operator = 1;
+
+    // required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;
+    /**
+     * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+     *
+     * <pre>
+     *TODO: Default op? Summary, Bucket or Alignment level?
+     * </pre>
+     */
     boolean hasOperator();
-    AlignmentProto.Difference.DifferenceOperator getOperator();
-    
+    /**
+     * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+     *
+     * <pre>
+     *TODO: Default op? Summary, Bucket or Alignment level?
+     * </pre>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator getOperator();
+
     // optional uint32 pos = 2;
+    /**
+     * <code>optional uint32 pos = 2;</code>
+     *
+     * <pre>
+     *If missing, starts at the end of the last difference.
+     * </pre>
+     */
     boolean hasPos();
+    /**
+     * <code>optional uint32 pos = 2;</code>
+     *
+     * <pre>
+     *If missing, starts at the end of the last difference.
+     * </pre>
+     */
     int getPos();
-    
+
     // optional uint32 length = 3;
+    /**
+     * <code>optional uint32 length = 3;</code>
+     *
+     * <pre>
+     *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+     * </pre>
+     */
     boolean hasLength();
+    /**
+     * <code>optional uint32 length = 3;</code>
+     *
+     * <pre>
+     *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+     * </pre>
+     */
     int getLength();
-    
+
     // optional bytes sequence = 4;
+    /**
+     * <code>optional bytes sequence = 4;</code>
+     *
+     * <pre>
+     *If missing, take from the reference sequence.
+     * </pre>
+     */
     boolean hasSequence();
+    /**
+     * <code>optional bytes sequence = 4;</code>
+     *
+     * <pre>
+     *If missing, take from the reference sequence.
+     * </pre>
+     */
     com.google.protobuf.ByteString getSequence();
   }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Difference}
+   */
   public static final class Difference extends
       com.google.protobuf.GeneratedMessage
       implements DifferenceOrBuilder {
     // Use Difference.newBuilder() to construct.
-    private Difference(Builder builder) {
+    private Difference(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
+      this.unknownFields = builder.getUnknownFields();
     }
-    private Difference(boolean noInit) {}
-    
+    private Difference(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
     private static final Difference defaultInstance;
     public static Difference getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public Difference getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Difference_descriptor;
-    }
-    
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Difference_fieldAccessorTable;
-    }
-    
-    public enum DifferenceOperator
-        implements com.google.protobuf.ProtocolMessageEnum {
-      INSERTION(0, 1),
-      DELETION(1, 2),
-      MISMATCH(2, 3),
-      SKIPPED_REGION(3, 4),
-      SOFT_CLIPPING(4, 5),
-      HARD_CLIPPING(5, 6),
-      PADDING(6, 7),
-      ;
-      
-      public static final int INSERTION_VALUE = 1;
-      public static final int DELETION_VALUE = 2;
-      public static final int MISMATCH_VALUE = 3;
-      public static final int SKIPPED_REGION_VALUE = 4;
-      public static final int SOFT_CLIPPING_VALUE = 5;
-      public static final int HARD_CLIPPING_VALUE = 6;
-      public static final int PADDING_VALUE = 7;
-      
-      
-      public final int getNumber() { return value; }
-      
-      public static DifferenceOperator valueOf(int value) {
-        switch (value) {
-          case 1: return INSERTION;
-          case 2: return DELETION;
-          case 3: return MISMATCH;
-          case 4: return SKIPPED_REGION;
-          case 5: return SOFT_CLIPPING;
-          case 6: return HARD_CLIPPING;
-          case 7: return PADDING;
-          default: return null;
-        }
-      }
-      
-      public static com.google.protobuf.Internal.EnumLiteMap<DifferenceOperator>
-          internalGetValueMap() {
-        return internalValueMap;
-      }
-      private static com.google.protobuf.Internal.EnumLiteMap<DifferenceOperator>
-          internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<DifferenceOperator>() {
-              public DifferenceOperator findValueByNumber(int number) {
-                return DifferenceOperator.valueOf(number);
-              }
-            };
-      
-      public final com.google.protobuf.Descriptors.EnumValueDescriptor
-          getValueDescriptor() {
-        return getDescriptor().getValues().get(index);
-      }
-      public final com.google.protobuf.Descriptors.EnumDescriptor
-          getDescriptorForType() {
-        return getDescriptor();
-      }
-      public static final com.google.protobuf.Descriptors.EnumDescriptor
-          getDescriptor() {
-        return AlignmentProto.Difference.getDescriptor().getEnumTypes().get(0);
-      }
-      
-      private static final DifferenceOperator[] VALUES = {
-        INSERTION, DELETION, MISMATCH, SKIPPED_REGION, SOFT_CLIPPING, HARD_CLIPPING, PADDING, 
-      };
-      
-      public static DifferenceOperator valueOf(
-          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-        if (desc.getType() != getDescriptor()) {
-          throw new java.lang.IllegalArgumentException(
-            "EnumValueDescriptor is not for this type.");
-        }
-        return VALUES[desc.getIndex()];
-      }
-      
-      private final int index;
-      private final int value;
-      
-      private DifferenceOperator(int index, int value) {
-        this.index = index;
-        this.value = value;
-      }
-      
-      // @@protoc_insertion_point(enum_scope:org.opencb.opencga.storage.alignment.Difference.DifferenceOperator)
-    }
-    
-    private int bitField0_;
-    // required .org.opencb.opencga.storage.alignment.Difference.DifferenceOperator operator = 1;
-    public static final int OPERATOR_FIELD_NUMBER = 1;
-    private AlignmentProto.Difference.DifferenceOperator operator_;
-    public boolean hasOperator() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    public AlignmentProto.Difference.DifferenceOperator getOperator() {
-      return operator_;
-    }
-    
-    // optional uint32 pos = 2;
-    public static final int POS_FIELD_NUMBER = 2;
-    private int pos_;
-    public boolean hasPos() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public int getPos() {
-      return pos_;
-    }
-    
-    // optional uint32 length = 3;
-    public static final int LENGTH_FIELD_NUMBER = 3;
-    private int length_;
-    public boolean hasLength() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    public int getLength() {
-      return length_;
-    }
-    
-    // optional bytes sequence = 4;
-    public static final int SEQUENCE_FIELD_NUMBER = 4;
-    private com.google.protobuf.ByteString sequence_;
-    public boolean hasSequence() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    public com.google.protobuf.ByteString getSequence() {
-      return sequence_;
-    }
-    
-    private void initFields() {
-      operator_ = AlignmentProto.Difference.DifferenceOperator.INSERTION;
-      pos_ = 0;
-      length_ = 0;
-      sequence_ = com.google.protobuf.ByteString.EMPTY;
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-      
-      if (!hasOperator()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-    
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeEnum(1, operator_.getNumber());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, pos_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeUInt32(3, length_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBytes(4, sequence_);
-      }
-      getUnknownFields().writeTo(output);
-    }
-    
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-    
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeEnumSize(1, operator_.getNumber());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(2, pos_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(3, length_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, sequence_);
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-    
-    private static final long serialVersionUID = 0L;
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
     }
-    
-    public static AlignmentProto.Difference parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static AlignmentProto.Difference parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static AlignmentProto.Difference parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static AlignmentProto.Difference parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static AlignmentProto.Difference parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static AlignmentProto.Difference parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    public static AlignmentProto.Difference parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static AlignmentProto.Difference parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static AlignmentProto.Difference parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static AlignmentProto.Difference parseFrom(
+    private Difference(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(AlignmentProto.Difference prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-    
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements AlignmentProto.DifferenceOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Difference_descriptor;
-      }
-      
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Difference_fieldAccessorTable;
-      }
-      
-      // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-      
-      private Builder(BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-      
-      public Builder clear() {
-        super.clear();
-        operator_ = AlignmentProto.Difference.DifferenceOperator.INSERTION;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        pos_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        length_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        sequence_ = com.google.protobuf.ByteString.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000008);
-        return this;
-      }
-      
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-      
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return AlignmentProto.Difference.getDescriptor();
-      }
-      
-      public AlignmentProto.Difference getDefaultInstanceForType() {
-        return AlignmentProto.Difference.getDefaultInstance();
-      }
-      
-      public AlignmentProto.Difference build() {
-        AlignmentProto.Difference result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
-        }
-        return result;
-      }
-      
-      private AlignmentProto.Difference buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        AlignmentProto.Difference result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-      
-      public AlignmentProto.Difference buildPartial() {
-        AlignmentProto.Difference result = new AlignmentProto.Difference(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.operator_ = operator_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.pos_ = pos_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.length_ = length_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.sequence_ = sequence_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-      
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof AlignmentProto.Difference) {
-          return mergeFrom((AlignmentProto.Difference)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-      
-      public Builder mergeFrom(AlignmentProto.Difference other) {
-        if (other == AlignmentProto.Difference.getDefaultInstance()) return this;
-        if (other.hasOperator()) {
-          setOperator(other.getOperator());
-        }
-        if (other.hasPos()) {
-          setPos(other.getPos());
-        }
-        if (other.hasLength()) {
-          setLength(other.getLength());
-        }
-        if (other.hasSequence()) {
-          setSequence(other.getSequence());
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-      
-      public final boolean isInitialized() {
-        if (!hasOperator()) {
-          
-          return false;
-        }
-        return true;
-      }
-      
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
           int tag = input.readTag();
           switch (tag) {
             case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
+              done = true;
+              break;
             default: {
               if (!parseUnknownField(input, unknownFields,
                                      extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
+                done = true;
               }
               break;
             }
             case 8: {
               int rawValue = input.readEnum();
-              AlignmentProto.Difference.DifferenceOperator value = AlignmentProto.Difference.DifferenceOperator.valueOf(rawValue);
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator value = org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
@@ -518,19 +162,583 @@ public final class AlignmentProto {
             }
           }
         }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
       }
-      
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Difference_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Difference_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<Difference> PARSER =
+        new com.google.protobuf.AbstractParser<Difference>() {
+      public Difference parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new Difference(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Difference> getParserForType() {
+      return PARSER;
+    }
+
+    /**
+     * Protobuf enum {@code org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator}
+     */
+    public enum DifferenceOperator
+        implements com.google.protobuf.ProtocolMessageEnum {
+      /**
+       * <code>INSERTION = 1;</code>
+       */
+      INSERTION(0, 1),
+      /**
+       * <code>DELETION = 2;</code>
+       */
+      DELETION(1, 2),
+      /**
+       * <code>MISMATCH = 3;</code>
+       */
+      MISMATCH(2, 3),
+      /**
+       * <code>SKIPPED_REGION = 4;</code>
+       */
+      SKIPPED_REGION(3, 4),
+      /**
+       * <code>SOFT_CLIPPING = 5;</code>
+       */
+      SOFT_CLIPPING(4, 5),
+      /**
+       * <code>HARD_CLIPPING = 6;</code>
+       */
+      HARD_CLIPPING(5, 6),
+      /**
+       * <code>PADDING = 7;</code>
+       */
+      PADDING(6, 7),
+      ;
+
+      /**
+       * <code>INSERTION = 1;</code>
+       */
+      public static final int INSERTION_VALUE = 1;
+      /**
+       * <code>DELETION = 2;</code>
+       */
+      public static final int DELETION_VALUE = 2;
+      /**
+       * <code>MISMATCH = 3;</code>
+       */
+      public static final int MISMATCH_VALUE = 3;
+      /**
+       * <code>SKIPPED_REGION = 4;</code>
+       */
+      public static final int SKIPPED_REGION_VALUE = 4;
+      /**
+       * <code>SOFT_CLIPPING = 5;</code>
+       */
+      public static final int SOFT_CLIPPING_VALUE = 5;
+      /**
+       * <code>HARD_CLIPPING = 6;</code>
+       */
+      public static final int HARD_CLIPPING_VALUE = 6;
+      /**
+       * <code>PADDING = 7;</code>
+       */
+      public static final int PADDING_VALUE = 7;
+
+
+      public final int getNumber() { return value; }
+
+      public static DifferenceOperator valueOf(int value) {
+        switch (value) {
+          case 1: return INSERTION;
+          case 2: return DELETION;
+          case 3: return MISMATCH;
+          case 4: return SKIPPED_REGION;
+          case 5: return SOFT_CLIPPING;
+          case 6: return HARD_CLIPPING;
+          case 7: return PADDING;
+          default: return null;
+        }
+      }
+
+      public static com.google.protobuf.Internal.EnumLiteMap<DifferenceOperator>
+          internalGetValueMap() {
+        return internalValueMap;
+      }
+      private static com.google.protobuf.Internal.EnumLiteMap<DifferenceOperator>
+          internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<DifferenceOperator>() {
+              public DifferenceOperator findValueByNumber(int number) {
+                return DifferenceOperator.valueOf(number);
+              }
+            };
+
+      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+          getValueDescriptor() {
+        return getDescriptor().getValues().get(index);
+      }
+      public final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptorForType() {
+        return getDescriptor();
+      }
+      public static final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptor() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.getDescriptor().getEnumTypes().get(0);
+      }
+
+      private static final DifferenceOperator[] VALUES = values();
+
+      public static DifferenceOperator valueOf(
+          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+          throw new java.lang.IllegalArgumentException(
+            "EnumValueDescriptor is not for this type.");
+        }
+        return VALUES[desc.getIndex()];
+      }
+
+      private final int index;
+      private final int value;
+
+      private DifferenceOperator(int index, int value) {
+        this.index = index;
+        this.value = value;
+      }
+
+      // @@protoc_insertion_point(enum_scope:org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator)
+    }
+
+    private int bitField0_;
+    // required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;
+    public static final int OPERATOR_FIELD_NUMBER = 1;
+    private org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator operator_;
+    /**
+     * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+     *
+     * <pre>
+     *TODO: Default op? Summary, Bucket or Alignment level?
+     * </pre>
+     */
+    public boolean hasOperator() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+     *
+     * <pre>
+     *TODO: Default op? Summary, Bucket or Alignment level?
+     * </pre>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator getOperator() {
+      return operator_;
+    }
+
+    // optional uint32 pos = 2;
+    public static final int POS_FIELD_NUMBER = 2;
+    private int pos_;
+    /**
+     * <code>optional uint32 pos = 2;</code>
+     *
+     * <pre>
+     *If missing, starts at the end of the last difference.
+     * </pre>
+     */
+    public boolean hasPos() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional uint32 pos = 2;</code>
+     *
+     * <pre>
+     *If missing, starts at the end of the last difference.
+     * </pre>
+     */
+    public int getPos() {
+      return pos_;
+    }
+
+    // optional uint32 length = 3;
+    public static final int LENGTH_FIELD_NUMBER = 3;
+    private int length_;
+    /**
+     * <code>optional uint32 length = 3;</code>
+     *
+     * <pre>
+     *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+     * </pre>
+     */
+    public boolean hasLength() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional uint32 length = 3;</code>
+     *
+     * <pre>
+     *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+     * </pre>
+     */
+    public int getLength() {
+      return length_;
+    }
+
+    // optional bytes sequence = 4;
+    public static final int SEQUENCE_FIELD_NUMBER = 4;
+    private com.google.protobuf.ByteString sequence_;
+    /**
+     * <code>optional bytes sequence = 4;</code>
+     *
+     * <pre>
+     *If missing, take from the reference sequence.
+     * </pre>
+     */
+    public boolean hasSequence() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional bytes sequence = 4;</code>
+     *
+     * <pre>
+     *If missing, take from the reference sequence.
+     * </pre>
+     */
+    public com.google.protobuf.ByteString getSequence() {
+      return sequence_;
+    }
+
+    private void initFields() {
+      operator_ = org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator.INSERTION;
+      pos_ = 0;
+      length_ = 0;
+      sequence_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasOperator()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeEnum(1, operator_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeUInt32(2, pos_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeUInt32(3, length_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, sequence_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(1, operator_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(2, pos_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(3, length_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, sequence_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Difference}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Difference_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Difference_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder.class);
+      }
+
+      // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        operator_ = org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator.INSERTION;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        pos_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        length_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        sequence_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Difference_descriptor;
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.getDefaultInstance();
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.operator_ = operator_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.pos_ = pos_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.length_ = length_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.sequence_ = sequence_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.getDefaultInstance()) return this;
+        if (other.hasOperator()) {
+          setOperator(other.getOperator());
+        }
+        if (other.hasPos()) {
+          setPos(other.getPos());
+        }
+        if (other.hasLength()) {
+          setLength(other.getLength());
+        }
+        if (other.hasSequence()) {
+          setSequence(other.getSequence());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasOperator()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
       private int bitField0_;
-      
-      // required .org.opencb.opencga.storage.alignment.Difference.DifferenceOperator operator = 1;
-      private AlignmentProto.Difference.DifferenceOperator operator_ = AlignmentProto.Difference.DifferenceOperator.INSERTION;
+
+      // required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;
+      private org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator operator_ = org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator.INSERTION;
+      /**
+       * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+       *
+       * <pre>
+       *TODO: Default op? Summary, Bucket or Alignment level?
+       * </pre>
+       */
       public boolean hasOperator() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public AlignmentProto.Difference.DifferenceOperator getOperator() {
+      /**
+       * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+       *
+       * <pre>
+       *TODO: Default op? Summary, Bucket or Alignment level?
+       * </pre>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator getOperator() {
         return operator_;
       }
-      public Builder setOperator(AlignmentProto.Difference.DifferenceOperator value) {
+      /**
+       * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+       *
+       * <pre>
+       *TODO: Default op? Summary, Bucket or Alignment level?
+       * </pre>
+       */
+      public Builder setOperator(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -539,63 +747,147 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>required .org.opencb.opencga.storage.alignment.proto.Difference.DifferenceOperator operator = 1;</code>
+       *
+       * <pre>
+       *TODO: Default op? Summary, Bucket or Alignment level?
+       * </pre>
+       */
       public Builder clearOperator() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        operator_ = AlignmentProto.Difference.DifferenceOperator.INSERTION;
+        operator_ = org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.DifferenceOperator.INSERTION;
         onChanged();
         return this;
       }
-      
+
       // optional uint32 pos = 2;
       private int pos_ ;
+      /**
+       * <code>optional uint32 pos = 2;</code>
+       *
+       * <pre>
+       *If missing, starts at the end of the last difference.
+       * </pre>
+       */
       public boolean hasPos() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
+      /**
+       * <code>optional uint32 pos = 2;</code>
+       *
+       * <pre>
+       *If missing, starts at the end of the last difference.
+       * </pre>
+       */
       public int getPos() {
         return pos_;
       }
+      /**
+       * <code>optional uint32 pos = 2;</code>
+       *
+       * <pre>
+       *If missing, starts at the end of the last difference.
+       * </pre>
+       */
       public Builder setPos(int value) {
         bitField0_ |= 0x00000002;
         pos_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>optional uint32 pos = 2;</code>
+       *
+       * <pre>
+       *If missing, starts at the end of the last difference.
+       * </pre>
+       */
       public Builder clearPos() {
         bitField0_ = (bitField0_ & ~0x00000002);
         pos_ = 0;
         onChanged();
         return this;
       }
-      
+
       // optional uint32 length = 3;
       private int length_ ;
+      /**
+       * <code>optional uint32 length = 3;</code>
+       *
+       * <pre>
+       *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+       * </pre>
+       */
       public boolean hasLength() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
+      /**
+       * <code>optional uint32 length = 3;</code>
+       *
+       * <pre>
+       *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+       * </pre>
+       */
       public int getLength() {
         return length_;
       }
+      /**
+       * <code>optional uint32 length = 3;</code>
+       *
+       * <pre>
+       *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+       * </pre>
+       */
       public Builder setLength(int value) {
         bitField0_ |= 0x00000004;
         length_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>optional uint32 length = 3;</code>
+       *
+       * <pre>
+       *If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+       * </pre>
+       */
       public Builder clearLength() {
         bitField0_ = (bitField0_ & ~0x00000004);
         length_ = 0;
         onChanged();
         return this;
       }
-      
+
       // optional bytes sequence = 4;
       private com.google.protobuf.ByteString sequence_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes sequence = 4;</code>
+       *
+       * <pre>
+       *If missing, take from the reference sequence.
+       * </pre>
+       */
       public boolean hasSequence() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
+      /**
+       * <code>optional bytes sequence = 4;</code>
+       *
+       * <pre>
+       *If missing, take from the reference sequence.
+       * </pre>
+       */
       public com.google.protobuf.ByteString getSequence() {
         return sequence_;
       }
+      /**
+       * <code>optional bytes sequence = 4;</code>
+       *
+       * <pre>
+       *If missing, take from the reference sequence.
+       * </pre>
+       */
       public Builder setSequence(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
@@ -605,299 +897,650 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>optional bytes sequence = 4;</code>
+       *
+       * <pre>
+       *If missing, take from the reference sequence.
+       * </pre>
+       */
       public Builder clearSequence() {
         bitField0_ = (bitField0_ & ~0x00000008);
         sequence_ = getDefaultInstance().getSequence();
         onChanged();
         return this;
       }
-      
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.Difference)
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.Difference)
     }
-    
+
     static {
       defaultInstance = new Difference(true);
       defaultInstance.initFields();
     }
-    
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.Difference)
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.Difference)
   }
-  
+
   public interface AlignmentRecordOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required string name = 1;
+    /**
+     * <code>required string name = 1;</code>
+     */
     boolean hasName();
-    String getName();
-    
+    /**
+     * <code>required string name = 1;</code>
+     */
+    java.lang.String getName();
+    /**
+     * <code>required string name = 1;</code>
+     */
+    com.google.protobuf.ByteString
+        getNameBytes();
+
     // required uint32 pos = 2;
+    /**
+     * <code>required uint32 pos = 2;</code>
+     *
+     * <pre>
+     * position relative to the alignment region
+     * </pre>
+     */
     boolean hasPos();
+    /**
+     * <code>required uint32 pos = 2;</code>
+     *
+     * <pre>
+     * position relative to the alignment region
+     * </pre>
+     */
     int getPos();
-    
+
     // optional uint32 flags = 3;
+    /**
+     * <code>optional uint32 flags = 3;</code>
+     */
     boolean hasFlags();
+    /**
+     * <code>optional uint32 flags = 3;</code>
+     */
     int getFlags();
-    
+
     // optional uint32 len = 4;
+    /**
+     * <code>optional uint32 len = 4;</code>
+     */
     boolean hasLen();
+    /**
+     * <code>optional uint32 len = 4;</code>
+     */
     int getLen();
-    
+
     // required uint32 mapq = 5;
+    /**
+     * <code>required uint32 mapq = 5;</code>
+     */
     boolean hasMapq();
+    /**
+     * <code>required uint32 mapq = 5;</code>
+     */
     int getMapq();
-    
+
     // required string qualities = 6;
+    /**
+     * <code>required string qualities = 6;</code>
+     */
     boolean hasQualities();
-    String getQualities();
-    
+    /**
+     * <code>required string qualities = 6;</code>
+     */
+    java.lang.String getQualities();
+    /**
+     * <code>required string qualities = 6;</code>
+     */
+    com.google.protobuf.ByteString
+        getQualitiesBytes();
+
     // optional string rnext = 7;
+    /**
+     * <code>optional string rnext = 7;</code>
+     */
     boolean hasRnext();
-    String getRnext();
-    
+    /**
+     * <code>optional string rnext = 7;</code>
+     */
+    java.lang.String getRnext();
+    /**
+     * <code>optional string rnext = 7;</code>
+     */
+    com.google.protobuf.ByteString
+        getRnextBytes();
+
     // required sint32 relativePnext = 8;
+    /**
+     * <code>required sint32 relativePnext = 8;</code>
+     */
     boolean hasRelativePnext();
+    /**
+     * <code>required sint32 relativePnext = 8;</code>
+     */
     int getRelativePnext();
-    
+
     // required sint32 inferredInsertSize = 9;
+    /**
+     * <code>required sint32 inferredInsertSize = 9;</code>
+     */
     boolean hasInferredInsertSize();
+    /**
+     * <code>required sint32 inferredInsertSize = 9;</code>
+     */
     int getInferredInsertSize();
-    
-    // repeated .org.opencb.opencga.storage.alignment.Difference diffs = 10;
-    java.util.List<AlignmentProto.Difference>
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference> 
         getDiffsList();
-    AlignmentProto.Difference getDiffs(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference getDiffs(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
     int getDiffsCount();
-    java.util.List<? extends AlignmentProto.DifferenceOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder> 
         getDiffsOrBuilderList();
-    AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
         int index);
-    
+
     // repeated uint32 tags = 11 [packed = true];
+    /**
+     * <code>repeated uint32 tags = 11 [packed = true];</code>
+     */
     java.util.List<java.lang.Integer> getTagsList();
+    /**
+     * <code>repeated uint32 tags = 11 [packed = true];</code>
+     */
     int getTagsCount();
+    /**
+     * <code>repeated uint32 tags = 11 [packed = true];</code>
+     */
     int getTags(int index);
   }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.AlignmentRecord}
+   */
   public static final class AlignmentRecord extends
       com.google.protobuf.GeneratedMessage
       implements AlignmentRecordOrBuilder {
     // Use AlignmentRecord.newBuilder() to construct.
-    private AlignmentRecord(Builder builder) {
+    private AlignmentRecord(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
+      this.unknownFields = builder.getUnknownFields();
     }
-    private AlignmentRecord(boolean noInit) {}
-    
+    private AlignmentRecord(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
     private static final AlignmentRecord defaultInstance;
     public static AlignmentRecord getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public AlignmentRecord getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private AlignmentRecord(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              name_ = input.readBytes();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              pos_ = input.readUInt32();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              flags_ = input.readUInt32();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              len_ = input.readUInt32();
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000010;
+              mapq_ = input.readUInt32();
+              break;
+            }
+            case 50: {
+              bitField0_ |= 0x00000020;
+              qualities_ = input.readBytes();
+              break;
+            }
+            case 58: {
+              bitField0_ |= 0x00000040;
+              rnext_ = input.readBytes();
+              break;
+            }
+            case 64: {
+              bitField0_ |= 0x00000080;
+              relativePnext_ = input.readSInt32();
+              break;
+            }
+            case 72: {
+              bitField0_ |= 0x00000100;
+              inferredInsertSize_ = input.readSInt32();
+              break;
+            }
+            case 82: {
+              if (!((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+                diffs_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference>();
+                mutable_bitField0_ |= 0x00000200;
+              }
+              diffs_.add(input.readMessage(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.PARSER, extensionRegistry));
+              break;
+            }
+            case 88: {
+              if (!((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+                tags_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000400;
+              }
+              tags_.add(input.readUInt32());
+              break;
+            }
+            case 90: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000400) == 0x00000400) && input.getBytesUntilLimit() > 0) {
+                tags_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000400;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                tags_.add(input.readUInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000200) == 0x00000200)) {
+          diffs_ = java.util.Collections.unmodifiableList(diffs_);
+        }
+        if (((mutable_bitField0_ & 0x00000400) == 0x00000400)) {
+          tags_ = java.util.Collections.unmodifiableList(tags_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_fieldAccessorTable;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder.class);
     }
-    
+
+    public static com.google.protobuf.Parser<AlignmentRecord> PARSER =
+        new com.google.protobuf.AbstractParser<AlignmentRecord>() {
+      public AlignmentRecord parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new AlignmentRecord(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<AlignmentRecord> getParserForType() {
+      return PARSER;
+    }
+
     private int bitField0_;
     // required string name = 1;
     public static final int NAME_FIELD_NUMBER = 1;
     private java.lang.Object name_;
+    /**
+     * <code>required string name = 1;</code>
+     */
     public boolean hasName() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public String getName() {
+    /**
+     * <code>required string name = 1;</code>
+     */
+    public java.lang.String getName() {
       java.lang.Object ref = name_;
-      if (ref instanceof String) {
-        return (String) ref;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
       } else {
         com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
           name_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getNameBytes() {
+    /**
+     * <code>required string name = 1;</code>
+     */
+    public com.google.protobuf.ByteString
+        getNameBytes() {
       java.lang.Object ref = name_;
-      if (ref instanceof String) {
+      if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         name_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // required uint32 pos = 2;
     public static final int POS_FIELD_NUMBER = 2;
     private int pos_;
+    /**
+     * <code>required uint32 pos = 2;</code>
+     *
+     * <pre>
+     * position relative to the alignment region
+     * </pre>
+     */
     public boolean hasPos() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
+    /**
+     * <code>required uint32 pos = 2;</code>
+     *
+     * <pre>
+     * position relative to the alignment region
+     * </pre>
+     */
     public int getPos() {
       return pos_;
     }
-    
+
     // optional uint32 flags = 3;
     public static final int FLAGS_FIELD_NUMBER = 3;
     private int flags_;
+    /**
+     * <code>optional uint32 flags = 3;</code>
+     */
     public boolean hasFlags() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
+    /**
+     * <code>optional uint32 flags = 3;</code>
+     */
     public int getFlags() {
       return flags_;
     }
-    
+
     // optional uint32 len = 4;
     public static final int LEN_FIELD_NUMBER = 4;
     private int len_;
+    /**
+     * <code>optional uint32 len = 4;</code>
+     */
     public boolean hasLen() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
+    /**
+     * <code>optional uint32 len = 4;</code>
+     */
     public int getLen() {
       return len_;
     }
-    
+
     // required uint32 mapq = 5;
     public static final int MAPQ_FIELD_NUMBER = 5;
     private int mapq_;
+    /**
+     * <code>required uint32 mapq = 5;</code>
+     */
     public boolean hasMapq() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
+    /**
+     * <code>required uint32 mapq = 5;</code>
+     */
     public int getMapq() {
       return mapq_;
     }
-    
+
     // required string qualities = 6;
     public static final int QUALITIES_FIELD_NUMBER = 6;
     private java.lang.Object qualities_;
+    /**
+     * <code>required string qualities = 6;</code>
+     */
     public boolean hasQualities() {
       return ((bitField0_ & 0x00000020) == 0x00000020);
     }
-    public String getQualities() {
+    /**
+     * <code>required string qualities = 6;</code>
+     */
+    public java.lang.String getQualities() {
       java.lang.Object ref = qualities_;
-      if (ref instanceof String) {
-        return (String) ref;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
       } else {
         com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
           qualities_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getQualitiesBytes() {
+    /**
+     * <code>required string qualities = 6;</code>
+     */
+    public com.google.protobuf.ByteString
+        getQualitiesBytes() {
       java.lang.Object ref = qualities_;
-      if (ref instanceof String) {
+      if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         qualities_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // optional string rnext = 7;
     public static final int RNEXT_FIELD_NUMBER = 7;
     private java.lang.Object rnext_;
+    /**
+     * <code>optional string rnext = 7;</code>
+     */
     public boolean hasRnext() {
       return ((bitField0_ & 0x00000040) == 0x00000040);
     }
-    public String getRnext() {
+    /**
+     * <code>optional string rnext = 7;</code>
+     */
+    public java.lang.String getRnext() {
       java.lang.Object ref = rnext_;
-      if (ref instanceof String) {
-        return (String) ref;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
       } else {
         com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
           rnext_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getRnextBytes() {
+    /**
+     * <code>optional string rnext = 7;</code>
+     */
+    public com.google.protobuf.ByteString
+        getRnextBytes() {
       java.lang.Object ref = rnext_;
-      if (ref instanceof String) {
+      if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         rnext_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // required sint32 relativePnext = 8;
     public static final int RELATIVEPNEXT_FIELD_NUMBER = 8;
     private int relativePnext_;
+    /**
+     * <code>required sint32 relativePnext = 8;</code>
+     */
     public boolean hasRelativePnext() {
       return ((bitField0_ & 0x00000080) == 0x00000080);
     }
+    /**
+     * <code>required sint32 relativePnext = 8;</code>
+     */
     public int getRelativePnext() {
       return relativePnext_;
     }
-    
+
     // required sint32 inferredInsertSize = 9;
     public static final int INFERREDINSERTSIZE_FIELD_NUMBER = 9;
     private int inferredInsertSize_;
+    /**
+     * <code>required sint32 inferredInsertSize = 9;</code>
+     */
     public boolean hasInferredInsertSize() {
       return ((bitField0_ & 0x00000100) == 0x00000100);
     }
+    /**
+     * <code>required sint32 inferredInsertSize = 9;</code>
+     */
     public int getInferredInsertSize() {
       return inferredInsertSize_;
     }
-    
-    // repeated .org.opencb.opencga.storage.alignment.Difference diffs = 10;
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;
     public static final int DIFFS_FIELD_NUMBER = 10;
-    private java.util.List<AlignmentProto.Difference> diffs_;
-    public java.util.List<AlignmentProto.Difference> getDiffsList() {
+    private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference> diffs_;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference> getDiffsList() {
       return diffs_;
     }
-    public java.util.List<? extends AlignmentProto.DifferenceOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder> 
         getDiffsOrBuilderList() {
       return diffs_;
     }
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
     public int getDiffsCount() {
       return diffs_.size();
     }
-    public AlignmentProto.Difference getDiffs(int index) {
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference getDiffs(int index) {
       return diffs_.get(index);
     }
-    public AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
         int index) {
       return diffs_.get(index);
     }
-    
+
     // repeated uint32 tags = 11 [packed = true];
     public static final int TAGS_FIELD_NUMBER = 11;
     private java.util.List<java.lang.Integer> tags_;
+    /**
+     * <code>repeated uint32 tags = 11 [packed = true];</code>
+     */
     public java.util.List<java.lang.Integer>
         getTagsList() {
       return tags_;
     }
+    /**
+     * <code>repeated uint32 tags = 11 [packed = true];</code>
+     */
     public int getTagsCount() {
       return tags_.size();
     }
+    /**
+     * <code>repeated uint32 tags = 11 [packed = true];</code>
+     */
     public int getTags(int index) {
       return tags_.get(index);
     }
     private int tagsMemoizedSerializedSize = -1;
-    
+
     private void initFields() {
       name_ = "";
       pos_ = 0;
@@ -909,13 +1552,13 @@ public final class AlignmentProto {
       relativePnext_ = 0;
       inferredInsertSize_ = 0;
       diffs_ = java.util.Collections.emptyList();
-      tags_ = java.util.Collections.emptyList();;
+      tags_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasName()) {
         memoizedIsInitialized = 0;
         return false;
@@ -949,7 +1592,7 @@ public final class AlignmentProto {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -992,12 +1635,12 @@ public final class AlignmentProto {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1057,113 +1700,105 @@ public final class AlignmentProto {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
-    public static AlignmentProto.AlignmentRecord parseFrom(
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(byte[] data)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentRecord parseDelimitedFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input);
     }
-    public static AlignmentProto.AlignmentRecord parseDelimitedFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.AlignmentRecord parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(AlignmentProto.AlignmentRecord prototype) {
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.AlignmentRecord}
+     */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements AlignmentProto.AlignmentRecordOrBuilder {
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_fieldAccessorTable;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder.class);
       }
-      
+
       // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
-      private Builder(BuilderParent parent) {
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1175,7 +1810,7 @@ public final class AlignmentProto {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         name_ = "";
@@ -1202,44 +1837,34 @@ public final class AlignmentProto {
         } else {
           diffsBuilder_.clear();
         }
-        tags_ = java.util.Collections.emptyList();;
+        tags_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000400);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return AlignmentProto.AlignmentRecord.getDescriptor();
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_descriptor;
       }
-      
-      public AlignmentProto.AlignmentRecord getDefaultInstanceForType() {
-        return AlignmentProto.AlignmentRecord.getDefaultInstance();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.getDefaultInstance();
       }
-      
-      public AlignmentProto.AlignmentRecord build() {
-        AlignmentProto.AlignmentRecord result = buildPartial();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord result = buildPartial();
         if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
+          throw newUninitializedMessageException(result);
         }
         return result;
       }
-      
-      private AlignmentProto.AlignmentRecord buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        AlignmentProto.AlignmentRecord result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-      
-      public AlignmentProto.AlignmentRecord buildPartial() {
-        AlignmentProto.AlignmentRecord result = new AlignmentProto.AlignmentRecord(this);
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -1296,20 +1921,22 @@ public final class AlignmentProto {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof AlignmentProto.AlignmentRecord) {
-          return mergeFrom((AlignmentProto.AlignmentRecord)other);
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
-      
-      public Builder mergeFrom(AlignmentProto.AlignmentRecord other) {
-        if (other == AlignmentProto.AlignmentRecord.getDefaultInstance()) return this;
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.getDefaultInstance()) return this;
         if (other.hasName()) {
-          setName(other.getName());
+          bitField0_ |= 0x00000001;
+          name_ = other.name_;
+          onChanged();
         }
         if (other.hasPos()) {
           setPos(other.getPos());
@@ -1324,10 +1951,14 @@ public final class AlignmentProto {
           setMapq(other.getMapq());
         }
         if (other.hasQualities()) {
-          setQualities(other.getQualities());
+          bitField0_ |= 0x00000020;
+          qualities_ = other.qualities_;
+          onChanged();
         }
         if (other.hasRnext()) {
-          setRnext(other.getRnext());
+          bitField0_ |= 0x00000040;
+          rnext_ = other.rnext_;
+          onChanged();
         }
         if (other.hasRelativePnext()) {
           setRelativePnext(other.getRelativePnext());
@@ -1374,7 +2005,7 @@ public final class AlignmentProto {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasName()) {
           
@@ -1408,117 +2039,69 @@ public final class AlignmentProto {
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
-              }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              name_ = input.readBytes();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              pos_ = input.readUInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              flags_ = input.readUInt32();
-              break;
-            }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              len_ = input.readUInt32();
-              break;
-            }
-            case 40: {
-              bitField0_ |= 0x00000010;
-              mapq_ = input.readUInt32();
-              break;
-            }
-            case 50: {
-              bitField0_ |= 0x00000020;
-              qualities_ = input.readBytes();
-              break;
-            }
-            case 58: {
-              bitField0_ |= 0x00000040;
-              rnext_ = input.readBytes();
-              break;
-            }
-            case 64: {
-              bitField0_ |= 0x00000080;
-              relativePnext_ = input.readSInt32();
-              break;
-            }
-            case 72: {
-              bitField0_ |= 0x00000100;
-              inferredInsertSize_ = input.readSInt32();
-              break;
-            }
-            case 82: {
-              AlignmentProto.Difference.Builder subBuilder = AlignmentProto.Difference.newBuilder();
-              input.readMessage(subBuilder, extensionRegistry);
-              addDiffs(subBuilder.buildPartial());
-              break;
-            }
-            case 88: {
-              ensureTagsIsMutable();
-              tags_.add(input.readUInt32());
-              break;
-            }
-            case 90: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addTags(input.readUInt32());
-              }
-              input.popLimit(limit);
-              break;
-            }
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
           }
         }
+        return this;
       }
-      
       private int bitField0_;
-      
+
       // required string name = 1;
       private java.lang.Object name_ = "";
+      /**
+       * <code>required string name = 1;</code>
+       */
       public boolean hasName() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public String getName() {
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public java.lang.String getName() {
         java.lang.Object ref = name_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
           name_ = s;
           return s;
         } else {
-          return (String) ref;
+          return (java.lang.String) ref;
         }
       }
-      public Builder setName(String value) {
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getNameBytes() {
+        java.lang.Object ref = name_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          name_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public Builder setName(
+          java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1527,118 +2110,220 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>required string name = 1;</code>
+       */
       public Builder clearName() {
         bitField0_ = (bitField0_ & ~0x00000001);
         name_ = getDefaultInstance().getName();
         onChanged();
         return this;
       }
-      void setName(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000001;
+      /**
+       * <code>required string name = 1;</code>
+       */
+      public Builder setNameBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
         name_ = value;
         onChanged();
+        return this;
       }
-      
+
       // required uint32 pos = 2;
       private int pos_ ;
+      /**
+       * <code>required uint32 pos = 2;</code>
+       *
+       * <pre>
+       * position relative to the alignment region
+       * </pre>
+       */
       public boolean hasPos() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
+      /**
+       * <code>required uint32 pos = 2;</code>
+       *
+       * <pre>
+       * position relative to the alignment region
+       * </pre>
+       */
       public int getPos() {
         return pos_;
       }
+      /**
+       * <code>required uint32 pos = 2;</code>
+       *
+       * <pre>
+       * position relative to the alignment region
+       * </pre>
+       */
       public Builder setPos(int value) {
         bitField0_ |= 0x00000002;
         pos_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required uint32 pos = 2;</code>
+       *
+       * <pre>
+       * position relative to the alignment region
+       * </pre>
+       */
       public Builder clearPos() {
         bitField0_ = (bitField0_ & ~0x00000002);
         pos_ = 0;
         onChanged();
         return this;
       }
-      
+
       // optional uint32 flags = 3;
       private int flags_ ;
+      /**
+       * <code>optional uint32 flags = 3;</code>
+       */
       public boolean hasFlags() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
+      /**
+       * <code>optional uint32 flags = 3;</code>
+       */
       public int getFlags() {
         return flags_;
       }
+      /**
+       * <code>optional uint32 flags = 3;</code>
+       */
       public Builder setFlags(int value) {
         bitField0_ |= 0x00000004;
         flags_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>optional uint32 flags = 3;</code>
+       */
       public Builder clearFlags() {
         bitField0_ = (bitField0_ & ~0x00000004);
         flags_ = 0;
         onChanged();
         return this;
       }
-      
+
       // optional uint32 len = 4;
       private int len_ ;
+      /**
+       * <code>optional uint32 len = 4;</code>
+       */
       public boolean hasLen() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
+      /**
+       * <code>optional uint32 len = 4;</code>
+       */
       public int getLen() {
         return len_;
       }
+      /**
+       * <code>optional uint32 len = 4;</code>
+       */
       public Builder setLen(int value) {
         bitField0_ |= 0x00000008;
         len_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>optional uint32 len = 4;</code>
+       */
       public Builder clearLen() {
         bitField0_ = (bitField0_ & ~0x00000008);
         len_ = 0;
         onChanged();
         return this;
       }
-      
+
       // required uint32 mapq = 5;
       private int mapq_ ;
+      /**
+       * <code>required uint32 mapq = 5;</code>
+       */
       public boolean hasMapq() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
+      /**
+       * <code>required uint32 mapq = 5;</code>
+       */
       public int getMapq() {
         return mapq_;
       }
+      /**
+       * <code>required uint32 mapq = 5;</code>
+       */
       public Builder setMapq(int value) {
         bitField0_ |= 0x00000010;
         mapq_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required uint32 mapq = 5;</code>
+       */
       public Builder clearMapq() {
         bitField0_ = (bitField0_ & ~0x00000010);
         mapq_ = 0;
         onChanged();
         return this;
       }
-      
+
       // required string qualities = 6;
       private java.lang.Object qualities_ = "";
+      /**
+       * <code>required string qualities = 6;</code>
+       */
       public boolean hasQualities() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
-      public String getQualities() {
+      /**
+       * <code>required string qualities = 6;</code>
+       */
+      public java.lang.String getQualities() {
         java.lang.Object ref = qualities_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
           qualities_ = s;
           return s;
         } else {
-          return (String) ref;
+          return (java.lang.String) ref;
         }
       }
-      public Builder setQualities(String value) {
+      /**
+       * <code>required string qualities = 6;</code>
+       */
+      public com.google.protobuf.ByteString
+          getQualitiesBytes() {
+        java.lang.Object ref = qualities_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          qualities_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string qualities = 6;</code>
+       */
+      public Builder setQualities(
+          java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1647,34 +2332,72 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>required string qualities = 6;</code>
+       */
       public Builder clearQualities() {
         bitField0_ = (bitField0_ & ~0x00000020);
         qualities_ = getDefaultInstance().getQualities();
         onChanged();
         return this;
       }
-      void setQualities(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000020;
+      /**
+       * <code>required string qualities = 6;</code>
+       */
+      public Builder setQualitiesBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000020;
         qualities_ = value;
         onChanged();
+        return this;
       }
-      
+
       // optional string rnext = 7;
       private java.lang.Object rnext_ = "";
+      /**
+       * <code>optional string rnext = 7;</code>
+       */
       public boolean hasRnext() {
         return ((bitField0_ & 0x00000040) == 0x00000040);
       }
-      public String getRnext() {
+      /**
+       * <code>optional string rnext = 7;</code>
+       */
+      public java.lang.String getRnext() {
         java.lang.Object ref = rnext_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
           rnext_ = s;
           return s;
         } else {
-          return (String) ref;
+          return (java.lang.String) ref;
         }
       }
-      public Builder setRnext(String value) {
+      /**
+       * <code>optional string rnext = 7;</code>
+       */
+      public com.google.protobuf.ByteString
+          getRnextBytes() {
+        java.lang.Object ref = rnext_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          rnext_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string rnext = 7;</code>
+       */
+      public Builder setRnext(
+          java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -1683,80 +2406,121 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>optional string rnext = 7;</code>
+       */
       public Builder clearRnext() {
         bitField0_ = (bitField0_ & ~0x00000040);
         rnext_ = getDefaultInstance().getRnext();
         onChanged();
         return this;
       }
-      void setRnext(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000040;
+      /**
+       * <code>optional string rnext = 7;</code>
+       */
+      public Builder setRnextBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000040;
         rnext_ = value;
         onChanged();
+        return this;
       }
-      
+
       // required sint32 relativePnext = 8;
       private int relativePnext_ ;
+      /**
+       * <code>required sint32 relativePnext = 8;</code>
+       */
       public boolean hasRelativePnext() {
         return ((bitField0_ & 0x00000080) == 0x00000080);
       }
+      /**
+       * <code>required sint32 relativePnext = 8;</code>
+       */
       public int getRelativePnext() {
         return relativePnext_;
       }
+      /**
+       * <code>required sint32 relativePnext = 8;</code>
+       */
       public Builder setRelativePnext(int value) {
         bitField0_ |= 0x00000080;
         relativePnext_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required sint32 relativePnext = 8;</code>
+       */
       public Builder clearRelativePnext() {
         bitField0_ = (bitField0_ & ~0x00000080);
         relativePnext_ = 0;
         onChanged();
         return this;
       }
-      
+
       // required sint32 inferredInsertSize = 9;
       private int inferredInsertSize_ ;
+      /**
+       * <code>required sint32 inferredInsertSize = 9;</code>
+       */
       public boolean hasInferredInsertSize() {
         return ((bitField0_ & 0x00000100) == 0x00000100);
       }
+      /**
+       * <code>required sint32 inferredInsertSize = 9;</code>
+       */
       public int getInferredInsertSize() {
         return inferredInsertSize_;
       }
+      /**
+       * <code>required sint32 inferredInsertSize = 9;</code>
+       */
       public Builder setInferredInsertSize(int value) {
         bitField0_ |= 0x00000100;
         inferredInsertSize_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required sint32 inferredInsertSize = 9;</code>
+       */
       public Builder clearInferredInsertSize() {
         bitField0_ = (bitField0_ & ~0x00000100);
         inferredInsertSize_ = 0;
         onChanged();
         return this;
       }
-      
-      // repeated .org.opencb.opencga.storage.alignment.Difference diffs = 10;
-      private java.util.List<AlignmentProto.Difference> diffs_ =
+
+      // repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;
+      private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference> diffs_ =
         java.util.Collections.emptyList();
       private void ensureDiffsIsMutable() {
         if (!((bitField0_ & 0x00000200) == 0x00000200)) {
-          diffs_ = new java.util.ArrayList<AlignmentProto.Difference>(diffs_);
+          diffs_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference>(diffs_);
           bitField0_ |= 0x00000200;
          }
       }
-      
+
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.Difference, AlignmentProto.Difference.Builder, AlignmentProto.DifferenceOrBuilder> diffsBuilder_;
-      
-      public java.util.List<AlignmentProto.Difference> getDiffsList() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder> diffsBuilder_;
+
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference> getDiffsList() {
         if (diffsBuilder_ == null) {
           return java.util.Collections.unmodifiableList(diffs_);
         } else {
           return diffsBuilder_.getMessageList();
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public int getDiffsCount() {
         if (diffsBuilder_ == null) {
           return diffs_.size();
@@ -1764,15 +2528,21 @@ public final class AlignmentProto {
           return diffsBuilder_.getCount();
         }
       }
-      public AlignmentProto.Difference getDiffs(int index) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference getDiffs(int index) {
         if (diffsBuilder_ == null) {
           return diffs_.get(index);
         } else {
           return diffsBuilder_.getMessage(index);
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder setDiffs(
-          int index, AlignmentProto.Difference value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference value) {
         if (diffsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1785,8 +2555,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder setDiffs(
-          int index, AlignmentProto.Difference.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder builderForValue) {
         if (diffsBuilder_ == null) {
           ensureDiffsIsMutable();
           diffs_.set(index, builderForValue.build());
@@ -1796,7 +2569,10 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public Builder addDiffs(AlignmentProto.Difference value) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public Builder addDiffs(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference value) {
         if (diffsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1809,8 +2585,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder addDiffs(
-          int index, AlignmentProto.Difference value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference value) {
         if (diffsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -1823,8 +2602,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder addDiffs(
-          AlignmentProto.Difference.Builder builderForValue) {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder builderForValue) {
         if (diffsBuilder_ == null) {
           ensureDiffsIsMutable();
           diffs_.add(builderForValue.build());
@@ -1834,8 +2616,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder addDiffs(
-          int index, AlignmentProto.Difference.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder builderForValue) {
         if (diffsBuilder_ == null) {
           ensureDiffsIsMutable();
           diffs_.add(index, builderForValue.build());
@@ -1845,8 +2630,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder addAllDiffs(
-          java.lang.Iterable<? extends AlignmentProto.Difference> values) {
+          java.lang.Iterable<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference> values) {
         if (diffsBuilder_ == null) {
           ensureDiffsIsMutable();
           super.addAll(values, diffs_);
@@ -1856,6 +2644,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder clearDiffs() {
         if (diffsBuilder_ == null) {
           diffs_ = java.util.Collections.emptyList();
@@ -1866,6 +2657,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
       public Builder removeDiffs(int index) {
         if (diffsBuilder_ == null) {
           ensureDiffsIsMutable();
@@ -1876,18 +2670,27 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public AlignmentProto.Difference.Builder getDiffsBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder getDiffsBuilder(
           int index) {
         return getDiffsFieldBuilder().getBuilder(index);
       }
-      public AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder getDiffsOrBuilder(
           int index) {
         if (diffsBuilder_ == null) {
           return diffs_.get(index);  } else {
           return diffsBuilder_.getMessageOrBuilder(index);
         }
       }
-      public java.util.List<? extends AlignmentProto.DifferenceOrBuilder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder> 
            getDiffsOrBuilderList() {
         if (diffsBuilder_ != null) {
           return diffsBuilder_.getMessageOrBuilderList();
@@ -1895,25 +2698,34 @@ public final class AlignmentProto {
           return java.util.Collections.unmodifiableList(diffs_);
         }
       }
-      public AlignmentProto.Difference.Builder addDiffsBuilder() {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder addDiffsBuilder() {
         return getDiffsFieldBuilder().addBuilder(
-            AlignmentProto.Difference.getDefaultInstance());
+            org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.getDefaultInstance());
       }
-      public AlignmentProto.Difference.Builder addDiffsBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder addDiffsBuilder(
           int index) {
         return getDiffsFieldBuilder().addBuilder(
-            index, AlignmentProto.Difference.getDefaultInstance());
+            index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.getDefaultInstance());
       }
-      public java.util.List<AlignmentProto.Difference.Builder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Difference diffs = 10;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder> 
            getDiffsBuilderList() {
         return getDiffsFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.Difference, AlignmentProto.Difference.Builder, AlignmentProto.DifferenceOrBuilder>
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder> 
           getDiffsFieldBuilder() {
         if (diffsBuilder_ == null) {
           diffsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              AlignmentProto.Difference, AlignmentProto.Difference.Builder, AlignmentProto.DifferenceOrBuilder>(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Difference.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.DifferenceOrBuilder>(
                   diffs_,
                   ((bitField0_ & 0x00000200) == 0x00000200),
                   getParentForChildren(),
@@ -1922,25 +2734,37 @@ public final class AlignmentProto {
         }
         return diffsBuilder_;
       }
-      
+
       // repeated uint32 tags = 11 [packed = true];
-      private java.util.List<java.lang.Integer> tags_ = java.util.Collections.emptyList();;
+      private java.util.List<java.lang.Integer> tags_ = java.util.Collections.emptyList();
       private void ensureTagsIsMutable() {
         if (!((bitField0_ & 0x00000400) == 0x00000400)) {
           tags_ = new java.util.ArrayList<java.lang.Integer>(tags_);
           bitField0_ |= 0x00000400;
          }
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public java.util.List<java.lang.Integer>
           getTagsList() {
         return java.util.Collections.unmodifiableList(tags_);
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public int getTagsCount() {
         return tags_.size();
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public int getTags(int index) {
         return tags_.get(index);
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public Builder setTags(
           int index, int value) {
         ensureTagsIsMutable();
@@ -1948,12 +2772,18 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public Builder addTags(int value) {
         ensureTagsIsMutable();
         tags_.add(value);
         onChanged();
         return this;
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public Builder addAllTags(
           java.lang.Iterable<? extends java.lang.Integer> values) {
         ensureTagsIsMutable();
@@ -1961,115 +2791,255 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>repeated uint32 tags = 11 [packed = true];</code>
+       */
       public Builder clearTags() {
-        tags_ = java.util.Collections.emptyList();;
+        tags_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000400);
         onChanged();
         return this;
       }
-      
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.AlignmentRecord)
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.AlignmentRecord)
     }
-    
+
     static {
       defaultInstance = new AlignmentRecord(true);
       defaultInstance.initFields();
     }
-    
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.AlignmentRecord)
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.AlignmentRecord)
   }
-  
+
   public interface AlignmentBucketOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required uint32 summaryIndex = 1;
+    /**
+     * <code>required uint32 summaryIndex = 1;</code>
+     */
     boolean hasSummaryIndex();
+    /**
+     * <code>required uint32 summaryIndex = 1;</code>
+     */
     int getSummaryIndex();
-    
+
     // optional uint32 overlapped = 2;
+    /**
+     * <code>optional uint32 overlapped = 2;</code>
+     */
     boolean hasOverlapped();
+    /**
+     * <code>optional uint32 overlapped = 2;</code>
+     */
     int getOverlapped();
-    
-    // repeated .org.opencb.opencga.storage.alignment.AlignmentRecord alignmentRecords = 9;
-    java.util.List<AlignmentProto.AlignmentRecord>
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord> 
         getAlignmentRecordsList();
-    AlignmentProto.AlignmentRecord getAlignmentRecords(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord getAlignmentRecords(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
     int getAlignmentRecordsCount();
-    java.util.List<? extends AlignmentProto.AlignmentRecordOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder> 
         getAlignmentRecordsOrBuilderList();
-    AlignmentProto.AlignmentRecordOrBuilder getAlignmentRecordsOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder getAlignmentRecordsOrBuilder(
         int index);
   }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.AlignmentBucket}
+   */
   public static final class AlignmentBucket extends
       com.google.protobuf.GeneratedMessage
       implements AlignmentBucketOrBuilder {
     // Use AlignmentBucket.newBuilder() to construct.
-    private AlignmentBucket(Builder builder) {
+    private AlignmentBucket(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
+      this.unknownFields = builder.getUnknownFields();
     }
-    private AlignmentBucket(boolean noInit) {}
-    
+    private AlignmentBucket(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
     private static final AlignmentBucket defaultInstance;
     public static AlignmentBucket getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public AlignmentBucket getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private AlignmentBucket(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              summaryIndex_ = input.readUInt32();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              overlapped_ = input.readUInt32();
+              break;
+            }
+            case 74: {
+              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+                alignmentRecords_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord>();
+                mutable_bitField0_ |= 0x00000004;
+              }
+              alignmentRecords_.add(input.readMessage(org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.PARSER, extensionRegistry));
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+          alignmentRecords_ = java.util.Collections.unmodifiableList(alignmentRecords_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_descriptor;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_fieldAccessorTable;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.Builder.class);
     }
-    
+
+    public static com.google.protobuf.Parser<AlignmentBucket> PARSER =
+        new com.google.protobuf.AbstractParser<AlignmentBucket>() {
+      public AlignmentBucket parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new AlignmentBucket(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<AlignmentBucket> getParserForType() {
+      return PARSER;
+    }
+
     private int bitField0_;
     // required uint32 summaryIndex = 1;
     public static final int SUMMARYINDEX_FIELD_NUMBER = 1;
     private int summaryIndex_;
+    /**
+     * <code>required uint32 summaryIndex = 1;</code>
+     */
     public boolean hasSummaryIndex() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
+    /**
+     * <code>required uint32 summaryIndex = 1;</code>
+     */
     public int getSummaryIndex() {
       return summaryIndex_;
     }
-    
+
     // optional uint32 overlapped = 2;
     public static final int OVERLAPPED_FIELD_NUMBER = 2;
     private int overlapped_;
+    /**
+     * <code>optional uint32 overlapped = 2;</code>
+     */
     public boolean hasOverlapped() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
+    /**
+     * <code>optional uint32 overlapped = 2;</code>
+     */
     public int getOverlapped() {
       return overlapped_;
     }
-    
-    // repeated .org.opencb.opencga.storage.alignment.AlignmentRecord alignmentRecords = 9;
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;
     public static final int ALIGNMENTRECORDS_FIELD_NUMBER = 9;
-    private java.util.List<AlignmentProto.AlignmentRecord> alignmentRecords_;
-    public java.util.List<AlignmentProto.AlignmentRecord> getAlignmentRecordsList() {
+    private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord> alignmentRecords_;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord> getAlignmentRecordsList() {
       return alignmentRecords_;
     }
-    public java.util.List<? extends AlignmentProto.AlignmentRecordOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder> 
         getAlignmentRecordsOrBuilderList() {
       return alignmentRecords_;
     }
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
     public int getAlignmentRecordsCount() {
       return alignmentRecords_.size();
     }
-    public AlignmentProto.AlignmentRecord getAlignmentRecords(int index) {
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord getAlignmentRecords(int index) {
       return alignmentRecords_.get(index);
     }
-    public AlignmentProto.AlignmentRecordOrBuilder getAlignmentRecordsOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder getAlignmentRecordsOrBuilder(
         int index) {
       return alignmentRecords_.get(index);
     }
-    
+
     private void initFields() {
       summaryIndex_ = 0;
       overlapped_ = 0;
@@ -2079,7 +3049,7 @@ public final class AlignmentProto {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasSummaryIndex()) {
         memoizedIsInitialized = 0;
         return false;
@@ -2093,7 +3063,7 @@ public final class AlignmentProto {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -2108,12 +3078,12 @@ public final class AlignmentProto {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -2131,113 +3101,105 @@ public final class AlignmentProto {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
-    public static AlignmentProto.AlignmentBucket parseFrom(
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(byte[] data)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentBucket parseDelimitedFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input);
     }
-    public static AlignmentProto.AlignmentBucket parseDelimitedFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.AlignmentBucket parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(AlignmentProto.AlignmentBucket prototype) {
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.AlignmentBucket}
+     */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements AlignmentProto.AlignmentBucketOrBuilder {
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucketOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_descriptor;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_fieldAccessorTable;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.Builder.class);
       }
-      
+
       // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
-      private Builder(BuilderParent parent) {
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2249,7 +3211,7 @@ public final class AlignmentProto {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         summaryIndex_ = 0;
@@ -2264,40 +3226,30 @@ public final class AlignmentProto {
         }
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return AlignmentProto.AlignmentBucket.getDescriptor();
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_descriptor;
       }
-      
-      public AlignmentProto.AlignmentBucket getDefaultInstanceForType() {
-        return AlignmentProto.AlignmentBucket.getDefaultInstance();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.getDefaultInstance();
       }
-      
-      public AlignmentProto.AlignmentBucket build() {
-        AlignmentProto.AlignmentBucket result = buildPartial();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket result = buildPartial();
         if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
+          throw newUninitializedMessageException(result);
         }
         return result;
       }
-      
-      private AlignmentProto.AlignmentBucket buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        AlignmentProto.AlignmentBucket result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-      
-      public AlignmentProto.AlignmentBucket buildPartial() {
-        AlignmentProto.AlignmentBucket result = new AlignmentProto.AlignmentBucket(this);
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2321,18 +3273,18 @@ public final class AlignmentProto {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof AlignmentProto.AlignmentBucket) {
-          return mergeFrom((AlignmentProto.AlignmentBucket)other);
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
-      
-      public Builder mergeFrom(AlignmentProto.AlignmentBucket other) {
-        if (other == AlignmentProto.AlignmentBucket.getDefaultInstance()) return this;
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket.getDefaultInstance()) return this;
         if (other.hasSummaryIndex()) {
           setSummaryIndex(other.getSummaryIndex());
         }
@@ -2368,7 +3320,7 @@ public final class AlignmentProto {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasSummaryIndex()) {
           
@@ -2382,114 +3334,118 @@ public final class AlignmentProto {
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
-              }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              summaryIndex_ = input.readUInt32();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              overlapped_ = input.readUInt32();
-              break;
-            }
-            case 74: {
-              AlignmentProto.AlignmentRecord.Builder subBuilder = AlignmentProto.AlignmentRecord.newBuilder();
-              input.readMessage(subBuilder, extensionRegistry);
-              addAlignmentRecords(subBuilder.buildPartial());
-              break;
-            }
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentBucket) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
           }
         }
+        return this;
       }
-      
       private int bitField0_;
-      
+
       // required uint32 summaryIndex = 1;
       private int summaryIndex_ ;
+      /**
+       * <code>required uint32 summaryIndex = 1;</code>
+       */
       public boolean hasSummaryIndex() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
+      /**
+       * <code>required uint32 summaryIndex = 1;</code>
+       */
       public int getSummaryIndex() {
         return summaryIndex_;
       }
+      /**
+       * <code>required uint32 summaryIndex = 1;</code>
+       */
       public Builder setSummaryIndex(int value) {
         bitField0_ |= 0x00000001;
         summaryIndex_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required uint32 summaryIndex = 1;</code>
+       */
       public Builder clearSummaryIndex() {
         bitField0_ = (bitField0_ & ~0x00000001);
         summaryIndex_ = 0;
         onChanged();
         return this;
       }
-      
+
       // optional uint32 overlapped = 2;
       private int overlapped_ ;
+      /**
+       * <code>optional uint32 overlapped = 2;</code>
+       */
       public boolean hasOverlapped() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
+      /**
+       * <code>optional uint32 overlapped = 2;</code>
+       */
       public int getOverlapped() {
         return overlapped_;
       }
+      /**
+       * <code>optional uint32 overlapped = 2;</code>
+       */
       public Builder setOverlapped(int value) {
         bitField0_ |= 0x00000002;
         overlapped_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>optional uint32 overlapped = 2;</code>
+       */
       public Builder clearOverlapped() {
         bitField0_ = (bitField0_ & ~0x00000002);
         overlapped_ = 0;
         onChanged();
         return this;
       }
-      
-      // repeated .org.opencb.opencga.storage.alignment.AlignmentRecord alignmentRecords = 9;
-      private java.util.List<AlignmentProto.AlignmentRecord> alignmentRecords_ =
+
+      // repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;
+      private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord> alignmentRecords_ =
         java.util.Collections.emptyList();
       private void ensureAlignmentRecordsIsMutable() {
         if (!((bitField0_ & 0x00000004) == 0x00000004)) {
-          alignmentRecords_ = new java.util.ArrayList<AlignmentProto.AlignmentRecord>(alignmentRecords_);
+          alignmentRecords_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord>(alignmentRecords_);
           bitField0_ |= 0x00000004;
          }
       }
-      
+
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.AlignmentRecord, AlignmentProto.AlignmentRecord.Builder, AlignmentProto.AlignmentRecordOrBuilder> alignmentRecordsBuilder_;
-      
-      public java.util.List<AlignmentProto.AlignmentRecord> getAlignmentRecordsList() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder> alignmentRecordsBuilder_;
+
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord> getAlignmentRecordsList() {
         if (alignmentRecordsBuilder_ == null) {
           return java.util.Collections.unmodifiableList(alignmentRecords_);
         } else {
           return alignmentRecordsBuilder_.getMessageList();
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public int getAlignmentRecordsCount() {
         if (alignmentRecordsBuilder_ == null) {
           return alignmentRecords_.size();
@@ -2497,15 +3453,21 @@ public final class AlignmentProto {
           return alignmentRecordsBuilder_.getCount();
         }
       }
-      public AlignmentProto.AlignmentRecord getAlignmentRecords(int index) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord getAlignmentRecords(int index) {
         if (alignmentRecordsBuilder_ == null) {
           return alignmentRecords_.get(index);
         } else {
           return alignmentRecordsBuilder_.getMessage(index);
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder setAlignmentRecords(
-          int index, AlignmentProto.AlignmentRecord value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord value) {
         if (alignmentRecordsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2518,8 +3480,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder setAlignmentRecords(
-          int index, AlignmentProto.AlignmentRecord.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder builderForValue) {
         if (alignmentRecordsBuilder_ == null) {
           ensureAlignmentRecordsIsMutable();
           alignmentRecords_.set(index, builderForValue.build());
@@ -2529,7 +3494,10 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public Builder addAlignmentRecords(AlignmentProto.AlignmentRecord value) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public Builder addAlignmentRecords(org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord value) {
         if (alignmentRecordsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2542,8 +3510,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder addAlignmentRecords(
-          int index, AlignmentProto.AlignmentRecord value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord value) {
         if (alignmentRecordsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -2556,8 +3527,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder addAlignmentRecords(
-          AlignmentProto.AlignmentRecord.Builder builderForValue) {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder builderForValue) {
         if (alignmentRecordsBuilder_ == null) {
           ensureAlignmentRecordsIsMutable();
           alignmentRecords_.add(builderForValue.build());
@@ -2567,8 +3541,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder addAlignmentRecords(
-          int index, AlignmentProto.AlignmentRecord.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder builderForValue) {
         if (alignmentRecordsBuilder_ == null) {
           ensureAlignmentRecordsIsMutable();
           alignmentRecords_.add(index, builderForValue.build());
@@ -2578,8 +3555,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder addAllAlignmentRecords(
-          java.lang.Iterable<? extends AlignmentProto.AlignmentRecord> values) {
+          java.lang.Iterable<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord> values) {
         if (alignmentRecordsBuilder_ == null) {
           ensureAlignmentRecordsIsMutable();
           super.addAll(values, alignmentRecords_);
@@ -2589,6 +3569,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder clearAlignmentRecords() {
         if (alignmentRecordsBuilder_ == null) {
           alignmentRecords_ = java.util.Collections.emptyList();
@@ -2599,6 +3582,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
       public Builder removeAlignmentRecords(int index) {
         if (alignmentRecordsBuilder_ == null) {
           ensureAlignmentRecordsIsMutable();
@@ -2609,18 +3595,27 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public AlignmentProto.AlignmentRecord.Builder getAlignmentRecordsBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder getAlignmentRecordsBuilder(
           int index) {
         return getAlignmentRecordsFieldBuilder().getBuilder(index);
       }
-      public AlignmentProto.AlignmentRecordOrBuilder getAlignmentRecordsOrBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder getAlignmentRecordsOrBuilder(
           int index) {
         if (alignmentRecordsBuilder_ == null) {
           return alignmentRecords_.get(index);  } else {
           return alignmentRecordsBuilder_.getMessageOrBuilder(index);
         }
       }
-      public java.util.List<? extends AlignmentProto.AlignmentRecordOrBuilder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder> 
            getAlignmentRecordsOrBuilderList() {
         if (alignmentRecordsBuilder_ != null) {
           return alignmentRecordsBuilder_.getMessageOrBuilderList();
@@ -2628,25 +3623,34 @@ public final class AlignmentProto {
           return java.util.Collections.unmodifiableList(alignmentRecords_);
         }
       }
-      public AlignmentProto.AlignmentRecord.Builder addAlignmentRecordsBuilder() {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder addAlignmentRecordsBuilder() {
         return getAlignmentRecordsFieldBuilder().addBuilder(
-            AlignmentProto.AlignmentRecord.getDefaultInstance());
+            org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.getDefaultInstance());
       }
-      public AlignmentProto.AlignmentRecord.Builder addAlignmentRecordsBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder addAlignmentRecordsBuilder(
           int index) {
         return getAlignmentRecordsFieldBuilder().addBuilder(
-            index, AlignmentProto.AlignmentRecord.getDefaultInstance());
+            index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.getDefaultInstance());
       }
-      public java.util.List<AlignmentProto.AlignmentRecord.Builder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.AlignmentRecord alignmentRecords = 9;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder> 
            getAlignmentRecordsBuilderList() {
         return getAlignmentRecordsFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.AlignmentRecord, AlignmentProto.AlignmentRecord.Builder, AlignmentProto.AlignmentRecordOrBuilder>
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder> 
           getAlignmentRecordsFieldBuilder() {
         if (alignmentRecordsBuilder_ == null) {
           alignmentRecordsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              AlignmentProto.AlignmentRecord, AlignmentProto.AlignmentRecord.Builder, AlignmentProto.AlignmentRecordOrBuilder>(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecord.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.AlignmentRecordOrBuilder>(
                   alignmentRecords_,
                   ((bitField0_ & 0x00000004) == 0x00000004),
                   getParentForChildren(),
@@ -2655,525 +3659,350 @@ public final class AlignmentProto {
         }
         return alignmentRecordsBuilder_;
       }
-      
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.AlignmentBucket)
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.AlignmentBucket)
     }
-    
+
     static {
       defaultInstance = new AlignmentBucket(true);
       defaultInstance.initFields();
     }
-    
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.AlignmentBucket)
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.AlignmentBucket)
   }
-  
+
   public interface SummaryOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
+
     // required uint32 defaultFlag = 1;
+    /**
+     * <code>required uint32 defaultFlag = 1;</code>
+     */
     boolean hasDefaultFlag();
+    /**
+     * <code>required uint32 defaultFlag = 1;</code>
+     */
     int getDefaultFlag();
-    
+
     // required uint32 defaultLen = 2;
+    /**
+     * <code>required uint32 defaultLen = 2;</code>
+     */
     boolean hasDefaultLen();
+    /**
+     * <code>required uint32 defaultLen = 2;</code>
+     */
     int getDefaultLen();
-    
+
     // required string defaultRNext = 3;
+    /**
+     * <code>required string defaultRNext = 3;</code>
+     */
     boolean hasDefaultRNext();
-    String getDefaultRNext();
-    
+    /**
+     * <code>required string defaultRNext = 3;</code>
+     */
+    java.lang.String getDefaultRNext();
+    /**
+     * <code>required string defaultRNext = 3;</code>
+     */
+    com.google.protobuf.ByteString
+        getDefaultRNextBytes();
+
     // required uint32 defaultOverlapped = 4;
+    /**
+     * <code>required uint32 defaultOverlapped = 4;</code>
+     */
     boolean hasDefaultOverlapped();
+    /**
+     * <code>required uint32 defaultOverlapped = 4;</code>
+     */
     int getDefaultOverlapped();
-    
+
     // required string keys = 8;
+    /**
+     * <code>required string keys = 8;</code>
+     *
+     * <pre>
+     *Concatenated tags.
+     * </pre>
+     */
     boolean hasKeys();
-    String getKeys();
-    
-    // repeated .org.opencb.opencga.storage.alignment.Summary.Pair values = 9;
-    java.util.List<AlignmentProto.Summary.Pair>
+    /**
+     * <code>required string keys = 8;</code>
+     *
+     * <pre>
+     *Concatenated tags.
+     * </pre>
+     */
+    java.lang.String getKeys();
+    /**
+     * <code>required string keys = 8;</code>
+     *
+     * <pre>
+     *Concatenated tags.
+     * </pre>
+     */
+    com.google.protobuf.ByteString
+        getKeysBytes();
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair> 
         getValuesList();
-    AlignmentProto.Summary.Pair getValues(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair getValues(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
     int getValuesCount();
-    java.util.List<? extends AlignmentProto.Summary.PairOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder> 
         getValuesOrBuilderList();
-    AlignmentProto.Summary.PairOrBuilder getValuesOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder getValuesOrBuilder(
         int index);
   }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Summary}
+   */
   public static final class Summary extends
       com.google.protobuf.GeneratedMessage
       implements SummaryOrBuilder {
     // Use Summary.newBuilder() to construct.
-    private Summary(Builder builder) {
+    private Summary(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
+      this.unknownFields = builder.getUnknownFields();
     }
-    private Summary(boolean noInit) {}
-    
+    private Summary(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
     private static final Summary defaultInstance;
     public static Summary getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public Summary getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private Summary(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              defaultFlag_ = input.readUInt32();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              defaultLen_ = input.readUInt32();
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
+              defaultRNext_ = input.readBytes();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              defaultOverlapped_ = input.readUInt32();
+              break;
+            }
+            case 66: {
+              bitField0_ |= 0x00000010;
+              keys_ = input.readBytes();
+              break;
+            }
+            case 74: {
+              if (!((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
+                values_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair>();
+                mutable_bitField0_ |= 0x00000020;
+              }
+              values_.add(input.readMessage(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.PARSER, extensionRegistry));
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
+          values_ = java.util.Collections.unmodifiableList(values_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_fieldAccessorTable;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Builder.class);
     }
-    
+
+    public static com.google.protobuf.Parser<Summary> PARSER =
+        new com.google.protobuf.AbstractParser<Summary>() {
+      public Summary parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new Summary(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Summary> getParserForType() {
+      return PARSER;
+    }
+
     public interface PairOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
-      
+
       // required uint32 key = 1;
+      /**
+       * <code>required uint32 key = 1;</code>
+       */
       boolean hasKey();
+      /**
+       * <code>required uint32 key = 1;</code>
+       */
       int getKey();
-      
+
       // optional uint32 avalue = 2;
+      /**
+       * <code>optional uint32 avalue = 2;</code>
+       */
       boolean hasAvalue();
+      /**
+       * <code>optional uint32 avalue = 2;</code>
+       */
       int getAvalue();
-      
+
       // optional sint32 ivalue = 3;
+      /**
+       * <code>optional sint32 ivalue = 3;</code>
+       */
       boolean hasIvalue();
+      /**
+       * <code>optional sint32 ivalue = 3;</code>
+       */
       int getIvalue();
-      
+
       // optional float fvalue = 4;
+      /**
+       * <code>optional float fvalue = 4;</code>
+       */
       boolean hasFvalue();
+      /**
+       * <code>optional float fvalue = 4;</code>
+       */
       float getFvalue();
-      
+
       // optional string zvalue = 5;
+      /**
+       * <code>optional string zvalue = 5;</code>
+       */
       boolean hasZvalue();
-      String getZvalue();
+      /**
+       * <code>optional string zvalue = 5;</code>
+       */
+      java.lang.String getZvalue();
+      /**
+       * <code>optional string zvalue = 5;</code>
+       */
+      com.google.protobuf.ByteString
+          getZvalueBytes();
     }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Summary.Pair}
+     */
     public static final class Pair extends
         com.google.protobuf.GeneratedMessage
         implements PairOrBuilder {
       // Use Pair.newBuilder() to construct.
-      private Pair(Builder builder) {
+      private Pair(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
+        this.unknownFields = builder.getUnknownFields();
       }
-      private Pair(boolean noInit) {}
-      
+      private Pair(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
       private static final Pair defaultInstance;
       public static Pair getDefaultInstance() {
         return defaultInstance;
       }
-      
+
       public Pair getDefaultInstanceForType() {
         return defaultInstance;
       }
-      
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_descriptor;
-      }
-      
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_fieldAccessorTable;
-      }
-      
-      private int bitField0_;
-      // required uint32 key = 1;
-      public static final int KEY_FIELD_NUMBER = 1;
-      private int key_;
-      public boolean hasKey() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      public int getKey() {
-        return key_;
-      }
-      
-      // optional uint32 avalue = 2;
-      public static final int AVALUE_FIELD_NUMBER = 2;
-      private int avalue_;
-      public boolean hasAvalue() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public int getAvalue() {
-        return avalue_;
-      }
-      
-      // optional sint32 ivalue = 3;
-      public static final int IVALUE_FIELD_NUMBER = 3;
-      private int ivalue_;
-      public boolean hasIvalue() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      public int getIvalue() {
-        return ivalue_;
-      }
-      
-      // optional float fvalue = 4;
-      public static final int FVALUE_FIELD_NUMBER = 4;
-      private float fvalue_;
-      public boolean hasFvalue() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      public float getFvalue() {
-        return fvalue_;
-      }
-      
-      // optional string zvalue = 5;
-      public static final int ZVALUE_FIELD_NUMBER = 5;
-      private java.lang.Object zvalue_;
-      public boolean hasZvalue() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      public String getZvalue() {
-        java.lang.Object ref = zvalue_;
-        if (ref instanceof String) {
-          return (String) ref;
-        } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
-          String s = bs.toStringUtf8();
-          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-            zvalue_ = s;
-          }
-          return s;
-        }
-      }
-      private com.google.protobuf.ByteString getZvalueBytes() {
-        java.lang.Object ref = zvalue_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-          zvalue_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      
-      private void initFields() {
-        key_ = 0;
-        avalue_ = 0;
-        ivalue_ = 0;
-        fvalue_ = 0F;
-        zvalue_ = "";
-      }
-      private byte memoizedIsInitialized = -1;
-      public final boolean isInitialized() {
-        byte isInitialized = memoizedIsInitialized;
-        if (isInitialized != -1) return isInitialized == 1;
-        
-        if (!hasKey()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
-        memoizedIsInitialized = 1;
-        return true;
-      }
-      
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
-                          throws java.io.IOException {
-        getSerializedSize();
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeUInt32(1, key_);
-        }
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeUInt32(2, avalue_);
-        }
-        if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          output.writeSInt32(3, ivalue_);
-        }
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          output.writeFloat(4, fvalue_);
-        }
-        if (((bitField0_ & 0x00000010) == 0x00000010)) {
-          output.writeBytes(5, getZvalueBytes());
-        }
-        getUnknownFields().writeTo(output);
-      }
-      
-      private int memoizedSerializedSize = -1;
-      public int getSerializedSize() {
-        int size = memoizedSerializedSize;
-        if (size != -1) return size;
-      
-        size = 0;
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeUInt32Size(1, key_);
-        }
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeUInt32Size(2, avalue_);
-        }
-        if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeSInt32Size(3, ivalue_);
-        }
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeFloatSize(4, fvalue_);
-        }
-        if (((bitField0_ & 0x00000010) == 0x00000010)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(5, getZvalueBytes());
-        }
-        size += getUnknownFields().getSerializedSize();
-        memoizedSerializedSize = size;
-        return size;
-      }
-      
-      private static final long serialVersionUID = 0L;
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      protected java.lang.Object writeReplace()
-          throws java.io.ObjectStreamException {
-        return super.writeReplace();
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
       }
-      
-      public static AlignmentProto.Summary.Pair parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data).buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data, extensionRegistry)
-                 .buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data).buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(
-          byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data, extensionRegistry)
-                 .buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input).buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(
-          java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input, extensionRegistry)
-                 .buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseDelimitedFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        Builder builder = newBuilder();
-        if (builder.mergeDelimitedFrom(input)) {
-          return builder.buildParsed();
-        } else {
-          return null;
-        }
-      }
-      public static AlignmentProto.Summary.Pair parseDelimitedFrom(
-          java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        Builder builder = newBuilder();
-        if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-          return builder.buildParsed();
-        } else {
-          return null;
-        }
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(
-          com.google.protobuf.CodedInputStream input)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input).buildParsed();
-      }
-      public static AlignmentProto.Summary.Pair parseFrom(
+      private Pair(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input, extensionRegistry)
-                 .buildParsed();
-      }
-      
-      public static Builder newBuilder() { return Builder.create(); }
-      public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(AlignmentProto.Summary.Pair prototype) {
-        return newBuilder().mergeFrom(prototype);
-      }
-      public Builder toBuilder() { return newBuilder(this); }
-      
-      @java.lang.Override
-      protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-        Builder builder = new Builder(parent);
-        return builder;
-      }
-      public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
-         implements AlignmentProto.Summary.PairOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
-            getDescriptor() {
-          return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_descriptor;
-        }
-        
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalGetFieldAccessorTable() {
-          return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_fieldAccessorTable;
-        }
-        
-        // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.newBuilder()
-        private Builder() {
-          maybeForceBuilderInitialization();
-        }
-        
-        private Builder(BuilderParent parent) {
-          super(parent);
-          maybeForceBuilderInitialization();
-        }
-        private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          }
-        }
-        private static Builder create() {
-          return new Builder();
-        }
-        
-        public Builder clear() {
-          super.clear();
-          key_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000001);
-          avalue_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000002);
-          ivalue_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000004);
-          fvalue_ = 0F;
-          bitField0_ = (bitField0_ & ~0x00000008);
-          zvalue_ = "";
-          bitField0_ = (bitField0_ & ~0x00000010);
-          return this;
-        }
-        
-        public Builder clone() {
-          return create().mergeFrom(buildPartial());
-        }
-        
-        public com.google.protobuf.Descriptors.Descriptor
-            getDescriptorForType() {
-          return AlignmentProto.Summary.Pair.getDescriptor();
-        }
-        
-        public AlignmentProto.Summary.Pair getDefaultInstanceForType() {
-          return AlignmentProto.Summary.Pair.getDefaultInstance();
-        }
-        
-        public AlignmentProto.Summary.Pair build() {
-          AlignmentProto.Summary.Pair result = buildPartial();
-          if (!result.isInitialized()) {
-            throw AbstractMessage.Builder.newUninitializedMessageException(result);
-          }
-          return result;
-        }
-        
-        private AlignmentProto.Summary.Pair buildParsed()
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          AlignmentProto.Summary.Pair result = buildPartial();
-          if (!result.isInitialized()) {
-            throw AbstractMessage.Builder.newUninitializedMessageException(
-                    result).asInvalidProtocolBufferException();
-          }
-          return result;
-        }
-        
-        public AlignmentProto.Summary.Pair buildPartial() {
-          AlignmentProto.Summary.Pair result = new AlignmentProto.Summary.Pair(this);
-          int from_bitField0_ = bitField0_;
-          int to_bitField0_ = 0;
-          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-            to_bitField0_ |= 0x00000001;
-          }
-          result.key_ = key_;
-          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-            to_bitField0_ |= 0x00000002;
-          }
-          result.avalue_ = avalue_;
-          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-            to_bitField0_ |= 0x00000004;
-          }
-          result.ivalue_ = ivalue_;
-          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-            to_bitField0_ |= 0x00000008;
-          }
-          result.fvalue_ = fvalue_;
-          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-            to_bitField0_ |= 0x00000010;
-          }
-          result.zvalue_ = zvalue_;
-          result.bitField0_ = to_bitField0_;
-          onBuilt();
-          return result;
-        }
-        
-        public Builder mergeFrom(com.google.protobuf.Message other) {
-          if (other instanceof AlignmentProto.Summary.Pair) {
-            return mergeFrom((AlignmentProto.Summary.Pair)other);
-          } else {
-            super.mergeFrom(other);
-            return this;
-          }
-        }
-        
-        public Builder mergeFrom(AlignmentProto.Summary.Pair other) {
-          if (other == AlignmentProto.Summary.Pair.getDefaultInstance()) return this;
-          if (other.hasKey()) {
-            setKey(other.getKey());
-          }
-          if (other.hasAvalue()) {
-            setAvalue(other.getAvalue());
-          }
-          if (other.hasIvalue()) {
-            setIvalue(other.getIvalue());
-          }
-          if (other.hasFvalue()) {
-            setFvalue(other.getFvalue());
-          }
-          if (other.hasZvalue()) {
-            setZvalue(other.getZvalue());
-          }
-          this.mergeUnknownFields(other.getUnknownFields());
-          return this;
-        }
-        
-        public final boolean isInitialized() {
-          if (!hasKey()) {
-            
-            return false;
-          }
-          return true;
-        }
-        
-        public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder(
-              this.getUnknownFields());
-          while (true) {
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
             int tag = input.readTag();
             switch (tag) {
               case 0:
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
+                done = true;
+                break;
               default: {
                 if (!parseUnknownField(input, unknownFields,
                                        extensionRegistry, tag)) {
-                  this.setUnknownFields(unknownFields.build());
-                  onChanged();
-                  return this;
+                  done = true;
                 }
                 break;
               }
@@ -3204,110 +4033,631 @@ public final class AlignmentProto {
               }
             }
           }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
         }
-        
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<Pair> PARSER =
+          new com.google.protobuf.AbstractParser<Pair>() {
+        public Pair parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new Pair(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<Pair> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required uint32 key = 1;
+      public static final int KEY_FIELD_NUMBER = 1;
+      private int key_;
+      /**
+       * <code>required uint32 key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required uint32 key = 1;</code>
+       */
+      public int getKey() {
+        return key_;
+      }
+
+      // optional uint32 avalue = 2;
+      public static final int AVALUE_FIELD_NUMBER = 2;
+      private int avalue_;
+      /**
+       * <code>optional uint32 avalue = 2;</code>
+       */
+      public boolean hasAvalue() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>optional uint32 avalue = 2;</code>
+       */
+      public int getAvalue() {
+        return avalue_;
+      }
+
+      // optional sint32 ivalue = 3;
+      public static final int IVALUE_FIELD_NUMBER = 3;
+      private int ivalue_;
+      /**
+       * <code>optional sint32 ivalue = 3;</code>
+       */
+      public boolean hasIvalue() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional sint32 ivalue = 3;</code>
+       */
+      public int getIvalue() {
+        return ivalue_;
+      }
+
+      // optional float fvalue = 4;
+      public static final int FVALUE_FIELD_NUMBER = 4;
+      private float fvalue_;
+      /**
+       * <code>optional float fvalue = 4;</code>
+       */
+      public boolean hasFvalue() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      /**
+       * <code>optional float fvalue = 4;</code>
+       */
+      public float getFvalue() {
+        return fvalue_;
+      }
+
+      // optional string zvalue = 5;
+      public static final int ZVALUE_FIELD_NUMBER = 5;
+      private java.lang.Object zvalue_;
+      /**
+       * <code>optional string zvalue = 5;</code>
+       */
+      public boolean hasZvalue() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional string zvalue = 5;</code>
+       */
+      public java.lang.String getZvalue() {
+        java.lang.Object ref = zvalue_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            zvalue_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>optional string zvalue = 5;</code>
+       */
+      public com.google.protobuf.ByteString
+          getZvalueBytes() {
+        java.lang.Object ref = zvalue_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          zvalue_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      private void initFields() {
+        key_ = 0;
+        avalue_ = 0;
+        ivalue_ = 0;
+        fvalue_ = 0F;
+        zvalue_ = "";
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasKey()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeUInt32(1, key_);
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeUInt32(2, avalue_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          output.writeSInt32(3, ivalue_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          output.writeFloat(4, fvalue_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          output.writeBytes(5, getZvalueBytes());
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeUInt32Size(1, key_);
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeUInt32Size(2, avalue_);
+        }
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeSInt32Size(3, ivalue_);
+        }
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeFloatSize(4, fvalue_);
+        }
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(5, getZvalueBytes());
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Summary.Pair}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder.class);
+        }
+
+        // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          key_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000001);
+          avalue_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000002);
+          ivalue_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000004);
+          fvalue_ = 0F;
+          bitField0_ = (bitField0_ & ~0x00000008);
+          zvalue_ = "";
+          bitField0_ = (bitField0_ & ~0x00000010);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_descriptor;
+        }
+
+        public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair getDefaultInstanceForType() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.getDefaultInstance();
+        }
+
+        public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair build() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair buildPartial() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.key_ = key_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          result.avalue_ = avalue_;
+          if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+            to_bitField0_ |= 0x00000004;
+          }
+          result.ivalue_ = ivalue_;
+          if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+            to_bitField0_ |= 0x00000008;
+          }
+          result.fvalue_ = fvalue_;
+          if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+            to_bitField0_ |= 0x00000010;
+          }
+          result.zvalue_ = zvalue_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair) {
+            return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair other) {
+          if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.getDefaultInstance()) return this;
+          if (other.hasKey()) {
+            setKey(other.getKey());
+          }
+          if (other.hasAvalue()) {
+            setAvalue(other.getAvalue());
+          }
+          if (other.hasIvalue()) {
+            setIvalue(other.getIvalue());
+          }
+          if (other.hasFvalue()) {
+            setFvalue(other.getFvalue());
+          }
+          if (other.hasZvalue()) {
+            bitField0_ |= 0x00000010;
+            zvalue_ = other.zvalue_;
+            onChanged();
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasKey()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
         private int bitField0_;
-        
+
         // required uint32 key = 1;
         private int key_ ;
+        /**
+         * <code>required uint32 key = 1;</code>
+         */
         public boolean hasKey() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
+        /**
+         * <code>required uint32 key = 1;</code>
+         */
         public int getKey() {
           return key_;
         }
+        /**
+         * <code>required uint32 key = 1;</code>
+         */
         public Builder setKey(int value) {
           bitField0_ |= 0x00000001;
           key_ = value;
           onChanged();
           return this;
         }
+        /**
+         * <code>required uint32 key = 1;</code>
+         */
         public Builder clearKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
           key_ = 0;
           onChanged();
           return this;
         }
-        
+
         // optional uint32 avalue = 2;
         private int avalue_ ;
+        /**
+         * <code>optional uint32 avalue = 2;</code>
+         */
         public boolean hasAvalue() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
+        /**
+         * <code>optional uint32 avalue = 2;</code>
+         */
         public int getAvalue() {
           return avalue_;
         }
+        /**
+         * <code>optional uint32 avalue = 2;</code>
+         */
         public Builder setAvalue(int value) {
           bitField0_ |= 0x00000002;
           avalue_ = value;
           onChanged();
           return this;
         }
+        /**
+         * <code>optional uint32 avalue = 2;</code>
+         */
         public Builder clearAvalue() {
           bitField0_ = (bitField0_ & ~0x00000002);
           avalue_ = 0;
           onChanged();
           return this;
         }
-        
+
         // optional sint32 ivalue = 3;
         private int ivalue_ ;
+        /**
+         * <code>optional sint32 ivalue = 3;</code>
+         */
         public boolean hasIvalue() {
           return ((bitField0_ & 0x00000004) == 0x00000004);
         }
+        /**
+         * <code>optional sint32 ivalue = 3;</code>
+         */
         public int getIvalue() {
           return ivalue_;
         }
+        /**
+         * <code>optional sint32 ivalue = 3;</code>
+         */
         public Builder setIvalue(int value) {
           bitField0_ |= 0x00000004;
           ivalue_ = value;
           onChanged();
           return this;
         }
+        /**
+         * <code>optional sint32 ivalue = 3;</code>
+         */
         public Builder clearIvalue() {
           bitField0_ = (bitField0_ & ~0x00000004);
           ivalue_ = 0;
           onChanged();
           return this;
         }
-        
+
         // optional float fvalue = 4;
         private float fvalue_ ;
+        /**
+         * <code>optional float fvalue = 4;</code>
+         */
         public boolean hasFvalue() {
           return ((bitField0_ & 0x00000008) == 0x00000008);
         }
+        /**
+         * <code>optional float fvalue = 4;</code>
+         */
         public float getFvalue() {
           return fvalue_;
         }
+        /**
+         * <code>optional float fvalue = 4;</code>
+         */
         public Builder setFvalue(float value) {
           bitField0_ |= 0x00000008;
           fvalue_ = value;
           onChanged();
           return this;
         }
+        /**
+         * <code>optional float fvalue = 4;</code>
+         */
         public Builder clearFvalue() {
           bitField0_ = (bitField0_ & ~0x00000008);
           fvalue_ = 0F;
           onChanged();
           return this;
         }
-        
+
         // optional string zvalue = 5;
         private java.lang.Object zvalue_ = "";
+        /**
+         * <code>optional string zvalue = 5;</code>
+         */
         public boolean hasZvalue() {
           return ((bitField0_ & 0x00000010) == 0x00000010);
         }
-        public String getZvalue() {
+        /**
+         * <code>optional string zvalue = 5;</code>
+         */
+        public java.lang.String getZvalue() {
           java.lang.Object ref = zvalue_;
-          if (!(ref instanceof String)) {
-            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
             zvalue_ = s;
             return s;
           } else {
-            return (String) ref;
+            return (java.lang.String) ref;
           }
         }
-        public Builder setZvalue(String value) {
+        /**
+         * <code>optional string zvalue = 5;</code>
+         */
+        public com.google.protobuf.ByteString
+            getZvalueBytes() {
+          java.lang.Object ref = zvalue_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            zvalue_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>optional string zvalue = 5;</code>
+         */
+        public Builder setZvalue(
+            java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -3316,145 +4666,223 @@ public final class AlignmentProto {
           onChanged();
           return this;
         }
+        /**
+         * <code>optional string zvalue = 5;</code>
+         */
         public Builder clearZvalue() {
           bitField0_ = (bitField0_ & ~0x00000010);
           zvalue_ = getDefaultInstance().getZvalue();
           onChanged();
           return this;
         }
-        void setZvalue(com.google.protobuf.ByteString value) {
-          bitField0_ |= 0x00000010;
+        /**
+         * <code>optional string zvalue = 5;</code>
+         */
+        public Builder setZvalueBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
           zvalue_ = value;
           onChanged();
+          return this;
         }
-        
-        // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.Summary.Pair)
+
+        // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.Summary.Pair)
       }
-      
+
       static {
         defaultInstance = new Pair(true);
         defaultInstance.initFields();
       }
-      
-      // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.Summary.Pair)
+
+      // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.Summary.Pair)
     }
-    
+
     private int bitField0_;
     // required uint32 defaultFlag = 1;
     public static final int DEFAULTFLAG_FIELD_NUMBER = 1;
     private int defaultFlag_;
+    /**
+     * <code>required uint32 defaultFlag = 1;</code>
+     */
     public boolean hasDefaultFlag() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
+    /**
+     * <code>required uint32 defaultFlag = 1;</code>
+     */
     public int getDefaultFlag() {
       return defaultFlag_;
     }
-    
+
     // required uint32 defaultLen = 2;
     public static final int DEFAULTLEN_FIELD_NUMBER = 2;
     private int defaultLen_;
+    /**
+     * <code>required uint32 defaultLen = 2;</code>
+     */
     public boolean hasDefaultLen() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
+    /**
+     * <code>required uint32 defaultLen = 2;</code>
+     */
     public int getDefaultLen() {
       return defaultLen_;
     }
-    
+
     // required string defaultRNext = 3;
     public static final int DEFAULTRNEXT_FIELD_NUMBER = 3;
     private java.lang.Object defaultRNext_;
+    /**
+     * <code>required string defaultRNext = 3;</code>
+     */
     public boolean hasDefaultRNext() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    public String getDefaultRNext() {
+    /**
+     * <code>required string defaultRNext = 3;</code>
+     */
+    public java.lang.String getDefaultRNext() {
       java.lang.Object ref = defaultRNext_;
-      if (ref instanceof String) {
-        return (String) ref;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
       } else {
         com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
           defaultRNext_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getDefaultRNextBytes() {
+    /**
+     * <code>required string defaultRNext = 3;</code>
+     */
+    public com.google.protobuf.ByteString
+        getDefaultRNextBytes() {
       java.lang.Object ref = defaultRNext_;
-      if (ref instanceof String) {
+      if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         defaultRNext_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
+
     // required uint32 defaultOverlapped = 4;
     public static final int DEFAULTOVERLAPPED_FIELD_NUMBER = 4;
     private int defaultOverlapped_;
+    /**
+     * <code>required uint32 defaultOverlapped = 4;</code>
+     */
     public boolean hasDefaultOverlapped() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
+    /**
+     * <code>required uint32 defaultOverlapped = 4;</code>
+     */
     public int getDefaultOverlapped() {
       return defaultOverlapped_;
     }
-    
+
     // required string keys = 8;
     public static final int KEYS_FIELD_NUMBER = 8;
     private java.lang.Object keys_;
+    /**
+     * <code>required string keys = 8;</code>
+     *
+     * <pre>
+     *Concatenated tags.
+     * </pre>
+     */
     public boolean hasKeys() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
-    public String getKeys() {
+    /**
+     * <code>required string keys = 8;</code>
+     *
+     * <pre>
+     *Concatenated tags.
+     * </pre>
+     */
+    public java.lang.String getKeys() {
       java.lang.Object ref = keys_;
-      if (ref instanceof String) {
-        return (String) ref;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
       } else {
         com.google.protobuf.ByteString bs = 
             (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
           keys_ = s;
         }
         return s;
       }
     }
-    private com.google.protobuf.ByteString getKeysBytes() {
+    /**
+     * <code>required string keys = 8;</code>
+     *
+     * <pre>
+     *Concatenated tags.
+     * </pre>
+     */
+    public com.google.protobuf.ByteString
+        getKeysBytes() {
       java.lang.Object ref = keys_;
-      if (ref instanceof String) {
+      if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
         keys_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
       }
     }
-    
-    // repeated .org.opencb.opencga.storage.alignment.Summary.Pair values = 9;
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;
     public static final int VALUES_FIELD_NUMBER = 9;
-    private java.util.List<AlignmentProto.Summary.Pair> values_;
-    public java.util.List<AlignmentProto.Summary.Pair> getValuesList() {
+    private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair> values_;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair> getValuesList() {
       return values_;
     }
-    public java.util.List<? extends AlignmentProto.Summary.PairOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder> 
         getValuesOrBuilderList() {
       return values_;
     }
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
     public int getValuesCount() {
       return values_.size();
     }
-    public AlignmentProto.Summary.Pair getValues(int index) {
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair getValues(int index) {
       return values_.get(index);
     }
-    public AlignmentProto.Summary.PairOrBuilder getValuesOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder getValuesOrBuilder(
         int index) {
       return values_.get(index);
     }
-    
+
     private void initFields() {
       defaultFlag_ = 0;
       defaultLen_ = 0;
@@ -3467,7 +4895,7 @@ public final class AlignmentProto {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       if (!hasDefaultFlag()) {
         memoizedIsInitialized = 0;
         return false;
@@ -3497,7 +4925,7 @@ public final class AlignmentProto {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -3521,12 +4949,12 @@ public final class AlignmentProto {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
@@ -3556,113 +4984,105 @@ public final class AlignmentProto {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
-    public static AlignmentProto.Summary parseFrom(
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.Summary parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.Summary parseFrom(byte[] data)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.Summary parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.Summary parseFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.Summary parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.Summary parseDelimitedFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input);
     }
-    public static AlignmentProto.Summary parseDelimitedFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.Summary parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.Summary parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(AlignmentProto.Summary prototype) {
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Summary}
+     */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements AlignmentProto.SummaryOrBuilder {
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.SummaryOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Summary_fieldAccessorTable;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Builder.class);
       }
-      
+
       // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
-      private Builder(BuilderParent parent) {
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3674,7 +5094,7 @@ public final class AlignmentProto {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         defaultFlag_ = 0;
@@ -3695,40 +5115,30 @@ public final class AlignmentProto {
         }
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return AlignmentProto.Summary.getDescriptor();
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor;
       }
-      
-      public AlignmentProto.Summary getDefaultInstanceForType() {
-        return AlignmentProto.Summary.getDefaultInstance();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.getDefaultInstance();
       }
-      
-      public AlignmentProto.Summary build() {
-        AlignmentProto.Summary result = buildPartial();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary result = buildPartial();
         if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
+          throw newUninitializedMessageException(result);
         }
         return result;
       }
-      
-      private AlignmentProto.Summary buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        AlignmentProto.Summary result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-      
-      public AlignmentProto.Summary buildPartial() {
-        AlignmentProto.Summary result = new AlignmentProto.Summary(this);
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -3764,18 +5174,18 @@ public final class AlignmentProto {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof AlignmentProto.Summary) {
-          return mergeFrom((AlignmentProto.Summary)other);
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
-      
-      public Builder mergeFrom(AlignmentProto.Summary other) {
-        if (other == AlignmentProto.Summary.getDefaultInstance()) return this;
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.getDefaultInstance()) return this;
         if (other.hasDefaultFlag()) {
           setDefaultFlag(other.getDefaultFlag());
         }
@@ -3783,13 +5193,17 @@ public final class AlignmentProto {
           setDefaultLen(other.getDefaultLen());
         }
         if (other.hasDefaultRNext()) {
-          setDefaultRNext(other.getDefaultRNext());
+          bitField0_ |= 0x00000004;
+          defaultRNext_ = other.defaultRNext_;
+          onChanged();
         }
         if (other.hasDefaultOverlapped()) {
           setDefaultOverlapped(other.getDefaultOverlapped());
         }
         if (other.hasKeys()) {
-          setKeys(other.getKeys());
+          bitField0_ |= 0x00000010;
+          keys_ = other.keys_;
+          onChanged();
         }
         if (valuesBuilder_ == null) {
           if (!other.values_.isEmpty()) {
@@ -3820,7 +5234,7 @@ public final class AlignmentProto {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         if (!hasDefaultFlag()) {
           
@@ -3850,125 +5264,135 @@ public final class AlignmentProto {
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
-              }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              defaultFlag_ = input.readUInt32();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              defaultLen_ = input.readUInt32();
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              defaultRNext_ = input.readBytes();
-              break;
-            }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              defaultOverlapped_ = input.readUInt32();
-              break;
-            }
-            case 66: {
-              bitField0_ |= 0x00000010;
-              keys_ = input.readBytes();
-              break;
-            }
-            case 74: {
-              AlignmentProto.Summary.Pair.Builder subBuilder = AlignmentProto.Summary.Pair.newBuilder();
-              input.readMessage(subBuilder, extensionRegistry);
-              addValues(subBuilder.buildPartial());
-              break;
-            }
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
           }
         }
+        return this;
       }
-      
       private int bitField0_;
-      
+
       // required uint32 defaultFlag = 1;
       private int defaultFlag_ ;
+      /**
+       * <code>required uint32 defaultFlag = 1;</code>
+       */
       public boolean hasDefaultFlag() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
+      /**
+       * <code>required uint32 defaultFlag = 1;</code>
+       */
       public int getDefaultFlag() {
         return defaultFlag_;
       }
+      /**
+       * <code>required uint32 defaultFlag = 1;</code>
+       */
       public Builder setDefaultFlag(int value) {
         bitField0_ |= 0x00000001;
         defaultFlag_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required uint32 defaultFlag = 1;</code>
+       */
       public Builder clearDefaultFlag() {
         bitField0_ = (bitField0_ & ~0x00000001);
         defaultFlag_ = 0;
         onChanged();
         return this;
       }
-      
+
       // required uint32 defaultLen = 2;
       private int defaultLen_ ;
+      /**
+       * <code>required uint32 defaultLen = 2;</code>
+       */
       public boolean hasDefaultLen() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
+      /**
+       * <code>required uint32 defaultLen = 2;</code>
+       */
       public int getDefaultLen() {
         return defaultLen_;
       }
+      /**
+       * <code>required uint32 defaultLen = 2;</code>
+       */
       public Builder setDefaultLen(int value) {
         bitField0_ |= 0x00000002;
         defaultLen_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required uint32 defaultLen = 2;</code>
+       */
       public Builder clearDefaultLen() {
         bitField0_ = (bitField0_ & ~0x00000002);
         defaultLen_ = 0;
         onChanged();
         return this;
       }
-      
+
       // required string defaultRNext = 3;
       private java.lang.Object defaultRNext_ = "";
+      /**
+       * <code>required string defaultRNext = 3;</code>
+       */
       public boolean hasDefaultRNext() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public String getDefaultRNext() {
+      /**
+       * <code>required string defaultRNext = 3;</code>
+       */
+      public java.lang.String getDefaultRNext() {
         java.lang.Object ref = defaultRNext_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
           defaultRNext_ = s;
           return s;
         } else {
-          return (String) ref;
+          return (java.lang.String) ref;
         }
       }
-      public Builder setDefaultRNext(String value) {
+      /**
+       * <code>required string defaultRNext = 3;</code>
+       */
+      public com.google.protobuf.ByteString
+          getDefaultRNextBytes() {
+        java.lang.Object ref = defaultRNext_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          defaultRNext_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string defaultRNext = 3;</code>
+       */
+      public Builder setDefaultRNext(
+          java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3977,55 +5401,121 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>required string defaultRNext = 3;</code>
+       */
       public Builder clearDefaultRNext() {
         bitField0_ = (bitField0_ & ~0x00000004);
         defaultRNext_ = getDefaultInstance().getDefaultRNext();
         onChanged();
         return this;
       }
-      void setDefaultRNext(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000004;
+      /**
+       * <code>required string defaultRNext = 3;</code>
+       */
+      public Builder setDefaultRNextBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
         defaultRNext_ = value;
         onChanged();
+        return this;
       }
-      
+
       // required uint32 defaultOverlapped = 4;
       private int defaultOverlapped_ ;
+      /**
+       * <code>required uint32 defaultOverlapped = 4;</code>
+       */
       public boolean hasDefaultOverlapped() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
+      /**
+       * <code>required uint32 defaultOverlapped = 4;</code>
+       */
       public int getDefaultOverlapped() {
         return defaultOverlapped_;
       }
+      /**
+       * <code>required uint32 defaultOverlapped = 4;</code>
+       */
       public Builder setDefaultOverlapped(int value) {
         bitField0_ |= 0x00000008;
         defaultOverlapped_ = value;
         onChanged();
         return this;
       }
+      /**
+       * <code>required uint32 defaultOverlapped = 4;</code>
+       */
       public Builder clearDefaultOverlapped() {
         bitField0_ = (bitField0_ & ~0x00000008);
         defaultOverlapped_ = 0;
         onChanged();
         return this;
       }
-      
+
       // required string keys = 8;
       private java.lang.Object keys_ = "";
+      /**
+       * <code>required string keys = 8;</code>
+       *
+       * <pre>
+       *Concatenated tags.
+       * </pre>
+       */
       public boolean hasKeys() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
-      public String getKeys() {
+      /**
+       * <code>required string keys = 8;</code>
+       *
+       * <pre>
+       *Concatenated tags.
+       * </pre>
+       */
+      public java.lang.String getKeys() {
         java.lang.Object ref = keys_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+              .toStringUtf8();
           keys_ = s;
           return s;
         } else {
-          return (String) ref;
+          return (java.lang.String) ref;
         }
       }
-      public Builder setKeys(String value) {
+      /**
+       * <code>required string keys = 8;</code>
+       *
+       * <pre>
+       *Concatenated tags.
+       * </pre>
+       */
+      public com.google.protobuf.ByteString
+          getKeysBytes() {
+        java.lang.Object ref = keys_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          keys_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string keys = 8;</code>
+       *
+       * <pre>
+       *Concatenated tags.
+       * </pre>
+       */
+      public Builder setKeys(
+          java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4034,38 +5524,63 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>required string keys = 8;</code>
+       *
+       * <pre>
+       *Concatenated tags.
+       * </pre>
+       */
       public Builder clearKeys() {
         bitField0_ = (bitField0_ & ~0x00000010);
         keys_ = getDefaultInstance().getKeys();
         onChanged();
         return this;
       }
-      void setKeys(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000010;
+      /**
+       * <code>required string keys = 8;</code>
+       *
+       * <pre>
+       *Concatenated tags.
+       * </pre>
+       */
+      public Builder setKeysBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000010;
         keys_ = value;
         onChanged();
+        return this;
       }
-      
-      // repeated .org.opencb.opencga.storage.alignment.Summary.Pair values = 9;
-      private java.util.List<AlignmentProto.Summary.Pair> values_ =
+
+      // repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;
+      private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair> values_ =
         java.util.Collections.emptyList();
       private void ensureValuesIsMutable() {
         if (!((bitField0_ & 0x00000020) == 0x00000020)) {
-          values_ = new java.util.ArrayList<AlignmentProto.Summary.Pair>(values_);
+          values_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair>(values_);
           bitField0_ |= 0x00000020;
          }
       }
-      
+
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.Summary.Pair, AlignmentProto.Summary.Pair.Builder, AlignmentProto.Summary.PairOrBuilder> valuesBuilder_;
-      
-      public java.util.List<AlignmentProto.Summary.Pair> getValuesList() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder> valuesBuilder_;
+
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair> getValuesList() {
         if (valuesBuilder_ == null) {
           return java.util.Collections.unmodifiableList(values_);
         } else {
           return valuesBuilder_.getMessageList();
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public int getValuesCount() {
         if (valuesBuilder_ == null) {
           return values_.size();
@@ -4073,15 +5588,21 @@ public final class AlignmentProto {
           return valuesBuilder_.getCount();
         }
       }
-      public AlignmentProto.Summary.Pair getValues(int index) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair getValues(int index) {
         if (valuesBuilder_ == null) {
           return values_.get(index);
         } else {
           return valuesBuilder_.getMessage(index);
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder setValues(
-          int index, AlignmentProto.Summary.Pair value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair value) {
         if (valuesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4094,8 +5615,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder setValues(
-          int index, AlignmentProto.Summary.Pair.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder builderForValue) {
         if (valuesBuilder_ == null) {
           ensureValuesIsMutable();
           values_.set(index, builderForValue.build());
@@ -4105,7 +5629,10 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public Builder addValues(AlignmentProto.Summary.Pair value) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public Builder addValues(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair value) {
         if (valuesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4118,8 +5645,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder addValues(
-          int index, AlignmentProto.Summary.Pair value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair value) {
         if (valuesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -4132,8 +5662,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder addValues(
-          AlignmentProto.Summary.Pair.Builder builderForValue) {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder builderForValue) {
         if (valuesBuilder_ == null) {
           ensureValuesIsMutable();
           values_.add(builderForValue.build());
@@ -4143,8 +5676,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder addValues(
-          int index, AlignmentProto.Summary.Pair.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder builderForValue) {
         if (valuesBuilder_ == null) {
           ensureValuesIsMutable();
           values_.add(index, builderForValue.build());
@@ -4154,8 +5690,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder addAllValues(
-          java.lang.Iterable<? extends AlignmentProto.Summary.Pair> values) {
+          java.lang.Iterable<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair> values) {
         if (valuesBuilder_ == null) {
           ensureValuesIsMutable();
           super.addAll(values, values_);
@@ -4165,6 +5704,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder clearValues() {
         if (valuesBuilder_ == null) {
           values_ = java.util.Collections.emptyList();
@@ -4175,6 +5717,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
       public Builder removeValues(int index) {
         if (valuesBuilder_ == null) {
           ensureValuesIsMutable();
@@ -4185,18 +5730,27 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public AlignmentProto.Summary.Pair.Builder getValuesBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder getValuesBuilder(
           int index) {
         return getValuesFieldBuilder().getBuilder(index);
       }
-      public AlignmentProto.Summary.PairOrBuilder getValuesOrBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder getValuesOrBuilder(
           int index) {
         if (valuesBuilder_ == null) {
           return values_.get(index);  } else {
           return valuesBuilder_.getMessageOrBuilder(index);
         }
       }
-      public java.util.List<? extends AlignmentProto.Summary.PairOrBuilder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder> 
            getValuesOrBuilderList() {
         if (valuesBuilder_ != null) {
           return valuesBuilder_.getMessageOrBuilderList();
@@ -4204,25 +5758,34 @@ public final class AlignmentProto {
           return java.util.Collections.unmodifiableList(values_);
         }
       }
-      public AlignmentProto.Summary.Pair.Builder addValuesBuilder() {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder addValuesBuilder() {
         return getValuesFieldBuilder().addBuilder(
-            AlignmentProto.Summary.Pair.getDefaultInstance());
+            org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.getDefaultInstance());
       }
-      public AlignmentProto.Summary.Pair.Builder addValuesBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder addValuesBuilder(
           int index) {
         return getValuesFieldBuilder().addBuilder(
-            index, AlignmentProto.Summary.Pair.getDefaultInstance());
+            index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.getDefaultInstance());
       }
-      public java.util.List<AlignmentProto.Summary.Pair.Builder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Summary.Pair values = 9;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder> 
            getValuesBuilderList() {
         return getValuesFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.Summary.Pair, AlignmentProto.Summary.Pair.Builder, AlignmentProto.Summary.PairOrBuilder>
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder> 
           getValuesFieldBuilder() {
         if (valuesBuilder_ == null) {
           valuesBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              AlignmentProto.Summary.Pair, AlignmentProto.Summary.Pair.Builder, AlignmentProto.Summary.PairOrBuilder>(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.Pair.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Summary.PairOrBuilder>(
                   values_,
                   ((bitField0_ & 0x00000020) == 0x00000020),
                   getParentForChildren(),
@@ -4231,424 +5794,238 @@ public final class AlignmentProto {
         }
         return valuesBuilder_;
       }
-      
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.Summary)
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.Summary)
     }
-    
+
     static {
       defaultInstance = new Summary(true);
       defaultInstance.initFields();
     }
-    
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.Summary)
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.Summary)
   }
-  
+
   public interface HeaderOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
-    
-    // repeated .org.opencb.opencga.storage.alignment.Header.Region regions = 1;
-    java.util.List<AlignmentProto.Header.Region>
+
+    // repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region> 
         getRegionsList();
-    AlignmentProto.Header.Region getRegions(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region getRegions(int index);
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
     int getRegionsCount();
-    java.util.List<? extends AlignmentProto.Header.RegionOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder> 
         getRegionsOrBuilderList();
-    AlignmentProto.Header.RegionOrBuilder getRegionsOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder getRegionsOrBuilder(
         int index);
-    
+
     // optional bytes SamHeader = 2;
+    /**
+     * <code>optional bytes SamHeader = 2;</code>
+     */
     boolean hasSamHeader();
+    /**
+     * <code>optional bytes SamHeader = 2;</code>
+     */
     com.google.protobuf.ByteString getSamHeader();
   }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Header}
+   */
   public static final class Header extends
       com.google.protobuf.GeneratedMessage
       implements HeaderOrBuilder {
     // Use Header.newBuilder() to construct.
-    private Header(Builder builder) {
+    private Header(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
+      this.unknownFields = builder.getUnknownFields();
     }
-    private Header(boolean noInit) {}
-    
+    private Header(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
     private static final Header defaultInstance;
     public static Header getDefaultInstance() {
       return defaultInstance;
     }
-    
+
     public Header getDefaultInstanceForType() {
       return defaultInstance;
     }
-    
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private Header(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                regions_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              regions_.add(input.readMessage(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.PARSER, extensionRegistry));
+              break;
+            }
+            case 18: {
+              bitField0_ |= 0x00000001;
+              samHeader_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+          regions_ = java.util.Collections.unmodifiableList(regions_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_descriptor;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor;
     }
-    
+
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_fieldAccessorTable;
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Builder.class);
     }
-    
+
+    public static com.google.protobuf.Parser<Header> PARSER =
+        new com.google.protobuf.AbstractParser<Header>() {
+      public Header parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new Header(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Header> getParserForType() {
+      return PARSER;
+    }
+
     public interface RegionOrBuilder
         extends com.google.protobuf.MessageOrBuilder {
-      
+
       // required string chromosomeName = 1;
+      /**
+       * <code>required string chromosomeName = 1;</code>
+       */
       boolean hasChromosomeName();
-      String getChromosomeName();
-      
+      /**
+       * <code>required string chromosomeName = 1;</code>
+       */
+      java.lang.String getChromosomeName();
+      /**
+       * <code>required string chromosomeName = 1;</code>
+       */
+      com.google.protobuf.ByteString
+          getChromosomeNameBytes();
+
       // required uint32 maxValue = 2;
+      /**
+       * <code>required uint32 maxValue = 2;</code>
+       */
       boolean hasMaxValue();
+      /**
+       * <code>required uint32 maxValue = 2;</code>
+       */
       int getMaxValue();
     }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Header.Region}
+     */
     public static final class Region extends
         com.google.protobuf.GeneratedMessage
         implements RegionOrBuilder {
       // Use Region.newBuilder() to construct.
-      private Region(Builder builder) {
+      private Region(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
+        this.unknownFields = builder.getUnknownFields();
       }
-      private Region(boolean noInit) {}
-      
+      private Region(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
       private static final Region defaultInstance;
       public static Region getDefaultInstance() {
         return defaultInstance;
       }
-      
+
       public Region getDefaultInstanceForType() {
         return defaultInstance;
       }
-      
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_Region_descriptor;
-      }
-      
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_Region_fieldAccessorTable;
-      }
-      
-      private int bitField0_;
-      // required string chromosomeName = 1;
-      public static final int CHROMOSOMENAME_FIELD_NUMBER = 1;
-      private java.lang.Object chromosomeName_;
-      public boolean hasChromosomeName() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      public String getChromosomeName() {
-        java.lang.Object ref = chromosomeName_;
-        if (ref instanceof String) {
-          return (String) ref;
-        } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
-          String s = bs.toStringUtf8();
-          if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-            chromosomeName_ = s;
-          }
-          return s;
-        }
-      }
-      private com.google.protobuf.ByteString getChromosomeNameBytes() {
-        java.lang.Object ref = chromosomeName_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-          chromosomeName_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      
-      // required uint32 maxValue = 2;
-      public static final int MAXVALUE_FIELD_NUMBER = 2;
-      private int maxValue_;
-      public boolean hasMaxValue() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public int getMaxValue() {
-        return maxValue_;
-      }
-      
-      private void initFields() {
-        chromosomeName_ = "";
-        maxValue_ = 0;
-      }
-      private byte memoizedIsInitialized = -1;
-      public final boolean isInitialized() {
-        byte isInitialized = memoizedIsInitialized;
-        if (isInitialized != -1) return isInitialized == 1;
-        
-        if (!hasChromosomeName()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
-        if (!hasMaxValue()) {
-          memoizedIsInitialized = 0;
-          return false;
-        }
-        memoizedIsInitialized = 1;
-        return true;
-      }
-      
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
-                          throws java.io.IOException {
-        getSerializedSize();
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          output.writeBytes(1, getChromosomeNameBytes());
-        }
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          output.writeUInt32(2, maxValue_);
-        }
-        getUnknownFields().writeTo(output);
-      }
-      
-      private int memoizedSerializedSize = -1;
-      public int getSerializedSize() {
-        int size = memoizedSerializedSize;
-        if (size != -1) return size;
-      
-        size = 0;
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeBytesSize(1, getChromosomeNameBytes());
-        }
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
-            .computeUInt32Size(2, maxValue_);
-        }
-        size += getUnknownFields().getSerializedSize();
-        memoizedSerializedSize = size;
-        return size;
-      }
-      
-      private static final long serialVersionUID = 0L;
+
+      private final com.google.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      protected java.lang.Object writeReplace()
-          throws java.io.ObjectStreamException {
-        return super.writeReplace();
+      public final com.google.protobuf.UnknownFieldSet
+          getUnknownFields() {
+        return this.unknownFields;
       }
-      
-      public static AlignmentProto.Header.Region parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data).buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data, extensionRegistry)
-                 .buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data).buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseFrom(
-          byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        return newBuilder().mergeFrom(data, extensionRegistry)
-                 .buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input).buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseFrom(
-          java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input, extensionRegistry)
-                 .buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseDelimitedFrom(java.io.InputStream input)
-          throws java.io.IOException {
-        Builder builder = newBuilder();
-        if (builder.mergeDelimitedFrom(input)) {
-          return builder.buildParsed();
-        } else {
-          return null;
-        }
-      }
-      public static AlignmentProto.Header.Region parseDelimitedFrom(
-          java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        Builder builder = newBuilder();
-        if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-          return builder.buildParsed();
-        } else {
-          return null;
-        }
-      }
-      public static AlignmentProto.Header.Region parseFrom(
-          com.google.protobuf.CodedInputStream input)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input).buildParsed();
-      }
-      public static AlignmentProto.Header.Region parseFrom(
+      private Region(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        return newBuilder().mergeFrom(input, extensionRegistry)
-                 .buildParsed();
-      }
-      
-      public static Builder newBuilder() { return Builder.create(); }
-      public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder(AlignmentProto.Header.Region prototype) {
-        return newBuilder().mergeFrom(prototype);
-      }
-      public Builder toBuilder() { return newBuilder(this); }
-      
-      @java.lang.Override
-      protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-        Builder builder = new Builder(parent);
-        return builder;
-      }
-      public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
-         implements AlignmentProto.Header.RegionOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
-            getDescriptor() {
-          return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_Region_descriptor;
-        }
-        
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-            internalGetFieldAccessorTable() {
-          return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_Region_fieldAccessorTable;
-        }
-        
-        // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.newBuilder()
-        private Builder() {
-          maybeForceBuilderInitialization();
-        }
-        
-        private Builder(BuilderParent parent) {
-          super(parent);
-          maybeForceBuilderInitialization();
-        }
-        private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          }
-        }
-        private static Builder create() {
-          return new Builder();
-        }
-        
-        public Builder clear() {
-          super.clear();
-          chromosomeName_ = "";
-          bitField0_ = (bitField0_ & ~0x00000001);
-          maxValue_ = 0;
-          bitField0_ = (bitField0_ & ~0x00000002);
-          return this;
-        }
-        
-        public Builder clone() {
-          return create().mergeFrom(buildPartial());
-        }
-        
-        public com.google.protobuf.Descriptors.Descriptor
-            getDescriptorForType() {
-          return AlignmentProto.Header.Region.getDescriptor();
-        }
-        
-        public AlignmentProto.Header.Region getDefaultInstanceForType() {
-          return AlignmentProto.Header.Region.getDefaultInstance();
-        }
-        
-        public AlignmentProto.Header.Region build() {
-          AlignmentProto.Header.Region result = buildPartial();
-          if (!result.isInitialized()) {
-            throw AbstractMessage.Builder.newUninitializedMessageException(result);
-          }
-          return result;
-        }
-        
-        private AlignmentProto.Header.Region buildParsed()
-            throws com.google.protobuf.InvalidProtocolBufferException {
-          AlignmentProto.Header.Region result = buildPartial();
-          if (!result.isInitialized()) {
-            throw AbstractMessage.Builder.newUninitializedMessageException(
-                    result).asInvalidProtocolBufferException();
-          }
-          return result;
-        }
-        
-        public AlignmentProto.Header.Region buildPartial() {
-          AlignmentProto.Header.Region result = new AlignmentProto.Header.Region(this);
-          int from_bitField0_ = bitField0_;
-          int to_bitField0_ = 0;
-          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-            to_bitField0_ |= 0x00000001;
-          }
-          result.chromosomeName_ = chromosomeName_;
-          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-            to_bitField0_ |= 0x00000002;
-          }
-          result.maxValue_ = maxValue_;
-          result.bitField0_ = to_bitField0_;
-          onBuilt();
-          return result;
-        }
-        
-        public Builder mergeFrom(com.google.protobuf.Message other) {
-          if (other instanceof AlignmentProto.Header.Region) {
-            return mergeFrom((AlignmentProto.Header.Region)other);
-          } else {
-            super.mergeFrom(other);
-            return this;
-          }
-        }
-        
-        public Builder mergeFrom(AlignmentProto.Header.Region other) {
-          if (other == AlignmentProto.Header.Region.getDefaultInstance()) return this;
-          if (other.hasChromosomeName()) {
-            setChromosomeName(other.getChromosomeName());
-          }
-          if (other.hasMaxValue()) {
-            setMaxValue(other.getMaxValue());
-          }
-          this.mergeUnknownFields(other.getUnknownFields());
-          return this;
-        }
-        
-        public final boolean isInitialized() {
-          if (!hasChromosomeName()) {
-            
-            return false;
-          }
-          if (!hasMaxValue()) {
-            
-            return false;
-          }
-          return true;
-        }
-        
-        public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws java.io.IOException {
-          com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder(
-              this.getUnknownFields());
-          while (true) {
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        initFields();
+        int mutable_bitField0_ = 0;
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+            com.google.protobuf.UnknownFieldSet.newBuilder();
+        try {
+          boolean done = false;
+          while (!done) {
             int tag = input.readTag();
             switch (tag) {
               case 0:
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
+                done = true;
+                break;
               default: {
                 if (!parseUnknownField(input, unknownFields,
                                        extensionRegistry, tag)) {
-                  this.setUnknownFields(unknownFields.build());
-                  onChanged();
-                  return this;
+                  done = true;
                 }
                 break;
               }
@@ -4664,26 +6041,408 @@ public final class AlignmentProto {
               }
             }
           }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(this);
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(
+              e.getMessage()).setUnfinishedMessage(this);
+        } finally {
+          this.unknownFields = unknownFields.build();
+          makeExtensionsImmutable();
         }
-        
+      }
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder.class);
+      }
+
+      public static com.google.protobuf.Parser<Region> PARSER =
+          new com.google.protobuf.AbstractParser<Region>() {
+        public Region parsePartialFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws com.google.protobuf.InvalidProtocolBufferException {
+          return new Region(input, extensionRegistry);
+        }
+      };
+
+      @java.lang.Override
+      public com.google.protobuf.Parser<Region> getParserForType() {
+        return PARSER;
+      }
+
+      private int bitField0_;
+      // required string chromosomeName = 1;
+      public static final int CHROMOSOMENAME_FIELD_NUMBER = 1;
+      private java.lang.Object chromosomeName_;
+      /**
+       * <code>required string chromosomeName = 1;</code>
+       */
+      public boolean hasChromosomeName() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required string chromosomeName = 1;</code>
+       */
+      public java.lang.String getChromosomeName() {
+        java.lang.Object ref = chromosomeName_;
+        if (ref instanceof java.lang.String) {
+          return (java.lang.String) ref;
+        } else {
+          com.google.protobuf.ByteString bs = 
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            chromosomeName_ = s;
+          }
+          return s;
+        }
+      }
+      /**
+       * <code>required string chromosomeName = 1;</code>
+       */
+      public com.google.protobuf.ByteString
+          getChromosomeNameBytes() {
+        java.lang.Object ref = chromosomeName_;
+        if (ref instanceof java.lang.String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          chromosomeName_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+
+      // required uint32 maxValue = 2;
+      public static final int MAXVALUE_FIELD_NUMBER = 2;
+      private int maxValue_;
+      /**
+       * <code>required uint32 maxValue = 2;</code>
+       */
+      public boolean hasMaxValue() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required uint32 maxValue = 2;</code>
+       */
+      public int getMaxValue() {
+        return maxValue_;
+      }
+
+      private void initFields() {
+        chromosomeName_ = "";
+        maxValue_ = 0;
+      }
+      private byte memoizedIsInitialized = -1;
+      public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized != -1) return isInitialized == 1;
+
+        if (!hasChromosomeName()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        if (!hasMaxValue()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+        memoizedIsInitialized = 1;
+        return true;
+      }
+
+      public void writeTo(com.google.protobuf.CodedOutputStream output)
+                          throws java.io.IOException {
+        getSerializedSize();
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          output.writeBytes(1, getChromosomeNameBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          output.writeUInt32(2, maxValue_);
+        }
+        getUnknownFields().writeTo(output);
+      }
+
+      private int memoizedSerializedSize = -1;
+      public int getSerializedSize() {
+        int size = memoizedSerializedSize;
+        if (size != -1) return size;
+
+        size = 0;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeBytesSize(1, getChromosomeNameBytes());
+        }
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          size += com.google.protobuf.CodedOutputStream
+            .computeUInt32Size(2, maxValue_);
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSerializedSize = size;
+        return size;
+      }
+
+      private static final long serialVersionUID = 0L;
+      @java.lang.Override
+      protected java.lang.Object writeReplace()
+          throws java.io.ObjectStreamException {
+        return super.writeReplace();
+      }
+
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(
+          com.google.protobuf.ByteString data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(
+          com.google.protobuf.ByteString data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(byte[] data)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(
+          byte[] data,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseDelimitedFrom(java.io.InputStream input)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseDelimitedFrom(
+          java.io.InputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseDelimitedFrom(input, extensionRegistry);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(
+          com.google.protobuf.CodedInputStream input)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input);
+      }
+      public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parseFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        return PARSER.parseFrom(input, extensionRegistry);
+      }
+
+      public static Builder newBuilder() { return Builder.create(); }
+      public Builder newBuilderForType() { return newBuilder(); }
+      public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region prototype) {
+        return newBuilder().mergeFrom(prototype);
+      }
+      public Builder toBuilder() { return newBuilder(this); }
+
+      @java.lang.Override
+      protected Builder newBuilderForType(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
+      }
+      /**
+       * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Header.Region}
+       */
+      public static final class Builder extends
+          com.google.protobuf.GeneratedMessage.Builder<Builder>
+         implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_fieldAccessorTable
+              .ensureFieldAccessorsInitialized(
+                  org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder.class);
+        }
+
+        // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.newBuilder()
+        private Builder() {
+          maybeForceBuilderInitialization();
+        }
+
+        private Builder(
+            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          super(parent);
+          maybeForceBuilderInitialization();
+        }
+        private void maybeForceBuilderInitialization() {
+          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          }
+        }
+        private static Builder create() {
+          return new Builder();
+        }
+
+        public Builder clear() {
+          super.clear();
+          chromosomeName_ = "";
+          bitField0_ = (bitField0_ & ~0x00000001);
+          maxValue_ = 0;
+          bitField0_ = (bitField0_ & ~0x00000002);
+          return this;
+        }
+
+        public Builder clone() {
+          return create().mergeFrom(buildPartial());
+        }
+
+        public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_descriptor;
+        }
+
+        public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region getDefaultInstanceForType() {
+          return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.getDefaultInstance();
+        }
+
+        public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region build() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region result = buildPartial();
+          if (!result.isInitialized()) {
+            throw newUninitializedMessageException(result);
+          }
+          return result;
+        }
+
+        public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region buildPartial() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region(this);
+          int from_bitField0_ = bitField0_;
+          int to_bitField0_ = 0;
+          if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+            to_bitField0_ |= 0x00000001;
+          }
+          result.chromosomeName_ = chromosomeName_;
+          if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+            to_bitField0_ |= 0x00000002;
+          }
+          result.maxValue_ = maxValue_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
+        }
+
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+          if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region) {
+            return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region)other);
+          } else {
+            super.mergeFrom(other);
+            return this;
+          }
+        }
+
+        public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region other) {
+          if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.getDefaultInstance()) return this;
+          if (other.hasChromosomeName()) {
+            bitField0_ |= 0x00000001;
+            chromosomeName_ = other.chromosomeName_;
+            onChanged();
+          }
+          if (other.hasMaxValue()) {
+            setMaxValue(other.getMaxValue());
+          }
+          this.mergeUnknownFields(other.getUnknownFields());
+          return this;
+        }
+
+        public final boolean isInitialized() {
+          if (!hasChromosomeName()) {
+            
+            return false;
+          }
+          if (!hasMaxValue()) {
+            
+            return false;
+          }
+          return true;
+        }
+
+        public Builder mergeFrom(
+            com.google.protobuf.CodedInputStream input,
+            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region parsedMessage = null;
+          try {
+            parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region) e.getUnfinishedMessage();
+            throw e;
+          } finally {
+            if (parsedMessage != null) {
+              mergeFrom(parsedMessage);
+            }
+          }
+          return this;
+        }
         private int bitField0_;
-        
+
         // required string chromosomeName = 1;
         private java.lang.Object chromosomeName_ = "";
+        /**
+         * <code>required string chromosomeName = 1;</code>
+         */
         public boolean hasChromosomeName() {
           return ((bitField0_ & 0x00000001) == 0x00000001);
         }
-        public String getChromosomeName() {
+        /**
+         * <code>required string chromosomeName = 1;</code>
+         */
+        public java.lang.String getChromosomeName() {
           java.lang.Object ref = chromosomeName_;
-          if (!(ref instanceof String)) {
-            String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          if (!(ref instanceof java.lang.String)) {
+            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+                .toStringUtf8();
             chromosomeName_ = s;
             return s;
           } else {
-            return (String) ref;
+            return (java.lang.String) ref;
           }
         }
-        public Builder setChromosomeName(String value) {
+        /**
+         * <code>required string chromosomeName = 1;</code>
+         */
+        public com.google.protobuf.ByteString
+            getChromosomeNameBytes() {
+          java.lang.Object ref = chromosomeName_;
+          if (ref instanceof String) {
+            com.google.protobuf.ByteString b = 
+                com.google.protobuf.ByteString.copyFromUtf8(
+                    (java.lang.String) ref);
+            chromosomeName_ = b;
+            return b;
+          } else {
+            return (com.google.protobuf.ByteString) ref;
+          }
+        }
+        /**
+         * <code>required string chromosomeName = 1;</code>
+         */
+        public Builder setChromosomeName(
+            java.lang.String value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -4692,82 +6451,126 @@ public final class AlignmentProto {
           onChanged();
           return this;
         }
+        /**
+         * <code>required string chromosomeName = 1;</code>
+         */
         public Builder clearChromosomeName() {
           bitField0_ = (bitField0_ & ~0x00000001);
           chromosomeName_ = getDefaultInstance().getChromosomeName();
           onChanged();
           return this;
         }
-        void setChromosomeName(com.google.protobuf.ByteString value) {
-          bitField0_ |= 0x00000001;
+        /**
+         * <code>required string chromosomeName = 1;</code>
+         */
+        public Builder setChromosomeNameBytes(
+            com.google.protobuf.ByteString value) {
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
           chromosomeName_ = value;
           onChanged();
+          return this;
         }
-        
+
         // required uint32 maxValue = 2;
         private int maxValue_ ;
+        /**
+         * <code>required uint32 maxValue = 2;</code>
+         */
         public boolean hasMaxValue() {
           return ((bitField0_ & 0x00000002) == 0x00000002);
         }
+        /**
+         * <code>required uint32 maxValue = 2;</code>
+         */
         public int getMaxValue() {
           return maxValue_;
         }
+        /**
+         * <code>required uint32 maxValue = 2;</code>
+         */
         public Builder setMaxValue(int value) {
           bitField0_ |= 0x00000002;
           maxValue_ = value;
           onChanged();
           return this;
         }
+        /**
+         * <code>required uint32 maxValue = 2;</code>
+         */
         public Builder clearMaxValue() {
           bitField0_ = (bitField0_ & ~0x00000002);
           maxValue_ = 0;
           onChanged();
           return this;
         }
-        
-        // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.Header.Region)
+
+        // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.Header.Region)
       }
-      
+
       static {
         defaultInstance = new Region(true);
         defaultInstance.initFields();
       }
-      
-      // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.Header.Region)
+
+      // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.Header.Region)
     }
-    
+
     private int bitField0_;
-    // repeated .org.opencb.opencga.storage.alignment.Header.Region regions = 1;
+    // repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;
     public static final int REGIONS_FIELD_NUMBER = 1;
-    private java.util.List<AlignmentProto.Header.Region> regions_;
-    public java.util.List<AlignmentProto.Header.Region> getRegionsList() {
+    private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region> regions_;
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region> getRegionsList() {
       return regions_;
     }
-    public java.util.List<? extends AlignmentProto.Header.RegionOrBuilder>
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder> 
         getRegionsOrBuilderList() {
       return regions_;
     }
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
     public int getRegionsCount() {
       return regions_.size();
     }
-    public AlignmentProto.Header.Region getRegions(int index) {
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region getRegions(int index) {
       return regions_.get(index);
     }
-    public AlignmentProto.Header.RegionOrBuilder getRegionsOrBuilder(
+    /**
+     * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+     */
+    public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder getRegionsOrBuilder(
         int index) {
       return regions_.get(index);
     }
-    
+
     // optional bytes SamHeader = 2;
     public static final int SAMHEADER_FIELD_NUMBER = 2;
     private com.google.protobuf.ByteString samHeader_;
+    /**
+     * <code>optional bytes SamHeader = 2;</code>
+     */
     public boolean hasSamHeader() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
+    /**
+     * <code>optional bytes SamHeader = 2;</code>
+     */
     public com.google.protobuf.ByteString getSamHeader() {
       return samHeader_;
     }
-    
+
     private void initFields() {
       regions_ = java.util.Collections.emptyList();
       samHeader_ = com.google.protobuf.ByteString.EMPTY;
@@ -4776,7 +6579,7 @@ public final class AlignmentProto {
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
-      
+
       for (int i = 0; i < getRegionsCount(); i++) {
         if (!getRegions(i).isInitialized()) {
           memoizedIsInitialized = 0;
@@ -4786,7 +6589,7 @@ public final class AlignmentProto {
       memoizedIsInitialized = 1;
       return true;
     }
-    
+
     public void writeTo(com.google.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
@@ -4798,12 +6601,12 @@ public final class AlignmentProto {
       }
       getUnknownFields().writeTo(output);
     }
-    
+
     private int memoizedSerializedSize = -1;
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
-    
+
       size = 0;
       for (int i = 0; i < regions_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
@@ -4817,113 +6620,105 @@ public final class AlignmentProto {
       memoizedSerializedSize = size;
       return size;
     }
-    
+
     private static final long serialVersionUID = 0L;
     @java.lang.Override
     protected java.lang.Object writeReplace()
         throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
-    
-    public static AlignmentProto.Header parseFrom(
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.Header parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.Header parseFrom(byte[] data)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
+      return PARSER.parseFrom(data);
     }
-    public static AlignmentProto.Header parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static AlignmentProto.Header parseFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.Header parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.Header parseDelimitedFrom(java.io.InputStream input)
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input);
     }
-    public static AlignmentProto.Header parseDelimitedFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static AlignmentProto.Header parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
+      return PARSER.parseFrom(input);
     }
-    public static AlignmentProto.Header parseFrom(
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
+      return PARSER.parseFrom(input, extensionRegistry);
     }
-    
+
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(AlignmentProto.Header prototype) {
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
-    
+
     @java.lang.Override
     protected Builder newBuilderForType(
         com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Header}
+     */
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements AlignmentProto.HeaderOrBuilder {
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.HeaderOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_descriptor;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor;
       }
-      
+
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_Header_fieldAccessorTable;
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Builder.class);
       }
-      
+
       // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
-      
-      private Builder(BuilderParent parent) {
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4935,7 +6730,7 @@ public final class AlignmentProto {
       private static Builder create() {
         return new Builder();
       }
-      
+
       public Builder clear() {
         super.clear();
         if (regionsBuilder_ == null) {
@@ -4948,40 +6743,30 @@ public final class AlignmentProto {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      
+
       public Builder clone() {
         return create().mergeFrom(buildPartial());
       }
-      
+
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return AlignmentProto.Header.getDescriptor();
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor;
       }
-      
-      public AlignmentProto.Header getDefaultInstanceForType() {
-        return AlignmentProto.Header.getDefaultInstance();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.getDefaultInstance();
       }
-      
-      public AlignmentProto.Header build() {
-        AlignmentProto.Header result = buildPartial();
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header result = buildPartial();
         if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
+          throw newUninitializedMessageException(result);
         }
         return result;
       }
-      
-      private AlignmentProto.Header buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        AlignmentProto.Header result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-      
-      public AlignmentProto.Header buildPartial() {
-        AlignmentProto.Header result = new AlignmentProto.Header(this);
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (regionsBuilder_ == null) {
@@ -5001,18 +6786,18 @@ public final class AlignmentProto {
         onBuilt();
         return result;
       }
-      
+
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof AlignmentProto.Header) {
-          return mergeFrom((AlignmentProto.Header)other);
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
-      
-      public Builder mergeFrom(AlignmentProto.Header other) {
-        if (other == AlignmentProto.Header.getDefaultInstance()) return this;
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.getDefaultInstance()) return this;
         if (regionsBuilder_ == null) {
           if (!other.regions_.isEmpty()) {
             if (regions_.isEmpty()) {
@@ -5045,7 +6830,7 @@ public final class AlignmentProto {
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
-      
+
       public final boolean isInitialized() {
         for (int i = 0; i < getRegionsCount(); i++) {
           if (!getRegions(i).isInitialized()) {
@@ -5055,67 +6840,52 @@ public final class AlignmentProto {
         }
         return true;
       }
-      
+
       public Builder mergeFrom(
           com.google.protobuf.CodedInputStream input,
           com.google.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
-                onChanged();
-                return this;
-              }
-              break;
-            }
-            case 10: {
-              AlignmentProto.Header.Region.Builder subBuilder = AlignmentProto.Header.Region.newBuilder();
-              input.readMessage(subBuilder, extensionRegistry);
-              addRegions(subBuilder.buildPartial());
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              samHeader_ = input.readBytes();
-              break;
-            }
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
           }
         }
+        return this;
       }
-      
       private int bitField0_;
-      
-      // repeated .org.opencb.opencga.storage.alignment.Header.Region regions = 1;
-      private java.util.List<AlignmentProto.Header.Region> regions_ =
+
+      // repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;
+      private java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region> regions_ =
         java.util.Collections.emptyList();
       private void ensureRegionsIsMutable() {
         if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-          regions_ = new java.util.ArrayList<AlignmentProto.Header.Region>(regions_);
+          regions_ = new java.util.ArrayList<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region>(regions_);
           bitField0_ |= 0x00000001;
          }
       }
-      
+
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.Header.Region, AlignmentProto.Header.Region.Builder, AlignmentProto.Header.RegionOrBuilder> regionsBuilder_;
-      
-      public java.util.List<AlignmentProto.Header.Region> getRegionsList() {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder> regionsBuilder_;
+
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region> getRegionsList() {
         if (regionsBuilder_ == null) {
           return java.util.Collections.unmodifiableList(regions_);
         } else {
           return regionsBuilder_.getMessageList();
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public int getRegionsCount() {
         if (regionsBuilder_ == null) {
           return regions_.size();
@@ -5123,15 +6893,21 @@ public final class AlignmentProto {
           return regionsBuilder_.getCount();
         }
       }
-      public AlignmentProto.Header.Region getRegions(int index) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region getRegions(int index) {
         if (regionsBuilder_ == null) {
           return regions_.get(index);
         } else {
           return regionsBuilder_.getMessage(index);
         }
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder setRegions(
-          int index, AlignmentProto.Header.Region value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region value) {
         if (regionsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -5144,8 +6920,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder setRegions(
-          int index, AlignmentProto.Header.Region.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder builderForValue) {
         if (regionsBuilder_ == null) {
           ensureRegionsIsMutable();
           regions_.set(index, builderForValue.build());
@@ -5155,7 +6934,10 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public Builder addRegions(AlignmentProto.Header.Region value) {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public Builder addRegions(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region value) {
         if (regionsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -5168,8 +6950,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder addRegions(
-          int index, AlignmentProto.Header.Region value) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region value) {
         if (regionsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -5182,8 +6967,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder addRegions(
-          AlignmentProto.Header.Region.Builder builderForValue) {
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder builderForValue) {
         if (regionsBuilder_ == null) {
           ensureRegionsIsMutable();
           regions_.add(builderForValue.build());
@@ -5193,8 +6981,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder addRegions(
-          int index, AlignmentProto.Header.Region.Builder builderForValue) {
+          int index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder builderForValue) {
         if (regionsBuilder_ == null) {
           ensureRegionsIsMutable();
           regions_.add(index, builderForValue.build());
@@ -5204,8 +6995,11 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder addAllRegions(
-          java.lang.Iterable<? extends AlignmentProto.Header.Region> values) {
+          java.lang.Iterable<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region> values) {
         if (regionsBuilder_ == null) {
           ensureRegionsIsMutable();
           super.addAll(values, regions_);
@@ -5215,6 +7009,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder clearRegions() {
         if (regionsBuilder_ == null) {
           regions_ = java.util.Collections.emptyList();
@@ -5225,6 +7022,9 @@ public final class AlignmentProto {
         }
         return this;
       }
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
       public Builder removeRegions(int index) {
         if (regionsBuilder_ == null) {
           ensureRegionsIsMutable();
@@ -5235,18 +7035,27 @@ public final class AlignmentProto {
         }
         return this;
       }
-      public AlignmentProto.Header.Region.Builder getRegionsBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder getRegionsBuilder(
           int index) {
         return getRegionsFieldBuilder().getBuilder(index);
       }
-      public AlignmentProto.Header.RegionOrBuilder getRegionsOrBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder getRegionsOrBuilder(
           int index) {
         if (regionsBuilder_ == null) {
           return regions_.get(index);  } else {
           return regionsBuilder_.getMessageOrBuilder(index);
         }
       }
-      public java.util.List<? extends AlignmentProto.Header.RegionOrBuilder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public java.util.List<? extends org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder> 
            getRegionsOrBuilderList() {
         if (regionsBuilder_ != null) {
           return regionsBuilder_.getMessageOrBuilderList();
@@ -5254,25 +7063,34 @@ public final class AlignmentProto {
           return java.util.Collections.unmodifiableList(regions_);
         }
       }
-      public AlignmentProto.Header.Region.Builder addRegionsBuilder() {
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder addRegionsBuilder() {
         return getRegionsFieldBuilder().addBuilder(
-            AlignmentProto.Header.Region.getDefaultInstance());
+            org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.getDefaultInstance());
       }
-      public AlignmentProto.Header.Region.Builder addRegionsBuilder(
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder addRegionsBuilder(
           int index) {
         return getRegionsFieldBuilder().addBuilder(
-            index, AlignmentProto.Header.Region.getDefaultInstance());
+            index, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.getDefaultInstance());
       }
-      public java.util.List<AlignmentProto.Header.Region.Builder>
+      /**
+       * <code>repeated .org.opencb.opencga.storage.alignment.proto.Header.Region regions = 1;</code>
+       */
+      public java.util.List<org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder> 
            getRegionsBuilderList() {
         return getRegionsFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
-          AlignmentProto.Header.Region, AlignmentProto.Header.Region.Builder, AlignmentProto.Header.RegionOrBuilder>
+          org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder> 
           getRegionsFieldBuilder() {
         if (regionsBuilder_ == null) {
           regionsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
-              AlignmentProto.Header.Region, AlignmentProto.Header.Region.Builder, AlignmentProto.Header.RegionOrBuilder>(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.Region.Builder, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Header.RegionOrBuilder>(
                   regions_,
                   ((bitField0_ & 0x00000001) == 0x00000001),
                   getParentForChildren(),
@@ -5281,15 +7099,24 @@ public final class AlignmentProto {
         }
         return regionsBuilder_;
       }
-      
+
       // optional bytes SamHeader = 2;
       private com.google.protobuf.ByteString samHeader_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes SamHeader = 2;</code>
+       */
       public boolean hasSamHeader() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
+      /**
+       * <code>optional bytes SamHeader = 2;</code>
+       */
       public com.google.protobuf.ByteString getSamHeader() {
         return samHeader_;
       }
+      /**
+       * <code>optional bytes SamHeader = 2;</code>
+       */
       public Builder setSamHeader(com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
@@ -5299,60 +7126,1624 @@ public final class AlignmentProto {
         onChanged();
         return this;
       }
+      /**
+       * <code>optional bytes SamHeader = 2;</code>
+       */
       public Builder clearSamHeader() {
         bitField0_ = (bitField0_ & ~0x00000002);
         samHeader_ = getDefaultInstance().getSamHeader();
         onChanged();
         return this;
       }
-      
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.Header)
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.Header)
     }
-    
+
     static {
       defaultInstance = new Header(true);
       defaultInstance.initFields();
     }
-    
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.Header)
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.Header)
   }
-  
+
+  public interface MeanCoverageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // required float coverage = 1;
+    /**
+     * <code>required float coverage = 1;</code>
+     */
+    boolean hasCoverage();
+    /**
+     * <code>required float coverage = 1;</code>
+     */
+    float getCoverage();
+  }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.MeanCoverage}
+   */
+  public static final class MeanCoverage extends
+      com.google.protobuf.GeneratedMessage
+      implements MeanCoverageOrBuilder {
+    // Use MeanCoverage.newBuilder() to construct.
+    private MeanCoverage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private MeanCoverage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final MeanCoverage defaultInstance;
+    public static MeanCoverage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public MeanCoverage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private MeanCoverage(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 13: {
+              bitField0_ |= 0x00000001;
+              coverage_ = input.readFloat();
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<MeanCoverage> PARSER =
+        new com.google.protobuf.AbstractParser<MeanCoverage>() {
+      public MeanCoverage parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new MeanCoverage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<MeanCoverage> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // required float coverage = 1;
+    public static final int COVERAGE_FIELD_NUMBER = 1;
+    private float coverage_;
+    /**
+     * <code>required float coverage = 1;</code>
+     */
+    public boolean hasCoverage() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required float coverage = 1;</code>
+     */
+    public float getCoverage() {
+      return coverage_;
+    }
+
+    private void initFields() {
+      coverage_ = 0F;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      if (!hasCoverage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeFloat(1, coverage_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeFloatSize(1, coverage_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.MeanCoverage}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.Builder.class);
+      }
+
+      // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        coverage_ = 0F;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_descriptor;
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.getDefaultInstance();
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.coverage_ = coverage_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage.getDefaultInstance()) return this;
+        if (other.hasCoverage()) {
+          setCoverage(other.getCoverage());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasCoverage()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.MeanCoverage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // required float coverage = 1;
+      private float coverage_ ;
+      /**
+       * <code>required float coverage = 1;</code>
+       */
+      public boolean hasCoverage() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required float coverage = 1;</code>
+       */
+      public float getCoverage() {
+        return coverage_;
+      }
+      /**
+       * <code>required float coverage = 1;</code>
+       */
+      public Builder setCoverage(float value) {
+        bitField0_ |= 0x00000001;
+        coverage_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required float coverage = 1;</code>
+       */
+      public Builder clearCoverage() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        coverage_ = 0F;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.MeanCoverage)
+    }
+
+    static {
+      defaultInstance = new MeanCoverage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.MeanCoverage)
+  }
+
+  public interface CoverageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+
+    // repeated uint32 all = 1 [packed = true];
+    /**
+     * <code>repeated uint32 all = 1 [packed = true];</code>
+     */
+    java.util.List<java.lang.Integer> getAllList();
+    /**
+     * <code>repeated uint32 all = 1 [packed = true];</code>
+     */
+    int getAllCount();
+    /**
+     * <code>repeated uint32 all = 1 [packed = true];</code>
+     */
+    int getAll(int index);
+
+    // repeated uint32 a = 2 [packed = true];
+    /**
+     * <code>repeated uint32 a = 2 [packed = true];</code>
+     */
+    java.util.List<java.lang.Integer> getAList();
+    /**
+     * <code>repeated uint32 a = 2 [packed = true];</code>
+     */
+    int getACount();
+    /**
+     * <code>repeated uint32 a = 2 [packed = true];</code>
+     */
+    int getA(int index);
+
+    // repeated uint32 c = 3 [packed = true];
+    /**
+     * <code>repeated uint32 c = 3 [packed = true];</code>
+     */
+    java.util.List<java.lang.Integer> getCList();
+    /**
+     * <code>repeated uint32 c = 3 [packed = true];</code>
+     */
+    int getCCount();
+    /**
+     * <code>repeated uint32 c = 3 [packed = true];</code>
+     */
+    int getC(int index);
+
+    // repeated uint32 g = 4 [packed = true];
+    /**
+     * <code>repeated uint32 g = 4 [packed = true];</code>
+     */
+    java.util.List<java.lang.Integer> getGList();
+    /**
+     * <code>repeated uint32 g = 4 [packed = true];</code>
+     */
+    int getGCount();
+    /**
+     * <code>repeated uint32 g = 4 [packed = true];</code>
+     */
+    int getG(int index);
+
+    // repeated uint32 t = 5 [packed = true];
+    /**
+     * <code>repeated uint32 t = 5 [packed = true];</code>
+     */
+    java.util.List<java.lang.Integer> getTList();
+    /**
+     * <code>repeated uint32 t = 5 [packed = true];</code>
+     */
+    int getTCount();
+    /**
+     * <code>repeated uint32 t = 5 [packed = true];</code>
+     */
+    int getT(int index);
+  }
+  /**
+   * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Coverage}
+   */
+  public static final class Coverage extends
+      com.google.protobuf.GeneratedMessage
+      implements CoverageOrBuilder {
+    // Use Coverage.newBuilder() to construct.
+    private Coverage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private Coverage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final Coverage defaultInstance;
+    public static Coverage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public Coverage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private Coverage(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 8: {
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                all_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              all_.add(input.readUInt32());
+              break;
+            }
+            case 10: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001) && input.getBytesUntilLimit() > 0) {
+                all_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                all_.add(input.readUInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 16: {
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                a_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              a_.add(input.readUInt32());
+              break;
+            }
+            case 18: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002) && input.getBytesUntilLimit() > 0) {
+                a_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000002;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                a_.add(input.readUInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 24: {
+              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+                c_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000004;
+              }
+              c_.add(input.readUInt32());
+              break;
+            }
+            case 26: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004) && input.getBytesUntilLimit() > 0) {
+                c_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000004;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                c_.add(input.readUInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 32: {
+              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+                g_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000008;
+              }
+              g_.add(input.readUInt32());
+              break;
+            }
+            case 34: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008) && input.getBytesUntilLimit() > 0) {
+                g_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000008;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                g_.add(input.readUInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 40: {
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+                t_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              t_.add(input.readUInt32());
+              break;
+            }
+            case 42: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010) && input.getBytesUntilLimit() > 0) {
+                t_ = new java.util.ArrayList<java.lang.Integer>();
+                mutable_bitField0_ |= 0x00000010;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                t_.add(input.readUInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+          all_ = java.util.Collections.unmodifiableList(all_);
+        }
+        if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+          a_ = java.util.Collections.unmodifiableList(a_);
+        }
+        if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+          c_ = java.util.Collections.unmodifiableList(c_);
+        }
+        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+          g_ = java.util.Collections.unmodifiableList(g_);
+        }
+        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+          t_ = java.util.Collections.unmodifiableList(t_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_descriptor;
+    }
+
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.Builder.class);
+    }
+
+    public static com.google.protobuf.Parser<Coverage> PARSER =
+        new com.google.protobuf.AbstractParser<Coverage>() {
+      public Coverage parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new Coverage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<Coverage> getParserForType() {
+      return PARSER;
+    }
+
+    // repeated uint32 all = 1 [packed = true];
+    public static final int ALL_FIELD_NUMBER = 1;
+    private java.util.List<java.lang.Integer> all_;
+    /**
+     * <code>repeated uint32 all = 1 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getAllList() {
+      return all_;
+    }
+    /**
+     * <code>repeated uint32 all = 1 [packed = true];</code>
+     */
+    public int getAllCount() {
+      return all_.size();
+    }
+    /**
+     * <code>repeated uint32 all = 1 [packed = true];</code>
+     */
+    public int getAll(int index) {
+      return all_.get(index);
+    }
+    private int allMemoizedSerializedSize = -1;
+
+    // repeated uint32 a = 2 [packed = true];
+    public static final int A_FIELD_NUMBER = 2;
+    private java.util.List<java.lang.Integer> a_;
+    /**
+     * <code>repeated uint32 a = 2 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getAList() {
+      return a_;
+    }
+    /**
+     * <code>repeated uint32 a = 2 [packed = true];</code>
+     */
+    public int getACount() {
+      return a_.size();
+    }
+    /**
+     * <code>repeated uint32 a = 2 [packed = true];</code>
+     */
+    public int getA(int index) {
+      return a_.get(index);
+    }
+    private int aMemoizedSerializedSize = -1;
+
+    // repeated uint32 c = 3 [packed = true];
+    public static final int C_FIELD_NUMBER = 3;
+    private java.util.List<java.lang.Integer> c_;
+    /**
+     * <code>repeated uint32 c = 3 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getCList() {
+      return c_;
+    }
+    /**
+     * <code>repeated uint32 c = 3 [packed = true];</code>
+     */
+    public int getCCount() {
+      return c_.size();
+    }
+    /**
+     * <code>repeated uint32 c = 3 [packed = true];</code>
+     */
+    public int getC(int index) {
+      return c_.get(index);
+    }
+    private int cMemoizedSerializedSize = -1;
+
+    // repeated uint32 g = 4 [packed = true];
+    public static final int G_FIELD_NUMBER = 4;
+    private java.util.List<java.lang.Integer> g_;
+    /**
+     * <code>repeated uint32 g = 4 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getGList() {
+      return g_;
+    }
+    /**
+     * <code>repeated uint32 g = 4 [packed = true];</code>
+     */
+    public int getGCount() {
+      return g_.size();
+    }
+    /**
+     * <code>repeated uint32 g = 4 [packed = true];</code>
+     */
+    public int getG(int index) {
+      return g_.get(index);
+    }
+    private int gMemoizedSerializedSize = -1;
+
+    // repeated uint32 t = 5 [packed = true];
+    public static final int T_FIELD_NUMBER = 5;
+    private java.util.List<java.lang.Integer> t_;
+    /**
+     * <code>repeated uint32 t = 5 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getTList() {
+      return t_;
+    }
+    /**
+     * <code>repeated uint32 t = 5 [packed = true];</code>
+     */
+    public int getTCount() {
+      return t_.size();
+    }
+    /**
+     * <code>repeated uint32 t = 5 [packed = true];</code>
+     */
+    public int getT(int index) {
+      return t_.get(index);
+    }
+    private int tMemoizedSerializedSize = -1;
+
+    private void initFields() {
+      all_ = java.util.Collections.emptyList();
+      a_ = java.util.Collections.emptyList();
+      c_ = java.util.Collections.emptyList();
+      g_ = java.util.Collections.emptyList();
+      t_ = java.util.Collections.emptyList();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (getAllList().size() > 0) {
+        output.writeRawVarint32(10);
+        output.writeRawVarint32(allMemoizedSerializedSize);
+      }
+      for (int i = 0; i < all_.size(); i++) {
+        output.writeUInt32NoTag(all_.get(i));
+      }
+      if (getAList().size() > 0) {
+        output.writeRawVarint32(18);
+        output.writeRawVarint32(aMemoizedSerializedSize);
+      }
+      for (int i = 0; i < a_.size(); i++) {
+        output.writeUInt32NoTag(a_.get(i));
+      }
+      if (getCList().size() > 0) {
+        output.writeRawVarint32(26);
+        output.writeRawVarint32(cMemoizedSerializedSize);
+      }
+      for (int i = 0; i < c_.size(); i++) {
+        output.writeUInt32NoTag(c_.get(i));
+      }
+      if (getGList().size() > 0) {
+        output.writeRawVarint32(34);
+        output.writeRawVarint32(gMemoizedSerializedSize);
+      }
+      for (int i = 0; i < g_.size(); i++) {
+        output.writeUInt32NoTag(g_.get(i));
+      }
+      if (getTList().size() > 0) {
+        output.writeRawVarint32(42);
+        output.writeRawVarint32(tMemoizedSerializedSize);
+      }
+      for (int i = 0; i < t_.size(); i++) {
+        output.writeUInt32NoTag(t_.get(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      {
+        int dataSize = 0;
+        for (int i = 0; i < all_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeUInt32SizeNoTag(all_.get(i));
+        }
+        size += dataSize;
+        if (!getAllList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        allMemoizedSerializedSize = dataSize;
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < a_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeUInt32SizeNoTag(a_.get(i));
+        }
+        size += dataSize;
+        if (!getAList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        aMemoizedSerializedSize = dataSize;
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < c_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeUInt32SizeNoTag(c_.get(i));
+        }
+        size += dataSize;
+        if (!getCList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        cMemoizedSerializedSize = dataSize;
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < g_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeUInt32SizeNoTag(g_.get(i));
+        }
+        size += dataSize;
+        if (!getGList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        gMemoizedSerializedSize = dataSize;
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < t_.size(); i++) {
+          dataSize += com.google.protobuf.CodedOutputStream
+            .computeUInt32SizeNoTag(t_.get(i));
+        }
+        size += dataSize;
+        if (!getTList().isEmpty()) {
+          size += 1;
+          size += com.google.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        tMemoizedSerializedSize = dataSize;
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code org.opencb.opencga.storage.alignment.proto.Coverage}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements org.opencb.opencga.storage.alignment.proto.AlignmentProto.CoverageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_descriptor;
+      }
+
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.class, org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.Builder.class);
+      }
+
+      // Construct using org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        all_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        a_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        c_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000004);
+        g_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000008);
+        t_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_descriptor;
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage getDefaultInstanceForType() {
+        return org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.getDefaultInstance();
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage build() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage buildPartial() {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage result = new org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage(this);
+        int from_bitField0_ = bitField0_;
+        if (((bitField0_ & 0x00000001) == 0x00000001)) {
+          all_ = java.util.Collections.unmodifiableList(all_);
+          bitField0_ = (bitField0_ & ~0x00000001);
+        }
+        result.all_ = all_;
+        if (((bitField0_ & 0x00000002) == 0x00000002)) {
+          a_ = java.util.Collections.unmodifiableList(a_);
+          bitField0_ = (bitField0_ & ~0x00000002);
+        }
+        result.a_ = a_;
+        if (((bitField0_ & 0x00000004) == 0x00000004)) {
+          c_ = java.util.Collections.unmodifiableList(c_);
+          bitField0_ = (bitField0_ & ~0x00000004);
+        }
+        result.c_ = c_;
+        if (((bitField0_ & 0x00000008) == 0x00000008)) {
+          g_ = java.util.Collections.unmodifiableList(g_);
+          bitField0_ = (bitField0_ & ~0x00000008);
+        }
+        result.g_ = g_;
+        if (((bitField0_ & 0x00000010) == 0x00000010)) {
+          t_ = java.util.Collections.unmodifiableList(t_);
+          bitField0_ = (bitField0_ & ~0x00000010);
+        }
+        result.t_ = t_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage) {
+          return mergeFrom((org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage other) {
+        if (other == org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage.getDefaultInstance()) return this;
+        if (!other.all_.isEmpty()) {
+          if (all_.isEmpty()) {
+            all_ = other.all_;
+            bitField0_ = (bitField0_ & ~0x00000001);
+          } else {
+            ensureAllIsMutable();
+            all_.addAll(other.all_);
+          }
+          onChanged();
+        }
+        if (!other.a_.isEmpty()) {
+          if (a_.isEmpty()) {
+            a_ = other.a_;
+            bitField0_ = (bitField0_ & ~0x00000002);
+          } else {
+            ensureAIsMutable();
+            a_.addAll(other.a_);
+          }
+          onChanged();
+        }
+        if (!other.c_.isEmpty()) {
+          if (c_.isEmpty()) {
+            c_ = other.c_;
+            bitField0_ = (bitField0_ & ~0x00000004);
+          } else {
+            ensureCIsMutable();
+            c_.addAll(other.c_);
+          }
+          onChanged();
+        }
+        if (!other.g_.isEmpty()) {
+          if (g_.isEmpty()) {
+            g_ = other.g_;
+            bitField0_ = (bitField0_ & ~0x00000008);
+          } else {
+            ensureGIsMutable();
+            g_.addAll(other.g_);
+          }
+          onChanged();
+        }
+        if (!other.t_.isEmpty()) {
+          if (t_.isEmpty()) {
+            t_ = other.t_;
+            bitField0_ = (bitField0_ & ~0x00000010);
+          } else {
+            ensureTIsMutable();
+            t_.addAll(other.t_);
+          }
+          onChanged();
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (org.opencb.opencga.storage.alignment.proto.AlignmentProto.Coverage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // repeated uint32 all = 1 [packed = true];
+      private java.util.List<java.lang.Integer> all_ = java.util.Collections.emptyList();
+      private void ensureAllIsMutable() {
+        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+          all_ = new java.util.ArrayList<java.lang.Integer>(all_);
+          bitField0_ |= 0x00000001;
+         }
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getAllList() {
+        return java.util.Collections.unmodifiableList(all_);
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public int getAllCount() {
+        return all_.size();
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public int getAll(int index) {
+        return all_.get(index);
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public Builder setAll(
+          int index, int value) {
+        ensureAllIsMutable();
+        all_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public Builder addAll(int value) {
+        ensureAllIsMutable();
+        all_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public Builder addAllAll(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureAllIsMutable();
+        super.addAll(values, all_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 all = 1 [packed = true];</code>
+       */
+      public Builder clearAll() {
+        all_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        onChanged();
+        return this;
+      }
+
+      // repeated uint32 a = 2 [packed = true];
+      private java.util.List<java.lang.Integer> a_ = java.util.Collections.emptyList();
+      private void ensureAIsMutable() {
+        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+          a_ = new java.util.ArrayList<java.lang.Integer>(a_);
+          bitField0_ |= 0x00000002;
+         }
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getAList() {
+        return java.util.Collections.unmodifiableList(a_);
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public int getACount() {
+        return a_.size();
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public int getA(int index) {
+        return a_.get(index);
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public Builder setA(
+          int index, int value) {
+        ensureAIsMutable();
+        a_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public Builder addA(int value) {
+        ensureAIsMutable();
+        a_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public Builder addAllA(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureAIsMutable();
+        super.addAll(values, a_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 a = 2 [packed = true];</code>
+       */
+      public Builder clearA() {
+        a_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000002);
+        onChanged();
+        return this;
+      }
+
+      // repeated uint32 c = 3 [packed = true];
+      private java.util.List<java.lang.Integer> c_ = java.util.Collections.emptyList();
+      private void ensureCIsMutable() {
+        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+          c_ = new java.util.ArrayList<java.lang.Integer>(c_);
+          bitField0_ |= 0x00000004;
+         }
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getCList() {
+        return java.util.Collections.unmodifiableList(c_);
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public int getCCount() {
+        return c_.size();
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public int getC(int index) {
+        return c_.get(index);
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public Builder setC(
+          int index, int value) {
+        ensureCIsMutable();
+        c_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public Builder addC(int value) {
+        ensureCIsMutable();
+        c_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public Builder addAllC(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureCIsMutable();
+        super.addAll(values, c_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 c = 3 [packed = true];</code>
+       */
+      public Builder clearC() {
+        c_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000004);
+        onChanged();
+        return this;
+      }
+
+      // repeated uint32 g = 4 [packed = true];
+      private java.util.List<java.lang.Integer> g_ = java.util.Collections.emptyList();
+      private void ensureGIsMutable() {
+        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
+          g_ = new java.util.ArrayList<java.lang.Integer>(g_);
+          bitField0_ |= 0x00000008;
+         }
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getGList() {
+        return java.util.Collections.unmodifiableList(g_);
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public int getGCount() {
+        return g_.size();
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public int getG(int index) {
+        return g_.get(index);
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public Builder setG(
+          int index, int value) {
+        ensureGIsMutable();
+        g_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public Builder addG(int value) {
+        ensureGIsMutable();
+        g_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public Builder addAllG(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureGIsMutable();
+        super.addAll(values, g_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 g = 4 [packed = true];</code>
+       */
+      public Builder clearG() {
+        g_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000008);
+        onChanged();
+        return this;
+      }
+
+      // repeated uint32 t = 5 [packed = true];
+      private java.util.List<java.lang.Integer> t_ = java.util.Collections.emptyList();
+      private void ensureTIsMutable() {
+        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+          t_ = new java.util.ArrayList<java.lang.Integer>(t_);
+          bitField0_ |= 0x00000010;
+         }
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getTList() {
+        return java.util.Collections.unmodifiableList(t_);
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public int getTCount() {
+        return t_.size();
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public int getT(int index) {
+        return t_.get(index);
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public Builder setT(
+          int index, int value) {
+        ensureTIsMutable();
+        t_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public Builder addT(int value) {
+        ensureTIsMutable();
+        t_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public Builder addAllT(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureTIsMutable();
+        super.addAll(values, t_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated uint32 t = 5 [packed = true];</code>
+       */
+      public Builder clearT() {
+        t_ = java.util.Collections.emptyList();
+        bitField0_ = (bitField0_ & ~0x00000010);
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.alignment.proto.Coverage)
+    }
+
+    static {
+      defaultInstance = new Coverage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.alignment.proto.Coverage)
+  }
+
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_Difference_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_Difference_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_Difference_fieldAccessorTable;
+      internal_static_org_opencb_opencga_storage_alignment_proto_Difference_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_fieldAccessorTable;
+      internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_fieldAccessorTable;
+      internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_Summary_fieldAccessorTable;
+      internal_static_org_opencb_opencga_storage_alignment_proto_Summary_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_fieldAccessorTable;
+      internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_Header_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_Header_fieldAccessorTable;
+      internal_static_org_opencb_opencga_storage_alignment_proto_Header_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_alignment_Header_Region_descriptor;
+    internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_alignment_Header_Region_fieldAccessorTable;
-  
+      internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_fieldAccessorTable;
+
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
@@ -5361,98 +8752,100 @@ public final class AlignmentProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\017Alignment.proto\022$org.opencb.opencga.st" +
-      "orage.alignment\"\233\002\n\nDifference\022U\n\010operat" +
-      "or\030\001 \002(\0162C.org.opencb.opencga.storage.al" +
-      "ignment.Difference.DifferenceOperator\022\013\n" +
-      "\003pos\030\002 \001(\r\022\016\n\006length\030\003 \001(\r\022\020\n\010sequence\030\004" +
-      " \001(\014\"\206\001\n\022DifferenceOperator\022\r\n\tINSERTION" +
-      "\020\001\022\014\n\010DELETION\020\002\022\014\n\010MISMATCH\020\003\022\022\n\016SKIPPE" +
-      "D_REGION\020\004\022\021\n\rSOFT_CLIPPING\020\005\022\021\n\rHARD_CL" +
-      "IPPING\020\006\022\013\n\007PADDING\020\007\"\376\001\n\017AlignmentRecor" +
-      "d\022\014\n\004name\030\001 \002(\t\022\013\n\003pos\030\002 \002(\r\022\r\n\005flags\030\003 ",
-      "\001(\r\022\013\n\003len\030\004 \001(\r\022\014\n\004mapq\030\005 \002(\r\022\021\n\tqualit" +
-      "ies\030\006 \002(\t\022\r\n\005rnext\030\007 \001(\t\022\025\n\rrelativePnex" +
-      "t\030\010 \002(\021\022\032\n\022inferredInsertSize\030\t \002(\021\022?\n\005d" +
-      "iffs\030\n \003(\01320.org.opencb.opencga.storage." +
-      "alignment.Difference\022\020\n\004tags\030\013 \003(\rB\002\020\001\"\214" +
-      "\001\n\017AlignmentBucket\022\024\n\014summaryIndex\030\001 \002(\r" +
-      "\022\022\n\noverlapped\030\002 \001(\r\022O\n\020alignmentRecords" +
-      "\030\t \003(\01325.org.opencb.opencga.storage.alig" +
-      "nment.AlignmentRecord\"\212\002\n\007Summary\022\023\n\013def" +
-      "aultFlag\030\001 \002(\r\022\022\n\ndefaultLen\030\002 \002(\r\022\024\n\014de",
-      "faultRNext\030\003 \002(\t\022\031\n\021defaultOverlapped\030\004 " +
-      "\002(\r\022\014\n\004keys\030\010 \002(\t\022B\n\006values\030\t \003(\01322.org." +
-      "opencb.opencga.storage.alignment.Summary" +
-      ".Pair\032S\n\004Pair\022\013\n\003key\030\001 \002(\r\022\016\n\006avalue\030\002 \001" +
-      "(\r\022\016\n\006ivalue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zv" +
-      "alue\030\005 \001(\t\"\225\001\n\006Header\022D\n\007regions\030\001 \003(\01323" +
-      ".org.opencb.opencga.storage.alignment.He" +
-      "ader.Region\022\021\n\tSamHeader\030\002 \001(\014\0322\n\006Region" +
-      "\022\026\n\016chromosomeName\030\001 \002(\t\022\020\n\010maxValue\030\002 \002" +
-      "(\rB\020B\016AlignmentProto"
+      "\n\017Alignment.proto\022*org.opencb.opencga.st" +
+      "orage.alignment.proto\"\241\002\n\nDifference\022[\n\010" +
+      "operator\030\001 \002(\0162I.org.opencb.opencga.stor" +
+      "age.alignment.proto.Difference.Differenc" +
+      "eOperator\022\013\n\003pos\030\002 \001(\r\022\016\n\006length\030\003 \001(\r\022\020" +
+      "\n\010sequence\030\004 \001(\014\"\206\001\n\022DifferenceOperator\022" +
+      "\r\n\tINSERTION\020\001\022\014\n\010DELETION\020\002\022\014\n\010MISMATCH" +
+      "\020\003\022\022\n\016SKIPPED_REGION\020\004\022\021\n\rSOFT_CLIPPING\020" +
+      "\005\022\021\n\rHARD_CLIPPING\020\006\022\013\n\007PADDING\020\007\"\204\002\n\017Al" +
+      "ignmentRecord\022\014\n\004name\030\001 \002(\t\022\013\n\003pos\030\002 \002(\r",
+      "\022\r\n\005flags\030\003 \001(\r\022\013\n\003len\030\004 \001(\r\022\014\n\004mapq\030\005 \002" +
+      "(\r\022\021\n\tqualities\030\006 \002(\t\022\r\n\005rnext\030\007 \001(\t\022\025\n\r" +
+      "relativePnext\030\010 \002(\021\022\032\n\022inferredInsertSiz" +
+      "e\030\t \002(\021\022E\n\005diffs\030\n \003(\01326.org.opencb.open" +
+      "cga.storage.alignment.proto.Difference\022\020" +
+      "\n\004tags\030\013 \003(\rB\002\020\001\"\222\001\n\017AlignmentBucket\022\024\n\014" +
+      "summaryIndex\030\001 \002(\r\022\022\n\noverlapped\030\002 \001(\r\022U" +
+      "\n\020alignmentRecords\030\t \003(\0132;.org.opencb.op" +
+      "encga.storage.alignment.proto.AlignmentR" +
+      "ecord\"\220\002\n\007Summary\022\023\n\013defaultFlag\030\001 \002(\r\022\022",
+      "\n\ndefaultLen\030\002 \002(\r\022\024\n\014defaultRNext\030\003 \002(\t" +
+      "\022\031\n\021defaultOverlapped\030\004 \002(\r\022\014\n\004keys\030\010 \002(" +
+      "\t\022H\n\006values\030\t \003(\01328.org.opencb.opencga.s" +
+      "torage.alignment.proto.Summary.Pair\032S\n\004P" +
+      "air\022\013\n\003key\030\001 \002(\r\022\016\n\006avalue\030\002 \001(\r\022\016\n\006ival" +
+      "ue\030\003 \001(\021\022\016\n\006fvalue\030\004 \001(\002\022\016\n\006zvalue\030\005 \001(\t" +
+      "\"\233\001\n\006Header\022J\n\007regions\030\001 \003(\01329.org.openc" +
+      "b.opencga.storage.alignment.proto.Header" +
+      ".Region\022\021\n\tSamHeader\030\002 \001(\014\0322\n\006Region\022\026\n\016" +
+      "chromosomeName\030\001 \002(\t\022\020\n\010maxValue\030\002 \002(\r\" ",
+      "\n\014MeanCoverage\022\020\n\010coverage\030\001 \002(\002\"W\n\010Cove" +
+      "rage\022\017\n\003all\030\001 \003(\rB\002\020\001\022\r\n\001a\030\002 \003(\rB\002\020\001\022\r\n\001" +
+      "c\030\003 \003(\rB\002\020\001\022\r\n\001g\030\004 \003(\rB\002\020\001\022\r\n\001t\030\005 \003(\rB\002\020" +
+      "\001B\020B\016AlignmentProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
             com.google.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
-          internal_static_org_opencb_opencga_storage_alignment_Difference_descriptor =
+          internal_static_org_opencb_opencga_storage_alignment_proto_Difference_descriptor =
             getDescriptor().getMessageTypes().get(0);
-          internal_static_org_opencb_opencga_storage_alignment_Difference_fieldAccessorTable = new
+          internal_static_org_opencb_opencga_storage_alignment_proto_Difference_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_Difference_descriptor,
-              new java.lang.String[] { "Operator", "Pos", "Length", "Sequence", },
-              AlignmentProto.Difference.class,
-              AlignmentProto.Difference.Builder.class);
-          internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor =
+              internal_static_org_opencb_opencga_storage_alignment_proto_Difference_descriptor,
+              new java.lang.String[] { "Operator", "Pos", "Length", "Sequence", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_descriptor =
             getDescriptor().getMessageTypes().get(1);
-          internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_fieldAccessorTable = new
+          internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_AlignmentRecord_descriptor,
-              new java.lang.String[] { "Name", "Pos", "Flags", "Len", "Mapq", "Qualities", "Rnext", "RelativePnext", "InferredInsertSize", "Diffs", "Tags", },
-              AlignmentProto.AlignmentRecord.class,
-              AlignmentProto.AlignmentRecord.Builder.class);
-          internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_descriptor =
+              internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentRecord_descriptor,
+              new java.lang.String[] { "Name", "Pos", "Flags", "Len", "Mapq", "Qualities", "Rnext", "RelativePnext", "InferredInsertSize", "Diffs", "Tags", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_descriptor =
             getDescriptor().getMessageTypes().get(2);
-          internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_fieldAccessorTable = new
+          internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_AlignmentBucket_descriptor,
-              new java.lang.String[] { "SummaryIndex", "Overlapped", "AlignmentRecords", },
-              AlignmentProto.AlignmentBucket.class,
-              AlignmentProto.AlignmentBucket.Builder.class);
-          internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor =
+              internal_static_org_opencb_opencga_storage_alignment_proto_AlignmentBucket_descriptor,
+              new java.lang.String[] { "SummaryIndex", "Overlapped", "AlignmentRecords", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor =
             getDescriptor().getMessageTypes().get(3);
-          internal_static_org_opencb_opencga_storage_alignment_Summary_fieldAccessorTable = new
+          internal_static_org_opencb_opencga_storage_alignment_proto_Summary_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor,
-              new java.lang.String[] { "DefaultFlag", "DefaultLen", "DefaultRNext", "DefaultOverlapped", "Keys", "Values", },
-              AlignmentProto.Summary.class,
-              AlignmentProto.Summary.Builder.class);
-          internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_descriptor =
-            internal_static_org_opencb_opencga_storage_alignment_Summary_descriptor.getNestedTypes().get(0);
-          internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_fieldAccessorTable = new
+              internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor,
+              new java.lang.String[] { "DefaultFlag", "DefaultLen", "DefaultRNext", "DefaultOverlapped", "Keys", "Values", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_descriptor =
+            internal_static_org_opencb_opencga_storage_alignment_proto_Summary_descriptor.getNestedTypes().get(0);
+          internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_Summary_Pair_descriptor,
-              new java.lang.String[] { "Key", "Avalue", "Ivalue", "Fvalue", "Zvalue", },
-              AlignmentProto.Summary.Pair.class,
-              AlignmentProto.Summary.Pair.Builder.class);
-          internal_static_org_opencb_opencga_storage_alignment_Header_descriptor =
+              internal_static_org_opencb_opencga_storage_alignment_proto_Summary_Pair_descriptor,
+              new java.lang.String[] { "Key", "Avalue", "Ivalue", "Fvalue", "Zvalue", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor =
             getDescriptor().getMessageTypes().get(4);
-          internal_static_org_opencb_opencga_storage_alignment_Header_fieldAccessorTable = new
+          internal_static_org_opencb_opencga_storage_alignment_proto_Header_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_Header_descriptor,
-              new java.lang.String[] { "Regions", "SamHeader", },
-              AlignmentProto.Header.class,
-              AlignmentProto.Header.Builder.class);
-          internal_static_org_opencb_opencga_storage_alignment_Header_Region_descriptor =
-            internal_static_org_opencb_opencga_storage_alignment_Header_descriptor.getNestedTypes().get(0);
-          internal_static_org_opencb_opencga_storage_alignment_Header_Region_fieldAccessorTable = new
+              internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor,
+              new java.lang.String[] { "Regions", "SamHeader", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_descriptor =
+            internal_static_org_opencb_opencga_storage_alignment_proto_Header_descriptor.getNestedTypes().get(0);
+          internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_alignment_Header_Region_descriptor,
-              new java.lang.String[] { "ChromosomeName", "MaxValue", },
-              AlignmentProto.Header.Region.class,
-              AlignmentProto.Header.Region.Builder.class);
+              internal_static_org_opencb_opencga_storage_alignment_proto_Header_Region_descriptor,
+              new java.lang.String[] { "ChromosomeName", "MaxValue", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_descriptor =
+            getDescriptor().getMessageTypes().get(5);
+          internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_org_opencb_opencga_storage_alignment_proto_MeanCoverage_descriptor,
+              new java.lang.String[] { "Coverage", });
+          internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_descriptor =
+            getDescriptor().getMessageTypes().get(6);
+          internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_org_opencb_opencga_storage_alignment_proto_Coverage_descriptor,
+              new java.lang.String[] { "All", "A", "C", "G", "T", });
           return null;
         }
       };
@@ -5461,6 +8854,6 @@ public final class AlignmentProto {
         new com.google.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
-  
+
   // @@protoc_insertion_point(outer_class_scope)
 }
