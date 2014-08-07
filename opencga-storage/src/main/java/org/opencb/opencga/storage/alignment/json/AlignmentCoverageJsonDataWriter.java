@@ -119,6 +119,7 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         try {
             coverageGenerator.writeObject(coverage);
             coverageGenerator.writeObject(meanCoverage);
+            coverageGenerator.writeRaw("\n");
         } catch (IOException ex) {
             Logger.getLogger(AlignmentCoverageJsonDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;

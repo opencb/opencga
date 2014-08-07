@@ -14,10 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public abstract class AlignmentJsonMixin {
     
-    @JsonIgnore
-    public abstract byte[] getReadSequence() ;
-
-    @JsonIgnore
-    public abstract void setReadSequence(byte[] readSequence);
+//    @JsonIgnore
+//    public abstract Object getEtc() ;
 
 }
