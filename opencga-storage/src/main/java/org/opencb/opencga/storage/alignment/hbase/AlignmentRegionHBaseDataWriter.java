@@ -1,23 +1,30 @@
 package org.opencb.opencga.storage.alignment.hbase;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.alignment.AlignmentRegion;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
-import org.opencb.opencga.storage.alignment.proto.AlignmentProto;
-import org.opencb.opencga.storage.alignment.proto.AlignmentProtoHelper;
-import org.opencb.opencga.storage.alignment.AlignmentRegionSummary;
-import org.opencb.opencga.storage.datamanagers.HBaseManager;
-import org.xerial.snappy.Snappy;
-
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentHeader;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.commons.containers.map.ObjectMap;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.storage.alignment.AlignmentSummary;
+import org.opencb.opencga.storage.alignment.AlignmentSummary.AlignmentRegionSummaryBuilder;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProto;
+import org.opencb.opencga.storage.alignment.proto.AlignmentProtoHelper;
+import org.xerial.snappy.Snappy;
 
 /**
  * Created with IntelliJ IDEA.
@@ -27,15 +34,17 @@ import java.util.List;
  */
 public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegion> {
 
-    private HBaseManager hBaseManager;
+    private final HBaseManager hBaseManager;
+    private final String tableName;
+    private final AlignmentDataReader reader;
     private HTable table;
-    private String tableName;
-    private String sample = "generic_sample";
-    private String columnFamilyName = "c";
+    private final String sample;
     private List<Put> puts;
 
+    private AlignmentHeader header;
 
-    private int alignmentBucketSize = 256;
+    private int alignmentBucketSize = AlignmentHBase.ALIGNMENT_BUCKET_SIZE;
+    private String columnFamilyName = AlignmentHBase.ALIGNMENT_COLUMN_FAMILY_NAME;
 
     //
     List<Alignment> alignmentsRemain = new LinkedList<>();
@@ -46,58 +55,66 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
     private LinkedList<Integer> numBucketsOverlapped = new LinkedList<>();
     private long bucketsOverlappedStart = 0;
 
-
-
-    public AlignmentRegionHBaseDataWriter(MonbaseCredentials credentials, String tableName) {
-        // HBase configuration
-
-        hBaseManager = new HBaseManager(credentials);
-
+    private boolean snappyCompress = false;
+    
+    //Summary Fields
+    private long summarySpace = 0;
+    private long alignmentsSpace = 0;
+    private long bucketsWritten = 0;
+    
+    
+    public AlignmentRegionHBaseDataWriter(Properties props, String tableName, String sampleName, AlignmentDataReader reader) {
+        hBaseManager = new HBaseManager(props);
         this.puts = new LinkedList<>();
         this.tableName = tableName;
+        this.reader = reader;
+        this.sample = sampleName;
     }
-
-    public AlignmentRegionHBaseDataWriter(Configuration config, String tableName) {
+    public AlignmentRegionHBaseDataWriter(Configuration config, String tableName, String sampleName, AlignmentDataReader reader) {
         hBaseManager = new HBaseManager(config);
-
         this.puts = new LinkedList<>();
         this.tableName = tableName;
+        this.reader = reader;
+        this.sample = sampleName;
     }
 
     @Override
     public boolean open() {
-        hBaseManager.connect();
+        return hBaseManager.connect();
 
-        return true;
     }
 
     @Override
     public boolean close() {
 
-        hBaseManager.disconnect();
+        return hBaseManager.disconnect();
 
-        return true;
     }
 
     @Override
     public boolean pre() {
-        table = hBaseManager.createTable(tableName,columnFamilyName);
-
+        table = hBaseManager.createTable(tableName,columnFamilyName);   //Creates or get table
+        header = reader.getHeader();
+        writeGlobalHeader(header);
         return true;
     }
 
     @Override
     public boolean post() {
         try {
-            System.out.println("Puteamos la tabla. " + puts.size());
+            //System.out.println("Puteamos la tabla. " + puts.size());
             table.put(puts);
             puts.clear();
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
-
-
+        System.out.println("---------------HBase Storage-----------------");
+        System.out.println("Amoung space stored in Summaries : " + summarySpace);
+        System.out.println("Amoung space stored in Alignments: " + alignmentsSpace);
+        System.out.println("Buckets written : " + this.bucketsWritten);
+        System.out.println("AlignmentBucketSize : " + this.alignmentBucketSize);
+        System.out.println("Snappy compress : " + this.snappyCompress);
         return true;
     }
 
@@ -106,7 +123,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
         /*
          * 1º Add remaining alignments from last AR
-         * 2º Take Alignments from tail
+         * 2º Cut Alignments from tail
          * 3º Split into AlignmentBucket
          *
          * 4º Create summary
@@ -114,11 +131,6 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
          * 6º Write into hbase
          *
          */
-
-
-
-
-
 
         //if(currentBucket != bucketsOverlappedStart)
 
@@ -131,7 +143,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
                 long remainBucket = alignmentsRemain.get(0).getStart() / alignmentBucketSize;
                 List<Alignment>[] list = new List[1];
                 list[0] = alignmentsRemain;
-                AlignmentRegionSummary summary = createSummary(list);
+                AlignmentSummary summary = createSummary(list);
                 putSummary(summary);
 
                 int overlapped = numBucketsOverlapped.remove((int) (remainBucket - bucketsOverlappedStart));
@@ -163,7 +175,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         List<Alignment>[] alignmentBuckets = splitIntoAlignmentBuckets(alignmentRegion);
 
         //4º
-        AlignmentRegionSummary summary = createSummary(alignmentBuckets);
+        AlignmentSummary summary = createSummary(alignmentBuckets);
         putSummary(summary);
 
         //5º Create Proto
@@ -178,7 +190,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
         //6º Write into hbase
         try {
-            System.out.println("Puteamos la tabla. " + puts.size()+ " Pos: " + currentBucket*alignmentBucketSize);
+            //System.out.println("Puteamos la tabla. " + puts.size()+ " Pos: " + currentBucket*alignmentBucketSize);
             table.put(puts);
             puts.clear();
         } catch (IOException e) {
@@ -187,29 +199,46 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         }
 
         return true;
-
     }
 
-    private void globalHeader() { //TODO jj:
-        //To change body of created methods use File | Settings | File Templates.
+    private void writeGlobalHeader(AlignmentHeader header) { 
+        
+        String rowKey = AlignmentHBase.getHeaderRowKey();
+        Put put = new Put(Bytes.toBytes(rowKey));
+        AlignmentHBaseHeader hbHeader= new AlignmentHBaseHeader(header, alignmentBucketSize, snappyCompress);
+        ObjectMap h = new ObjectMap("header", hbHeader);
+        
+        String headerString = h.toJson();
+        
+        put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), Bytes.toBytes(headerString));
+        
+        try {
+            table.put(put);
+            return;
+        } catch (InterruptedIOException ex) {
+            Logger.getLogger(AlignmentRegionHBaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (RetriesExhaustedWithDetailsException ex) {
+            Logger.getLogger(AlignmentRegionHBaseDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        throw new RuntimeException("[ERROR] while pushing the AlignmentHeader to HBase");
     }
 
-    private void chromosomeHeader() { //TODO jj:
-        //To change body of created methods use File | Settings | File Templates.
-    }
 
-
-    private void putSummary(AlignmentRegionSummary summary){
-        String rowKey = AlignmentProtoHelper.getSummaryRowkey(chromosome, summary.getIndex());
+    private void putSummary(AlignmentSummary summary){
+        String rowKey = AlignmentHBase.getSummaryRowkey(chromosome, summary.getIndex());
 
         Put put = new Put(Bytes.toBytes(rowKey));
         byte[] compress;
         try {
-            compress = Snappy.compress(summary.toProto().toByteArray());
+            AlignmentProto.Summary toProto = summary.toProto();
+            compress = toProto.toByteArray();
+            if(snappyCompress){
+                compress = Snappy.compress(compress);
+            }
+            summarySpace+=compress.length;
         } catch (IOException e) {
-            System.out.println("this AlignmentProto.Summary could not be compressed by snappy");
-            e.printStackTrace();  // TODO jj handle properly
-            return;
+            e.printStackTrace(); 
+            throw new RuntimeException("[ERROR] this AlignmentProto.Summary " + rowKey + " could not be compressed by snappy");
         }
         put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
 
@@ -220,20 +249,23 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         if(alignmentBucket == null)
             return;
 
-        String rowKey = AlignmentProtoHelper.getBucketRowkey(chromosome,index);
+        String rowKey = AlignmentHBase.getBucketRowkey(chromosome,index);
         //System.out.println("Creamos un Put() con rowKey " + rowKey);
 
         Put put = new Put(Bytes.toBytes(rowKey));
-        byte[] compress;
+        byte[] compress = alignmentBucket.toByteArray();
         try {
-            compress = Snappy.compress(alignmentBucket.toByteArray());
+            if(snappyCompress){
+                compress = Snappy.compress(compress);
+            }
+            alignmentsSpace+=compress.length;
         } catch (IOException e) {
-            System.out.println("this AlignmentProto.AlignmentBucket could not be compressed by snappy");
-            e.printStackTrace();  // TODO jj handle properly
-            return;
+            e.printStackTrace();  
+            throw new RuntimeException("[ERROR] this AlignmentProto.AlignmentBucket " + rowKey + " could not be compressed by snappy");
         }
+        bucketsWritten++;
         put.add(Bytes.toBytes(columnFamilyName), Bytes.toBytes(sample), compress);
-
+        
         puts.add(put);
     }
 
@@ -270,7 +302,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
                 i++;
                 bucketEnd+=alignmentBucketSize;
                 if(alignment.getStart()/alignmentBucketSize != i+firstBucket){
-                    System.out.println("Cuidado!");
+                    //System.out.println("Cuidado!");
                     i = (int)(alignment.getStart()/alignmentBucketSize-firstBucket);
                     bucketEnd = (1+i+firstBucket)*alignmentBucketSize;
                 }
@@ -281,19 +313,18 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         return alignmentBuckets;
     }
 
-    private AlignmentRegionSummary createSummary(List<Alignment>[] alignmentBuckets){
+    private AlignmentSummary createSummary(List<Alignment>[] alignmentBuckets){
 
         //4º Create Summary
 
-        AlignmentRegionSummary summary = new AlignmentRegionSummary(summaryIndex++);
+        AlignmentRegionSummaryBuilder builder = new AlignmentRegionSummaryBuilder(summaryIndex++);
 
         int i = 0;
         while(alignmentBuckets[i] == null){
             i++;
             if(i > alignmentBuckets.length){
                 System.out.println("TODO! FIXME! PAINFULL!! AlignmentRegionHBaseDataWriter.createSummary(List<Alignment>[] alignmentBuckets)");
-                summary.close();//Empty Summary
-                return summary;
+                return builder.build();//Empty Summary
             }
         }
         long currentBucket = alignmentBuckets[i].get(0).getStart()/alignmentBucketSize;
@@ -302,12 +333,12 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
 
         for(List<Alignment> bucket : alignmentBuckets){
             //System.out.println(currentBucket + " " + bucketsOverlappedStart);
-            summary.addOverlappedBucket(numBucketsOverlapped.get((int)(currentBucket - bucketsOverlappedStart)));
+            builder.addOverlappedBucket(numBucketsOverlapped.get((int)(currentBucket - bucketsOverlappedStart)));
 
             lastOverlappedPosition = 0;
             if(bucket != null){
                 for(Alignment alignment : bucket){
-                    summary.addAlignment(alignment);
+                    builder.addAlignment(alignment);
                     lastOverlappedPosition = ((lastOverlappedPosition > alignment.getUnclippedEnd()) ? lastOverlappedPosition : alignment.getUnclippedEnd()); // max
                 }
             } else {
@@ -331,8 +362,7 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
             currentBucket++;
         }
 
-        summary.close();
-        return summary;
+        return builder.build();
     }
 
 
@@ -354,16 +384,9 @@ public class AlignmentRegionHBaseDataWriter implements DataWriter<AlignmentRegio
         return sample;
     }
 
-    public void setSample(String sample) {
-        this.sample = sample;
-    }
 
     public String getTableName() {
         return tableName;
-    }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
     }
 
     public String getColumnFamilyName() {
