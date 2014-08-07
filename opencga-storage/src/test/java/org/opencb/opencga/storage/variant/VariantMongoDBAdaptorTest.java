@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.variant;
 
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
-import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
@@ -18,6 +17,7 @@ import static org.junit.Assert.assertTrue;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
@@ -143,10 +143,10 @@ public class VariantMongoDBAdaptorTest {
         // Gene present in the dataset
         queryResult = vqb.getAllVariantsByGene("MIB2", null);
         assertNotEquals(0, queryResult.getNumResults());
-        List<BasicDBObject> variantsInGene = queryResult.getResult();
+        List<Variant> variantsInGene = queryResult.getResult();
         
-        for (BasicDBObject v : variantsInGene) {
-            assertEquals("1", v.get("chr"));
+        for (Variant v : variantsInGene) {
+            assertEquals("1", v.getChromosome());
         }
         
         // Gene not present in the dataset
@@ -217,8 +217,8 @@ public class VariantMongoDBAdaptorTest {
         
         queryResult = vqb.getVariantById("rs1137005", null);
         assertEquals(1, queryResult.getNumResults());
-        DBObject object = (DBObject) queryResult.getResult().get(0);
-        assertEquals(object.get("start"), 1650807);
+        Variant object = (Variant) queryResult.getResult().get(0);
+        assertEquals(object.getStart(), 1650807);
         
         queryResult = vqb.getVariantById("rs123456789", null);
         assertEquals(0, queryResult.getNumResults());

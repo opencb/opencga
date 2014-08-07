@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.variant;
 
-import org.opencb.opencga.storage.variant.monbase.VariantHbaseWriter;
-import org.opencb.opencga.storage.variant.monbase.VariantHbaseDBAdaptor;
+import org.opencb.opencga.storage.variant.hbase.VariantHbaseWriter;
+import org.opencb.opencga.storage.variant.hbase.VariantHbaseDBAdaptor;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import org.apache.hadoop.hbase.HBaseConfiguration;

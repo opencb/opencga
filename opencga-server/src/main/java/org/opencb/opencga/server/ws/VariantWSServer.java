@@ -8,8 +8,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import org.apache.commons.lang.mutable.MutableInt;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.containers.QueryResult;
