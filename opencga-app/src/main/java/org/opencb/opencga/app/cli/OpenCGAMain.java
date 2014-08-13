@@ -3,14 +3,6 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -31,20 +23,31 @@ import org.opencb.opencga.app.cli.OptionsParser.Command;
 import org.opencb.opencga.app.cli.OptionsParser.CommandCreateAccessions;
 import org.opencb.opencga.app.cli.OptionsParser.CommandLoadVariants;
 import org.opencb.opencga.app.cli.OptionsParser.CommandTransformVariants;
-import org.opencb.opencga.lib.auth.*;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
-import org.opencb.opencga.storage.variant.json.VariantJsonReader;
-import org.opencb.opencga.storage.variant.json.VariantJsonWriter;
-import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
 //import org.opencb.opencga.storage.variant.VariantVcfHbaseWriter;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
  */
 public class OpenCGAMain {
+
+    private static VariantStorageManager variantStorageManager = null;
+
+    private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException {
         OptionsParser parser = new OptionsParser();
@@ -75,6 +78,23 @@ public class OpenCGAMain {
             System.out.println(parser.usage());
             System.exit(1);
         }
+
+
+        try {
+
+
+            variantStorageManager = (VariantStorageManager) Class.forName(MONGODB_VARIANT_MANAGER).newInstance();
+
+
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
         if (command instanceof CommandCreateAccessions) {
             CommandCreateAccessions c = (CommandCreateAccessions) command;
             
@@ -96,12 +116,23 @@ public class OpenCGAMain {
         } else if (command instanceof CommandTransformVariants) {
             CommandTransformVariants c = (CommandTransformVariants) command;
 
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("fileId", c.fileId);
+            params.put("studyId", c.studyId);
+            params.put("study", c.study);
+            params.put("includeEffect", c.includeEffect);
+            params.put("includeStats", c.includeStats);
+            params.put("includeSamples", c.includeSamples);
+            params.put("aggregated", c.aggregated);
+
             Path variantsPath = Paths.get(c.file);
             Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
+            variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
+//
+//            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
+//            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
 
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
-            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
         }
     }
 
@@ -166,10 +197,10 @@ public class OpenCGAMain {
         if (backend.equalsIgnoreCase("mongo")) {
             Properties properties = new Properties();
             properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-            OpenCGACredentials credentials = new MongoCredentials(properties);
-            writers.add(new VariantMongoWriter(source, (MongoCredentials) credentials,
-                    properties.getProperty("collection_variants", "variants"),
-                    properties.getProperty("collection_files", "files")));
+//            OpenCGACredentials credentials = new MongoCredentials(properties);
+//            writers.add(new VariantMongoWriter(source, (MongoCredentials) credentials,
+//                    properties.getProperty("collection_variants", "variants"),
+//                    properties.getProperty("collection_files", "files")));
         } else if (backend.equalsIgnoreCase("json")) {
 //            credentials = new MongoCredentials(properties);
             writers.add(new VariantJsonWriter(source, outdir));

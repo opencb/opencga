@@ -8,6 +8,7 @@ import java.util.Properties;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
+@Deprecated
 public class MonbaseCredentials implements OpenCGACredentials {
 
     private final String hbaseMasterHost;

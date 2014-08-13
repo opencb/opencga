@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.variant;
 
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.variant.sqlite.VariantSqliteDBAdaptor;
 import org.junit.*;
 import org.opencb.commons.containers.QueryResult;

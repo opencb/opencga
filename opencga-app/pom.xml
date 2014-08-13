@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.3.1</version>
+        <version>0.4.0</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -30,15 +30,16 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage</artifactId>
+            <artifactId>opencga-storage-core</artifactId>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.opencga</groupId>-->
+            <!--<artifactId>opencga-storage-mongodb</artifactId>-->
+            <!--<version>0.4.0</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.biodata</groupId>
             <artifactId>formats</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>models</artifactId>
         </dependency>
 
         <dependency>
@@ -185,6 +186,8 @@
                 <configuration>
                     <!--<assembleDirectory>target/variant</assembleDirectory>-->
                     <repositoryName>libs</repositoryName>
+                    <repositoryLayout>flat</repositoryLayout>
+                    <useWildcardClassPath>true</useWildcardClassPath>
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.OpenCGAMain</mainClass>

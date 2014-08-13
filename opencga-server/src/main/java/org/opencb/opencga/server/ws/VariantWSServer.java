@@ -1,19 +1,12 @@
 package org.opencb.opencga.server.ws;
 
-import com.google.common.base.Joiner;
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import org.apache.commons.lang.mutable.MutableInt;
+
 import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 
 @Path("/account/{accountId}/file/{jobId}")
 public class VariantWSServer extends GenericWSServer {

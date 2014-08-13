@@ -1,6 +1,6 @@
 package org.opencb.opencga.server.ws;
 
-import java.io.IOException;
+//import org.opencb.opencga.storage.datamanagers.bam.BamManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
@@ -10,8 +10,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
-import org.opencb.opencga.storage.datamanagers.bam.BamManager;
+import java.io.IOException;
 
 @Deprecated
 @Path("/bam")
@@ -70,12 +69,12 @@ public class BamWSServer extends GenericWSServer {
         return createOkResponse("");
     }
 
-    @GET
-    @Path("/list")
-    public Response getFileList() throws IOException {
-        String filePath = properties.getProperty("FILES.PATH");
-        return createOkResponse(new BamManager().getFileList(filePath));
-    }
+//    @GET
+//    @Path("/list")
+//    public Response getFileList() throws IOException {
+//        String filePath = properties.getProperty("FILES.PATH");
+//        return createOkResponse(new BamManager().getFileList(filePath));
+//    }
 
 
     //TODO
