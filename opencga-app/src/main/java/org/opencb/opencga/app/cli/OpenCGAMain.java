@@ -112,6 +112,9 @@ public class OpenCGAMain {
         
         List<DataWriter> writers = new ArrayList<>();
         String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
+        if (variantsPath.toString().endsWith(".gz")) {
+            variantsFilename = Files.getNameWithoutExtension(variantsFilename);
+        }
         writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
         
         List<Task<VcfRecord>> taskList = new ArrayList<>();
