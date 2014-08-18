@@ -45,9 +45,11 @@ import java.util.*;
  */
 public class OpenCGAMain {
 
-    private static VariantStorageManager variantStorageManager = null;
-
+    private static final String APPLICATION_PROPERTIES_FILE = "application.properties";
+    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
     private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
+
+    private static VariantStorageManager variantStorageManager = null;
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException {
         OptionsParser parser = new OptionsParser();
@@ -84,7 +86,11 @@ public class OpenCGAMain {
 
 
             variantStorageManager = (VariantStorageManager) Class.forName(MONGODB_VARIANT_MANAGER).newInstance();
-
+            Path propPath = Paths.get(OPENCGA_HOME, APPLICATION_PROPERTIES_FILE);
+            if(propPath != null && propPath.toFile().exists()) {
+                variantStorageManager.setProperties(propPath);
+            }
+            //variantStorageManager.setProperties(...); //Add default properties
 
         } catch (InstantiationException e) {
             e.printStackTrace();
@@ -97,21 +103,12 @@ public class OpenCGAMain {
 
         if (command instanceof CommandCreateAccessions) {
             CommandCreateAccessions c = (CommandCreateAccessions) command;
-            
+
             Path variantsPath = Paths.get(c.input);
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
-            
+
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
             createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
-            
-        } else if (command instanceof CommandLoadVariants) {
-            CommandLoadVariants c = (CommandLoadVariants) command;
-
-            Path variantsPath = Paths.get(c.input + ".variants.json.gz");
-            Path filePath = Paths.get(c.input + ".file.json.gz");
-
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
-            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
 
         } else if (command instanceof CommandTransformVariants) {
             CommandTransformVariants c = (CommandTransformVariants) command;
@@ -133,6 +130,23 @@ public class OpenCGAMain {
 //            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
 //            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
 
+        } else if (command instanceof CommandLoadVariants) {
+            CommandLoadVariants c = (CommandLoadVariants) command;
+            Path variantsPath = Paths.get(c.input + ".variants.json.gz");
+            Path credentials = Paths.get(c.credentials);
+            //variantStorageManager.setProperties(Paths.get(c.credentials));
+
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("includeEffect", c.includeEffect);
+            params.put("includeStats", c.includeStats);
+            params.put("includeSamples", c.includeSamples);
+
+            variantStorageManager.load(variantsPath, credentials, params);
+
+//            Path filePath = Paths.get(c.input + ".file.json.gz");
+//
+//            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
+//            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
         }
     }
 
@@ -140,22 +154,22 @@ public class OpenCGAMain {
         String studyId = source.getStudyId();
         String studyPrefix = studyId.substring(studyId.length() - 6);
         VcfRawReader reader = new VcfRawReader(variantsPath.toString());
-        
+
         List<DataWriter> writers = new ArrayList<>();
         String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
         writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
-        
+
         List<Task<VcfRecord>> taskList = new ArrayList<>();
         taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));
-        
+
         Runner vr = new Runner(reader, writers, taskList);
-        
+
         System.out.println("Accessioning variants with prefix " + studyPrefix + "...");
         vr.run();
         System.out.println("Variants accessioned!");
     }
 
-    
+    //indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
     private static void indexVariants(String step, VariantSource source, Path mainFilePath, Path auxiliaryFilePath, Path outdir, String backend,
                                       Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples, String aggregated)
             throws IOException, IllegalOpenCGACredentialsException {

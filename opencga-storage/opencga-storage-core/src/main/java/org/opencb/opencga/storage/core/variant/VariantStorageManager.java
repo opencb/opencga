@@ -19,7 +19,9 @@ import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,22 +31,32 @@ import java.util.Properties;
 /**
  * Created by imedina on 13/08/14.
  */
-public abstract class VariantStorageManager {
+public abstract class VariantStorageManager /*implements StorageManager<VariantReader, VariantWriter, VariantDBAdaptor>*/{
 
     protected Properties properties;
-    private Path[] props;
 
     public VariantStorageManager() {
-
+        properties = new Properties();
     }
 
     public VariantStorageManager(Path properties) {
-
+        this.properties = new Properties();
+        setProperties(properties);
     }
 
+    public void setProperties(Path propertiesPath){
+        try {
+            properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toString())));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-    abstract public VariantDBAdaptor getVariantDBAdaptor();
+    public void setProperty(String key, String value){
+        properties.put(key, value);
+    }
 
+    abstract public VariantDBAdaptor getVariantDBAdaptor(Path credentials);
 
     public VariantReader getVariantDBSchemaReader() {
         return null;
@@ -54,31 +66,41 @@ public abstract class VariantStorageManager {
         return null;
     }
 
-    abstract public VariantWriter getVariantDBWriter();
+    //TODO: Remove VariantSource
+    abstract public VariantWriter getVariantDBWriter(Path credentials, VariantSource source);
 
-//    indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
-//private static void indexVariants(String step, VariantSource source, Path mainFilePath, Path auxiliaryFilePath, Path outdir, String backend,
-//                                  Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples, String aggregated)
 
+    /**
+     * Transform raw variant files into Biodata model.
+     *
+     * @param input         Input file. Accepted formats: *.vcf, *.vcf.gz
+     * @param pedigree      Pedigree input file. Accepted formats: *.ped
+     * @param output
+     * @param params
+     * @throws IOException
+     */
     final public void transform(Path input, Path pedigree, Path output, Map<String, Object> params) throws IOException {
         // input: VcfReader
         // output: JsonWriter
 
-        Path variantsPath = input;
-        Path outdir = output;
-        VariantSource source = new VariantSource(variantsPath.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
+        boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
+        boolean includeStats = Boolean.parseBoolean(params.get("includeStats").toString());
+        String aggregated = (String) params.get("aggregated");
+        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
+        //Reader
         VariantReader reader;
         PedigreeReader pedReader = null;
-        if(pedigree != null && pedigree.toFile().exists()) {
+        if(pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
             pedReader = new PedigreePedReader(pedigree.toString());
         }
 
         // TODO Create a utility to determine which extensions are variants files
         if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
-            if (params.get("aggregated") != null) {
-                params.put("includeStats", false);
-                switch (params.get("aggregated").toString().toLowerCase()) {
+            if (aggregated != null) {
+                includeStats = false;
+                switch (aggregated.toLowerCase()) {
                     case "basic":
                         reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
                         break;
@@ -93,35 +115,30 @@ public abstract class VariantStorageManager {
             } else {
                 reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
             }
-        } else if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
-            assert (pedigree != null);
-            reader = new VariantJsonReader(source, input.toAbsolutePath().toString(), pedigree.toAbsolutePath().toString());
         } else {
             throw new IOException("Variants input file format not supported");
         }
 
+        //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
-
-        List<VariantWriter> writers = new ArrayList<>();
-        writers.add(new VariantJsonWriter(source, outdir));
-
-        // If a JSON file is provided, then stats and effects do not need to be recalculated
-        if (!source.getFileName().endsWith(".json") && !source.getFileName().endsWith(".json.gz")) {
-            if (Boolean.parseBoolean(params.get("includeEffect").toString())) {
-                taskList.add(new VariantEffectTask());
-            }
-
-            if (Boolean.parseBoolean(params.get("includeStats").toString())) {
-                taskList.add(new VariantStatsTask(reader, source));
-            }
+        if (includeEffect) {
+            taskList.add(new VariantEffectTask());
         }
+        if (includeStats) {
+            taskList.add(new VariantStatsTask(reader, source));
+        }
+
+        //Writers
+        List<VariantWriter> writers = new ArrayList<>();
+        writers.add(new VariantJsonWriter(source, output));
 
         for (VariantWriter variantWriter : writers) {
-            variantWriter.includeSamples(Boolean.parseBoolean(params.get("includeSamples").toString()));
-            variantWriter.includeEffect(Boolean.parseBoolean(params.get("includeEffect").toString()));
-            variantWriter.includeStats(Boolean.parseBoolean(params.get("includeStats").toString()));
+            variantWriter.includeSamples(includeSamples);
+            variantWriter.includeEffect(includeEffect);
+            variantWriter.includeStats(includeStats);
         }
 
+        //Runner
         VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
 
         System.out.println("Indexing variants...");
@@ -130,18 +147,79 @@ public abstract class VariantStorageManager {
     }
 
 
-    public void preLoad(Path input, Path output) {
+    public void preLoad(Path input, Path output, Map<String, Object> params) throws IOException {
         // input: JsonVariatnReader
         // output: getVariantDBSchemaWriter
+
+        //Writers
+        List<VariantWriter> writers = this.getVariantDBSchemaWriter();
+        if(writers == null){
+            System.out.println("[ALERT] preLoad method not supported in this plugin");
+            return;
+        }
+
+        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+
+        //Reader
+        String sourceFile = input.toAbsolutePath().toString().replace("variant.json", "file.json");
+        VariantReader jsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString() , sourceFile);
+
+
+        //Tasks
+        List<Task<Variant>> taskList = new SortedList<>();
+
+
+        //Runner
+        VariantRunner vr = new VariantRunner(source, jsonReader, null, writers, taskList);
+
+        System.out.println("Indexing variants...");
+        vr.run();
+        System.out.println("Variants indexed!");
 
     }
 
 
-    public void load(Path input) {
+    public void load(Path input, Path credentials, Map<String, Object> params) throws IOException {
         // input: getVariantDBSchemaReader
         // output: getVariantDBWriter()
-        VariantWriter variantDBWriter = this.getVariantDBWriter();
 
+        boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
+        boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
+        boolean includeStats = Boolean.parseBoolean(params.get("includeStats").toString());
+        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+
+        //Reader
+        VariantReader variantDBSchemaReader = this.getVariantDBSchemaReader();
+        if (variantDBSchemaReader == null) {
+            if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
+                String sourceFile = input.toAbsolutePath().toString().replace("variant.json", "file.json");
+                variantDBSchemaReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
+            } else {
+                throw new IOException("Variants input file format not supported");
+            }
+        }
+
+        //Tasks
+        List<Task<Variant>> taskList = new SortedList<>();
+
+
+        //Writers
+        VariantWriter variantDBWriter = this.getVariantDBWriter(credentials, source);
+        List<VariantWriter> writers = new ArrayList<>();
+        writers.add(variantDBWriter);
+
+        for (VariantWriter variantWriter : writers) {
+            variantWriter.includeSamples(includeSamples);
+            variantWriter.includeEffect(includeEffect);
+            variantWriter.includeStats(includeStats);
+        }
+
+        //Runner
+        VariantRunner vr = new VariantRunner(source, variantDBSchemaReader, null, writers, taskList);
+
+        System.out.println("Indexing variants...");
+        vr.run();
+        System.out.println("Variants indexed!");
     }
 
 
