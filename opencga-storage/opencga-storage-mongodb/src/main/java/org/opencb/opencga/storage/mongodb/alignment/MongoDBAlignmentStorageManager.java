@@ -1,20 +1,12 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
 import org.opencb.biodata.formats.alignment.io.AlignmentDataWriter;
-import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
-import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
-import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
-import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
-import org.opencb.biodata.models.alignment.AlignmentRegion;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.Runner;
-import org.opencb.commons.run.Task;
-import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.mongodb.sequence.SqliteSequenceDBAdaptor;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -76,7 +68,11 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         if (path == null) {
             adaptor = new CellBaseSequenceDBAdaptor();
         } else {
-            adaptor = new SqliteSequenceDBAdaptor(path);
+            if(path.toString().endsWith("sqlite.db")){
+                adaptor = new SqliteSequenceDBAdaptor(path);
+            } else {
+                adaptor = new CellBaseSequenceDBAdaptor(path);
+            }
         }
         return new IndexedAlignmentDBAdaptor(adaptor);
     }
