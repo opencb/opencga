@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.mongodb.sequence;
 
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.test.GenericTest;
@@ -19,22 +20,32 @@ public class SqliteSequenceDBAdaptorTest extends GenericTest {
 
     @Test
     public void queryDB() throws IOException, SQLException {
-        SequenceDBAdaptor sql = new SqliteSequenceDBAdaptor(Paths.get("/home/jacobo/Documentos/bioinfo/human_g1k_v37.fasta.gz.sqlite.db"));
-        //SequenceDBAdaptor sql = new CellBaseSequenceDBAdaptor();
+        SequenceDBAdaptor sql = new SqliteSequenceDBAdaptor(Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db"));
+        SequenceDBAdaptor cellbase = new CellBaseSequenceDBAdaptor();
+        long start;
+        long end;
+        Region region = new Region("2", 1000000, 1000015);
 
 
         sql.open();
-
-        long start = System.currentTimeMillis();
-        System.out.println(sql.getSequence(new Region("2", 1010000, 1030000)).length() + " Elements");
-        long end = System.currentTimeMillis();
-        System.out.println(end-start + " ms");
+        start = System.currentTimeMillis();
+        System.out.println(sql.getSequence(region));
+        end = System.currentTimeMillis();
         sql.close();
+        System.out.println(end - start + " ms");
+
+
+        cellbase.open();
+        start = System.currentTimeMillis();
+        System.out.println(cellbase.getSequence(region));
+        end = System.currentTimeMillis();
+        cellbase.close();
+        System.out.println(end - start + " ms");
 
     }
 
     @Test
-    public void crehtoateDB() throws IOException, SQLException, FileFormatException {
+    public void createDB() throws IOException, SQLException, FileFormatException {
         SqliteSequenceDBAdaptor sql = new SqliteSequenceDBAdaptor();
         sql.createDB(Paths.get("/home/jacobo/Documentos/bioinfo/human_g1k_v37.fasta.gz"));
     }

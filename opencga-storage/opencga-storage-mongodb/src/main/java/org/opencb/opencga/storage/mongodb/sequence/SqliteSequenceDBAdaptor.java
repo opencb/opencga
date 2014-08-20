@@ -69,15 +69,29 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
     /**
      * Creates the ChunkId for SQLite
      * @param chromosome  Region name or chromosome
-     * @param pos         Absolute position
+     * @param pos         Absolute position 1-based
      * @return            ChunkID. <chromosome>_<pos/CHUNK_SIZE>
      */
     private String getChunkId(String chromosome, int pos){
-        return String.format("%s_%06d", chromosome, pos/CHUNK_SIZE);
+        return String.format("%s_%06d", chromosome, (pos-1)/CHUNK_SIZE);
     }
 
+    /**
+     * Returns the sequence stored in the DB of a given region.
+     * The stored sequence will be interpreted as 1-based.
+     *      e.g. The first 10 elements will correspond to the region 1-10
+     *
+     * @param region    Region requested.
+     * @return          Sequence 1-based for [region.start, region.end]
+     * @throws IOException
+     */
     @Override
     public String getSequence(Region region) throws IOException {
+        /*
+         * [0-1999],[2000,3999],[4000,5999]  ==> 0-based
+         * [1-2000],[2001,4000],[4001,6000]  ==> 1-based
+         */
+
         /*
          *  A                   B    C
          *  |----|----|----|----|----|      == seq
@@ -89,10 +103,9 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
          *  D : region.getStart()
          *  E : region.getEnd()
          */
-
         List<XObject> query;
-        int chunkStart = region.getStart()/CHUNK_SIZE;
-        int chunkEnd = region.getEnd()/CHUNK_SIZE;
+        int chunkStart = (region.getStart() - 1)/CHUNK_SIZE;
+        int chunkEnd = (region.getEnd() - 1)/CHUNK_SIZE;
         int regionLength = region.getEnd() - region.getStart() + 1;               //+1 to include last position. [start-end]
         if(regionLength <= 0){
             return "";      //Reject bad regions.
@@ -117,9 +130,7 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
         }
 
 
-        int startIndex = region.getStart() - chunkStart * CHUNK_SIZE;        // D - A
-        //int endClipping = (chunkEnd+1) * CHUNK_SIZE - region.getEnd();          // C - E
-        //int endIndex = seq.length() - endClipping + 1;
+        int startIndex = (region.getStart() - 1) - chunkStart * CHUNK_SIZE;        // D - A
         int endIndex = startIndex + regionLength;                          //
         //System.out.println(0 + " - " + startIndex + " - " + endIndex  + " - " + seq.length());
         //System.out.println(chunkStart * CHUNK_SIZE + " - " + region.getStart() + " - " + region.getEnd() + " - " + (chunkEnd+1) * CHUNK_SIZE);
@@ -135,6 +146,11 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 
     /**
      * Creates a <input>.sqlite.db.
+     *
+     * Contents 2 tables:
+     * SEQUENCES:
+     *      id TEXT  : <chromosome>_<pos/CHUNK_SIZE>
+     *      seq TEXT : sequence [ chunk_id*CHUNK_SIZE , (chunk_id+1)*CHUNK_SIZE )
      *
      * @param fastaInputFile Accept formats: *.fasta, *.fasta.gz
      */
