@@ -18,9 +18,10 @@ import net.sf.samtools.CigarElement;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
+import org.opencb.biodata.formats.alignment.AlignmentConverter;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
-import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
@@ -293,7 +294,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                 continue;
             }
             
-            Map<String, String> attributes = new HashMap<>();
+            Map<String, Object> attributes = new HashMap<>();
             for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
                 attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
             }
@@ -303,7 +304,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                     (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
 
             // Build alignment object, including differences calculation
-            Alignment alignment = new Alignment(record, attributes, referenceSubstring);
+            Alignment alignment = AlignmentConverter.buildAlignment(record, attributes, referenceSubstring);
             alignments.add(alignment);
         }
 
