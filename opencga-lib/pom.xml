@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.3.1</version>
+        <version>0.3.2</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -19,12 +19,8 @@
             <artifactId>cellbase-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-lib</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>formats</artifactId>
+            <groupId>org.opencb.variant</groupId>
+            <artifactId>variant-lib</artifactId>
         </dependency>
 
         <dependency>
