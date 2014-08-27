@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.3.1</version>
+        <version>0.3.2</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -22,10 +22,6 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>models</artifactId>
         </dependency>
 
         <dependency>
