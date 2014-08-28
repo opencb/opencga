@@ -4,13 +4,12 @@
  * and open the template in the editor.
  */
 
-package org.opencb.opencga.storage.alignment.json;
+package org.opencb.opencga.storage.core.alignment.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- *
- * @author jacobo
+ * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
  */
 public abstract class AlignmentDifferenceJsonMixin {
 

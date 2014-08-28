@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.alignment.json;
+package org.opencb.opencga.storage.core.alignment.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -10,22 +10,19 @@ import org.opencb.biodata.models.alignment.AlignmentHeader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Created with IntelliJ IDEA.
- * User: jacobo
  * Date: 18/06/14
- * Time: 13:03
- * To change this template use File | Settings | File Templates.
+ * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ *     
+ * AlignmentsFileName     : <name>.alignments.json.gz
+ * HeaderFileName         : <name>.header.json.gz
  */
-public class AlignmentJsonDataReader implements AlignmentDataReader<Alignment>{
+public class AlignmentJsonDataReader implements AlignmentDataReader{
 
     private final String alignmentFilename;
     private final String headerFilename;
@@ -83,7 +80,7 @@ public class AlignmentJsonDataReader implements AlignmentDataReader<Alignment>{
     @Override
     public boolean pre() {
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Alignment.class, AlignmentJsonMixin.class);
+        //jsonObjectMapper.addMixInAnnotations(Alignment.class, AlignmentJsonMixin.class); //Not needed
         try {
             alignmentsParser = factory.createParser(alignmentsStream);
             headerParser = factory.createParser(headerStream);

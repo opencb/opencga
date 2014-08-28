@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.alignment.json;
+package org.opencb.opencga.storage.core.alignment.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -12,26 +12,24 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Created with IntelliJ IDEA.
- * User: jacobo
  * Date: 8/06/14
- * Time: 10:17
- * To change this template use File | Settings | File Templates.
+ * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ *
+ * AlignmentsFileName     : <name>.alignments.json.gz
+ * HeaderFileName         : <name>.header.json.gz
  */
-public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, AlignmentHeader> {
+public class AlignmentJsonDataWriter implements AlignmentDataWriter {
 
     private final String alignmentFilename;
     private final String headerFilename;
     private final boolean gzip;
     private boolean append = false;
 
-    private AlignmentDataReader<Alignment> reader;
+    private AlignmentDataReader reader;
 
     private final JsonFactory factory;
     private final ObjectMapper jsonObjectMapper;
@@ -45,7 +43,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     //private int alignmentsPerLine = 1;
 
 
-    public AlignmentJsonDataWriter(AlignmentDataReader<Alignment> reader, String alignmentFilename, String headerFilename) {
+    public AlignmentJsonDataWriter(AlignmentDataReader reader, String alignmentFilename, String headerFilename) {
         this.alignmentFilename = alignmentFilename;
         this.headerFilename = headerFilename;
         this.reader = reader;
@@ -54,7 +52,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
         this.gzip = alignmentFilename.endsWith(".gz");
     }
 
-    public AlignmentJsonDataWriter(AlignmentDataReader<Alignment> reader, String baseFilename, boolean gzip) {
+    public AlignmentJsonDataWriter(AlignmentDataReader reader, String baseFilename, boolean gzip) {
         this.alignmentFilename  = baseFilename + ".alignments" + (gzip ? ".json.gz" : ".json");
         this.headerFilename     = baseFilename + ".header"     + (gzip ? ".json.gz" : ".json");
         this.reader = reader;
@@ -107,7 +105,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter<Alignment, A
     @Override
     public boolean pre() {
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Alignment.class, AlignmentJsonMixin.class);
+        //jsonObjectMapper.addMixInAnnotations(Alignment.class, AlignmentJsonMixin.class); //Not needed
         try {
             alignmentsGenerator = factory.createGenerator(alignmentOutputStream);
             headerGenerator = factory.createGenerator(headerOutputStream);

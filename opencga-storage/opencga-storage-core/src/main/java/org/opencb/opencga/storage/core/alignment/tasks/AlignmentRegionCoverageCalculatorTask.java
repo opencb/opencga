@@ -1,10 +1,9 @@
-package org.opencb.opencga.storage.alignment.tasks;
+package org.opencb.opencga.storage.core.alignment.tasks;
 
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import org.opencb.biodata.models.alignment.Alignment;
@@ -12,118 +11,85 @@ import org.opencb.biodata.models.alignment.Alignment.AlignmentDifference;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.run.Task;
 
 
 /**
- * Created with IntelliJ IDEA.
- * User: jcoll
  * Date: 11/21/13
- * Time: 5:48 PM
+ * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
  *
  * Calculates coverage and mean coverage for AlignmentRegion
  *
  **/
 public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion> {
 
+    /**
+     * Calculates the Mean Coverage at intervals.
+     *
+     */
     private class MeanCoverageCalculator {
+        private final int size;
+        private final String name;
+
         private int accumulator;
         private long next;
-        private int size;
-        List<Float> savedMean;
-        private int savedMeanSize;
-        private String name;
 
-
-        public MeanCoverageCalculator(){
-            this(1000, "1K");
-        }
         public MeanCoverageCalculator(String name){
-            int size = 1;
-            String numerical;
-            char key = name.toUpperCase().charAt(name.length() - 1);    //take last char
-            switch (key) {
-                case 'G':
-                    size *= 1000;
-                case 'M':
-                    size *= 1000;
-                case 'K':
-                    size *= 1000;
-                    numerical = name.substring(0, name.length() - 1);
-                    break;
-                default:
-                    if (!Character.isDigit(key)) {
-                        throw new UnsupportedOperationException("Mean coverage value \"" + name + "\" not supported.");
-                    }
-                    numerical = name;
-                    break;
-            }
-            size = (int) (size * Float.parseFloat(numerical));
-            
             this.accumulator = 0;
             this.next = 0;
-            this.size = size;
-            this.savedMean = new LinkedList<>();
-            this.savedMeanSize = 0;
+            this.size = MeanCoverage.nameToSizeConvert(name);
             this.name = name;
         }
         public MeanCoverageCalculator(int size, String name){
             this.accumulator = 0;
             this.next = 0;
             this.size = size;
-            this.savedMean = new LinkedList<>();
-            this.savedMeanSize = 0;
             this.name = name;
         }
 
-        public void mean(long position, short all){
-            accumulator += all;
-            if(next == position){
-                //System.out.println("POS: " + position + ", Accumulator = "+ accumulator + " Size: " + size + " Mean= " + ((float)accumulator)/size);
-                savedMean.add(savedMeanSize,((float)accumulator)/size);
-                savedMeanSize++;
-                accumulator = 0;
-                next+=size;
+
+        public List<MeanCoverage> calculateMeanCoverage(RegionCoverage coverage){
+            List<MeanCoverage> list = new LinkedList<>();
+            final short[] all = coverage.getAll();
+
+            if (coverage.getStart() >= next) {
+                Region region = new Region(coverage.getChromosome(), (int)next - size, (int)next - 1);
+                list.add(new MeanCoverage(size, name, region, (float)accumulator /size));
+                reset(coverage.getStart());
             }
-        }
 
-        public MeanCoverage takeMeanCoverage(long start){
-            MeanCoverage meanCoverage = new MeanCoverage(size,name);
-            meanCoverage.setCoverage(takeMeanCoverageArray());
-            meanCoverage.setInitPosition((int)(start/size));
-
-            return meanCoverage;
-        }
-
-        public float[] takeMeanCoverageArray(){
-            float[] array = new float[savedMeanSize];
-            for(int i = 0; i < savedMeanSize; i++){
-                array[i] = savedMean.get(i);
+            int i = 0;
+            boolean lastIteration = false;
+            while (i < all.length) {
+                int lim = (int) (next-coverage.getStart());
+                if(all.length < lim) {
+                    lim = all.length;
+                    lastIteration = true;
+                }
+                for(; i < lim; i++) {
+                    accumulator += all[i];
+                }
+                if(!lastIteration) {    //The last iteration will keep the value for the next call to this function
+                    Region region = new Region(coverage.getChromosome(), (int) next - size, (int) next - 1);
+                    list.add(new MeanCoverage(size, name, region, (float) accumulator / size));
+                    next += size;
+                    accumulator = 0;
+                }
             }
-            savedMeanSize = 0;
-            return array;
+
+            return list;
         }
 
-        public void init(long position){
-            this.next =((position)/size+1)*size;
+        public void reset(long position){
+            this.next =((position-1)/size+1)*size+1;  //Calculates the NEXT interval starting position
+            this.accumulator = 0;                   //Reset the accumulator
         }
-        private void setSize(int size) {
-            this.size = size;
-        }
-        private void setName(String name){
-            this.name = name;
-        }
+
     }
 
-    private List<MeanCoverageCalculator> meanCoverageCalculator;
-
-    private long start, end;
-    RegionCoverage coverage;
-    int  regionCoverageSize;
-    long regionCoverageMask;
-
     private class NativeShortArrayList{
-        private short[] array = null;
+        private short[] array = new short[0];
         private int size = 0;
         private int capacity = 0;
 
@@ -137,11 +103,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
         }
 
         public void resize(int newSize){
-            short[] newArray = new short[newSize];
-            for(int i = 0; i < size; i++){
-                newArray[i] = array[i];
-            }
-            array = newArray;
+            array = Arrays.copyOf(array, newSize);
             capacity = newSize;
         }
 
@@ -158,16 +120,9 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
 
         public void add(short elem){
             if(size >= capacity){
-                System.out.println("CRASH!");
+                resize(capacity*2);
             }
-            if(size >= array.length){
-                System.out.println("CRASH!");
-            }
-            try{
-                array[size++] = elem;
-            } catch (ArrayIndexOutOfBoundsException e){
-                System.out.println("Chrashed...");
-            }
+            array[size++] = elem;
         }
         private int size() {
             return size;
@@ -182,15 +137,20 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
 
     }
 
+    private List<MeanCoverageCalculator> meanCoverageCalculator;
 
-    NativeShortArrayList a;
-    NativeShortArrayList c;
-    NativeShortArrayList g;
-    NativeShortArrayList t;
-    NativeShortArrayList all;
+    private long start, end;
+    private RegionCoverage coverage;
+    private int  regionCoverageSize;
+    private long regionCoverageMask;
 
+    private NativeShortArrayList a;
+    private NativeShortArrayList c;
+    private NativeShortArrayList g;
+    private NativeShortArrayList t;
+    private NativeShortArrayList all;
 
-    int savedSize;
+    private int savedSize;
 
 
     public AlignmentRegionCoverageCalculatorTask() {
@@ -201,12 +161,9 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
         t = new   NativeShortArrayList();
         all = new NativeShortArrayList();
 
-
         meanCoverageCalculator = new ArrayList<>();
 
         reset();
-//        addMeanCoverageCalculator(1000, "1K");
-
     }
 
     public void reset(){
@@ -252,7 +209,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
             if(start == 0){                 //Set Default value
                 coverageStart = start = end = alignmentRegion.getStart();
                 for(MeanCoverageCalculator aux : meanCoverageCalculator){
-                    aux.init(start);
+                    aux.reset(start);
                 }
             }
             int totalSize = (int)(alignmentRegion.getEnd()-alignmentRegion.getStart());
@@ -275,21 +232,13 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
 
             if(!alignmentRegion.isOverlapEnd()){
                 saveCoverage(alignmentRegion.getEnd()+1);   //[start-end]
-                //end = alignmentRegion.getEnd();
-                //reset();  // jmml
             }
 
             /*
                 Create Region Coverage  //Todo jcoll: Profile this part
              */
             RegionCoverage regionCoverage = new RegionCoverage();
-//            for(int i = 0; i < savedSize; i++){
-//                regionCoverage.getA()[i] = a.get(i);
-//                regionCoverage.getC()[i] = c.get(i);
-//                regionCoverage.getG()[i] = g.get(i);
-//                regionCoverage.getT()[i] = t.get(i);
-//                regionCoverage.getAll()[i] = all.get(i);
-//            }
+
             regionCoverage.setA(a.getArray());
             regionCoverage.setC(c.getArray());
             regionCoverage.setG(g.getArray());
@@ -297,25 +246,10 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
             regionCoverage.setAll(all.getArray());
 
 
-
-//            for(int i = 0; i < savedSize; i++){
-//                regionCoverage.getA()[i] = a.get(i);
-//            }for(int i = 0; i < savedSize; i++){
-//                regionCoverage.getC()[i] = c.get(i);
-//            }for(int i = 0; i < savedSize; i++){
-//                regionCoverage.getG()[i] = g.get(i);
-//            }for(int i = 0; i < savedSize; i++){
-//                regionCoverage.getT()[i] = t.get(i);
-//            }for(int i = 0; i < savedSize; i++){
-//                regionCoverage.getAll()[i] = all.get(i);
-//            }
             regionCoverage.setStart(coverageStart);
             regionCoverage.setEnd(coverageStart + savedSize);
             regionCoverage.setChromosome(alignmentRegion.getChromosome());
 
-//            System.out.println(end-coverageStart);
-//            System.out.println(start-coverageStart);
-//            System.out.println(savedSize);
 
          //   assert start-coverageStart == savedSize;  //TODO jcoll: Assert this
             alignmentRegion.setCoverage(regionCoverage);
@@ -331,7 +265,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
              */
             List<MeanCoverage> meanCoverageList = new ArrayList<>(meanCoverageCalculator.size());
             for(MeanCoverageCalculator aux: meanCoverageCalculator){
-                meanCoverageList.add(aux.takeMeanCoverage(coverageStart));
+                meanCoverageList.addAll(aux.calculateMeanCoverage(regionCoverage));
             }
             alignmentRegion.setMeanCoverage(meanCoverageList);
 
@@ -362,10 +296,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
             coverage.getT()[pos] = 0;
 
             all.add(/*savedSize, */coverage.getAll()[pos]);
-            
-            for(MeanCoverageCalculator aux : meanCoverageCalculator){
-                aux.mean(i,coverage.getAll()[pos]);
-            }
+
             coverage.getAll()[pos] = 0;
             savedSize++;
         }
@@ -396,8 +327,8 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
         //Iterator<AlignmentDifference> diferencesIterator = alignment.getDifferences().iterator();
         //AlignmentDifference alignmentDifference = diferencesIterator.hasNext()? diferencesIterator.next():null;
         int offset = 0; // offset caused by insertions and deletions
-        int clipping = 0; 
-        
+        int clipping = 0;
+
         //int validBases = (int)(alignment.getEnd()-alignment.getStart());
         int pos = 0;
         for(AlignmentDifference diff : alignment.getDifferences()){
@@ -446,7 +377,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
                             pos++;
                         }
                     }   //else, in the next loop will increase the "all" coverage
-                    
+
                     break;
                 }
             }
@@ -456,58 +387,9 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
         }
         //assert pos == validBases;
         if(pos + clipping - offset != alignment.getLength()){
-            System.out.println("Nooooo");
+            System.out.println("[ERROR] assert pos == validBases");   //TODO jcoll: Assert this
         }
         //assert pos+clipping == alignment.getLength();
-        
-//        for(int i = 0; i < alignment.getLength(); i++) {
-//            //        for(int i = 0; i < sequence.length; i++) {    //TODO jcoll: Analyze this case
-//            assert alignment.getLength() == sequence.length;
-//            if (alignmentDifference != null) {  // if there are remaining differences
-//                if(alignmentDifference.getPos() == i) {
-//                    switch(alignmentDifference.getOp()){
-//                        case Alignment.AlignmentDifference.INSERTION:
-//                            i += alignmentDifference.getLength();
-//                            offset -= alignmentDifference.getLength();
-//                            break;
-//                        case Alignment.AlignmentDifference.DELETION:
-//                            offset += alignmentDifference.getLength();
-//                            break;
-//                        case Alignment.AlignmentDifference.MISMATCH:
-//                        case Alignment.AlignmentDifference.SKIPPED_REGION:
-//                        case Alignment.AlignmentDifference.SOFT_CLIPPING:
-//                        case Alignment.AlignmentDifference.HARD_CLIPPING:
-//                        case Alignment.AlignmentDifference.PADDING:
-//                        default:
-//                            break;
-//                    }
-//                    if (diferencesIterator.hasNext()) {
-//                        alignmentDifference = diferencesIterator.next();
-//                    } else {
-//                        alignmentDifference = null;
-//                    }
-//                }
-//            }
-//            if(i < alignment.getLength()){ //TODO jj: Write a correct commentary
-//                switch (sequence[i]) {
-//                    case 'A':
-//                        coverage.getA()[(int) ((i + offset + start) & regionCoverageMask)]++;
-//                        break;
-//                    case 'C':
-//                        coverage.getC()[(int) ((i + offset + start) & regionCoverageMask)]++;
-//                        break;
-//                    case 'G':
-//                        coverage.getG()[(int) ((i + offset + start) & regionCoverageMask)]++;
-//                        break;
-//                    case 'T':
-//                        coverage.getT()[(int) ((i + offset + start) & regionCoverageMask)]++;
-//                        break;
-//                    default:
-//                        //TODO jcoll: Analyze this case
-//                        break;
-//                }
-//            }
-//        }
 
         return 0;
     }
