@@ -22,6 +22,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
+    private final String collectionName = "variants";
 
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
@@ -38,7 +39,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         getRegionFilter(region, qb);
@@ -59,7 +60,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyId, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
 
         // Aggregation for filtering when more than one study is present
         QueryBuilder qb = QueryBuilder.start(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD).in(studyId);
@@ -80,7 +81,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }}, 
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]}, 20000] } ] }, 
         //                                  totalCount: {$sum: 1}}})
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         int interval = options.getInt("interval", 20000);
 
@@ -176,7 +177,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
 
         QueryBuilder qb = QueryBuilder.start("_at.gn").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
@@ -199,7 +200,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         //                        { $group : { _id : "$genes", count: { $sum : 1 } }},
         //                        { $sort : { "count" : -1 }},
         //                        { $limit : 10 } )
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
@@ -226,7 +227,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult getConsequenceTypesRanking(int numConsequenceTypes, int order, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
@@ -244,7 +245,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     @Override
     public QueryResult getVariantById(String id, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
 
         BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
         return coll.find(query, options, variantConverter);
