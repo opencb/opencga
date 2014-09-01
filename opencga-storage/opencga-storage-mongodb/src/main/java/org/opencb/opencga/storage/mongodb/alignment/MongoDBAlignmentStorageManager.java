@@ -1,52 +1,100 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import org.opencb.biodata.formats.alignment.io.AlignmentDataWriter;
+import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
+import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
+import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
+import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.commons.io.DataReader;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.Runner;
+import org.opencb.commons.run.Task;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
+import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.opencga.storage.mongodb.sequence.SqliteSequenceDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by jacobo on 15/08/14.
  */
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
-    private Properties properties;
+    public static final String MONGO_DB_NAME = "opencga";
+    public static final String MEAN_COVERAGE_SIZE_LIST = "meanCoverageSizeList";
+    public static final String PLAIN = "plain";
+    public static final String REGION_SIZE = "regionSize";
+    public static final String STUDY = "study";
+
+    private MongoCredentials mongoCredentials;
+    private final Properties properties;
     private AlignmentMetaDataDBAdaptor metadata;
    // private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
-    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
 
 
     public MongoDBAlignmentStorageManager(Path propertiesPath) {
         super(propertiesPath);
 
         this.properties = new Properties();
-
         try {
             properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toString())));
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+        try {
+            this.mongoCredentials = new MongoCredentials(
+                    properties.getProperty("mongo_host","localhost"),
+                    Integer.parseInt(properties.getProperty("mongo_port", "27017")),
+                    properties.getProperty("mongo_db_name",MONGO_DB_NAME),
+                    properties.getProperty("mongo_user",null),
+                    properties.getProperty("mongo_password",null)
+            );
+            //this.mongoCredentials = new MongoCredentials(properties);
+        } catch (IllegalOpenCGACredentialsException e) {
+            logger.error(e.getMessage(), e);
         }
 
         this.metadata = new AlignmentMetaDataDBAdaptor(properties.getProperty("files-index", "/tmp/files-index.properties"));
-
-
     }
 
 
+    @Override
+    public DataReader<AlignmentRegion> getDBSchemaReader(Path input) {
+        String meanCoverage = input.toString()
+                .replaceFirst("coverage\\.json$", "mean-coverage.json")
+                .replaceFirst("coverage\\.json\\.gz$", "mean-coverage.json.gz");
+
+        return new AlignmentCoverageJsonDataReader(input.toString(), meanCoverage);
+    }
 
     @Override
-    public AlignmentDataWriter getDBWriter(Path credentials) {
+    public DataWriter<AlignmentRegion> getDBWriter(Path credentials, String fileId) {
+        try {
+            if(credentials != null) {
+                Properties credentialsProperties = new Properties();
+                credentialsProperties.load(new InputStreamReader(new FileInputStream(credentials.toString())));
+                return new CoverageMongoWriter(new MongoCredentials(credentialsProperties), fileId);
+            } else {
+                return new CoverageMongoWriter(this.mongoCredentials, fileId);
+            }
+        } catch (IOException e) {
+            logger.error(e.toString(), e);
+        }
         return null;
     }
 
@@ -74,12 +122,21 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
                 adaptor = new CellBaseSequenceDBAdaptor(path);
             }
         }
-        return new IndexedAlignmentDBAdaptor(adaptor);
+        return new IndexedAlignmentDBAdaptor(adaptor, mongoCredentials);
+
     }
 
 
     @Override
-    public void transform(Path input, Path pedigree, Path output, Map<String, Object> params) throws IOException, FileFormatException {
+    public void transform(Path inputPath, Path pedigree, Path output, Map<String, Object> params) throws IOException, FileFormatException {
+
+
+        String study = params.containsKey(STUDY)? params.get(STUDY).toString(): STUDY;
+        boolean plain = params.containsKey(PLAIN)? Boolean.parseBoolean(params.get(PLAIN).toString()): false;
+        int regionSize = params.containsKey(REGION_SIZE)? Integer.parseInt(params.get(REGION_SIZE).toString()): 20000;
+        List<String> meanCoverageSizeList = (List<String>) (params.containsKey(MEAN_COVERAGE_SIZE_LIST)? params.get(MEAN_COVERAGE_SIZE_LIST): new LinkedList<>());
+        String fileName = inputPath.getFileName().toString();
+        Path sqliteSequenceDBPath = Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
 
         /*
          * 1º Transform into a BAM
@@ -90,7 +147,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
          */
 
         //1º
-        if(!input.endsWith(".bam")){
+        if(!inputPath.toString().endsWith(".bam")){
 
             System.out.println("[ERROR] Expected BAM file");
             throw new FileFormatException("Expected BAM file");
@@ -99,58 +156,63 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         //2º Sort
 
         //3º
-        String fileName = input.getFileName().toString();
         //name.bam
         //name.bam.bai
-        Path inputBamIndexFile = Paths.get(fileName + ".bai");
+        Path inputBamIndexFile = Paths.get(inputPath.toString() + ".bai");
         if (!Files.exists(inputBamIndexFile)) {
-
             System.out.println("[ERROR] Expected BAI file");
             throw new FileFormatException("Expected BAI file");
         }
 
 
-        //4º Add in metadata
-        String index = metadata.registerPath(input);
-
-
-//        String study = params.get("study").toString();
-//        boolean plain = Boolean.parseBoolean(params.get("plain").toString());
-//
-//
 //        try {
 //            Runtime.getRuntime().exec( "comand" ).waitFor();
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
 //        }
-//
-//        //reader
-//        AlignmentDataReader reader;
-//
-//        if(input.endsWith(".sam")){
-//            reader = new AlignmentSamDataReader(input, study);
-//        } else if (input.endsWith(".bam")) {
-//            reader = new AlignmentBamDataReader(input, study);
-//        } else {
-//            throw new UnsupportedOperationException("[ERROR] Unsuported file input format : " + input);
-//        }
-//
-//
-//        //Tasks
-//        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
-//
-//        //Writer
-//        List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-//        //writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, output.toString(), plain)));
-//
-//
-//        //Runner
-//        AlignmentRegionDataReader regionReader = new AlignmentRegionDataReader(reader);
-//        Runner<AlignmentRegion> runner = new Runner<>(regionReader, writers, tasks, 1);
-//
-//        System.out.println("Indexing alignments...");
-//        runner.run();
-//        System.out.println("Alignments indexed!");
+
+
+        //4º Add in metadata
+        String index = metadata.registerPath(inputPath);
+
+
+        //5º Calculate Coverage
+        //reader
+        AlignmentDataReader reader;
+
+        if(inputPath.toString().endsWith(".sam")){
+            reader = new AlignmentSamDataReader(inputPath, study);
+        } else if (inputPath.toString().endsWith(".bam")) {
+            reader = new AlignmentBamDataReader(inputPath, study);
+        } else {
+            throw new UnsupportedOperationException("[ERROR] Unsuported file input format : " + inputPath);
+        }
+
+
+        //Tasks
+        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
+       // tasks.add(new AlignmentRegionCompactorTask(new SqliteSequenceDBAdaptor(sqliteSequenceDBPath)));
+        AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
+        for (String size : meanCoverageSizeList) {
+            coverageCalculatorTask.addMeanCoverageCalculator(size);
+        }
+        tasks.add(coverageCalculatorTask);
+
+        //Writer
+        List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
+        //writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, output.toString(), !plain)));
+        writers.add(new AlignmentCoverageJsonDataWriter(Paths.get(output.toString(), fileName).toString(), !plain));
+
+
+
+        //Runner
+        AlignmentRegionDataReader regionReader = new AlignmentRegionDataReader(reader);
+        regionReader.setMaxSequenceSize(regionSize);
+        Runner<AlignmentRegion> runner = new Runner<>(regionReader, writers, tasks, 1);
+
+        System.out.println("Indexing alignments...");
+        runner.run();
+        System.out.println("Alignments indexed!");
     }
 
 

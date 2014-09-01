@@ -1,5 +1,8 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DBObject;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
@@ -7,12 +10,20 @@ import org.opencb.biodata.formats.alignment.AlignmentConverter;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.biodata.models.alignment.stats.MeanCoverage;
+import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.common.Config;
+import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.mongodb.MongoDBCollection;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -21,7 +32,9 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Created by jacobo on 15/08/14.
+ * Date 15/08/14.
+ *
+ * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
  */
 public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
@@ -30,24 +43,34 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     public static final String QO_BAI_PATH = "bai_path";
     public static final String QO_VIEW_AS_PAIRS = "view_as_pairs";
     public static final String QO_PROCESS_DIFFERENCES = "process_differences";
-
-
+    public static final String QO_FILE_ID = "file_id";
+    public static final String QO_COVERAGE = "coverage";
+    //public static final String QO_AVERAGE = "average";
+    public static final String QO_BATCH_SIZE = "batch_size";
 
 
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(IndexedAlignmentDBAdaptor.class);
 
     private AlignmentConverter converter;
+    private MongoDataStoreManager mongoManager;
+    private MongoDataStore mongoDataStore;
+    private MongoDBCollection collection;
 
 
-    public IndexedAlignmentDBAdaptor(SequenceDBAdaptor adaptor) {
+    public IndexedAlignmentDBAdaptor(SequenceDBAdaptor adaptor, MongoCredentials credentials) {
         try {
             this.converter = new AlignmentConverter(adaptor);
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
+        mongoDataStore = mongoManager.get(credentials.getMongoDbName());
+        collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
+
     }
-    public IndexedAlignmentDBAdaptor() {
-        this(new CellBaseSequenceDBAdaptor());
+    public IndexedAlignmentDBAdaptor(MongoCredentials credentials) {
+        this(new CellBaseSequenceDBAdaptor(), credentials);
     }
 
     /**
@@ -96,7 +119,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             queryResult.setNumResults(alignmentList.size());
         }
 
-        queryResult.setTime(System.currentTimeMillis() - startTime);
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         return queryResult;
     }
 
@@ -107,7 +130,49 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
     @Override
     public QueryResult getCoverageByRegion(Region region, QueryOptions options) {
-        return null;
+        long startTime = System.currentTimeMillis();
+
+        int size = region.getEnd()-region.getStart();
+        String fileId = options.getString(QO_FILE_ID);
+        boolean coverage = options.getBoolean(QO_COVERAGE, size < 2000);
+        int batchSize = coverage? 1000 : options.getInt(QO_BATCH_SIZE, 1000);
+        String batchName = MeanCoverage.sizeToNameConvert(batchSize);
+
+        String coverageType;
+        ComplexTypeConverter complexTypeConverter;
+        if(coverage) {
+            complexTypeConverter = new DBObjectToRegionCoverageConverter();
+            coverageType = CoverageMongoWriter.COVERAGE_FIELD;
+        } else {
+            complexTypeConverter = new DBObjectToMeanCoverageConverter();
+            coverageType = CoverageMongoWriter.AVERAGE_FIELD;
+        }
+        List<String> regions = new LinkedList<>();
+
+        for(int i = region.getStart()/batchSize;  i <= region.getEnd()/batchSize; i++){
+            regions.add(region.getChromosome()+"_"+i+"_"+batchName);
+        }
+
+
+        //db.alignment.find( { _id:{$in:regions}}, { files: {$elemMatch : {id:fileId} }, "files.cov":0 , "files.id":0 } )}
+        DBObject query = new BasicDBObject(CoverageMongoWriter.ID_FIELD, new BasicDBObject("$in", regions));
+        DBObject projection = BasicDBObjectBuilder
+                .start()
+//                .append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD,fileId)
+                .append(CoverageMongoWriter.FILES_FIELD, new BasicDBObject("$elemMatch", new BasicDBObject(CoverageMongoWriter.FILE_ID_FIELD,fileId)))
+                .append(CoverageMongoWriter.FILES_FIELD+"."+coverageType, true)
+
+                //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToRegionCoverageConverter.COVERAGE_FIELD, true)
+                //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToMeanCoverageConverter.AVERAGE_FIELD, true)
+                //.append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD, true)
+                .get();
+
+        System.out.println("db."+CoverageMongoWriter.COVERAGE_COLLECTION_NAME+".find("+query.toString()+", "+projection.toString()+")");
+
+        QueryResult queryResult = collection.find(query, null, complexTypeConverter, projection);
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
+
+        return queryResult;
     }
 
     @Override
@@ -180,6 +245,32 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         }
     }
 
+    //Not in use. Useful to get detailed coverage.
+    private QueryResult calculateCoverageByRegion(Region region, QueryOptions options) {
+        QueryResult<RegionCoverage> queryResult = new QueryResult<>(
+                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
+        long startTime = System.currentTimeMillis();
 
+        QueryResult alignmentsResult = this.getAllAlignmentsByRegion(region, options);
+        if(alignmentsResult.getResultType() == Alignment.class.getCanonicalName()) {
+            AlignmentRegionCoverageCalculatorTask task = new AlignmentRegionCoverageCalculatorTask();
+            AlignmentRegion alignmentRegion = new AlignmentRegion(alignmentsResult.getResult(), null);
+//            alignmentRegion.setAlignments(alignmentsResult.getResult());
+            try {
+                task.apply(Arrays.asList(alignmentRegion));
+            } catch (IOException e) {
+                e.printStackTrace();
+                queryResult.setErrorMsg(e.getMessage());    //ERROR
+                logger.warn(e.getMessage());
+            }
+            queryResult.setResult(Arrays.asList(alignmentRegion.getCoverage()));
+            queryResult.setNumResults(1);
+        } else {
+            queryResult.setErrorMsg(alignmentsResult.getErrorMsg());    //ERROR
+            logger.warn(alignmentsResult.getErrorMsg());
+        }
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
+        return queryResult;
+    }
 
 }

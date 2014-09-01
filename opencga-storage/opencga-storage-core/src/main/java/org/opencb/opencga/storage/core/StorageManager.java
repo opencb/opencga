@@ -11,9 +11,9 @@ import java.util.Map;
  */
 public interface StorageManager<READER, WRITER, ADAPTOR> {
 
-    public WRITER getDBSchemaWriter();
-    public READER getDBSchemaReader();
-    public WRITER getDBWriter(Path credentials);
+    public WRITER getDBSchemaWriter(Path output);
+    public READER getDBSchemaReader(Path input);
+    public WRITER getDBWriter(Path credentials, String fileId);
     public ADAPTOR getDBAdaptor(Path credentials);
 
     public void transform(Path input, Path pedigree, Path output, Map<String, Object> params) throws IOException, FileFormatException;

@@ -23,9 +23,9 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.ObjectMap;
-import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.CellbaseCredentials;
 import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.lib.auth.TabixCredentials;
@@ -74,7 +74,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             queryResult.setErrorMsg(ex.getMessage());
         }
         
-        queryResult.setTime(System.currentTimeMillis() - startTime);
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         return queryResult;
     }
 
@@ -100,7 +100,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             queryResult.setErrorMsg(ex.getMessage());
         }
         
-        queryResult.setTime(System.currentTimeMillis() - startTime);
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         return queryResult;  
     }
     
@@ -124,7 +124,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                     "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
             List<XObject> queryResults = sqliteManager.query(queryString);
             sqliteManager.disconnect(true);
-            queryResult.setDbTime(System.currentTimeMillis() - startDbTime);
+            queryResult.setDbTime((int) (System.currentTimeMillis() - startDbTime));
             
             int resultSize = queryResults.size();
 
@@ -176,7 +176,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         
         queryResult.setResult(data);
         queryResult.setNumResults(data.size());
-        queryResult.setTime(System.currentTimeMillis() - startTime);
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         
         return queryResult;
     }
@@ -200,7 +200,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             queryResult.setErrorMsg(ex.getMessage());
         }
         
-        queryResult.setTime(System.currentTimeMillis() - startTime);
+        queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         queryResult.addResult(alignmentRegion);
         queryResult.setNumResults(1);
         return queryResult;  
