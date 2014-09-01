@@ -14,6 +14,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -147,6 +149,17 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
     }
 
     private void writeMeanCoverageJson(List<MeanCoverage> meanCoverage) throws IOException {
+        Collections.sort(meanCoverage, new Comparator<MeanCoverage>() {
+            @Override
+            public int compare(MeanCoverage o1, MeanCoverage o2) {
+                if(o1.getRegion().getChromosome().equals(o2.getRegion().getChromosome())){
+                    return o1.getRegion().getStart() - o2.getRegion().getStart();
+                } else {
+                    return o1.getRegion().getChromosome().compareTo(o2.getRegion().getChromosome());
+                }
+            }
+        });
+
         for(MeanCoverage mc : meanCoverage) {
             meanCoverageGenerator.writeObject(mc);
             meanCoverageGenerator.writeRaw("\n");
