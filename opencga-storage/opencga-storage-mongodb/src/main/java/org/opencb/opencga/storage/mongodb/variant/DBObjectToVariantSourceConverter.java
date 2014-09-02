@@ -46,14 +46,16 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // Statistics
         DBObject statsObject = (DBObject) object.get(STATS_FIELD);
         VariantGlobalStats stats = new VariantGlobalStats();
-        stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
-        stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
-        stats.setSnpsCount((int) statsObject.get(NUMSNPS_FIELD));
-        stats.setIndelsCount((int) statsObject.get(NUMINDELS_FIELD));
-        stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
-        stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
-        stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
-        stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+        if (statsObject != null) {
+            stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
+            stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
+            stats.setSnpsCount((int) statsObject.get(NUMSNPS_FIELD));
+            stats.setIndelsCount((int) statsObject.get(NUMINDELS_FIELD));
+            stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
+            stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
+            stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
+            stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+        }
         source.setStats(stats);
         
         // Metadata

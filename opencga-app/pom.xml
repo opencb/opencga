@@ -37,10 +37,10 @@
             <!--<artifactId>opencga-storage-mongodb</artifactId>-->
             <!--<version>0.4.0</version>-->
         <!--</dependency>-->
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-formats</artifactId>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.biodata</groupId>-->
+            <!--<artifactId>biodata-formats</artifactId>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>com.google.guava</groupId>
