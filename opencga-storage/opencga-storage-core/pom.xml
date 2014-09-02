@@ -18,10 +18,30 @@
         <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opencb.biodata</groupId>
+                    <artifactId>formats</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.opencb.biodata</groupId>
+                    <artifactId>models</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.variant</groupId>
             <artifactId>variant-lib</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opencb.biodata</groupId>
+                    <artifactId>formats</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.opencb.biodata</groupId>
+                    <artifactId>models</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

@@ -25,8 +25,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.biodata</groupId>
-            <artifactId>models</artifactId>
-            <version>0.1</version>
+            <artifactId>biodata-models</artifactId>
         </dependency>
 
         <dependency>

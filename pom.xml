@@ -94,14 +94,19 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.biodata</groupId>
-                <artifactId>formats</artifactId>
-                <version>0.1</version>
+                <artifactId>biodata-formats</artifactId>
+                <version>0.2.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>biodata-models</artifactId>
+                <version>0.2.0</version>
             </dependency>
 
             <dependency>
                 <groupId>org.opencb.variant</groupId>
                 <artifactId>variant-lib</artifactId>
-                <version>1.1.0</version>
+                <version>1.2.0</version>
             </dependency>
             <!--<dependency>-->
             <!--<groupId>org.opencb.commons</groupId>-->

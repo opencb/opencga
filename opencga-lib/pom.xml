@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.biodata</groupId>
-            <artifactId>formats</artifactId>
+            <artifactId>biodata-formats</artifactId>
         </dependency>
 
         <dependency>
