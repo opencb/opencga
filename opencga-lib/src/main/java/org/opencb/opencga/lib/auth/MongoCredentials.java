@@ -64,5 +64,13 @@ public class MongoCredentials implements OpenCGACredentials {
         return mongoPort;
     }
 
+    public String getUsername() {
+        return mongoCredentials != null ? mongoCredentials.getUserName() : null;
+    }
+    
+    public char[] getPassword() {
+        return mongoCredentials != null ? mongoCredentials.getPassword() : null;
+    }
+    
 
 }

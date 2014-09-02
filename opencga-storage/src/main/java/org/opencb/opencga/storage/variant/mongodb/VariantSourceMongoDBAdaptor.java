@@ -34,8 +34,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", credentials.getMongoCredentials().getUserName())
-                .add("password", new String(credentials.getMongoCredentials().getPassword())).build();
+                .add("username", credentials.getUsername())
+                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         variantSourceConverter = new DBObjectToVariantSourceConverter();
     }
