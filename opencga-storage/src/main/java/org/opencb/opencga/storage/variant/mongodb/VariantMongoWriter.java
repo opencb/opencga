@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.effect.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.storage.variant.VariantDBWriter;
@@ -185,10 +186,9 @@ public class VariantMongoWriter extends VariantDBWriter {
                     for (VariantEffect effect : effects) {
                         BasicDBObject object = getVariantEffectDBObject(effect);
                         effectsSet.add(object);
-                        // TODO Do this once the new variant effect API is well-defined
-//                        addConsequenceType(effect.getConsequenceTypeObo());
-
-                        soSet.add(object.get("so").toString());
+                        
+                        addConsequenceType(effect);
+                        soSet.addAll(Arrays.asList((String[]) object.get("so")));
                         if (object.containsField("geneName")) {
                             genesSet.add(object.get("geneName").toString());
                         }
@@ -216,11 +216,12 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private BasicDBObject getVariantEffectDBObject(VariantEffect effect) {
-        // TODO Do this once the new variant effect API is well-defined
-        BasicDBObject object = new BasicDBObject(
-//        "so", effect.getConsequenceTypeObo());
-//        object.append(
-                "featureId", effect.getFeatureId());
+        String[] consequenceTypes = new String[effect.getConsequenceTypes().length];
+        for (int i = 0; i < effect.getConsequenceTypes().length; i++) {
+            consequenceTypes[i] = ConsequenceTypeMappings.accessionToTerm.get(effect.getConsequenceTypes()[i]);
+        }
+        
+        BasicDBObject object = new BasicDBObject("so", consequenceTypes).append("featureId", effect.getFeatureId());
         if (effect.getGeneName() != null && !effect.getGeneName().isEmpty()) {
             object.append("geneName", effect.getGeneName());
         }
@@ -258,7 +259,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 } catch(MongoInternalException ex) {
                     System.out.println(v);
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
-                } catch(MongoException.DuplicateKey ex) {
+                } catch(DuplicateKeyException ex) {
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
                             "Variant already existed: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
@@ -340,9 +341,12 @@ public class VariantMongoWriter extends VariantDBWriter {
         variantConverter = new DBObjectToVariantConverter();
     }
     
-    private void addConsequenceType(String ct) {
-        int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct) : 1;
-        conseqTypes.put(ct, ctCount);
+    private void addConsequenceType(VariantEffect effect) {
+        for (int so : effect.getConsequenceTypes()) {
+            String ct = ConsequenceTypeMappings.accessionToTerm.get(so);
+            int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct)+1 : 1;
+            conseqTypes.put(ct, ctCount);
+        }
     }
 
 }
