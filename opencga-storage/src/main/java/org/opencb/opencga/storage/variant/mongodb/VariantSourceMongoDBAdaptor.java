@@ -88,6 +88,11 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
+    public List<QueryResult> getSourceDownloadUrlByName(List<String> filenames) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
     public QueryResult getSourceDownloadUrlById(String fileId, String studyId) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
