@@ -120,7 +120,6 @@ public class OpenCGAMain {
             e.printStackTrace();
         }
 
-
         if (command instanceof CommandCreateAccessions) {
             CommandCreateAccessions c = (CommandCreateAccessions) command;
 
@@ -146,12 +145,7 @@ public class OpenCGAMain {
             Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
             variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
-//
-//            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
-//            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
 
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
-            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
         } else if (command instanceof CommandLoadVariants) {
             CommandLoadVariants c = (CommandLoadVariants) command;
             Path variantsPath = Paths.get(c.input + ".variants.json.gz");
@@ -165,10 +159,6 @@ public class OpenCGAMain {
 
             variantStorageManager.load(variantsPath, credentials, params);
 
-//            Path filePath = Paths.get(c.input + ".file.json.gz");
-//
-//            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
-//            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
         } else if (command instanceof CommandTransformAlignments) {
       /*      CommandTransformAlignments c = (CommandTransformAlignments) command;
             
@@ -233,6 +223,9 @@ public class OpenCGAMain {
         
         List<DataWriter> writers = new ArrayList<>();
         String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
+        if (variantsPath.toString().endsWith(".gz")) {
+            variantsFilename = Files.getNameWithoutExtension(variantsFilename);
+        }
         writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
         
         List<Task<VcfRecord>> taskList = new ArrayList<>();

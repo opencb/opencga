@@ -393,7 +393,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
     private VariantEffectProtos.EffectInfo buildEffectProto(VariantEffect v) {
         VariantEffectProtos.EffectInfo.Builder effect = VariantEffectProtos.EffectInfo.newBuilder();
         effect.setReference(v.getReferenceAllele());
-        effect.setAlternative(v.getAlternativeAllele());
+        effect.setAlternative(v.getAlternateAllele());
         effect.setChromosome(v.getChromosome());
         effect.setPosition(v.getPosition());
         effect.setFeatureId(v.getFeatureId());
