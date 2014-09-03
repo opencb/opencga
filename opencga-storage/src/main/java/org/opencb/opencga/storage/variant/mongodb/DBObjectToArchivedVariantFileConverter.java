@@ -35,8 +35,8 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     
     private List<String> samples;
     
+    private DBObjectToSamplesConverter samplesConverter;
     private DBObjectToVariantStatsConverter statsConverter;
-    private VariantSourceDBAdaptor sourceDbAdaptor;
 
     /**
      * Create a converter between ArchivedVariantFile and DBObject entities when 
@@ -45,6 +45,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     public DBObjectToArchivedVariantFileConverter() {
         this.includeSamples = false;
         this.samples = null;
+        this.samplesConverter = null;
         this.statsConverter = null;
     }
     
@@ -54,34 +55,35 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
      * should be processed during the conversion.
      * 
      * @param samples The list of samples, if any
+     * @param samplesConverter The object used to convert the samples
      * @param statsConverter The object used to convert the file statistics
      */
-    public DBObjectToArchivedVariantFileConverter(List<String> samples, DBObjectToVariantStatsConverter statsConverter) {
+    public DBObjectToArchivedVariantFileConverter(List<String> samples, DBObjectToSamplesConverter samplesConverter, 
+            DBObjectToVariantStatsConverter statsConverter) {
         this.samples = samples;
+        this.samplesConverter = samplesConverter;
         this.statsConverter = statsConverter;
     }
     
     /**
      * Create a converter from DBObject to ArchivedVariantFile entities. A 
-     * list of samples and a statistics converter may be provided in case those 
-     * should be processed during the conversion.
+     * list of samples and converter, and a statistics converter may be provided 
+     * in case those should be processed during the conversion.
      * 
      * If samples are to be included, their names must have been previously 
      * stored in the database and the connection parameters must be provided.
      * 
      * @param includeSamples Whether to include samples or not
+     * @param compressSamples Whether to compress samples or not
      * @param statsConverter The object used to convert the file statistics
      * @param credentials Parameters for connecting to the database
      */
-    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, DBObjectToVariantStatsConverter statsConverter, MongoCredentials credentials) {
+    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, boolean compressSamples, 
+            DBObjectToVariantStatsConverter statsConverter, MongoCredentials credentials) {
         this.includeSamples = includeSamples;
-        if (this.includeSamples) {
-            try {
-                this.sourceDbAdaptor = new VariantSourceMongoDBAdaptor(credentials);
-            } catch (UnknownHostException ex) {
-                Logger.getLogger(DBObjectToArchivedVariantFileConverter.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+        this.samplesConverter = compressSamples ? 
+                new DBObjectToSamplesCompressedConverter(credentials) : 
+                new DBObjectToSamplesDecompressedConverter();
         this.statsConverter = statsConverter;
     }
     
@@ -111,39 +113,12 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         
         // Samples
         if (includeSamples && object.containsField(SAMPLES_FIELD)) {
-            BasicDBObject mongoGenotypes = (BasicDBObject) object.get(SAMPLES_FIELD);
-            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(fileId, studyId, null).getResult().get(0);
-            int numSamples = samples.size();
-            
-            // An array of genotypes is initialized with the most common one
-            Genotype[] genotypes = new Genotype[numSamples];
-            String mostCommonGtString = mongoGenotypes.getString("def");
-            Genotype mostCommongGt = new Genotype(mostCommonGtString);
-            for (int i = 0; i < numSamples; i++) {
-                genotypes[i] = mostCommongGt;
-            }
-            
-            // Loop through the non-most commmon genotypes, and set their value
-            // in the position specified in the array, such as:
-            // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
-            // genotypes[41], genotypes[311], etc, will be set to "0|1"
-            for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
-                if (!dbo.getKey().equals("def")) {
-                    Genotype gt = new Genotype(dbo.getKey());
-                    for (int position : (List<Integer>) dbo.getValue()) {
-                        genotypes[position] = gt;
-                    }
-                }
-            }
+            ArchivedVariantFile fileWithSamplesData = samplesConverter.convertToDataModelType(object);
             
             // Add the samples to the Java object, combining the data structures
             // with the samples' names and the genotypes
-            int i = 0;
-            for (String sample : samples) {
-                Map<String, String> sampleData = new HashMap<>();
-                sampleData.put("GT", genotypes[i].toString());
-                file.addSampleData(sample, sampleData);
-                i++;
+            for (Map.Entry<String, Map<String, String>> sampleData : fileWithSamplesData.getSamplesData().entrySet()) {
+                file.addSampleData(sampleData.getKey(), sampleData.getValue());
             }
         }
         
@@ -183,53 +158,9 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
             }
         }
 
-        // Samples are stored in a map, classified by their genotype.
-        // The most common genotype will be marked as "default" and the specific
-        // positions where it is shown will not be stored. Example from 1000G:
-        // "def" : 0|0,       
-        // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
-        // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         if (samples != null && !samples.isEmpty()) {
             mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-
-            Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
-            int i = 0;
-            
-            // Classify samples by genotype
-            for (String sampleName : samples) {
-                String genotype = object.getSampleData(sampleName, "GT");
-                if (genotype != null) {
-                    Genotype g = new Genotype(genotype);
-                    List<Integer> samplesWithGenotype = genotypeCodes.get(g);
-                    if (samplesWithGenotype == null) {
-                        samplesWithGenotype = new ArrayList<>();
-                        genotypeCodes.put(g, samplesWithGenotype);
-                    }
-                    samplesWithGenotype.add(i);
-                }
-                i++;
-            }
-            
-            // Get the most common genotype
-            Map.Entry<Genotype, List<Integer>> longestList = null;
-            for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
-                List<Integer> genotypeList = entry.getValue();
-                if (longestList == null || genotypeList.size() > longestList.getValue().size()) {
-                    longestList = entry;
-                }
-            }
-            
-            // Create the map to store in Mongo
-            BasicDBObject mongoGenotypeCodes = new BasicDBObject();
-            for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
-                if (entry.getKey().equals(longestList.getKey())) {
-                    mongoGenotypeCodes.append("def", entry.getKey().toString());
-                } else {
-                    mongoGenotypeCodes.append(entry.getKey().toString(), entry.getValue());
-                }
-            }
-            
-            mongoFile.put(SAMPLES_FIELD, mongoGenotypeCodes);
+            mongoFile.put(SAMPLES_FIELD, samplesConverter.convertToStorageType(object));
         }
         
         // Statistics

@@ -48,6 +48,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     private DBObjectToVariantStatsConverter statsConverter;
     private DBObjectToVariantSourceConverter sourceConverter;
     private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
+    private DBObjectToSamplesConverter samplesConverter;
     
     private long numVariantsWritten;
     
@@ -333,8 +334,11 @@ public class VariantMongoWriter extends VariantDBWriter {
     private void setConverters(boolean includeStats, boolean includeSamples, boolean includeEffect) {
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
+        // TODO Allow to configure samples compression
+        samplesConverter = new DBObjectToSamplesCompressedConverter();
         archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
                 includeSamples ? samples : null,
+                includeSamples ? samplesConverter : null,
                 includeStats ? statsConverter : null);
         // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
 //        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);

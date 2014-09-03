@@ -74,7 +74,8 @@ public class DBObjectToArchivedVariantFileConverterTest {
         mongoStats.append(DBObjectToVariantStatsConverter.NUMGT_FIELD, genotypes);
         mongoFile.append(DBObjectToArchivedVariantFileConverter.STATS_FIELD, mongoStats);
         
-        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(null, new DBObjectToVariantStatsConverter());
+        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(
+                null, null, new DBObjectToVariantStatsConverter());
         ArchivedVariantFile converted = converter.convertToDataModelType(mongoFile);
         assertEquals(file, converted);
     }
@@ -101,7 +102,8 @@ public class DBObjectToArchivedVariantFileConverterTest {
         mongoFile.append(DBObjectToArchivedVariantFileConverter.STATS_FIELD, mongoStats);
         
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
-        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(sampleNames, new DBObjectToVariantStatsConverter());
+        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(
+                sampleNames, new DBObjectToSamplesCompressedConverter(), new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(file);
         
         assertEquals(mongoFile.get(DBObjectToVariantStatsConverter.MAF_FIELD), converted.get(DBObjectToVariantStatsConverter.MAF_FIELD));
@@ -118,12 +120,12 @@ public class DBObjectToArchivedVariantFileConverterTest {
         file.getSamplesData().clear(); // TODO Samples can't be tested easily, needs a running Mongo instance
         
         // Test with no stats converter provided
-        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(null, null);
+        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(null, null, null);
         ArchivedVariantFile converted = converter.convertToDataModelType(mongoFile);
         assertEquals(file, converted);
         
         // Test with a stats converter provided but no stats object
-        converter = new DBObjectToArchivedVariantFileConverter(null, new DBObjectToVariantStatsConverter());
+        converter = new DBObjectToArchivedVariantFileConverter(null, null, new DBObjectToVariantStatsConverter());
         converted = converter.convertToDataModelType(mongoFile);
         assertEquals(file, converted);
     }
@@ -131,13 +133,15 @@ public class DBObjectToArchivedVariantFileConverterTest {
     @Test
     public void testConvertToStorageTypeWithoutStats() {
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
-        // TODO Test with no stats converter provided
-        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(sampleNames, null);
+        // Test with no stats converter provided
+        DBObjectToArchivedVariantFileConverter converter = new DBObjectToArchivedVariantFileConverter(
+                sampleNames, new DBObjectToSamplesCompressedConverter(sampleNames), null);
         DBObject converted = converter.convertToStorageType(file);
         assertEquals(mongoFile, converted);
         
         // Test with a stats converter provided but no stats object
-        converter = new DBObjectToArchivedVariantFileConverter(sampleNames, new DBObjectToVariantStatsConverter());
+        converter = new DBObjectToArchivedVariantFileConverter(sampleNames, 
+                new DBObjectToSamplesCompressedConverter(sampleNames), new DBObjectToVariantStatsConverter());
         converted = converter.convertToStorageType(file);
         assertEquals(mongoFile, converted);
     }
