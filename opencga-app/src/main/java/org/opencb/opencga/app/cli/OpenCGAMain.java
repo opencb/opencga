@@ -3,27 +3,18 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
-import java.io.FileInputStream;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
-import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
+
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
-import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -36,18 +27,12 @@ import org.opencb.opencga.app.cli.OptionsParser.CommandTransformAlignments;
 import org.opencb.opencga.app.cli.OptionsParser.CommandDownloadAlignments;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
+import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
-import org.opencb.variant.lib.runners.VariantRunner;
-import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
-import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 //import org.opencb.opencga.storage.variant.VariantVcfHbaseWriter;
 
@@ -59,33 +44,47 @@ public class OpenCGAMain {
     private static final String APPLICATION_PROPERTIES_FILE = "application.properties";
     private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
     private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
+    private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
 
+    private static AlignmentStorageManager alignmentStorageManager = null;
     private static VariantStorageManager variantStorageManager = null;
+    //private static StorageManager storageManager = null; //TODO: Use only one generic StorageManager instead of one for variant and other for alignment
 
-    public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException {
+    protected static Logger logger = LoggerFactory.getLogger(OpenCGAMain.class);
+
+
+    public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException {
+
         OptionsParser parser = new OptionsParser();
-        // If no arguments are provided, or -h/--help is the first argument, the usage is shown
-        if (args.length == 0 || args[0].equals("-h") || args[0].equals("--help")) {
-            System.out.println(parser.usage());
-            return;
-        }
-
+        boolean variantCommand = false;
+        boolean alignmentCommand = false;
         Command command = null;
         try {
-            switch (parser.parse(args)) {
+            String parsedCommand = parser.parse(args);
+
+            if(parser.getGeneralParameters().help){
+                System.out.println(parser.usage());
+                return;
+            }
+
+            switch (parsedCommand) {
                 case "create-accessions":
                     command = parser.getAccessionsCommand();
                     break;
                 case "load-variants":
+                    variantCommand = true;
                     command = parser.getLoadCommand();
                     break;
                 case "transform-variants":
+                    variantCommand = true;
                     command = parser.getTransformCommand();
                     break;
                 case "transform-alignments":
+                    alignmentCommand = true;
                     command = parser.getTransformAlignments();
                     break;
                 case "load-alignments":
+                    alignmentCommand = true;
                     command = parser.getLoadAlignments();
                     break;
                 case "download-alignments":
@@ -102,21 +101,32 @@ public class OpenCGAMain {
         }
 
 
+        Path defaultPropertiesPath = Paths.get(OPENCGA_HOME, APPLICATION_PROPERTIES_FILE);
+        Path propertiesPath = null;
+        if(parser.getGeneralParameters().propertiesPath != null) {
+            propertiesPath = Paths.get(parser.getGeneralParameters().propertiesPath);
+        }
+
+
+        //Get the StorageManager
         try {
-
-
-            variantStorageManager = (VariantStorageManager) Class.forName(MONGODB_VARIANT_MANAGER).newInstance();
-            Path propPath = Paths.get(OPENCGA_HOME, APPLICATION_PROPERTIES_FILE);
-            if(propPath != null && propPath.toFile().exists()) {
-                variantStorageManager.setProperties(propPath);
+            if(variantCommand) {
+                String variantManagerName = parser.getGeneralParameters().storageManagerName !=null?
+                        parser.getGeneralParameters().storageManagerName :
+                        MONGODB_VARIANT_MANAGER;
+                variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
+                variantStorageManager.addPropertiesPath(defaultPropertiesPath);
+                variantStorageManager.addPropertiesPath(propertiesPath);
+            } else if(alignmentCommand) {
+                String alignmentManagerName = parser.getGeneralParameters().storageManagerName !=null?
+                        parser.getGeneralParameters().storageManagerName :
+                        MONGODB_ALIGNMENT_MANAGER;
+                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+                alignmentStorageManager.addPropertiesPath(defaultPropertiesPath);
+                alignmentStorageManager.addPropertiesPath(propertiesPath);
             }
-            //variantStorageManager.setProperties(...); //Add default properties
-
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            logger.error("Error during the reflexion",e);
             e.printStackTrace();
         }
 
@@ -150,7 +160,6 @@ public class OpenCGAMain {
             CommandLoadVariants c = (CommandLoadVariants) command;
             Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path credentials = Paths.get(c.credentials);
-            //variantStorageManager.setProperties(Paths.get(c.credentials));
 
             Map<String, Object> params = new LinkedHashMap<>();
             params.put("includeEffect", c.includeEffect);
@@ -160,16 +169,33 @@ public class OpenCGAMain {
             variantStorageManager.load(variantsPath, credentials, params);
 
         } else if (command instanceof CommandTransformAlignments) {
-      /*      CommandTransformAlignments c = (CommandTransformAlignments) command;
-            
+
+
+            CommandTransformAlignments c = (CommandTransformAlignments) command;
+
+            Map<String, Object> params = new LinkedHashMap<>();
+
+            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+            params.put(AlignmentStorageManager.STUDY,   c.study);
+            params.put(AlignmentStorageManager.PLAIN,   c.plain);
+            params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
+            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.includeCoverage);
+
+            Path input = Paths.get(c.file);
+            Path output = Paths.get(c.outdir);
+
+            alignmentStorageManager.transform(input, null, output, params);
+
+      /*
+
             Path filePath = Paths.get(c.file);
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
             String backend = c.plain ? "json" : "json.gz";
-            
+
             if (!filePath.toFile().exists()) {
                 throw new IOException("[Error] File not found : " + c.file);
             }
-            
+
             indexAlignments(
                     c.study, //c.studyId,
                     filePath,
@@ -178,9 +204,19 @@ public class OpenCGAMain {
                     true,
                     false,              //Can't be loaded
                     c.includeCoverage, c.meanCoverage);*/
-        
+
         } else if (command instanceof CommandLoadAlignments){
             CommandLoadAlignments c = (CommandLoadAlignments) command;
+
+            Map<String, Object> params = new LinkedHashMap<>();
+
+            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.includeCoverage);
+
+            Path input = Paths.get(c.input);
+            Path credentials = Paths.get(c.credentials);
+
+            alignmentStorageManager.load(input, credentials, params);
+
             /*
             //Path filePath = Paths.get(c.dir, c.input + ".alignment" + (c.plain ? ".json" : ".json.gz"));
             Path filePath = Paths.get(c.input);
@@ -238,7 +274,7 @@ public class OpenCGAMain {
         System.out.println("Variants accessioned!");
     }
 
-    
+/*    @Deprecated
     private static void indexVariants(String step, VariantSource source, Path mainFilePath, Path auxiliaryFilePath, Path outdir, String backend,
                                       Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples, String aggregated)
             throws IOException, IllegalOpenCGACredentialsException {
@@ -287,13 +323,14 @@ public class OpenCGAMain {
         } else if (backend.equalsIgnoreCase("json")) {
 //            credentials = new MongoCredentials(properties);
             writers.add(new VariantJsonWriter(source, outdir));
-        }/* else if (backend.equalsIgnoreCase("sqlite")) {
-            credentials = new SqliteCredentials(properties);
-            writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
-        } else if (backend.equalsIgnoreCase("monbase")) {
-            credentials = new MonbaseCredentials(properties);
-            writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));// TODO Restore when SQLite and Monbase are once again ready!!
-        } */
+        }
+//        else if (backend.equalsIgnoreCase("sqlite")) {
+//            credentials = new SqliteCredentials(properties);
+//            writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
+//        } else if (backend.equalsIgnoreCase("monbase")) {
+//            credentials = new MonbaseCredentials(properties);
+//            writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));// TODO Restore when SQLite and Monbase are once again ready!!
+//        }
 
 
         // If a JSON file is provided, then stats and effects do not need to be recalculated
@@ -319,8 +356,10 @@ public class OpenCGAMain {
         vr.run();
         System.out.println("Variants indexed!");
     }
-
+*/
 /*
+
+    @Deprecated
     private static void indexAlignments(
             String study, //String studyId,
             Path filePath, 
