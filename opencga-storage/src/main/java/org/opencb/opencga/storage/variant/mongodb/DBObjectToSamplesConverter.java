@@ -68,7 +68,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
     
     @Override
     public ArchivedVariantFile convertToDataModelType(DBObject object) {
-        if (samples == null && sourceDbAdaptor != null) { // samples not set as constructor argument, need to query
+        if (samples == null && sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
             samples = (List<String>) sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), 
                     object.get(STUDYID_FIELD).toString(), null).getResult().get(0);
         }
@@ -119,6 +119,14 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
 
     @Override
     public DBObject convertToStorageType(ArchivedVariantFile object) {
+        if (compressSamples) {
+            return getCompressedSamples(object);
+        } else {
+            return getDecompressedSamples(object);
+        }
+    }
+    
+    private DBObject getCompressedSamples(ArchivedVariantFile object) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
         int i = 0;
 
@@ -152,16 +160,27 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
         // "def" : 0|0,       
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
-        BasicDBObject mongoGenotypeCodes = new BasicDBObject();
+        BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
             if (longestList != null && entry.getKey().equals(longestList.getKey())) {
-                mongoGenotypeCodes.append("def", entry.getKey().toString());
+                mongoSamples.append("def", entry.getKey().toString());
             } else {
-                mongoGenotypeCodes.append(entry.getKey().toString(), entry.getValue());
+                mongoSamples.append(entry.getKey().toString(), entry.getValue());
             }
         }
         
-        return mongoGenotypeCodes;
+        return mongoSamples;
     }
     
+    private DBObject getDecompressedSamples(ArchivedVariantFile object) {
+        BasicDBObject mongoSamples = new BasicDBObject();
+        for (Map.Entry<String, Map<String, String>> entry : object.getSamplesData().entrySet()) {
+            BasicDBObject sampleData = new BasicDBObject();
+            for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
+                sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());
+            }
+            mongoSamples.put(entry.getKey(), sampleData);
+        }
+        return mongoSamples;
+    }
 }
