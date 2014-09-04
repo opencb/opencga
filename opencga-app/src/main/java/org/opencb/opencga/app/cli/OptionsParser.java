@@ -1,10 +1,7 @@
 package org.opencb.opencga.app.cli;
 
-import com.beust.jcommander.IValueValidator;
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
-import com.beust.jcommander.Parameters;
+import com.beust.jcommander.*;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -23,19 +20,52 @@ public class OptionsParser {
     private CommandTransformAlignments transformAlignments;
     private CommandLoadAlignments loadAlignments;
     private CommandDownloadAlignments downloadAlignments;
+    private final GeneralParameters generalParameters;
 
     public OptionsParser() {
         jcommander = new JCommander();
+        jcommander.addObject(generalParameters = new GeneralParameters());
         jcommander.addCommand(accessions = new CommandCreateAccessions());
         jcommander.addCommand(transform = new CommandTransformVariants());
         jcommander.addCommand(load = new CommandLoadVariants());
-        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
-        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
-        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
+//        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
+//        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
+//        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
-    
-    interface Command {}
-          
+
+    interface Command {
+    }
+
+    class GeneralParameters implements Command {
+        @Parameter(names = { "--properties-path" }, description = "Properties path")
+        String propertiesPath = null;
+
+        @Parameter(names = { "--sm-name" }, description = "StorageManager class name. (Must be in the classpath)")
+        String storageManagerName;
+
+        @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
+        boolean help;
+
+        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+        private Map<String, String> params = new HashMap<String, String>();
+
+        @Override
+        public String toString() {
+            String paramsString = "{";
+            for(Map.Entry<String, String> e :  params.entrySet()){
+                paramsString += e.getKey()+" = "+e.getValue() + ", ";
+            }
+            paramsString+="}";
+            return "GeneralParameters{" +
+                    "propertiesPath='" + propertiesPath + '\'' +
+                    ", storageManagerName='" + storageManagerName + '\'' +
+                    ", help=" + help +
+                    ", params=" + paramsString +
+                    '}';
+        }
+    }
+
+
     @Parameters(commandNames = { "create-accessions" }, commandDescription = "Creates accession IDs for an input file")
     class CommandCreateAccessions implements Command {
         
@@ -244,13 +274,14 @@ public class OptionsParser {
     
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
-        return jcommander.getParsedCommand();
+        String parsedCommand = jcommander.getParsedCommand();
+        return parsedCommand!=null?parsedCommand:"";
     }
 
     String usage() {
         StringBuilder builder = new StringBuilder();
         jcommander.usage(builder);
-        return builder.toString();
+        return builder.toString().replaceAll("\\^.*Default: false\\$\n", "");
     }
 
     CommandCreateAccessions getAccessionsCommand() {
@@ -277,4 +308,7 @@ public class OptionsParser {
         return downloadAlignments;
     }
 
+    GeneralParameters getGeneralParameters() {
+        return generalParameters;
+    }
 }

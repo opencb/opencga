@@ -24,7 +24,7 @@ import java.util.Properties;
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
-    public VariantDBAdaptor getVariantDBAdaptor(Path credentialsPath) {
+    public VariantDBAdaptor getDBAdaptor(Path credentialsPath) {
         Properties credentialsProperties = new Properties();
         try {
             credentialsProperties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
@@ -44,7 +44,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantWriter getVariantDBWriter(Path credentialsPath, VariantSource source) {
+    public VariantWriter getDBWriter(Path credentialsPath, VariantSource source) {
         Properties credentialsProperties = new Properties();
         try {
             credentialsProperties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));

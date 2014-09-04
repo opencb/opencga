@@ -31,14 +31,6 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     public static final String FILE_ID = "fileId";
     public static final String INCLUDE_COVERAGE = "includeCoverage";
 
-    public AlignmentStorageManager(){
-    }
-
-    public AlignmentStorageManager(Path propertiesPath){
-    }
-
-    public void setPropertiesPath(Path propertiesPath){
-    }
 
     @Override
     public DataWriter<AlignmentRegion> getDBSchemaWriter(Path output) {

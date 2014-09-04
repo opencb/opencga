@@ -11,8 +11,8 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
@@ -23,51 +23,51 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by imedina on 13/08/14.
  */
-public abstract class VariantStorageManager /*implements StorageManager<VariantReader, VariantWriter, VariantDBAdaptor>*/{
+public abstract class VariantStorageManager /*implements StorageManager<VariantReader, VariantWriter, VariantDBAdaptor>*/ {
+
 
     protected Properties properties;
 
     public VariantStorageManager() {
-        properties = new Properties();
-    }
-
-    public VariantStorageManager(Path properties) {
         this.properties = new Properties();
-        setProperties(properties);
     }
 
-    public void setProperties(Path propertiesPath){
-        try {
-            properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toString())));
-        } catch (IOException e) {
-            e.printStackTrace();
+    //@Override
+    public void addPropertiesPath(Path propertiesPath){
+        if(propertiesPath != null && propertiesPath.toFile().exists()) {
+            try {
+                properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toString())));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void setProperty(String key, String value){
-        properties.put(key, value);
-    }
-
-    abstract public VariantDBAdaptor getVariantDBAdaptor(Path credentials);
-
-    public VariantReader getVariantDBSchemaReader() {
+    //@Override
+    public VariantWriter getDBWriter(Path credentials, String fileId) {
         return null;
     }
 
-    public List<VariantWriter> getVariantDBSchemaWriter() {
+    //@Override
+    abstract public VariantDBAdaptor getDBAdaptor(Path credentials);
+
+    //@Override
+    public VariantReader getDBSchemaReader(Path input) {
+        return null;
+    }
+
+    //@Override
+    public VariantWriter getDBSchemaWriter(Path output) {
         return null;
     }
 
     //TODO: Remove VariantSource
-    abstract public VariantWriter getVariantDBWriter(Path credentials, VariantSource source);
+    abstract public VariantWriter getDBWriter(Path credentials, VariantSource source);
 
 
     /**
@@ -149,11 +149,11 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
 
     public void preLoad(Path input, Path output, Map<String, Object> params) throws IOException {
         // input: JsonVariatnReader
-        // output: getVariantDBSchemaWriter
+        // output: getDBSchemaWriter
 
         //Writers
-        List<VariantWriter> writers = this.getVariantDBSchemaWriter();
-        if(writers == null){
+        List<VariantWriter> writers = Arrays.asList(this.getDBSchemaWriter(output));
+        if(writers.isEmpty()){
             System.out.println("[ALERT] preLoad method not supported in this plugin");
             return;
         }
@@ -180,8 +180,8 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
 
 
     public void load(Path input, Path credentials, Map<String, Object> params) throws IOException {
-        // input: getVariantDBSchemaReader
-        // output: getVariantDBWriter()
+        // input: getDBSchemaReader
+        // output: getDBWriter()
 
         boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
         boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
@@ -189,7 +189,7 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
         //Reader
-        VariantReader variantDBSchemaReader = this.getVariantDBSchemaReader();
+        VariantReader variantDBSchemaReader = this.getDBSchemaReader(input);
         if (variantDBSchemaReader == null) {
             if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
                 String sourceFile = input.toAbsolutePath().toString().replace("variant.json", "file.json");
@@ -204,7 +204,7 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
 
 
         //Writers
-        VariantWriter variantDBWriter = this.getVariantDBWriter(credentials, source);
+        VariantWriter variantDBWriter = this.getDBWriter(credentials, source);
         List<VariantWriter> writers = new ArrayList<>();
         writers.add(variantDBWriter);
 

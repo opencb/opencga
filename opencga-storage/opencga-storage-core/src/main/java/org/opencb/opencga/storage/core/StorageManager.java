@@ -11,6 +11,8 @@ import java.util.Map;
  */
 public interface StorageManager<READER, WRITER, ADAPTOR> {
 
+    public void addPropertiesPath(Path propertiesPath);
+
     public WRITER getDBSchemaWriter(Path output);
     public READER getDBSchemaReader(Path input);
     public WRITER getDBWriter(Path credentials, String fileId);
