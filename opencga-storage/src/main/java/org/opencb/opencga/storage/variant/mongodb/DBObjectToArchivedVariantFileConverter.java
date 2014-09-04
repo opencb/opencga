@@ -3,21 +3,16 @@ package org.opencb.opencga.storage.variant.mongodb;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.datastore.core.ComplexTypeConverter;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.VariantSourceDBAdaptor;
 
 /**
+ * TODO Allow compressed and decompressed modes
  * 
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
@@ -54,36 +49,50 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
      * list of samples and a statistics converter may be provided in case those 
      * should be processed during the conversion.
      * 
+     * @param compressSamples Whether to compress samples or not
      * @param samples The list of samples, if any
-     * @param samplesConverter The object used to convert the samples
      * @param statsConverter The object used to convert the file statistics
      */
-    public DBObjectToArchivedVariantFileConverter(List<String> samples, DBObjectToSamplesConverter samplesConverter, 
+    public DBObjectToArchivedVariantFileConverter(boolean compressSamples, List<String> samples, 
             DBObjectToVariantStatsConverter statsConverter) {
         this.samples = samples;
-        this.samplesConverter = samplesConverter;
+        this.samplesConverter = new DBObjectToSamplesConverter(compressSamples);
         this.statsConverter = statsConverter;
     }
     
     /**
      * Create a converter from DBObject to ArchivedVariantFile entities. A 
-     * list of samples and converter, and a statistics converter may be provided 
-     * in case those should be processed during the conversion.
+     * list of samples and a statistics converter may be provided in case those 
+     * should be processed during the conversion.
+     * 
+     * @param includeSamples Whether to include samples or not
+     * @param statsConverter The object used to convert the file statistics
+     * @param samples The list of samples, if any
+     */
+    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, 
+            DBObjectToVariantStatsConverter statsConverter, List<String> samples) {
+        this.includeSamples = includeSamples;
+        this.samples = samples;
+        this.samplesConverter = new DBObjectToSamplesConverter(samples);
+        this.statsConverter = statsConverter;
+    }
+    
+    /**
+     * Create a converter from DBObject to ArchivedVariantFile entities. A 
+     * statistics converter may be provided in case those should be processed 
+     * during the conversion.
      * 
      * If samples are to be included, their names must have been previously 
      * stored in the database and the connection parameters must be provided.
      * 
      * @param includeSamples Whether to include samples or not
-     * @param compressSamples Whether to compress samples or not
      * @param statsConverter The object used to convert the file statistics
      * @param credentials Parameters for connecting to the database
      */
-    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, boolean compressSamples, 
+    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, 
             DBObjectToVariantStatsConverter statsConverter, MongoCredentials credentials) {
         this.includeSamples = includeSamples;
-        this.samplesConverter = compressSamples ? 
-                new DBObjectToSamplesCompressedConverter(credentials) : 
-                new DBObjectToSamplesDecompressedConverter();
+        this.samplesConverter = new DBObjectToSamplesConverter(credentials);
         this.statsConverter = statsConverter;
     }
     

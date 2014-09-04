@@ -34,7 +34,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
-        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, true, 
+        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, 
                 new DBObjectToVariantStatsConverter(), credentials);
         variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }

@@ -335,10 +335,9 @@ public class VariantMongoWriter extends VariantDBWriter {
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
         // TODO Allow to configure samples compression
-        samplesConverter = new DBObjectToSamplesCompressedConverter();
         archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+                true,
                 includeSamples ? samples : null,
-                includeSamples ? samplesConverter : null,
                 includeStats ? statsConverter : null);
         // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
 //        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
