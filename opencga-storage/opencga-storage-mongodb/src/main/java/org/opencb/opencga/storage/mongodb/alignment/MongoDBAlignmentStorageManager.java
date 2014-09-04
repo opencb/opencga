@@ -35,41 +35,33 @@ import java.util.*;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     public static final String MONGO_DB_NAME = "opencga";
-    public static final String MEAN_COVERAGE_SIZE_LIST = "meanCoverageSizeList";
-    public static final String PLAIN = "plain";
-    public static final String REGION_SIZE = "regionSize";
-    public static final String STUDY = "study";
 
-    private MongoCredentials mongoCredentials;
-    private final Properties properties;
+    private MongoCredentials mongoCredentials = null;
+    private final Properties properties = new Properties();
     private AlignmentMetaDataDBAdaptor metadata;
    // private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
     protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
 
 
+    public MongoDBAlignmentStorageManager() {
+
+    }
     public MongoDBAlignmentStorageManager(Path propertiesPath) {
         super(propertiesPath);
-
-        this.properties = new Properties();
-        try {
-            properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toString())));
-        } catch (IOException e) {
-            logger.error(e.getMessage(), e);
-        }
-        try {
-            this.mongoCredentials = new MongoCredentials(
-                    properties.getProperty("mongo_host","localhost"),
-                    Integer.parseInt(properties.getProperty("mongo_port", "27017")),
-                    properties.getProperty("mongo_db_name",MONGO_DB_NAME),
-                    properties.getProperty("mongo_user",null),
-                    properties.getProperty("mongo_password",null)
-            );
-            //this.mongoCredentials = new MongoCredentials(properties);
-        } catch (IllegalOpenCGACredentialsException e) {
-            logger.error(e.getMessage(), e);
+        if(propertiesPath != null) {
+            setPropertiesPath(propertiesPath);
         }
 
         this.metadata = new AlignmentMetaDataDBAdaptor(properties.getProperty("files-index", "/tmp/files-index.properties"));
+    }
+
+    @Override
+    public void setPropertiesPath(Path propertiesPath){
+        try {
+                properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toFile())));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+        }
     }
 
 
@@ -98,17 +90,6 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         return null;
     }
 
-//    @Override
-//    public AlignmentQueryBuilder getDBAdaptor(Path sqlitePath) {
-//        SqliteCredentials sqliteCredentials;
-//        try {
-//            sqliteCredentials = new SqliteCredentials(sqlitePath);
-//        } catch (IllegalOpenCGACredentialsException e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//        return new TabixAlignmentQueryBuilder(sqliteCredentials, null, null);
-//    }
 
     @Override
     public AlignmentQueryBuilder getDBAdaptor(Path path) {
@@ -120,6 +101,20 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
                 adaptor = new SqliteSequenceDBAdaptor(path);
             } else {
                 adaptor = new CellBaseSequenceDBAdaptor(path);
+            }
+        }
+        if(mongoCredentials == null){
+            try {
+                this.mongoCredentials = new MongoCredentials(
+                        properties.getProperty("mongo_host","localhost"),
+                        Integer.parseInt(properties.getProperty("mongo_port", "27017")),
+                        properties.getProperty("mongo_db_name",MONGO_DB_NAME),
+                        properties.getProperty("mongo_user",null),
+                        properties.getProperty("mongo_password",null)
+                );
+                //this.mongoCredentials = new MongoCredentials(properties);
+            } catch (IllegalOpenCGACredentialsException e) {
+                logger.error(e.getMessage(), e);
             }
         }
         return new IndexedAlignmentDBAdaptor(adaptor, mongoCredentials);
@@ -139,23 +134,26 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         Path sqliteSequenceDBPath = Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
 
         /*
-         * 1º Transform into a BAM
-         * 2º Sort
-         * 3º Index (bai)
-         * 4º Add in metadata
-         * 5º Calculate Coverage
+         * 1 Transform into a BAM
+         * 2 Sort
+         * 3 Index (bai)
+         * 4 Add in metadata
+         * 5 Calculate Coverage
          */
 
-        //1º
+        //1
         if(!inputPath.toString().endsWith(".bam")){
+
+            //samtools -b -h -S file.sam > file.bam
 
             System.out.println("[ERROR] Expected BAM file");
             throw new FileFormatException("Expected BAM file");
         }
 
-        //2º Sort
+        //2 Sort
+        //samtools sort -o
 
-        //3º
+        //3
         //name.bam
         //name.bam.bai
         Path inputBamIndexFile = Paths.get(inputPath.toString() + ".bai");
@@ -172,11 +170,11 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 //        }
 
 
-        //4º Add in metadata
+        //4 Add in metadata
         String index = metadata.registerPath(inputPath);
 
 
-        //5º Calculate Coverage
+        //5 Calculate Coverage
         //reader
         AlignmentDataReader reader;
 

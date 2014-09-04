@@ -23,8 +23,21 @@ import java.util.Map;
  */
 public abstract class AlignmentStorageManager implements StorageManager<DataReader<AlignmentRegion>, DataWriter<AlignmentRegion>, AlignmentQueryBuilder> {
 
-    public AlignmentStorageManager(Path credentialsPath){
 
+    public static final String MEAN_COVERAGE_SIZE_LIST = "meanCoverageSizeList";
+    public static final String PLAIN = "plain";
+    public static final String REGION_SIZE = "regionSize";
+    public static final String STUDY = "study";
+    public static final String FILE_ID = "fileId";
+    public static final String INCLUDE_COVERAGE = "includeCoverage";
+
+    public AlignmentStorageManager(){
+    }
+
+    public AlignmentStorageManager(Path propertiesPath){
+    }
+
+    public void setPropertiesPath(Path propertiesPath){
     }
 
     @Override
