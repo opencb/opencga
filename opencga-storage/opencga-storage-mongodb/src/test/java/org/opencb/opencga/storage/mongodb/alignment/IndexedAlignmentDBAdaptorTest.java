@@ -24,7 +24,8 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     @Before
     public void before(){
         manager = new MongoDBAlignmentStorageManager(Paths.get("/media/jacobo/Nusado/opencga", "opencga.properties"));
-        metadata = manager.getMetadata();
+        metadata = new AlignmentMetaDataDBAdaptor(manager.getProperties().getProperty("files-index", "/tmp/files-index.properties"));
+        //manager.getMetadata();
 
         Path adaptorPath = null;
         adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");

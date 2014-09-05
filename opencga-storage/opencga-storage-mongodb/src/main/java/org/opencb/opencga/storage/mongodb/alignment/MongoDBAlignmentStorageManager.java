@@ -1,9 +1,11 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
+import net.sf.samtools.BAMFileWriter;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMRecordIterator;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
-import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
@@ -30,37 +32,38 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Created by jacobo on 15/08/14.
+ * Date 15/08/14.
+ *
+ * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
  */
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     public static final String MONGO_DB_NAME = "opencga";
 
-    private MongoCredentials mongoCredentials = null;
+//    private MongoCredentials mongoCredentials = null;
     private final Properties properties = new Properties();
-    private AlignmentMetaDataDBAdaptor metadata;
-   // private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
+    //private AlignmentMetaDataDBAdaptor metadata;
+    //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
     protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
 
 
-    public MongoDBAlignmentStorageManager() {
-
-    }
     public MongoDBAlignmentStorageManager(Path propertiesPath) {
-        super(propertiesPath);
-        if(propertiesPath != null) {
-            setPropertiesPath(propertiesPath);
-        }
+        this();
+        addPropertiesPath(propertiesPath);
+    }
 
-        this.metadata = new AlignmentMetaDataDBAdaptor(properties.getProperty("files-index", "/tmp/files-index.properties"));
+    public MongoDBAlignmentStorageManager() {
+        super();
     }
 
     @Override
-    public void setPropertiesPath(Path propertiesPath){
-        try {
+    public void addPropertiesPath(Path propertiesPath){
+        if(propertiesPath != null && propertiesPath.toFile().exists()) {
+            try {
                 properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toFile())));
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
+            }
         }
     }
 
@@ -82,7 +85,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
                 credentialsProperties.load(new InputStreamReader(new FileInputStream(credentials.toString())));
                 return new CoverageMongoWriter(new MongoCredentials(credentialsProperties), fileId);
             } else {
-                return new CoverageMongoWriter(this.mongoCredentials, fileId);
+                return new CoverageMongoWriter(getMongoCredentials(), fileId);
             }
         } catch (IOException e) {
             logger.error(e.toString(), e);
@@ -90,6 +93,22 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         return null;
     }
 
+
+    private MongoCredentials getMongoCredentials(){
+        try {
+            return new MongoCredentials(
+                    properties.getProperty("mongo_host","localhost"),
+                    Integer.parseInt(properties.getProperty("mongo_port", "27017")),
+                    properties.getProperty("mongo_db_name",MONGO_DB_NAME),
+                    properties.getProperty("mongo_user",null),
+                    properties.getProperty("mongo_password",null)
+            );
+            //this.mongoCredentials = new MongoCredentials(properties);
+        } catch (IllegalOpenCGACredentialsException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
 
     @Override
     public AlignmentQueryBuilder getDBAdaptor(Path path) {
@@ -103,88 +122,148 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
                 adaptor = new CellBaseSequenceDBAdaptor(path);
             }
         }
-        if(mongoCredentials == null){
-            try {
-                this.mongoCredentials = new MongoCredentials(
-                        properties.getProperty("mongo_host","localhost"),
-                        Integer.parseInt(properties.getProperty("mongo_port", "27017")),
-                        properties.getProperty("mongo_db_name",MONGO_DB_NAME),
-                        properties.getProperty("mongo_user",null),
-                        properties.getProperty("mongo_password",null)
-                );
-                //this.mongoCredentials = new MongoCredentials(properties);
-            } catch (IllegalOpenCGACredentialsException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-        return new IndexedAlignmentDBAdaptor(adaptor, mongoCredentials);
+
+        return new IndexedAlignmentDBAdaptor(adaptor, getMongoCredentials());
 
     }
 
 
+    /**
+     * Copy into the output path                   : <outputPath>/<FILE_ID>.bam
+     * Create the bai with the samtools            : <outputPath>/<FILE_ID>.bam.bai
+     * Calculate the coverage                      : <outputPath>/<FILE_ID>.bam.mean-coverage.json[.gz]
+     * Calculate the meanCoverage                  : <outputPath>/<FILE_ID>.bam.coverage.json[.gz]
+     *
+     * @param input         Sorted/unsorted bam file
+     * @param pedigree      Not used
+     * @param outputPath    Output path where files are created
+     * @param params        Hash for extra params. FILE_ID, ENCRYPT, PLAIN, REGION_SIZE, MEAN_COVERAGE_SIZE_LIST
+     * @throws IOException
+     * @throws FileFormatException
+     */
     @Override
-    public void transform(Path inputPath, Path pedigree, Path output, Map<String, Object> params) throws IOException, FileFormatException {
+    public void transform(Path input, Path pedigree, Path outputPath, Map<String, Object> params) throws IOException, FileFormatException {
 
-
-        String study = params.containsKey(STUDY)? params.get(STUDY).toString(): STUDY;
+       // String study = params.containsKey(STUDY)? params.get(STUDY).toString(): null;
+        String fileId = params.containsKey(FILE_ID)? params.get(FILE_ID).toString(): input.getFileName().toString().split("\\.")[0];
+        String encrypt = params.containsKey(ENCRYPT)? params.get(ENCRYPT).toString(): "null";
         boolean plain = params.containsKey(PLAIN)? Boolean.parseBoolean(params.get(PLAIN).toString()): false;
-        int regionSize = params.containsKey(REGION_SIZE)? Integer.parseInt(params.get(REGION_SIZE).toString()): 20000;
-        List<String> meanCoverageSizeList = (List<String>) (params.containsKey(MEAN_COVERAGE_SIZE_LIST)? params.get(MEAN_COVERAGE_SIZE_LIST): new LinkedList<>());
-        String fileName = inputPath.getFileName().toString();
-        Path sqliteSequenceDBPath = Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
+        int regionSize = params.containsKey(REGION_SIZE)? Integer.parseInt(params.get(REGION_SIZE).toString()): 200000;
+        List<String> meanCoverageSizeList = (List<String>) (params.containsKey(MEAN_COVERAGE_SIZE_LIST)? params.get(MEAN_COVERAGE_SIZE_LIST): new LinkedList<String>());
+        //String fileName = inputPath.getFileName().toString();
+        //Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
 
         /*
          * 1 Transform into a BAM
          * 2 Sort
-         * 3 Index (bai)
-         * 4 Add in metadata
+         * 3 Move to output
+         * 4 Index (bai)
          * 5 Calculate Coverage
          */
 
         //1
-        if(!inputPath.toString().endsWith(".bam")){
+        if(!input.toString().toLowerCase().endsWith(".bam")){
 
             //samtools -b -h -S file.sam > file.bam
-
+//            String transform = "samtools -b -h " + inputPath.toString() + " -o " +
+//            try {
+//                Runtime.getRuntime().exec( "___" ).waitFor();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             System.out.println("[ERROR] Expected BAM file");
             throw new FileFormatException("Expected BAM file");
         }
 
-        //2 Sort
-        //samtools sort -o
 
-        //3
-        //name.bam
-        //name.bam.bai
-        Path inputBamIndexFile = Paths.get(inputPath.toString() + ".bai");
-        if (!Files.exists(inputBamIndexFile)) {
-            System.out.println("[ERROR] Expected BAI file");
-            throw new FileFormatException("Expected BAI file");
+        //2 Sort
+        Path bamFile = Paths.get(outputPath.toString() , fileId+".bam").toAbsolutePath();
+        Path sortBam = null;
+        if (!bamFile.toFile().exists()) {
+            {
+                SAMFileReader reader = new SAMFileReader(input.toFile());
+                switch (reader.getFileHeader().getSortOrder()) {
+                    case coordinate:
+                        sortBam = input;
+                        logger.info("File sorted.");
+                        break;
+                    case queryname:
+                    case unsorted:
+                    default:
+                        sortBam = Paths.get(input.toAbsolutePath().toString()+".sort.bam");
+                        String sortCommand = "samtools sort -f " + input.toAbsolutePath().toString() + " " + sortBam.toString();
+                        logger.info("Sorting file : " + sortCommand);
+                        long start = System.currentTimeMillis();
+                        try {
+                            Runtime.getRuntime().exec( sortCommand ).waitFor();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        long end = System.currentTimeMillis();
+                        logger.info("end - start = " + (end - start)/1000.0+"s");
+                        break;
+                }
+                reader.close();
+            }
+
+            //3
+            logger.info("Coping file. Encryption : " + encrypt);
+            long start = System.currentTimeMillis();
+            switch(encrypt){
+                case "aes-256":
+                    InputStream inputStream = new BufferedInputStream(new FileInputStream(sortBam.toFile()), 50000000);
+                    OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(bamFile.toFile()), 50000000);       //TODO: ENCRYPT OUTPUT
+
+                    SAMFileReader reader = new SAMFileReader(inputStream);
+                    BAMFileWriter writer = new BAMFileWriter(outputStream, bamFile.toFile());
+
+                    writer.setSortOrder(reader.getFileHeader().getSortOrder(), true);   //Must be called before calling setHeader()
+                    writer.setHeader(reader.getFileHeader());
+                    SAMRecordIterator iterator = reader.iterator();
+                    while(iterator.hasNext()){
+                        writer.addAlignment(iterator.next());
+                    }
+
+                    writer.close();
+                    reader.close();
+                    break;
+                case "":
+                default:
+                    Files.copy(sortBam, bamFile);
+            }
+            long end = System.currentTimeMillis();
+            logger.info("end - start = " + (end - start)/1000.0+"s");
+
         }
 
-
-//        try {
-//            Runtime.getRuntime().exec( "comand" ).waitFor();
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-
-
-        //4 Add in metadata
-        String index = metadata.registerPath(inputPath);
-
+        //4
+        //Path bamIndexFile = Paths.get(inputPath.toString() + ".bai");
+        Path bamIndexFile = Paths.get(bamFile.toString() + ".bai");
+        if (!Files.exists(bamIndexFile)) {
+            long start = System.currentTimeMillis();
+            String indexBai = "samtools index " + bamFile.toString();
+            logger.info("Creating index : " + indexBai);
+            try {
+                Runtime.getRuntime().exec( indexBai ).waitFor();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            long end = System.currentTimeMillis();
+            logger.info("end - start = " + (end - start) / 1000.0 + "s");
+//            System.out.println("[ERROR] Expected BAI file");
+//            throw new FileFormatException("Expected BAI file");
+        }
 
         //5 Calculate Coverage
-        //reader
         AlignmentDataReader reader;
-
-        if(inputPath.toString().endsWith(".sam")){
-            reader = new AlignmentSamDataReader(inputPath, study);
-        } else if (inputPath.toString().endsWith(".bam")) {
-            reader = new AlignmentBamDataReader(inputPath, study);
-        } else {
-            throw new UnsupportedOperationException("[ERROR] Unsuported file input format : " + inputPath);
-        }
+//        if(inputPath.toString().endsWith(".sam")){
+//            reader = new AlignmentSamDataReader(inputPath, study);
+//        } else if (inputPath.toString().endsWith(".bam")) {
+//            reader = new AlignmentBamDataReader(inputPath, study);
+//        } else {
+//            throw new UnsupportedOperationException("[ERROR] Unsuported file input format : " + inputPath);
+//        }
+        reader = new AlignmentBamDataReader(bamFile, null);
 
 
         //Tasks
@@ -199,7 +278,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         //Writer
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
         //writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, output.toString(), !plain)));
-        writers.add(new AlignmentCoverageJsonDataWriter(Paths.get(output.toString(), fileName).toString(), !plain));
+        writers.add(new AlignmentCoverageJsonDataWriter(bamFile.toString(), !plain));
 
 
 
@@ -208,9 +287,14 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         regionReader.setMaxSequenceSize(regionSize);
         Runner<AlignmentRegion> runner = new Runner<>(regionReader, writers, tasks, 1);
 
-        System.out.println("Indexing alignments...");
+        logger.info("Calculating coverage...");
+        long start = System.currentTimeMillis();
         runner.run();
-        System.out.println("Alignments indexed!");
+        long end = System.currentTimeMillis();
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+
+
+        logger.info("done!");
     }
 
 
@@ -236,7 +320,15 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 //        return "indexer_" + jobId;
 //    }
 
-    public AlignmentMetaDataDBAdaptor getMetadata() {
-        return metadata;
+//    public AlignmentMetaDataDBAdaptor getMetadata() {
+//        if(metadata == null){
+//            this.metadata = new AlignmentMetaDataDBAdaptor(properties.getProperty("files-index", "/tmp/files-index.properties"));
+//        }
+//        return metadata;
+//    }
+
+
+    public Properties getProperties() {
+        return properties;
     }
 }

@@ -54,7 +54,6 @@ public class OpenCGAMain {
 
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException {
-
         OptionsParser parser = new OptionsParser();
         boolean variantCommand = false;
         boolean alignmentCommand = false;
@@ -62,7 +61,7 @@ public class OpenCGAMain {
         try {
             String parsedCommand = parser.parse(args);
 
-            if(parser.getGeneralParameters().help){
+            if(parser.getGeneralParameters().help || args.length == 0){
                 System.out.println(parser.usage());
                 return;
             }
@@ -176,7 +175,7 @@ public class OpenCGAMain {
             Map<String, Object> params = new LinkedHashMap<>();
 
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
-            params.put(AlignmentStorageManager.STUDY,   c.study);
+            //params.put(AlignmentStorageManager.STUDY,   c.study);
             params.put(AlignmentStorageManager.PLAIN,   c.plain);
             params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
             params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.includeCoverage);

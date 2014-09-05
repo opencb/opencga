@@ -30,6 +30,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     public static final String STUDY = "study";
     public static final String FILE_ID = "fileId";
     public static final String INCLUDE_COVERAGE = "includeCoverage";
+    public static final String ENCRYPT = "encrypt";
 
 
     @Override
@@ -63,7 +64,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     @Override
     public void load(Path input, Path credentials, Map<String, Object> params) throws IOException {
 
-        String fileId = input.getFileName().toString().split("\\.")[0]; //TODO: Get fileId
+        String fileId = params.containsKey(FILE_ID)? params.get(FILE_ID).toString(): input.getFileName().toString().split("\\.")[0];
 
         DataReader<AlignmentRegion> schemaReader = this.getDBSchemaReader(input);
         DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(credentials, fileId);

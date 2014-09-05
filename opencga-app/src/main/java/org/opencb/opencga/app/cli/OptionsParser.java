@@ -13,14 +13,14 @@ import java.util.Map;
  */
 public class OptionsParser {
     private final JCommander jcommander;
-    
+
+    private final GeneralParameters generalParameters;
     private final CommandCreateAccessions accessions;
     private final CommandTransformVariants transform;
     private final CommandLoadVariants load;
-    private CommandTransformAlignments transformAlignments;
-    private CommandLoadAlignments loadAlignments;
+    private final CommandTransformAlignments transformAlignments;
+    private final CommandLoadAlignments loadAlignments;
     private CommandDownloadAlignments downloadAlignments;
-    private final GeneralParameters generalParameters;
 
     public OptionsParser() {
         jcommander = new JCommander();
@@ -28,8 +28,8 @@ public class OptionsParser {
         jcommander.addCommand(accessions = new CommandCreateAccessions());
         jcommander.addCommand(transform = new CommandTransformVariants());
         jcommander.addCommand(load = new CommandLoadVariants());
-//        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
-//        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
+        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
+        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -165,8 +165,8 @@ public class OptionsParser {
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be transformed", required = true, arity = 1)
         String fileId;
 
-        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
-        String study;
+//        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+//        String study;
 
       //  @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
       //  String studyId;
