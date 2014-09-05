@@ -112,7 +112,7 @@ public class OptionsParser {
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
 
-        @Parameter(names = {"--study-type"}, description = "Study type (optional)", arity = 1)
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
     }

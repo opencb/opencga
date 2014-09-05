@@ -68,7 +68,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
     
     @Override
     public ArchivedVariantFile convertToDataModelType(DBObject object) {
-        if (samples == null && sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
+        if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
             samples = (List<String>) sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), 
                     object.get(STUDYID_FIELD).toString(), null).getResult().get(0);
         }
@@ -79,39 +79,54 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
         
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(SAMPLES_FIELD);
         int numSamples = samples.size();
-            
-        // An array of genotypes is initialized with the most common one
-        Genotype[] genotypes = new Genotype[numSamples];
-        String mostCommonGtString = mongoGenotypes.getString("def");
-        Genotype mostCommongGt = new Genotype(mostCommonGtString);
-        for (int i = 0; i < numSamples; i++) {
-            genotypes[i] = mostCommongGt;
-        }
-
-        // Loop through the non-most commmon genotypes, and set their value
-        // in the position specified in the array, such as:
-        // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
-        // genotypes[41], genotypes[311], etc, will be set to "0|1"
-        for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
-            if (!dbo.getKey().equals("def")) {
-                Genotype gt = new Genotype(dbo.getKey());
-                for (int position : (List<Integer>) dbo.getValue()) {
-                    genotypes[position] = gt;
-                }
-            }
-        }
-
-        // Add the samples to the file, combining the data structures
-        // containing the samples' names and the genotypes
+        
+        // Temporary file, just to store the samples
         ArchivedVariantFile fileWithSamples = new ArchivedVariantFile(object.get(FILEID_FIELD).toString(), 
                 object.get(STUDYID_FIELD).toString());
         
-        int i = 0;
-        for (String sample : samples) {
-            Map<String, String> sampleData = new HashMap<>();
-            sampleData.put("GT", genotypes[i].toString());
-            fileWithSamples.addSampleData(sample, sampleData);
-            i++;
+        if (mongoGenotypes.containsField("def")) { // Compressed genotypes mode
+            // An array of genotypes is initialized with the most common one
+            Genotype[] genotypes = new Genotype[numSamples];
+            String mostCommonGtString = mongoGenotypes.getString("def");
+            Genotype mostCommongGt = new Genotype(mostCommonGtString);
+            for (int i = 0; i < numSamples; i++) {
+                genotypes[i] = mostCommongGt;
+            }
+
+            // Loop through the non-most commmon genotypes, and set their value
+            // in the position specified in the array, such as:
+            // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
+            // genotypes[41], genotypes[311], etc, will be set to "0|1"
+            for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
+                if (!dbo.getKey().equals("def")) {
+                    Genotype gt = new Genotype(dbo.getKey());
+                    for (int position : (List<Integer>) dbo.getValue()) {
+                        genotypes[position] = gt;
+                    }
+                }
+            }
+
+            // Add the samples to the file, combining the data structures
+            // containing the samples' names and the genotypes
+            int i = 0;
+            for (String sample : samples) {
+                Map<String, String> sampleData = new HashMap<>();
+                sampleData.put("GT", genotypes[i].toString());
+                fileWithSamples.addSampleData(sample, sampleData);
+                i++;
+            }
+
+        } else { // Non-compressed genotypes mode
+            for (Object entry : mongoGenotypes.toMap().entrySet()) {
+                Map.Entry sample = (Map.Entry) entry;
+                fileWithSamples.addSampleData(sample.getKey().toString(), ((DBObject) sample.getValue()).toMap());
+            }
+            
+//            for (String sample : samples) {
+//                Map<String, String> sampleData = ((DBObject) mongoGenotypes.get(sample)).toMap();
+//                fileWithSamples.addSampleData(sample, sampleData);
+//                System.out.println("Sample processed: " + sample);
+//            }
         }
         
         return fileWithSamples;
