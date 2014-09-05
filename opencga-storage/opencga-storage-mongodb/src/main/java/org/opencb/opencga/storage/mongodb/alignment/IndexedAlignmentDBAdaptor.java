@@ -149,7 +149,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         }
         List<String> regions = new LinkedList<>();
 
-        for(int i = region.getStart()/batchSize;  i <= region.getEnd()/batchSize; i++){
+        for(int i = region.getStart()/batchSize;  i <= (region.getEnd()-1)/batchSize; i++){
             regions.add(region.getChromosome()+"_"+i+"_"+batchName);
         }
 
@@ -170,8 +170,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         System.out.println("db."+CoverageMongoWriter.COVERAGE_COLLECTION_NAME+".find("+query.toString()+", "+projection.toString()+")");
 
         QueryResult queryResult = collection.find(query, null, complexTypeConverter, projection);
+        queryResult.setId(region.toString());
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
-
         return queryResult;
     }
 
