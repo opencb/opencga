@@ -272,7 +272,7 @@ public class VariantSqliteWriter implements VariantWriter {
                     pstmt.setString(1, v.getChromosome());
                     pstmt.setInt(2, v.getPosition());
                     pstmt.setString(3, v.getReferenceAllele());
-                    pstmt.setString(4, v.getAlternativeAllele());
+                    pstmt.setString(4, v.getAlternateAllele());
                     pstmt.setString(5, v.getFeatureId());
                     pstmt.setString(6, v.getFeatureName());
                     pstmt.setString(7, v.getFeatureType());

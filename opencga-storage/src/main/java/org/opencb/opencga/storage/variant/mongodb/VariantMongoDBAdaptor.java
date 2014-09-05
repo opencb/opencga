@@ -26,7 +26,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "B10p@ss").build();
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", credentials.getUsername())
+                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         
         // Converters from DBObject to Java classes

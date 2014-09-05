@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.effect.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.storage.variant.VariantDBWriter;
@@ -178,17 +179,19 @@ public class VariantMongoWriter extends VariantDBWriter {
             Set<String> soSet = new HashSet<>();
             
             // Add effects to file
-            if (!v.getEffect().isEmpty()) {
+            if (!v.getAnnotation().getEffects().isEmpty()) {
                 Set<BasicDBObject> effectsSet = new HashSet<>();
 
-                for (VariantEffect effect : v.getEffect()) {
-                    BasicDBObject object = getVariantEffectDBObject(effect);
-                    effectsSet.add(object);
-                    addConsequenceType(effect.getConsequenceTypeObo());
-                    
-                    soSet.add(object.get("so").toString());
-                    if (object.containsField("geneName")) {
-                        genesSet.add(object.get("geneName").toString());
+                for (List<VariantEffect> effects : v.getAnnotation().getEffects().values()) {
+                    for (VariantEffect effect : effects) {
+                        BasicDBObject object = getVariantEffectDBObject(effect);
+                        effectsSet.add(object);
+                        
+                        addConsequenceType(effect);
+                        soSet.addAll(Arrays.asList((String[]) object.get("so")));
+                        if (object.containsField("geneName")) {
+                            genesSet.add(object.get("geneName").toString());
+                        }
                     }
                 }
                 
@@ -213,8 +216,12 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private BasicDBObject getVariantEffectDBObject(VariantEffect effect) {
-        BasicDBObject object = new BasicDBObject("so", effect.getConsequenceTypeObo());
-        object.append("featureId", effect.getFeatureId());
+        String[] consequenceTypes = new String[effect.getConsequenceTypes().length];
+        for (int i = 0; i < effect.getConsequenceTypes().length; i++) {
+            consequenceTypes[i] = ConsequenceTypeMappings.accessionToTerm.get(effect.getConsequenceTypes()[i]);
+        }
+        
+        BasicDBObject object = new BasicDBObject("so", consequenceTypes).append("featureId", effect.getFeatureId());
         if (effect.getGeneName() != null && !effect.getGeneName().isEmpty()) {
             object.append("geneName", effect.getGeneName());
         }
@@ -223,13 +230,13 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
-        variantsCollection.ensureIndex(new BasicDBObject("_at.chunkIds", 1));
-        variantsCollection.ensureIndex(new BasicDBObject("_at.gn", 1));
-        variantsCollection.ensureIndex(new BasicDBObject("_at.ct", 1));
-        variantsCollection.ensureIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
-        variantsCollection.ensureIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
-        variantsCollection.ensureIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.FILEID_FIELD, 1), "studyAndFile");
+        variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1));
+        variantsCollection.createIndex(new BasicDBObject("_at.gn", 1));
+        variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD, 1)
+                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.FILEID_FIELD, 1));
         return true;
     }
 
@@ -252,7 +259,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 } catch(MongoInternalException ex) {
                     System.out.println(v);
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
-                } catch(MongoException.DuplicateKey ex) {
+                } catch(DuplicateKeyException ex) {
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
                             "Variant already existed: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
@@ -334,9 +341,12 @@ public class VariantMongoWriter extends VariantDBWriter {
         variantConverter = new DBObjectToVariantConverter();
     }
     
-    private void addConsequenceType(String ct) {
-        int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct) : 1;
-        conseqTypes.put(ct, ctCount);
+    private void addConsequenceType(VariantEffect effect) {
+        for (int so : effect.getConsequenceTypes()) {
+            String ct = ConsequenceTypeMappings.accessionToTerm.get(so);
+            int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct)+1 : 1;
+            conseqTypes.put(ct, ctCount);
+        }
     }
 
 }

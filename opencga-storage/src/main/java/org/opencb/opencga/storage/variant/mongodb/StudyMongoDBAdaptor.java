@@ -26,7 +26,9 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     public StudyMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", credentials.getUsername())
+                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
     }
 

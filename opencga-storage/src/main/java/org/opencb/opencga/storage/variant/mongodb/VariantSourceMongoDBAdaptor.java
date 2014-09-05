@@ -33,7 +33,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "biopass").build();
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", credentials.getUsername())
+                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         variantSourceConverter = new DBObjectToVariantSourceConverter();
     }
@@ -82,6 +84,11 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     
     @Override
     public QueryResult getSourceDownloadUrlByName(String filename) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public List<QueryResult> getSourceDownloadUrlByName(List<String> filenames) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
