@@ -3,25 +3,24 @@ package org.opencb.opencga.server.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.*;
-
-import org.opencb.commons.containers.QueryResponse;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.ObjectMap;
-import org.opencb.commons.containers.map.QueryOptions;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResponse;
 import org.opencb.opencga.account.CloudSessionManager;
 import org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.ResponseBuilder;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Properties;
 
 @Path("/")
 public class GenericWSServer {
@@ -42,6 +41,7 @@ public class GenericWSServer {
     protected String outputFormat;
     protected long startTime;
     protected long endTime;
+    protected QueryResponse queryResponse;
 
     protected static ObjectWriter jsonObjectWriter;
     protected static ObjectMapper jsonObjectMapper;
@@ -54,7 +54,6 @@ public class GenericWSServer {
     @DefaultValue("json")
     @QueryParam("of")
     protected String of;
-
 
     /**
      * Only one CloudSessionManager
@@ -85,24 +84,12 @@ public class GenericWSServer {
         this.uriInfo = uriInfo;
         this.params = this.uriInfo.getQueryParameters();
         this.queryOptions = new QueryOptions();
+        queryResponse = new QueryResponse();
         parseCommonQueryParameters(this.params);
-
-//        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";
-//        this.of = (this.params.get("of") != null) ? this.params.get("of").get(0) : "";
         this.sessionIp = httpServletRequest.getRemoteAddr();
 
-//		UserAgent userAgent = UserAgent.parseUserAgentString(httpServletRequest.getHeader("User-Agent"));
-//
-//		Browser br = userAgent.getBrowser();
-//
-//		OperatingSystem op = userAgent.getOperatingSystem();
 
         logger.debug(uriInfo.getRequestUri().toString());
-        // logger.info("------------------->" + br.getName());
-        // logger.info("------------------->" + br.getBrowserType().getName());
-        // logger.info("------------------->" + op.getName());
-        // logger.info("------------------->" + op.getId());
-        // logger.info("------------------->" + op.getDeviceType().getName());
 
         File dqsDir = new File(properties.getProperty("DQS.PATH"));
         if (dqsDir.exists()) {
@@ -111,6 +98,9 @@ public class GenericWSServer {
                 accountsDir.mkdir();
             }
         }
+
+        startTime = System.currentTimeMillis();
+
     }
 
 
@@ -136,36 +126,67 @@ public class GenericWSServer {
         return createOkResponse(message);
     }
 
-    protected Response createErrorResponse(Object o) {
-        QueryResult<ObjectMap> result = new QueryResult();
-        result.setErrorMsg(o.toString());
-        return createJsonResponse(result);
+    protected Response createErrorResponse(Object obj) {
+        endTime = System.currentTimeMillis() - startTime;
+        queryResponse.setTime(new Long(endTime - startTime).intValue());
+//        queryResponse.setApiVersion(version);
+        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setError(obj.toString());
+
+        // Guarantee that the QueryResponse object contains a coll of results
+        Collection coll;
+        if (obj instanceof Collection) {
+            coll = (Collection) obj;
+        } else {
+            coll = new ArrayList();
+            coll.add(obj);
+        }
+        queryResponse.setResponse(coll);
+
+        return createJsonResponse(queryResponse);
     }
 
     protected Response createOkResponse(Object obj) {
+
+        endTime = System.currentTimeMillis() - startTime;
+        queryResponse.setTime(new Long(endTime - startTime).intValue());
+//        queryResponse.setApiVersion(version);
+        queryResponse.setQueryOptions(queryOptions);
+
+        // Guarantee that the QueryResponse object contains a coll of results
+        Collection coll;
+        if (obj instanceof Collection) {
+            coll = (Collection) obj;
+        } else {
+            coll = new ArrayList();
+            coll.add(obj);
+        }
+        queryResponse.setResponse(coll);
+
         switch (outputFormat.toLowerCase()) {
             case "json":
-                return createJsonResponse(obj);
+                return createJsonResponse(queryResponse);
             case "xml":
-                return createOkResponse(obj, MediaType.APPLICATION_XML_TYPE);
+                return createOkResponse(queryResponse, MediaType.APPLICATION_XML_TYPE);
             default:
-                return buildResponse(Response.ok(obj));
+                return createJsonResponse(queryResponse);
         }
     }
 
     protected Response createJsonResponse(Object obj) {
-        endTime = System.currentTimeMillis() - startTime;
-        QueryResponse queryResponse = new QueryResponse(queryOptions, obj,
-                (params.get("version") != null) ? params.get("version").get(0) : null,
-                (params.get("species") != null) ? params.get("species").get(0) : null,
-                endTime);
+//        endTime = System.currentTimeMillis() - startTime;
+//        QueryResponse queryResponse = new QueryResponse(queryOptions, obj,
+//                (params.get("version") != null) ? params.get("version").get(0) : null,
+//                (params.get("species") != null) ? params.get("species").get(0) : null,
+//                endTime);
 
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(obj), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
-            return null;
+
+            return buildResponse(Response.ok("Error parsing queryResponse JSON object"));
         }
     }
 
