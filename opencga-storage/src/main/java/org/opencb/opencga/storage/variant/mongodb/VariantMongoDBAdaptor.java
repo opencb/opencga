@@ -33,7 +33,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         
         // Converters from DBObject to Java classes
-        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, new DBObjectToVariantStatsConverter(), credentials);
+        // TODO Allow to configure depending on the type of study?
+        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, 
+                new DBObjectToVariantStatsConverter(), credentials);
         variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }
 
