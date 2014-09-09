@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by jacobo on 26/08/14.
+ * Date 26/08/14.
+ *
+ * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  */
 public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
 
@@ -66,6 +68,9 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
     @Override
     public boolean pre() {
         collection = db.createCollection(collectionName);
+        DBCollection nativeCollection = db.getDb().getCollection(collectionName);
+        nativeCollection.createIndex(new BasicDBObject(FILES_FIELD + "." + FILE_ID_FIELD, "text"));
+        nativeCollection.createIndex(new BasicDBObject(FILES_FIELD, 1));
         return true;
     }
 
@@ -82,20 +87,20 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
         if(regionCoverage != null){
             DBObject coverageQuery = coverageConverter.getIdObject(regionCoverage);
             DBObject coverageObject = coverageConverter.convertToStorageType(regionCoverage);
-            secureInsert(coverageQuery, coverageObject);
+            secureInsert(coverageQuery, coverageObject, regionCoverage.getChromosome(), (int) regionCoverage.getStart(), regionCoverage.getAll().length);
         }
 
         if(meanCoverageList != null) {
             for (MeanCoverage meanCoverage : meanCoverageList) {
                 DBObject query = this.meanCoverageConverter.getIdObject(meanCoverage);  //{_id:"20_2354_1k"}
                 DBObject object = meanCoverageConverter.convertToStorageType(meanCoverage);  //{avg:4.5662}
-                secureInsert(query, object);
+                secureInsert(query, object, meanCoverage.getRegion().getChromosome(), meanCoverage.getRegion().getStart(), meanCoverage.getSize());
             }
         }
         return true;
     }
 
-    private void secureInsert(DBObject query, DBObject object) {
+    private void secureInsert(DBObject query, DBObject object, String chromosome, int start, int size) {
         boolean documentExists = true;
         boolean fileExists = true;
 
@@ -104,7 +109,12 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
             QueryResult countId = collection.count(query);
             if (countId.getNumResults() == 1 && countId.getResultType().equals(Long.class.getCanonicalName())) {
                 if ((Long) countId.getResult().get(0) < 1) {
-                    DBObject document = new BasicDBObject(FILES_FIELD, new BasicDBList());
+                    DBObject document = BasicDBObjectBuilder.start()
+                            .append(FILES_FIELD, new BasicDBList())
+                            .append("chr", chromosome)
+                            .append("start", start)
+                            .append("size", size)
+                            .get();
                     document.putAll(query);             //{_id:<chunkId>, files:[]}
                     collection.insert(document);        //Insert a document with empty files array.
                     fileExists = false;

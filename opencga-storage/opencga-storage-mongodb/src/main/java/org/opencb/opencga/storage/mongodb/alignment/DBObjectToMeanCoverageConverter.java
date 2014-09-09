@@ -42,6 +42,8 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
             averageFloat = (Float) average;
         } else if(average instanceof Double) {
             averageFloat = ((Double) average).floatValue();
+        } else if(average == null) {
+            return null;
         } else {
             averageFloat = Float.parseFloat(average.toString());
         }
