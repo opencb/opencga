@@ -15,7 +15,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -25,7 +24,8 @@ import java.util.List;
 public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
 
-    private AlignmentQueryBuilder dbAdaptor;
+    private IndexedAlignmentDBAdaptor dbAdaptor;
+    //private AlignmentQueryBuilder dbAdaptor;
     private MongoDBAlignmentStorageManager manager;
     private AlignmentMetaDataDBAdaptor metadata;
 
@@ -37,7 +37,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
         Path adaptorPath = null;
         adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
-        dbAdaptor = manager.getDBAdaptor(adaptorPath);
+        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(adaptorPath);
     }
 
     @Test
@@ -72,14 +72,15 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     }
 
     @Test
-    public void testGetCoverageByRegion2() throws IOException {
-
+    public void testGetHistogramCoverageByRegion() throws IOException {
+//29337216, 29473005
         QueryOptions qo = new QueryOptions();
         qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG04239");
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, "/media/jacobo/Nusado/opencga/alignment/HG04239.chrom20.ILLUMINA.bwa.ITU.low_coverage.20130415.bam");
         jsonQueryResult("HG04239.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29829001, 29830000), qo));
         jsonQueryResult("HG04239.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29830001, 29833000), qo));
-        qo.put(IndexedAlignmentDBAdaptor.QO_COVERAGE, false);
-        jsonQueryResult("HG04239.mean-coverage.1k",dbAdaptor.getCoverageByRegion(new Region("20", 29800000, 29900000), qo));
+        //qo.put(IndexedAlignmentDBAdaptor.QO_HISTOGRAM, false);
+        jsonQueryResult("HG04239.mean-coverage.1k",dbAdaptor.getAllIntervalFrequencies(new Region("20", 29800000, 29900000), qo));
 
     }
 
@@ -89,12 +90,13 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
         QueryOptions qo = new QueryOptions();
         qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG04239");
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, "/media/jacobo/Nusado/opencga_bam_files/HG00096.bam");
 
         //Region region = new Region("20", 20000000, 20000100);
 
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 29829000, 29830000), qo));
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 29829000, 29850000), qo));
-        qo.put(IndexedAlignmentDBAdaptor.QO_COVERAGE, false);
+        qo.put(IndexedAlignmentDBAdaptor.QO_HISTOGRAM, false);
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 29829000, 29830000), qo));
         qo.put(IndexedAlignmentDBAdaptor.QO_BATCH_SIZE, 1000000);
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 1, 65000000), qo));

@@ -174,7 +174,9 @@ public class OpenCGAMain {
 
             Map<String, Object> params = new LinkedHashMap<>();
 
-            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+            if(c.fileId != null) {
+                params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+            }
             //params.put(AlignmentStorageManager.STUDY,   c.study);
             params.put(AlignmentStorageManager.PLAIN,   c.plain);
             params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
@@ -209,7 +211,7 @@ public class OpenCGAMain {
 
             Map<String, Object> params = new LinkedHashMap<>();
 
-            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.includeCoverage);
+            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true/*c.includeCoverage*/);
 
             Path input = Paths.get(c.input);
             Path credentials = Paths.get(c.credentials);

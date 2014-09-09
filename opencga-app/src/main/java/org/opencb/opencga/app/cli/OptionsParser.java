@@ -162,7 +162,7 @@ public class OptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "File to transform into the OpenCGA data model", required = true, arity = 1)
         String file;
 
-        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be transformed", required = true, arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be transformed", required = false, arity = 1)
         String fileId;
 
 //        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -222,14 +222,14 @@ public class OptionsParser {
 //        @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
 //        boolean plain = false;
         
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required = false, arity = 1)
-        String backend = "hbase";
+//        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required = false, arity = 1)
+//        String backend = "hbase";
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = true, arity = 1)
         String credentials;
         
-        @Parameter(names = {"--include-coverage"}, description = "Save coverage information (optional)", required = false, arity = 0)
-        boolean includeCoverage = false;
+//        @Parameter(names = {"--include-coverage"}, description = "Save coverage information (optional)", required = false, arity = 0)
+//        boolean includeCoverage = false;
     }
 
     

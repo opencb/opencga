@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Date 15/08/14.
  *
- * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  */
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
@@ -70,11 +70,31 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     @Override
     public DataReader<AlignmentRegion> getDBSchemaReader(Path input) {
-        String meanCoverage = input.toString()
-                .replaceFirst("coverage\\.json$", "mean-coverage.json")
-                .replaceFirst("coverage\\.json\\.gz$", "mean-coverage.json.gz");
+        String baseFileName = input.toString();
+        String meanCoverageFile;
+        String regionCoverageFile = baseFileName;
+        if(baseFileName.endsWith(".bam")){
+            regionCoverageFile = baseFileName + (Paths.get(baseFileName + ".coverage.json").toFile().exists() ?
+                    ".coverage.json" :
+                    ".coverage.json.gz");
+            meanCoverageFile = baseFileName + (Paths.get(baseFileName + ".mean-coverage.json").toFile().exists() ?
+                    ".mean-coverage.json" :
+                    ".mean-coverage.json.gz");
+        } else if(baseFileName.endsWith(".coverage.json")){
+            meanCoverageFile = baseFileName.replaceFirst("coverage\\.json$", "mean-coverage.json");
+        } else if(baseFileName.endsWith(".coverage.json.gz")){
+            meanCoverageFile = baseFileName.replaceFirst("coverage\\.json\\.gz$", "mean-coverage.json.gz");
+        } else {
+            return null;
+        }
 
-        return new AlignmentCoverageJsonDataReader(input.toString(), meanCoverage);
+//        String meanCoverage = input.toString()
+//                .replaceFirst("coverage\\.json$", "mean-coverage.json")
+//                .replaceFirst("coverage\\.json\\.gz$", "mean-coverage.json.gz");
+
+        AlignmentCoverageJsonDataReader alignmentCoverageJsonDataReader = new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
+        alignmentCoverageJsonDataReader.setReadRegionCoverage(false);
+        return alignmentCoverageJsonDataReader;
     }
 
     @Override

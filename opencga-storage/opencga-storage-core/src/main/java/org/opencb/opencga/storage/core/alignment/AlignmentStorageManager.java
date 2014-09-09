@@ -69,7 +69,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
         DataReader<AlignmentRegion> schemaReader = this.getDBSchemaReader(input);
         DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(credentials, fileId);
 
-        Runner runner = new Runner(schemaReader, Arrays.asList(dbWriter), new LinkedList<Task>());
+        Runner runner = new Runner(schemaReader, Arrays.asList(dbWriter), new LinkedList<Task>(), 1);
 
         System.out.println("Loading alignments...");
         runner.run();

@@ -8,6 +8,7 @@ import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.io.DataReader;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.zip.GZIPInputStream;
 public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegion> {
 
 
+    public static final int REGION_SIZE = 100000;
     private final String coverageFilename;
     private final String meanCoverageFilename;
     private InputStream coverageStream;
@@ -39,6 +41,9 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
     private JsonParser coverageParser;
     private JsonParser meanCoverageParser;
     private MeanCoverage meanCoverage;
+    private boolean readRegionCoverage = true;
+    private boolean readMeanCoverage = true;
+    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(AlignmentCoverageJsonDataReader.class);
 
     public AlignmentCoverageJsonDataReader(String coverageFilename, String meanCoverageFilename) {
         this.coverageFilename = coverageFilename;
@@ -109,29 +114,51 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
     }
 
     public AlignmentRegion readElem(){
-        RegionCoverage regionCoverage;
-        try {
-            regionCoverage = coverageParser.readValueAs(RegionCoverage.class);
-        } catch (IOException e) {
-            //e.printStackTrace();
+        RegionCoverage regionCoverage = null;
+        List<MeanCoverage> meanCoverageList = null;
+        String chromosome = null;
+        long start = 0;
+        long end   = 0;
+
+        if(!readMeanCoverage && !readRegionCoverage) {
             return null;
         }
-
-        if(meanCoverage == null) {
-            meanCoverage = readMeanCoverage();
-        }
-
-        List<MeanCoverage> meanCoverageList = new LinkedList<>();
-        while (meanCoverage != null) {
-            Region region = meanCoverage.getRegion();
-            if (!(region.getChromosome().equals(regionCoverage.getChromosome()) && region.getStart() < regionCoverage.getEnd())) {
-                break;
+        if(readRegionCoverage){
+            try {
+                regionCoverage = coverageParser.readValueAs(RegionCoverage.class);
+            } catch (IOException e) {
+                //e.printStackTrace();
+                return null;
             }
-            meanCoverageList.add(meanCoverage);
-            meanCoverage = readMeanCoverage();
+            chromosome = regionCoverage.getChromosome();
+            start = regionCoverage.getStart();
+            end = regionCoverage.getEnd();
         }
 
-        AlignmentRegion alignmentRegion = new AlignmentRegion(regionCoverage.getChromosome(), regionCoverage.getStart(), regionCoverage.getEnd());
+        if(readMeanCoverage) {
+            if (meanCoverage == null) {
+                meanCoverage = readMeanCoverage();
+                if(meanCoverage == null){
+                    return null;
+                }
+            }
+            if(chromosome == null){
+                chromosome = meanCoverage.getRegion().getChromosome();
+                start = meanCoverage.getRegion().getStart();
+                end = meanCoverage.getRegion().getStart()+ REGION_SIZE;
+            }
+            meanCoverageList = new LinkedList<>();
+            while (meanCoverage != null) {
+                Region region = meanCoverage.getRegion();
+                if (!(region.getChromosome().equals(chromosome) && region.getStart() < end)) {
+                    break;
+                }
+                meanCoverageList.add(meanCoverage);
+                meanCoverage = readMeanCoverage();
+            }
+        }
+        logger.info("Read : " + chromosome + ":" + start + "-" + end + ", length = " + (end - start));
+        AlignmentRegion alignmentRegion = new AlignmentRegion(chromosome, start, end);
         alignmentRegion.setCoverage(regionCoverage);
         alignmentRegion.setMeanCoverage(meanCoverageList);
 
@@ -157,5 +184,22 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
             return null;
         }
         return alignmentRegions;
+    }
+
+
+    public boolean isReadRegionCoverage() {
+        return readRegionCoverage;
+    }
+
+    public void setReadRegionCoverage(boolean readRegionCoverage) {
+        this.readRegionCoverage = readRegionCoverage;
+    }
+
+    public boolean isReadMeanCoverage() {
+        return readMeanCoverage;
+    }
+
+    public void setReadMeanCoverage(boolean readMeanCoverage) {
+        this.readMeanCoverage = readMeanCoverage;
     }
 }
