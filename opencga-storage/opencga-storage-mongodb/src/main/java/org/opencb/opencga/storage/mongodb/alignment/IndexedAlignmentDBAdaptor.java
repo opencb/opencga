@@ -44,7 +44,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     public static final String QO_VIEW_AS_PAIRS = "view_as_pairs";
     public static final String QO_PROCESS_DIFFERENCES = "process_differences";
     public static final String QO_FILE_ID = "file_id";
-    public static final String QO_HISTOGRAM = "coverage";
+    public static final String QO_HISTOGRAM = "histogram";
+    public static final String QO_INCLUDE_COVERAGE = "include_coverage";
     //public static final String QO_AVERAGE = "average";
     public static final String QO_BATCH_SIZE = "batch_size";
 
@@ -85,13 +86,14 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
         String bam = options.getString(QO_BAM_PATH, "");
         String bai = options.getString(QO_BAI_PATH, "");
+        boolean includeCoverage = options.getBoolean(QO_INCLUDE_COVERAGE, true);
         if(bai.equals("")) {
             bai = getIndexFromBam(bam);
         }
         Path bamFile = Paths.get(bam);
         Path baiFile = Paths.get(bai);
 
-        QueryResult<Alignment> queryResult = new QueryResult<>(
+        QueryResult<AlignmentRegion> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
 
         long startTime = System.currentTimeMillis();
@@ -115,8 +117,17 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         } else {
             List<SAMRecord> recordList = getSamRecordsByRegion(bamFile, baiFile, region);
             List<Alignment> alignmentList = getAlignmentsFromSamRecords(recordList, options);
-            queryResult.setResult(alignmentList);
-            queryResult.setNumResults(alignmentList.size());
+//            queryResult.setResult(alignmentList);
+//            queryResult.setNumResults(alignmentList.size());
+
+            AlignmentRegion alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd(), alignmentList, null, null);
+
+            if(includeCoverage){
+                RegionCoverage regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
+                alignmentRegion.setCoverage(regionCoverage);
+            }
+            queryResult.setResult(Arrays.asList(alignmentRegion));
+            queryResult.setNumResults(1);
         }
 
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
@@ -127,7 +138,6 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     public QueryResult getAllAlignmentsByGene(String gene, QueryOptions options) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
     @Override
     public QueryResult getCoverageByRegion(Region region, QueryOptions options) {
         QueryResult<RegionCoverage> queryResult = new QueryResult<>(
@@ -135,47 +145,17 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         long startTime = System.currentTimeMillis();
 
         options.put(QO_PROCESS_DIFFERENCES, false);
+        options.put(QO_INCLUDE_COVERAGE, true);
 
         QueryResult alignmentsResult = this.getAllAlignmentsByRegion(region, options);
-        if(alignmentsResult.getResultType() == Alignment.class.getCanonicalName()) {
-            AlignmentRegionCoverageCalculatorTask task = new AlignmentRegionCoverageCalculatorTask();
-            AlignmentRegion alignmentRegion = new AlignmentRegion(alignmentsResult.getResult(), null);
-//            alignmentRegion.setAlignments(alignmentsResult.getResult());
-            try {
-                task.apply(Arrays.asList(alignmentRegion));
-            } catch (IOException e) {
-                e.printStackTrace();
-                queryResult.setErrorMsg(e.getMessage());    //ERROR
-                logger.warn(e.getMessage());
-            }
-            RegionCoverage coverage = alignmentRegion.getCoverage();
+        if(alignmentsResult.getResultType().equals(AlignmentRegion.class.getCanonicalName())) {
+//            AlignmentRegion alignmentRegion = new AlignmentRegion(alignmentsResult.getResult(), null);
+//
+//            RegionCoverage regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
 
-            int from = (int) (region.getStart() - coverage.getStart());
-            int to = (int) (region.getEnd() - coverage.getStart());
-            RegionCoverage coverageAdjust = new RegionCoverage(to - from);
-            coverageAdjust.setChromosome(region.getChromosome());
-            coverageAdjust.setStart(region.getStart());
-            coverageAdjust.setEnd(region.getEnd());
+            RegionCoverage regionCoverage = ((AlignmentRegion) alignmentsResult.getResult().get(0)).getCoverage();
 
-//            int scrPos  = from>0 ? from : 0;
-//            int destPos = from>0 ? 0 : from;
-//            int length = Math.min(coverageAdjust.getAll().length,coverageAdjust.getAll().length);
-//            System.arraycopy(coverage.getAll(), scrPos, coverageAdjust.getAll(), destPos, length);
-//            System.arraycopy(coverage.getA()  , scrPos, coverageAdjust.getA()  , destPos, length);
-//            System.arraycopy(coverage.getC()  , scrPos, coverageAdjust.getC()  , destPos, length);
-//            System.arraycopy(coverage.getG()  , scrPos, coverageAdjust.getG()  , destPos, length);
-//            System.arraycopy(coverage.getT()  , scrPos, coverageAdjust.getT()  , destPos, length);
-            if(from < 0){
-                from = 0;
-                System.out.println("[ERROR] from < 0");
-            } else {
-                coverageAdjust.setAll(copyOfRange(coverage.getAll(), from, to));
-                coverageAdjust.setA  (copyOfRange(coverage.getA()  , from, to));
-                coverageAdjust.setC  (copyOfRange(coverage.getC()  , from, to));
-                coverageAdjust.setG  (copyOfRange(coverage.getG()  , from, to));
-                coverageAdjust.setT  (copyOfRange(coverage.getT()  , from, to));
-            }
-            queryResult.setResult(Arrays.asList(coverageAdjust));
+            queryResult.setResult(Arrays.asList(regionCoverage));
             queryResult.setNumResults(1);
         } else {
             queryResult.setErrorMsg(alignmentsResult.getErrorMsg());    //ERROR
@@ -184,6 +164,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         return queryResult;
     }
+
+
 
 
     public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
@@ -263,8 +245,6 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
     }
 
-
-
     private List<Alignment> getAlignmentsFromSamRecords(List<SAMRecord> records, QueryOptions params) {
         List<Alignment> alignments = new ArrayList<>();
 
@@ -291,8 +271,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         return alignments;
     }
 
-
-    private String getIndexFromBam(String bam) {
+    private static String getIndexFromBam(String bam) {
         String bai;
         if(Paths.get((bai = bam+".bai")).toFile().exists()){
             return bai;
@@ -303,6 +282,42 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         }
     }
 
+    private static RegionCoverage calculateCoverageByRegion(AlignmentRegion alignmentRegion, Region region) {
+        AlignmentRegionCoverageCalculatorTask task = new AlignmentRegionCoverageCalculatorTask();
+        try {
+            task.apply(Arrays.asList(alignmentRegion));
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.warn(e.getMessage());
+            return null;
+        }
+        RegionCoverage coverage = alignmentRegion.getCoverage();
+        int from = (int) (region.getStart() - coverage.getStart());
+        int to = (int) (region.getEnd() - coverage.getStart()+1);
+        RegionCoverage coverageAdjust = new RegionCoverage(to - from);
+        coverageAdjust.setChromosome(region.getChromosome());
+        coverageAdjust.setStart(region.getStart());
+        coverageAdjust.setEnd(region.getEnd());
+
+//            int scrPos  = from>0 ? from : 0;
+//            int destPos = from>0 ? 0 : from;
+//            int length = Math.min(coverageAdjust.getAll().length,coverageAdjust.getAll().length);
+//            System.arraycopy(coverage.getAll(), scrPos, coverageAdjust.getAll(), destPos, length);
+//            System.arraycopy(coverage.getA()  , scrPos, coverageAdjust.getA()  , destPos, length);
+//            System.arraycopy(coverage.getC()  , scrPos, coverageAdjust.getC()  , destPos, length);
+//            System.arraycopy(coverage.getG()  , scrPos, coverageAdjust.getG()  , destPos, length);
+//            System.arraycopy(coverage.getT()  , scrPos, coverageAdjust.getT()  , destPos, length);
+
+        coverageAdjust.setAll(copyOfRange(coverage.getAll(), from, to));
+        coverageAdjust.setA  (copyOfRange(coverage.getA()  , from, to));
+        coverageAdjust.setC  (copyOfRange(coverage.getC()  , from, to));
+        coverageAdjust.setG  (copyOfRange(coverage.getG()  , from, to));
+        coverageAdjust.setT  (copyOfRange(coverage.getT()  , from, to));
+
+        alignmentRegion.setCoverage(null);
+
+        return coverageAdjust;
+    }
 
     private static short[] copyOfRange(short[] array, int from, int to) {
         if (from < 0) {
