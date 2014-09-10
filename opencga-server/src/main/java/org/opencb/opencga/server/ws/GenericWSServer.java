@@ -3,6 +3,8 @@ package org.opencb.opencga.server.ws;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import encryption.AESCipher;
+import encryption.KeystoreUtil;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.opencga.account.CloudSessionManager;
@@ -15,9 +17,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
@@ -54,6 +55,12 @@ public class GenericWSServer {
     @DefaultValue("json")
     @QueryParam("of")
     protected String of;
+
+
+
+    @DefaultValue("aes-256")
+    @QueryParam("enc")
+    protected String enc;
 
     /**
      * Only one CloudSessionManager
@@ -154,6 +161,11 @@ public class GenericWSServer {
         queryResponse.setQueryOptions(queryOptions);
 
         // Guarantee that the QueryResponse object contains a coll of results
+
+        if (enc.equalsIgnoreCase("aes-256")){
+           obj =  encryptResponse(obj);
+
+        }
         Collection coll;
         if (obj instanceof Collection) {
             coll = (Collection) obj;
@@ -161,6 +173,7 @@ public class GenericWSServer {
             coll = new ArrayList();
             coll.add(obj);
         }
+
         queryResponse.setResponse(coll);
 
         switch (outputFormat.toLowerCase()) {
@@ -201,4 +214,33 @@ public class GenericWSServer {
     private Response buildResponse(ResponseBuilder responseBuilder) {
         return responseBuilder.header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "x-requested-with, content-type").build();
     }
+
+    private String encryptResponse(Object obj){
+        String encryptedMessage = "";
+        try {
+            Properties prop = new Properties();
+            prop.load(new InputStreamReader(getClass().getClassLoader().getResourceAsStream("aes.properties") ));
+            String keyStoreFileLocation = getClass().getClassLoader().getResource("aes-keystore.jck").getFile();
+            String storePass = prop.get("storepass").toString();
+            String alias = prop.get("alias").toString();
+            String keyPass = prop.get("keypass").toString();
+
+            Key keyFromKeyStore = KeystoreUtil.getKeyFromKeyStore(keyStoreFileLocation, storePass, alias, keyPass);
+
+            AESCipher cipherWithIv = new AESCipher(keyFromKeyStore, "0123456789012345".getBytes());
+
+            String jsonStr = jsonObjectWriter.writeValueAsString(obj);
+            encryptedMessage = cipherWithIv.getEncryptedMessage(jsonStr);
+
+            //coll.add(encryptedMessage);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return encryptedMessage;
+    }
 }
+
