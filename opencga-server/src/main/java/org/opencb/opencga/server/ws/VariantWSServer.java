@@ -40,7 +40,14 @@ public class VariantWSServer extends GenericWSServer {
     static {
 
         try {
-            credentials = new MongoCredentials("localhost", 27017, "test", "user", "pass");
+
+            String host = properties.getProperty("VARIANT.STORAGE.HOST");
+            int port = Integer.parseInt(properties.getProperty("VARIANT.STORAGE.PORT"));
+            String db = properties.getProperty("VARIANT.STORAGE.DB");
+            String user = properties.getProperty("VARIANT.STORAGE.USER");
+            String pass = properties.getProperty("VARIANT.STORAGE.PASS");
+
+            credentials = new MongoCredentials(host, port, db, user, pass);
             variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials);
 
 
