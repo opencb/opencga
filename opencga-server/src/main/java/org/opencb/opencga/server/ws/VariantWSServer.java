@@ -1,55 +1,165 @@
 package org.opencb.opencga.server.ws;
 
-import com.google.common.base.Joiner;
-import java.io.IOException;
-import java.net.UnknownHostException;
-import java.util.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.storage.variant.json.ArchivedVariantFileJsonMixin;
+import org.opencb.opencga.storage.variant.json.GenotypeJsonMixin;
+import org.opencb.opencga.storage.variant.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.variant.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-import org.apache.commons.lang.mutable.MutableInt;
-import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.variant.VariantDBAdaptor;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-@Path("/account/{accountId}/file/{jobId}")
+@Path("/account/{accountId}/variant/{studyId}/{fileId}")
 public class VariantWSServer extends GenericWSServer {
-    
+
     private final String accountId;
-    private final String projectId;
-    private final String jobId;
+    private final String studyId;
+    private final String fileId;
+
+    private static VariantMongoDBAdaptor variantMongoDbAdaptor;
+    private static MongoCredentials credentials;
+    private static final int MAX_REGION = 1000000;
+
+    static {
+
+        try {
+            credentials = new MongoCredentials("localhost", 27017, "test", "user", "pass");
+            variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials);
+
+
+            jsonObjectMapper = new ObjectMapper();
+            jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
+            jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
+            jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+            jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
+            jsonObjectWriter = jsonObjectMapper.writer();
+
+        } catch (IllegalOpenCGACredentialsException | UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
     public VariantWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                               @DefaultValue("") @PathParam("accountId") String accountId,
-                               @DefaultValue("default") @QueryParam("projectId") String projectId,
-                               @DefaultValue("") @PathParam("jobId") String jobId) throws IOException {
+                           @DefaultValue("") @PathParam("accountId") String accountId,
+                           @DefaultValue("") @PathParam("studyId") String studyId,
+                           @DefaultValue("") @PathParam("fileId") String fileId) throws IOException, IllegalOpenCGACredentialsException {
         super(uriInfo, httpServletRequest);
 
         this.accountId = accountId;
-        this.projectId = projectId;
-        this.jobId = jobId;
+        this.studyId = studyId;
+        this.fileId = fileId;
+
+
     }
 
-    @POST
-    @Path("region/{regions}/variants")
-    public Response getVariantsByRegion(@DefaultValue("") @PathParam("regions") String regions) {
-        // TODO getAllVariantsByRegionList
-        List<Region> regionList = Region.parseRegions(regions);
-        return null;
-    }
-    
-    @POST
-    @Path("/list")
-    public Response listVariants(@DefaultValue("1") @QueryParam("page") String page,
-                                 @DefaultValue("0") @PathParam("start") String start,
-                                 @DefaultValue("25") @PathParam("limit") String limit) {
-        return null;
+    @OPTIONS
+    @Path("/fetch")
+    public Response getVariantsOpt() {
+        return createOkResponse("");
     }
 
-/*   
+    @GET
+    @Path("/fetch")
+    public Response getVariants(@QueryParam("region") String region,
+                                @QueryParam("ref") String reference,
+                                @QueryParam("alt") String alternate,
+                                @QueryParam("effects") String effects,
+                                @QueryParam("studies") String studies,
+                                @DefaultValue("-1f") @QueryParam("maf") float maf,
+                                @DefaultValue("-1") @QueryParam("miss_alleles") int missingAlleles,
+                                @DefaultValue("-1") @QueryParam("miss_gts") int missingGenotypes,
+                                @QueryParam("maf_op") String mafOperator,
+                                @QueryParam("miss_alleles_op") String missingAllelesOperator,
+                                @QueryParam("miss_gts_op") String missingGenotypesOperator,
+                                @QueryParam("type") String variantType,
+                                @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                                @DefaultValue("-1") @QueryParam("histogram_interval") int interval
+    ) {
+
+
+        if (reference != null && !reference.isEmpty()) {
+            queryOptions.put("reference", reference);
+        }
+        if (alternate != null && !alternate.isEmpty()) {
+            queryOptions.put("alternate", alternate);
+        }
+        if (effects != null && !effects.isEmpty()) {
+            queryOptions.put("effect", Arrays.asList(effects.split(",")));
+        }
+        if (studies != null && !studies.isEmpty()) {
+            queryOptions.put("studies", Arrays.asList(studies.split(",")));
+        }
+        if (variantType != null && !variantType.isEmpty()) {
+            queryOptions.put("type", variantType);
+        }
+        if (maf >= 0) {
+            queryOptions.put("maf", maf);
+            if (mafOperator != null) {
+                queryOptions.put("opMaf", mafOperator);
+            }
+        }
+        if (missingAlleles >= 0) {
+            queryOptions.put("missingAlleles", missingAlleles);
+            if (missingAllelesOperator != null) {
+                queryOptions.put("opMissingAlleles", missingAllelesOperator);
+            }
+        }
+        if (missingGenotypes >= 0) {
+            queryOptions.put("missingGenotypes", missingGenotypes);
+            if (missingGenotypesOperator != null) {
+                queryOptions.put("opMissingGenotypes", missingGenotypesOperator);
+            }
+        }
+
+        // Parse the provided regions. The total size of all regions together
+        // can't excede 1 million positions
+        int regionsSize = 0;
+        List<Region> regions = new ArrayList<>();
+        for (String s : region.split(",")) {
+            Region r = Region.parseRegion(s);
+            regions.add(r);
+            regionsSize += r.getEnd() - r.getStart();
+        }
+
+        if (histogram) {
+            if (regions.size() > 1) {
+                return createErrorResponse("Sorry, histogram functionality only works with a single region");
+            } else {
+                if (interval > 0) {
+                    queryOptions.put("interval", interval);
+                }
+                return createOkResponse(variantMongoDbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions));
+            }
+        } else if (regionsSize <= MAX_REGION) {
+            List<QueryResult> allVariantsByRegionList = variantMongoDbAdaptor.getAllVariantsByRegionList(regions, queryOptions);
+            System.out.println("allVariantsByRegionList = " + allVariantsByRegionList);
+            return createOkResponse(allVariantsByRegionList);
+        } else {
+            return createErrorResponse("The total size of all regions provided can't exceed " + MAX_REGION + " positions. "
+                    + "If you want to browse a larger number of positions, please provide the parameter 'histogram=true'");
+        }
+    }
+
+    /*
     @GET
     @Path("/variantsMongo")
     public Response getVariantsMongo() {
@@ -72,7 +182,7 @@ public class VariantWSServer extends GenericWSServer {
         //map.put("start", start);
 
 
-        map.put("studyId", accountId + "_-_" + this.jobId);
+        map.put("studyId", accountId + "_-_" + this.fileId);
 
         System.out.println(map);
         MutableInt count = new MutableInt(-1);
@@ -108,7 +218,7 @@ public class VariantWSServer extends GenericWSServer {
 
         return createOkResponse(queryResult);
     }
-    
+
     @POST
     @Path("/effects")
     @Consumes("application/x-www-form-urlencoded")
@@ -121,7 +231,7 @@ public class VariantWSServer extends GenericWSServer {
 
         System.out.println(map);
 
-        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, projectId, Paths.get(this.jobId)).resolve(filename);
+        java.nio.file.Path dataPath = cloudSessionManager.getJobFolderPath(accountId, studyId, Paths.get(this.fileId)).resolve(filename);
 
         System.out.println("dataPath = " + dataPath.toString());
 
@@ -144,7 +254,7 @@ public class VariantWSServer extends GenericWSServer {
     @Path("/variantInfoMongo")
     public Response getAnalysisInfoMongo() {
 
-        String studyId = (accountId + "_-_" + this.jobId);
+        String studyId = (accountId + "_-_" + this.fileId);
 
         Properties prop = new Properties();
         prop.put("mongo_host", "mem15");
