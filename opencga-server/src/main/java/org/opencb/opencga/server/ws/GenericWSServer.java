@@ -230,6 +230,11 @@ public class GenericWSServer {
             String keyPass = prop.get("keypass").toString();
             String iv = prop.get("IV").toString();
 
+            System.out.println("storePass = " + storePass);
+            System.out.println("alias = " + alias);
+            System.out.println("keyPass = " + keyPass);
+            System.out.println("iv = " + iv);
+
             Key keyFromKeyStore = KeystoreUtil.getKeyFromKeyStore(keyStoreFileLocation, storePass, alias, keyPass);
 
             AESCipher cipherWithIv = new AESCipher(keyFromKeyStore, iv.getBytes());
