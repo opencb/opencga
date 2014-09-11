@@ -24,3 +24,9 @@ mvn clean compile install -DskipTests
 
 ## Testing
 Should you want to run the unit tests, you can use Maven or your favorite IDE. Just take note that some tests require of certain database back-ends (MongoDB, Hadoop HBase) and may fail if they are not available.
+
+
+## AES encryption
+
+For AES encryption please download UnlimitedJCEPolicyJDK7.zip from http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html .
+Then unzip the file into $JAVA_HOME/jre/lib/security
