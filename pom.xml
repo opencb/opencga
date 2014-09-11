@@ -15,6 +15,7 @@
         <module>opencga-storage</module>
         <module>opencga-analysis</module>
         <module>opencga-server</module>
+        <module>opencga-catalog</module>
     </modules>
 
     <mailingLists>
