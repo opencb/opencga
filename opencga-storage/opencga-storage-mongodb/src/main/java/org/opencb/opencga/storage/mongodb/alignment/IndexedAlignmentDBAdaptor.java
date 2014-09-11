@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -166,6 +167,92 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     }
 
 
+    public QueryResult getAllIntervalFrequenciesAggregate(Region region, QueryOptions options) {
+        long startTime = System.currentTimeMillis();
+        int size = options.getInt(QO_BATCH_SIZE, 2000);
+        String fileId = options.getString(QO_FILE_ID);
+        List<DBObject> operations = new LinkedList<>();
+        int chunkSize = 200;
+
+        //List<DBObject> operations = Arrays.asList(
+        operations.add(new BasicDBObject(
+                "$match",
+                new BasicDBObject(
+                        "$and",
+                        Arrays.asList(
+                                new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$gt", region.getStart())),
+                                new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$lt", region.getEnd())),
+                                new BasicDBObject(CoverageMongoWriter.CHR_FIELD, region.getChromosome()),
+                                new BasicDBObject(CoverageMongoWriter.SIZE_FIELD, chunkSize)
+                        )
+                )
+        ));
+        operations.add(new BasicDBObject(
+                "$unwind",
+                "$" + CoverageMongoWriter.FILES_FIELD
+        ));
+        operations.add(new BasicDBObject(
+                "$match",
+                new BasicDBObject(CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.FILE_ID_FIELD, fileId)
+        ));
+        operations.add(new BasicDBObject(
+                "$group", BasicDBObjectBuilder.start(
+                        "_id", new BasicDBObject(
+                                "$divide", Arrays.asList(
+                                        new BasicDBObject(
+                                                "$subtract", Arrays.asList(
+                                                        "$start",
+                                                        new BasicDBObject(
+                                                                "$mod", Arrays.asList("$start", size)
+                                                        )
+                                                )
+                                        ),
+                                        size
+                                )
+                        )
+                )
+                .append(
+                        "feature_count", new BasicDBObject(
+                                "$sum" ,
+                                new BasicDBObject(
+                                        "$divide",
+                                        Arrays.asList(
+                                                "$"+ CoverageMongoWriter.FILES_FIELD +"." + CoverageMongoWriter.AVERAGE_FIELD,
+                                                size/chunkSize
+                                        )
+                                )
+                        )
+                ).get()
+        ));
+        operations.add(new BasicDBObject(
+                "$sort",
+                new BasicDBObject("_id", 1)
+        ));
+        System.out.print("db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [");
+        for (DBObject operation : operations) {
+            System.out.print(operation.toString() + " , ");
+        }
+        System.out.println("])");
+        QueryResult<DBObject> result = collection.aggregate(null, operations, null);
+
+        for (DBObject object : result.getResult()) {
+            int id;
+            Object oid = object.get("_id");
+            if(oid instanceof Double){
+                id = (int) (double)oid;
+            } else if(oid instanceof Float){
+                id = (int) (float)oid;
+            } else {
+                id = Integer.parseInt(oid.toString());
+            }
+            object.put("chromosome", region.getChromosome());
+            object.put("start", id * size + 1);
+            object.put("end", id * size + size);
+        }
+
+        return result;
+
+    }
 
 
     public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {

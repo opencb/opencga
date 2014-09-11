@@ -90,6 +90,17 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
 
     @Test
+    public void getAllIntervalFrequenciesAggregateTest() throws IOException {
+        QueryOptions qo = new QueryOptions();
+        qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG00096");
+
+        jsonQueryResult("aggregate", dbAdaptor.getAllIntervalFrequenciesAggregate(new Region("20", 50000, 100000), qo));
+
+
+    }
+
+
+    @Test
     public void testGetCoverageByRegion() throws IOException {
 
         QueryOptions qo = new QueryOptions();

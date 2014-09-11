@@ -30,6 +30,9 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
     public static final String FILES_FIELD = "files";
     public static final String FILE_ID_FIELD = "id";
     public static final String AVERAGE_FIELD = "avg";
+    public static final String START_FIELD = "start";
+    public static final String CHR_FIELD = "chr";
+    public static final String SIZE_FIELD = "size";
 
     private final MongoDataStoreManager mongoManager;
     private final String fileId;
@@ -111,9 +114,9 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
                 if ((Long) countId.getResult().get(0) < 1) {
                     DBObject document = BasicDBObjectBuilder.start()
                             .append(FILES_FIELD, new BasicDBList())
-                            .append("chr", chromosome)
-                            .append("start", start)
-                            .append("size", size)
+                            .append(CHR_FIELD, chromosome)
+                            .append(START_FIELD, start)
+                            .append(SIZE_FIELD, size)
                             .get();
                     document.putAll(query);             //{_id:<chunkId>, files:[]}
                     collection.insert(document);        //Insert a document with empty files array.
