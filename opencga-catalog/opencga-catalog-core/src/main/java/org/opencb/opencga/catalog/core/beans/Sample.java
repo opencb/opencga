@@ -12,6 +12,7 @@ public class Sample {
     private String name;
     private String source;
     private Individual individual;
+    private int studyId;
     private String description;
 
     private List<SampleAnnotation> sampleAnnotations;
@@ -19,16 +20,17 @@ public class Sample {
     public Sample() {
     }
 
-    public Sample(int id, String name, String source, Individual individual, String description) {
-        this(id, name, source, individual, description, new LinkedList<SampleAnnotation>());
+    public Sample(int id, String name, String source, Individual individual, int studyId, String description) {
+        this(id, name, source, individual, studyId, description, new LinkedList<SampleAnnotation>());
     }
 
-    public Sample(int id, String name, String source, Individual individual, String description,
+    public Sample(int id, String name, String source, Individual individual, int studyId, String description,
                   List<SampleAnnotation> sampleAnnotations) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individual = individual;
+        this.studyId = studyId;
         this.description = description;
         this.sampleAnnotations = sampleAnnotations;
     }

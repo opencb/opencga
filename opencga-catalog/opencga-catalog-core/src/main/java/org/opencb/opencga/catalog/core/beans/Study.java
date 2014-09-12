@@ -23,13 +23,17 @@ public class Study {
 
     private List<Acl> acl;
     private List<Experiment> experiments;
-    private List<File> files;
 
+    private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
     /**
      * To think about:
         public static final String STUDY_TYPE = "study_type";
+        private List<File> files;
+        private List<Dataset> files;
+        private List<Sample> files;
+        private List<SampleAnnotationDescription> files;
      */
 
     public Study() {
@@ -38,12 +42,12 @@ public class Study {
     public Study(int id, String name, String alias, String type, String creatorId, String creationDate, String description,
                  String status) {
         this(id, name, alias, type, creatorId, creationDate, description, status, 0, "", new ArrayList<Acl>(),
-                new ArrayList<Experiment>(), new ArrayList<File>(), new HashMap<String, Object>());
+                new ArrayList<Experiment>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, String type, String creatorId, String creationDate, String description,
                  String status, long diskUsage, String cipher, List<Acl> acl, List<Experiment> experiments,
-                 List<File> files, Map<String, Object> attributes) {
+                 Map<String, Object> attributes, Map<String, Object> stats) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -56,8 +60,8 @@ public class Study {
         this.cipher = cipher;
         this.acl = acl;
         this.experiments = experiments;
-        this.files = files;
         this.attributes = attributes;
+        this.stats = stats;
     }
 
     @Override
@@ -73,7 +77,6 @@ public class Study {
                 ", diskUsage=" + diskUsage +
                 ", cipher='" + cipher + '\'' +
                 ", acl=" + acl +
-                ", files=" + files +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -166,14 +169,6 @@ public class Study {
         this.acl = acl;
     }
 
-    public List<File> getFiles() {
-        return files;
-    }
-
-    public void setFiles(List<File> files) {
-        this.files = files;
-    }
-
     public Map<String, Object> getAttributes() {
         return attributes;
     }
@@ -190,4 +185,11 @@ public class Study {
         this.experiments = experiments;
     }
 
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
+    }
 }

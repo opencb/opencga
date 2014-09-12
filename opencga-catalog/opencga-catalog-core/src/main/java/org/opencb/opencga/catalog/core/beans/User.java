@@ -25,20 +25,21 @@ public class User {
     private long diskUsage;
     private long diskQuota;
 
-    private List<Tool> plugins = new ArrayList<>();
+    private List<Project> projects = new ArrayList<>();
+    private List<Analysis> analyses = new ArrayList<>();
 
+    private List<Tool> plugins = new ArrayList<>();
     /**
      * Open and closed session of this user. More than one session can be open, i.e. logged from Chrome and Firefox
      */
     private List<Session> sessions;
+
     private Map<String, Object> configs = new HashMap<>();
 
     private Map<String, Object> attributes;
-
     /**
      * Things to think about:
-        private List<Credential> credentials = new ArrayList<Credential>();
-        private List<Project> projects = new ArrayList<>();
+     private List<Credential> credentials = new ArrayList<Credential>();
         private List<Bucket> buckets = new ArrayList<Bucket>();
      */
 
@@ -50,12 +51,14 @@ public class User {
     }
 
     public User(String id, String name, String email, String password, String role, String status, String organization) {
-        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Tool>(0), new ArrayList<Session>(0),
+        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
+                new ArrayList<Analysis>(), new ArrayList<Tool>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public User(String id, String name, String email, String password, String organization, String role, String status, String lastActivity,
-                long diskUsage, long diskQuota, List<Tool> plugins, List<Session> sessions, Map<String, Object> configs,
+    public User(String id, String name, String email, String password, String organization, String role, String status,
+                String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Analysis> analyses,
+                List<Tool> plugins, List<Session> sessions, Map<String, Object> configs,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -67,6 +70,8 @@ public class User {
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;
+        this.projects = projects;
+        this.analyses = analyses;
         this.plugins = plugins;
         this.sessions = sessions;
         this.configs = configs;
@@ -202,5 +207,21 @@ public class User {
 
     public void setOrganization(String organization) {
         this.organization = organization;
+    }
+
+    public List<Project> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(List<Project> projects) {
+        this.projects = projects;
+    }
+
+    public List<Analysis> getAnalyses() {
+        return analyses;
+    }
+
+    public void setAnalyses(List<Analysis> analyses) {
+        this.analyses = analyses;
     }
 }

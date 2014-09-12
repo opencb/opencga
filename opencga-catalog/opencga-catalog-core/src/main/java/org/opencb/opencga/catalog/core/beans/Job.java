@@ -21,12 +21,12 @@ public class Job {
     private long diskUsage;
 
     private String outdir;
-    private List<Integer> input;
-    private List<Integer> output;
+//    private List<Integer> input;
+//    private List<Integer> output;
 
     /**
      * To think about:
-        private Index index;
+     * private Index index;
      */
 
     public static final String QUEUED = "queued";
@@ -37,8 +37,7 @@ public class Job {
     }
 
     public Job(int id, String name, String toolName, String date, String description, long startTime, long endTime,
-               String outputError, String commandLine, int visits, String status, long diskUsage, String outdir,
-               List<Integer> input, List<Integer> output) {
+               String outputError, String commandLine, int visits, String status, long diskUsage, String outdir) {
         this.id = id;
         this.name = name;
         this.toolName = toolName;
@@ -52,8 +51,6 @@ public class Job {
         this.status = status;
         this.diskUsage = diskUsage;
         this.outdir = outdir;
-        this.input = input;
-        this.output = output;
     }
 
     @Override
@@ -72,8 +69,6 @@ public class Job {
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", outdir='" + outdir + '\'' +
-                ", input=" + input +
-                ", output=" + output +
                 '}';
     }
 
@@ -181,19 +176,4 @@ public class Job {
         this.outdir = outdir;
     }
 
-    public List<Integer> getInput() {
-        return input;
-    }
-
-    public void setInput(List<Integer> input) {
-        this.input = input;
-    }
-
-    public List<Integer> getOutput() {
-        return output;
-    }
-
-    public void setOutput(List<Integer> output) {
-        this.output = output;
-    }
 }

@@ -7,7 +7,7 @@ import java.util.List;
  */
 public class Tool {
 
-    private String id;
+    private String alias;
     private String name;
     private String description;
     private Object manifest;
@@ -18,7 +18,8 @@ public class Tool {
     public Tool() {
     }
 
-    public Tool(String name, String description, Object manifest, Object result, String path, List<Acl> acl) {
+    public Tool(String alias, String name, String description, Object manifest, Object result, String path, List<Acl> acl) {
+        this.alias = alias;
         this.name = name;
         this.description = description;
         this.manifest = manifest;
@@ -30,13 +31,13 @@ public class Tool {
     @Override
     public String toString() {
         return "Tool{" +
-                "acl=" + acl +
-                ", path='" + path + '\'' +
-                ", result=" + result +
-                ", manifest=" + manifest +
-                ", description='" + description + '\'' +
+                "alias='" + alias + '\'' +
                 ", name='" + name + '\'' +
-                ", id='" + id + '\'' +
+                ", description='" + description + '\'' +
+                ", manifest=" + manifest +
+                ", result=" + result +
+                ", path='" + path + '\'' +
+                ", acl=" + acl +
                 '}';
     }
 
@@ -86,5 +87,13 @@ public class Tool {
 
     public void setAcl(List<Acl> acl) {
         this.acl = acl;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 }

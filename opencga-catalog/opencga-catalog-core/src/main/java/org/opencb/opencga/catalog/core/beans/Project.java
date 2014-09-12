@@ -7,13 +7,14 @@ import java.util.*;
  */
 public class Project {
 
-    private int id;
+//    private int id;
     private String name;
     private String alias;
-    /**
+
+    /*
      * This must be a valid userId
      */
-    private String ownerId;
+    //private String ownerId;   Not needed
     private String creationDate;
     private String description;
     private String organization;
@@ -29,18 +30,17 @@ public class Project {
     public Project() {
     }
 
-    public Project(int id, String name, String alias, String ownerId, String creationDate, String description, String status,
+    public Project(String name, String alias, String creationDate, String description, String status,
                    String lastActivity, long diskUsage, String organization) {
-        this(id, name, alias, ownerId, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<Acl>(),
-                new LinkedList<Study>(), new HashMap<String, Object>());
+        this(name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
+                new LinkedList<Acl>(), new LinkedList<Study>(), new HashMap<String, Object>());
     }
 
-    public Project(int id, String name, String alias, String ownerId, String creationDate, String description, String organization, String status,
-                   String lastActivity, long diskUsage, List<Acl> acl, List<Study> studies, Map<String, Object> attributes) {
-        this.id = id;
+    public Project(String name, String alias, String creationDate, String description, String organization,
+                   String status, String lastActivity, long diskUsage, List<Acl> acl, List<Study> studies,
+                   Map<String, Object> attributes) {
         this.name = name;
         this.alias = alias;
-        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.description = description;
         this.organization = organization;
@@ -64,19 +64,9 @@ public class Project {
                 ", organization='" + organization + '\'' +
                 ", description='" + description + '\'' +
                 ", creationDate='" + creationDate + '\'' +
-                ", ownerId='" + ownerId + '\'' +
                 ", alias='" + alias + '\'' +
                 ", name='" + name + '\'' +
-                ", id='" + id + '\'' +
                 '}';
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getName() {
@@ -93,14 +83,6 @@ public class Project {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
     }
 
     public String getCreationDate() {

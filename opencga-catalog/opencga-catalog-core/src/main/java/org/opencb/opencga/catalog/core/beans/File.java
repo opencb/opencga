@@ -12,7 +12,6 @@ public class File {
 
     private int id;
     private String name;
-    private int studyId;
     private String type;
     private String format;
     private String bioType;
@@ -20,13 +19,18 @@ public class File {
     private String creatorId;
     private String creationDate;
     private String description;
+
     private String status;
     private long diskUsage;
 
+    private int studyId;
     private int experimentId;
     private List<Integer> sampleIds;
+    private int originJobId;
+    private List<Integer> destinyJobIds;
 
     private Map<String, Object> attributes;
+    private Map<String, Object> stats;
 
     public static final String UPLOADING = "uploading";
     public static final String UPLOADED = "uploaded";
@@ -41,14 +45,16 @@ public class File {
     }
 
     public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
-                String creationDate, String description, String status, long diskUsage, int experimentId) {
-        this(id, name, type, format, bioType, uri, creatorId, creationDate,description, status, diskUsage, experimentId,
-                new LinkedList<Integer>(), new HashMap<String, Object>());
+                String creationDate, String description, String status, long diskUsage, int studyId, int experimentId) {
+        this(id, name, type, format, bioType, uri, creatorId, creationDate, description, status, diskUsage, studyId,
+                experimentId, new LinkedList<Integer>(), -1, new LinkedList<Integer>(),new HashMap<String, Object>(),
+                new HashMap<String, Object>());
     }
 
     public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
-                String creationDate, String description, String status, long diskUsage, int experimentId,
-                List<Integer> sampleIds, Map<String, Object> attributes) {
+                String creationDate, String description, String status, long diskUsage, int studyId, int experimentId,
+                List<Integer> sampleIds, int originJobId, List<Integer> destinyJobIds, Map<String, Object> attributes,
+                Map<String, Object> stats) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -60,9 +66,13 @@ public class File {
         this.description = description;
         this.status = status;
         this.diskUsage = diskUsage;
+        this.studyId = studyId;
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
+        this.originJobId = originJobId;
+        this.destinyJobIds = destinyJobIds;
         this.attributes = attributes;
+        this.stats = stats;
     }
 
     @Override
@@ -79,9 +89,13 @@ public class File {
                 ", description='" + description + '\'' +
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
-                ", experimentId='" + experimentId + '\'' +
+                ", studyId=" + studyId +
+                ", experimentId=" + experimentId +
                 ", sampleIds=" + sampleIds +
+                ", originJobId=" + originJobId +
+                ", destinyJobIds=" + destinyJobIds +
                 ", attributes=" + attributes +
+                ", stats=" + stats +
                 '}';
     }
 
@@ -173,6 +187,14 @@ public class File {
         this.diskUsage = diskUsage;
     }
 
+    public int getStudyId() {
+        return studyId;
+    }
+
+    public void setStudyId(int studyId) {
+        this.studyId = studyId;
+    }
+
     public int getExperimentId() {
         return experimentId;
     }
@@ -189,11 +211,35 @@ public class File {
         this.sampleIds = sampleIds;
     }
 
+    public int getOriginJobId() {
+        return originJobId;
+    }
+
+    public void setOriginJobId(int originJobId) {
+        this.originJobId = originJobId;
+    }
+
+    public List<Integer> getDestinyJobIds() {
+        return destinyJobIds;
+    }
+
+    public void setDestinyJobIds(List<Integer> destinyJobIds) {
+        this.destinyJobIds = destinyJobIds;
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
     }
 }
