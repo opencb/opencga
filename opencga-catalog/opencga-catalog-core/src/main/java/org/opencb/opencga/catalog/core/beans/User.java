@@ -50,7 +50,7 @@ public class User {
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String role, String status, String organization) {
+    public User(String id, String name, String email, String password, String organization, String role, String status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
                 new ArrayList<Analysis>(), new ArrayList<Tool>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());

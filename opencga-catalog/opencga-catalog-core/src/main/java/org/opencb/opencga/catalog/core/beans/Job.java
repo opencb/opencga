@@ -6,9 +6,13 @@ import java.util.List;
  * Created by jacobo on 11/09/14.
  */
 public class Job {
-
+    /**
+     * TODO: UserID, AnalysisID
+     */
     private int id;
     private String name;
+    private String userId;
+    private int analysisId;
     private String toolName;
     private String date;
     private String description;
@@ -21,8 +25,8 @@ public class Job {
     private long diskUsage;
 
     private String outdir;
-//    private List<Integer> input;
-//    private List<Integer> output;
+    private List<Integer> input;
+    private List<Integer> output;
 
     /**
      * To think about:
@@ -36,10 +40,13 @@ public class Job {
     public Job() {
     }
 
-    public Job(int id, String name, String toolName, String date, String description, long startTime, long endTime,
-               String outputError, String commandLine, int visits, String status, long diskUsage, String outdir) {
+    public Job(int id, String name, String userId, int analysisId, String toolName, String date, String description,
+               long startTime, long endTime, String outputError, String commandLine, int visits, String status,
+               long diskUsage, String outdir, List<Integer> input, List<Integer> output) {
         this.id = id;
         this.name = name;
+        this.userId = userId;
+        this.analysisId = analysisId;
         this.toolName = toolName;
         this.date = date;
         this.description = description;
@@ -51,6 +58,8 @@ public class Job {
         this.status = status;
         this.diskUsage = diskUsage;
         this.outdir = outdir;
+        this.input = input;
+        this.output = output;
     }
 
     @Override
@@ -58,6 +67,8 @@ public class Job {
         return "Job{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", userId='" + userId + '\'' +
+                ", analysisId=" + analysisId +
                 ", toolName='" + toolName + '\'' +
                 ", date='" + date + '\'' +
                 ", description='" + description + '\'' +
@@ -69,6 +80,8 @@ public class Job {
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", outdir='" + outdir + '\'' +
+                ", input=" + input +
+                ", output=" + output +
                 '}';
     }
 
@@ -86,6 +99,22 @@ public class Job {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public int getAnalysisId() {
+        return analysisId;
+    }
+
+    public void setAnalysisId(int analysisId) {
+        this.analysisId = analysisId;
     }
 
     public String getToolName() {
@@ -176,4 +205,19 @@ public class Job {
         this.outdir = outdir;
     }
 
+    public List<Integer> getInput() {
+        return input;
+    }
+
+    public void setInput(List<Integer> input) {
+        this.input = input;
+    }
+
+    public List<Integer> getOutput() {
+        return output;
+    }
+
+    public void setOutput(List<Integer> output) {
+        this.output = output;
+    }
 }

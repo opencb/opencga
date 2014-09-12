@@ -26,8 +26,9 @@ public class File {
     private int studyId;
     private int experimentId;
     private List<Integer> sampleIds;
-    private int originJobId;
-    private List<Integer> destinyJobIds;
+    private int jobId;
+//    private int originJobId;
+    //private List<Integer> destinyJobIds;
 
     private Map<String, Object> attributes;
     private Map<String, Object> stats;
@@ -47,13 +48,13 @@ public class File {
     public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage, int studyId, int experimentId) {
         this(id, name, type, format, bioType, uri, creatorId, creationDate, description, status, diskUsage, studyId,
-                experimentId, new LinkedList<Integer>(), -1, new LinkedList<Integer>(),new HashMap<String, Object>(),
+                experimentId, new LinkedList<Integer>(), -1, new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage, int studyId, int experimentId,
-                List<Integer> sampleIds, int originJobId, List<Integer> destinyJobIds, Map<String, Object> attributes,
+                List<Integer> sampleIds, int jobId, Map<String, Object> attributes,
                 Map<String, Object> stats) {
         this.id = id;
         this.name = name;
@@ -69,8 +70,7 @@ public class File {
         this.studyId = studyId;
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
-        this.originJobId = originJobId;
-        this.destinyJobIds = destinyJobIds;
+        this.jobId = jobId;
         this.attributes = attributes;
         this.stats = stats;
     }
@@ -92,8 +92,7 @@ public class File {
                 ", studyId=" + studyId +
                 ", experimentId=" + experimentId +
                 ", sampleIds=" + sampleIds +
-                ", originJobId=" + originJobId +
-                ", destinyJobIds=" + destinyJobIds +
+                ", jobId=" + jobId +
                 ", attributes=" + attributes +
                 ", stats=" + stats +
                 '}';
@@ -207,24 +206,16 @@ public class File {
         return sampleIds;
     }
 
+    public int getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(int jobId) {
+        this.jobId = jobId;
+    }
+
     public void setSampleIds(List<Integer> sampleIds) {
         this.sampleIds = sampleIds;
-    }
-
-    public int getOriginJobId() {
-        return originJobId;
-    }
-
-    public void setOriginJobId(int originJobId) {
-        this.originJobId = originJobId;
-    }
-
-    public List<Integer> getDestinyJobIds() {
-        return destinyJobIds;
-    }
-
-    public void setDestinyJobIds(List<Integer> destinyJobIds) {
-        this.destinyJobIds = destinyJobIds;
     }
 
     public Map<String, Object> getAttributes() {

@@ -7,34 +7,52 @@ import java.util.List;
  */
 public class Analysis {
 
-    //private int id;
+    private int id;
     private String name;
+    private String alias;
     private String date;
     private int studyId;
     private String description;
 
-    private List<Job> jobs;
 
     public Analysis() {
     }
 
-    public Analysis(String name, String date, int studyId, String description, List<Job> jobs) {
+    public Analysis(int id, String name, String alias, String date, int studyId, String description) {
+        this.id = id;
         this.name = name;
+        this.alias = alias;
         this.date = date;
         this.studyId = studyId;
         this.description = description;
-        this.jobs = jobs;
     }
 
     @Override
     public String toString() {
         return "Analysis{" +
-                "name='" + name + '\'' +
-                ", date='" + date + '\'' +
+                "description='" + description + '\'' +
                 ", studyId=" + studyId +
-                ", description='" + description + '\'' +
-                ", jobs=" + jobs +
+                ", date='" + date + '\'' +
+                ", alias='" + alias + '\'' +
+                ", name='" + name + '\'' +
+                ", id=" + id +
                 '}';
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     public String getName() {
@@ -69,11 +87,4 @@ public class Analysis {
         this.description = description;
     }
 
-    public List<Job> getJobs() {
-        return jobs;
-    }
-
-    public void setJobs(List<Job> jobs) {
-        this.jobs = jobs;
-    }
 }
