@@ -4,6 +4,7 @@ package org.opencb.opencga.catalog.core.beans;
  * Created by jacobo on 11/09/14.
  */
 public class Session {
+
     private String id;
     private String ip;
     private String login;
@@ -17,6 +18,16 @@ public class Session {
         this.ip = ip;
         this.login = login;
         this.logout = logout;
+    }
+
+    @Override
+    public String toString() {
+        return "Session{" +
+                "id='" + id + '\'' +
+                ", ip='" + ip + '\'' +
+                ", login='" + login + '\'' +
+                ", logout='" + logout + '\'' +
+                '}';
     }
 
     public String getId() {

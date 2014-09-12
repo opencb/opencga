@@ -6,19 +6,28 @@ import java.util.List;
  * Created by jacobo on 11/09/14.
  */
 public class Job {
-    private String date;
-    private String status;
-    private String toolName;
-    private long diskUsage;
-    private String startTime;
-    private String endTime;
-    private String ouputError;
-    private int visits;
-    private String commandLine;
-    private String description;
 
-    private List<Integer> input;    //fileId
-    private List<Integer> output;   //fileId
+    private int id;
+    private String name;
+    private String toolName;
+    private String date;
+    private String description;
+    private long startTime;
+    private long endTime;
+    private String outputError;
+    private String commandLine;
+    private int visits;
+    private String status;
+    private long diskUsage;
+
+    private String outdir;
+    private List<Integer> input;
+    private List<Integer> output;
+
+    /**
+     * To think about:
+        private Index index;
+     */
 
     public static final String QUEUED = "queued";
     public static final String RUNNING = "running";
@@ -27,35 +36,61 @@ public class Job {
     public Job() {
     }
 
-    public Job(String date, String status, String toolName, long diskUsage, String startTime, String endTime, String ouputError, int visits, String commandLine, String description, List<Integer> input, List<Integer> output) {
-        this.date = date;
-        this.status = status;
+    public Job(int id, String name, String toolName, String date, String description, long startTime, long endTime,
+               String outputError, String commandLine, int visits, String status, long diskUsage, String outdir,
+               List<Integer> input, List<Integer> output) {
+        this.id = id;
+        this.name = name;
         this.toolName = toolName;
-        this.diskUsage = diskUsage;
+        this.date = date;
+        this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.ouputError = ouputError;
-        this.visits = visits;
+        this.outputError = outputError;
         this.commandLine = commandLine;
-        this.description = description;
+        this.visits = visits;
+        this.status = status;
+        this.diskUsage = diskUsage;
+        this.outdir = outdir;
         this.input = input;
         this.output = output;
     }
 
-    public String getDate() {
-        return date;
+    @Override
+    public String toString() {
+        return "Job{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", toolName='" + toolName + '\'' +
+                ", date='" + date + '\'' +
+                ", description='" + description + '\'' +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
+                ", outputError='" + outputError + '\'' +
+                ", commandLine='" + commandLine + '\'' +
+                ", visits=" + visits +
+                ", status='" + status + '\'' +
+                ", diskUsage=" + diskUsage +
+                ", outdir='" + outdir + '\'' +
+                ", input=" + input +
+                ", output=" + output +
+                '}';
     }
 
-    public void setDate(String date) {
-        this.date = date;
+    public int getId() {
+        return id;
     }
 
-    public String getStatus() {
-        return status;
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getToolName() {
@@ -66,44 +101,44 @@ public class Job {
         this.toolName = toolName;
     }
 
-    public long getDiskUsage() {
-        return diskUsage;
+    public String getDate() {
+        return date;
     }
 
-    public void setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public void setDate(String date) {
+        this.date = date;
     }
 
-    public String getStartTime() {
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public long getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(String startTime) {
+    public void setStartTime(long startTime) {
         this.startTime = startTime;
     }
 
-    public String getEndTime() {
+    public long getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(String endTime) {
+    public void setEndTime(long endTime) {
         this.endTime = endTime;
     }
 
-    public String getOuputError() {
-        return ouputError;
+    public String getOutputError() {
+        return outputError;
     }
 
-    public void setOuputError(String ouputError) {
-        this.ouputError = ouputError;
-    }
-
-    public int getVisits() {
-        return visits;
-    }
-
-    public void setVisits(int visits) {
-        this.visits = visits;
+    public void setOutputError(String outputError) {
+        this.outputError = outputError;
     }
 
     public String getCommandLine() {
@@ -114,12 +149,36 @@ public class Job {
         this.commandLine = commandLine;
     }
 
-    public String getDescription() {
-        return description;
+    public int getVisits() {
+        return visits;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setVisits(int visits) {
+        this.visits = visits;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public long getDiskUsage() {
+        return diskUsage;
+    }
+
+    public void setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
+    }
+
+    public String getOutdir() {
+        return outdir;
+    }
+
+    public void setOutdir(String outdir) {
+        this.outdir = outdir;
     }
 
     public List<Integer> getInput() {

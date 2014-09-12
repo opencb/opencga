@@ -1,59 +1,128 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Created by jacobo on 11/09/14.
  */
 public class File {
-    private int fileId;
-    private String fileName;
-    private String fileType;
-    private String fileFormat;
-    private String fileBioType;
-    private String path;
-    private String uri;
-    private String submissionDate;
-    private long size;
 
-    private String source;
+    private int id;
+    private String name;
+    private int studyId;
+    private String type;
+    private String format;
+    private String bioType;
+    private String uri;
+    private String creatorId;
+    private String creationDate;
+    private String description;
+    private String status;
+    private long diskUsage;
+
+    private int experimentId;
+    private List<Integer> sampleIds;
+
+    private Map<String, Object> attributes;
+
+    public static final String UPLOADING = "uploading";
+    public static final String UPLOADED = "uploaded";
+    public static final String READY = "ready";
+
+    /**
+     * To think:
+     * ACL, url,  responsible,  extended source ??
+     */
 
     public File() {
     }
 
-    public File(int fileId, String fileName, String fileType, String fileFormat, String fileBioType, String path, String uri, String submissionDate, long size, String source) {
-        this.fileId = fileId;
-        this.fileName = fileName;
-        this.fileType = fileType;
-        this.fileFormat = fileFormat;
-        this.fileBioType = fileBioType;
-        this.path = path;
+    public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
+                String creationDate, String description, String status, long diskUsage, int experimentId) {
+        this(id, name, type, format, bioType, uri, creatorId, creationDate,description, status, diskUsage, experimentId,
+                new LinkedList<Integer>(), new HashMap<String, Object>());
+    }
+
+    public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
+                String creationDate, String description, String status, long diskUsage, int experimentId,
+                List<Integer> sampleIds, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.format = format;
+        this.bioType = bioType;
         this.uri = uri;
-        this.submissionDate = submissionDate;
-        this.size = size;
-        this.source = source;
+        this.creatorId = creatorId;
+        this.creationDate = creationDate;
+        this.description = description;
+        this.status = status;
+        this.diskUsage = diskUsage;
+        this.experimentId = experimentId;
+        this.sampleIds = sampleIds;
+        this.attributes = attributes;
     }
 
-    public String getSource() {
-        return source;
+    @Override
+    public String toString() {
+        return "File{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", format='" + format + '\'' +
+                ", bioType='" + bioType + '\'' +
+                ", uri='" + uri + '\'' +
+                ", creatorId='" + creatorId + '\'' +
+                ", creationDate='" + creationDate + '\'' +
+                ", description='" + description + '\'' +
+                ", status='" + status + '\'' +
+                ", diskUsage=" + diskUsage +
+                ", experimentId='" + experimentId + '\'' +
+                ", sampleIds=" + sampleIds +
+                ", attributes=" + attributes +
+                '}';
     }
 
-    public void setSource(String source) {
-        this.source = source;
+    public int getId() {
+        return id;
     }
 
-    public long getSize() {
-        return size;
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public void setSize(long size) {
-        this.size = size;
+    public String getName() {
+        return name;
     }
 
-    public String getSubmissionDate() {
-        return submissionDate;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void setSubmissionDate(String submissionDate) {
-        this.submissionDate = submissionDate;
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
+    public String getBioType() {
+        return bioType;
+    }
+
+    public void setBioType(String bioType) {
+        this.bioType = bioType;
     }
 
     public String getUri() {
@@ -64,51 +133,67 @@ public class File {
         this.uri = uri;
     }
 
-    public String getPath() {
-        return path;
+    public String getCreatorId() {
+        return creatorId;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setCreatorId(String creatorId) {
+        this.creatorId = creatorId;
     }
 
-    public String getFileBioType() {
-        return fileBioType;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public void setFileBioType(String fileBioType) {
-        this.fileBioType = fileBioType;
+    public void setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
     }
 
-    public String getFileFormat() {
-        return fileFormat;
+    public String getDescription() {
+        return description;
     }
 
-    public void setFileFormat(String fileFormat) {
-        this.fileFormat = fileFormat;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getFileType() {
-        return fileType;
+    public String getStatus() {
+        return status;
     }
 
-    public void setFileType(String fileType) {
-        this.fileType = fileType;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
-    public String getFileName() {
-        return fileName;
+    public long getDiskUsage() {
+        return diskUsage;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
+    public void setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
     }
 
-    public int getFileId() {
-        return fileId;
+    public int getExperimentId() {
+        return experimentId;
     }
 
-    public void setFileId(int fileId) {
-        this.fileId = fileId;
+    public void setExperimentId(int experimentId) {
+        this.experimentId = experimentId;
+    }
+
+    public List<Integer> getSampleIds() {
+        return sampleIds;
+    }
+
+    public void setSampleIds(List<Integer> sampleIds) {
+        this.sampleIds = sampleIds;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

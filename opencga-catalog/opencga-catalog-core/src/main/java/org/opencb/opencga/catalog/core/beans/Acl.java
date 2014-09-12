@@ -22,6 +22,17 @@ public class Acl {
         this.delete = delete;
     }
 
+    @Override
+    public String toString() {
+        return "Acl{" +
+                "userId='" + userId + '\'' +
+                ", read=" + read +
+                ", write=" + write +
+                ", execute=" + execute +
+                ", delete=" + delete +
+                '}';
+    }
+
     public String getUserId() {
         return userId;
     }

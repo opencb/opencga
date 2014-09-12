@@ -32,23 +32,23 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public class CloudSessionManager {
+public class CatalogManager {
 
     private AccountManager accountManager;
     private FileIOManager ioManager;
 
-    protected static Logger logger = LoggerFactory.getLogger(CloudSessionManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
 
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
 
     private Properties accountProperties;
 
-    public CloudSessionManager() throws IOException, IOManagementException {
+    public CatalogManager() throws IOException, IOManagementException {
         this(System.getenv("OPENCGA_HOME"));
     }
 
-    public CloudSessionManager(String gcsaHome) throws IOException, IOManagementException {
+    public CatalogManager(String gcsaHome) throws IOException, IOManagementException {
         accountProperties = Config.getAccountProperties();
 
         if (accountProperties.getProperty("OPENCGA.ACCOUNT.MODE").equals("file")) {

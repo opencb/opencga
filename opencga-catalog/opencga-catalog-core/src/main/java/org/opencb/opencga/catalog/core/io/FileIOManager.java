@@ -20,7 +20,7 @@ import java.util.Properties;
 
 //import org.opencb.opencga.account.io.result.Result;
 
-public class FileIOManager implements IOManager {
+public class FileIOManager implements CatalogIOManager {
 
     protected static Logger logger = LoggerFactory.getLogger(FileIOManager.class);
     protected static ObjectMapper jsonObjectMapper;

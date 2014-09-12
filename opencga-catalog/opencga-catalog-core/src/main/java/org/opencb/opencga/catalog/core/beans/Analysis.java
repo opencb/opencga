@@ -6,5 +6,15 @@ import java.util.List;
  * Created by jacobo on 11/09/14.
  */
 public class Analysis {
-    List<Job> jobs;
+
+    private int id;
+    private String name;
+    private String date;
+    private String ownerId;
+    private int studyId;
+    private String description;
+
+    private List<Job> jobs;
+
+
 }
