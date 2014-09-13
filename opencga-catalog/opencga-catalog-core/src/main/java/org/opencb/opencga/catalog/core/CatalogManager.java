@@ -575,8 +575,8 @@ public class CatalogManager {
 //     * Project methods
 //     * ***************************
 //     */
-//    public QueryResult getProjectsList(String accountId, String sessionId) throws AccountManagementException {
-//        return accountManager.getProjectsList(accountId, sessionId);
+//    public QueryResult getAllProjects(String accountId, String sessionId) throws AccountManagementException {
+//        return accountManager.getAllProjects(accountId, sessionId);
 //    }
 //
 //    public QueryResult createProject(String accountId, Project project, String sessionId) throws AccountManagementException,

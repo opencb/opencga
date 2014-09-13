@@ -11,7 +11,7 @@ public class Project {
     private String name;
     private String alias;
 
-    /*
+    /**
      * This must be a valid userId
      */
     //private String ownerId;   Not needed
