@@ -1,5 +1,8 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
+
 /**
  * Created by jacobo on 11/09/14.
  */
@@ -11,6 +14,15 @@ public class Session {
     private String logout;
 
     public Session() {
+        this(StringUtils.randomString(20), "", TimeUtils.getTime(), "");
+    }
+
+    public Session(String ip) {
+        this(StringUtils.randomString(20), ip, TimeUtils.getTime(), "");
+    }
+
+    public Session(String id, String ip, String logout) {
+        this(StringUtils.randomString(20), ip, TimeUtils.getTime(), logout);
     }
 
     public Session(String id, String ip, String login, String logout) {
