@@ -132,7 +132,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult createUser(User user, Session session) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult createUser(User user) throws CatalogManagerException, JsonProcessingException {
         startQuery();
 
         //TODO: ManageSession
@@ -152,11 +152,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult deleteUser(String userId) throws CatalogManagerException, JsonProcessingException {
-        return null;
-    }
-
-    @Override
-    public QueryResult createAnonymousUser(String userId, String password, Session session) throws CatalogManagerException, IOException {
         return null;
     }
 
@@ -185,6 +180,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult logout(String userId, String sessionId) throws CatalogManagerException, IOException {
+        return null;
+    }
+
+    @Override
+    public QueryResult loginAsAnonymous(Session session) throws CatalogManagerException, IOException {
         return null;
     }
 
@@ -253,6 +253,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         DBObject update = new BasicDBObject("$push", new BasicDBObject ("projects", (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(project))));
         System.out.println(update);
         return endQuery("Create Project", userCollection.update(query, update, false, false));
+    }
+
+    @Override
+    public QueryResult getProject(String userId, String project, String sessionId) throws CatalogManagerException {
+        return null;
     }
 
     @Override
