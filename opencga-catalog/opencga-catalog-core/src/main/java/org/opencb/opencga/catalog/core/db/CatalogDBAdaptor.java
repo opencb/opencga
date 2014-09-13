@@ -26,7 +26,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult loginAsAnonymous(Session session) throws CatalogManagerException, IOException;
 
-    QueryResult logoutAnonymous(String userId, String sessionId);
+    QueryResult logoutAnonymous(String sessionId);
 
 
     // public String getUserByAccountId(String accountId, String sessionId);

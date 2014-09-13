@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class Project {
 
-//    private int id;
+    private int id;
     private String name;
     private String alias;
 
@@ -32,13 +32,14 @@ public class Project {
 
     public Project(String name, String alias, String creationDate, String description, String status,
                    String lastActivity, long diskUsage, String organization) {
-        this(name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
+        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
                 new LinkedList<Acl>(), new LinkedList<Study>(), new HashMap<String, Object>());
     }
 
-    public Project(String name, String alias, String creationDate, String description, String organization,
+    public Project(int id, String name, String alias, String creationDate, String description, String organization,
                    String status, String lastActivity, long diskUsage, List<Acl> acl, List<Study> studies,
                    Map<String, Object> attributes) {
+        this.id = id;
         this.name = name;
         this.alias = alias;
         this.creationDate = creationDate;
@@ -55,18 +56,27 @@ public class Project {
     @Override
     public String toString() {
         return "Project{" +
-                "attributes=" + attributes +
-                ", studies=" + studies +
-                ", acl=" + acl +
-                ", diskUsage=" + diskUsage +
-                ", lastActivity='" + lastActivity + '\'' +
-                ", status='" + status + '\'' +
-                ", organization='" + organization + '\'' +
-                ", description='" + description + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", alias='" + alias + '\'' +
+                "id=" + id +
                 ", name='" + name + '\'' +
+                ", alias='" + alias + '\'' +
+                ", creationDate='" + creationDate + '\'' +
+                ", description='" + description + '\'' +
+                ", organization='" + organization + '\'' +
+                ", status='" + status + '\'' +
+                ", lastActivity='" + lastActivity + '\'' +
+                ", diskUsage=" + diskUsage +
+                ", acl=" + acl +
+                ", studies=" + studies +
+                ", attributes=" + attributes +
                 '}';
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {

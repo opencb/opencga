@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBObject;
+import com.mongodb.*;
 import com.mongodb.util.JSON;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -19,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -29,12 +26,13 @@ import java.util.Properties;
  */
 public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
-    public static final String METADATA = "metadata";
-    public static final String USER = "user";
-    public static final String FILE = "file";
-    public static final String SAMPLE = "sample";
-    public static final String JOB = "job";
+    public static final String METADATA_COLLECTION = "metadata";
+    public static final String USER_COLLECTION = "user";
+    public static final String FILE_COLLECTION = "file";
+    public static final String SAMPLE_COLLECTION = "sample";
+    public static final String JOB_COLLECTION = "job";
     public static final boolean LOGIN_AT_CREATE_USER = false;
+    public static final String METADATA_OBJECT = "METADATA";
 
     private final MongoDataStoreManager mongoManager;
     private final MongoCredentials credentials;
@@ -52,6 +50,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
     private Properties catalogProperties;
+    private DBCollection nativeMetaCollection;
 
     public CatalogMongoDBAdaptor(MongoCredentials credentials) {
         this.mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
@@ -63,22 +62,33 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         //catalogProperties = Config.getAccountProperties();
     }
 
-    public void connect(){
+    public void connect() throws JsonProcessingException {
         db = mongoManager.get(credentials.getMongoDbName());
-        metaCollection = db.getCollection(METADATA);
-        userCollection = db.getCollection(USER);
-        fileCollection = db.getCollection(FILE);
-        sampleCollection = db.getCollection(SAMPLE);
-        jobCollection = db.getCollection(JOB);
+        nativeMetaCollection = db.getDb().getCollection(METADATA_COLLECTION);
+        metaCollection = db.getCollection(METADATA_COLLECTION);
+        userCollection = db.getCollection(USER_COLLECTION);
+        fileCollection = db.getCollection(FILE_COLLECTION);
+        sampleCollection = db.getCollection(SAMPLE_COLLECTION);
+        jobCollection = db.getCollection(JOB_COLLECTION);
 
 
+        //If "metadata" document doesn't exist, create.
+        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_COLLECTION));
+        if(queryResult.getNumResults() == 0){
+            try {
+                DBObject metadataObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(new Metadata()));
+                metadataObject.put("_id", METADATA_OBJECT);
+                metaCollection.insert(metadataObject);
+            } catch (MongoException.DuplicateKey e){
+                logger.warn("Trying to replace MetadataObject. DuplicateKey");
+            }
+        }
     }
+
 
     public void disconnect(){
          mongoManager.close(db.getDatabaseName());
     }
-
-
 
     private void startQuery(){
         startTime = System.currentTimeMillis();
@@ -116,16 +126,53 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return l != 0;
     }
 
-    private String getUserIdBySession(String sessionId){
+    @Override
+    public String getUserIdBySessionId(String sessionId){
         QueryResult id = userCollection.find(new BasicDBObject("sessions.id", sessionId), null, null, new BasicDBObject("id", true));
 
         if (id.getNumResults() != 0) {
-            return (String) id.getResult().get(0);
+            return ((String) ((DBObject) id.getResult().get(0)).get("id"));
         } else {
             return null;
         }
     }
 
+
+    private int getNewProjectId()  {return getNewId("projectCounter");}
+    private int getNewStudyId()    {return getNewId("studyCounter");}
+    private int getNewFileId()     {return getNewId("fileCounter");}
+    private int getNewAnalysisId() {return getNewId("analysisCounter");}
+    private int getNewJobId()      {return getNewId("jobCounter");}
+    private int getNewSampleId()   {return getNewId("sampleCounter");}
+
+    private int getNewId(String field){
+        DBObject object = nativeMetaCollection.findAndModify(
+                new BasicDBObject("_id", METADATA_OBJECT),  //Query
+                new BasicDBObject(field, true),  //Fields
+                null,
+                false,
+                new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
+                true,
+                false
+        );
+        return (int)(Float.parseFloat(object.get(field).toString()));
+    }
+
+    public int getProjectId(String userId, String project) {
+        QueryResult queryResult = userCollection.find(
+                BasicDBObjectBuilder
+                        .start("projects.alias", project)
+                        .append("id", userId).get(),
+                null,
+                null,
+                new BasicDBObject("projects.id", true)
+        );
+        if (queryResult.getNumResults() != 1) {
+            return -1;
+        } else {
+            return ((Integer) ((DBObject) ((BasicDBList) ((DBObject) queryResult.getResult().get(0)).get("projects")).get(0)).get("id"));
+        }
+    }
     @Override
     public boolean checkUserCredentials(String userId, String sessionId) {
         return false;
@@ -169,7 +216,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             } else {
                 BasicDBObject id = new BasicDBObject("id", userId);
                 BasicDBObject updates = new BasicDBObject(
-                        "$addToSet", new BasicDBObject(
+                        "$push", new BasicDBObject(
                                 "sessions", (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(session))
                         )
                 );
@@ -185,11 +232,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult loginAsAnonymous(Session session) throws CatalogManagerException, IOException {
-        return null;
+        startQuery();
+
+        QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+        if(countSessions.getResult().get(0) != 0){
+            endQuery("Login as anonymous", "Error, sessionID already exists", null);
+        }
+        User user = new User("anonymous", "Anonymous", "no@email.com", "", "ACME", User.ROLE_ANONYMOUS, "");
+        user.getSessions().add(session);
+        DBObject anonymous = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
+        return endQuery("Login as anonymous", userCollection.insert(anonymous));
     }
 
     @Override
-    public QueryResult logoutAnonymous(String userId, String sessionId) {
+    public QueryResult logoutAnonymous(String sessionId) {
         return null;
     }
 
@@ -249,6 +305,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             //IDEA: For each study, "createStudy" or "Can't create study error"
         }
 
+        project.setId(getNewProjectId());
         DBObject query = new BasicDBObject("id", userId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject ("projects", (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(project))));
         System.out.println(update);
@@ -320,9 +377,34 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return null;
     }
 
+
+
     @Override
     public QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return null;
+        startQuery();
+
+        int projectId = getProjectId(userId, project);
+        if(projectId < 0){
+            return endQuery("Create Study", "Project not found", null);
+        }
+        QueryResult<Long> queryResult = userCollection.count(BasicDBObjectBuilder
+                .start("projects.id", projectId)
+                .append("projects.studies.alias", study.getAlias()).get());
+
+        if (queryResult.getResult().get(0) != 0) {
+            return endQuery("Create Study", "Study alias already exists", null);
+        } else {
+            study.setId(getNewStudyId());
+            if (study.getCreatorId() == null) {
+                study.setCreatorId(getUserIdBySessionId(sessionId));
+            }
+            DBObject query = new BasicDBObject("projects.id", projectId);
+            DBObject update = new BasicDBObject("$push", new BasicDBObject(
+                    "projects.$.studies", (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study))
+            ));
+            System.out.println(update);
+            return endQuery("Create Project", userCollection.update(query, update, false, false));
+        }
     }
 
     @Override
@@ -410,8 +492,4 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return null;
     }
 
-    @Override
-    public String getUserIdBySessionId(String sessionId) {
-        return null;
-    }
 }
