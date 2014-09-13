@@ -85,6 +85,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
+    public void getAllStudiesTest() throws CatalogManagerException, JsonProcessingException {
+        System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_TEST));
+    }
+
+    @Test
     public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
         System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));

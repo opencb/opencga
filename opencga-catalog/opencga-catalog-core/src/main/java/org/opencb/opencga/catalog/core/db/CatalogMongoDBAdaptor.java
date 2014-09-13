@@ -339,12 +339,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {//jm?
+    public QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {
         return null;
     }
 
     @Override
-    public QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException {//jm?
+    public QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException {
         return null;
     }
 
@@ -395,10 +395,26 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return null;
+        startQuery();
+        //TODO: ManageSession
+
+        DBObject query = new BasicDBObject("id", userId);
+        DBObject projection = BasicDBObjectBuilder
+                .start(new BasicDBObject(
+                                "projects",
+                                new BasicDBObject(
+                                        "$elemMatch",
+                                        new BasicDBObject("alias", project)
+                                )
+                        )
+                )
+                .append("projects.studies", true).get();
+        QueryResult queryResult = endQuery("get project", userCollection.find(query, null, null, projection));
+        List studies = ((List)((DBObject)((List) (((DBObject) (queryResult.getResult().get(0))).get("projects"))).get(0)).get("studies"));
+
+        queryResult.setResult(studies);
+        return queryResult;
     }
-
-
 
     @Override
     public QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException {
