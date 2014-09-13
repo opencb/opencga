@@ -6,9 +6,7 @@ import java.util.List;
  * Created by jacobo on 11/09/14.
  */
 public class Job {
-    /**
-     * TODO: UserID, AnalysisID
-     */
+
     private int id;
     private String name;
     private String userId;

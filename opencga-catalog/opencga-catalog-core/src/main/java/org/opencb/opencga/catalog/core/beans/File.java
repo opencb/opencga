@@ -13,8 +13,14 @@ public class File {
     private int id;
     private String name;
     private String type;
+    /**
+     * Formats: txt, executable, image, ...
+     */
     private String format;
-    private String bioType;
+    /**
+     * BAM, VCF, ...
+     */
+    private String bioformat;
     private String uri;
     private String creatorId;
     private String creationDate;
@@ -26,12 +32,13 @@ public class File {
     private int studyId;
     private int experimentId;
     private List<Integer> sampleIds;
+    /**
+     * This field values -1 when file has been uploaded.
+     */
     private int jobId;
-//    private int originJobId;
-    //private List<Integer> destinyJobIds;
 
-    private Map<String, Object> attributes;
     private Map<String, Object> stats;
+    private Map<String, Object> attributes;
 
     public static final String UPLOADING = "uploading";
     public static final String UPLOADED = "uploaded";
@@ -45,22 +52,20 @@ public class File {
     public File() {
     }
 
-    public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
+    public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage, int studyId, int experimentId) {
-        this(id, name, type, format, bioType, uri, creatorId, creationDate, description, status, diskUsage, studyId,
-                experimentId, new LinkedList<Integer>(), -1, new HashMap<String, Object>(),
-                new HashMap<String, Object>());
+        this(id, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage, studyId,
+                experimentId, new LinkedList<Integer>(), -1, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public File(int id, String name, String type, String format, String bioType, String uri, String creatorId,
+    public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage, int studyId, int experimentId,
-                List<Integer> sampleIds, int jobId, Map<String, Object> attributes,
-                Map<String, Object> stats) {
+                List<Integer> sampleIds, int jobId, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.format = format;
-        this.bioType = bioType;
+        this.bioformat = bioformat;
         this.uri = uri;
         this.creatorId = creatorId;
         this.creationDate = creationDate;
@@ -71,8 +76,8 @@ public class File {
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
         this.jobId = jobId;
-        this.attributes = attributes;
         this.stats = stats;
+        this.attributes = attributes;
     }
 
     @Override
@@ -82,7 +87,7 @@ public class File {
                 ", name='" + name + '\'' +
                 ", type='" + type + '\'' +
                 ", format='" + format + '\'' +
-                ", bioType='" + bioType + '\'' +
+                ", bioformat='" + bioformat + '\'' +
                 ", uri='" + uri + '\'' +
                 ", creatorId='" + creatorId + '\'' +
                 ", creationDate='" + creationDate + '\'' +
@@ -93,8 +98,8 @@ public class File {
                 ", experimentId=" + experimentId +
                 ", sampleIds=" + sampleIds +
                 ", jobId=" + jobId +
-                ", attributes=" + attributes +
                 ", stats=" + stats +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -130,12 +135,12 @@ public class File {
         this.format = format;
     }
 
-    public String getBioType() {
-        return bioType;
+    public String getBioformat() {
+        return bioformat;
     }
 
-    public void setBioType(String bioType) {
-        this.bioType = bioType;
+    public void setBioformat(String bioformat) {
+        this.bioformat = bioformat;
     }
 
     public String getUri() {

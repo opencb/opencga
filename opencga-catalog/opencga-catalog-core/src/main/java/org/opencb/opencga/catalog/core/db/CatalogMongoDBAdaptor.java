@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -159,7 +158,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getUserInfo(String userId, String sessionId, String lastActivity) throws CatalogManagerException {
+    public QueryResult getUser(String userId, String sessionId, String lastActivity) throws CatalogManagerException {
         return null;
     }
 
@@ -189,7 +188,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getProjectsList(String userId, String sessionId) throws CatalogManagerException {
+    public QueryResult getAllProjects(String userId, String sessionId) throws CatalogManagerException {
         startQuery();
         //TODO: ManageSession
 
@@ -262,17 +261,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public Session getSession(String userId, String sessionId) throws IOException {
+    public QueryResult getSession(String userId, String sessionId) throws IOException {
         return null;
     }
 
     @Override
-    public QueryResult getStudiesList(String userId, String projectAlias, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException, JsonProcessingException {
         return null;
     }
 
     @Override
-    public QueryResult createStudy(String userId, String projectAlias, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException {
         return null;
     }
 
