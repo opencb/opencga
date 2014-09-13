@@ -3,11 +3,13 @@ package org.opencb.opencga.catalog.core.db;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
+import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -194,8 +196,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getUser(String userId, String sessionId, String lastActivity) throws CatalogManagerException {
-        return null;
+    public QueryResult getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException {
+        startQuery();
+        //TODO: ManageSession
+        DBObject query = new BasicDBObject("id", userId);
+        return endQuery("get user", userCollection.find(query, null, null));
     }
 
     @Override
@@ -239,7 +244,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         //TODO: ManageSession and ACLs
 
         if(project.getStudies() != null && !project.getStudies().isEmpty()){
-            return endQuery("Create Project", "Can't create project with studyes", null);
+            return endQuery("Create Project", "Can't create project with studies", null);
         }
         QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
                 .start("id", userId)
@@ -257,16 +262,32 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult getProject(String userId, String project, String sessionId) throws CatalogManagerException {
+        startQuery();
+        //TODO: ManageSession
+
+        DBObject query = new BasicDBObject("id", userId);
+        DBObject projection = new BasicDBObject(
+                "projects",
+                new BasicDBObject(
+                        "$elemMatch",
+                        new BasicDBObject("alias", project)
+                )
+        );
+        QueryResult queryResult = endQuery("get project", userCollection.find(query, null, null, projection));
+        List projects = (List) (((DBObject) (queryResult.getResult().get(0))).get("projects"));
+
+        queryResult.setResult(projects);
+        System.out.println(queryResult);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {//jm?
         return null;
     }
 
     @Override
-    public QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {
-        return null;
-    }
-
-    @Override
-    public QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException {
+    public QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException {//jm?
         return null;
     }
 
