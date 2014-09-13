@@ -58,8 +58,8 @@ public class CatalogManager {
 //     * ***************************
 //     */
 //
-//    public Path getAccountPath(String accountId) {
-//        return ioManager.getAccountPath(accountId);
+//    public Path getUserPath(String accountId) {
+//        return ioManager.getUserPath(accountId);
 //    }
 //
 //    public Path getBucketPath(String accountId, String bucketId) {
@@ -621,7 +621,7 @@ public class CatalogManager {
 //        checkParameter(accountId, "accountId");
 //        checkParameter(jobId, "jobId");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 ////        return ioManager.getJobResult(jobPath);
 //        return "DEPRECATED";
 //    }
@@ -640,7 +640,7 @@ public class CatalogManager {
 //        checkParameter(jobId, "jobId");
 //        checkParameter(filename, "filename");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //
 //        return ioManager.getFileTableFromJob(jobPath, filename, start, limit, colNames, colVisibility, sort);
 //    }
@@ -652,7 +652,7 @@ public class CatalogManager {
 //        checkParameter(filename, "filename");
 //        checkParameter(zip, "zip");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //
 //        return ioManager.getFileFromJob(jobPath, filename, zip);
 //    }
@@ -667,7 +667,7 @@ public class CatalogManager {
 //        checkParameter(sessionId, "sessionId");
 //
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //
 //        return ioManager.getGrepFileFromJob(jobPath, filename, pattern, ignoreCase, multi);
 //    }
@@ -678,7 +678,7 @@ public class CatalogManager {
 //        checkParameter(jobId, "jobId");
 //        checkParameter(sessionId, "sessionId");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //        logger.info("getJobZipped");
 //        logger.info(jobPath.toString());
 //        logger.info(jobId);
