@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import org.opencb.opencga.lib.common.TimeUtils;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,9 +41,9 @@ public class Study {
     public Study() {
     }
 
-    public Study(int id, String name, String alias, String type, String creatorId, String creationDate, String description,
+    public Study(String name, String alias, String type, String description,
                  String status) {
-        this(id, name, alias, type, creatorId, creationDate, description, status, 0, "", new ArrayList<Acl>(),
+        this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, 0, "", new ArrayList<Acl>(),
                 new ArrayList<Experiment>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 

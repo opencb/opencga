@@ -8,6 +8,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.Project;
 import org.opencb.opencga.catalog.core.beans.Session;
+import org.opencb.opencga.catalog.core.beans.Study;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
@@ -22,7 +23,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     CatalogMongoDBAdaptor catalog;
 
     @Before
-    public void before() throws IllegalOpenCGACredentialsException {
+    public void before() throws IllegalOpenCGACredentialsException, JsonProcessingException {
 
         MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, "catalog", "", "");
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
@@ -89,5 +90,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));
         p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
         System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));
+    }
+
+    @Test
+    public void createStudy() throws CatalogManagerException, JsonProcessingException {
+        Study s = new Study("Phase 1", "ph2", "TEST", "", "");
+        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_TEST));
+    }
+
+    @Test
+    public void getProjectIdTest(){
+        System.out.println(catalog.getProjectId("jcoll", "1000G"));
     }
 }
