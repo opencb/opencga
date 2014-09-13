@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import org.opencb.datastore.core.ObjectMap;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -33,6 +35,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public static final String FILE = "file";
     public static final String SAMPLE = "sample";
     public static final String JOB = "job";
+    public static final boolean LOGIN_AT_CREATE_USER = false;
 
     private final MongoDataStoreManager mongoManager;
     private final MongoCredentials credentials;
@@ -76,38 +79,53 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
          mongoManager.close(db.getDatabaseName());
     }
 
-    boolean userExists(String userId){
-        QueryResult count = userCollection.count(new BasicDBObject("id", userId));
-        long l = (Long) count.getResult().get(0);
-        return l != 0;
-    }
 
-    void startQuery(){
+
+    private void startQuery(){
         startTime = System.currentTimeMillis();
     }
 
-    public QueryResult endQuery(String queryId, List result) {
+    private QueryResult endQuery(String queryId, List result) {
         return endQuery(queryId, result, null, null);
     }
 
-    public QueryResult endQuery(String queryId, QueryResult result) {
+    private QueryResult endQuery(String queryId, QueryResult result) {
         long end = System.currentTimeMillis();
         result.setId(queryId);
         result.setDbTime((int)(end-startTime));
         return result;
     }
 
-    public QueryResult endQuery(String queryId, String errorMessage, String warnMessage) {
+    private QueryResult endQuery(String queryId, String errorMessage, String warnMessage) {
         return endQuery(queryId, Collections.emptyList(), errorMessage, warnMessage);
     }
 
-    public QueryResult endQuery(String queryId, List result, String errorMessage, String warnMessage){
+    private QueryResult endQuery(String queryId, List result, String errorMessage, String warnMessage){
         long end = System.currentTimeMillis();
         int numResults = result != null ? result.size() : 0;
 
         return new QueryResult(queryId, (int) (end-startTime), numResults, numResults, warnMessage, errorMessage, result);
     }
+    /*
+        Auxyliar query methods
+     */
 
+
+    private boolean userExists(String userId){
+        QueryResult count = userCollection.count(new BasicDBObject("id", userId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
+    private String getUserIdBySession(String sessionId){
+        QueryResult id = userCollection.find(new BasicDBObject("sessions.id", sessionId), null, null, new BasicDBObject("id", true));
+
+        if (id.getNumResults() != 0) {
+            return (String) id.getResult().get(0);
+        } else {
+            return null;
+        }
+    }
 
     @Override
     public boolean checkUserCredentials(String userId, String sessionId) {
@@ -145,7 +163,25 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult login(String userId, String password, Session session) throws CatalogManagerException, IOException {
-        return null;
+        startQuery();
+
+        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
+        if(count.getResult().get(0) == 0){
+            return endQuery("Login", "Bad user or password", null);
+        } else {
+            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+            if (countSessions.getResult().get(0) != 0) {
+                return endQuery("Login", "Already loggin", null);
+            } else {
+                BasicDBObject id = new BasicDBObject("id", userId);
+                BasicDBObject updates = new BasicDBObject(
+                        "$addToSet", new BasicDBObject(
+                                "sessions", (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(session))
+                        )
+                );
+                return endQuery("Login", userCollection.update(id, updates, false, false));
+            }
+        }
     }
 
     @Override
@@ -201,14 +237,23 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult createProject(String userId, Project project, String sessionId) throws CatalogManagerException, JsonProcessingException {
         startQuery();
-        //TODO: ManageSession
+        //TODO: ManageSession and ACLs
+
+        if(project.getStudies() != null && !project.getStudies().isEmpty()){
+            return endQuery("Create Project", "Can't create project with studyes", null);
+        }
+        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
+                .start("id", userId)
+                .append("projects.alias", project.getAlias()).get());
+        if(count.getResult().get(0) != 0){
+            return endQuery("Create Project", "Project alias already exists in this user", null);
+            //IDEA: For each study, "createStudy" or "Can't create study error"
+        }
 
         DBObject query = new BasicDBObject("id", userId);
-        DBObject insert = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(project));
-
-        //TODO: Check projectAlias. For each study, "createStudy" or "Can't create study error"
-
-        return null;
+        DBObject update = new BasicDBObject("$push", new BasicDBObject ("projects", (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(project))));
+        System.out.println(update);
+        return endQuery("Create Project", userCollection.update(query, update, false, false));
     }
 
     @Override
