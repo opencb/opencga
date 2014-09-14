@@ -52,9 +52,9 @@ public class File {
     public File() {
     }
 
-    public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,
+    public File(String name, String type, String format, String bioformat, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage, int studyId, int experimentId) {
-        this(id, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage, studyId,
+        this(-1, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage, studyId,
                 experimentId, new LinkedList<Integer>(), -1, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
