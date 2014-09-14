@@ -46,6 +46,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
+    public void getUserTest() {
+        try {
+            QueryResult jcoll = catalog.getUser("jcoll", "", ID_LOGIN_TEST);
+            System.out.println(jcoll);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
     public void loginTest() throws CatalogManagerException, IOException {
         Session session = new Session("127.0.0.1");
         Session session2 = new Session("127.0.0.1"); session2.setId(ID_LOGIN_TEST);
@@ -63,8 +73,20 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
+    public void getProjectTest() throws CatalogManagerException {
+        System.out.println(catalog.getProject("jcoll", "pmp", ID_LOGIN_TEST));
+    }
+
+    @Test
+    public void getAllStudiesTest() throws CatalogManagerException, JsonProcessingException {
+        System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_TEST));
+    }
+
+    @Test
     public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));
+        p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
         System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));
     }
 
