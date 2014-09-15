@@ -12,12 +12,15 @@ import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
-    public static final String ID_LOGIN_TEST = "ID_LOGIN_TEST";
+    public static final String ID_LOGIN_JCOLL = "ID_LOGIN_JCOLL";
+    public static final String ID_LOGIN_JMMUT = "ID_LOGIN_JMMUT";
+    public static final String ID_LOGIN_ANONY = "ID_LOGIN_ANONY";
     CatalogMongoDBAdaptor catalog;
 
     @Before
@@ -34,9 +37,30 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalog.disconnect();
     }
 
+
+    @Test
+    public void allTests() throws CatalogManagerException, IOException {
+        createUserTest();
+        getUserTest();
+        loginTest();
+        changePasswordTest();
+        createProjectTest();
+        getProjectTest();
+        getProjectIdTest();
+        getAllProjects();
+        createStudyTest();
+        getStudyIdTest();
+        getAllStudiesTest();
+        createFileToStudyTest();
+    }
+
+    /**
+     * User methods ···
+     * ***************************
+     */
     @Test
     public void createUserTest() throws CatalogManagerException, JsonProcessingException {
-        User userInvalid = new User("jcoll", "jacobo", "", "asdf", "", "", "");
+        User userInvalid = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", "", "");
         QueryResult createUser = catalog.createUser(userInvalid);
         System.out.println(createUser.toString());
 
@@ -48,7 +72,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getUserTest() {
         try {
-            QueryResult jcoll = catalog.getUser("jcoll", "", ID_LOGIN_TEST);
+            QueryResult jcoll = catalog.getUser("jcoll", "", ID_LOGIN_JCOLL);
             System.out.println(jcoll);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
@@ -58,37 +82,42 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void loginTest() throws CatalogManagerException, IOException {
         Session session = new Session("127.0.0.1");
-        Session session2 = new Session("127.0.0.1"); session2.setId(ID_LOGIN_TEST);
+        Session sessionJCOLL = new Session("127.0.0.1"); sessionJCOLL.setId(ID_LOGIN_JCOLL);
+        Session sessionJMMUT = new Session("127.0.0.1"); sessionJMMUT.setId(ID_LOGIN_JMMUT);
+        Session sessionANONY = new Session("127.0.0.1"); sessionANONY.setId(ID_LOGIN_ANONY);
         System.out.println(catalog.login("jcoll", "INVALID_PASSWORD", session));
-        System.out.println(catalog.login("jcoll", "asdf", session));
-        System.out.println(catalog.login("jcoll", "asdf", session2));
+        System.out.println(catalog.login("jcoll", "1234", session));
+        System.out.println(catalog.login("jcoll", "1234", sessionJCOLL));
+        System.out.println(catalog.login("jmmut", "1111", sessionJMMUT));
+        System.out.println(catalog.loginAsAnonymous(sessionANONY));
 
     }
 
     @Test
     public void changePasswordTest() throws CatalogManagerException {
-        System.out.println(catalog.changePassword("jcoll", ID_LOGIN_TEST, "asdf", "ASDF"));
-        //System.out.println(catalog.changePassword("jcoll", ID_LOGIN_TEST, "ASDF", "asdf"));
-        System.out.println(catalog.changePassword("jcoll", ID_LOGIN_TEST, "IOQUESE", "asdf"));
+        System.out.println(catalog.changePassword("jcoll", ID_LOGIN_JCOLL, "1234", "asdf"));
+        System.out.println(catalog.changePassword("jcoll", ID_LOGIN_JCOLL, "BAD_PASSWORD", "asdf"));
+    }
+
+    /**
+     * Project methods ···
+     * ***************************
+     */
+    @Test
+    public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
+        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JCOLL));
+        p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
+        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JCOLL));
+        p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
+        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JMMUT));
     }
 
     @Test
     public void getProjectTest() throws CatalogManagerException {
-        System.out.println(catalog.getProject("jcoll", "pmp", ID_LOGIN_TEST));
+        System.out.println(catalog.getProject("jcoll", "pmp", ID_LOGIN_JCOLL));
     }
 
-    @Test
-    public void getAllStudiesTest() throws CatalogManagerException, JsonProcessingException {
-        System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_TEST));
-    }
-
-    @Test
-    public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
-        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));
-        p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_TEST));
-    }
 
     @Test
     public void getProjectIdTest(){
@@ -98,25 +127,48 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getAllProjects() throws CatalogManagerException {
-        System.out.println(catalog.getAllProjects("jcoll", ID_LOGIN_TEST));
+        System.out.println(catalog.getAllProjects("jcoll", ID_LOGIN_JCOLL));
     }
 
+    /**
+     * Study methods ···
+     * ***************************
+     */
     @Test
     public void createStudyTest() throws CatalogManagerException, JsonProcessingException {
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_TEST));
+        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_JCOLL));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_TEST));
+        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_JCOLL));
     }
 
     @Test
-    public void getStudyIdTest(){
-        System.out.println(catalog.getStudyId("jcoll", "1000G", "ph3"));
+    public void getStudyIdTest() throws CatalogManagerException {
+        System.out.println(catalog.getStudyId("jcoll", "1000G", "ph3", ID_LOGIN_JCOLL));
     }
 
+    @Test
+    public void getAllStudiesTest() throws CatalogManagerException, JsonProcessingException {
+        System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_JCOLL));
+    }
+
+
+    /**
+     * Files methods ···
+     * ***************************
+     */
     @Test
     public void createFileToStudyTest() throws CatalogManagerException, JsonProcessingException {
-        File f = new File("file.bam", "t", "f", "bam", "/tmp/small.sam", null, TimeUtils.getTime(), "", "2", 1000, -1, -1);
-        System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f, ID_LOGIN_TEST));
+        File f = new File("file.bam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", "2", 1000, -1, -1);
+        System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f, ID_LOGIN_JCOLL));
     }
+
+    @Test
+    public void getFileTest() throws CatalogManagerException, IOException {
+        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
+        System.out.println(catalog.getFile(1, ID_LOGIN_JCOLL));
+        System.out.println(catalog.getFile(2, ID_LOGIN_JCOLL));
+    }
+
+
 }

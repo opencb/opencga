@@ -2,11 +2,16 @@ package org.opencb.opencga.catalog.core.db.converters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.core.beans.Study;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by jacobo on 14/09/14.
@@ -32,23 +37,22 @@ public class DBObjectToStudyConverter  implements ComplexTypeConverter <Study,DB
         if(object.get("studies")!= null){
             object = (DBObject) ((BasicDBList) object.get("studies")).get(0);
         }
-
-        QueryOptions qo = new QueryOptions(object.toMap());
+        ObjectMap om = new ObjectMap(object.toMap());
         Study study = new Study();
 
-        study.setId(qo.getInt("id"));
-        study.setCreatorId(qo.getString("creatorId"));
-        study.setStatus(qo.getString("status"));
-        study.setAlias(qo.getString("alias"));
-        study.setCipher(qo.getString(""));
-        study.setAttributes(qo.getMap("attributes"));
-        study.setStats(qo.getMap("stats"));
-        study.setCreationDate(qo.getString("creationDate"));
-        study.setDiskUsage(qo.getInt("diskUsage"));
-        study.setName(qo.getString("name"));
-        study.setType(qo.getString("type"));
-//        study.setAcl       (qo.getList("acl"));
-//        study.setExperiments       (qo.getList("experiments"));
+        study.setId(om.getInt("id"));
+        study.setCreatorId(om.getString("creatorId"));
+        study.setStatus(om.getString("status"));
+        study.setAlias(om.getString("alias"));
+        study.setCipher(om.getString(""));
+        study.setAttributes(om.getMap("attributes"));
+        study.setStats(om.getMap("stats"));
+        study.setCreationDate(om.getString("creationDate"));
+        study.setDiskUsage(om.getInt("diskUsage"));
+        study.setName(om.getString("name"));
+        study.setType(om.getString("type"));
+//        study.setAcl       (om.getList("acl"));
+//        study.setExperiments       (om.getList("experiments"));
 
         return study;
     }
