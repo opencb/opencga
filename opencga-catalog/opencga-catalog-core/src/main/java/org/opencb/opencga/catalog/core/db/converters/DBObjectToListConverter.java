@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.core.db.converters;
 
-import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import org.opencb.datastore.core.ComplexTypeConverter;
 

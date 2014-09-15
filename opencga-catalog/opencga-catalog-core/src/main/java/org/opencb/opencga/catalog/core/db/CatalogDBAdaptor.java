@@ -45,6 +45,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult getSession(String userId, String sessionId) throws IOException;
 
+    String getUserIdBySessionId(String sessionId);
 
     /**
      * Project methods ···
@@ -56,7 +57,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult getAllProjects(String userId, String sessionId) throws CatalogManagerException;
 
-
+    int getProjectId(String userId, String project);
     /**
      * Study methods ···
      * ***************************
@@ -66,6 +67,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException, JsonProcessingException;
 
+    QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName, String sessionId) throws CatalogManagerException;
 
@@ -96,6 +98,10 @@ public interface CatalogDBAdaptor {
 
     int getFileId(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
     int getFileId(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+
+    QueryResult getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult getFile(int fileId, String sessionId) throws CatalogManagerException, IOException;
 
     QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
     QueryResult setFileStatus(int studyId, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
@@ -145,6 +151,6 @@ public interface CatalogDBAdaptor {
 //
 //    ObjectItem getObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId) throws CatalogManagerException, IOException;
 
-    String getUserIdBySessionId(String sessionId);
+
 
 }
