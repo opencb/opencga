@@ -22,6 +22,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public static final String ID_LOGIN_JMMUT = "ID_LOGIN_JMMUT";
     public static final String ID_LOGIN_ANONY = "ID_LOGIN_ANONY";
     CatalogMongoDBAdaptor catalog;
+    private Session session;
 
     @Before
     public void before() throws IllegalOpenCGACredentialsException, JsonProcessingException {
@@ -43,6 +44,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         createUserTest();
         getUserTest();
         loginTest();
+        logoutTest();
         changePasswordTest();
         createProjectTest();
         getProjectTest();
@@ -81,7 +83,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void loginTest() throws CatalogManagerException, IOException {
-        Session session = new Session("127.0.0.1");
+        session = new Session("127.0.0.1");
         Session sessionJCOLL = new Session("127.0.0.1"); sessionJCOLL.setId(ID_LOGIN_JCOLL);
         Session sessionJMMUT = new Session("127.0.0.1"); sessionJMMUT.setId(ID_LOGIN_JMMUT);
         Session sessionANONY = new Session("127.0.0.1"); sessionANONY.setId(ID_LOGIN_ANONY);
@@ -90,6 +92,19 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.login("jcoll", "1234", sessionJCOLL));
         System.out.println(catalog.login("jmmut", "1111", sessionJMMUT));
         System.out.println(catalog.loginAsAnonymous(sessionANONY));
+
+    }
+
+    @Test
+    public void logoutTest() throws CatalogManagerException, IOException {
+        System.out.println(catalog.logout("jcoll", session.getId()));
+    }
+
+    @Test
+    public void logInOutTest() throws CatalogManagerException, IOException {
+        Session session = new Session("127.0.0.1");
+        System.out.println(catalog.login("jmmut", "1111", session));
+        System.out.println(catalog.logout("jmmut", session.getId()));
 
     }
 
@@ -170,5 +185,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.getFile(2, ID_LOGIN_JCOLL));
     }
 
+    @Test
+    public void deleteFileTest() throws CatalogManagerException {
+        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
+    }
 
 }

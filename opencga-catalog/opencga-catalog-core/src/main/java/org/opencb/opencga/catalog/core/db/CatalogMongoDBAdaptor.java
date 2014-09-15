@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.core.db.converters.DBObjectToListConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToProjectConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToStudyConverter;
 import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private MongoDBCollection sampleCollection;
     private MongoDBCollection jobCollection;
     private DBCollection nativeMetaCollection;
+    private DBCollection nativeFileCollection;
 
     private final DBObjectToProjectConverter projectConverter = new DBObjectToProjectConverter();
     private final DBObjectToListConverter<Project> projectListConverter = new DBObjectToListConverter<>(
@@ -78,6 +80,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public void connect() throws JsonProcessingException {
         db = mongoManager.get(credentials.getMongoDbName());
         nativeMetaCollection = db.getDb().getCollection(METADATA_COLLECTION);
+        nativeFileCollection = db.getDb().getCollection(FILE_COLLECTION);
+
         metaCollection = db.getCollection(METADATA_COLLECTION);
         userCollection = db.getCollection(USER_COLLECTION);
         fileCollection = db.getCollection(FILE_COLLECTION);
@@ -239,6 +243,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult logout(String userId, String sessionId) throws CatalogManagerException, IOException {
+        startQuery();
+
+        String userIdBySessionId = getUserIdBySessionId(sessionId);
+        if(userIdBySessionId.equals(userId)){
+            userCollection.update(
+                    new BasicDBObject("sessions.id", sessionId),
+                    new BasicDBObject("$set", new BasicDBObject("sessions.$.logout", TimeUtils.getTime())),
+                    false,
+                    false);
+
+        } else {
+            return endQuery("Logout", "UserId mismatches with the sessionId", null);
+        }
+
         return null;
     }
 
@@ -302,7 +320,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public String getUserIdBySessionId(String sessionId){
         QueryResult id = userCollection.find(
-                new BasicDBObject("sessions.id", sessionId),
+                BasicDBObjectBuilder
+                        .start("sessions.id", sessionId)
+                        .append("sessions.logout", "").get(),
                 null,
                 null,
                 new BasicDBObject("id", true));
@@ -542,17 +562,24 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException {
-        return null;
+        return deleteFile(getFileId(userId, projectAlias, studyAlias, filePath, sessionId), sessionId);
     }
 
     @Override
     public QueryResult deleteFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException {
-        return null;
+        return deleteFile(getFileId(studyId, filePath, sessionId), sessionId);
     }
 
     @Override
     public QueryResult deleteFile(int fileId, String sessionId) throws CatalogManagerException {
-        return null;
+        startQuery();
+
+        WriteResult id = nativeFileCollection.remove(new BasicDBObject("id", fileId));
+        if(id.getN() == 0){
+            return endQuery("Delete file", "file not found", null);
+        } else {
+            return endQuery("Delete file", Arrays.asList(id.getN()));
+        }
     }
 
     @Override
@@ -566,13 +593,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public int getFileId(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException {
+    public int getFileId(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException {
         int studyId = getStudyId(userId, projectAlias, studyAlias, sessionId);
         return getFileId(studyId, filePath, sessionId);
     }
 
     @Override
-    public int getFileId(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException {
+    public int getFileId(int studyId, Path filePath, String sessionId) throws CatalogManagerException {
 
         QueryResult queryResult = fileCollection.find(
                 BasicDBObjectBuilder
