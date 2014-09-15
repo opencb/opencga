@@ -174,7 +174,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createFileToStudyTest() throws CatalogManagerException, JsonProcessingException {
-        File f = new File("file.bam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", "2", 1000, -1, -1);
+        File f = new File("file.sam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1, -1);
         System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f, ID_LOGIN_JCOLL));
     }
 
@@ -183,6 +183,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
         System.out.println(catalog.getFile(1, ID_LOGIN_JCOLL));
         System.out.println(catalog.getFile(2, ID_LOGIN_JCOLL));
+    }
+
+    @Test
+    public void setFileStatus() throws CatalogManagerException, IOException {
+        System.out.println(catalog.setFileStatus("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), File.READY, ID_LOGIN_JCOLL));
     }
 
     @Test

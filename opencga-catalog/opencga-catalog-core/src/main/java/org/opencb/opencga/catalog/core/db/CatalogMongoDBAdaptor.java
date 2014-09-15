@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.core.db;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
@@ -10,6 +11,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.core.CatalogManager;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToFileConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToListConverter;
@@ -22,10 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -65,6 +64,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
+    protected static ObjectReader jsonFileReader;
+    protected static ObjectReader jsonUserReader;
+    protected static ObjectReader jsonProjectReader;
+    protected static ObjectReader jsonStudyReader;
+    protected static ObjectReader jsonSampleReader;
     private Properties catalogProperties;
 
     public CatalogMongoDBAdaptor(MongoCredentials credentials) {
@@ -73,7 +77,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectWriter = jsonObjectMapper.writer();
-
+        jsonFileReader = jsonObjectMapper.reader(File.class);
+        jsonUserReader = jsonObjectMapper.reader(User.class);
+        jsonProjectReader = jsonObjectMapper.reader(Project.class);
+        jsonStudyReader = jsonObjectMapper.reader(Study.class);
+        jsonSampleReader = jsonObjectMapper.reader(Sample.class);
         //catalogProperties = Config.getAccountProperties();
     }
 
@@ -198,12 +206,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult createUser(User user) throws CatalogManagerException, JsonProcessingException {
         startQuery();
 
-        //TODO: ManageSession
-
-        user.setAnalyses(Collections.<Analysis>emptyList());
-        user.setProjects(Collections.<Project>emptyList());
-        user.setPlugins(Collections.<Tool>emptyList());
-        user.setSessions(Collections.<Session>emptyList());
 
         if(userExists(user.getId())){
             return endQuery("createUser", "UserID already exists", null);
@@ -280,11 +282,19 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException {
+    public QueryResult getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException{
         startQuery();
         //TODO: ManageSession
         DBObject query = new BasicDBObject("id", userId);
-        return endQuery("get user", userCollection.find(query, null, null));
+        QueryResult result = userCollection.find(query, null, null);
+
+        User user;
+        try {
+            user = jsonUserReader.readValue(result.getResult().get(0).toString());
+        } catch (IOException e) {
+            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+        }
+        return endQuery("get user", Arrays.asList(user));
     }
 
     @Override
@@ -379,14 +389,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         QueryResult queryResult = endQuery("get project", userCollection.find(
                 query,
                 null,
-                        projectConverter,
+                null, //projectConverter,
                 projection)
         );
-        //List projects = (List) (((DBObject) (queryResult.getResult().get(0))).get("projects"));
-
-        //queryResult.setResult(projects);
-        System.out.println(queryResult);
-        return queryResult;
+        User user;
+        try {
+            user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+            queryResult.setResult(user.getProjects());
+            return queryResult;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogManagerException("Failed to parse mongo schema : " + e.getMessage());
+        }
     }
 
     @Override
@@ -396,13 +410,21 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         DBObject query = new BasicDBObject("id", userId);
         DBObject projection = new BasicDBObject("projects", true); projection.put("_id", false);
-        return endQuery(
-                "User projects list",
-                userCollection.find(
-                        query,
-                        null,
-                        projectListConverter,
-                        projection));
+        QueryResult result = userCollection.find(
+                query,
+                null,
+                null,   //projectListConverter
+                projection);
+        User user = null;
+        try {
+            user = jsonUserReader.readValue(result.getResult().get(0).toString());
+            return endQuery(
+                    "User projects list",
+                    user.getProjects());
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+        }
     }
 
     /**
@@ -473,6 +495,29 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException, JsonProcessingException{
         return null;
+        /*startQuery();
+        //TODO: ManageSession
+
+        DBObject query = new BasicDBObject("projects.study.", userId);
+        DBObject projection = BasicDBObjectBuilder
+                .start(new BasicDBObject(
+                                "projects",
+                                new BasicDBObject(
+                                        "$elemMatch",
+                                        new BasicDBObject("alias", project)
+                                )
+                        )
+                )
+                .append("projects.studies", true).get();
+        QueryResult<List<Study>> queryResult = (QueryResult<List<Study>>) endQuery("get project", userCollection.find(
+                query,
+                null,
+                studyListConverter,
+                projection));
+        for (Study study : queryResult.getResult().get(0)) {
+            study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
+        }
+        return endQuery("Get all studies", queryResult);*/
     }
 
 
@@ -483,6 +528,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult renameStudy(int studyId, String newStudyName, String sessionId) throws CatalogManagerException {
+//        startQuery();
+//
+//        QueryResult studyResult = getStudy(studyId, sessionId);
         return null;
     }
 
@@ -650,12 +698,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 BasicDBObjectBuilder
                         .start("id", fileId).get(),
                 null,
-                fileConverter,
+                null,
                 null
         );
+        List<File> files = new LinkedList<>();
+        for (DBObject object : (List<DBObject>)queryResult.getResult()) {
+            files.add((File) jsonFileReader.readValue(object.toString()));
+        }
 
         if(queryResult.getNumResults() != 0) {
-            return endQuery("Get file", queryResult);
+            return endQuery("Get file", files);
         } else {
             return endQuery("Get file", "File not found", null);
         }
@@ -663,17 +715,28 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException {
-        return null;
+        int fileId = getFileId(userId, projectAlias, studyAlias, filePath, sessionId);
+        return setFileStatus(fileId, status, sessionId);
     }
 
     @Override
     public QueryResult setFileStatus(int studyId, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException {
-        return null;
+        int fileId = getFileId(studyId, filePath, sessionId);
+        return setFileStatus(fileId, status, sessionId);
     }
 
     @Override
     public QueryResult setFileStatus(int fileId, String status, String sessionId) throws CatalogManagerException, IOException {
-        return null;
+        startQuery();
+        System.out.println(fileId);
+        QueryResult update = fileCollection.update(
+                new BasicDBObject("id", fileId),
+                new BasicDBObject("$set",
+                        new BasicDBObject("status", status)),
+                false,
+                false);
+
+        return endQuery("Set file status", update);
     }
 
     private int getDiskUsageByStudy(int studyId , String sessionId){
