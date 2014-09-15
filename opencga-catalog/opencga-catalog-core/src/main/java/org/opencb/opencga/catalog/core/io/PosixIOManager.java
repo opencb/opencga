@@ -34,6 +34,7 @@ public class PosixIOManager implements CatalogIOManager {
      * OPENCGA_BIN_FOLDER contains all packaged binaries delivered with OpenCGA
      */
     private static String OPENCGA_USER_FOLDER = "users";
+    private static String OPENCGA_ANONYMOUS_USER_FOLDER = "anonymous";
     private static String OPENCGA_BIN_FOLDER = "bin";
 
     /**
@@ -80,6 +81,10 @@ public class PosixIOManager implements CatalogIOManager {
             Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_USER_FOLDER));
         }
 
+        if(!Files.exists(opencgaRootDirPath.resolve(OPENCGA_ANONYMOUS_USER_FOLDER))) {
+            Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_ANONYMOUS_USER_FOLDER));
+        }
+
         if(!Files.exists(opencgaRootDirPath.resolve(OPENCGA_BIN_FOLDER))) {
             Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_BIN_FOLDER));
         }
@@ -117,6 +122,15 @@ public class PosixIOManager implements CatalogIOManager {
         checkParam(userId);
 
         Path path = Paths.get(opencgaRootDir, OPENCGA_USER_FOLDER, userId);
+        checkPath(path);
+
+        return path;
+    }
+
+    public Path getAnonmousUserPath(String userId) throws CatalogIOManagerException {
+        checkParam(userId);
+
+        Path path = Paths.get(opencgaRootDir, OPENCGA_ANONYMOUS_USER_FOLDER, userId);
         checkPath(path);
 
         return path;
@@ -217,6 +231,26 @@ public class PosixIOManager implements CatalogIOManager {
         return userPath;
     }
 
+    public Path createAnonymousUser(String userId) throws CatalogIOManagerException {
+        checkParam(userId);
+
+        Path usersPath = Paths.get(opencgaRootDir, OPENCGA_ANONYMOUS_USER_FOLDER);
+        checkDirectoryPath(usersPath, true);
+
+        Path userPath = usersPath.resolve(userId);
+        try {
+            if(!Files.exists(userPath)) {
+                Files.createDirectory(userPath);
+                Files.createDirectories(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER, "default"));
+                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_BIN_FOLDER));
+
+                return userPath;
+            }
+        } catch (IOException e) {
+            throw new CatalogIOManagerException("IOException" + e.toString());
+        }
+        return null;
+    }
 
 
     /*****************************
@@ -354,15 +388,19 @@ public class PosixIOManager implements CatalogIOManager {
         return filePath;
     }
 
-    public void deleteObject(String userId, String projectId, String studyId, String objectId) throws CatalogIOManagerException {
-        Path fullFilePath = getFilePath(userId, projectId, studyId, objectId);
-        checkPath(fullFilePath);
+    public void deleteFile(String userId, String projectId, String studyId, String objectId) throws CatalogIOManagerException {
+        Path filePath = getFilePath(userId, projectId, studyId, objectId);
+        checkPath(filePath);
 
-        logger.info(fullFilePath.toString());
+        logger.debug("Deleting {}", filePath.toString());
         try {
-            Files.delete(fullFilePath);
+            if(Files.isDirectory(filePath)) {
+                IOUtils.deleteDirectory(filePath);
+            }else {
+                Files.delete(filePath);
+            }
         } catch (IOException e) {
-            throw new CatalogIOManagerException("deleteObject(): could not delete the object " + e.toString());
+            throw new CatalogIOManagerException("deleteFile(): could not delete the object " + e.toString());
         }
     }
 

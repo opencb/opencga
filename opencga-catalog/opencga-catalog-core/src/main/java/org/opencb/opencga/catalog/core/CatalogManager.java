@@ -273,7 +273,7 @@ public class CatalogManager {
 //            return accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
 ////            return objectId.toString();
 //        } catch (AccountManagementException e) {
-//            ioManager.deleteObject(accountId, bucketId, objectId);
+//            ioManager.deleteFile(accountId, bucketId, objectId);
 //            throw e;
 //        }
 //    }
@@ -296,7 +296,7 @@ public class CatalogManager {
 //            return accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
 ////            return objectId.toString();
 //        } catch (AccountManagementException e) {
-//            ioManager.deleteObject(bucketId, accountId, objectId);
+//            ioManager.deleteFile(bucketId, accountId, objectId);
 //            throw e;
 //        }
 //    }
@@ -396,7 +396,7 @@ public class CatalogManager {
 //        checkParameter(sessionId, "sessionId");
 //        checkParameter(objectId.toString(), "objectId");
 //
-//        objectId = ioManager.deleteObject(accountId, bucketId, objectId);
+//        objectId = ioManager.deleteFile(accountId, bucketId, objectId);
 //        return accountManager.deleteObjectFromBucket(accountId, bucketId, objectId, sessionId);
 //    }
 //

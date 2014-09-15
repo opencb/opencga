@@ -52,9 +52,10 @@ public class PosixIOManagerTest {
         assertTrue(Files.exists(projectPath));
         assertEquals(userPath.toString()+"/projects/"+projectId, projectPath.toString());
 
-        Path studyPath1 = posixIOManager.createStudy(userId, "default", "phase1");
         Path studyPath = posixIOManager.createStudy(userId, projectId, "phase1");
         assertTrue(Files.exists(studyPath));
+        assertTrue(Files.exists(studyPath.resolve("data")));
+        assertTrue(Files.exists(studyPath.resolve("analysis")));
         assertEquals(projectPath.toString()+"/phase1", studyPath.toString());
 
 //        posixIOManager.deleteStudy(userId, projectId, "phase1");
