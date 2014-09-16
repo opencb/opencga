@@ -58,16 +58,16 @@ public class CatalogManager {
 //     * ***************************
 //     */
 //
-//    public Path getAccountPath(String accountId) {
-//        return ioManager.getAccountPath(accountId);
+//    public Path getUserPath(String accountId) {
+//        return ioManager.getUserPath(accountId);
 //    }
 //
 //    public Path getBucketPath(String accountId, String bucketId) {
 //        return ioManager.getBucketPath(accountId, bucketId);
 //    }
 //
-//    public Path getObjectPath(String accountId, String bucketId, Path ObjectId) {
-//        return ioManager.getObjectPath(accountId, bucketId, ObjectId);
+//    public Path getFilePath(String accountId, String bucketId, Path ObjectId) {
+//        return ioManager.getFilePath(accountId, bucketId, ObjectId);
 //    }
 //
 //    public Path getJobFolderPath(String accountId, String projectId, Path JobId) {
@@ -88,7 +88,7 @@ public class CatalogManager {
 //     * ***************************
 //     */
 //
-//    public QueryResult createAccount(String accountId, String password, String name, String email, String sessionIp)
+//    public QueryResult createUser(String accountId, String password, String name, String email, String sessionIp)
 //            throws AccountManagementException, IOManagementException, JsonProcessingException {
 //        checkParameter(accountId, "accountId");
 //        checkParameter(password, "password");
@@ -98,10 +98,10 @@ public class CatalogManager {
 //        Session session = new Session(sessionIp);
 //
 //        try {
-//            ioManager.createAccount(accountId);
-//            return accountManager.createAccount(accountId, password, name, "user", email, session);
+//            ioManager.createUser(accountId);
+//            return accountManager.createUser(accountId, password, name, "user", email, session);
 //        } catch (IOManagementException | AccountManagementException e) {
-//            ioManager.deleteAccount(accountId);
+//            ioManager.deleteUser(accountId);
 //            throw e;
 //        }
 //    }
@@ -114,14 +114,14 @@ public class CatalogManager {
 //        String accountId = "anonymous_" + password;
 //
 //
-//        ioManager.deleteAccount(accountId);
-//        ioManager.createAccount(accountId);
+//        ioManager.deleteUser(accountId);
+//        ioManager.createUser(accountId);
 //
 //        try {
-//            accountManager.deleteAccount(accountId);
+//            accountManager.deleteUser(accountId);
 //            return accountManager.createAnonymousAccount(accountId, password, session);
 //        } catch (AccountManagementException e) {
-//            ioManager.deleteAccount(accountId);
+//            ioManager.deleteUser(accountId);
 //            throw e;
 //        }
 //
@@ -134,7 +134,7 @@ public class CatalogManager {
 //        Session session = new Session(sessionIp);
 //
 //        try {
-//            ioManager.createAccount(accountId);
+//            ioManager.createUser(accountId);
 //        } catch (IOManagementException e) {
 //            ;
 //        }
@@ -156,7 +156,7 @@ public class CatalogManager {
 //        checkParameter(sessionId, "sessionId");
 //
 //        // TODO check inconsistency
-//        ioManager.deleteAccount(accountId);
+//        ioManager.deleteUser(accountId);
 //        return accountManager.logoutAnonymous(accountId, sessionId);
 //    }
 //
@@ -194,7 +194,7 @@ public class CatalogManager {
 //        return accountManager.getAccountInfo(accountId, sessionId, lastActivity);
 //    }
 //
-//    public void deleteAccount(String accountId, String sessionId) throws AccountManagementException,
+//    public void deleteUser(String accountId, String sessionId) throws AccountManagementException,
 //            IOManagementException {
 //        // TODO
 //    }
@@ -253,11 +253,11 @@ public class CatalogManager {
 //        String sgeJobName;
 ////        switch (objectItem.getFileFormat()) {
 ////            case "bam":
-////                sgeJobName = BamManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+////                sgeJobName = BamManager.createIndex(getFilePath(accountId, bucketId, objectId));
 ////                objectItem.setStatus(sgeJobName);
 ////                break;
 ////            case "vcf":
-////                sgeJobName = VcfManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+////                sgeJobName = VcfManager.createIndex(getFilePath(accountId, bucketId, objectId));
 ////                objectItem.setStatus(sgeJobName);
 ////                break;
 ////            default:
@@ -273,7 +273,7 @@ public class CatalogManager {
 //            return accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
 ////            return objectId.toString();
 //        } catch (AccountManagementException e) {
-//            ioManager.deleteObject(accountId, bucketId, objectId);
+//            ioManager.deleteFile(accountId, bucketId, objectId);
 //            throw e;
 //        }
 //    }
@@ -296,7 +296,7 @@ public class CatalogManager {
 //            return accountManager.createObjectToBucket(accountId, bucketId, objectItem, sessionId);
 ////            return objectId.toString();
 //        } catch (AccountManagementException e) {
-//            ioManager.deleteObject(bucketId, accountId, objectId);
+//            ioManager.deleteFile(bucketId, accountId, objectId);
 //            throw e;
 //        }
 //    }
@@ -396,7 +396,7 @@ public class CatalogManager {
 //        checkParameter(sessionId, "sessionId");
 //        checkParameter(objectId.toString(), "objectId");
 //
-//        objectId = ioManager.deleteObject(accountId, bucketId, objectId);
+//        objectId = ioManager.deleteFile(accountId, bucketId, objectId);
 //        return accountManager.deleteObjectFromBucket(accountId, bucketId, objectId, sessionId);
 //    }
 //
@@ -537,16 +537,16 @@ public class CatalogManager {
 //        boolean indexReady;
 //        switch (objectItem.getFileFormat()) {
 //            case "bam":
-//                indexReady = BamManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
+//                indexReady = BamManager.checkIndex(ioManager.getFilePath(accountId, bucketId, objectId));
 //                if (force || !indexReady) {
-//                    sgeJobName = BamManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+//                    sgeJobName = BamManager.createIndex(getFilePath(accountId, bucketId, objectId));
 //                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
 //                }
 //                break;
 //            case "vcf":
-//                indexReady = VcfManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
+//                indexReady = VcfManager.checkIndex(ioManager.getFilePath(accountId, bucketId, objectId));
 //                if (force || !indexReady) {
-//                    sgeJobName = VcfManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+//                    sgeJobName = VcfManager.createIndex(getFilePath(accountId, bucketId, objectId));
 //                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
 //                }
 //                break;
@@ -621,7 +621,7 @@ public class CatalogManager {
 //        checkParameter(accountId, "accountId");
 //        checkParameter(jobId, "jobId");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 ////        return ioManager.getJobResult(jobPath);
 //        return "DEPRECATED";
 //    }
@@ -640,7 +640,7 @@ public class CatalogManager {
 //        checkParameter(jobId, "jobId");
 //        checkParameter(filename, "filename");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //
 //        return ioManager.getFileTableFromJob(jobPath, filename, start, limit, colNames, colVisibility, sort);
 //    }
@@ -652,7 +652,7 @@ public class CatalogManager {
 //        checkParameter(filename, "filename");
 //        checkParameter(zip, "zip");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //
 //        return ioManager.getFileFromJob(jobPath, filename, zip);
 //    }
@@ -667,7 +667,7 @@ public class CatalogManager {
 //        checkParameter(sessionId, "sessionId");
 //
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //
 //        return ioManager.getGrepFileFromJob(jobPath, filename, pattern, ignoreCase, multi);
 //    }
@@ -678,7 +678,7 @@ public class CatalogManager {
 //        checkParameter(jobId, "jobId");
 //        checkParameter(sessionId, "sessionId");
 //
-//        Path jobPath = getAccountPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
+//        Path jobPath = getUserPath(accountId).resolve(accountManager.getJobPath(accountId, jobId, sessionId));
 //        logger.info("getJobZipped");
 //        logger.info(jobPath.toString());
 //        logger.info(jobId);
