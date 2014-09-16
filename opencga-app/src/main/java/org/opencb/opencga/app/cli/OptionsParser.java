@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 
 /**
@@ -87,8 +88,10 @@ public class OptionsParser {
         boolean includeStats = false;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
-        String aggregated;
+        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
+        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
     }
 
     @Parameters(commandNames = {"load-variants"}, commandDescription = "Loads an already generated data model into a backend")
