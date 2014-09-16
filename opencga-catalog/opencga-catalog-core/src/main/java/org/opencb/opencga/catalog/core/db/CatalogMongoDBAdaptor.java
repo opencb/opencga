@@ -181,7 +181,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
     /**
-     * User methods ···
+     * User methods 
      * ***************************
      */
 
@@ -316,7 +316,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
     /**
-     * Project methods ···
+     * Project methods
      * ***************************
      */
 
@@ -386,7 +386,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     /**
-     * Study methods ···
+     * Study methods
      * ***************************
      */
 
@@ -508,7 +508,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     /**
-     * File methods ···
+     * File methods ï¿½ï¿½ï¿½
      * ***************************
      */
 
@@ -684,7 +684,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     /**
-     * Analysis methods ···
+     * Analysis methods
      * ***************************
      */
     @Override
