@@ -2,10 +2,7 @@ package org.opencb.opencga.catalog.core.beans;
 
 import org.opencb.opencga.lib.common.TimeUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -25,6 +22,8 @@ public class Study {
 
     private List<Acl> acl;
     private List<Experiment> experiments;
+    private List<File> files;
+    private List<Analysis> analyses;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -44,12 +43,12 @@ public class Study {
     public Study(String name, String alias, String type, String description,
                  String status) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, 0, "", new ArrayList<Acl>(),
-                new ArrayList<Experiment>(), new HashMap<String, Object>(), new HashMap<String, Object>());
+                new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Analysis>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, String type, String creatorId, String creationDate, String description,
                  String status, long diskUsage, String cipher, List<Acl> acl, List<Experiment> experiments,
-                 Map<String, Object> attributes, Map<String, Object> stats) {
+                 List<File> files, List<Analysis> analyses, Map<String, Object> attributes, Map<String, Object> stats) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -62,6 +61,8 @@ public class Study {
         this.cipher = cipher;
         this.acl = acl;
         this.experiments = experiments;
+        this.files = files;
+        this.analyses = analyses;
         this.attributes = attributes;
         this.stats = stats;
     }
@@ -69,8 +70,9 @@ public class Study {
     @Override
     public String toString() {
         return "Study{" +
-                "id='" + id + '\'' +
+                "id=" + id +
                 ", name='" + name + '\'' +
+                ", alias='" + alias + '\'' +
                 ", type='" + type + '\'' +
                 ", creatorId='" + creatorId + '\'' +
                 ", creationDate='" + creationDate + '\'' +
@@ -79,6 +81,10 @@ public class Study {
                 ", diskUsage=" + diskUsage +
                 ", cipher='" + cipher + '\'' +
                 ", acl=" + acl +
+                ", experiments=" + experiments +
+                ", files=" + files +
+                ", analyses=" + analyses +
+                ", stats=" + stats +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -187,11 +193,27 @@ public class Study {
         this.experiments = experiments;
     }
 
+    public List<File> getFiles() {
+        return files;
+    }
+
+    public void setFiles(List<File> files) {
+        this.files = files;
+    }
+
     public Map<String, Object> getStats() {
         return stats;
     }
 
     public void setStats(Map<String, Object> stats) {
         this.stats = stats;
+    }
+
+    public List<Analysis> getAnalyses() {
+        return analyses;
+    }
+
+    public void setAnalyses(List<Analysis> analyses) {
+        this.analyses = analyses;
     }
 }

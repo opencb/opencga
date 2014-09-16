@@ -13,6 +13,8 @@ import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -57,18 +59,33 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     /**
-     * User methods ···
+     * User methods
      * ***************************
      */
     @Test
     public void createUserTest() throws CatalogManagerException, JsonProcessingException {
-        User userInvalid = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", "", "");
-        QueryResult createUser = catalog.createUser(userInvalid);
+        User user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", "", "");
+        QueryResult createUser = catalog.createUser(user1);
         System.out.println(createUser.toString());
 
         User user = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", "no", "off");
         QueryResult createUser2 = catalog.createUser(user);
         System.out.println(createUser2.toString());
+
+
+        User fullUser = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", "BOSS", "active", "", 1222, 122222,
+                Arrays.asList( new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
+                        Arrays.asList( new Study(-1, "Study name", "ph1", "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
+                                        Arrays.asList( new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000, -1)
+                                        ), Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP
+                                )
+                        ), Collections.EMPTY_MAP)
+                ),
+                Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP);
+
+        System.out.println(catalog.createUser(fullUser).toString());
+
+
     }
 
     @Test
@@ -97,7 +114,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void logoutTest() throws CatalogManagerException, IOException {
-        System.out.println(catalog.logout("jcoll", session.getId()));
+        if(session != null){
+            System.out.println(catalog.logout("jcoll", session.getId()));
+        }
     }
 
     @Test
@@ -110,12 +129,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void changePasswordTest() throws CatalogManagerException {
-        System.out.println(catalog.changePassword("jcoll", ID_LOGIN_JCOLL, "1234", "asdf"));
-        System.out.println(catalog.changePassword("jcoll", ID_LOGIN_JCOLL, "BAD_PASSWORD", "asdf"));
+        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "1234", "asdf"));
+        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "BAD_PASSWORD", "asdf"));
     }
 
     /**
-     * Project methods ···
+     * Project methods
      * ***************************
      */
     @Test
@@ -146,7 +165,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     /**
-     * Study methods ···
+     * Study methods
      * ***************************
      */
     @Test
@@ -169,12 +188,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
 
     /**
-     * Files methods ···
+     * Files methods
      * ***************************
      */
     @Test
     public void createFileToStudyTest() throws CatalogManagerException, JsonProcessingException {
-        File f = new File("file.sam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1, -1);
+        File f = new File("file.sam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
         System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f, ID_LOGIN_JCOLL));
     }
 
