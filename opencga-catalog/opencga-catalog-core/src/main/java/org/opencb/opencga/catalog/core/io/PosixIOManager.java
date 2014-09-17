@@ -89,7 +89,6 @@ public class PosixIOManager implements CatalogIOManager {
             Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_BIN_FOLDER));
         }
 
-
     }
 
     private void checkParam(String param) throws CatalogIOManagerException {
@@ -207,7 +206,7 @@ public class PosixIOManager implements CatalogIOManager {
         try {
             if(!Files.exists(userPath)) {
                 Files.createDirectory(userPath);
-                Files.createDirectories(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER, "default"));
+                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER));
                 Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_BIN_FOLDER));
 
                 return userPath;
@@ -231,17 +230,17 @@ public class PosixIOManager implements CatalogIOManager {
         return userPath;
     }
 
-    public Path createAnonymousUser(String userId) throws CatalogIOManagerException {
-        checkParam(userId);
+    public Path createAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
+        checkParam(anonymousUserId);
 
         Path usersPath = Paths.get(opencgaRootDir, OPENCGA_ANONYMOUS_USER_FOLDER);
         checkDirectoryPath(usersPath, true);
 
-        Path userPath = usersPath.resolve(userId);
+        Path userPath = usersPath.resolve(anonymousUserId);
         try {
             if(!Files.exists(userPath)) {
                 Files.createDirectory(userPath);
-                Files.createDirectories(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER, "default"));
+                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER));
                 Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_BIN_FOLDER));
 
                 return userPath;
@@ -305,6 +304,7 @@ public class PosixIOManager implements CatalogIOManager {
         Path oldFolder =  getProjectPath(userId, oldProjectId);
         Path newFolder =  getProjectPath(userId, newProjectId);
         checkPath(oldFolder);
+        checkDirectoryPath(oldFolder.getParent(), true);
 
         try {
             if(!Files.exists(newFolder)) {
@@ -343,20 +343,6 @@ public class PosixIOManager implements CatalogIOManager {
         return studyPath;
     }
 
-    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId) throws CatalogIOManagerException {
-        Path oldFolder =  getStudyPath(userId, projectId, oldStudyId);
-        Path newFolder =  getStudyPath(userId, projectId, newStudyId);
-        checkPath(oldFolder);
-
-        try {
-            if(!Files.exists(newFolder)) {
-                Files.move(oldFolder, newFolder);
-            }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("renameProject(): could not rename the project folder: " + e.toString());
-        }
-    }
-
     public Path deleteStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         Path studyPath = getStudyPath(userId, projectId, studyId);
         checkPath(studyPath);
@@ -368,6 +354,21 @@ public class PosixIOManager implements CatalogIOManager {
         }
 
         return studyPath;
+    }
+
+    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId) throws CatalogIOManagerException {
+        Path oldFolder =  getStudyPath(userId, projectId, oldStudyId);
+        Path newFolder =  getStudyPath(userId, projectId, newStudyId);
+        checkPath(oldFolder);
+        checkDirectoryPath(oldFolder.getParent(), true);
+
+        try {
+            if(!Files.exists(newFolder)) {
+                Files.move(oldFolder, newFolder);
+            }
+        } catch (IOException e) {
+            throw new CatalogIOManagerException("renameProject(): could not rename the project folder: " + e.toString());
+        }
     }
 
 

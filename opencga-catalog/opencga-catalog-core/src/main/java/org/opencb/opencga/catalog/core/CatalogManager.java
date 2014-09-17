@@ -130,6 +130,7 @@ public class CatalogManager {
 
         String userId = "anonymous_" + session.getId();
 
+// TODO sessionID should be created here
 
         ioManager.createAnonymousUser(userId);
 
@@ -147,6 +148,7 @@ public class CatalogManager {
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
+// TODO sessionID should be created here
 
         try {
             ioManager.createUser(userId);

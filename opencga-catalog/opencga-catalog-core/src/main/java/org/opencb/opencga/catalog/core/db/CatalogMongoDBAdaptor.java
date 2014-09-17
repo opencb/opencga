@@ -12,7 +12,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.core.CatalogManager;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToFileConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToListConverter;
@@ -39,7 +38,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static final String SAMPLE_COLLECTION = "sample";
     private static final String JOB_COLLECTION = "job";
 
-    private static final String METADATA_OBJECT = "METADATA";
+    private static final String METADATA_OBJECT_ID = "METADATA";
 
     private final MongoDataStoreManager mongoManager;
     private final MongoCredentials credentials;
@@ -69,7 +68,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static ObjectReader jsonProjectReader;
     private static ObjectReader jsonStudyReader;
     private static ObjectReader jsonSampleReader;
+
     private Properties catalogProperties;
+
+
 
     public CatalogMongoDBAdaptor(MongoCredentials credentials) {
         super();
@@ -105,7 +107,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(queryResult.getNumResults() == 0){
             try {
                 DBObject metadataObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(new Metadata()));
-                metadataObject.put("_id", METADATA_OBJECT);
+                metadataObject.put("_id", METADATA_OBJECT_ID);
                 metaCollection.insert(metadataObject);
             } catch (MongoException.DuplicateKey e){
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
@@ -167,7 +169,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     private int getNewId(String field){
         DBObject object = nativeMetaCollection.findAndModify(
-                new BasicDBObject("_id", METADATA_OBJECT),  //Query
+                new BasicDBObject("_id", METADATA_OBJECT_ID),  //Query
                 new BasicDBObject(field, true),  //Fields
                 null,
                 false,
@@ -211,15 +213,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult createUser(User user) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
 
-
         if(userExists(user.getId())){
             return endQuery("createUser", startTime, "UserID already exists");
         }
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
         DBObject userDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
-        QueryResult insert = userCollection.insert(userDBObject);
 
+        QueryResult insert = userCollection.insert(userDBObject);
 
         for (Project p : projects){
             String errorMsg = createProject(user.getId(), p, null).getErrorMsg();
@@ -227,6 +228,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 insert.setErrorMsg(insert.getErrorMsg() + ", " + p.getAlias() + ":" + errorMsg);
             }
         }
+
+        // TODO call to getUser()
 
         return endQuery("createUser", startTime, insert);
     }
@@ -244,6 +247,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(count.getResult().get(0) == 0){
             return endQuery("Login", startTime, "Bad user or password");
         } else {
+
             QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
             if (countSessions.getResult().get(0) != 0) {
                 return endQuery("Login", startTime, "Already logged");
@@ -291,7 +295,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(countSessions.getResult().get(0) != 0){
             endQuery("Login as anonymous", startTime, "Error, sessionID already exists");
         }
-        String userId = "anonymous";
+        String userId = "anonymous_" + session.getId();
         User user = new User(userId, "Anonymous", "", "", "", User.ROLE_ANONYMOUS, "");
         user.getSessions().add(session);
         DBObject anonymous = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
@@ -383,7 +387,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         long startTime = startQuery();
         //TODO: ManageSession and ACLs
 
-        List<Study> studies = project.getStudies(); if(studies == null) studies = Collections.emptyList();
+        List<Study> studies = project.getStudies();
+        if(studies == null) {
+            studies = Collections.emptyList();
+        }
         project.setStudies(Collections.<Study>emptyList());
 
 
