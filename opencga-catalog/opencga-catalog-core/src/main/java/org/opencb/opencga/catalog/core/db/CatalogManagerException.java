@@ -9,4 +9,11 @@ public class CatalogManagerException extends Exception {
         super(msg);
     }
 
+    public CatalogManagerException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public CatalogManagerException(Throwable cause) {
+        super(cause);
+    }
 }

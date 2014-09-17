@@ -31,8 +31,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, "catalog", "", "");
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
-        catalog.connect();
-
     }
 
     @After
@@ -228,7 +226,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", 0, "analaysis 1 description");
+        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));
     }
 }

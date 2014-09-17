@@ -19,16 +19,17 @@ public class Metadata {
     private int sampleCounter;
 
     public Metadata() {
-        this("v2", TimeUtils.getTime());
+        this("v2", TimeUtils.getTime(), "public");
     }
 
-    public Metadata(String version, String date) {
-        this(version, date, 0, 0, 0, 0, 0, 0);
+    public Metadata(String version, String date, String open) {
+        this(version, date, open, 0, 0, 0, 0, 0, 0);
     }
 
-    public Metadata(String version, String date, int projectCounter, int studyCounter, int fileCounter, int analysisCounter, int jobCounter, int sampleCounter) {
+    public Metadata(String version, String date, String open, int projectCounter, int studyCounter, int fileCounter, int analysisCounter, int jobCounter, int sampleCounter) {
         this.version = version;
         this.date = date;
+        this.open = open;
         this.projectCounter = projectCounter;
         this.studyCounter = studyCounter;
         this.fileCounter = fileCounter;
@@ -42,6 +43,7 @@ public class Metadata {
         return "Metadata{" +
                 "version='" + version + '\'' +
                 ", date='" + date + '\'' +
+                ", open='" + open + '\'' +
                 ", projectCounter=" + projectCounter +
                 ", studyCounter=" + studyCounter +
                 ", fileCounter=" + fileCounter +
@@ -113,5 +115,13 @@ public class Metadata {
 
     public void setSampleCounter(int sampleCounter) {
         this.sampleCounter = sampleCounter;
+    }
+
+    public String getOpen() {
+        return open;
+    }
+
+    public void setOpen(String open) {
+        this.open = open;
     }
 }
