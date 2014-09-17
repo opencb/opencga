@@ -55,6 +55,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         getAllStudiesTest();
         getStudyTest();
         createAnalysisTest();
+        getAllAnalysisTest();
         createFileToStudyTest();
     }
 
@@ -226,6 +227,21 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));
+        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));  // different alias, same study
+        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis, ID_LOGIN_JCOLL));  // different study, same alias
+    }
+
+    @Test
+    public void getAllAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+        System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1", ID_LOGIN_JCOLL));
+    }
+
+    @Test
+    public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
         Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));
     }

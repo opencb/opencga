@@ -433,15 +433,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 )
         );
         QueryResult queryResult = endQuery("get project", startTime, userCollection.find(
-                query,
-                null,
-                null, //projectConverter,
-                projection)
+                        query,
+                        null,
+                        null, //projectConverter,
+                        projection)
         );
+
         User user;
         try {
-            user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
-            queryResult.setResult(user.getProjects());
+            if (queryResult.getNumResults() != 0) {
+                user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+                queryResult.setResult(user.getProjects());
+            } else {
+                queryResult.setResult(Collections.<Project>emptyList());
+            }
             return queryResult;
         } catch (IOException e) {
             e.printStackTrace();
@@ -455,18 +460,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         //TODO: ManageSession
 
         DBObject query = new BasicDBObject("id", userId);
-        DBObject projection = new BasicDBObject("projects", true); projection.put("_id", false);
-        QueryResult result = userCollection.find(
-                query,
-                null,
-                null,   //projectListConverter
-                projection);
+        DBObject projection = new BasicDBObject("projects", true);
+        projection.put("_id", false);
+        QueryResult result = userCollection.find(query, null, null, projection);
+
         User user;
         try {
-            user = jsonUserReader.readValue(result.getResult().get(0).toString());
-            return endQuery(
-                    "User projects list", startTime,
-                    user.getProjects());
+            List<Project> projects;
+            if (result.getNumResults() != 0) {
+                user = jsonUserReader.readValue(result.getResult().get(0).toString());
+                projects = user.getProjects();
+            } else {
+                projects = Collections.<Project>emptyList();
+            }
+            return endQuery("User projects list", startTime, projects);
         } catch (IOException e) {
             e.printStackTrace();
             throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
@@ -575,21 +582,23 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         )
                 )
                 .append("projects.studies", true).get();
-        QueryResult queryResult = endQuery("get project", startTime, userCollection.find(
-                query,
-                null,
-                null,
-                projection));
-        User user = null;
-        try {
-            user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+        QueryResult queryResult = endQuery("get project", startTime
+                , userCollection.find(query, null, null, projection));
 
-            List<Study> studies = user.getProjects().get(0).getStudies();
-            for (Study study : studies) {
-                study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
+        User user;
+        try {
+            List<Study> studies;
+            if (queryResult.getNumResults() != 0) {
+                user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+                studies = user.getProjects().get(0).getStudies();
+                for (Study study : studies) {
+                    study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
+                }
+                //TODO: append files
+            } else {
+                studies = Collections.<Study>emptyList();
             }
 
-            //TODO: append files
             return endQuery("Get all studies", startTime, studies);
 
         } catch (IOException e) {
@@ -909,13 +918,38 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      */
     @Override
     public QueryResult getAllAnalysis(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {
-        return null;
+        long startTime = startQuery();
+        //TODO: ManageSession
+        int studyId = getStudyId(userId, projectAlias, studyAlias, sessionId);
+        if (studyId < 0) {
+            return endQuery("get All Analysis", startTime, "Study not found");
+        } else {
+            return getAllAnalysis(studyId, sessionId);
+        }
     }
 
     @Override
     public QueryResult getAllAnalysis(int studyId, String sessionId) throws CatalogManagerException {
-        return null;
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject("analyses.studyId", studyId);
+        DBObject projection = new BasicDBObject("analyses", true);
+        projection.put("_id", false);   // exclude mongo's private _id
+        QueryResult result = userCollection.find(query, null, null, projection);
+
+        try {
+            Study study = jsonStudyReader.readValue(result.getResult().get(0).toString());
+            List<Analysis> analyses = study.getAnalyses();
+            // TODO fill analyses with jobs
+            return endQuery("User analyses list", startTime, analyses);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+        }
     }
+
+    //@Override
+//    public QueryResult getAnalysis()
 
     @Override
     public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException {
@@ -937,7 +971,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
                 .start("analyses.studyId", studyId)
                 .append("analyses.alias", analysis.getAlias()).get());
-        System.out.println(count.getResult().get(0));
         if(count.getResult().get(0) != 0) {
             return endQuery("Create Analysis", startTime, "Analysis alias already exists in this study");
         }
