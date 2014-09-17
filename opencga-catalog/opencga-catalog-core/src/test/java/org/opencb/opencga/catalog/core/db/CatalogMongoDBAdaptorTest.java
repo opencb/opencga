@@ -31,8 +31,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, "catalog", "", "");
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
-        catalog.connect();
-
     }
 
     @After

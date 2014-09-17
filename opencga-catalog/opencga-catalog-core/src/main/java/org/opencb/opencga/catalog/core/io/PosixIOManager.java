@@ -252,6 +252,18 @@ public class PosixIOManager implements CatalogIOManager {
         return null;
     }
 
+    public Path deleteAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
+        Path anonymousUserPath = getAnonmousUserPath(anonymousUserId);
+        checkPath(anonymousUserPath);
+
+        try {
+            IOUtils.deleteDirectory(anonymousUserPath);
+        } catch (IOException e1) {
+            throw new CatalogIOManagerException("IOException: " + e1.toString());
+        }
+
+        return anonymousUserPath;
+    }
 
     /*****************************
      * Project methods ***********

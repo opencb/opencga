@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -81,9 +82,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonStudyReader = jsonObjectMapper.reader(Study.class);
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
         //catalogProperties = Config.getAccountProperties();
+
+        connect();
     }
 
-    public void connect() throws JsonProcessingException {
+    private void connect()  {
         db = mongoManager.get(credentials.getMongoDbName());
         nativeMetaCollection = db.getDb().getCollection(METADATA_COLLECTION);
         nativeFileCollection = db.getDb().getCollection(FILE_COLLECTION);
@@ -104,6 +107,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 metaCollection.insert(metadataObject);
             } catch (MongoException.DuplicateKey e){
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
+            } catch (JsonProcessingException e) {
+                logger.error("Metadata json parse error", e);
             }
         }
     }
@@ -116,11 +121,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return System.currentTimeMillis();
     }
 
-    private QueryResult endQuery(String queryId, long startTime, List result) {
+    private <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result) {
         return endQuery(queryId, startTime, result, null, null);
     }
 
-    private QueryResult endQuery(String queryId, long startTime, QueryResult result) {
+    private <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result) {
         long end = System.currentTimeMillis();
         result.setId(queryId);
         result.setDbTime((int)(end-startTime));
@@ -131,7 +136,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery(queryId, startTime, Collections.emptyList(), errorMessage, null);
     }
 
-    private QueryResult endQuery(String queryId, long startTime, List result, String errorMessage, String warnMessage){
+
+    private <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result, String errorMessage, String warnMessage){
         long end = System.currentTimeMillis();
         int numResults = result != null ? result.size() : 0;
 
@@ -229,7 +235,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult login(String userId, String password, Session session) throws CatalogManagerException, IOException {
+    public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogManagerException, IOException {
         long startTime = startQuery();
 
         QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
@@ -246,7 +252,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                                 "sessions", JSON.parse(jsonObjectWriter.writeValueAsString(session))
                         )
                 );
-                return endQuery("Login", startTime, userCollection.update(id, updates, false, false));
+                userCollection.update(id, updates, false, false);
+
+                ObjectMap resultObjectMap = new ObjectMap();
+                resultObjectMap.put("sessionId", session.getId());
+                resultObjectMap.put("userId", userId);
+                return endQuery("Login", startTime, Arrays.asList(resultObjectMap));
             }
         }
     }
@@ -271,17 +282,23 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult loginAsAnonymous(Session session) throws CatalogManagerException, IOException {
+    public QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogManagerException, IOException {
         long startTime = startQuery();
 
         QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
         if(countSessions.getResult().get(0) != 0){
             endQuery("Login as anonymous", startTime, "Error, sessionID already exists");
         }
-        User user = new User("anonymous", "Anonymous", "", "", "", User.ROLE_ANONYMOUS, "");
+        String userId = "anonymous";
+        User user = new User(userId, "Anonymous", "", "", "", User.ROLE_ANONYMOUS, "");
         user.getSessions().add(session);
         DBObject anonymous = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
-        return endQuery("Login as anonymous", startTime, userCollection.insert(anonymous));
+        userCollection.insert(anonymous);
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        resultObjectMap.put("sessionId", session.getId());
+        resultObjectMap.put("userId", userId);
+        return endQuery("Login as anonymous", startTime, Arrays.asList(resultObjectMap));
     }
 
     @Override
@@ -290,9 +307,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException{
+    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException{
         long startTime = startQuery();
         //TODO: ManageSession
+        //TODO: Check "lastActivity". If lastActivity == user.getLastActivity, return []
         DBObject query = new BasicDBObject("id", userId);
         QueryResult result = userCollection.find(query, null, null);
 
@@ -359,7 +377,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      */
 
     @Override
-    public QueryResult createProject(String userId, Project project, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult<ObjectMap> createProject(String userId, Project project, String sessionId) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
         //TODO: ManageSession and ACLs
 
@@ -375,7 +393,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             return endQuery("Create Project", startTime, "Project alias already exists in this user");
         }
 
-        project.setId(getNewProjectId());
+        int projectId = getNewProjectId();
+        project.setId(projectId);
         DBObject query = new BasicDBObject("id", userId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject ("projects", JSON.parse(jsonObjectWriter.writeValueAsString(project))));
         QueryResult queryResult = userCollection.update(query, update, false, false);
@@ -386,12 +405,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 queryResult.setErrorMsg(queryResult.getErrorMsg() + ", " + study.getAlias() + ":" + errorMsg);
             }
         }
-
-        return endQuery("Create Project", startTime, queryResult);
+        ObjectMap result = new ObjectMap("id", projectId);
+        queryResult.setResult(Arrays.asList(result));
+        return (QueryResult<ObjectMap>) endQuery("Create Project", startTime, queryResult);
     }
 
     @Override
-    public QueryResult getProject(String userId, String project, String sessionId) throws CatalogManagerException {
+    public QueryResult<Project> getProject(String userId, String project, String sessionId) throws CatalogManagerException {
         long startTime = startQuery();
         //TODO: ManageSession
 
@@ -421,7 +441,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllProjects(String userId, String sessionId) throws CatalogManagerException {
+    public QueryResult<Project> getAllProjects(String userId, String sessionId) throws CatalogManagerException {
         long startTime = startQuery();
         //TODO: ManageSession
 
@@ -444,12 +464,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    @Override
+    public QueryResult renameProject(String userId, String projectName, String newProjectName, String sessionId) throws CatalogManagerException {
+        return null;
+    }
+
     /**
      * Study methods
      * ***************************
      */
     @Override
-    public QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException {
         long startTime = startQuery();
         int projectId = getProjectId(userId, project);
         if(projectId < 0){
@@ -459,7 +484,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public QueryResult createStudy(int projectId, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult createStudy(int projectId, Study study, String sessionId) throws CatalogManagerException {
         long startTime = startQuery();
         //TODO: ManageSession
 
@@ -485,21 +510,36 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             study.setFiles(Collections.<File>emptyList());
 
             DBObject query = new BasicDBObject("projects.id", projectId);
-            DBObject studyObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study));
+            DBObject studyObject = null;
+            try {
+                studyObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study));
+            } catch (JsonProcessingException e) {
+                throw new CatalogManagerException(e);
+            }
             DBObject update = new BasicDBObject("$push", new BasicDBObject(
                     "projects.$.studies", studyObject ));
             QueryResult updateResult = userCollection.update(query, update, false, false);
 
 
             for(Analysis analysis : analyses){
-                String errorMsg = createAnalysis(study.getId(), analysis, sessionId).getErrorMsg();
+                String errorMsg = null;
+                try {
+                    errorMsg = createAnalysis(study.getId(), analysis, sessionId).getErrorMsg();
+                } catch (JsonProcessingException e) {
+                    throw new CatalogManagerException(e);
+                }
                 if(errorMsg != null){
                     updateResult.setErrorMsg(updateResult.getErrorMsg() + ", " + analysis.getAlias() + ":" + errorMsg);
                 }
             }
 
             for (File file : files) {
-                String errorMsg = createFileToStudy(study.getId(), file, sessionId).getErrorMsg();
+                String errorMsg = null;
+                try {
+                    errorMsg = createFileToStudy(study.getId(), file, sessionId).getErrorMsg();
+                } catch (JsonProcessingException e) {
+                    throw new CatalogManagerException(e);
+                }
                 if(errorMsg != null){
                     updateResult.setErrorMsg(updateResult.getErrorMsg() + ", " + file.getName() + ":" + errorMsg);
                 }
@@ -511,7 +551,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException {
         long startTime = startQuery();
         //TODO: ManageSession
 
@@ -538,7 +578,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException, JsonProcessingException{
+    public QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException{
         return null;
         /*long startTime = startQuery();
         //TODO: ManageSession
@@ -711,12 +751,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException {
         return getFile(getStudyId(userId, projectAlias, studyAlias, sessionId), filePath, sessionId);
     }
 
     @Override
-    public QueryResult getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult<File> getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException {
         long startTime = startQuery();
 
         QueryResult queryResult = fileCollection.find(
@@ -736,7 +776,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult getFile(int fileId, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult<File> getFile(int fileId, String sessionId) throws CatalogManagerException, IOException {
         long startTime = startQuery();
 
         QueryResult queryResult = fileCollection.find(
