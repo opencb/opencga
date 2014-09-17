@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.core.db.converters.DBObjectToFileConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToListConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToProjectConverter;
 import org.opencb.opencga.catalog.core.db.converters.DBObjectToStudyConverter;
+import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.Logger;
@@ -695,7 +696,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      */
 
     @Override
-    public QueryResult createFileToStudy(String userId, String projectAlias, String studyAlias, File file, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult<ObjectMap> createFileToStudy(String userId, String projectAlias, String studyAlias, File file, String sessionId) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
         //TODO: ManageSession
 
@@ -703,23 +704,25 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(studyId < 0){
             return endQuery("Create file", startTime, "Study not exists");
         }
-        QueryResult fileToStudy = createFileToStudy(studyId, file, sessionId);
-
+        QueryResult<ObjectMap> fileToStudy = createFileToStudy(studyId, file, sessionId);
         return endQuery("Create file", startTime, fileToStudy);
     }
 
     @Override
-    public QueryResult createFileToStudy(int studyId, File file, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult<ObjectMap> createFileToStudy(int studyId, File file, String sessionId) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
         //TODO: ManageSession
 
-        file.setId(getNewFileId());
+        int newFileId = getNewFileId();
+        file.setId(newFileId);
         file.setCreatorId(getUserIdBySessionId(sessionId));
 
         DBObject fileDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(file));
         fileDBObject.put("studyId", studyId);
+        fileCollection.insert(fileDBObject);
 
-        return endQuery("Create file", startTime, fileCollection.insert(fileDBObject));
+        ObjectMap om = new ObjectMap("id", newFileId);
+        return endQuery("Create file", startTime, Arrays.asList(om));
     }
 
     @Override
@@ -768,12 +771,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         .start("studyId", studyId)
                         .append("uri", filePath.toString()).get(),
                 null,
-                fileConverter,
+                null,
                 new BasicDBObject("id", true)
         );
-
         if(queryResult.getNumResults() != 0) {
-            return ((File) queryResult.getResult().get(0)).getId();
+            try {
+                File file = jsonFileReader.readValue(queryResult.getResult().get(0).toString());
+                return file.getId();
+            } catch (IOException e) {
+                throw new CatalogManagerException("GetFileId", e);
+            }
         } else {
             return -1;
         }
@@ -793,12 +800,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         .start("studyId", studyId)
                         .append("uri", filePath.toString()).get(),
                 null,
-                fileConverter,
+                null,
                 null
         );
 
         if(queryResult.getNumResults() != 0) {
-            return endQuery("Get file", startTime, queryResult);
+            File file = jsonFileReader.readValue(queryResult.getResult().get(0).toString());
+            return endQuery("Get file", startTime, Arrays.asList(file));
         } else {
             return endQuery("Get file", startTime, "File not found");
         }
@@ -815,13 +823,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 null,
                 null
         );
-        List<File> files = new LinkedList<>();
-        for (DBObject object : (List<DBObject>)queryResult.getResult()) {
-            files.add((File) jsonFileReader.readValue(object.toString()));
-        }
+//        List<File> files = new LinkedList<>();
+//        for (DBObject object : (List<DBObject>)queryResult.getResult()) {
+//            files.add((File) jsonFileReader.readValue(object.toString()));
+//        }
 
         if(queryResult.getNumResults() != 0) {
-            return endQuery("Get file", startTime, files);
+            File file = jsonFileReader.readValue(queryResult.getResult().get(0).toString());
+            return endQuery("Get file", startTime, Arrays.asList(file));
         } else {
             return endQuery("Get file", startTime, "File not found");
         }

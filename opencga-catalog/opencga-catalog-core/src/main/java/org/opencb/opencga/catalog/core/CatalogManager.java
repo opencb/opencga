@@ -256,8 +256,11 @@ public class CatalogManager {
      * Study methods
      * ***************************
      */
+    public QueryResult<Study> getAllStudies(String userId, String projectAlias, String sessionId) throws CatalogManagerException, JsonProcessingException {
+        return catalogDBAdaptor.getAllStudies(userId, projectAlias, sessionId);
+    }
 
-    public QueryResult createStudy(String userId, String projectAlias, Study study, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
+    public QueryResult<ObjectMap> createStudy(String userId, String projectAlias, Study study, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(study.getName(), "studyName");
         checkParameter(study.getAlias(), "studylias");
         checkParameter(projectAlias, "projectAlias");
@@ -289,7 +292,9 @@ public class CatalogManager {
         }
     }
 
-//    public QueryResult createObjectToStudy(String userId, String projectAlias, String studyAlias, Path objectId, File file,
+
+//
+//    public QueryResult<ObjectMap> createObjectToStudy(String userId, String projectAlias, String studyAlias, Path objectId, File file,
 //                                            InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
 //            CatalogIOManagerException, IOException, InterruptedException {
 //        checkParameter(projectAlias, "projectAlias");
@@ -300,27 +305,10 @@ public class CatalogManager {
 //        checkObj(file, "file");
 //
 //        file.setStatus("ready");
-//        objectId = ioManager.createObject(userId, bucketId, objectId, file, fileIs, parents);
-//
-//        //Check files to create index if needed
-//        String sgeJobName;
-////        switch (file.getFileFormat()) {
-////            case "bam":
-////                sgeJobName = BamManager.createIndex(getFilePath(userId, bucketId, objectId));
-////                file.setStatus(sgeJobName);
-////                break;
-////            case "vcf":
-////                sgeJobName = VcfManager.createIndex(getFilePath(userId, bucketId, objectId));
-////                file.setStatus(sgeJobName);
-////                break;
-////            default:
-////                break;
-////        }
-//
+////        objectId = ioManager.createFile(userId, bucketId, objectId, file, fileIs, parents);
 //
 //        // set id and name to the itemObject
-//        file.setId(objectId.toString());
-//        file.setName(objectId.getFileName().toString());
+//        file.setUri(uri);
 //
 //        try {
 //            return catalogDBAdaptor.createFileToStudy(userId, projectAlias, studyAlias, file, sessionId);

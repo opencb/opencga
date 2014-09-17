@@ -66,7 +66,7 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException;
+    QueryResult<ObjectMap> createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException;
 
@@ -89,8 +89,8 @@ public interface CatalogDBAdaptor {
      */
 
     // add file to study
-    QueryResult createFileToStudy(String userId, String projectAlias, String studyAlias, File file, String sessionId) throws CatalogManagerException, JsonProcessingException;
-    QueryResult createFileToStudy(int studyId, File file, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<ObjectMap> createFileToStudy(String userId, String projectAlias, String studyAlias, File file, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<ObjectMap> createFileToStudy(int studyId, File file, String sessionId) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException;
     QueryResult deleteFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException;
@@ -102,9 +102,9 @@ public interface CatalogDBAdaptor {
     int getFileId(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
     int getFileId(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
 
-    QueryResult<File>getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
-    QueryResult<File>getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
-    QueryResult<File>getFile(int fileId, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<File> getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<File> getFile(int fileId, String sessionId) throws CatalogManagerException, IOException;
 
     QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
     QueryResult setFileStatus(int studyId, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
