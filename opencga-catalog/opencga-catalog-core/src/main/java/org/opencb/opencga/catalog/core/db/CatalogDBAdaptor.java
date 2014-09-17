@@ -68,9 +68,9 @@ public interface CatalogDBAdaptor {
 
     QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException;
 
-    QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException;
+    QueryResult<Study> getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException;
 
-    QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException;
+    QueryResult<Study> getStudy(int studyId, String sessionId) throws CatalogManagerException;
 
     QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName, String sessionId) throws CatalogManagerException;
 
