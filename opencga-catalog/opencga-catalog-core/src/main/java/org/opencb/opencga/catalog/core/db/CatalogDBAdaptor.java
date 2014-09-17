@@ -16,7 +16,7 @@ public interface CatalogDBAdaptor {
      */
     boolean checkUserCredentials(String userId, String sessionId);
 
-    QueryResult createUser(User user) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<User> createUser(User user) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult deleteUser(String userId) throws CatalogManagerException, JsonProcessingException;
 
@@ -34,15 +34,15 @@ public interface CatalogDBAdaptor {
 
     // public String getUserByEmail(String email, String sessionId);
 
-    QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException;
+    QueryResult<User> getUser(String userId, String lastActivity) throws CatalogManagerException;
 
-    QueryResult changePassword(String userId, String password, String password1, String sessionId) throws CatalogManagerException;
+    QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogManagerException;
 
-    QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogManagerException;
+    QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException;
 
     QueryResult resetPassword(String userId, String email) throws CatalogManagerException;
 
-    // public boolean checkSessionId(String userId, String sessionId);
+//    public boolean checkSessionId(String userId, String sessionId);
 
     QueryResult getSession(String userId, String sessionId) throws IOException;
 
@@ -52,11 +52,11 @@ public interface CatalogDBAdaptor {
      * Project methods ···
      * ***************************
      */
-    QueryResult<ObjectMap> createProject(String userId, Project project, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult renameProject(String userId, String projectName, String newprojectName, String sessionId) throws CatalogManagerException;
 
-    QueryResult<Project> getProject(String userId, String project, String sessionId) throws CatalogManagerException;
+    QueryResult<Project> getProject(String userId, String project) throws CatalogManagerException;
 
     QueryResult<Project> getAllProjects(String userId, String sessionId) throws CatalogManagerException;
 
@@ -66,7 +66,7 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult<ObjectMap> createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException;
+    QueryResult<Study> createStudy(String userId, String project, Study study) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException;
 
@@ -80,7 +80,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult deleteStudy(int studyId, String sessionId) throws CatalogManagerException;
 
-    int getStudyId(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException, IOException;
+    int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogManagerException, IOException;
 
 
     /**
@@ -89,18 +89,18 @@ public interface CatalogDBAdaptor {
      */
 
     // add file to study
-    QueryResult<ObjectMap> createFileToStudy(String userId, String projectAlias, String studyAlias, File file, String sessionId) throws CatalogManagerException, JsonProcessingException;
-    QueryResult<ObjectMap> createFileToStudy(int studyId, File file, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogManagerException, IOException;
+    QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogManagerException, JsonProcessingException;
 
-    QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException;
-    QueryResult deleteFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException;
-    QueryResult deleteFile(int fileId, String sessionId) throws CatalogManagerException;
+    QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException;
+    QueryResult deleteFile(int studyId, Path filePath) throws CatalogManagerException;
+    QueryResult deleteFile(int fileId) throws CatalogManagerException;
 
     QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
     QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogManagerException;
 
-    int getFileId(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
-    int getFileId(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    int getFileId(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException;
+    int getFileId(int studyId, Path filePath) throws CatalogManagerException, IOException;
 
     QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
     QueryResult<File> getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
@@ -122,8 +122,8 @@ public interface CatalogDBAdaptor {
     QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
     QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException;
 
-    QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException;
-    QueryResult createAnalysis(int studyId, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
+    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException;
 

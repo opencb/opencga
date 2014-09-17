@@ -12,14 +12,11 @@ import org.opencb.opencga.catalog.core.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.core.io.PosixIOManager;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.lib.common.Config;
 
-import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -162,6 +159,7 @@ public class CatalogManager {
     public QueryResult logout(String userId, String sessionId) throws CatalogManagerException, IOException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
         return catalogDBAdaptor.logout(userId, sessionId);
     }
 
@@ -171,6 +169,7 @@ public class CatalogManager {
 
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
 
         ioManager.deleteAnonymousUser(userId);
         return catalogDBAdaptor.logoutAnonymous(sessionId);
@@ -183,17 +182,19 @@ public class CatalogManager {
         checkParameter(password, "password");
         checkParameter(nPassword1, "nPassword1");
         checkParameter(nPassword2, "nPassword2");
+        checkSessionId(userId, sessionId);
         if (!nPassword1.equals(nPassword2)) {
             throw new CatalogManagerException("the new pass is not the same in both fields");
         }
-        return catalogDBAdaptor.changePassword(userId, password, nPassword1, sessionId);
+        return catalogDBAdaptor.changePassword(userId, password, nPassword1);
     }
 
     public QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
         checkEmail(nEmail);
-        return catalogDBAdaptor.changeEmail(userId, sessionId, nEmail);
+        return catalogDBAdaptor.changeEmail(userId, nEmail);
     }
 
     public QueryResult resetPassword(String userId, String email) throws CatalogManagerException {
@@ -206,8 +207,9 @@ public class CatalogManager {
             throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);    //FIXME: Should other users get access to other user information?
         // lastActivity can be null
-        return catalogDBAdaptor.getUser(userId, sessionId, lastActivity);
+        return catalogDBAdaptor.getUser(userId, sessionId);
     }
 
 //    public void deleteUser(String userId, String sessionId) throws CatalogManagerException,
@@ -220,19 +222,33 @@ public class CatalogManager {
      * ***************************
      */
     public QueryResult<Project> getAllProjects(String userId, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return catalogDBAdaptor.getAllProjects(userId, sessionId);
+        checkParameter(userId, "userId");
+        checkParameter(sessionId, "sessionId");
+
+
+        QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(userId, sessionId);
+
+        Iterator<Project> it = allProjects.getResult().iterator();
+        while (it.hasNext()) {
+            Project p = it.next();
+            if (!getProjectAcl(userId, p.getAlias(), sessionId).isRead()) { //Remove all projects that can't be redden
+                it.remove();
+            }
+        }
+        return allProjects;
     }
 
-    public QueryResult<ObjectMap> createProject(String userId, Project project, String sessionId) throws CatalogManagerException,
+    public QueryResult<Project> createProject(String userId, Project project, String sessionId) throws CatalogManagerException,
             CatalogIOManagerException, JsonProcessingException {
         checkParameter(project.getName(), "projectName");
         checkParameter(project.getAlias(), "projectAlias");
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);    //Only the user can create a project
 
         ioManager.createProject(userId, project.getAlias());
         try {
-            return catalogDBAdaptor.createProject(userId, project, sessionId);
+            return catalogDBAdaptor.createProject(userId, project);
         } catch (CatalogManagerException e) {
             ioManager.deleteProject(userId, project.getName());
             throw e;
@@ -245,12 +261,18 @@ public class CatalogManager {
         checkParameter(newProjectAlias, "newProjectAlias");
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
-        ioManager.renameProject(userId, projectAlias, newProjectAlias);
-        try {
-            return catalogDBAdaptor.renameProject(userId, projectAlias, newProjectAlias, sessionId);
-        } catch (CatalogManagerException e) {
-            ioManager.renameProject(userId, newProjectAlias, projectAlias);
-            throw e;
+
+        Acl projectAcl = getProjectAcl(userId, projectAlias, sessionId);
+        if(projectAcl.isWrite()) {
+            ioManager.renameProject(userId, projectAlias, newProjectAlias);
+            try {
+                return catalogDBAdaptor.renameProject(userId, projectAlias, newProjectAlias, sessionId);
+            } catch (CatalogManagerException e) {
+                ioManager.renameProject(userId, newProjectAlias, projectAlias);
+                throw e;
+            }
+        } else {
+            throw new CatalogManagerException("Permission denied. Can't rename project");
         }
     }
 
@@ -259,19 +281,41 @@ public class CatalogManager {
      * ***************************
      */
     public QueryResult<Study> getAllStudies(String userId, String projectAlias, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return catalogDBAdaptor.getAllStudies(userId, projectAlias, sessionId);
-    }
-
-    public QueryResult<ObjectMap> createStudy(String userId, String projectAlias, Study study, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
-        checkParameter(study.getName(), "studyName");
-        checkParameter(study.getAlias(), "studylias");
         checkParameter(projectAlias, "projectAlias");
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
 
+//        Acl projectAcl = getProjectAcl(userId, projectAlias, sessionId);
+//        if(!projectAcl.isRead()) {
+//            throw new CatalogManagerException("Permission denied. Can't read project");
+//        }
+
+        QueryResult<Study> allStudies = catalogDBAdaptor.getAllStudies(userId, projectAlias, sessionId);
+
+        for (Iterator<Study> iterator = allStudies.getResult().iterator(); iterator.hasNext(); ) {
+            Study study = iterator.next();
+            if (!getStudyAcl(userId, projectAlias, study.getAlias(), sessionId).isRead()) {
+                iterator.remove();
+            }
+        }
+        return allStudies;
+
+
+    }
+
+    public QueryResult<Study> createStudy(String userId, String projectAlias, Study study, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
+        checkParameter(study.getName(), "studyName");
+        checkParameter(study.getAlias(), "studyAlias");
+        checkParameter(projectAlias, "projectAlias");
+        checkParameter(userId, "userId");
+        checkParameter(sessionId, "sessionId");
+
+        if (!getProjectAcl(userId, projectAlias, sessionId).isWrite()) { //User can't write/modify the project
+            throw new CatalogManagerException("Permission denied. Can't write in project");
+        }
         ioManager.createStudy(userId, projectAlias, study.getAlias());
         try {
-            return catalogDBAdaptor.createStudy(userId, projectAlias, study, sessionId);
+            return catalogDBAdaptor.createStudy(userId, projectAlias, study);
         } catch (CatalogManagerException e) {
             ioManager.deleteStudy(userId, projectAlias, study.getAlias());
             throw e;
@@ -285,6 +329,10 @@ public class CatalogManager {
         checkParameter(newStudAlias, "newStudAlias");
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+
+        if (!getStudyAcl(userId, projectAlias, studyAlias, sessionId).isWrite()) {  //User can't write/modify the study
+            throw new CatalogManagerException("Permission denied. Can't write in project");
+        }
         ioManager.renameProject(userId, studyAlias, newStudAlias);
         try {
             return catalogDBAdaptor.renameStudy(userId, projectAlias, studyAlias, newStudAlias, sessionId);
@@ -433,15 +481,23 @@ public class CatalogManager {
 //    }
 //
     public QueryResult deleteDataFromStudy(String userId, String projectAlias, String studyAlias, Path objectId, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException {
+            throws CatalogManagerException, IOException {
         checkParameter(projectAlias, "projectAlias");
         checkParameter(studyAlias, "studyAlias");
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkParameter(objectId.toString(), "objectId");
 
-        ioManager.deleteFile(userId, projectAlias, studyAlias, objectId.toString());
-        return catalogDBAdaptor.deleteFile(userId, projectAlias, studyAlias, objectId, sessionId);
+        if (!getFileAcl(userId, projectAlias, studyAlias, objectId, sessionId).isDelete()) {
+            throw new CatalogManagerException("Permission denied. User can't delete this file");
+        }
+
+        try {
+            ioManager.deleteFile(userId, projectAlias, studyAlias, objectId.toString());
+        } catch (CatalogIOManagerException e) {
+            throw new CatalogManagerException(e);
+        }
+        return catalogDBAdaptor.deleteFile(userId, projectAlias, studyAlias, objectId);
     }
 //
 //    public DataInputStream getFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String start, String limit)
@@ -827,5 +883,37 @@ public class CatalogManager {
             throw new CatalogManagerException("region '" + name + "' is not valid");
         }
     }
+
+    private void checkSessionId(String userId, String sessionId) throws CatalogManagerException {
+        String userIdBySessionId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!userIdBySessionId.equals(userId)) {
+            throw new CatalogManagerException("Invalid sessionId for user: " + userId);
+        }
+    }
+
+    /*
+     *  Permission methods. Internal use only.
+     *  Builds the specific ACL for each pair sessionId,object
+     *  ****************
+     */
+
+    private Acl getProjectAcl(String userId, String projectAlias, String sessionId){
+        String sessionUser = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        boolean sameOwner = userId.equals(sessionUser);
+        return new Acl(userId, sameOwner, sameOwner, sameOwner, sameOwner);
+    }
+
+    private Acl getStudyAcl(String userId, String projectAlias, String studyAlias, String sessionId){
+        String sessionUser = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        boolean sameOwner = userId.equals(sessionUser);
+        return new Acl(userId, sameOwner, sameOwner, sameOwner, sameOwner);
+    }
+
+    private Acl getFileAcl(String userId, String projectAlias, String studyAlias, Path objectId, String sessionId) {
+        String sessionUser = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        boolean sameOwner = userId.equals(sessionUser);
+        return new Acl(userId, sameOwner, sameOwner, sameOwner, sameOwner);
+    }
+
 
 }
