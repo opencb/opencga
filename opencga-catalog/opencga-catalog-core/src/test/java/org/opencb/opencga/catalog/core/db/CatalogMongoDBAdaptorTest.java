@@ -16,8 +16,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
-
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     public static final String ID_LOGIN_JCOLL = "ID_LOGIN_JCOLL";
@@ -92,7 +90,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getUserTest() {
         try {
-            QueryResult jcoll = catalog.getUser("jcoll", "", ID_LOGIN_JCOLL);
+            QueryResult jcoll = catalog.getUser("jcoll", "");
             System.out.println(jcoll);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
@@ -130,8 +128,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void changePasswordTest() throws CatalogManagerException {
-        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "1234", "asdf"));
-        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "BAD_PASSWORD", "asdf"));
+        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "1234"));
+        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "BAD_PASSWORD"));
     }
 
     /**
@@ -141,16 +139,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createProject("jcoll", p));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createProject("jcoll", p));
         p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JMMUT));
+        System.out.println(catalog.createProject("jcoll", p));
     }
 
     @Test
     public void getProjectTest() throws CatalogManagerException {
-        System.out.println(catalog.getProject("jcoll", "pmp", ID_LOGIN_JCOLL));
+        System.out.println(catalog.getProject("jcoll", "pmp"));
     }
 
 
@@ -172,14 +170,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void createStudyTest() throws CatalogManagerException, JsonProcessingException {
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createStudy("jcoll", "1000G", s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createStudy("jcoll", "1000G", s));
     }
 
     @Test
-    public void getStudyIdTest() throws CatalogManagerException {
-        System.out.println(catalog.getStudyId("jcoll", "1000G", "ph3", ID_LOGIN_JCOLL));
+    public void getStudyIdTest() throws CatalogManagerException, IOException {
+        System.out.println(catalog.getStudyId("jcoll", "1000G", "ph3"));
     }
 
     @Test
@@ -198,9 +196,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * ***************************
      */
     @Test
-    public void createFileToStudyTest() throws CatalogManagerException, JsonProcessingException {
+    public void createFileToStudyTest() throws CatalogManagerException, IOException {
         File f = new File("file.sam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
-        System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f));
     }
 
     @Test
@@ -216,8 +214,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void deleteFileTest() throws CatalogManagerException {
-        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
+    public void deleteFileTest() throws CatalogManagerException, IOException {
+        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam")));
     }
 
 
