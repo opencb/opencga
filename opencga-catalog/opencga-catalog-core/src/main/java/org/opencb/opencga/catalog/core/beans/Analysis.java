@@ -12,41 +12,35 @@ public class Analysis {
     private String name;
     private String alias;
     private String date;
-//    private int studyId;
     private String description;
 
-    private Map<String, Object> attributes;
     private List<Job> jobs; // FIXME revise inclusion
 
-    public List<Job> getJobs() {
-        return jobs;
-    }
+    private Map<String, Object> attributes;
 
-    public void setJobs(List<Job> jobs) {
-        this.jobs = jobs;
-    }
 
     public Analysis() {
     }
 
-    public Analysis(int id, String name, String alias, String date, int studyId, String description) {
+    public Analysis(int id, String name, String alias, String date, String description, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.date = date;
-//        this.studyId = studyId;
         this.description = description;
+        this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         return "Analysis{" +
-                "description='" + description + '\'' +
-//                ", studyId=" + studyId +
-                ", date='" + date + '\'' +
-                ", alias='" + alias + '\'' +
+                "id=" + id +
                 ", name='" + name + '\'' +
-                ", id=" + id +
+                ", alias='" + alias + '\'' +
+                ", date='" + date + '\'' +
+                ", description='" + description + '\'' +
+                ", jobs=" + jobs +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -81,21 +75,29 @@ public class Analysis {
     public void setDate(String date) {
         this.date = date;
     }
-//
-//    public int getStudyId() {
-//        return studyId;
-//    }
-//
-//    public void setStudyId(int studyId) {
-//        this.studyId = studyId;
-//    }
-//
+
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<Job> getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(List<Job> jobs) {
+        this.jobs = jobs;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 
 }
