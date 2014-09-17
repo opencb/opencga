@@ -843,12 +843,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * ***************************
      */
     @Override
-    public QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {
+    public QueryResult getAllAnalysis(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {
         return null;
     }
 
     @Override
-    public QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException {
+    public QueryResult getAllAnalysis(int studyId, String sessionId) throws CatalogManagerException {
         return null;
     }
 
@@ -868,31 +868,37 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         long startTime = startQuery();
         // TODO manage session
 
-
         // Check if analysis.alias already exists.
         QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
-                .start("projects.studies.id", studyId)
-                .append("analysis.alias", analysis.getAlias()).get());
+                .start("analyses.studyId", studyId)
+                .append("analyses.alias", analysis.getAlias()).get());
+        System.out.println(count.getResult().get(0));
         if(count.getResult().get(0) != 0) {
             return endQuery("Create Analysis", startTime, "Analysis alias already exists in this study");
         }
 
+        // complete and push Analysis: id, studyId, jobs...
         analysis.setId(getNewAnalysisId());
 
         List<Job> jobs = analysis.getJobs();
-        if (jobs == null) {
-            jobs = Collections.<Job>emptyList();
-        }
-        // TODO create jobs
-        analysis.setJobs(Collections.<Job>emptyList()); // TODO revise if this can be used in mongo as a jobId list
-        // TODO analysis set studyId. Analysis.studyId exists, but wasn't it removed?
+        analysis.setJobs(Collections.<Job>emptyList());
 
         DBObject query = new BasicDBObject("projects.studies.id", studyId);
         DBObject analysisObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(analysis));
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("analysis", analysisObject));
+        analysisObject.put("studyId", studyId);
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("analyses", analysisObject));
         QueryResult updateResult = userCollection.update(query, update, false, false);
 
-        return endQuery("Create Analysis", startTime, updateResult);    // TODO test
+        // fill other collections: jobs
+        if (jobs == null) {
+            jobs = Collections.<Job>emptyList();
+        }
+
+        // TODO for (j:jobs) createJob(j)
+//        for (Job job : jobs) {
+//        }
+
+        return endQuery("Create Analysis", startTime, updateResult);
     }
 
     @Override

@@ -18,14 +18,6 @@ public class Analysis {
     private Map<String, Object> attributes;
     private List<Job> jobs; // FIXME revise inclusion
 
-    public List<Job> getJobs() {
-        return jobs;
-    }
-
-    public void setJobs(List<Job> jobs) {
-        this.jobs = jobs;
-    }
-
     public Analysis() {
     }
 
@@ -90,6 +82,14 @@ public class Analysis {
 //        this.studyId = studyId;
 //    }
 //
+    public List<Job> getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(List<Job> jobs) {
+        this.jobs = jobs;
+    }
+
     public String getDescription() {
         return description;
     }

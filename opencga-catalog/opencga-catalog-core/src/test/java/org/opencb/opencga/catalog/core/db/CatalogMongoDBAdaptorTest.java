@@ -56,6 +56,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         getStudyIdTest();
         getAllStudiesTest();
         getStudyTest();
+        createAnalysisTest();
         createFileToStudyTest();
     }
 
@@ -220,4 +221,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
     }
 
+
+    /**
+     * Analyses methods
+     * ***************************
+     */
+    @Test
+    public void createAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", 0, "analaysis 1 description");
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));
+    }
 }

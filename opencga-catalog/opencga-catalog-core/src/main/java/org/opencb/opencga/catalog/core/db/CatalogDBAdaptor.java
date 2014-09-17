@@ -116,8 +116,8 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
-    QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException;
+    QueryResult getAllAnalysis(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
+    QueryResult getAllAnalysis(int studyId, String sessionId) throws CatalogManagerException;
 
     QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException;
     QueryResult createAnalysis(int studyId, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException;
