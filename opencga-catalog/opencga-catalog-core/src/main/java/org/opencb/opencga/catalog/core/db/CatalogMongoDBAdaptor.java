@@ -220,6 +220,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
 
+        // TODO: remove files and replace them with ids
         return endQuery("createUser", startTime, insert);
     }
 
@@ -302,6 +303,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         } catch (IOException e) {
             throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
         }
+        //TODO append files in the studies
         return endQuery("get user", startTime, Arrays.asList(user));
     }
 
@@ -474,7 +476,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             study.setId(getNewStudyId());
             if (study.getCreatorId() == null) {
                 String userIdBySessionId = getUserIdBySessionId(sessionId);
-                if(userIdBySessionId == null){
+                if(userIdBySessionId == null) {
                     endQuery("Create Study", startTime, "Invalid session");
                 }
                 study.setCreatorId(userIdBySessionId);
@@ -497,6 +499,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                     updateResult.setErrorMsg(updateResult.getErrorMsg() + ", " + analysis.getAlias() + ":" + errorMsg);
                 }
             }
+            //TODO: jobs
 
             for (File file : files) {
                 String errorMsg = createFileToStudy(study.getId(), file, sessionId).getErrorMsg();
@@ -534,35 +537,52 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         for (Study study : queryResult.getResult().get(0)) {
             study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
         }
+
+        //TODO: append files
         return endQuery("Get all studies", startTime, queryResult);
     }
 
     @Override
     public QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException, JsonProcessingException{
-        return null;
-        /*long startTime = startQuery();
+        long startTime = startQuery();
         //TODO: ManageSession
 
-        DBObject query = new BasicDBObject("projects.study.", userId);
+        DBObject query = new BasicDBObject("projects.studies.id", studyId);
         DBObject projection = BasicDBObjectBuilder
                 .start(new BasicDBObject(
                                 "projects",
                                 new BasicDBObject(
                                         "$elemMatch",
-                                        new BasicDBObject("alias", project)
+                                        new BasicDBObject("studies.id", studyId)
                                 )
                         )
                 )
                 .append("projects.studies", true).get();
-        QueryResult<List<Study>> queryResult = (QueryResult<List<Study>>) endQuery("get project", userCollection.find(
-                query,
-                null,
-                studyListConverter,
-                projection));
-        for (Study study : queryResult.getResult().get(0)) {
-            study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
+
+        QueryResult result = userCollection.find(query, null, null, projection);
+        QueryResult queryResult = endQuery("get study", startTime, result);
+
+        try {
+            User user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+            List<Study> studies = user.getProjects().get(0).getStudies();
+            Study study = null;
+            for (Study st : studies) {
+                if (st.getId() == studyId) {
+                    study = st;
+                }
+            }
+            if (study != null) {
+                study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
+            }
+            // TODO study.setAnalysis
+            // TODO study.setfiles
+            studies = new LinkedList<>();
+            studies.add(study);
+            queryResult.setResult(studies);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return endQuery("Get all studies", queryResult);*/
+        return queryResult;
     }
 
 
@@ -819,7 +839,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     /**
-     * Analysis methods ···
+     * Analysis methods
      * ***************************
      */
     @Override
@@ -834,12 +854,45 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return null;
+        long startTime = startQuery();
+        int studyId = getStudyId(userId, projectAlias, studyAlias, sessionId);
+        if (studyId < 0) {
+            return endQuery("Create Analysis", startTime, "Study not found");
+        } else {
+            return createAnalysis(studyId, analysis, sessionId);
+        }
     }
 
     @Override
     public QueryResult createAnalysis(int studyId, Analysis analysis, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return null;
+        long startTime = startQuery();
+        // TODO manage session
+
+
+        // Check if analysis.alias already exists.
+        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
+                .start("projects.studies.id", studyId)
+                .append("analysis.alias", analysis.getAlias()).get());
+        if(count.getResult().get(0) != 0) {
+            return endQuery("Create Analysis", startTime, "Analysis alias already exists in this study");
+        }
+
+        analysis.setId(getNewAnalysisId());
+
+        List<Job> jobs = analysis.getJobs();
+        if (jobs == null) {
+            jobs = Collections.<Job>emptyList();
+        }
+        // TODO create jobs
+        analysis.setJobs(Collections.<Job>emptyList()); // TODO revise if this can be used in mongo as a jobId list
+        // TODO analysis set studyId. Analysis.studyId exists, but wasn't it removed?
+
+        DBObject query = new BasicDBObject("projects.studies.id", studyId);
+        DBObject analysisObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(analysis));
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("analysis", analysisObject));
+        QueryResult updateResult = userCollection.update(query, update, false, false);
+
+        return endQuery("Create Analysis", startTime, updateResult);    // TODO test
     }
 
     @Override
@@ -873,5 +926,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
 
+    /*
+    * Helper methods
+    ********************/
+
+//    private User appendFilesToUser(User user, List<File> files) {
+//
+//    }
 
 }

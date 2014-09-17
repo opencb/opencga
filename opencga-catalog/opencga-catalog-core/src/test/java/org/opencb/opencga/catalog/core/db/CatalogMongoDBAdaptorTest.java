@@ -55,6 +55,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         createStudyTest();
         getStudyIdTest();
         getAllStudiesTest();
+        getStudyTest();
         createFileToStudyTest();
     }
 
@@ -186,6 +187,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_JCOLL));
     }
 
+    @Test
+    public void getStudyTest() throws CatalogManagerException, JsonProcessingException {
+
+        System.out.println(catalog.getStudy(5, ID_LOGIN_JCOLL));
+    }
 
     /**
      * Files methods

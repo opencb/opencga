@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,10 +12,19 @@ public class Analysis {
     private String name;
     private String alias;
     private String date;
-    private int studyId;
+//    private int studyId;
     private String description;
 
     private Map<String, Object> attributes;
+    private List<Job> jobs; // FIXME revise inclusion
+
+    public List<Job> getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(List<Job> jobs) {
+        this.jobs = jobs;
+    }
 
     public Analysis() {
     }
@@ -24,7 +34,7 @@ public class Analysis {
         this.name = name;
         this.alias = alias;
         this.date = date;
-        this.studyId = studyId;
+//        this.studyId = studyId;
         this.description = description;
     }
 
@@ -32,7 +42,7 @@ public class Analysis {
     public String toString() {
         return "Analysis{" +
                 "description='" + description + '\'' +
-                ", studyId=" + studyId +
+//                ", studyId=" + studyId +
                 ", date='" + date + '\'' +
                 ", alias='" + alias + '\'' +
                 ", name='" + name + '\'' +
@@ -71,15 +81,15 @@ public class Analysis {
     public void setDate(String date) {
         this.date = date;
     }
-
-    public int getStudyId() {
-        return studyId;
-    }
-
-    public void setStudyId(int studyId) {
-        this.studyId = studyId;
-    }
-
+//
+//    public int getStudyId() {
+//        return studyId;
+//    }
+//
+//    public void setStudyId(int studyId) {
+//        this.studyId = studyId;
+//    }
+//
     public String getDescription() {
         return description;
     }
