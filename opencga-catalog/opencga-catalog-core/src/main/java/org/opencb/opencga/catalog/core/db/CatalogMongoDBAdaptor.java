@@ -605,22 +605,28 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         QueryResult result = userCollection.find(query, null, null, projection);
         QueryResult queryResult = endQuery("get study", startTime, result);
 
+        User user;
+        List<Study> studies;
         try {
-            User user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
-            List<Study> studies = user.getProjects().get(0).getStudies();
-            Study study = null;
-            for (Study st : studies) {
-                if (st.getId() == studyId) {
-                    study = st;
+            if (queryResult.getNumResults() != 0) {
+                user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+                studies = user.getProjects().get(0).getStudies();
+                Study study = null;
+                for (Study st : studies) {
+                    if (st.getId() == studyId) {
+                        study = st;
+                    }
                 }
+                if (study != null) {
+                    study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
+                }
+                // TODO study.setAnalysis
+                // TODO study.setfiles
+                studies = new LinkedList<>();
+                studies.add(study);
+            } else {
+                studies = Collections.<Study>emptyList();
             }
-            if (study != null) {
-                study.setDiskUsage(getDiskUsageByStudy(study.getId(), sessionId));
-            }
-            // TODO study.setAnalysis
-            // TODO study.setfiles
-            studies = new LinkedList<>();
-            studies.add(study);
             //queryResult.setResult(studies);
             return endQuery("Get Study", startTime, studies);
         } catch (IOException e) {
