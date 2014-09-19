@@ -3,10 +3,14 @@ package org.opencb.opencga.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+
+
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.core.CatalogManager;
+import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +73,15 @@ public class OpenCGAWSServer {
     @QueryParam("metadata")
     protected Boolean metadata;
 
-
+    protected static CatalogManager catalogManager;
     static {
-
+        try {
+            catalogManager = new CatalogManager();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+        }
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
 
@@ -100,6 +110,7 @@ public class OpenCGAWSServer {
     }
 
     protected Response createOkResponse(Object obj) {
+        queryResponse = new QueryResponse();
         endTime = System.currentTimeMillis() - startTime;
         queryResponse.setTime(new Long(endTime - startTime).intValue());
         queryResponse.setApiVersion(version);
