@@ -154,8 +154,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getProjectIdTest(){
-        System.out.println(catalog.getProjectId("jcoll", "1000G"));
-        System.out.println(catalog.getProjectId("jcoll", "2000G"));
+        try {
+            System.out.println(catalog.getProjectId("jcoll", "1000G"));
+            System.out.println(catalog.getProjectId("jcoll", "2000G"));
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -188,7 +192,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getStudyTest() throws CatalogManagerException, JsonProcessingException {
 
-        System.out.println(catalog.getStudy(5, ID_LOGIN_JCOLL));
+        QueryResult<Study> study = catalog.getStudy(5, ID_LOGIN_JCOLL);
+        System.out.println(study);
     }
 
     /**
@@ -225,22 +230,32 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));
-        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));  // different alias, same study
-        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis, ID_LOGIN_JCOLL));  // different study, same alias
+        try {
+            Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+            analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // different alias, same study
+            analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void getAllAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1", ID_LOGIN_JCOLL));
+        System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1"));
+        QueryResult<Analysis> allAnalysis = catalog.getAllAnalysis(8);
+        System.out.println(allAnalysis);
     }
 
     @Test
     public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
         Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis, ID_LOGIN_JCOLL));
+        try {
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
