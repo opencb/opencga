@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
@@ -207,13 +208,19 @@ public class CatalogManager {
         return catalogDBAdaptor.resetPassword(userId, email);
     }
 
-    public QueryResult<User> getUserInfo(String userId, String lastActivity, String sessionId)
+
+    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId)
             throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);    //FIXME: Should other users get access to other user information?
         // lastActivity can be null
         return catalogDBAdaptor.getUser(userId, sessionId);
+    }
+
+    public QueryResult modifyUser(String userId, QueryOptions options, String sessionId)
+            throws CatalogManagerException {
+        throw new UnsupportedOperationException();
     }
 
 //    public void deleteUser(String userId, String sessionId) throws CatalogManagerException,
@@ -225,6 +232,45 @@ public class CatalogManager {
      * Project methods
      * ***************************
      */
+    public QueryResult<Project> createProject(String ownerId, Project project, String sessionId)
+            throws CatalogManagerException,
+            CatalogIOManagerException, JsonProcessingException {
+        checkParameter(project.getName(), "projectName");
+        checkParameter(project.getAlias(), "projectAlias");
+        checkParameter(ownerId, "ownerId");
+        checkParameter(sessionId, "sessionId");
+        checkSessionId(ownerId, sessionId);    //Only the user can create a project
+
+        QueryResult<Project> result = catalogDBAdaptor.createProject(ownerId, project);
+        project = result.getResult().get(0);
+
+        try {
+            ioManager.createProject(ownerId, Integer.toString(project.getId()));
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            catalogDBAdaptor.deleteProject(project.getId());
+        }
+        return result;
+//        try {
+//            return catalogDBAdaptor.createProject(ownerId, project);
+//        } catch (CatalogManagerException e) {
+//            ioManager.deleteProject(ownerId, project.getName());
+//            throw e;
+//        }
+    }
+
+    public QueryResult<Project> getProject(int projectId, String sessionId)
+            throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (getProjectAcl(userId, projectId).isRead()) {
+            return catalogDBAdaptor.getProject(projectId);
+        } else {
+            throw new CatalogManagerException("Permission denied. Can't read project.");
+        }
+    }
+
     public QueryResult<Project> getAllProjects(String ownerId, String sessionId)
             throws CatalogManagerException, JsonProcessingException {
         checkParameter(ownerId, "ownerId");
@@ -242,33 +288,6 @@ public class CatalogManager {
             }
         }
         return allProjects;
-    }
-
-    public QueryResult<Project> createProject(String userId, Project project, String sessionId)
-            throws CatalogManagerException,
-            CatalogIOManagerException, JsonProcessingException {
-        checkParameter(project.getName(), "projectName");
-        checkParameter(project.getAlias(), "projectAlias");
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);    //Only the user can create a project
-
-        QueryResult<Project> result = catalogDBAdaptor.createProject(userId, project);
-        project = result.getResult().get(0);
-
-        try {
-            ioManager.createProject(userId, Integer.toString(project.getId()));
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            catalogDBAdaptor.deleteProject(project.getId());
-        }
-        return result;
-//        try {
-//            return catalogDBAdaptor.createProject(userId, project);
-//        } catch (CatalogManagerException e) {
-//            ioManager.deleteProject(userId, project.getName());
-//            throw e;
-//        }
     }
 
     //TODO: Create a generic modifier function?
@@ -292,10 +311,60 @@ public class CatalogManager {
         }
     }
 
+    public QueryResult modifyProject(int projectId, QueryOptions options, String sessionId)
+            throws CatalogManagerException {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Study methods
      * ***************************
      */
+
+    public QueryResult<Study> createStudy(int projectId, Study study, String sessionId)
+            throws CatalogManagerException, CatalogIOManagerException {
+        checkParameter(study.getName(), "studyName");
+        checkParameter(study.getAlias(), "studyAlias");
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
+            throw new CatalogManagerException("Permission denied. Can't write in project");
+        }
+
+        QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study);
+        study = result.getResult().get(0);
+
+        try {
+            ioManager.createStudy(userId, Integer.toString(projectId), Integer.toString(study.getId()));
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            catalogDBAdaptor.deleteStudy(study.getId());
+        }
+        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, sessionId);
+        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, sessionId);
+        return result;
+//        ioManager.createStudy(userId, projectAlias, study.getAlias());
+//        try {
+//            return catalogDBAdaptor.createStudy(userId, projectAlias, study);
+//        } catch (CatalogManagerException e) {
+//            ioManager.deleteStudy(userId, projectAlias, study.getAlias());
+//            throw e;
+//        }
+    }
+
+    public QueryResult<Study> getStudy(int studyId, String sessionId)
+            throws CatalogManagerException{
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (getStudyAcl(userId, studyId).isRead()) {
+            return catalogDBAdaptor.getStudy(studyId);
+        } else {
+            throw new CatalogManagerException("Permission denied. Can't read this study");
+        }
+    }
+
     public QueryResult<Study> getAllStudies(int projectId, String sessionId)
             throws CatalogManagerException, JsonProcessingException {
 //        checkParameter(projectAlias, "projectAlias");
@@ -320,39 +389,6 @@ public class CatalogManager {
 
     }
 
-    public QueryResult<Study> createStudy(int projectId, Study study, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException {
-        checkParameter(study.getName(), "studyName");
-        checkParameter(study.getAlias(), "studyAlias");
-        checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
-        if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
-            throw new CatalogManagerException("Permission denied. Can't write in project");
-        }
-
-        QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study);
-        System.out.println(result);
-        study = result.getResult().get(0);
-
-        try {
-            ioManager.createStudy(userId, Integer.toString(projectId), Integer.toString(study.getId()));
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            catalogDBAdaptor.deleteStudy(study.getId());
-        }
-        return result;
-
-//        ioManager.createStudy(userId, projectAlias, study.getAlias());
-//        try {
-//            return catalogDBAdaptor.createStudy(userId, projectAlias, study);
-//        } catch (CatalogManagerException e) {
-//            ioManager.deleteStudy(userId, projectAlias, study.getAlias());
-//            throw e;
-//        }
-    }
-
     //TODO: Create a generic modifier function?
     public QueryResult renameStudy(int studyId, String newStudAlias, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
@@ -372,8 +408,18 @@ public class CatalogManager {
 //        }
     }
 
+    public QueryResult modifyStudy(int studyId, QueryOptions options, String sessionId)
+            throws CatalogManagerException {
+        throw new UnsupportedOperationException();
+    }
 
-//
+
+    /**
+     * File methods
+     * ***************************
+     */
+
+
 //    public QueryResult<ObjectMap> createObjectToStudy(String userId, String projectAlias, String studyAlias, Path objectId, File file,
 //                                            InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
 //            CatalogIOManagerException, IOException, InterruptedException {
@@ -400,7 +446,7 @@ public class CatalogManager {
 //    }
 
     public QueryResult createFolder(int studyId, Path folderPath, boolean parents, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException, IOException {
+            throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
         checkParameter(folderPath.toString(), "folderPath");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -507,9 +553,9 @@ public class CatalogManager {
 //
 //        return result;
 //    }
-//
+
     public QueryResult deleteDataFromStudy(int fileId, String sessionId)
-            throws CatalogManagerException, IOException {
+            throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -878,6 +924,21 @@ public class CatalogManager {
 //        // mongodb
 //    }
 //
+
+
+    /**
+     * Analysis methods
+     * ***************************
+     */
+
+    public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
+        try {
+            return catalogDBAdaptor.createAnalysis(studyId, analysis);
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException(e);
+        }
+    }
+
     /**
      * ****************
      */

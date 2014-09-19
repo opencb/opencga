@@ -148,7 +148,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getProjectTest() throws CatalogManagerException {
-        System.out.println(catalog.getProject("jcoll", "pmp"));
+        int projectId = catalog.getProjectId("jcoll", "pmp");
+        System.out.println(catalog.getProject(projectId));
     }
 
 
@@ -173,7 +174,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createStudyTest() throws CatalogManagerException, JsonProcessingException {
-        Project p = catalog.getProject("jcoll", "1000G").getResult().get(0);
+
+        int projectId = catalog.getProjectId("jcoll", "1000G");
+        Project p = catalog.getProject(projectId).getResult().get(0);
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
         System.out.println(catalog.createStudy(p.getId(), s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
@@ -193,7 +196,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getStudyTest() throws CatalogManagerException, JsonProcessingException {
 
-        QueryResult<Study> study = catalog.getStudy(5, ID_LOGIN_JCOLL);
+        QueryResult<Study> study = catalog.getStudy(5);
         System.out.println(study);
     }
 
