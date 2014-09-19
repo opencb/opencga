@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.core.io.PosixIOManager;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
 import org.opencb.opencga.lib.common.TimeUtils;
@@ -28,7 +29,7 @@ import java.util.regex.Pattern;
 public class CatalogManager {
 
     private CatalogDBAdaptor catalogDBAdaptor;
-//    private CatalogIOManager ioManager; //TODO: Generify API
+    //    private CatalogIOManager ioManager; //TODO: Generify API
     private PosixIOManager ioManager;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
@@ -36,7 +37,7 @@ public class CatalogManager {
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
 
-    private Properties catalogProperties;
+    private Properties properties;
 
     public CatalogManager() throws IOException, CatalogIOManagerException{
         this(System.getenv("OPENCGA_HOME"));
@@ -45,22 +46,42 @@ public class CatalogManager {
     public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, PosixIOManager ioManager, Properties catalogProperties) {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.ioManager = ioManager;
-        this.catalogProperties = catalogProperties;
+        this.properties = catalogProperties;
     }
 
     public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException {
-//        catalogProperties = Config.getAccountProperties();
+//        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
-        catalogProperties = new Properties();
+        properties = new Properties();
         try {
-            catalogProperties.load(Files.newInputStream(path));
+            properties.load(Files.newInputStream(path));
         } catch (IOException e) {
             logger.error("Failed to load account.properties: " + e.getMessage());
         }
 
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(catalogProperties));
+//        if (properties.getProperty("OPENCGA.ACCOUNT.MODE").equals("file")) {
+//            catalogDBAdaptor = (CatalogDBAdaptor) new CatalogMongoDBAdaptor( --- );
+//        } else {
+//            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
+//        }
+        catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
         ioManager = new PosixIOManager(rootdir);
+
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
+    }
+
+    public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException {
+        this.properties = properties;
+
+        try {
+            MongoCredentials mongoCredentials = new MongoCredentials(properties.getProperty("HOST"), Integer.parseInt(properties.getProperty("PORT")), properties.getProperty("DATABASE"), properties.getProperty("USER"), properties.getProperty("PASSWORD"));
+            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(this.properties));
+            ioManager = new PosixIOManager(properties.getProperty("ROOTDIR"));
+        } catch (IllegalOpenCGACredentialsException e) {
+            e.printStackTrace();
+        }
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();

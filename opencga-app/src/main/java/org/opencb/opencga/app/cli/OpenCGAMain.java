@@ -3,14 +3,6 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -19,10 +11,7 @@ import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
+import org.opencb.biodata.models.variant.*;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -31,7 +20,9 @@ import org.opencb.opencga.app.cli.OptionsParser.Command;
 import org.opencb.opencga.app.cli.OptionsParser.CommandCreateAccessions;
 import org.opencb.opencga.app.cli.OptionsParser.CommandLoadVariants;
 import org.opencb.opencga.app.cli.OptionsParser.CommandTransformVariants;
-import org.opencb.opencga.lib.auth.*;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.lib.auth.OpenCGACredentials;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.variant.json.VariantJsonReader;
 import org.opencb.opencga.storage.variant.json.VariantJsonWriter;
@@ -39,6 +30,15 @@ import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 //import org.opencb.opencga.storage.variant.VariantVcfHbaseWriter;
 
 /**
@@ -77,20 +77,21 @@ public class OpenCGAMain {
         }
         if (command instanceof CommandCreateAccessions) {
             CommandCreateAccessions c = (CommandCreateAccessions) command;
-            
+
             Path variantsPath = Paths.get(c.input);
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
-            
+
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
             createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
-            
+
         } else if (command instanceof CommandLoadVariants) {
             CommandLoadVariants c = (CommandLoadVariants) command;
 
             Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path filePath = Paths.get(c.input + ".file.json.gz");
+            VariantStudy.StudyType st = c.studyType;
 
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
+            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null, st, null);
             indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
 
         } else if (command instanceof CommandTransformVariants) {
@@ -109,25 +110,25 @@ public class OpenCGAMain {
         String studyId = source.getStudyId();
         String studyPrefix = studyId.substring(studyId.length() - 6);
         VcfRawReader reader = new VcfRawReader(variantsPath.toString());
-        
+
         List<DataWriter> writers = new ArrayList<>();
         String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
         if (variantsPath.toString().endsWith(".gz")) {
             variantsFilename = Files.getNameWithoutExtension(variantsFilename);
         }
         writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
-        
+
         List<Task<VcfRecord>> taskList = new ArrayList<>();
         taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));
-        
+
         Runner vr = new Runner(reader, writers, taskList);
-        
+
         System.out.println("Accessioning variants with prefix " + studyPrefix + "...");
         vr.run();
         System.out.println("Variants accessioned!");
     }
 
-    
+
     private static void indexVariants(String step, VariantSource source, Path mainFilePath, Path auxiliaryFilePath, Path outdir, String backend,
                                       Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples, String aggregated)
             throws IOException, IllegalOpenCGACredentialsException {
