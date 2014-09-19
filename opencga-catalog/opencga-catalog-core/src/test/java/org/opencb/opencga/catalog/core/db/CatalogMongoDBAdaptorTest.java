@@ -16,8 +16,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
-
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     public static final String ID_LOGIN_JCOLL = "ID_LOGIN_JCOLL";
@@ -54,6 +52,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         getStudyIdTest();
         getAllStudiesTest();
         getStudyTest();
+        createAnalysisTest();
+        getAllAnalysisTest();
         createFileToStudyTest();
     }
 
@@ -90,7 +90,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getUserTest() {
         try {
-            QueryResult jcoll = catalog.getUser("jcoll", "", ID_LOGIN_JCOLL);
+            QueryResult jcoll = catalog.getUser("jcoll", "");
             System.out.println(jcoll);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
@@ -128,8 +128,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void changePasswordTest() throws CatalogManagerException {
-        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "1234", "asdf"));
-        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "BAD_PASSWORD", "asdf"));
+        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "1234"));
+        System.out.println(catalog.changePassword("jmmut", ID_LOGIN_JMMUT, "BAD_PASSWORD"));
     }
 
     /**
@@ -139,23 +139,28 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createProject("jcoll", p));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createProject("jcoll", p));
         p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
-        System.out.println(catalog.createProject("jcoll", p, ID_LOGIN_JMMUT));
+        System.out.println(catalog.createProject("jcoll", p));
     }
 
     @Test
     public void getProjectTest() throws CatalogManagerException {
-        System.out.println(catalog.getProject("jcoll", "pmp", ID_LOGIN_JCOLL));
+        int projectId = catalog.getProjectId("jcoll", "pmp");
+        System.out.println(catalog.getProject(projectId));
     }
 
 
     @Test
     public void getProjectIdTest(){
-        System.out.println(catalog.getProjectId("jcoll", "1000G"));
-        System.out.println(catalog.getProjectId("jcoll", "2000G"));
+        try {
+            System.out.println(catalog.getProjectId("jcoll", "1000G"));
+            System.out.println(catalog.getProjectId("jcoll", "2000G"));
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -169,26 +174,30 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createStudyTest() throws CatalogManagerException, JsonProcessingException {
+
+        int projectId = catalog.getProjectId("jcoll", "1000G");
+        Project p = catalog.getProject(projectId).getResult().get(0);
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createStudy(p.getId(), s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createStudy(p.getId(), s));
     }
 
     @Test
-    public void getStudyIdTest() throws CatalogManagerException {
-        System.out.println(catalog.getStudyId("jcoll", "1000G", "ph3", ID_LOGIN_JCOLL));
+    public void getStudyIdTest() throws CatalogManagerException, IOException {
+        System.out.println(catalog.getStudyId("jcoll", "1000G", "ph3"));
     }
 
     @Test
     public void getAllStudiesTest() throws CatalogManagerException, JsonProcessingException {
-        System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_JCOLL));
+        System.out.println(catalog.getAllStudies("jcoll", "1000G"));
     }
 
     @Test
     public void getStudyTest() throws CatalogManagerException, JsonProcessingException {
 
-        System.out.println(catalog.getStudy(5, ID_LOGIN_JCOLL));
+        QueryResult<Study> study = catalog.getStudy(5);
+        System.out.println(study);
     }
 
     /**
@@ -196,16 +205,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * ***************************
      */
     @Test
-    public void createFileToStudyTest() throws CatalogManagerException, JsonProcessingException {
+    public void createFileToStudyTest() throws CatalogManagerException, IOException {
         File f = new File("file.sam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
-        System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f, ID_LOGIN_JCOLL));
+        System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f));
     }
 
     @Test
     public void getFileTest() throws CatalogManagerException, IOException {
-        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
-        System.out.println(catalog.getFile(1, ID_LOGIN_JCOLL));
-        System.out.println(catalog.getFile(2, ID_LOGIN_JCOLL));
+        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam")));
+        System.out.println(catalog.getFile(1));
+        System.out.println(catalog.getFile(2));
     }
 
     @Test
@@ -214,8 +223,43 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void deleteFileTest() throws CatalogManagerException {
-        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
+    public void deleteFileTest() throws CatalogManagerException, IOException {
+        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam")));
     }
 
+
+    /**
+     * Analyses methods
+     * ***************************
+     */
+    @Test
+    public void createAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+        try {
+            Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+            analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // different alias, same study
+            analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void getAllAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+        System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1"));
+        QueryResult<Analysis> allAnalysis = catalog.getAllAnalysis(8);
+        System.out.println(allAnalysis);
+    }
+
+    @Test
+    public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
+        try {
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

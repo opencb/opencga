@@ -10,7 +10,7 @@ public class Job {
     private int id;
     private String name;
     private String userId;
-    private int analysisId;
+//    private int analysisId;
     private String toolName;
     private String date;
     private String description;
@@ -44,7 +44,7 @@ public class Job {
         this.id = id;
         this.name = name;
         this.userId = userId;
-        this.analysisId = analysisId;
+//        this.analysisId = analysisId;
         this.toolName = toolName;
         this.date = date;
         this.description = description;
@@ -66,7 +66,7 @@ public class Job {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", userId='" + userId + '\'' +
-                ", analysisId=" + analysisId +
+//                ", analysisId=" + analysisId +
                 ", toolName='" + toolName + '\'' +
                 ", date='" + date + '\'' +
                 ", description='" + description + '\'' +
@@ -106,14 +106,14 @@ public class Job {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-
-    public int getAnalysisId() {
-        return analysisId;
-    }
-
-    public void setAnalysisId(int analysisId) {
-        this.analysisId = analysisId;
-    }
+//
+//    public int getAnalysisId() {
+//        return analysisId;
+//    }
+//
+//    public void setAnalysisId(int analysisId) {
+//        this.analysisId = analysisId;
+//    }
 
     public String getToolName() {
         return toolName;

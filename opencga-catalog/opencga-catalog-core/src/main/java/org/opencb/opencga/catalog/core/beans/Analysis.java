@@ -14,7 +14,7 @@ public class Analysis {
     private String date;
     private String description;
 
-    private List<Job> jobs; // FIXME revise inclusion
+    private List<Job> jobs;
 
     private Map<String, Object> attributes;
 
@@ -22,12 +22,13 @@ public class Analysis {
     public Analysis() {
     }
 
-    public Analysis(int id, String name, String alias, String date, String description, Map<String, Object> attributes) {
+    public Analysis(int id, String name, String alias, String date, String description, List<Job> jobs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.date = date;
         this.description = description;
+        this.jobs = jobs;
         this.attributes = attributes;
     }
 
