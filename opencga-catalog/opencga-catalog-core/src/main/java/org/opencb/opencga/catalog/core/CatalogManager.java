@@ -121,7 +121,7 @@ public class CatalogManager {
 
     public QueryResult createUser(User user)
             throws CatalogManagerException, CatalogIOManagerException, JsonProcessingException {
-        checkParameter(user.getId(), "userId");
+        checkParameter(user.getId(), "id");
         checkParameter(user.getPassword(), "password");
         checkParameter(user.getName(), "name");
         checkEmail(user.getEmail());
