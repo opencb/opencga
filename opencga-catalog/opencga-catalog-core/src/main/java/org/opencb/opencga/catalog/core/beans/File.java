@@ -36,6 +36,8 @@ public class File {
      * This field values -1 when file has been uploaded.
      */
     private int jobId;
+    private List<Acl> acl;
+
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -55,14 +57,12 @@ public class File {
     public File(String name, String type, String format, String bioformat, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage, /*int studyId,*/ int experimentId) {
         this(-1, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage, //studyId,
-                experimentId, new LinkedList<Integer>(), -1, new HashMap<String, Object>(), new HashMap<String, Object>());
+                experimentId, new LinkedList<Integer>(), -1, null, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,
-                String creationDate, String description, String status, long diskUsage,
-                //int studyId,
-                int experimentId,
-                List<Integer> sampleIds, int jobId, Map<String, Object> stats, Map<String, Object> attributes) {
+                String creationDate, String description, String status, long diskUsage, int experimentId, List<Integer>
+            sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -74,10 +74,10 @@ public class File {
         this.description = description;
         this.status = status;
         this.diskUsage = diskUsage;
-       // this.studyId = studyId;
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
         this.jobId = jobId;
+        this.acl = acl;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -193,14 +193,6 @@ public class File {
         this.diskUsage = diskUsage;
     }
 
-//    public int getStudyId() {
-//        return studyId;
-//    }
-//
-//    public void setStudyId(int studyId) {
-//        this.studyId = studyId;
-//    }
-
     public int getExperimentId() {
         return experimentId;
     }
@@ -219,6 +211,14 @@ public class File {
 
     public void setJobId(int jobId) {
         this.jobId = jobId;
+    }
+
+    public List<Acl> getAcl() {
+        return acl;
+    }
+
+    public void setAcl(List<Acl> acl) {
+        this.acl = acl;
     }
 
     public void setSampleIds(List<Integer> sampleIds) {

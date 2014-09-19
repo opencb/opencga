@@ -916,6 +916,38 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    public void getFileAcl(int fileId, String userId, Acl projectAcl, Acl studyAcl, Acl fileAcl) throws CatalogManagerException, IOException {
+        QueryResult<File> file = getFile(fileId, "");
+        if (file.getNumResults() != 0) {
+            List<Acl> acl = file.getResult().get(0).getAcl();
+            for (Acl acl1 : acl) {
+                if (acl1.getUserId() == userId) {
+                    fileAcl = acl1;
+                }
+            }
+        }
+
+        QueryResult<Study> study = getStudyFromFileId(fileId);
+        if (study.getNumResults() != 0) {
+            List<Acl> acl = study.getResult().get(0).getAcl();
+            for (Acl acl1 : acl) {
+                if (acl1.getUserId() == userId) {
+                    fileAcl = acl1;
+                }
+            }
+        }
+
+        QueryResult<Project> project = getprojectFromFileId(fileId);
+        if (project.getNumResults() != 0) {
+            List<Acl> acl = project.getResult().get(0).getAcl();
+            for (Acl acl1 : acl) {
+                if (acl1.getUserId() == userId) {
+                    fileAcl = acl1;
+                }
+            }
+        }
+    }
+
     /**
      * Analysis methods
      * ***************************
