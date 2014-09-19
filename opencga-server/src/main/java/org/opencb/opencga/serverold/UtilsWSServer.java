@@ -1,15 +1,15 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.cellbase.core.lib.dbquery.DBObjectMap;
-import org.opencb.cellbase.core.lib.dbquery.QueryResult;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.networks.Layout;
 import org.opencb.opencga.lib.common.networks.Layout.LayoutResp;
+import org.opencb.opencga.server.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -87,14 +87,6 @@ public class UtilsWSServer extends GenericWSServer {
 
     }
 
-
-    @GET
-    @Path("/test/{message}")
-    public Response etest(@PathParam("message") String message) {
-        logger.info(sessionId);
-        logger.info(of);
-        return createOkResponse(message);
-    }
 
     @POST
     @Path("/network/community")
