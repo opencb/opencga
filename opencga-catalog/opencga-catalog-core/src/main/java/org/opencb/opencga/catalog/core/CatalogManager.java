@@ -225,13 +225,14 @@ public class CatalogManager {
      * Project methods
      * ***************************
      */
-    public QueryResult<Project> getAllProjects(String userId, String sessionId)
+    public QueryResult<Project> getAllProjects(String ownerId, String sessionId)
             throws CatalogManagerException, JsonProcessingException {
-        checkParameter(userId, "userId");
+        checkParameter(ownerId, "ownerId");
         checkParameter(sessionId, "sessionId");
 
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(userId, sessionId);
+        QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(ownerId, sessionId);
 
         Iterator<Project> it = allProjects.getResult().iterator();
         while (it.hasNext()) {

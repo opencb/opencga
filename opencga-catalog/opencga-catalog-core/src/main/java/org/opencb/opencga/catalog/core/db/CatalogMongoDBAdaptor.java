@@ -167,7 +167,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return (int) Float.parseFloat(object.get(field).toString());
     }
 
-    public int getProjectId(String userId, String project) {
+    @Override
+    public int getProjectId(String userId, String project) throws CatalogManagerException {
         QueryResult queryResult = userCollection.find(
                 BasicDBObjectBuilder
                         .start("projects.alias", project)
@@ -184,9 +185,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 User user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
                 return user.getProjects().get(0).getId();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new CatalogManagerException("Error parsing user.", e);
             }
-            return -1;
         }
     }
 
@@ -439,12 +439,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         //TODO: ManageSession
 
         DBObject query = new BasicDBObject("id", userId);
-        DBObject projection = new BasicDBObject("projects", true); projection.put("_id", false);
-        QueryResult result = userCollection.find(
-                query,
-                null,
-                null,   //projectListConverter
-                projection);
+        DBObject projection = new BasicDBObject("projects", true);
+        projection.put("_id", false);
+        QueryResult result = userCollection.find(query, null, null, projection);
+
         User user = parseUser(result);
         return endQuery(
                 "User projects list", startTime,
@@ -467,6 +465,19 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         } else {
             return result.getResult().get(0).get("id").toString();
         }
+    }
+
+    public Acl getProjectAcl(int projectId, String userId) {
+//        QueryResult<Project> project = getprojectFromFileId(fileId);
+//        if (project.getNumResults() != 0) {
+//            List<Acl> acl = project.getResult().get(0).getAcl();
+//            for (Acl acl1 : acl) {
+//                if (acl1.getUserId() == userId) {
+//                    return acl1;
+//                }
+//            }
+//        }
+        return null;
     }
 
     /**
@@ -503,7 +514,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             try {
                 studyObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study));
             } catch (JsonProcessingException e) {
-                throw new CatalogManagerException(e);
+                throw new CatalogManagerException("Error parsing study.", e);
             }
             DBObject update = new BasicDBObject("$push", new BasicDBObject(
                     "projects.$.studies", studyObject ));
@@ -538,6 +549,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             return endQuery("Create Study", startTime, studyList, errorMsg, null);
         }
     }
+
     @Override
     public QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException {
         long startTime = startQuery();
@@ -554,21 +566,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         )
                 )
                 .append("projects.studies", true).get();
-        QueryResult queryResult = endQuery("get project", startTime, userCollection.find(
-                query,
-                null,
-                null,
-                projection));
-        User user = parseUser(queryResult);
+        QueryResult queryResult = endQuery("get project", startTime
+                , userCollection.find(query, null, null, projection));
 
+        User user = parseUser(queryResult);
+		if(user == null || user.getProjects().isEmpty()) {
+            return endQuery("Get all studies", startTime, Collections.<Study>emptyList());
+        }
         List<Study> studies = user.getProjects().get(0).getStudies();
         for (Study study : studies) {
             study.setDiskUsage(getDiskUsageByStudy(study.getId()));
+            study.setAnalyses(getAllAnalysis(study.getId()).getResult());        
+            //TODO: append files
         }
-
-        //TODO: append files
         return endQuery("Get all studies", startTime, studies);
-
     }
 
     @Override
@@ -597,27 +608,34 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         QueryResult result = userCollection.find(query, null, null, projection);
         QueryResult queryResult = endQuery("get study", startTime, result);
 
+        User user;
+        List<Study> studies;
         try {
-            User user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
-            List<Study> studies = user.getProjects().get(0).getStudies();
-            Study study = null;
-            for (Study st : studies) {
-                if (st.getId() == studyId) {
-                    study = st;
+            if (queryResult.getNumResults() != 0) {
+                user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
+                studies = user.getProjects().get(0).getStudies();
+                Study study = null;
+                for (Study st : studies) {
+                    if (st.getId() == studyId) {
+                        study = st;
+                    }
                 }
+                if (study != null) {
+                    study.setDiskUsage(getDiskUsageByStudy(study.getId()));
+                    study.setAnalyses(getAllAnalysis(studyId).getResult());
+                }
+                // TODO study.setAnalysis
+                // TODO study.setfiles
+                studies = new LinkedList<>();
+                studies.add(study);
+            } else {
+                studies = Collections.<Study>emptyList();
             }
-            if (study != null) {
-                study.setDiskUsage(getDiskUsageByStudy(study.getId()));
-            }
-            // TODO study.setAnalysis
-            // TODO study.setfiles
-            studies = new LinkedList<>();
-            studies.add(study);
             //queryResult.setResult(studies);
             return endQuery("Get Study", startTime, studies);
         } catch (IOException e) {
             e.printStackTrace();
-            throw new CatalogManagerException("Get study IOException", e);
+            throw new CatalogManagerException("Error parsing user.", e);
         }
     }
 
@@ -654,7 +672,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogManagerException, IOException {
+    public int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
         //TODO: ManageSession
         QueryResult queryResult = userCollection.find(
                 BasicDBObjectBuilder
@@ -669,10 +687,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         .append("projects", new BasicDBObject("$elemMatch", new BasicDBObject("alias", projectAlias)))
                         .get()
         );
-        if (queryResult.getNumResults() != 1) {
+        User user = parseUser(queryResult);
+        if (user == null || user.getProjects().isEmpty()) {
             return -1;
         } else {
-            User user = jsonUserReader.readValue(queryResult.getResult().get(0).toString());
             for (Study s : user.getProjects().get(0).getStudies()) {
                 if(s.getAlias().equals(studyAlias)){
                     return s.getId();
@@ -680,7 +698,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
             return -1;
         }
-
     }
 
     @Override
@@ -712,7 +729,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-
+    public Acl getStudyAcl(int studyId, String userId) {
+//        QueryResult<Study> study = getStudyFromFileId(fileId);
+//        if (study.getNumResults() != 0) {
+//            List<Acl> acl = study.getResult().get(0).getAcl();
+//            for (Acl acl1 : acl) {
+//                if (acl1.getUserId() == userId) {
+//                    return acl1;
+//                }
+//            }
+//        }
+        return null;
+    }
     /**
      * File methods
      * ***************************
@@ -745,7 +773,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         return endQuery("Create file", startTime, Arrays.asList(file));
     }
-
 
     @Override
     public QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException {
@@ -899,7 +926,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return getStudyOwner(studyId);
     }
 
-    private int getDiskUsageByStudy(int studyId ){
+    private int getDiskUsageByStudy(int studyId){
         List<DBObject> operations = Arrays.<DBObject>asList(
                 new BasicDBObject(
                         "$match",
@@ -933,19 +960,76 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    public void getFileAcl(int fileId, String userId, Acl projectAcl, Acl studyAcl, Acl fileAcl) throws CatalogManagerException, IOException {
+        QueryResult<File> file = getFile(fileId);
+        if (file.getNumResults() != 0) {
+            List<Acl> acl = file.getResult().get(0).getAcl();
+            for (Acl acl1 : acl) {
+                if (acl1.getUserId() == userId) {
+                    fileAcl = acl1;
+                }
+            }
+        }
+    }
+
     /**
      * Analysis methods
      * ***************************
      */
     @Override
-    public QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException {
-        return null;
+    public QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
+        long startTime = startQuery();
+        //TODO: ManageSession
+        int studyId = getStudyId(userId, projectAlias, studyAlias);
+        if (studyId < 0) {
+            return endQuery("get All Analysis", startTime, "Study not found");
+        } else {
+            return getAllAnalysis(studyId);
+        }
     }
 
     @Override
-    public QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException {
-        return null;
+    public QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("analyses", 1));
+        DBObject unwind = new BasicDBObject("$unwind", "$analyses");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject group = new BasicDBObject(
+                "$group",
+                BasicDBObjectBuilder
+                        .start("_id", "$studyId")
+                        .append("analyses", new BasicDBObject("$push", "$analyses")).get());
+
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match1);
+        operations.add(project);
+        operations.add(unwind);
+        operations.add(match2);
+        operations.add(group);
+        QueryResult result = userCollection.aggregate(null, operations, null);
+
+        List<Analysis> analyses = new LinkedList<>();
+        try {
+            if (result.getNumResults() != 0) {
+                Study study = jsonStudyReader.readValue(result.getResult().get(0).toString());
+                analyses = study.getAnalyses();
+                // TODO fill analyses with jobs
+            }
+            return endQuery("User analyses list", startTime, analyses);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+        }
     }
+
+    /* aggregation: db.user.aggregate([{"$match":{"analyses.studyId": 8}}, {$project:{analyses:1}}, {$unwind:"$analyses"}, {$match:{"analyses.studyId": 8}}, {$group:{"_id":"$studyId", analyses:{$push:"$analyses"}}}]).pretty()
+
+     */
+
+    //@Override
+//    public QueryResult getAnalysis()
 
     @Override
     public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException {
@@ -963,31 +1047,36 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         long startTime = startQuery();
         // TODO manage session
 
-
         // Check if analysis.alias already exists.
         QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
-                .start("projects.studies.id", studyId)
-                .append("analysis.alias", analysis.getAlias()).get());
+                .start("analyses.studyId", studyId)
+                .append("analyses.alias", analysis.getAlias()).get());
         if(count.getResult().get(0) != 0) {
             return endQuery("Create Analysis", startTime, "Analysis alias already exists in this study");
         }
 
+        // complete and push Analysis: id, studyId, jobs...
         analysis.setId(getNewAnalysisId());
 
         List<Job> jobs = analysis.getJobs();
-        if (jobs == null) {
-            jobs = Collections.<Job>emptyList();
-        }
-        // TODO create jobs
-        analysis.setJobs(Collections.<Job>emptyList()); // TODO revise if this can be used in mongo as a jobId list
-        // TODO analysis set studyId. Analysis.studyId exists, but wasn't it removed?
+        analysis.setJobs(Collections.<Job>emptyList());
 
         DBObject query = new BasicDBObject("projects.studies.id", studyId);
         DBObject analysisObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(analysis));
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("analysis", analysisObject));
+        analysisObject.put("studyId", studyId);
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("analyses", analysisObject));
         QueryResult updateResult = userCollection.update(query, update, false, false);
 
-        return endQuery("Create Analysis", startTime, updateResult);    // TODO test
+        // fill other collections: jobs
+        if (jobs == null) {
+            jobs = Collections.<Job>emptyList();
+        }
+
+        // TODO for (j:jobs) createJob(j)
+//        for (Job job : jobs) {
+//        }
+
+        return endQuery("Create Analysis", startTime, updateResult);
     }
 
     @Override

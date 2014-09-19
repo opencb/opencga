@@ -63,7 +63,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult renameProject(int projectId, String newprojectName) throws CatalogManagerException;
 
-    int getProjectId(String userId, String project);
+    int getProjectId(String userId, String project) throws CatalogManagerException;
 
     String getProjectOwner(int projectId) throws CatalogManagerException;
 
@@ -132,8 +132,8 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult getAnalysisList(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
-    QueryResult getAnalysisList(int studyId, String sessionId) throws CatalogManagerException;
+    QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+    QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
 
     QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
     QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException, JsonProcessingException;
