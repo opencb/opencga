@@ -12,6 +12,7 @@ public class Experiment {
     private String name;
     private String type;
     private String platform;
+    private String manufacturer;
     private String date;
     private String lab;
     private String center;
@@ -24,16 +25,17 @@ public class Experiment {
     public Experiment() {
     }
 
-    public Experiment(int id, String name, String type, String platform, String date, String lab, String center, String responsible, String description) {
-        this(id, name, type, platform, date, lab, center, responsible, description, new HashMap<String, Object>());
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab, String center, String responsible, String description) {
+        this(id, name, type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<String, Object>());
     }
 
-    public Experiment(int id, String name, String type, String platform, String date, String lab, String center,
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab, String center,
                       String responsible, String description, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.platform = platform;
+        this.manufacturer = manufacturer;
         this.date = date;
         this.lab = lab;
         this.center = center;
@@ -48,6 +50,7 @@ public class Experiment {
                 "id='" + id + '\'' +
                 ", type='" + type + '\'' +
                 ", platform='" + platform + '\'' +
+                ", manufacturer='" + manufacturer + '\'' +
                 ", date='" + date + '\'' +
                 ", lab='" + lab + '\'' +
                 ", center='" + center + '\'' +
@@ -87,6 +90,14 @@ public class Experiment {
 
     public void setPlatform(String platform) {
         this.platform = platform;
+    }
+
+    public String getManufacturer() {
+        return manufacturer;
+    }
+
+    public void setManufacturer(String manufacturer) {
+        this.manufacturer = manufacturer;
     }
 
     public String getDate() {

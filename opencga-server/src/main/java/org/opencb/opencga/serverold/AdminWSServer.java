@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import java.io.IOException;
 
@@ -18,6 +18,7 @@ import org.opencb.opencga.account.beans.Bucket;
 import org.opencb.opencga.account.beans.Project;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
+import org.opencb.opencga.server.OpenCGAWSServer;
 
 @Path("/account/{accountId}/admin")
 public class AdminWSServer extends GenericWSServer {
@@ -34,6 +35,7 @@ public class AdminWSServer extends GenericWSServer {
      * ***************************
      */
     @GET
+
     @Path("/bucket/list")
     public Response getBucketsList() throws JsonProcessingException {
         try {

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.core.db;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
 
@@ -20,11 +21,11 @@ public interface CatalogDBAdaptor {
     QueryResult deleteUser(String userId) throws CatalogManagerException, JsonProcessingException;
 
 
-    QueryResult login(String userId, String password, Session session) throws CatalogManagerException, IOException;
+    QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogManagerException, IOException;
 
     QueryResult logout(String userId, String sessionId) throws CatalogManagerException, IOException;
 
-    QueryResult loginAsAnonymous(Session session) throws CatalogManagerException, IOException;
+    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogManagerException, IOException;
 
     QueryResult logoutAnonymous(String sessionId);
 
@@ -33,7 +34,7 @@ public interface CatalogDBAdaptor {
 
     // public String getUserByEmail(String email, String sessionId);
 
-    QueryResult getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException;
+    QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException;
 
     QueryResult changePassword(String userId, String password, String password1, String sessionId) throws CatalogManagerException;
 
@@ -51,11 +52,13 @@ public interface CatalogDBAdaptor {
      * Project methods ···
      * ***************************
      */
-    QueryResult createProject(String userId, Project project, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<ObjectMap> createProject(String userId, Project project, String sessionId) throws CatalogManagerException, JsonProcessingException;
 
-    QueryResult getProject(String userId, String project, String sessionId) throws CatalogManagerException;
+    QueryResult renameProject(String userId, String projectName, String newprojectName, String sessionId) throws CatalogManagerException;
 
-    QueryResult getAllProjects(String userId, String sessionId) throws CatalogManagerException;
+    QueryResult<Project> getProject(String userId, String project, String sessionId) throws CatalogManagerException;
+
+    QueryResult<Project> getAllProjects(String userId, String sessionId) throws CatalogManagerException;
 
     int getProjectId(String userId, String project);
     /**
@@ -63,11 +66,11 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult createStudy(String userId, String project, Study study, String sessionId) throws CatalogManagerException;
 
-    QueryResult getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<Study> getAllStudies(String userId, String project, String sessionId) throws CatalogManagerException;
 
-    QueryResult getStudy(int studyId, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<Study> getStudy(int studyId, String sessionId) throws CatalogManagerException;
 
     QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName, String sessionId) throws CatalogManagerException;
 
@@ -99,9 +102,9 @@ public interface CatalogDBAdaptor {
     int getFileId(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
     int getFileId(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
 
-    QueryResult getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
-    QueryResult getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
-    QueryResult getFile(int fileId, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<File>getFile(String userId, String projectAlias, String studyAlias, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<File>getFile(int studyId, Path filePath, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<File>getFile(int fileId, String sessionId) throws CatalogManagerException, IOException;
 
     QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
     QueryResult setFileStatus(int studyId, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;

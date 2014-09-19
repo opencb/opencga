@@ -26,7 +26,7 @@ public class User {
     private long diskQuota;
 
     private List<Project> projects = new ArrayList<>();
-    private List<Analysis> analyses = new ArrayList<>();
+//    private List<Analysis> analyses = new ArrayList<>();
 
     private List<Tool> plugins = new ArrayList<>();
     /**
@@ -52,12 +52,14 @@ public class User {
 
     public User(String id, String name, String email, String password, String organization, String role, String status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
-                new ArrayList<Analysis>(), new ArrayList<Tool>(0), new ArrayList<Session>(0),
+               // new ArrayList<Analysis>(),
+                new ArrayList<Tool>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public User(String id, String name, String email, String password, String organization, String role, String status,
-                String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Analysis> analyses,
+                String lastActivity, long diskUsage, long diskQuota, List<Project> projects,
+                //List<Analysis> analyses,
                 List<Tool> plugins, List<Session> sessions, Map<String, Object> configs,
                 Map<String, Object> attributes) {
         this.id = id;
@@ -71,7 +73,7 @@ public class User {
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;
         this.projects = projects;
-        this.analyses = analyses;
+      //  this.analyses = analyses;
         this.plugins = plugins;
         this.sessions = sessions;
         this.configs = configs;
@@ -85,11 +87,13 @@ public class User {
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
+                ", organization='" + organization + '\'' +
                 ", role='" + role + '\'' +
                 ", status='" + status + '\'' +
                 ", lastActivity='" + lastActivity + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", diskQuota=" + diskQuota +
+                ", projects=" + projects +
                 ", plugins=" + plugins +
                 ", sessions=" + sessions +
                 ", configs=" + configs +
@@ -127,6 +131,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(String organization) {
+        this.organization = organization;
     }
 
     public String getRole() {
@@ -169,6 +181,14 @@ public class User {
         this.diskQuota = diskQuota;
     }
 
+    public List<Project> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(List<Project> projects) {
+        this.projects = projects;
+    }
+
     public List<Tool> getPlugins() {
         return plugins;
     }
@@ -199,29 +219,5 @@ public class User {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-    }
-
-    public String getOrganization() {
-        return organization;
-    }
-
-    public void setOrganization(String organization) {
-        this.organization = organization;
-    }
-
-    public List<Project> getProjects() {
-        return projects;
-    }
-
-    public void setProjects(List<Project> projects) {
-        this.projects = projects;
-    }
-
-    public List<Analysis> getAnalyses() {
-        return analyses;
-    }
-
-    public void setAnalyses(List<Analysis> analyses) {
-        this.analyses = analyses;
     }
 }

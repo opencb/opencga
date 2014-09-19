@@ -1,23 +1,17 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
-import com.google.common.base.Joiner;
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import org.apache.commons.lang.mutable.MutableInt;
+
 import org.opencb.commons.bioformats.feature.Region;
-import org.opencb.commons.bioformats.variant.json.VariantInfo;
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
-import org.opencb.opencga.storage.variant.VariantDBAdaptor;
+import org.opencb.opencga.server.OpenCGAWSServer;
 
 @Path("/account/{accountId}/file/{jobId}")
 public class VariantWSServer extends GenericWSServer {
-    
+
     private final String accountId;
     private final String projectId;
     private final String jobId;
@@ -40,7 +34,7 @@ public class VariantWSServer extends GenericWSServer {
         List<Region> regionList = Region.parseRegions(regions);
         return null;
     }
-    
+
     @POST
     @Path("/list")
     public Response listVariants(@DefaultValue("1") @QueryParam("page") String page,
@@ -49,7 +43,7 @@ public class VariantWSServer extends GenericWSServer {
         return null;
     }
 
-/*   
+/*
     @GET
     @Path("/variantsMongo")
     public Response getVariantsMongo() {
@@ -108,7 +102,7 @@ public class VariantWSServer extends GenericWSServer {
 
         return createOkResponse(queryResult);
     }
-    
+
     @POST
     @Path("/effects")
     @Consumes("application/x-www-form-urlencoded")

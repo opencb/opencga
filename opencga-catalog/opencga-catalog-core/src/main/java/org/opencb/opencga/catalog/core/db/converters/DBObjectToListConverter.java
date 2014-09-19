@@ -8,22 +8,36 @@ import java.util.List;
 
 /**
  * Created by jacobo on 14/09/14.
+ *
+ * Converts nested objects with a specified ComplexTypeConverter
+ * Nesting route is specified in the constructor.
+ *
+ * Return a list of converted objects.
+ *
+ * Example: Route = [o1, o2]
+ * {o1:{o2:[{o3:{id:1}},{o3:{id:2}}}} -> convert({o3:{id:1}}) , convert({o3:{id:2}})
+ *
  */
 public class DBObjectToListConverter<T> implements ComplexTypeConverter<List<T>, DBObject> {
 
     private final ComplexTypeConverter<T, DBObject> converter;
-    private final String[] names;
+    private final String[] route;
 
-    public DBObjectToListConverter(ComplexTypeConverter<T, DBObject> converter, String... name) {
+    /**
+     *
+     * @param converter Converter object for the ModelType .
+     * @param route     Nesting route.
+     */
+    public DBObjectToListConverter(ComplexTypeConverter<T, DBObject> converter, String... route) {
         this.converter = converter;
-        this.names = name;
+        this.route = route;
     }
 
     @Override
     public List<T> convertToDataModelType(DBObject object) {
         List<T> list = new LinkedList<>();
 
-        for (String name : names) {
+        for (String name : route) {
             if(object instanceof List){
                 object = (DBObject) ((List) object).get(0);
             }

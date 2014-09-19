@@ -1,7 +1,6 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
 

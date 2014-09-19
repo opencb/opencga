@@ -23,8 +23,8 @@ public class Job {
     private long diskUsage;
 
     private String outdir;
-    private List<Integer> input;
-    private List<Integer> output;
+    private List<Integer> input;    // input files to this job
+    private List<Integer> output;   // output files of this job
 
     /**
      * To think about:

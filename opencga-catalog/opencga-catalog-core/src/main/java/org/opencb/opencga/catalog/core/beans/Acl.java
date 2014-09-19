@@ -4,7 +4,9 @@ package org.opencb.opencga.catalog.core.beans;
  * Created by jacobo on 11/09/14.
  */
 public class Acl {
+
     private String userId;
+
     private boolean read;
     private boolean write;
     private boolean execute;

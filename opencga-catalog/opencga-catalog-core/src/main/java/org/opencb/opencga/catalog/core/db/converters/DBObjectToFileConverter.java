@@ -28,7 +28,7 @@ public class DBObjectToFileConverter implements ComplexTypeConverter<File, DBObj
         file.setDescription(om.getString("description"));
         file.setStatus(om.getString("status"));
         file.setDiskUsage(om.getInt("diskUsage"));
-        file.setStudyId(om.getInt("studyId"));
+//        file.setStudyId(om.getInt("studyId"));
         file.setExperimentId(om.getInt("experimentId"));
         file.setJobId(om.getInt("jobId"));
         file.setSampleIds((List)om.getList("sampleIds"));
