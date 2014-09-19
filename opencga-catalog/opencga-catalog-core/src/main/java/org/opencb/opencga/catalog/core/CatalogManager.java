@@ -11,15 +11,13 @@ import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.core.io.PosixIOManager;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.lib.common.Config;
 
-import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +27,7 @@ import java.util.regex.Pattern;
 public class CatalogManager {
 
     private CatalogDBAdaptor catalogDBAdaptor;
-//    private CatalogIOManager ioManager; //TODO: Generify API
+    //    private CatalogIOManager ioManager; //TODO: Generify API
     private PosixIOManager ioManager;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
@@ -37,30 +35,45 @@ public class CatalogManager {
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
 
-    private Properties catalogProperties;
+    private Properties properties;
 
     public CatalogManager() throws IOException, CatalogIOManagerException{
         this(System.getenv("OPENCGA_HOME"));
     }
 
     public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException {
-//        catalogProperties = Config.getAccountProperties();
+//        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
-        catalogProperties = new Properties();
+        properties = new Properties();
         try {
-            catalogProperties.load(Files.newInputStream(path));
+            properties.load(Files.newInputStream(path));
         } catch (IOException e) {
             logger.error("Failed to load account.properties: " + e.getMessage());
         }
 
-//        if (catalogProperties.getProperty("OPENCGA.ACCOUNT.MODE").equals("file")) {
+//        if (properties.getProperty("OPENCGA.ACCOUNT.MODE").equals("file")) {
 //            catalogDBAdaptor = (CatalogDBAdaptor) new CatalogMongoDBAdaptor( --- );
 //        } else {
-//            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(catalogProperties));
+//            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
 //        }
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(catalogProperties));
+        catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
         ioManager = new PosixIOManager(rootdir);
+
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
+    }
+
+    public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException {
+        this.properties = properties;
+
+        try {
+            MongoCredentials mongoCredentials = new MongoCredentials(properties.getProperty("HOST"), Integer.parseInt(properties.getProperty("PORT")), properties.getProperty("DATABASE"), properties.getProperty("USER"), properties.getProperty("PASSWORD"));
+            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(this.properties));
+            ioManager = new PosixIOManager(properties.getProperty("ROOTDIR"));
+        } catch (IllegalOpenCGACredentialsException e) {
+            e.printStackTrace();
+        }
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
@@ -356,7 +369,7 @@ public class CatalogManager {
 //        }
 //    }
 
-//    public QueryResult refreshBucket(final String userId, final String bucketId, final String sessionId)
+    //    public QueryResult refreshBucket(final String userId, final String bucketId, final String sessionId)
 //            throws CatalogManagerException, IOException {
 //
 //        final Path bucketPath = ioManager.getBucketPath(userId, bucketId);
