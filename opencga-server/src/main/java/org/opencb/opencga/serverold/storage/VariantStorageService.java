@@ -1,6 +1,7 @@
-package org.opencb.opencga.server.ws.storage;
+package org.opencb.opencga.serverold.storage;
 
-import org.opencb.opencga.server.ws.GenericWSServer;
+
+import org.opencb.opencga.serverold.GenericWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;

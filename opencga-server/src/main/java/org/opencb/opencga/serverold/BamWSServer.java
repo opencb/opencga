@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import java.io.IOException;
 
@@ -11,6 +11,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.opencb.opencga.server.OpenCGAWSServer;
 import org.opencb.opencga.storage.datamanagers.bam.BamManager;
 
 @Deprecated
@@ -38,17 +39,17 @@ public class BamWSServer extends GenericWSServer {
 //		if(params.get("show_softclipping") != null){
 //			showSoftclipping = true;
 //		}
-//		
+//
 //		String chr = null;
 //		int start = 0;
 //		int end = 0;
-//		
+//
 //		if(filename == ""){
 //			return 	createErrorResponse("ERROR: filename path param is empty.");
 //		}
-//		
-//		//comprobar si existe el fichero 
-//		
+//
+//		//comprobar si existe el fichero
+//
 //		if(region == "") {
 //			return createErrorResponse("ERROR: region path param is empty.");
 //		}
@@ -56,16 +57,16 @@ public class BamWSServer extends GenericWSServer {
 //		if(parsedRegion == null){
 //			return createErrorResponse("ERROR: region format not valid.");
 //		}
-//		
+//
 //		chr = parsedRegion.getChromosome();
 //		start = parsedRegion.getStart();
 //		end =parsedRegion.getEnd();
-//		
+//
 //		BamManager bamManager = new BamManager();
-//		
+//
 //		String filePath = config.getProperty("FILES.PATH");
 //		String result = bamManager.getByRegion(filePath, filename, viewAsPairs, showSoftclipping, chr, start, end);
-//		
+//
 //		return createOkResponse(result);
         return createOkResponse("");
     }
@@ -86,7 +87,7 @@ public class BamWSServer extends GenericWSServer {
 //
 //		File inputSamFile = new File("/home/fsalavert/p01_pair1.remdup_bwa_bwa_cnag_mapped.sorted_rgfix.bam");
 //		File indexFile = new File("/home/fsalavert/p01_pair1.remdup_bwa_bwa_cnag_mapped.sorted_rgfix.bam.bai");
-//		
+//
 //		System.out.println("checking file: " + inputSamFile);
 //		try {
 //			FileUtils.checkFile(inputSamFile);
@@ -94,12 +95,12 @@ public class BamWSServer extends GenericWSServer {
 //		} catch (IOException e) {
 //			System.out.println("file " + inputSamFile + " not exists");
 //			e.printStackTrace();
-//		}					
+//		}
 //
 //		long lStartTime = System.currentTimeMillis();
 //		exampleSamUsage.getByRegion(inputSamFile, indexFile, outputSamFile);
 //		long lEndTime = System.currentTimeMillis();
-//		
+//
 //		long difference = lEndTime - lStartTime; //check different
 //		System.out.println("done in "+ difference + " milliseconds");
 //	}

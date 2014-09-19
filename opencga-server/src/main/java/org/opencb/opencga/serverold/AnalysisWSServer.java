@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.opencga.account.beans.Acl;
@@ -13,6 +13,7 @@ import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.server.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

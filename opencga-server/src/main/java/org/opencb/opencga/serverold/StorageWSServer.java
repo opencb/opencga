@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import com.google.common.base.Splitter;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.opencb.commons.containers.QueryResult;
+import org.opencb.opencga.server.OpenCGAWSServer;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
 public class StorageWSServer extends GenericWSServer {

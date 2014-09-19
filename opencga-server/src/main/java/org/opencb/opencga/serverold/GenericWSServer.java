@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.serverold;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,21 +39,32 @@ public class GenericWSServer {
     protected QueryOptions queryOptions;
 
     // Common output members
-    protected String outputFormat;
     protected long startTime;
     protected long endTime;
 
     protected static ObjectWriter jsonObjectWriter;
     protected static ObjectMapper jsonObjectMapper;
 
-    //General params
+    //Common query params
     @DefaultValue("")
     @QueryParam("sessionid")
     protected String sessionId;
 
     @DefaultValue("json")
     @QueryParam("of")
-    protected String of;
+    protected String outputFormat;
+
+    @DefaultValue("")
+    @QueryParam("exclude")
+    protected String exclude;
+
+    @DefaultValue("")
+    @QueryParam("include")
+    protected String include;
+
+    @DefaultValue("true")
+    @QueryParam("metadata")
+    protected Boolean metadata;
 
 
     /**
@@ -85,7 +96,11 @@ public class GenericWSServer {
         this.uriInfo = uriInfo;
         this.params = this.uriInfo.getQueryParameters();
         this.queryOptions = new QueryOptions();
-        parseCommonQueryParameters(this.params);
+//        parseCommonQueryParameters(this.params);
+
+        queryOptions.put("exclude", exclude);
+        queryOptions.put("include", include);
+        queryOptions.put("metadata", metadata);
 
 //        this.sessionId = (this.params.get("sessionid") != null) ? this.params.get("sessionid").get(0) : "";
 //        this.of = (this.params.get("of") != null) ? this.params.get("of").get(0) : "";
@@ -114,25 +129,26 @@ public class GenericWSServer {
     }
 
 
-    /**
-     * This method parse common query parameters from the URL
-     *
-     * @param multivaluedMap
-     */
-    private void parseCommonQueryParameters(MultivaluedMap<String, String> multivaluedMap) {
-        queryOptions.put("exclude", (multivaluedMap.get("exclude") != null) ? multivaluedMap.get("exclude").get(0) : "");
-        queryOptions.put("include", (multivaluedMap.get("include") != null) ? multivaluedMap.get("include").get(0) : "");
-        queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-
-        outputFormat = (multivaluedMap.get("of") != null) ? multivaluedMap.get("of").get(0) : "json";
-    }
+//    /**
+//     * This method parse common query parameters from the URL
+//     *
+//     * @param multivaluedMap
+//     */
+//    private void parseCommonQueryParameters(MultivaluedMap<String, String> multivaluedMap) {
+////        queryOptions.put("exclude", (multivaluedMap.get("exclude") != null) ? multivaluedMap.get("exclude").get(0) : "");
+////        queryOptions.put("include", (multivaluedMap.get("include") != null) ? multivaluedMap.get("include").get(0) : "");
+////        queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
+//
+////        outputFormat = (multivaluedMap.get("of") != null) ? multivaluedMap.get("of").get(0) : "json";
+//
+//    }
 
 
     @GET
     @Path("/echo/{message}")
     public Response echoGet(@PathParam("message") String message) {
         logger.info(sessionId);
-        logger.info(of);
+        logger.info(outputFormat);
         return createOkResponse(message);
     }
 
@@ -177,7 +193,7 @@ public class GenericWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    private Response buildResponse(ResponseBuilder responseBuilder) {
+    protected Response buildResponse(ResponseBuilder responseBuilder) {
         return responseBuilder.header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "x-requested-with, content-type").build();
     }
 }
