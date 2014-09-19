@@ -40,9 +40,18 @@ public class File {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
+    /* Status */
     public static final String UPLOADING = "uploading";
     public static final String UPLOADED = "uploaded";
     public static final String READY = "ready";
+
+    /* Formats */
+    public static final String FOLDER = "folder";
+    public static final String FILE = "file";
+    public static final String PLAIN = "plain";
+    public static final String GZIP = "gzip";
+    public static final String EXECUTABLE = "executable";
+    public static final String IMAGE = "image";
 
     /**
      * To think:

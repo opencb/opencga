@@ -167,10 +167,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createStudyTest() throws CatalogManagerException, JsonProcessingException {
+        Project p = catalog.getProject("jcoll", "1000G").getResult().get(0);
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s));
+        System.out.println(catalog.createStudy(p.getId(), s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
-        System.out.println(catalog.createStudy("jcoll", "1000G", s));
+        System.out.println(catalog.createStudy(p.getId(), s));
     }
 
     @Test
@@ -180,12 +181,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getAllStudiesTest() throws CatalogManagerException, JsonProcessingException {
-        System.out.println(catalog.getAllStudies("jcoll", "1000G", ID_LOGIN_JCOLL));
+        System.out.println(catalog.getAllStudies("jcoll", "1000G"));
     }
 
     @Test
     public void getStudyTest() throws CatalogManagerException, JsonProcessingException {
-
         System.out.println(catalog.getStudy(5, ID_LOGIN_JCOLL));
     }
 
@@ -201,9 +201,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getFileTest() throws CatalogManagerException, IOException {
-        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), ID_LOGIN_JCOLL));
-        System.out.println(catalog.getFile(1, ID_LOGIN_JCOLL));
-        System.out.println(catalog.getFile(2, ID_LOGIN_JCOLL));
+        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam")));
+        System.out.println(catalog.getFile(1));
+        System.out.println(catalog.getFile(2));
     }
 
     @Test

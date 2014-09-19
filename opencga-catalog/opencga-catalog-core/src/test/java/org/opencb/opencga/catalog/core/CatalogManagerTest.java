@@ -7,9 +7,11 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.Project;
+import org.opencb.opencga.catalog.core.beans.Study;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 
+import java.nio.file.Paths;
 import java.util.List;
 
 public class CatalogManagerTest extends GenericTest {
@@ -42,30 +44,7 @@ public class CatalogManagerTest extends GenericTest {
         }
     }
 
-    @Test
-    public void testGetUserPath() throws Exception {
 
-    }
-
-    @Test
-    public void testGetProjectPath() throws Exception {
-
-    }
-
-    @Test
-    public void testGetFilePath() throws Exception {
-
-    }
-
-    @Test
-    public void testGetTmpPath() throws Exception {
-
-    }
-
-    @Test
-    public void testGetObjectFromBucket() throws Exception {
-
-    }
 
     @Test
     public void testCreateUser() throws Exception {
@@ -108,19 +87,33 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testGetAllProjects() throws Exception {
-        System.out.println(catalogManager.getAllProjects("user", sessionIdUser));
-        System.out.println(catalogManager.getAllProjects("user", sessionIdUser2));
-    }
-
-    @Test
     public void testCreateProject() throws Exception {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
         System.out.println(catalogManager.createProject("user", p, sessionIdUser));
     }
 
     @Test
+    public void testGetAllProjects() throws Exception {
+        System.out.println(catalogManager.getAllProjects("user", sessionIdUser));
+        System.out.println(catalogManager.getAllProjects("user", sessionIdUser2));
+    }
+
+    @Test
+    public void testCreateStudy() throws Exception {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        Study study = new Study("Phase 1", "phase1", "", "Done", "");
+        System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
+    }
+
+    @Test
     public void testDeleteDataFromStudy() throws Exception {
 
+    }
+
+    @Test
+    public void testCreateFolder() throws Exception {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int sessionId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        System.out.println(catalogManager.createFolder(sessionId, Paths.get("data", "nueva", "carpeta"), true, sessionIdUser));
     }
 }
