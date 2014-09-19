@@ -199,7 +199,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
     /**
+<<<<<<< HEAD
+     * User methods 
+=======
      * User methods
+>>>>>>> 2d5c8e3b2b9c1486dacc9bcb8c7e36f153872402
      * ***************************
      */
 
@@ -697,7 +701,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     /**
+<<<<<<< HEAD
+     * File methods ���
+=======
      * File methods
+>>>>>>> 2d5c8e3b2b9c1486dacc9bcb8c7e36f153872402
      * ***************************
      */
 
