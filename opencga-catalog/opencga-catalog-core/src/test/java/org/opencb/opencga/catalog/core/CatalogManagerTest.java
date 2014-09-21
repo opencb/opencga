@@ -10,7 +10,9 @@ import org.opencb.opencga.catalog.core.beans.Project;
 import org.opencb.opencga.catalog.core.beans.Study;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
+import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -22,16 +24,20 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser2;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws IOException, CatalogIOManagerException {
         catalogManager = new CatalogManager("/tmp/opencga");
-        List<ObjectMap> result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
-        if(!result.isEmpty()) {
+        List<ObjectMap> result = null;
+        try {
+            result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser = result.get(0).getString("sessionId");
+        } catch (CatalogManagerException | IOException ignore) {
         }
-        result = catalogManager.login("user2", PASSWORD, "127.0.0.1").getResult();
-        if(!result.isEmpty()) {
+        try {
+            result = catalogManager.login("user2", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser2 = result.get(0).getString("sessionId");
+        } catch (CatalogManagerException | IOException ignore) {
         }
+
     }
 
     @After
@@ -43,7 +49,6 @@ public class CatalogManagerTest extends GenericTest {
             catalogManager.logout("user2", sessionIdUser2);
         }
     }
-
 
 
     @Test
@@ -78,9 +83,9 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetUserInfo() throws CatalogManagerException {
-        System.out.println(catalogManager.getUserInfo("user", null, sessionIdUser));
+        System.out.println(catalogManager.getUser("user", null, sessionIdUser));
         try {
-            catalogManager.getUserInfo("user", null, sessionIdUser2);
+            catalogManager.getUser("user", null, sessionIdUser2);
             assert false;
         } catch (CatalogManagerException ignored) {
         }
@@ -101,7 +106,10 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateStudy() throws Exception {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        Study study = new Study("Phase 1", "phase1", "", "Done", "");
+        Study study;
+        study = new Study("Phase 3", "phase3", "", "d", "");
+        System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
+        study = new Study("Phase 1", "phase1", "", "Done", "");
         System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
     }
 

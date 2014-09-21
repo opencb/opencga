@@ -81,6 +81,11 @@
                 <artifactId>opencga-storage</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog-core</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
 
             <!-- General dependencies -->
             <dependency>
