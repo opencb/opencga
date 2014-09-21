@@ -170,13 +170,6 @@ public class CatalogManager {
         checkParameter(password, "password");
         checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
-        // TODO sessionID should be created here
-
-        try {
-            ioManager.createUser(userId);
-        } catch (CatalogIOManagerException e) {
-
-        }
 
         return catalogDBAdaptor.login(userId, password, session);
     }
@@ -189,29 +182,25 @@ public class CatalogManager {
     }
 
     public QueryResult logoutAnonymous(String sessionId) throws CatalogManagerException, CatalogIOManagerException {
-        String userId = "anonymous_" + sessionId;
-        System.out.println("-----> el userId del anonimo es: " + userId + " y la sesionId: " + sessionId);
-
-        checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
+        String userId = "anonymous_" + sessionId;
+        checkParameter(userId, "userId");
         checkSessionId(userId, sessionId);
+
+        logger.info("new anonymous user. userId: " + userId + " sesionId: " + sessionId);
 
         ioManager.deleteAnonymousUser(userId);
         return catalogDBAdaptor.logoutAnonymous(sessionId);
     }
 
-    public QueryResult changePassword(String userId, String password, String nPassword1, String nPassword2,
-                                      String sessionId)
+    public QueryResult changePassword(String userId, String password, String nPassword1, String sessionId)
             throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkParameter(password, "password");
         checkParameter(nPassword1, "nPassword1");
-        checkParameter(nPassword2, "nPassword2");
-        checkSessionId(userId, sessionId);
-        if (!nPassword1.equals(nPassword2)) {
-            throw new CatalogManagerException("the new pass is not the same in both fields");
-        }
+        checkSessionId(userId, sessionId);  //Only the user can change his own password
+
         return catalogDBAdaptor.changePassword(userId, password, nPassword1);
     }
 
@@ -299,7 +288,7 @@ public class CatalogManager {
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(ownerId, sessionId);
+        QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(ownerId);
 
         Iterator<Project> it = allProjects.getResult().iterator();
         while (it.hasNext()) {
