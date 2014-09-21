@@ -942,11 +942,7 @@ public class CatalogManager {
      */
 
     public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
-        try {
-            return catalogDBAdaptor.createAnalysis(studyId, analysis);
-        } catch (JsonProcessingException e) {
-            throw new CatalogManagerException(e);
-        }
+        return catalogDBAdaptor.createAnalysis(studyId, analysis);
     }
 
     /**

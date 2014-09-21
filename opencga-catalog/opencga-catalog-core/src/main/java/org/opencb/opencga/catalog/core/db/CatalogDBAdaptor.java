@@ -76,7 +76,7 @@ public interface CatalogDBAdaptor {
     QueryResult<Study> createStudy(int projectId, Study study) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException;
-    QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
+//    QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
 
     QueryResult<Study> getStudy(int studyId) throws CatalogManagerException;
 

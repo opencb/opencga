@@ -539,11 +539,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             String errorMsg = updateResult.getErrorMsg() != null? updateResult.getErrorMsg() : "";
             for(Analysis analysis : analyses){
                 String analysisErrorMsg;
-                try {
-                    analysisErrorMsg = createAnalysis(study.getId(), analysis).getErrorMsg();
-                } catch (JsonProcessingException e) {
-                    throw new CatalogManagerException(e);
-                }
+
+                analysisErrorMsg = createAnalysis(study.getId(), analysis).getErrorMsg();
+
                 if(analysisErrorMsg != null && !analysisErrorMsg.isEmpty()){
                     errorMsg += analysis.getAlias() + ":" + analysisErrorMsg + ", ";
                 }
@@ -1088,7 +1086,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException {
+    public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException {
         long startTime = startQuery();
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         if (studyId < 0) {

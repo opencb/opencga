@@ -80,6 +80,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         Session sessionJCOLL = new Session("127.0.0.1");
         Session sessionJMMUT = new Session("127.0.0.1");
         Session sessionANONY = new Session("127.0.0.1");
+        System.out.println(sessionANONY);
+        System.out.println(sessionJCOLL);
+        System.out.println(sessionJMMUT);
         try {
             System.out.println(catalog.login("jcoll", "INVALID_PASSWORD", sessionJCOLL));
             fail("Expected \"wrong password\" exception");
@@ -188,7 +191,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(catalog.getStudyId("jcoll", "1000G", "ph3") != -1);
         assertTrue(catalog.getStudyId(projectId, "ph3") != -1);
         assertTrue(catalog.getStudyId( -20, "ph3") == -1);
-        assertTrue(catalog.getStudyId( projectId, "badStudy") == -1);
+        assertTrue(catalog.getStudyId(projectId, "badStudy") == -1);
     }
 
     @Test
@@ -294,7 +297,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * ***************************
      */
     @Test
-    public void createAnalysisTest() throws CatalogManagerException, IOException {
+    public void createAnalysisTest() throws CatalogManagerException {
         Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
         analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
@@ -303,6 +306,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
         analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+        try {
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+            fail("expected \"analysis already exists\" exception");
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
