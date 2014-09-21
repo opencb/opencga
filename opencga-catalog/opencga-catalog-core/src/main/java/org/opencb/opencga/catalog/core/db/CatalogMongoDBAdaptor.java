@@ -19,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -116,8 +116,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery(queryId, startTime, result, null, null);
     }
 
-    private QueryResult endQuery(String queryId, long startTime, String errorMessage) {
-        return endQuery(queryId, startTime, Collections.emptyList(), errorMessage, null);
+    private <T> QueryResult<T> endQuery(String queryId, long startTime, String errorMessage) {
+        return endQuery(queryId, startTime, Collections.<T>emptyList(), errorMessage, null);
     }
 
     //TODO: Shoud throw error if errorMessage != null?
@@ -523,11 +523,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             String errorMsg = uResult.getErrorMsg() != null? uResult.getErrorMsg() : "";
             for(Analysis analysis : analyses){
                 String em;
-                try {
-                    em = createAnalysis(study.getId(), analysis).getErrorMsg();
-                } catch (JsonProcessingException e) {
-                    throw new CatalogManagerException(e);
-                }
+                em = createAnalysis(study.getId(), analysis).getErrorMsg();
                 if(em != null){
                     errorMsg += ", " + analysis.getAlias() + ":" + em;
                 }
@@ -576,7 +572,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         List<Study> studies = user.getProjects().get(0).getStudies();
         for (Study study : studies) {
             study.setDiskUsage(getDiskUsageByStudy(study.getId()));
-            study.setAnalyses(getAllAnalysis(study.getId()).getResult());        
+            study.setAnalyses(getAllAnalysis(study.getId()).getResult());
             //TODO: append files
         }
         return endQuery("Get all studies", startTime, studies);
@@ -730,7 +726,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     public Acl getStudyAcl(int studyId, String userId) {
-//        QueryResult<Study> study = getStudyFromFileId(fileId);
+//        QueryResult<Study> study = getStudy(studyId);
 //        if (study.getNumResults() != 0) {
 //            List<Acl> acl = study.getResult().get(0).getAcl();
 //            for (Acl acl1 : acl) {
@@ -752,7 +748,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         if(studyId < 0){
-            return endQuery("Create file", startTime, "Study not exists");
+            return endQuery("Create file", startTime, "Study does not exist");
         }
         QueryResult<File> fileToStudy = createFileToStudy(studyId, file);
         return endQuery("Create file", startTime, fileToStudy);
@@ -761,10 +757,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
+        int fileId = getFileId(studyId, file.getUri());
+        if (fileId != -1) {
+            return endQuery("create file to study", startTime,
+                    "file URI already exists. Can't create file: " + file.getUri() + " in study " + studyId);
+        }
 
         int newFileId = getNewFileId();
         file.setId(newFileId);
-        if(file.getCreatorId() == null) {
+        if (file.getCreatorId() == null) {
             file.setCreatorId(getUserIdByStudyId(studyId));
         }
         DBObject fileDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(file));
@@ -775,12 +776,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException {
+    public QueryResult deleteFile(String userId, String projectAlias, String studyAlias, String filePath) throws CatalogManagerException, IOException {
         return deleteFile(getFileId(userId, projectAlias, studyAlias, filePath));
     }
 
     @Override
-    public QueryResult deleteFile(int studyId, Path filePath) throws CatalogManagerException {
+    public QueryResult deleteFile(int studyId, String filePath) throws CatalogManagerException {
         return deleteFile(getFileId(studyId, filePath));
     }
 
@@ -807,18 +808,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public int getFileId(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException {
+    public int getFileId(String userId, String projectAlias, String studyAlias, String filePath) throws CatalogManagerException, IOException {
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         return getFileId(studyId, filePath);
     }
 
     @Override
-    public int getFileId(int studyId, Path filePath) throws CatalogManagerException {
+    public int getFileId(int studyId, String filePath) throws CatalogManagerException {
 
         QueryResult queryResult = fileCollection.find(
                 BasicDBObjectBuilder
                         .start("studyId", studyId)
-                        .append("uri", filePath.toString()).get(),
+                        .append("uri", filePath).get(),
                 null,
                 null,
                 new BasicDBObject("id", true)
@@ -832,18 +833,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException {
+    public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String filePath) throws CatalogManagerException, IOException {
         return getFile(getStudyId(userId, projectAlias, studyAlias), filePath);
     }
 
     @Override
-    public QueryResult<File> getFile(int studyId, Path filePath) throws CatalogManagerException, IOException {
+    public QueryResult<File> getFile(int studyId, String filePath) throws CatalogManagerException, IOException {
         long startTime = startQuery();
 
         QueryResult queryResult = fileCollection.find(
                 BasicDBObjectBuilder
                         .start("studyId", studyId)
-                        .append("uri", filePath.toString()).get(),
+                        .append("uri", filePath).get(),
                 null,
                 null,
                 null
@@ -882,13 +883,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String filePath, String status, String sessionId) throws CatalogManagerException, IOException {
         int fileId = getFileId(userId, projectAlias, studyAlias, filePath);
         return setFileStatus(fileId, status, sessionId);
     }
 
     @Override
-    public QueryResult setFileStatus(int studyId, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult setFileStatus(int studyId, String filePath, String status, String sessionId) throws CatalogManagerException, IOException {
         int fileId = getFileId(studyId, filePath);
         return setFileStatus(fileId, status, sessionId);
     }
@@ -961,15 +962,22 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     public void getFileAcl(int fileId, String userId, Acl projectAcl, Acl studyAcl, Acl fileAcl) throws CatalogManagerException, IOException {
-        QueryResult<File> file = getFile(fileId);
-        if (file.getNumResults() != 0) {
-            List<Acl> acl = file.getResult().get(0).getAcl();
-            for (Acl acl1 : acl) {
-                if (acl1.getUserId() == userId) {
-                    fileAcl = acl1;
-                }
-            }
-        }
+//        long startQuery = startQuery();
+//
+//        DBObject query = new BasicDBObject("id", userId);
+//        new BasicDBObject()//seguir
+//
+//
+//        QueryResult<File> file = getFile(fileId);
+//        if (file.getNumResults() != 0) {
+//            List<Acl> acl = file.getResult().get(0).getAcl();
+//            for (Acl acl1 : acl) {
+//                if (acl1.getUserId() == userId) {
+//                    fileAcl = acl1;
+//                }
+//            }
+//            studyAcl = getStudyAcl(getStudyIdByFileId(fileId), userId);
+//        }
     }
 
     /**
@@ -988,6 +996,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    /**
+     *  aggregation: db.user.aggregate([{"$match":{"analyses.studyId": 8}}, {$project:{analyses:1}}, {$unwind:"$analyses"}, {$match:{"analyses.studyId": 8}}, {$group:{"_id":"$studyId", analyses:{$push:"$analyses"}}}]).pretty()
+     */
     @Override
     public QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException {
         long startTime = startQuery();
@@ -1024,12 +1035,56 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    /* aggregation: db.user.aggregate([{"$match":{"analyses.studyId": 8}}, {$project:{analyses:1}}, {$unwind:"$analyses"}, {$match:{"analyses.studyId": 8}}, {$group:{"_id":"$studyId", analyses:{$push:"$analyses"}}}]).pretty()
-
+    /**
+     * query: db.user.find({"analyses.alias":"analysis1Alias", "analyses.studyId":8}
+     * , {"analyses":{$elemMatch:{studyId:8,alias:"analysis1Alias"}},"analyses.id":1}).pretty()
      */
+    public int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException {
+        DBObject match = BasicDBObjectBuilder
+                .start("analyses.alias", analysisAlias)
+                .append("analyses.studyId", studyId).get();
+        DBObject projection = BasicDBObjectBuilder
+                .start("analyses",
+                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                                .start("studyId", studyId)
+                                .append("alias", analysisAlias)
+                                .get()
+                        )
+                )
+                .append("analyses.id", true)
+                .get();
 
-    //@Override
-//    public QueryResult getAnalysis()
+        QueryResult result = userCollection.find(match, null, null, projection);
+        List<Analysis> analyses = parseAnalyses(result);
+        return analyses.size() == 0? -1: analyses.get(0).getId();
+    }
+
+    @Override
+    public QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException {
+        String queryId = "get analysis";
+        long startTime = startQuery();
+        DBObject query = new BasicDBObject("analyses.id", analysisId);
+        DBObject projection = new BasicDBObject(
+                "analyses",
+                new BasicDBObject(
+                        "$elemMatch",
+                        new BasicDBObject("id", analysisId)
+                )
+        );
+
+        QueryResult result = userCollection.find(query, null, null, projection);
+        Study study;
+        List<Analysis> analyses = new LinkedList<>();
+        if (result.getNumResults() != 0) {
+            try {
+                study = jsonStudyReader.readValue(result.getResult().get(0).toString());
+            } catch (IOException e) {
+                return endQuery(queryId, startTime, "error parsing analysis");
+            }
+            analyses = study.getAnalyses();
+        }
+        return endQuery(queryId, startTime, analyses);
+    }
 
     @Override
     public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException {
@@ -1043,7 +1098,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
         long startTime = startQuery();
         // TODO manage session
 
@@ -1062,11 +1117,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         analysis.setJobs(Collections.<Job>emptyList());
 
         DBObject query = new BasicDBObject("projects.studies.id", studyId);
-        DBObject analysisObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(analysis));
+        DBObject analysisObject;
+        try {
+            analysisObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(analysis));
+        } catch (JsonProcessingException e) {
+            return endQuery(" Create analysis", startTime, "analysis " + analysis.getAlias() + " could not be parsed into json");
+        }
         analysisObject.put("studyId", studyId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject("analyses", analysisObject));
         QueryResult updateResult = userCollection.update(query, update, false, false);
 
+        System.out.println(updateResult.getResult());
         // fill other collections: jobs
         if (jobs == null) {
             jobs = Collections.<Job>emptyList();
@@ -1076,7 +1137,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //        for (Job job : jobs) {
 //        }
 
-        return endQuery("Create Analysis", startTime, updateResult);
+        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId())); // seguir2 vuelve cuando hayas hecho el test de analysis
+
     }
 
     @Override
@@ -1134,6 +1196,25 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         } catch (IOException e) {
             throw new CatalogManagerException("Error parsing file", e);
         }
+    }
+
+    /**
+     * must receive in the result: [{analyses:[{},...]}].
+     * other keys in the object, besides "analyses", will likely throw a parse error.
+     */
+    private List<Analysis> parseAnalyses(QueryResult result) throws CatalogManagerException {
+        List<Analysis> analyses = new LinkedList<>();
+        try {
+            if (result.getNumResults() != 0) {
+                Study study = jsonStudyReader.readValue(result.getResult().get(0).toString());
+                analyses = study.getAnalyses();
+                // TODO fill analyses with jobs
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogManagerException("Fail to parse analyses in mongo: " + e.getMessage());
+        }
+        return analyses;
     }
 
 //    private User appendFilesToUser(User user, List<File> files) {

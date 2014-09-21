@@ -12,7 +12,6 @@ import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -54,6 +53,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         getStudyTest();
         createAnalysisTest();
         getAllAnalysisTest();
+        getAnalysisTest();
+        getAnalysisIdTest();
         createFileToStudyTest();
     }
 
@@ -203,25 +204,25 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createFileToStudyTest() throws CatalogManagerException, IOException {
-        File f = new File("file.sam", "t", "f", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
+        File f = new File("file.bam", "t", "f", "bam", "/data/file.bam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
         System.out.println(catalog.createFileToStudy("jcoll", "1000G", "ph1", f));
     }
 
     @Test
     public void getFileTest() throws CatalogManagerException, IOException {
-        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam")));
+        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", "/data/file.bam"));
         System.out.println(catalog.getFile(1));
         System.out.println(catalog.getFile(2));
     }
 
     @Test
     public void setFileStatus() throws CatalogManagerException, IOException {
-        System.out.println(catalog.setFileStatus("jcoll", "1000G", "ph1", Paths.get("/data/file.sam"), File.READY, ID_LOGIN_JCOLL));
+        System.out.println(catalog.setFileStatus("jcoll", "1000G", "ph1", "/data/file.bam", File.READY, ID_LOGIN_JCOLL));
     }
 
     @Test
     public void deleteFileTest() throws CatalogManagerException, IOException {
-        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", Paths.get("/data/file.sam")));
+        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", "/data/file.bam"));
     }
 
 
@@ -230,17 +231,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * ***************************
      */
     @Test
-    public void createAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        try {
-            Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
-            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
-            analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
-            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // different alias, same study
-            analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "analaysis 2 decrypton", null, null);
-            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void createAnalysisTest() throws CatalogManagerException, IOException {
+        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // different alias, same study
+        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+        analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
     }
 
     @Test
@@ -252,11 +251,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "analaysis 1 description", null, null);
-        try {
-            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            System.out.println(catalog.getAnalysis(8));
     }
+
+    @Test
+    public void getAnalysisIdTest() throws CatalogManagerException {
+        System.out.println(catalog.getAnalysisId(8, "analysis2Alias"));
+    }
+
 }

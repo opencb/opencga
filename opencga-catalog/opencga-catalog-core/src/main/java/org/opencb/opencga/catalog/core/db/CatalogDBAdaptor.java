@@ -102,22 +102,22 @@ public interface CatalogDBAdaptor {
     QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogManagerException, IOException;
     QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogManagerException, JsonProcessingException;
 
-    QueryResult deleteFile(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException;
-    QueryResult deleteFile(int studyId, Path filePath) throws CatalogManagerException;
+    QueryResult deleteFile(String userId, String projectAlias, String studyAlias, String filePath) throws CatalogManagerException, IOException;
+    QueryResult deleteFile(int studyId, String filePath) throws CatalogManagerException;
     QueryResult deleteFile(int fileId) throws CatalogManagerException;
 
     QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
     QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogManagerException;
 
-    int getFileId(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException;
-    int getFileId(int studyId, Path filePath) throws CatalogManagerException, IOException;
+    int getFileId(String userId, String projectAlias, String studyAlias, String filePath) throws CatalogManagerException, IOException;
+    int getFileId(int studyId, String filePath) throws CatalogManagerException, IOException;
 
-    QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, Path filePath) throws CatalogManagerException, IOException;
-    QueryResult<File> getFile(int studyId, Path filePath) throws CatalogManagerException, IOException;
+    QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String filePath) throws CatalogManagerException, IOException;
+    QueryResult<File> getFile(int studyId, String filePath) throws CatalogManagerException, IOException;
     QueryResult<File> getFile(int fileId) throws CatalogManagerException, IOException;
 
-    QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
-    QueryResult setFileStatus(int studyId, Path filePath, String status, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String filePath, String status, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult setFileStatus(int studyId, String filePath, String status, String sessionId) throws CatalogManagerException, IOException;
     QueryResult setFileStatus(int fileId, String status, String sessionId) throws CatalogManagerException, IOException;
 
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
@@ -134,9 +134,10 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
     QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
+    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
 
     QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
-    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException, JsonProcessingException;
+    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 
     QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException;
 
