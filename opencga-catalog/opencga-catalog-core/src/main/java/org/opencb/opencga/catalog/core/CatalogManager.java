@@ -39,7 +39,7 @@ public class CatalogManager {
 
     private Properties properties;
 
-    public CatalogManager() throws IOException, CatalogIOManagerException{
+    public CatalogManager() throws IOException, CatalogIOManagerException {
         this(System.getenv("OPENCGA_HOME"));
     }
 
@@ -77,7 +77,7 @@ public class CatalogManager {
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(properties.getProperty("HOST"), Integer.parseInt(properties.getProperty("PORT")), properties.getProperty("DATABASE"), properties.getProperty("USER"), properties.getProperty("PASSWORD"));
-            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(this.properties));
+            catalogDBAdaptor = new CatalogMongoDBAdaptor(mongoCredentials);
             ioManager = new PosixIOManager(properties.getProperty("ROOTDIR"));
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();
@@ -130,7 +130,7 @@ public class CatalogManager {
 
     public QueryResult createUser(User user)
             throws CatalogManagerException, CatalogIOManagerException, JsonProcessingException {
-        checkParameter(user.getId(), "userId");
+        checkParameter(user.getId(), "id");
         checkParameter(user.getPassword(), "password");
         checkParameter(user.getName(), "name");
         checkEmail(user.getEmail());
