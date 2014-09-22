@@ -92,6 +92,19 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.login("jcoll", "1234", sessionJCOLL));
         System.out.println(catalog.login("jmmut", "1111", sessionJMMUT));
         System.out.println(catalog.loginAsAnonymous(sessionANONY));
+        try {
+            System.out.println(catalog.loginAsAnonymous(sessionANONY));
+            fail("Expected \"invalid sessionId or userId\" exception");
+        } catch (CatalogManagerException e){
+            System.out.println(e);
+        }
+
+        try {
+            System.out.println(catalog.login("jmmut", "1111", sessionJMMUT));
+            fail("Expected \"invalid sessionId\" exception");
+        } catch (CatalogManagerException e){
+            System.out.println(e);
+        }
 
         System.out.println(catalog.logout("jcoll", sessionJCOLL.getId()));
         System.out.println(catalog.logout("jmmut", sessionJMMUT.getId()));
@@ -186,7 +199,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         try {
             System.out.println(catalog.createStudy(projectId, s));  //Repeated study
-            fail("Expected \"bad alias study\" exception");
+            fail("Expected \"Study alias already exist\" exception");
         } catch (CatalogManagerException e) {
             System.out.println(e);
         }
