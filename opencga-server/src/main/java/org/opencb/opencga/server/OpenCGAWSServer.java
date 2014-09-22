@@ -3,10 +3,14 @@ package org.opencb.opencga.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+
+
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.core.CatalogManager;
+import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -69,8 +74,36 @@ public class OpenCGAWSServer {
     @QueryParam("metadata")
     protected Boolean metadata;
 
+    protected static CatalogManager catalogManager;
 
     static {
+
+        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
+        properties = new Properties();
+        try {
+            properties.load(is);
+            System.out.println("catalog.properties");
+            System.out.println(properties.getProperty("HOST"));
+            System.out.println(properties.getProperty("PORT"));
+            System.out.println(properties.getProperty("DATABASE"));
+            System.out.println(properties.getProperty("USER"));
+            System.out.println(properties.getProperty("PASSWORD"));
+            System.out.println(properties.getProperty("ROOTDIR"));
+        } catch (IOException e) {
+            System.out.println("Error loading properties");
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+
+        try {
+            catalogManager = new CatalogManager(properties);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        } catch (CatalogIOManagerException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
 
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
@@ -100,6 +133,7 @@ public class OpenCGAWSServer {
     }
 
     protected Response createOkResponse(Object obj) {
+        queryResponse = new QueryResponse();
         endTime = System.currentTimeMillis() - startTime;
         queryResponse.setTime(new Long(endTime - startTime).intValue());
         queryResponse.setApiVersion(version);

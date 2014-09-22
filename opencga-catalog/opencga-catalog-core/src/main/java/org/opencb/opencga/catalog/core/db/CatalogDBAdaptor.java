@@ -76,6 +76,7 @@ public interface CatalogDBAdaptor {
     QueryResult<Study> createStudy(int projectId, Study study) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException;
+//    QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
 
     QueryResult<Study> getStudy(int studyId) throws CatalogManagerException;
 
@@ -111,8 +112,8 @@ public interface CatalogDBAdaptor {
     QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
     QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogManagerException;
 
-    int getFileId(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException;
-    int getFileId(int studyId, String uri) throws CatalogManagerException, IOException;
+    int getFileId(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException;
+    int getFileId(int studyId, String uri) throws CatalogManagerException;
 
     QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException;
     QueryResult<File> getFile(int studyId, String uri) throws CatalogManagerException;
@@ -136,9 +137,10 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
     QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
+    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
 
     QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
-    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException, JsonProcessingException;
+    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 
     QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException;
 

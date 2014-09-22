@@ -43,7 +43,7 @@
         </init-param>
         <init-param>
             <param-name>swagger.api.basepath</param-name>
-            <param-value>/opencga-server-0.3.2/rest</param-value>
+            <param-value>/opencga/rest</param-value>
         </init-param>
         <load-on-startup>2</load-on-startup>
     </servlet>
