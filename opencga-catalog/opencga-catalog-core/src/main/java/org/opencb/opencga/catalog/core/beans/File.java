@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import org.opencb.opencga.lib.common.TimeUtils;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -64,9 +66,15 @@ public class File {
     }
 
     public File(String name, String type, String format, String bioformat, String uri, String creatorId,
-                String creationDate, String description, String status, long diskUsage, /*int studyId,*/ int experimentId) {
-        this(-1, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage, //studyId,
-                experimentId, new LinkedList<Integer>(), -1, null, new HashMap<String, Object>(), new HashMap<String, Object>());
+                String description, String status, long diskUsage) {
+        this(-1, name, type, format, bioformat, uri, creatorId, TimeUtils.getTime(), description, status, diskUsage,
+                -1, new LinkedList<Integer>(), -1, null, new HashMap<String, Object>(), new HashMap<String, Object>());
+    }
+
+    public File(String name, String type, String format, String bioformat, String uri, String creatorId,
+                String creationDate, String description, String status, long diskUsage) {
+        this(-1, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage,
+                -1, new LinkedList<Integer>(), -1, null, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,
