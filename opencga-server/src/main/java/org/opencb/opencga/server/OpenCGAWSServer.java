@@ -37,7 +37,6 @@ public class OpenCGAWSServer {
 
     protected String version;
     protected UriInfo uriInfo;
-    protected String userId;
     protected String sessionIp;
 
     // Common input arguments

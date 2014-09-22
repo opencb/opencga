@@ -5,13 +5,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.account.io.IOManagementException;
+import org.opencb.opencga.catalog.core.beans.Project;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.common.TimeUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -19,12 +18,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Date;
 
-@Path("/users")
-@Api(value = "users", description = "users")
-public class UserWSServer extends OpenCGAWSServer {
+@Path("/projects")
+@Api(value = "projects", description = "projects")
+public class ProjectWSServer extends OpenCGAWSServer {
 
-    public UserWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -33,18 +33,32 @@ public class UserWSServer extends OpenCGAWSServer {
     @Produces("text/plain")
     @ApiOperation(value = "Just to create the api")
 
-    public Response createUser(
-            @ApiParam(value = "id", required = true) @QueryParam("id") String id,
+
+    //createProject(String userId, Project project, String sessionId)
+    public Response createProject(
+            @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
+            @ApiParam(value = "sessionId", required = true) @QueryParam("sessionId") String sessionId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-            @ApiParam(value = "email", required = true) @QueryParam("email") String email,
-            @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-            @ApiParam(value = "role", required = true) @QueryParam("role") String role,
-            @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
-        User user = new User(id, name, email, password, organization, role, status);
+            @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
+            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
+            @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
+
+        Date dt = new Date();
+
+        String creationDate = TimeUtils.getTime();
+        String status = "initial";
+        String lastActivity = creationDate;
+        long diskUsage = Long.MIN_VALUE;
+//        System.out.println("Project project = new Project("+name+","+alias+","+creationDate+","+description+"," +status+","+lastActivity+"," +diskUsage+","+organization+")");
+//        System.out.println("catalogManager.createProject(" + userId + ",project, " + sessionId + ")");
+//        Project project = new Project(name, alias, creationDate, description, status, lastActivity, diskUsage,  organization);
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(user);
+
+            Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+            queryResult = catalogManager.createProject(userId, p, sessionId);
+
+          //  queryResult = catalogManager.createProject(userId, project, sessionId);
             return createOkResponse(queryResult);
 
         } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
