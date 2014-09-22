@@ -52,7 +52,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         User fullUser = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", "BOSS", "active", "", 1222, 122222,
                 Arrays.asList( new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
                         Arrays.asList( new Study(-1, "Study name", "ph1", "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
-                                        Arrays.asList( new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000, -1)
+                                        Arrays.asList( new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000)
                                         ), Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP
                                 )
                         ), Collections.EMPTY_MAP)
@@ -254,15 +254,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         assertTrue(studyId >= 0);
         File f;
-        f = new File("data/", File.FOLDER, "f", "bam", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
+        f = new File("data/", File.FOLDER, "f", "bam", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", true, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, true));
         f.setAcl(acl);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.sam", File.FILE, "sam", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
+        f = new File("file.sam", File.FILE, "sam", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.vcf", File.FILE, "vcf", "bam", "/data/file.vfc", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
+        f = new File("file.vcf", File.FILE, "vcf", "bam", "/data/file.vfc", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
 
         try {
             System.out.println(catalog.createFileToStudy(-20, f));

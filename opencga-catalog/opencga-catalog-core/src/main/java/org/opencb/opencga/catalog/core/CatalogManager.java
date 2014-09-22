@@ -495,7 +495,7 @@ public class CatalogManager {
         //TODO: Check ACL
         Path folder = ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
         File f = new File(folder.getFileName().toString()+"/", File.FOLDER, "", "", folderPath.toString(), userId
-                , TimeUtils.getTime(), "", "", 0, -1);
+                , TimeUtils.getTime(), "", "", 0);
 
         try {
             return catalogDBAdaptor.createFileToStudy(studyId, f);
