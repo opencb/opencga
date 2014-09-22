@@ -38,12 +38,13 @@ public class Sample {
     @Override
     public String toString() {
         return "Sample{" +
-                "id='" + id + '\'' +
+                "id=" + id +
                 ", name='" + name + '\'' +
                 ", source='" + source + '\'' +
                 ", individual=" + individual +
+                ", studyId=" + studyId +
                 ", description='" + description + '\'' +
-                ", annotations=" + sampleAnnotations +
+                ", sampleAnnotations=" + sampleAnnotations +
                 '}';
     }
 
@@ -77,6 +78,14 @@ public class Sample {
 
     public void setIndividual(Individual individual) {
         this.individual = individual;
+    }
+
+    public int getStudyId() {
+        return studyId;
+    }
+
+    public void setStudyId(int studyId) {
+        this.studyId = studyId;
     }
 
     public String getDescription() {

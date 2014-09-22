@@ -10,7 +10,6 @@ public class Job {
     private int id;
     private String name;
     private String userId;
-//    private int analysisId;
     private String toolName;
     private String date;
     private String description;
@@ -38,13 +37,12 @@ public class Job {
     public Job() {
     }
 
-    public Job(int id, String name, String userId, int analysisId, String toolName, String date, String description,
+    public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
                long diskUsage, String outdir, List<Integer> input, List<Integer> output) {
         this.id = id;
         this.name = name;
         this.userId = userId;
-//        this.analysisId = analysisId;
         this.toolName = toolName;
         this.date = date;
         this.description = description;

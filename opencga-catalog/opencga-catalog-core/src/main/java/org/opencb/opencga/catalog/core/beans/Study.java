@@ -40,10 +40,10 @@ public class Study {
     public Study() {
     }
 
-    public Study(String name, String alias, String type, String description,
-                 String status) {
+    public Study(String name, String alias, String type, String description, String status) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, 0, "", new ArrayList<Acl>(),
-                new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Analysis>(), new HashMap<String, Object>(), new HashMap<String, Object>());
+                new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Analysis>(),
+                new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, String type, String creatorId, String creationDate, String description,
