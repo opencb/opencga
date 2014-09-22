@@ -1080,7 +1080,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     /**
      * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
      */
-    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {
+    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {   // TODO test
         DBObject projection = BasicDBObjectBuilder
                 .start("acl",
                         new BasicDBObject("$elemMatch",
@@ -1094,6 +1094,33 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         List<Acl> acl = parseFile(queryResult).getAcl();
         return acl == null ? null : acl.get(0);
+    }
+
+
+    public void setFileAcl(int fileId, String userId, Acl newAcl) throws CatalogManagerException {   // TODO test
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to nonexistant user" + userId);
+        }
+        Acl fileAcl = getFileAcl(fileId, userId);
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+        DBObject match = BasicDBObjectBuilder
+                .start("id", fileId)
+                .append("acl.userId", userId).get();
+
+
+        DBObject updateOperation;
+        if (fileAcl == null) {  // there is no acl for that user in that file. push
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // set
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
     }
 
     /**
