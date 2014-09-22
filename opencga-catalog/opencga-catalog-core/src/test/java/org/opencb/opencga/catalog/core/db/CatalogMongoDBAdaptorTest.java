@@ -162,6 +162,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.getAllProjects("jcoll"));
     }
 
+    @Test
+    public void renameProjectTest() throws CatalogManagerException {
+        int projectId = catalog.getProjectId("jmmut", "pmp");
+        System.out.println(catalog.renameProjectAlias(projectId, "newpmp"));
+    }
     /**
      * Study methods
      * ***************************
@@ -322,7 +327,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
             fail("expected \"analysis already exists\" exception");
         } catch (CatalogManagerException e) {
-            e.printStackTrace();
         }
     }
 

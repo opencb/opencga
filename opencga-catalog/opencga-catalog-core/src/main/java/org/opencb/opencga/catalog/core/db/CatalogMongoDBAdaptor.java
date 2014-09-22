@@ -405,6 +405,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
+    public QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogManagerException {
+        int projectId = getProjectId(userId, projectAlias);
+        return getProject(projectId);
+    }
+
+    @Override
     public QueryResult<Project> getProject(int projectId) throws CatalogManagerException {
         long startTime = startQuery();
         //TODO: ManageSession
@@ -447,8 +453,33 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult renameProject(int projectId, String newProjectName) throws CatalogManagerException {
-        throw new CatalogManagerException("Unsupported opperation");
+    public QueryResult renameProjectAlias(int projectId, String newProjectAlias) throws CatalogManagerException {
+        boolean alreadyUsed = true;
+        String projectOwner = getProjectOwner(projectId);
+
+        try {   // check that the user doesn't have another project with that alias
+            getProject(projectOwner, newProjectAlias);
+        } catch (CatalogManagerException e) {
+            alreadyUsed = false;
+        }
+
+        if (alreadyUsed) {
+            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
+        }
+
+        QueryResult<Project> projectResult = getProject(projectId);
+        Project project = projectResult.getResult().get(0);
+
+        String oldAlias = project.getAlias();
+        project.setAlias(newProjectAlias);
+
+        DBObject query = BasicDBObjectBuilder
+                .start("id", projectOwner)
+                .append("projects.$.alias", oldAlias).get();
+        DBObject update = new BasicDBObject("$set",
+                new BasicDBObject("projects.$.alias", newProjectAlias));
+
+        return userCollection.update(query, update, false, false);
     }
 
     @Override

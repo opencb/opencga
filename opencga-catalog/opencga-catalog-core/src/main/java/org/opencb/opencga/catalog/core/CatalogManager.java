@@ -311,7 +311,7 @@ public class CatalogManager {
         if(projectAcl.isWrite()) {
 //            ioManager.renameProject(userId, projectAlias, newProjectAlias);
 //            try {
-                return catalogDBAdaptor.renameProject(projectId, newProjectAlias);
+                return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
 //            } catch (CatalogManagerException e) {
 //                ioManager.renameProject(userId, newProjectAlias, projectAlias);
 //                throw e;

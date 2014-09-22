@@ -58,11 +58,12 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Project> getAllProjects(String userId) throws CatalogManagerException;
 
+    QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogManagerException;
     QueryResult<Project> getProject(int project) throws CatalogManagerException;
 
     QueryResult deleteProject(int projecetId) throws CatalogManagerException;
 
-    QueryResult renameProject(int projectId, String newprojectName) throws CatalogManagerException;
+    QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogManagerException;
 
     int getProjectId(String userId, String project) throws CatalogManagerException;
 
