@@ -1,8 +1,9 @@
 package org.opencb.opencga.catalog.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import static org.junit.Assert.*;
+import org.junit.runners.MethodSorters;
+import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
@@ -14,18 +15,25 @@ import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@FixMethodOrder(MethodSorters.JVM)
 public class CatalogManagerTest extends GenericTest {
 
     public static final String PASSWORD = "asdf";
-    CatalogManager catalogManager;
+    static CatalogManager catalogManager;
     private String sessionIdUser;
     private String sessionIdUser2;
 
+    @BeforeClass
+    public static void init() throws IOException, CatalogIOManagerException {
+        catalogManager = new CatalogManager("/tmp/opencga");
+    }
+
     @Before
     public void setUp() throws IOException, CatalogIOManagerException {
-        catalogManager = new CatalogManager("/tmp/opencga");
         List<ObjectMap> result = null;
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
@@ -86,9 +94,36 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.getUser("user", null, sessionIdUser));
         try {
             catalogManager.getUser("user", null, sessionIdUser2);
-            assert false;
-        } catch (CatalogManagerException ignored) {
+            fail();
+        } catch (CatalogManagerException e) {
+            System.out.println(e);
         }
+    }
+
+    @Test
+    public void testModifyUser() throws CatalogManagerException {
+        Map<String, String> options = new HashMap<>();
+        options.put("name", "Changed Name");
+        options.put("attributes.myAttribute", "5");
+        options.put("attributes.myStruct.value.ok", "true");
+        catalogManager.modifyUser("user", options, sessionIdUser);
+
+        try {
+            options = new HashMap();
+            options.put("password", "1234321");
+            catalogManager.modifyUser("user", options, sessionIdUser);
+            fail("Expected exception");
+        } catch (CatalogManagerException e){
+            System.out.println(e);
+        }
+
+        try {
+            catalogManager.modifyUser("user", options, sessionIdUser2);
+            fail("Expected exception");
+        } catch (CatalogManagerException e){
+            System.out.println(e);
+        }
+
     }
 
     @Test
@@ -101,6 +136,34 @@ public class CatalogManagerTest extends GenericTest {
     public void testGetAllProjects() throws Exception {
         System.out.println(catalogManager.getAllProjects("user", sessionIdUser));
         System.out.println(catalogManager.getAllProjects("user", sessionIdUser2));
+    }
+
+    @Test
+    public void testModifyProject() throws CatalogManagerException {
+        Map<String, String> options = new HashMap<>();
+        options.put("name", "new ProjectName");
+        options.put("attributes.myAttribute", "5");
+        options.put("attributes.myStruct.value.ok", "true");
+
+        int projectId = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0).getProjects().get(0).getId();
+        catalogManager.modifyProject(projectId, options, sessionIdUser);
+
+        try {
+            options = new HashMap<>();
+            options.put("alias", "newProjectalias");
+            catalogManager.modifyProject(projectId, options, sessionIdUser);
+            fail("Expected 'Parameter can't be changed' exception");
+        } catch (CatalogManagerException e){
+            System.out.println(e);
+        }
+
+        try {
+            catalogManager.modifyProject(projectId, options, sessionIdUser2);
+            fail("Expected 'Permission denied' exception");
+        } catch (CatalogManagerException e){
+            System.out.println(e);
+        }
+
     }
 
     @Test

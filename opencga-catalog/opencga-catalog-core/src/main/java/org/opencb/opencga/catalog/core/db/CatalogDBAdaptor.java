@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.core.db;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
@@ -8,6 +9,7 @@ import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 
 public interface CatalogDBAdaptor {
 
@@ -42,6 +44,8 @@ public interface CatalogDBAdaptor {
 
     QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException;
 
+    QueryResult modifyUser(String userId, Map<String, String> parameters) throws CatalogManagerException;
+
     QueryResult resetPassword(String userId, String email) throws CatalogManagerException;
 
 //    public boolean checkSessionId(String userId, String sessionId);
@@ -63,6 +67,8 @@ public interface CatalogDBAdaptor {
     QueryResult deleteProject(int projecetId) throws CatalogManagerException;
 
     QueryResult renameProject(int projectId, String newprojectName) throws CatalogManagerException;
+
+    QueryResult modifyProject(int projectId, Map<String, String> parameters) throws CatalogManagerException;
 
     int getProjectId(String userId, String project) throws CatalogManagerException;
 

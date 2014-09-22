@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
+import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -366,6 +367,24 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
+    public QueryResult modifyUser(String userId, Map<String, String> parameters) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        if(!userExists(userId)){
+            throw new CatalogManagerException("User {id:\""+userId+"\"} not found");
+        }
+
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|email|organization|attributes\\..+|configs\\..+")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            }
+        }
+
+        userCollection.update(new BasicDBObject("id", userId), new BasicDBObject("$set", parameters), false, false);
+        return endQuery("Modify user", startTime, "");
+    }
+
+    @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogManagerException {
         return null;
     }
@@ -488,6 +507,25 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult renameProject(int projectId, String newProjectName) throws CatalogManagerException {
         throw new CatalogManagerException("Unsupported opperation");
     }
+
+    @Override
+    public QueryResult modifyProject(int projectId, Map<String, String> parameters) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        //TODO: Check projectExists?
+        BasicDBObject projectParameters = new BasicDBObject();
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|description|organization|status|attributes\\..+")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            } else {
+                projectParameters.put("projects.$."+s, parameters.get(s));
+            }
+        }
+
+        userCollection.update(new BasicDBObject("projects.id", projectId), new BasicDBObject("$set", projectParameters), false, false);
+        return endQuery("Modify user", startTime, "");
+    }
+
 
     @Override
     public int getProjectId(String userId, String project) throws CatalogManagerException {
