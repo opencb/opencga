@@ -333,8 +333,8 @@ public class PosixIOManager implements CatalogIOManager {
         try {
             if(!Files.exists(studyPath)) {
                 studyPath = Files.createDirectory(studyPath);
-                Files.createDirectory(studyPath.resolve("data"));
-                Files.createDirectory(studyPath.resolve("analysis"));
+//                Files.createDirectory(studyPath.resolve("data"));
+//                Files.createDirectory(studyPath.resolve("analysis"));
             }
         } catch (IOException e) {
             throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString());

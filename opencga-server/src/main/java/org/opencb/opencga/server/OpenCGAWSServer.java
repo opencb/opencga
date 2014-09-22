@@ -23,6 +23,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,14 +74,36 @@ public class OpenCGAWSServer {
     protected Boolean metadata;
 
     protected static CatalogManager catalogManager;
+
     static {
+
+        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
+        properties = new Properties();
         try {
-            catalogManager = new CatalogManager();
+            properties.load(is);
+            System.out.println("catalog.properties");
+            System.out.println(properties.getProperty("HOST"));
+            System.out.println(properties.getProperty("PORT"));
+            System.out.println(properties.getProperty("DATABASE"));
+            System.out.println(properties.getProperty("USER"));
+            System.out.println(properties.getProperty("PASSWORD"));
+            System.out.println(properties.getProperty("ROOTDIR"));
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CatalogIOManagerException e) {
+            System.out.println("Error loading properties");
+            System.out.println(e.getMessage());
             e.printStackTrace();
         }
+
+        try {
+            catalogManager = new CatalogManager(properties);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        } catch (CatalogIOManagerException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+
         jsonObjectMapper = new ObjectMapper();
         jsonObjectWriter = jsonObjectMapper.writer();
 

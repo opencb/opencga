@@ -12,9 +12,11 @@ public class Analysis {
     private String name;
     private String alias;
     private String date;
+    private String creatorId;
+    private String creationDate;
     private String description;
 
-    private List<Job> jobs; // FIXME revise inclusion
+    private List<Job> jobs;
 
     private Map<String, Object> attributes;
 
@@ -22,12 +24,15 @@ public class Analysis {
     public Analysis() {
     }
 
-    public Analysis(int id, String name, String alias, String date, String description, Map<String, Object> attributes) {
+    public Analysis(int id, String name, String alias, String date, String creatorId, String creationDate, String description, List<Job> jobs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.date = date;
+        this.creatorId = creatorId;
+        this.creationDate = creationDate;
         this.description = description;
+        this.jobs = jobs;
         this.attributes = attributes;
     }
 
@@ -38,6 +43,8 @@ public class Analysis {
                 ", name='" + name + '\'' +
                 ", alias='" + alias + '\'' +
                 ", date='" + date + '\'' +
+                ", creatorId='" + creatorId + '\'' +
+                ", creationDate='" + creationDate + '\'' +
                 ", description='" + description + '\'' +
                 ", jobs=" + jobs +
                 ", attributes=" + attributes +
@@ -76,6 +83,22 @@ public class Analysis {
         this.date = date;
     }
 
+    public String getCreatorId() {
+        return creatorId;
+    }
+
+    public void setCreatorId(String creatorId) {
+        this.creatorId = creatorId;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -99,5 +122,4 @@ public class Analysis {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
-
 }
