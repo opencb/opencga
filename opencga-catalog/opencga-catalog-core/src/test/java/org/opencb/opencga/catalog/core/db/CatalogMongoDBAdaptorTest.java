@@ -15,6 +15,7 @@ import org.opencb.opencga.lib.common.TimeUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class CatalogMongoDBAdaptorTest extends GenericTest {
@@ -23,7 +24,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @BeforeClass
     public static void before() throws IllegalOpenCGACredentialsException, JsonProcessingException {
-
         MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, "catalog", "", "");
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
     }
@@ -118,6 +118,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
         Project p ;
         p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+        LinkedList<Acl> acl = new LinkedList<>();
+        acl.push(new Acl("jcoll", true, false, true, true));
+        acl.push(new Acl("jmmut", false, true, true, true));
+        p.setAcl(acl);
         System.out.println(catalog.createProject("jcoll", p));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
         System.out.println(catalog.createProject("jcoll", p));
@@ -167,6 +171,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId = catalog.getProjectId("jcoll", "1000G");
 
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
+        LinkedList<Acl> acl = new LinkedList<>();
+        acl.push(new Acl("jcoll", false, true, true, true));
+        acl.push(new Acl("jmmut", false, false, true, false));
+        s.setAcl(acl);
         System.out.println(catalog.createStudy(projectId, s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
         System.out.println(catalog.createStudy(projectId, s));
@@ -229,6 +237,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(studyId >= 0);
         File f;
         f = new File("data/", File.FOLDER, "f", "bam", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
+        LinkedList<Acl> acl = new LinkedList<>();
+        acl.push(new Acl("jcoll", true, true, true, true));
+        acl.push(new Acl("jmmut", false, false, true, true));
+        f.setAcl(acl);
         System.out.println(catalog.createFileToStudy(studyId, f));
         f = new File("file.sam", File.FILE, "sam", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000, -1);
         System.out.println(catalog.createFileToStudy(studyId, f));
@@ -331,4 +343,23 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.getAnalysisId(8, "analysis2Alias"));
     }
 
+    @Test
+    public void getAclsTest() throws CatalogManagerException {
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int projectId = catalog.getProjectId("jcoll", "1000G");
+
+        Acl fileAcl = catalog.getFileAcl(fileId, "jcoll");
+        assertNotNull(fileAcl);
+        System.out.println(fileAcl);
+        Acl projectAcl = catalog.getProjectAcl(projectId, "jcoll");
+        assertNotNull(projectAcl);
+        System.out.println(projectAcl);
+        Acl studyAcl = catalog.getStudyAcl(studyId, "jcoll");
+        assertNotNull(studyAcl);
+        System.out.println(studyAcl);
+        Acl fileAcl1 = catalog.getFileAcl(fileId, "imedina");
+        assertNull(fileAcl1);
+        System.out.println(fileAcl1);
+    }
 }

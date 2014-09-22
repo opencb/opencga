@@ -175,11 +175,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
     /**
-<<<<<<< HEAD
-     * User methods 
-=======
      * User methods
->>>>>>> 2d5c8e3b2b9c1486dacc9bcb8c7e36f153872402
      * ***************************
      */
 
@@ -487,16 +483,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getProjectAcl(int projectId, String userId) {
-//        QueryResult<Project> project = getprojectFromFileId(fileId);
-//        if (project.getNumResults() != 0) {
-//            List<Acl> acl = project.getResult().get(0).getAcl();
-//            for (Acl acl1 : acl) {
-//                if (acl1.getUserId() == userId) {
-//                    return acl1;
-//                }
-//            }
-//        }
+    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+        QueryResult<Project> project = getProject(projectId);
+        if (project.getNumResults() != 0) {
+            List<Acl> acl = project.getResult().get(0).getAcl();
+            for (Acl acl1 : acl) {
+                if (userId.equals(acl1.getUserId())) {
+                    return acl1;
+                }
+            }
+        }
         return null;
     }
 
@@ -584,7 +580,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 , userCollection.find(query, null, null, projection));
 
         User user = parseUser(queryResult);
-		if(user == null || user.getProjects().isEmpty()) {
+        if(user == null || user.getProjects().isEmpty()) {
             return endQuery("Get all studies", startTime, "Project {id:"+projectId+"} not found");
         }
         List<Study> studies = user.getProjects().get(0).getStudies();
@@ -739,24 +735,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getStudyAcl(int studyId, String userId) {
-//        QueryResult<Study> study = getStudyFromFileId(fileId);
-//        if (study.getNumResults() != 0) {
-//            List<Acl> acl = study.getResult().get(0).getAcl();
-//            for (Acl acl1 : acl) {
-//                if (acl1.getUserId() == userId) {
-//                    return acl1;
-//                }
-//            }
-//        }
+    public Acl getStudyAcl(int studyId, String userId) throws CatalogManagerException {
+        QueryResult<Study> studyQuery = getStudy(studyId);
+        List<Acl> acl = studyQuery.getResult().get(0).getAcl();
+        for (Acl acl1 : acl) {
+            if (userId.equals(acl1.getUserId())) {
+                return acl1;
+            }
+        }
         return null;
     }
     /**
-<<<<<<< HEAD
-     * File methods ���
-=======
      * File methods
->>>>>>> 2d5c8e3b2b9c1486dacc9bcb8c7e36f153872402
      * ***************************
      */
 
@@ -838,7 +828,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public int getFileId(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException {
+    public int getFileId(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException {
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         return getFileId(studyId, uri);
     }
@@ -968,23 +958,23 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public void getFileAcl(int fileId, String userId, Acl projectAcl, Acl studyAcl, Acl fileAcl) throws CatalogManagerException, IOException {
-//        long startQuery = startQuery();
-//
-//        DBObject query = new BasicDBObject("id", userId);
-//        new BasicDBObject()//seguir
-//
-//
-//        QueryResult<File> file = getFile(fileId);
-//        if (file.getNumResults() != 0) {
-//            List<Acl> acl = file.getResult().get(0).getAcl();
-//            for (Acl acl1 : acl) {
-//                if (acl1.getUserId() == userId) {
-//                    fileAcl = acl1;
-//                }
-//            }
-//            studyAcl = getStudyAcl(getStudyIdByFileId(fileId), userId);
-//        }
+    /**
+     * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
+     */
+    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {
+        DBObject projection = BasicDBObjectBuilder
+                .start("acl",
+                        new BasicDBObject("$elemMatch",
+                                new BasicDBObject("userId", userId)))
+                .append("_id", false)
+                .get();
+
+        QueryResult queryResult = fileCollection.find(new BasicDBObject("id", fileId), null, null, projection);
+        if (queryResult.getNumResults() == 0) {
+            throw new CatalogManagerException("getFileAcl: There is no file with fileId = " + fileId);
+        }
+        List<Acl> acl = parseFile(queryResult).getAcl();
+        return acl == null ? null : acl.get(0);
     }
 
     /**
@@ -1207,7 +1197,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     /**
      * must receive in the result: [{analyses:[{},...]}].
-     * other keys in the object, besides "analyses", will likely throw a parse error.
+     * other keys in the object, besides "analyses", will throw
+     * a parse error if they are not present in the Analyses Bean.
      */
     private List<Analysis> parseAnalyses(QueryResult result) throws CatalogManagerException {
         List<Analysis> analyses = new LinkedList<>();
