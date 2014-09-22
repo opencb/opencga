@@ -21,15 +21,15 @@ public interface CatalogDBAdaptor {
 
     QueryResult<User> createUser(User user) throws CatalogManagerException, JsonProcessingException;
 
-    QueryResult deleteUser(String userId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult deleteUser(String userId) throws CatalogManagerException;
 
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogManagerException, IOException;
 
-    QueryResult logout(String userId, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult logout(String userId, String sessionId) throws CatalogManagerException;
 
-    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogManagerException, IOException;
+    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogManagerException;
 
-    QueryResult logoutAnonymous(String sessionId);
+    QueryResult logoutAnonymous(String sessionId) throws CatalogManagerException;
 
 
     // public String getUserByAccountId(String accountId, String sessionId);
