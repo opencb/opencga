@@ -4,10 +4,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Random;
 
 public class StringUtils {
     private final static String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private final static Random r = new Random(System.currentTimeMillis());
 
     public static String randomString() {
         return randomString(10);
@@ -15,7 +17,6 @@ public class StringUtils {
 
     public static String randomString(int length) {
         StringBuilder string = new StringBuilder();
-        Random r = new Random(System.currentTimeMillis());
         for (int i = 0; i < length; i++) {
             string.append(characters.charAt(r.nextInt(characters.length())));
         }
