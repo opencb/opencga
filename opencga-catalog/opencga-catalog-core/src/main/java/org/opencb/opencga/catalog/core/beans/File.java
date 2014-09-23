@@ -68,13 +68,13 @@ public class File {
     public File(String name, String type, String format, String bioformat, String uri, String creatorId,
                 String description, String status, long diskUsage) {
         this(-1, name, type, format, bioformat, uri, creatorId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, null, new HashMap<String, Object>(), new HashMap<String, Object>());
+                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public File(String name, String type, String format, String bioformat, String uri, String creatorId,
                 String creationDate, String description, String status, long diskUsage) {
         this(-1, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, null, new HashMap<String, Object>(), new HashMap<String, Object>());
+                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,

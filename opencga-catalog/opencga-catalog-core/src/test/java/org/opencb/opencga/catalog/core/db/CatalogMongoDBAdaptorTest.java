@@ -424,4 +424,22 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNull(fileAcl1);
         System.out.println(fileAcl1);
     }
+
+    @Test
+    public void setAclsTest() throws CatalogManagerException {
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        System.out.println(fileId);
+
+        Acl granted = new Acl("jmmut", true, true, true, false);
+        catalog.setFileAcl(fileId, granted);
+        granted.setUserId("imedina");
+        catalog.setFileAcl(fileId, granted);
+        try {
+            granted.setUserId("noUser");
+            catalog.setFileAcl(fileId, granted);
+            fail("error: expected exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+    }
 }

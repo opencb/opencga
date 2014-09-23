@@ -133,7 +133,8 @@ public interface CatalogDBAdaptor {
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
     String getFileOwner(int fileId) throws CatalogManagerException;
 
-    // TODO: void shareObject(String userId, int fileId, Acl acl) throws CatalogManagerException;
+    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException;
+    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
 
 
 

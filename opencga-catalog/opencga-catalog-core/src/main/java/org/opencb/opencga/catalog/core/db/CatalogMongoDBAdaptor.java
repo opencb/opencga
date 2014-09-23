@@ -1101,7 +1101,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     /**
      * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
      */
-    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {   // TODO test
+    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {
         DBObject projection = BasicDBObjectBuilder
                 .start("acl",
                         new BasicDBObject("$elemMatch",
@@ -1118,11 +1118,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
 
-    public void setFileAcl(int fileId, String userId, Acl newAcl) throws CatalogManagerException {   // TODO test
+    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
         if (!userExists(userId)) {
-            throw new CatalogManagerException("Can not set ACL to nonexistant user" + userId);
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
         }
-        Acl fileAcl = getFileAcl(fileId, userId);
 
         DBObject newAclObject;
         try {
@@ -1130,15 +1130,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         } catch (JsonProcessingException e) {
             throw new CatalogManagerException("could not put ACL: parsing error");
         }
-        DBObject match = BasicDBObjectBuilder
-                .start("id", fileId)
-                .append("acl.userId", userId).get();
 
-
+        Acl fileAcl = getFileAcl(fileId, userId);
+        DBObject match;
         DBObject updateOperation;
         if (fileAcl == null) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", fileId);
             updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
-        } else {    // set
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", fileId)
+                    .append("acl.userId", userId).get();
             updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
         QueryResult update = fileCollection.update(match, updateOperation, false, false);
