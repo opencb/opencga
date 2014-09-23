@@ -26,6 +26,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
+        System.out.println("version = [" + version + "], uriInfo = [" + uriInfo.toString() + "], httpServletRequest = [" + httpServletRequest.toString() + "]");
     }
 
     @GET
@@ -55,7 +56,12 @@ public class ProjectWSServer extends OpenCGAWSServer {
         QueryResult queryResult;
         try {
 
+            //Project p = new Project(name, alias, description, status,organization);
+
             Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+//            Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+            System.out.println("userId: "+userId);
+            System.out.println("sessionId: "+sessionId);
             queryResult = catalogManager.createProject(userId, p, sessionId);
 
           //  queryResult = catalogManager.createProject(userId, project, sessionId);
@@ -111,21 +117,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
-    @GET
-    @Path("/{userId}/info")
-    @Produces("text/plain")
-    @ApiOperation(value = "User info")
-    public Response getInfo(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "sessionId", required = true) @QueryParam("sessionId") String sessionId,
-            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
-        try {
-            QueryResult result = catalogManager.getUserInfo(userId, lastActivity, sessionId);
-            return createOkResponse(result);
-        } catch (CatalogManagerException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
+
 
 }
