@@ -365,6 +365,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // same study, different alias
         analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
+        analysis = new Analysis(0, "analisis3Name", "analysis2Alias", "lastmonth", "jmmmut", "today", "analaysis 2 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
+
         try {
             System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));
             fail("expected \"analysis already exists\" exception");
@@ -392,7 +395,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
             int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
-            System.out.println(analysisId);
+            System.out.println("analysisId: " + analysisId);
+        } catch (CatalogManagerException e) {
+            System.out.println(e);
+        }
+
+        try {
+            int studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
+            int analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");  // analysis3Alias does not belong to ph1
+            System.out.println("analysisId: " + analysisId);
         } catch (CatalogManagerException e) {
             System.out.println(e);
         }

@@ -1192,7 +1192,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 analyses = study.getAnalyses();
                 // TODO fill analyses with jobs
             }
-            return endQuery("User analyses list", startTime, analyses);
+            return endQuery("get all analyses", startTime, analyses);
         } catch (IOException e) {
             e.printStackTrace();
             throw new CatalogManagerException("Failed to parse mongo : " + e.getMessage());
@@ -1204,20 +1204,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * , {"analyses":{$elemMatch:{studyId:8,alias:"analysis1Alias"}},"analyses.id":1}).pretty()
      */
     public int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException {
-        DBObject match = BasicDBObjectBuilder
-                .start("analyses.alias", analysisAlias)
-                .append("analyses.studyId", studyId).get();
+        DBObject elem = new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                .start("studyId", studyId)
+                .append("alias", analysisAlias).get()
+        );
+        DBObject match = new BasicDBObject("analyses", elem);
         DBObject projection = BasicDBObjectBuilder
-                .start("analyses",
-                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
-                                .start("studyId", studyId)
-                                .append("alias", analysisAlias)
-                                .get()
-                        )
-                )
-                .append("analyses.id", true)
-                .get();
-
+                .start("analyses", elem)
+                .append("_id", false).get();
         QueryResult result = userCollection.find(match, null, null, projection);
         List<Analysis> analyses = parseAnalyses(result);
         return analyses.size() == 0? -1: analyses.get(0).getId();
@@ -1267,11 +1261,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         // TODO manage session
 
         // Check if analysis.alias already exists.
-        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
-                .start("analyses.studyId", studyId)
-                .append("analyses.alias", analysis.getAlias()).get());
+        QueryResult<Long> count = userCollection.count(
+                new BasicDBObject("analyses",
+                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                                .start("studyId", studyId)
+                                .append("alias", analysis.getAlias()).get()
+                        )
+                )
+        );
         if(count.getResult().get(0) != 0) {
-            throw new CatalogManagerException("Analysis alias already exists in this study");
+            throw new CatalogManagerException("Analysis alias " + analysis.getAlias() + " already exists in study " + studyId);
         }
 
         // complete and push Analysis: id, studyId, jobs...
@@ -1372,7 +1371,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         try {
             if (result.getNumResults() != 0) {
                 Study study = jsonStudyReader.readValue(result.getResult().get(0).toString());
-                analyses = study.getAnalyses();
+                analyses.addAll(study.getAnalyses());
                 // TODO fill analyses with jobs
             }
         } catch (IOException e) {
