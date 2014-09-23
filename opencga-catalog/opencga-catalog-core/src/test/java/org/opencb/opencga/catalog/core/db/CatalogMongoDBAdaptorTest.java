@@ -382,14 +382,20 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");
-        System.out.println(analysisId);
+//        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");
+//        catalog.getAnalysis(analysisId);
     }
 
     @Test
     public void getAnalysisIdTest() throws CatalogManagerException {
-        System.out.println(catalog.getAnalysisId(8, "analysis2Alias"));
+        try {
+            int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+            int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
+            System.out.println(analysisId);
+        } catch (CatalogManagerException e) {
+            System.out.println(e);
+        }
     }
 
     @Test
