@@ -385,28 +385,24 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-//        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-//        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");
-//        catalog.getAnalysis(analysisId);
+        QueryResult<Analysis> analysis = catalog.getAnalysis(-1);
+        if (analysis.getNumResults() != 0) {
+            fail("error: expected no analysis. instead returned: " + analysis);
+        }
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");  // analysis3Alias does not belong to ph1
+        catalog.getAnalysis(analysisId);
     }
 
     @Test
     public void getAnalysisIdTest() throws CatalogManagerException {
-        try {
-            int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-            int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
-            System.out.println("analysisId: " + analysisId);
-        } catch (CatalogManagerException e) {
-            System.out.println(e);
-        }
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
+        System.out.println("analysisId: " + analysisId);
 
-        try {
-            int studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
-            int analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");  // analysis3Alias does not belong to ph1
-            System.out.println("analysisId: " + analysisId);
-        } catch (CatalogManagerException e) {
-            System.out.println(e);
-        }
+        studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
+        analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
+        System.out.println("analysisId: " + analysisId);
     }
 
     @Test
