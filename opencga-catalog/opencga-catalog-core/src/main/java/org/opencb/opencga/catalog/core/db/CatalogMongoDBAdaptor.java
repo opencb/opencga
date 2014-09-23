@@ -422,6 +422,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * ***************************
      */
 
+    public boolean projectExists(int projectId) {
+        QueryResult count = userCollection.count(new BasicDBObject("projects.id", projectId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
     public QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
@@ -514,34 +520,49 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 user.getProjects());
     }
 
+
+    /**
+    db.user.update(
+        {
+            "projects.id" : projectId,
+            "projects.alias" : {
+                $ne : newAlias
+            }
+        },
+        {
+            $set:{
+                "projects.$.alias":newAlias
+            }
+        })
+    */
     @Override
     public QueryResult renameProjectAlias(int projectId, String newProjectAlias) throws CatalogManagerException {
-        boolean alreadyUsed = true;
-        String projectOwner = getProjectOwner(projectId);
+        long startTime = startQuery();
+//        String projectOwner = getProjectOwner(projectId);
+//
+//        int collisionProjectId = getProjectId(projectOwner, newProjectAlias);
+//        if (collisionProjectId != -1) {
+//            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
+//        }
 
-        try {   // check that the user doesn't have another project with that alias
-            getProject(projectOwner, newProjectAlias);
-        } catch (CatalogManagerException e) {
-            alreadyUsed = false;
-        }
-
-        if (alreadyUsed) {
-            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
-        }
-
-        QueryResult<Project> projectResult = getProject(projectId);
+        QueryResult<Project> projectResult = getProject(projectId); // if projectId doesn't exist, an exception is raised
         Project project = projectResult.getResult().get(0);
 
         String oldAlias = project.getAlias();
         project.setAlias(newProjectAlias);
 
         DBObject query = BasicDBObjectBuilder
-                .start("id", projectOwner)
-                .append("projects.$.alias", oldAlias).get();
+                .start("projects.id", projectId)
+                .append("projects.alias", new BasicDBObject("$ne", newProjectAlias))    // check that any other project in the user has the new name
+                .get();
         DBObject update = new BasicDBObject("$set",
                 new BasicDBObject("projects.$.alias", newProjectAlias));
 
-        return userCollection.update(query, update, false, false);
+        QueryResult<WriteResult> result = userCollection.update(query, update, false, false);
+        if (result.getResult().get(0).getN() == 0) {    //Check if the the study has been inserted
+            throw new CatalogManagerException("Project {alias:\"" + newProjectAlias+ "\"} already exists");
+        }
+        return endQuery("rename project alias", startTime, result);
     }
 
     @Override
@@ -696,7 +717,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 , userCollection.find(query, null, null, projection));
 
         User user = parseUser(queryResult);
-		if(user == null || user.getProjects().isEmpty()) {
+        if(user == null || user.getProjects().isEmpty()) {
             throw new CatalogManagerException("Project {id:"+projectId+"} not found");
         }
         List<Study> studies = user.getProjects().get(0).getStudies();
@@ -1146,10 +1167,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException {
         long startTime = startQuery();
 
-        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", studyId));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("analyses", 1));
         DBObject unwind = new BasicDBObject("$unwind", "$analyses");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", studyId));
         DBObject group = new BasicDBObject(
                 "$group",
                 BasicDBObjectBuilder
@@ -1174,7 +1195,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             return endQuery("User analyses list", startTime, analyses);
         } catch (IOException e) {
             e.printStackTrace();
-            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+            throw new CatalogManagerException("Failed to parse mongo : " + e.getMessage());
         }
     }
 

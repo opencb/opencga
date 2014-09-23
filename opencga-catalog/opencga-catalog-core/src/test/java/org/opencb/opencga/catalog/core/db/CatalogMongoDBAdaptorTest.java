@@ -175,10 +175,38 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.getAllProjects("jcoll"));
     }
 
+    /**
+     * cases:
+     *      ok: correct projectId, correct newName
+     *      error: non-existent projectId
+     *      error: newName already used
+     *      error: newName == oldName
+     * @throws CatalogManagerException
+     */
     @Test
     public void renameProjectTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jmmut", "pmp");
         System.out.println(catalog.renameProjectAlias(projectId, "newpmp"));
+
+        try {
+            System.out.println(catalog.renameProjectAlias(-1, "inexistentProject"));
+            fail("renamed project with projectId=-1");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+        try {
+            System.out.println(catalog.renameProjectAlias(catalog.getProjectId("jcoll", "1000G"), "2000G"));
+            fail("renamed project with name collision");
+        } catch (CatalogManagerException e){
+            System.out.println("correct exception: " + e);
+        }
+
+        try {
+            System.out.println(catalog.renameProjectAlias(catalog.getProjectId("jcoll", "1000G"), "1000G"));
+            fail("renamed project to its old name");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
     }
     /**
      * Study methods
@@ -195,6 +223,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         s.setAcl(acl);
         System.out.println(catalog.createStudy(projectId, s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
+        System.out.println(catalog.createStudy(projectId, s));
+        s = new Study("Phase 7", "ph7", "TEST", "", "");
         System.out.println(catalog.createStudy(projectId, s));
 
         try {
@@ -330,14 +360,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void createAnalysisTest() throws CatalogManagerException {
         Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
-        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // different alias, same study
-        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // same study, different alias
         analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton", null, null);
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
         try {
-            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));
             fail("expected \"analysis already exists\" exception");
         } catch (CatalogManagerException e) {
         }
@@ -346,13 +375,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getAllAnalysisTest() throws CatalogManagerException, JsonProcessingException {
         System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1"));
-        QueryResult<Analysis> allAnalysis = catalog.getAllAnalysis(8);
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        QueryResult<Analysis> allAnalysis = catalog.getAllAnalysis(studyId);
         System.out.println(allAnalysis);
     }
 
     @Test
     public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-            System.out.println(catalog.getAnalysis(8));
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");
+        System.out.println(analysisId);
     }
 
     @Test
