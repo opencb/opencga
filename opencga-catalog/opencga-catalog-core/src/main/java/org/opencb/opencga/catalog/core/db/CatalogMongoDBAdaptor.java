@@ -55,6 +55,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static ObjectReader jsonJobReader;
     private static ObjectReader jsonProjectReader;
     private static ObjectReader jsonStudyReader;
+    private static ObjectReader jsonAnalysisReader;
     private static ObjectReader jsonSampleReader;
 
     private Properties catalogProperties;
@@ -68,6 +69,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonJobReader = jsonObjectMapper.reader(Job.class);
         jsonProjectReader = jsonObjectMapper.reader(Project.class);
         jsonStudyReader = jsonObjectMapper.reader(Study.class);
+        jsonAnalysisReader = jsonObjectMapper.reader(Job.class);
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
     }
 
@@ -1419,7 +1421,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException {
         long startTime = startQuery();
 
         if (!analysisExists(analysisId)) {
@@ -1439,11 +1441,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jobObject.put("analysisId", analysisId);
         QueryResult insertResult = jobCollection.insert(jobObject);
 
-        return endQuery("Create Analysis", startTime, getJob(jobId));
+        return endQuery("Create Job", startTime, getJob(jobId));
     }
 
     @Override
-    public QueryResult deleteJob(int jobId, String sessionId) throws CatalogManagerException {
+    public QueryResult deleteJob(int jobId) throws CatalogManagerException {
         return null;
     }
 
@@ -1455,8 +1457,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(job != null) {
             return endQuery("Get job", startTime, Arrays.asList(job));
         } else {
-            throw new CatalogManagerException("Job {id:"+ jobId +"} not found");
+            throw new CatalogManagerException("Job {id:" + jobId + "} not found");
         }
+    }
+
+    public QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException {
+        long startTime = startQuery();
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null, null);
+        List<Job> jobs = parseJobs(queryResult);
+        return endQuery("Get all jobs", startTime, jobs);
     }
 
     @Override
@@ -1521,6 +1530,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         } catch (IOException e) {
             throw new CatalogManagerException("Error parsing job", e);
         }
+    }
+    private List<Job> parseJobs(QueryResult<DBObject> result) throws CatalogManagerException {
+        LinkedList<Job> jobs = new LinkedList<>();
+        try {
+            for (Object object : result.getResult()) {
+                jobs.add((Job) jsonJobReader.readValue(object.toString()));
+            }
+        } catch (IOException e) {
+            throw new CatalogManagerException("Error parsing job", e);
+        }
+        return jobs;
     }
 
     /**

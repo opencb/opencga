@@ -150,9 +150,9 @@ public interface CatalogDBAdaptor {
     QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
     QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 
-    QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException;
 
-    QueryResult deleteJob(int jobId, String sessionId) throws CatalogManagerException;
+    QueryResult deleteJob(int jobId) throws CatalogManagerException;
 
     QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
 

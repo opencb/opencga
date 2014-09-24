@@ -406,6 +406,36 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
+    public void getFileAclsTest() throws CatalogManagerException {
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
+
+        Acl fileAcl = catalog.getFileAcl(fileId, "jcoll");
+        assertNotNull(fileAcl);
+        System.out.println(fileAcl);
+        Acl fileAcl1 = catalog.getFileAcl(fileId, "imedina");
+        System.out.println(fileAcl1);
+        assertNull(fileAcl1);
+    }
+
+    @Test
+    public void setAclsTest() throws CatalogManagerException {
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        System.out.println(fileId);
+
+        Acl granted = new Acl("jmmut", true, true, true, false);
+        catalog.setFileAcl(fileId, granted);
+        granted.setUserId("imedina");
+        catalog.setFileAcl(fileId, granted);
+        try {
+            granted.setUserId("noUser");
+            catalog.setFileAcl(fileId, granted);
+            fail("error: expected exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+    }
+
+    @Test
     public void deleteFileTest() throws CatalogManagerException, IOException {
         System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", "/data/file.sam"));
         try {
@@ -471,32 +501,49 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void getFileAclsTest() throws CatalogManagerException {
-        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
+    public void createJobTest () throws CatalogManagerException {
+        Job job = new Job();
+        job.setVisits(0);
+        job.setName("jobName1");
 
-        Acl fileAcl = catalog.getFileAcl(fileId, "jcoll");
-        assertNotNull(fileAcl);
-        System.out.println(fileAcl);
-        Acl fileAcl1 = catalog.getFileAcl(fileId, "imedina");
-        System.out.println(fileAcl1);
-        assertNull(fileAcl1);
-    }
-
-    @Test
-    public void setAclsTest() throws CatalogManagerException {
-        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
-        System.out.println(fileId);
-
-        Acl granted = new Acl("jmmut", true, true, true, false);
-        catalog.setFileAcl(fileId, granted);
-        granted.setUserId("imedina");
-        catalog.setFileAcl(fileId, granted);
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        System.out.println(catalog.createJob(analysisId, job));
+        job.setName("jobName2");
+        System.out.println(catalog.createJob(analysisId, job));
         try {
-            granted.setUserId("noUser");
-            catalog.setFileAcl(fileId, granted);
+            catalog.createJob(-1, job);
             fail("error: expected exception");
         } catch (CatalogManagerException e) {
             System.out.println("correct exception: " + e);
         }
     }
+
+    @Test
+    public void getAllJobTest () throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        QueryResult<Job> allJobs = catalog.getAllJobs(analysisId);
+        System.out.println(allJobs);
+    }
+
+
+    @Test
+    public void getJobTest () throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        QueryResult<Job> allJobs = catalog.getAllJobs(analysisId);
+        Job job = catalog.getJob(allJobs.getResult().get(0).getId()).getResult().get(0);
+        System.out.println(job);
+
+        try {
+            catalog.getJob(-1);
+            fail("error: expected exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+
+    }
+
+
 }
