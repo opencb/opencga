@@ -616,7 +616,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+    public Acl getFullProjectAcl(int projectId, String userId) throws CatalogManagerException {
         QueryResult<Project> project = getProject(projectId);
         if (project.getNumResults() != 0) {
             List<Acl> acl = project.getResult().get(0).getAcl();
@@ -627,6 +627,75 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
         return null;
+    }
+    /**
+     * db.user.aggregate(
+     * {"$match": {"projects.id": 2}},
+     * {"$project": {"projects.acl":1, "projects.id":1}},
+     * {"$unwind": "$projects"},
+     * {"$match": {"projects.id": 2}},
+     * {"$unwind": "$projects.acl"},
+     * {"$match": {"projects.acl.userId": "jmmut"}}).pretty()
+     */
+    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
+        DBObject project = new BasicDBObject("$project", BasicDBObjectBuilder
+                .start("_id", false)
+                .append("projects.acl", true)
+                .append("projects.id", true).get());
+        DBObject unwind1 = new BasicDBObject("$unwind", "$projects");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
+        DBObject unwind2 = new BasicDBObject("$unwind", "$projects.acl");
+        DBObject match3 = new BasicDBObject("$match", new BasicDBObject("projects.acl.userId", userId));
+
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match1);
+        operations.add(project);
+        operations.add(unwind1);
+        operations.add(match2);
+        operations.add(unwind2);
+        operations.add(match3);
+        QueryResult aggregate = userCollection.aggregate(null, operations, null);
+        if (aggregate.getNumResults() == 0) {
+            return null;
+        }
+
+        Object aclObject = ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
+        Acl acl;
+        try {
+            acl = jsonObjectMapper.reader(Acl.class).readValue(aclObject.toString());
+        } catch (IOException e) {
+            throw new CatalogManagerException("get Project ACL: error parsing ACL");
+        }
+        return acl;
+    }
+
+    public void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        Acl projectAcl = getProjectAcl(projectId, userId);
+        DBObject match;
+        DBObject updateOperation;
+        if (projectAcl == null) {  // there is no acl for that user in that project. push
+            match = new BasicDBObject("projects.id", projectId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("projects.acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", projectId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
     }
 
     /**
@@ -880,6 +949,34 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
         return null;
+    }
+
+    public void setStudyAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        Acl fileAcl = getFileAcl(fileId, userId);
+        DBObject match;
+        DBObject updateOperation;
+        if (fileAcl == null) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", fileId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", fileId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
     }
     /**
      * File methods

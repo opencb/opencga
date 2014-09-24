@@ -208,6 +208,18 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             System.out.println("correct exception: " + e);
         }
     }
+
+    @Test
+    public void getProjectAclTest() throws CatalogManagerException {
+        int projectId = catalog.getProjectId("jcoll", "1000G");
+        Acl jmmut = catalog.getProjectAcl(projectId, "jmmut");
+        System.out.println(jmmut);
+        assertNotNull(jmmut);
+        Acl noUser = catalog.getProjectAcl(projectId, "noUser");
+        System.out.println(noUser);
+        assertNull(noUser);
+    }
+
     /**
      * Study methods
      * ***************************
@@ -273,6 +285,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         } catch (CatalogManagerException e){
             System.out.println(e);
         }
+    }
+
+    @Test
+    public void getStudyAclTest() throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        Acl jmmut = catalog.getStudyAcl(studyId, "jmmut");
+        System.out.println(jmmut);
+        assertNotNull(jmmut);
+        Acl noUser = catalog.getStudyAcl(studyId, "noUser");
+        System.out.println(noUser);
+        assertNull(noUser);
     }
 
     /**
