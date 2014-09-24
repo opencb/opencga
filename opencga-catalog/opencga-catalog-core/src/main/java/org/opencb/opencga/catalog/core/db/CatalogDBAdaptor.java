@@ -14,7 +14,7 @@ import java.util.Map;
 public interface CatalogDBAdaptor {
 
     /**
-     * User methods ···
+     * User methods
      * ***************************
      */
     boolean checkUserCredentials(String userId, String sessionId);
@@ -55,7 +55,7 @@ public interface CatalogDBAdaptor {
     String getUserIdBySessionId(String sessionId);
 
     /**
-     * Project methods ···
+     * Project methods
      * ***************************
      */
     QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException;
@@ -76,7 +76,7 @@ public interface CatalogDBAdaptor {
     String getProjectOwner(int projectId) throws CatalogManagerException;
 
     /**
-     * Study methods ···
+     * Study methods
      * ***************************
      */
 
@@ -108,7 +108,7 @@ public interface CatalogDBAdaptor {
     String getStudyOwner(int studyId) throws CatalogManagerException;
 
     /**
-     * File methods ···
+     * File methods
      * ***************************
      */
 
@@ -145,7 +145,7 @@ public interface CatalogDBAdaptor {
 
 
     /**
-     * Analysis methods ···
+     * Analysis methods
      * ***************************
      */
 
@@ -158,7 +158,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
     /**
-     * Job methods ···
+     * Job methods
      * ***************************
      */
 
@@ -184,7 +184,7 @@ public interface CatalogDBAdaptor {
 
 
     /**
-     * Util methods ···
+     * Util methods
      * ***************************
      */
 //    List<AnalysisPlugin> getUserAnalysis(String sessionId) throws CatalogManagerException, IOException;

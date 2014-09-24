@@ -1641,7 +1641,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     /**
-     * Job methods ···
+     * Job methods
      * ***************************
      */
 
