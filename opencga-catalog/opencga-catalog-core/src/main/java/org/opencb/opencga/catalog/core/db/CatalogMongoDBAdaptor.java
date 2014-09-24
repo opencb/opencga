@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -53,6 +52,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static ObjectWriter jsonObjectWriter;
     private static ObjectReader jsonFileReader;
     private static ObjectReader jsonUserReader;
+    private static ObjectReader jsonJobReader;
     private static ObjectReader jsonProjectReader;
     private static ObjectReader jsonStudyReader;
     private static ObjectReader jsonSampleReader;
@@ -65,6 +65,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonFileReader = jsonObjectMapper.reader(File.class);
         jsonUserReader = jsonObjectMapper.reader(User.class);
+        jsonJobReader = jsonObjectMapper.reader(Job.class);
         jsonProjectReader = jsonObjectMapper.reader(Project.class);
         jsonStudyReader = jsonObjectMapper.reader(Study.class);
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
@@ -1245,10 +1246,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         QueryResult update = fileCollection.update(match, updateOperation, false, false);
     }
 
+
+
     /**
      * Analysis methods
      * ***************************
      */
+    public boolean analysisExists(int analysisId) {
+        QueryResult count = userCollection.count(new BasicDBObject("analyses.id", analysisId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
     public QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
         long startTime = startQuery();
@@ -1359,7 +1368,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
         long startTime = startQuery();
-        // TODO manage session
 
         // Check if analysis.alias already exists.
         QueryResult<Long> count = userCollection.count(
@@ -1391,7 +1399,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         DBObject update = new BasicDBObject("$push", new BasicDBObject("analyses", analysisObject));
         QueryResult updateResult = userCollection.update(query, update, false, false);
 
-        System.out.println(updateResult.getResult());
         // fill other collections: jobs
         if (jobs == null) {
             jobs = Collections.<Job>emptyList();
@@ -1401,13 +1408,38 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //        for (Job job : jobs) {
 //        }
 
-        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId())); // seguir2 vuelve cuando hayas hecho el test de analysis
+        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId()));
 
     }
 
+    public boolean jobExists(int jobId) {
+        QueryResult count = jobCollection.count(new BasicDBObject("id", jobId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
-    public QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return null;
+    public QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException, JsonProcessingException {
+        long startTime = startQuery();
+
+        if (!analysisExists(analysisId)) {
+            throw new CatalogManagerException("Analysis {id:" + analysisId + "} does not exist");
+        }
+
+        int jobId = getNewJobId();
+        job.setId(jobId);
+
+        DBObject jobObject;
+        try {
+            jobObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(job));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("job " + job + " could not be parsed into json", e);
+        }
+        jobObject.put("_id", jobId);
+        jobObject.put("analysisId", analysisId);
+        QueryResult insertResult = jobCollection.insert(jobObject);
+
+        return endQuery("Create Analysis", startTime, getJob(jobId));
     }
 
     @Override
@@ -1416,22 +1448,40 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public Job getJob(int jobId, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult<Job> getJob(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null, null);
+        Job job = parseJob(queryResult);
+        if(job != null) {
+            return endQuery("Get job", startTime, Arrays.asList(job));
+        } else {
+            throw new CatalogManagerException("Job {id:"+ jobId +"} not found");
+        }
+    }
+
+    @Override
+    public String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException {   // TODO remove?
         return null;
     }
 
     @Override
-    public String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException {
-        return null;
+    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("id", jobId);
+        Job job = parseJob(jobCollection.find(query, null, null, new BasicDBObject("visits", 1)));
+        int visits;
+        if (job != null) {
+            visits = job.getVisits()+1;
+            jobCollection.update(query, new BasicDBObject("visits", visits), false, false);
+        } else {
+            throw new CatalogManagerException("Job {id:"+ jobId +"} not found");
+        }
+        return endQuery("Inc visits", startTime, Arrays.asList(new ObjectMap("visits", visits)));
     }
 
     @Override
-    public void incJobVisites(int jobId, String sessionId) throws CatalogManagerException, IOException {
-
-    }
-
-    @Override
-    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException {
+    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException {   // TODO remove?
 
     }
 
@@ -1459,6 +1509,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             return jsonFileReader.readValue(result.getResult().get(0).toString());
         } catch (IOException e) {
             throw new CatalogManagerException("Error parsing file", e);
+        }
+    }
+
+    private Job parseJob(QueryResult result) throws CatalogManagerException {
+        if(result.getResult().isEmpty()) {
+            return null;
+        }
+        try {
+            return jsonJobReader.readValue(result.getResult().get(0).toString());
+        } catch (IOException e) {
+            throw new CatalogManagerException("Error parsing job", e);
         }
     }
 
