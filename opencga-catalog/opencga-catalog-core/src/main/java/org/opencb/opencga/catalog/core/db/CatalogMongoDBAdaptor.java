@@ -52,6 +52,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static ObjectWriter jsonObjectWriter;
     private static ObjectReader jsonFileReader;
     private static ObjectReader jsonUserReader;
+    private static ObjectReader jsonJobReader;
     private static ObjectReader jsonProjectReader;
     private static ObjectReader jsonStudyReader;
     private static ObjectReader jsonSampleReader;
@@ -64,6 +65,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonFileReader = jsonObjectMapper.reader(File.class);
         jsonUserReader = jsonObjectMapper.reader(User.class);
+        jsonJobReader = jsonObjectMapper.reader(Job.class);
         jsonProjectReader = jsonObjectMapper.reader(Project.class);
         jsonStudyReader = jsonObjectMapper.reader(Study.class);
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
@@ -453,6 +455,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * ***************************
      */
 
+    public boolean projectExists(int projectId) {
+        QueryResult count = userCollection.count(new BasicDBObject("projects.id", projectId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
     public QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
@@ -548,34 +556,49 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 user.getProjects());
     }
 
+
+    /**
+    db.user.update(
+        {
+            "projects.id" : projectId,
+            "projects.alias" : {
+                $ne : newAlias
+            }
+        },
+        {
+            $set:{
+                "projects.$.alias":newAlias
+            }
+        })
+    */
     @Override
     public QueryResult renameProjectAlias(int projectId, String newProjectAlias) throws CatalogManagerException {
-        boolean alreadyUsed = true;
-        String projectOwner = getProjectOwner(projectId);
+        long startTime = startQuery();
+//        String projectOwner = getProjectOwner(projectId);
+//
+//        int collisionProjectId = getProjectId(projectOwner, newProjectAlias);
+//        if (collisionProjectId != -1) {
+//            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
+//        }
 
-        try {   // check that the user doesn't have another project with that alias
-            getProject(projectOwner, newProjectAlias);
-        } catch (CatalogManagerException e) {
-            alreadyUsed = false;
-        }
-
-        if (alreadyUsed) {
-            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
-        }
-
-        QueryResult<Project> projectResult = getProject(projectId);
+        QueryResult<Project> projectResult = getProject(projectId); // if projectId doesn't exist, an exception is raised
         Project project = projectResult.getResult().get(0);
 
         String oldAlias = project.getAlias();
         project.setAlias(newProjectAlias);
 
         DBObject query = BasicDBObjectBuilder
-                .start("id", projectOwner)
-                .append("projects.$.alias", oldAlias).get();
+                .start("projects.id", projectId)
+                .append("projects.alias", new BasicDBObject("$ne", newProjectAlias))    // check that any other project in the user has the new name
+                .get();
         DBObject update = new BasicDBObject("$set",
                 new BasicDBObject("projects.$.alias", newProjectAlias));
 
-        return userCollection.update(query, update, false, false);
+        QueryResult<WriteResult> result = userCollection.update(query, update, false, false);
+        if (result.getResult().get(0).getN() == 0) {    //Check if the the study has been inserted
+            throw new CatalogManagerException("Project {alias:\"" + newProjectAlias+ "\"} already exists");
+        }
+        return endQuery("rename project alias", startTime, result);
     }
 
     @Override
@@ -644,7 +667,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+    public Acl getFullProjectAcl(int projectId, String userId) throws CatalogManagerException {
         QueryResult<Project> project = getProject(projectId);
         if (project.getNumResults() != 0) {
             List<Acl> acl = project.getResult().get(0).getAcl();
@@ -655,6 +678,75 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
         return null;
+    }
+    /**
+     * db.user.aggregate(
+     * {"$match": {"projects.id": 2}},
+     * {"$project": {"projects.acl":1, "projects.id":1}},
+     * {"$unwind": "$projects"},
+     * {"$match": {"projects.id": 2}},
+     * {"$unwind": "$projects.acl"},
+     * {"$match": {"projects.acl.userId": "jmmut"}}).pretty()
+     */
+    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
+        DBObject project = new BasicDBObject("$project", BasicDBObjectBuilder
+                .start("_id", false)
+                .append("projects.acl", true)
+                .append("projects.id", true).get());
+        DBObject unwind1 = new BasicDBObject("$unwind", "$projects");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
+        DBObject unwind2 = new BasicDBObject("$unwind", "$projects.acl");
+        DBObject match3 = new BasicDBObject("$match", new BasicDBObject("projects.acl.userId", userId));
+
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match1);
+        operations.add(project);
+        operations.add(unwind1);
+        operations.add(match2);
+        operations.add(unwind2);
+        operations.add(match3);
+        QueryResult aggregate = userCollection.aggregate(null, operations, null);
+        if (aggregate.getNumResults() == 0) {
+            return null;
+        }
+
+        Object aclObject = ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
+        Acl acl;
+        try {
+            acl = jsonObjectMapper.reader(Acl.class).readValue(aclObject.toString());
+        } catch (IOException e) {
+            throw new CatalogManagerException("get Project ACL: error parsing ACL");
+        }
+        return acl;
+    }
+
+    public void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        Acl projectAcl = getProjectAcl(projectId, userId);
+        DBObject match;
+        DBObject updateOperation;
+        if (projectAcl == null) {  // there is no acl for that user in that project. push
+            match = new BasicDBObject("projects.id", projectId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("projects.acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", projectId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
     }
 
     /**
@@ -759,7 +851,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 , userCollection.find(query, null, null, projection));
 
         User user = parseUser(queryResult);
-		if(user == null || user.getProjects().isEmpty()) {
+        if(user == null || user.getProjects().isEmpty()) {
             throw new CatalogManagerException("Project {id:"+projectId+"} not found");
         }
         List<Study> studies = user.getProjects().get(0).getStudies();
@@ -1006,6 +1098,36 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
         return null;
+    }
+
+    public void setStudyAcl(int studyId, Acl newAcl) throws CatalogManagerException {
+        /*
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        Acl studyAcl = getStudyAcl(studyId, userId);
+        DBObject match;
+        DBObject updateOperation;
+        if (studyAcl == null) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", studyId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", studyId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
+        */
     }
     /**
      * File methods
@@ -1278,10 +1400,47 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return acl == null ? null : acl.get(0);
     }
 
+
+    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        Acl fileAcl = getFileAcl(fileId, userId);
+        DBObject match;
+        DBObject updateOperation;
+        if (fileAcl == null) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", fileId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", fileId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
+    }
+
+
+
     /**
      * Analysis methods
      * ***************************
      */
+    public boolean analysisExists(int analysisId) {
+        QueryResult count = userCollection.count(new BasicDBObject("analyses.id", analysisId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
     public QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
         long startTime = startQuery();
@@ -1301,10 +1460,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException {
         long startTime = startQuery();
 
-        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", studyId));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("analyses", 1));
         DBObject unwind = new BasicDBObject("$unwind", "$analyses");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", studyId));
         DBObject group = new BasicDBObject(
                 "$group",
                 BasicDBObjectBuilder
@@ -1326,10 +1485,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 analyses = study.getAnalyses();
                 // TODO fill analyses with jobs
             }
-            return endQuery("User analyses list", startTime, analyses);
+            return endQuery("get all analyses", startTime, analyses);
         } catch (IOException e) {
             e.printStackTrace();
-            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+            throw new CatalogManagerException("Failed to parse mongo : " + e.getMessage());
         }
     }
 
@@ -1338,20 +1497,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * , {"analyses":{$elemMatch:{studyId:8,alias:"analysis1Alias"}},"analyses.id":1}).pretty()
      */
     public int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException {
-        DBObject match = BasicDBObjectBuilder
-                .start("analyses.alias", analysisAlias)
-                .append("analyses.studyId", studyId).get();
+        DBObject elem = new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                .start("studyId", studyId)
+                .append("alias", analysisAlias).get()
+        );
+        DBObject match = new BasicDBObject("analyses", elem);
         DBObject projection = BasicDBObjectBuilder
-                .start("analyses",
-                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
-                                .start("studyId", studyId)
-                                .append("alias", analysisAlias)
-                                .get()
-                        )
-                )
-                .append("analyses.id", true)
-                .get();
-
+                .start("analyses", elem)
+                .append("_id", false).get();
         QueryResult result = userCollection.find(match, null, null, projection);
         List<Analysis> analyses = parseAnalyses(result);
         return analyses.size() == 0? -1: analyses.get(0).getId();
@@ -1398,14 +1551,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
         long startTime = startQuery();
-        // TODO manage session
 
         // Check if analysis.alias already exists.
-        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
-                .start("analyses.studyId", studyId)
-                .append("analyses.alias", analysis.getAlias()).get());
+        QueryResult<Long> count = userCollection.count(
+                new BasicDBObject("analyses",
+                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                                .start("studyId", studyId)
+                                .append("alias", analysis.getAlias()).get()
+                        )
+                )
+        );
         if(count.getResult().get(0) != 0) {
-            throw new CatalogManagerException("Analysis alias already exists in this study");
+            throw new CatalogManagerException("Analysis alias " + analysis.getAlias() + " already exists in study " + studyId);
         }
 
         // complete and push Analysis: id, studyId, jobs...
@@ -1425,7 +1582,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         DBObject update = new BasicDBObject("$push", new BasicDBObject("analyses", analysisObject));
         QueryResult updateResult = userCollection.update(query, update, false, false);
 
-        System.out.println(updateResult.getResult());
         // fill other collections: jobs
         if (jobs == null) {
             jobs = Collections.<Job>emptyList();
@@ -1435,13 +1591,38 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //        for (Job job : jobs) {
 //        }
 
-        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId())); // seguir2 vuelve cuando hayas hecho el test de analysis
+        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId()));
 
     }
 
+    public boolean jobExists(int jobId) {
+        QueryResult count = jobCollection.count(new BasicDBObject("id", jobId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
-    public QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException {
-        return null;
+    public QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException, JsonProcessingException {
+        long startTime = startQuery();
+
+        if (!analysisExists(analysisId)) {
+            throw new CatalogManagerException("Analysis {id:" + analysisId + "} does not exist");
+        }
+
+        int jobId = getNewJobId();
+        job.setId(jobId);
+
+        DBObject jobObject;
+        try {
+            jobObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(job));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("job " + job + " could not be parsed into json", e);
+        }
+        jobObject.put("_id", jobId);
+        jobObject.put("analysisId", analysisId);
+        QueryResult insertResult = jobCollection.insert(jobObject);
+
+        return endQuery("Create Analysis", startTime, getJob(jobId));
     }
 
     @Override
@@ -1450,22 +1631,40 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public Job getJob(int jobId, String sessionId) throws CatalogManagerException, IOException {
+    public QueryResult<Job> getJob(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null, null);
+        Job job = parseJob(queryResult);
+        if(job != null) {
+            return endQuery("Get job", startTime, Arrays.asList(job));
+        } else {
+            throw new CatalogManagerException("Job {id:"+ jobId +"} not found");
+        }
+    }
+
+    @Override
+    public String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException {   // TODO remove?
         return null;
     }
 
     @Override
-    public String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException {
-        return null;
+    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("id", jobId);
+        Job job = parseJob(jobCollection.find(query, null, null, new BasicDBObject("visits", 1)));
+        int visits;
+        if (job != null) {
+            visits = job.getVisits()+1;
+            jobCollection.update(query, new BasicDBObject("visits", visits), false, false);
+        } else {
+            throw new CatalogManagerException("Job {id:"+ jobId +"} not found");
+        }
+        return endQuery("Inc visits", startTime, Arrays.asList(new ObjectMap("visits", visits)));
     }
 
     @Override
-    public void incJobVisites(int jobId, String sessionId) throws CatalogManagerException, IOException {
-
-    }
-
-    @Override
-    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException {
+    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException {   // TODO remove?
 
     }
 
@@ -1496,6 +1695,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    private Job parseJob(QueryResult result) throws CatalogManagerException {
+        if(result.getResult().isEmpty()) {
+            return null;
+        }
+        try {
+            return jsonJobReader.readValue(result.getResult().get(0).toString());
+        } catch (IOException e) {
+            throw new CatalogManagerException("Error parsing job", e);
+        }
+    }
+
     /**
      * must receive in the result: [{analyses:[{},...]}].
      * other keys in the object, besides "analyses", will throw
@@ -1506,7 +1716,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         try {
             if (result.getNumResults() != 0) {
                 Study study = jsonStudyReader.readValue(result.getResult().get(0).toString());
-                analyses = study.getAnalyses();
+                analyses.addAll(study.getAnalyses());
                 // TODO fill analyses with jobs
             }
         } catch (IOException e) {

@@ -139,7 +139,8 @@ public interface CatalogDBAdaptor {
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
     String getFileOwner(int fileId) throws CatalogManagerException;
 
-    // TODO: void shareObject(String userId, int fileId, Acl acl) throws CatalogManagerException;
+    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException;
+    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
 
 
 
@@ -155,15 +156,15 @@ public interface CatalogDBAdaptor {
     QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
     QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 
-    QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult deleteJob(int jobId, String sessionId) throws CatalogManagerException;
 
-    Job getJob(int jobId, String sessionId) throws CatalogManagerException, IOException;
+    QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
 
     String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
 
-    void incJobVisites(int jobId, String sessionId) throws CatalogManagerException, IOException;
+    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException;
 
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 
