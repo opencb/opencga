@@ -951,7 +951,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return null;
     }
 
-    public void setStudyAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+    public void setStudyAcl(int studyId, Acl newAcl) throws CatalogManagerException {
+        /*
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
             throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
@@ -964,19 +965,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("could not put ACL: parsing error");
         }
 
-        Acl fileAcl = getFileAcl(fileId, userId);
+        Acl studyAcl = getStudyAcl(studyId, userId);
         DBObject match;
         DBObject updateOperation;
-        if (fileAcl == null) {  // there is no acl for that user in that file. push
-            match = new BasicDBObject("id", fileId);
+        if (studyAcl == null) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", studyId);
             updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
         } else {    // there is already another ACL: overwrite
             match = BasicDBObjectBuilder
-                    .start("id", fileId)
+                    .start("id", studyId)
                     .append("acl.userId", userId).get();
             updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
         QueryResult update = fileCollection.update(match, updateOperation, false, false);
+        */
     }
     /**
      * File methods

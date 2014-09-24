@@ -220,6 +220,27 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNull(noUser);
     }
 
+
+    @Test
+    public void setProjectAclTest() throws CatalogManagerException {
+        int projectId = catalog.getProjectId("jcoll", "1000G");
+        System.out.println(projectId);
+
+        Acl granted = new Acl("jmmut", true, true, true, false);
+        catalog.setProjectAcl(projectId, granted);
+        granted.setUserId("imedina");
+        catalog.setProjectAcl(projectId, granted);
+        try {
+            granted.setUserId("noUser");
+            catalog.setProjectAcl(projectId, granted);
+            fail("error: expected exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+    }
+
+
+
     /**
      * Study methods
      * ***************************
@@ -296,6 +317,27 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         Acl noUser = catalog.getStudyAcl(studyId, "noUser");
         System.out.println(noUser);
         assertNull(noUser);
+    }
+
+    @Test
+    public void setStudyAclTest() throws CatalogManagerException {
+        // unimplemented yet
+        /*
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        System.out.println(studyId);
+
+        Acl granted = new Acl("jmmut", true, true, true, false);
+        catalog.setStudyAcl(studyId, granted);
+        granted.setUserId("imedina");
+        catalog.setStudyAcl(studyId, granted);
+        try {
+            granted.setUserId("noUser");
+            catalog.setStudyAcl(studyId, granted);
+            fail("error: expected exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+        */
     }
 
     /**
@@ -429,23 +471,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void getAclsTest() throws CatalogManagerException {
+    public void getFileAclsTest() throws CatalogManagerException {
         int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
-        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int projectId = catalog.getProjectId("jcoll", "1000G");
 
         Acl fileAcl = catalog.getFileAcl(fileId, "jcoll");
         assertNotNull(fileAcl);
         System.out.println(fileAcl);
-        Acl projectAcl = catalog.getProjectAcl(projectId, "jcoll");
-        assertNotNull(projectAcl);
-        System.out.println(projectAcl);
-        Acl studyAcl = catalog.getStudyAcl(studyId, "jcoll");
-        assertNotNull(studyAcl);
-        System.out.println(studyAcl);
         Acl fileAcl1 = catalog.getFileAcl(fileId, "imedina");
-        assertNull(fileAcl1);
         System.out.println(fileAcl1);
+        assertNull(fileAcl1);
     }
 
     @Test
