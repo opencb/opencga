@@ -1,7 +1,10 @@
 package org.opencb.opencga.catalog.core;
 
+import com.mongodb.BasicDBObject;
 import org.junit.*;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
 import org.junit.runners.MethodSorters;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
@@ -12,6 +15,7 @@ import org.opencb.opencga.catalog.core.beans.Study;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -102,23 +106,33 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifyUser() throws CatalogManagerException {
-        Map<String, String> options = new HashMap<>();
-        options.put("name", "Changed Name");
-        options.put("attributes.myAttribute", "5");
-        options.put("attributes.myStruct.value.ok", "true");
-        catalogManager.modifyUser("user", options, sessionIdUser);
+        ObjectMap params = new ObjectMap();
+        String newName = "Changed Name " + StringUtils.randomString(10);
+        params.put("name", newName);
+        ObjectMap attributes = new ObjectMap("myBoolean", true);
+        attributes.put("value", 6);
+        attributes.put("object", new BasicDBObject("id", 1234));
+        params.put("attributes", attributes);
+
+        catalogManager.modifyUser("user", params, sessionIdUser);
+
+        User user = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0);
+        assertEquals(user.getName(), newName);
+        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+            assertEquals(user.getAttributes().get(entry.getKey()), entry.getValue());
+        }
 
         try {
-            options = new HashMap();
-            options.put("password", "1234321");
-            catalogManager.modifyUser("user", options, sessionIdUser);
+            params = new ObjectMap();
+            params.put("password", "1234321");
+            catalogManager.modifyUser("user", params, sessionIdUser);
             fail("Expected exception");
         } catch (CatalogManagerException e){
             System.out.println(e);
         }
 
         try {
-            catalogManager.modifyUser("user", options, sessionIdUser2);
+            catalogManager.modifyUser("user", params, sessionIdUser2);
             fail("Expected exception");
         } catch (CatalogManagerException e){
             System.out.println(e);
@@ -140,17 +154,33 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifyProject() throws CatalogManagerException {
-        Map<String, String> options = new HashMap<>();
-        options.put("name", "new ProjectName");
-        options.put("attributes.myAttribute", "5");
-        options.put("attributes.myStruct.value.ok", "true");
-
+//        Map<String, String> options = new HashMap<>();
+        String newProjectName = "ProjectName " + StringUtils.randomString(10);
         int projectId = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0).getProjects().get(0).getId();
+
+        ObjectMap options = new ObjectMap();
+        options.put("name", newProjectName);
+//        options.put("attributes.myAttribute", "5");
+//        options.put("attributes.myStruct.value.ok", "true");
+        ObjectMap attributes = new ObjectMap("myBoolean", true);
+        attributes.put("value", 6);
+        attributes.put("object", new BasicDBObject("id", 1234));
+        options.put("attributes", attributes);
+
         catalogManager.modifyProject(projectId, options, sessionIdUser);
+        QueryResult<Project> result = catalogManager.getProject(projectId, sessionIdUser);
+        Project project = result.getResult().get(0);
+        System.out.println(result);
+
+        assertEquals(newProjectName, project.getName());
+        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+            assertEquals(project.getAttributes().get(entry.getKey()), entry.getValue());
+        }
 
         try {
-            options = new HashMap<>();
-            options.put("alias", "newProjectalias");
+//            options = new HashMap<>();
+            options = new ObjectMap();
+            options.put("alias", "newProjectAlias");
             catalogManager.modifyProject(projectId, options, sessionIdUser);
             fail("Expected 'Parameter can't be changed' exception");
         } catch (CatalogManagerException e){
@@ -174,6 +204,30 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
         study = new Study("Phase 1", "phase1", "", "Done", "");
         System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
+    }
+
+    @Test
+    public void testModifyStudy() throws Exception {
+        int studyId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getStudies().get(0).getId();
+        String newName = "Phase 1 "+ StringUtils.randomString(20);
+        String newDescription = StringUtils.randomString(500);
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.put("name", newName);
+        parameters.put("description", newDescription);
+        BasicDBObject attributes = new BasicDBObject("key", "value");
+        parameters.put("attributes", attributes);
+        catalogManager.modifyStudy(studyId, parameters, sessionIdUser);
+
+        QueryResult<Study> result = catalogManager.getStudy(studyId, sessionIdUser);
+        System.out.println(result);
+        Study study = result.getResult().get(0);
+        assertEquals(study.getName(), newName);
+        assertEquals(study.getDescription(), newDescription);
+        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+            assertEquals(study.getAttributes().get(entry.getKey()), entry.getValue());
+        }
+
     }
 
     @Test

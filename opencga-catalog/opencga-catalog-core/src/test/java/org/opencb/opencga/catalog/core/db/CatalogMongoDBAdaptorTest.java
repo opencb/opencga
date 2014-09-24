@@ -1,21 +1,24 @@
 package org.opencb.opencga.catalog.core.db;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DBObject;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.*;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class CatalogMongoDBAdaptorTest extends GenericTest {
@@ -187,6 +190,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void createStudyTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "1000G");
+        int projectId2 = catalog.getProjectId("jcoll", "2000G");
 
         Study s = new Study("Phase 1", "ph1", "TEST", "", "");
         LinkedList<Acl> acl = new LinkedList<>();
@@ -194,6 +198,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         acl.push(new Acl("jmmut", false, false, true, false));
         s.setAcl(acl);
         System.out.println(catalog.createStudy(projectId, s));
+        System.out.println(catalog.createStudy(projectId2, s));
         s = new Study("Phase 3", "ph3", "TEST", "", "");
         System.out.println(catalog.createStudy(projectId, s));
 
@@ -243,6 +248,26 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         } catch (CatalogManagerException e){
             System.out.println(e);
         }
+    }
+
+    @Test
+    public void modifyStudyTest() throws CatalogManagerException {
+        int projectId = catalog.getProjectId("jcoll", "1000G");
+        int studyId = catalog.getStudyId(projectId, "ph1");
+//        Map<String, String> parameters = new HashMap<>();
+//        parameters.put("name", "new name");
+//        Map<String, Object> attributes = new HashMap<>();
+//        attributes.put("algo", "new name");
+//        attributes.put("otro", null);
+//        catalog.modifyStudy(studyId, parameters, attributes, null);
+
+        ObjectMap objectMap = new ObjectMap("name", "My new name");
+        HashMap<String, Object> attributes = new HashMap<String, Object>();
+        attributes.put("Value", 1);
+        attributes.put("Value2", true);
+        attributes.put("Value3", new BasicDBObject("key", "ok"));
+        objectMap.put("attributes", attributes);
+        catalog.modifyStudy(studyId, objectMap);
     }
 
     /**
@@ -301,13 +326,38 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void setFileStatus() throws CatalogManagerException, IOException {
-        System.out.println(catalog.setFileStatus("jcoll", "1000G", "ph1", "/data/file.sam", File.READY));
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        System.out.println(catalog.setFileStatus(fileId, File.UPLOADING));
+        assertEquals(catalog.getFile(fileId).getResult().get(0).getStatus(), File.UPLOADING);
+        System.out.println(catalog.setFileStatus(fileId, File.UPLOADED));
+        assertEquals(catalog.getFile(fileId).getResult().get(0).getStatus(), File.UPLOADED);
+        System.out.println(catalog.setFileStatus(fileId, File.READY));
+        assertEquals(catalog.getFile(fileId).getResult().get(0).getStatus(), File.READY);
         try {
             System.out.println(catalog.setFileStatus("jcoll", "1000G", "ph1", "/data/noExists", File.READY));
             fail("Expected \"FileId not found\" exception");
         } catch (CatalogManagerException e) {
             System.out.println(e);
         }
+    }
+
+    @Test
+    public void modifyFileTest() throws CatalogManagerException, IOException {
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        String newName = "newName-"+ StringUtils.randomString(10);
+        DBObject stats = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok"+StringUtils.randomString(20)).get();
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.put("name", newName);
+        parameters.put("status", File.READY);
+        parameters.put("stats", stats);
+        System.out.println(catalog.modifyFile(fileId, parameters));
+
+        File file = catalog.getFile(fileId).getResult().get(0);
+        assertEquals(file.getName(), newName);
+        assertEquals(file.getStatus(), File.READY);
+        assertEquals(file.getStats(), stats);
+
     }
 
     @Test

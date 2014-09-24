@@ -244,13 +244,17 @@ public class CatalogManager {
      * @return
      * @throws CatalogManagerException
      */
-    public QueryResult modifyUser(String userId, Map<String, String> parameters, String sessionId)
+    public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkObj(parameters, "parameters");
         checkSessionId(userId, sessionId);
-
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|email|organization|attributes|configs")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            }
+        }
         return catalogDBAdaptor.modifyUser(userId, parameters);
     }
 
@@ -347,15 +351,35 @@ public class CatalogManager {
         }
     }
 
-    public QueryResult modifyProject(int projectId, Map<String, String> parameters, String sessionId)
+
+    /**
+     * Modify some params from the specified project:
+     *
+     *   name
+     *   description
+     *   organization
+     *   status
+     *   attributes
+     *
+     * @param projectId Project identifier
+     * @param parameters Parameters to change.
+     * @param sessionId sessionId to check permissions
+     * @return
+     * @throws CatalogManagerException
+     */
+    public QueryResult modifyProject(int projectId, ObjectMap parameters, String sessionId)
             throws CatalogManagerException {
         checkObj(parameters, "Parameters");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         if (!getProjectAcl(userId, projectId).isWrite()) {
-            throw new CatalogManagerException("User " + userId + " can't modify the project " + projectId);
+            throw new CatalogManagerException("User '" + userId + "' can't modify the project " + projectId);
         }
-
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|description|organization|status|attributes")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            }
+        }
         return catalogDBAdaptor.modifyProject(projectId, parameters);
     }
 
@@ -446,10 +470,37 @@ public class CatalogManager {
 //            throw e;
 //        }
     }
-
-    public QueryResult modifyStudy(int studyId, QueryOptions options, String sessionId)
+    /**
+     * Modify some params from the specified study:
+     *
+     *   name
+     *   description
+     *   organization
+     *   status
+     *
+     *   attributes
+     *   stats
+     *
+     * @param studyId Study identifier
+     * @param parameters Parameters to change.
+     * @param sessionId sessionId to check permissions
+     * @return
+     * @throws CatalogManagerException
+     */
+    public QueryResult modifyStudy(int studyId, ObjectMap parameters, String sessionId)
             throws CatalogManagerException {
-        throw new UnsupportedOperationException();
+        checkObj(parameters, "Parameters");
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogManagerException("User " + userId + " can't modify the study " + studyId);
+        }
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|type|description|status|attributes|stats")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            }
+        }
+        return catalogDBAdaptor.modifyStudy(studyId, parameters);
     }
 
 
