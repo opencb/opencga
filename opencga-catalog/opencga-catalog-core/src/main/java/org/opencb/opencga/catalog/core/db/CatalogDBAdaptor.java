@@ -1,9 +1,9 @@
 package org.opencb.opencga.catalog.core.db;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 
@@ -44,7 +44,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException;
 
-    QueryResult modifyUser(String userId, Map<String, String> parameters) throws CatalogManagerException;
+    QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogManagerException;
 
     QueryResult resetPassword(String userId, String email) throws CatalogManagerException;
 
@@ -69,9 +69,9 @@ public interface CatalogDBAdaptor {
 
     QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogManagerException;
 
-    QueryResult modifyProject(int projectId, Map<String, String> parameters) throws CatalogManagerException;
+    QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogManagerException;
 
-    int getProjectId(String userId, String project) throws CatalogManagerException;
+    int getProjectId(String userId, String projectAlias) throws CatalogManagerException;
 
     String getProjectOwner(int projectId) throws CatalogManagerException;
 
@@ -90,6 +90,10 @@ public interface CatalogDBAdaptor {
     QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName) throws CatalogManagerException;
 
     QueryResult renameStudy(int studyId, String newStudyName) throws CatalogManagerException;
+
+//    QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats) throws CatalogManagerException;
+
+    QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogManagerException;
 
     QueryResult deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
 
@@ -130,6 +134,8 @@ public interface CatalogDBAdaptor {
     QueryResult setFileStatus(int studyId, String uri, String status) throws CatalogManagerException, IOException;
     QueryResult setFileStatus(int fileId, String status) throws CatalogManagerException, IOException;
 
+    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException;
+
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
     String getFileOwner(int fileId) throws CatalogManagerException;
 
@@ -147,8 +153,14 @@ public interface CatalogDBAdaptor {
     QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
     QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
 
-    QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
-    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
+    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+
+    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
+    /**
+     * Job methods ···
+     * ***************************
+     */
 
     QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException;
 
@@ -158,7 +170,9 @@ public interface CatalogDBAdaptor {
 
     String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
 
-    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException;
+    QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException;
+
+    QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogManagerException;
 
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 

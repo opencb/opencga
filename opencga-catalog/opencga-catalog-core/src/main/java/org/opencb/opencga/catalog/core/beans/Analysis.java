@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +26,11 @@ public class Analysis {
     public Analysis() {
     }
 
-    public Analysis(int id, String name, String alias, String date, String creatorId, String creationDate, String description, List<Job> jobs, Map<String, Object> attributes) {
+    public Analysis(int id, String name, String alias, String date, String creatorId, String creationDate, String description) {
+        this(id, name, alias, date, creatorId, creationDate, description, new LinkedList<Job>(), new HashMap<String, Object>());
+    }
+    public Analysis(int id, String name, String alias, String date, String creatorId, String creationDate,
+                    String description, List<Job> jobs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
