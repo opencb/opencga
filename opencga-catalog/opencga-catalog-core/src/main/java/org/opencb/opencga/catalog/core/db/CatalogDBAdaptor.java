@@ -153,8 +153,14 @@ public interface CatalogDBAdaptor {
     QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
     QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
 
-    QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
-    QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
+    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+
+    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
+    /**
+     * Job methods ···
+     * ***************************
+     */
 
     QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException, JsonProcessingException;
 
@@ -164,7 +170,9 @@ public interface CatalogDBAdaptor {
 
     String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
 
-    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException;
+    QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException;
+
+    QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogManagerException;
 
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 

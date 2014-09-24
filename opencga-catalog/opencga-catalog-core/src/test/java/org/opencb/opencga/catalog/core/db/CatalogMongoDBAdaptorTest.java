@@ -473,14 +473,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createAnalysisTest() throws CatalogManagerException {
-        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description", null, null);
+        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description");
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
-        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton", null, null);
+        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton");
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // same study, different alias
-        analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton", null, null);
+        analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton");
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
-        analysis = new Analysis(0, "analisis3Name", "analysis2Alias", "lastmonth", "jmmmut", "today", "analaysis 2 decrypton", null, null);
+        analysis = new Analysis(0, "analisis3Name", "analysis2Alias", "lastmonth", "jmmmut", "today", "analaysis 2 decrypton");
         System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
 
         try {
@@ -514,10 +514,34 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
         System.out.println("analysisId: " + analysisId);
+        assertTrue(analysisId < 0);
 
         studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
         analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
         System.out.println("analysisId: " + analysisId);
+        assertTrue(analysisId >= 0);
+    }
+
+    @Test
+    public void modifyAnalysisTest() throws CatalogManagerException, IOException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
+        String newName = "newName-"+ StringUtils.randomString(10);
+        String description = "description-"+ StringUtils.randomString(50);
+        DBObject attributes = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok"+StringUtils.randomString(20)).get();
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.put("name", newName);
+        parameters.put("description", description);
+        parameters.put("attributes", attributes);
+        System.out.println(catalog.modifyAnalysis(analysisId, parameters));
+
+        Analysis analysis = catalog.getAnalysis(analysisId).getResult().get(0);
+        System.out.println(analysis);
+        assertEquals(analysis.getName(), newName);
+        assertEquals(analysis.getDescription(), description);
+        assertEquals(analysis.getAttributes(), attributes);
+
     }
 
     @Test
