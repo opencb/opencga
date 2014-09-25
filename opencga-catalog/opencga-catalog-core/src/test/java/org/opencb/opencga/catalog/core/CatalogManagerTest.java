@@ -38,7 +38,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws IOException, CatalogIOManagerException {
-        List<ObjectMap> result = null;
+        List<ObjectMap> result;
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser = result.get(0).getString("sessionId");
