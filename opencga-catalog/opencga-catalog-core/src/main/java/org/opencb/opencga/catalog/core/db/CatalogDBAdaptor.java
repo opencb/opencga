@@ -33,22 +33,17 @@ public interface CatalogDBAdaptor {
 
     QueryResult logoutAnonymous(String sessionId) throws CatalogManagerException;
 
-
-    // public String getUserByAccountId(String accountId, String sessionId);
-
-    // public String getUserByEmail(String email, String sessionId);
-
     QueryResult<User> getUser(String userId, String lastActivity) throws CatalogManagerException;
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogManagerException;
 
     QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException;
 
+    void updateUserLastActivity(String userId) throws CatalogManagerException;
+
     QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogManagerException;
 
     QueryResult resetPassword(String userId, String email) throws CatalogManagerException;
-
-//    public boolean checkSessionId(String userId, String sessionId);
 
     QueryResult getSession(String userId, String sessionId) throws CatalogManagerException;
 
@@ -159,6 +154,7 @@ public interface CatalogDBAdaptor {
     QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
 
     int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
+    String getAnalysisOwner(int analysisId) throws CatalogManagerException;
 
     /**
      * Job methods

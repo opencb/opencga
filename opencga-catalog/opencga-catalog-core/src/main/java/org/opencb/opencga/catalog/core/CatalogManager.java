@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
@@ -201,7 +200,7 @@ public class CatalogManager {
         checkParameter(password, "password");
         checkParameter(nPassword1, "nPassword1");
         checkSessionId(userId, sessionId);  //Only the user can change his own password
-
+        catalogDBAdaptor.updateUserLastActivity(userId);
         return catalogDBAdaptor.changePassword(userId, password, nPassword1);
     }
 
@@ -210,12 +209,14 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
         checkEmail(nEmail);
+        catalogDBAdaptor.updateUserLastActivity(userId);
         return catalogDBAdaptor.changeEmail(userId, nEmail);
     }
 
     public QueryResult resetPassword(String userId, String email) throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkEmail(email);
+        catalogDBAdaptor.updateUserLastActivity(userId);
         return catalogDBAdaptor.resetPassword(userId, email);
     }
 
@@ -226,7 +227,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);    //FIXME: Should other users get access to other user information?
         // lastActivity can be null
-        return catalogDBAdaptor.getUser(userId, sessionId);
+        return catalogDBAdaptor.getUser(userId, lastActivity);
     }
 
     /**
@@ -259,6 +260,7 @@ public class CatalogManager {
         if(parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
+        catalogDBAdaptor.updateUserLastActivity(userId);
         return catalogDBAdaptor.modifyUser(userId, parameters);
     }
 
@@ -301,6 +303,7 @@ public class CatalogManager {
             e.printStackTrace();
             catalogDBAdaptor.deleteProject(project.getId());
         }
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return result;
     }
 
@@ -340,11 +343,13 @@ public class CatalogManager {
         checkParameter(newProjectAlias, "newProjectAlias");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
         Acl projectAcl = getProjectAcl(userId, projectId);
         if(projectAcl.isWrite()) {
 //            ioManager.renameProject(userId, projectAlias, newProjectAlias);
 //            try {
+                catalogDBAdaptor.updateUserLastActivity(ownerId);
                 return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
 //            } catch (CatalogManagerException e) {
 //                ioManager.renameProject(userId, newProjectAlias, projectAlias);
@@ -376,6 +381,7 @@ public class CatalogManager {
         checkObj(parameters, "Parameters");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
         if (!getProjectAcl(userId, projectId).isWrite()) {
             throw new CatalogManagerException("User '" + userId + "' can't modify the project " + projectId);
         }
@@ -384,6 +390,7 @@ public class CatalogManager {
                 throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
             }
         }
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyProject(projectId, parameters);
     }
 
@@ -400,6 +407,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
         if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
             throw new CatalogManagerException("Permission denied. Can't write in project");
@@ -420,6 +428,8 @@ public class CatalogManager {
         }
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, sessionId);
+
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return result;
     }
 
@@ -462,12 +472,14 @@ public class CatalogManager {
         checkParameter(newStudAlias, "newStudAlias");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
 
         if (!getStudyAcl(userId, studyId).isWrite()) {  //User can't write/modify the study
             throw new CatalogManagerException("Permission denied. Can't write in project");
         }
 //        ioManager.renameStudy(userId, projectAlias, studyAlias, newStudAlias);
 //        try {
+            catalogDBAdaptor.updateUserLastActivity(ownerId);
             return catalogDBAdaptor.renameStudy(studyId, newStudAlias);
 //        } catch (CatalogManagerException e) {
 //            ioManager.renameProject(userId, newStudAlias, studyAlias);
@@ -504,6 +516,9 @@ public class CatalogManager {
                 throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
             }
         }
+
+        String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyStudy(studyId, parameters);
     }
 
@@ -555,12 +570,15 @@ public class CatalogManager {
         File f = new File(folder.getFileName().toString()+"/", File.FOLDER, "", "", folderPath.toString(), userId
                 , TimeUtils.getTime(), "", "", 0);
 
+        QueryResult<File> result;
         try {
-            return catalogDBAdaptor.createFileToStudy(studyId, f);
+            result = catalogDBAdaptor.createFileToStudy(studyId, f);
         } catch (CatalogManagerException e) {
             ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString());
             throw e;
         }
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        return result;
     }
 
 //    public QueryResult refreshBucket(final String userId, final String bucketId, final String sessionId)
@@ -675,6 +693,7 @@ public class CatalogManager {
         } catch (CatalogIOManagerException e) {
             throw new CatalogManagerException(e);
         }
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.deleteFile(fileId);
     }
 
@@ -712,6 +731,8 @@ public class CatalogManager {
                 throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
             }
         }
+        String ownerId = catalogDBAdaptor.getFileOwner(fileId);
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyFile(fileId, parameters);
     }
 //
@@ -911,6 +932,8 @@ public class CatalogManager {
             analysis.setCreationDate(TimeUtils.getTime());
         }
 
+        String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.createAnalysis(studyId, analysis);
     }
 
@@ -969,6 +992,8 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. Can't modify this analysis"); //TODO: Should Analysis have ACL?
         }
 
+        String ownerId = catalogDBAdaptor.getAnalysisOwner(analysisId);
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
     }
 

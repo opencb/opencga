@@ -215,6 +215,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
+        user.setLastActivity(TimeUtils.getTime());
         DBObject userDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
         userDBObject.put("_id", user.getId());
 
@@ -344,7 +345,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<User> getUser(String userId, String lastActivityg) throws CatalogManagerException{
         long startTime = startQuery();
-        //TODO: Check "lastActivity". If lastActivity == user.getLastActivity, return []
         DBObject query = new BasicDBObject("id", userId);
         QueryResult result = userCollection.find(query, null, null);
 
@@ -352,7 +352,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(user == null){
             throw new CatalogManagerException("User  {id:" + userId + "} not found");
         }
-        return endQuery("Get user", startTime, Arrays.asList(user));
+        if(user.getLastActivity().equals(lastActivityg)) {
+            return endQuery("Get user", startTime);
+        } else {
+            return endQuery("Get user", startTime, Arrays.asList(user));
+        }
     }
 
     @Override
@@ -373,6 +377,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException {
         return modifyUser(userId, new ObjectMap("email", newEmail));
+    }
+
+    public void updateUserLastActivity(String userId) throws CatalogManagerException {
+        modifyUser(userId, new ObjectMap("lastActivity", TimeUtils.getTime()));
     }
 
     @Override
@@ -418,20 +426,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         return endQuery("Modify user", startTime);
-//        long startTime = startQuery();
-//
-//        if(!userExists(userId)){
-//            throw new CatalogManagerException("User {id:\""+userId+"\"} not found");
-//        }
-//
-//        for (String s : parameters.keySet()) {
-//            if (!s.matches("name|email|organization|attributes\\..+|configs\\..+")) {
-//                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
-//            }
-//        }
-//
-//        userCollection.update(new BasicDBObject("id", userId), new BasicDBObject("$set", parameters), false, false);
-//        return endQuery("Modify user", startTime);
     }
 
     @Override
@@ -1655,12 +1649,29 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         QueryResult id = userCollection.find(query, null, null, returnFields);
 
         if (id.getNumResults() != 0) {
-            return Integer.parseInt(((List<DBObject>) ((DBObject) id.getResult().get(0)).get("analyses")).get(0).get("studyId").toString());
+            List<DBObject> analyses = (List<DBObject>) ((DBObject) id.getResult().get(0)).get("analyses");
+            if(analyses.isEmpty()) {
+                return -1;
+            } else {
+                return Integer.parseInt(analyses.get(0).get("studyId").toString());
+            }
         } else {
             return -1;
         }
     }
 
+    public String getAnalysisOwner(int analysisId) throws CatalogManagerException {
+        DBObject query = new BasicDBObject("analyses.id", analysisId);
+        DBObject returnFields = new BasicDBObject("id", analysisId);
+        QueryResult id = userCollection.find(query, null, null, returnFields);
+
+        User user = parseUser(id);
+        if (user != null) {
+            return user.getId();
+        } else {
+            throw new CatalogManagerException("Study {id:"+analysisId+"} not found");
+        }
+    }
 
     /**
      * Job methods
