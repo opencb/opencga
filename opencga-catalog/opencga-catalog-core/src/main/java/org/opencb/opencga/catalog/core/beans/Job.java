@@ -1,5 +1,8 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import org.opencb.opencga.lib.common.TimeUtils;
+
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -36,7 +39,11 @@ public class Job {
 
     public Job() {
     }
-
+    public Job(String name, String userId, String toolName, String description, String commandLine,
+               String outdir,  List<Integer> input) {
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
+                outdir, input, new LinkedList<Integer>());
+    }
     public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
                long diskUsage, String outdir, List<Integer> input, List<Integer> output) {

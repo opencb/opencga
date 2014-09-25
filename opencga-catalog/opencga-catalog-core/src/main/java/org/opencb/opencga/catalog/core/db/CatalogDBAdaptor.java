@@ -175,6 +175,8 @@ public interface CatalogDBAdaptor {
 
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 
+    int getAnalysisIdByJobId(int jobId);
+
 //    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
 
 //    Project getJobProject(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;

@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.core.beans;
 
+import org.opencb.opencga.lib.common.TimeUtils;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,7 +15,7 @@ public class Analysis {
     private int id;
     private String name;
     private String alias;
-    private String date;
+    private String date;    //TODO: Necessary?
     private String creatorId;
     private String creationDate;
     private String description;
@@ -24,6 +26,10 @@ public class Analysis {
 
 
     public Analysis() {
+    }
+
+    public Analysis(String name, String alias, String date, String creatorId, String description) {
+        this(-1, name, alias, date, creatorId, TimeUtils.getTime(), description, new LinkedList<Job>(), new HashMap<String, Object>());
     }
 
     public Analysis(int id, String name, String alias, String date, String creatorId, String creationDate, String description) {

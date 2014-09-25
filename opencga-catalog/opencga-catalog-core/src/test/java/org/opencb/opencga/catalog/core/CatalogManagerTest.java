@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.core;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -10,15 +11,14 @@ import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.beans.Project;
-import org.opencb.opencga.catalog.core.beans.Study;
-import org.opencb.opencga.catalog.core.beans.User;
+import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,12 +80,14 @@ public class CatalogManagerTest extends GenericTest {
     public void testLogin() throws Exception {
         QueryResult<ObjectMap> queryResult = catalogManager.login("user", PASSWORD, "127.0.0.1");
         System.out.println(queryResult.getResult().get(0).toJson());
+        try{
+            catalogManager.login("user", "fakePassword", "127.0.0.1");
+            fail("Expected 'wrong password' exception");
+        } catch (CatalogManagerException e ){
+            System.out.println(e.getMessage());
+        }
     }
 
-    @Test
-    public void testLogout() throws Exception {
-
-    }
 
     @Test
     public void testLogoutAnonymous() throws Exception {
@@ -95,7 +97,11 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetUserInfo() throws CatalogManagerException {
-        System.out.println(catalogManager.getUser("user", null, sessionIdUser));
+        QueryResult<User> user = catalogManager.getUser("user", null, sessionIdUser);
+        System.out.println("user = " + user);
+        QueryResult<User> userVoid = catalogManager.getUser("user", user.getResult().get(0).getLastActivity(), sessionIdUser);
+        System.out.println("userVoid = " + userVoid);
+        assertTrue(userVoid.getResult().isEmpty());
         try {
             catalogManager.getUser("user", null, sessionIdUser2);
             fail();
@@ -105,21 +111,38 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifyUser() throws CatalogManagerException {
+    public void testModifyUser() throws CatalogManagerException, InterruptedException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + StringUtils.randomString(10);
+        String newPassword = StringUtils.randomString(10);
+        String newEmail = "new@email.ac.uk";
+
         params.put("name", newName);
         ObjectMap attributes = new ObjectMap("myBoolean", true);
         attributes.put("value", 6);
         attributes.put("object", new BasicDBObject("id", 1234));
         params.put("attributes", attributes);
 
-        catalogManager.modifyUser("user", params, sessionIdUser);
+        User userPre = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0);
+        System.out.println("userPre = " + userPre);
+        Thread.sleep(10);
 
-        User user = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0);
-        assertEquals(user.getName(), newName);
+        catalogManager.modifyUser("user", params, sessionIdUser);
+        catalogManager.changeEmail("user", newEmail, sessionIdUser);
+        catalogManager.changePassword("user", PASSWORD, newPassword, sessionIdUser);
+
+        List<User> userList = catalogManager.getUser("user", userPre.getLastActivity(), sessionIdUser).getResult();
+        if(userList.isEmpty()){
+            fail("Error. LastActivity should have changed");
+        }
+        User userPost = userList.get(0);
+        System.out.println("userPost = " + userPost);
+        assertTrue(!userPre.getLastActivity().equals(userPost.getLastActivity()));
+        assertEquals(userPost.getName(), newName);
+        assertEquals(userPost.getEmail(), newEmail);
+        assertEquals(userPost.getPassword(), newPassword);
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-            assertEquals(user.getAttributes().get(entry.getKey()), entry.getValue());
+            assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
         try {
@@ -138,7 +161,14 @@ public class CatalogManagerTest extends GenericTest {
             System.out.println(e);
         }
 
+        catalogManager.changePassword("user", newPassword, PASSWORD, sessionIdUser);
+
     }
+
+    /**
+     * Project methods
+     * ***************************
+     */
 
     @Test
     public void testCreateProject() throws Exception {
@@ -154,14 +184,11 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifyProject() throws CatalogManagerException {
-//        Map<String, String> options = new HashMap<>();
         String newProjectName = "ProjectName " + StringUtils.randomString(10);
         int projectId = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0).getProjects().get(0).getId();
 
         ObjectMap options = new ObjectMap();
         options.put("name", newProjectName);
-//        options.put("attributes.myAttribute", "5");
-//        options.put("attributes.myStruct.value.ok", "true");
         ObjectMap attributes = new ObjectMap("myBoolean", true);
         attributes.put("value", 6);
         attributes.put("object", new BasicDBObject("id", 1234));
@@ -178,7 +205,6 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         try {
-//            options = new HashMap<>();
             options = new ObjectMap();
             options.put("alias", "newProjectAlias");
             catalogManager.modifyProject(projectId, options, sessionIdUser);
@@ -195,6 +221,11 @@ public class CatalogManagerTest extends GenericTest {
         }
 
     }
+
+    /**
+     * Study methods
+     * ***************************
+     */
 
     @Test
     public void testCreateStudy() throws Exception {
@@ -227,8 +258,12 @@ public class CatalogManagerTest extends GenericTest {
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(study.getAttributes().get(entry.getKey()), entry.getValue());
         }
-
     }
+
+    /**
+     * File methods
+     * ***************************
+     */
 
     @Test
     public void testDeleteDataFromStudy() throws Exception {
@@ -238,7 +273,39 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateFolder() throws Exception {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int sessionId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
-        System.out.println(catalogManager.createFolder(sessionId, Paths.get("data", "nueva", "carpeta"), true, sessionIdUser));
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        System.out.println(catalogManager.createFolder(studyId, Paths.get("data", "nueva", "carpeta"), true, sessionIdUser));
+    }
+
+    /**
+     * Analysis methods
+     * ***************************
+     */
+
+    @Test
+    public void testCreateAnalysis() throws CatalogManagerException, JsonProcessingException {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        Analysis analysis = new Analysis("MyAnalysis", "analysis1", "date", "user", "description");
+
+        System.out.println(catalogManager.createAnalysis(studyId, analysis, sessionIdUser));
+
+    }
+
+    /**
+     * Job methods
+     * ***************************
+     */
+
+    @Test
+    public void testCreateJob() throws CatalogManagerException, JsonProcessingException, CatalogIOManagerException {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).getResult().get(0).getId();
+
+        Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", "jobs/myJob", Collections.<Integer>emptyList());
+
+        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
+
     }
 }

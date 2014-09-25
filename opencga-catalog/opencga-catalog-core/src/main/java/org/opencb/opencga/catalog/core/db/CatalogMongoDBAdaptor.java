@@ -215,7 +215,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
-        user.setLastActivity(TimeUtils.getTime());
+        user.setLastActivity(TimeUtils.getTimeMillis());
         DBObject userDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
         userDBObject.put("_id", user.getId());
 
@@ -379,8 +379,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return modifyUser(userId, new ObjectMap("email", newEmail));
     }
 
+    @Override
     public void updateUserLastActivity(String userId) throws CatalogManagerException {
-        modifyUser(userId, new ObjectMap("lastActivity", TimeUtils.getTime()));
+        modifyUser(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
     }
 
     @Override
@@ -1703,7 +1704,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         jobObject.put("_id", jobId);
         jobObject.put("analysisId", analysisId);
-        QueryResult insertResult = jobCollection.insert(jobObject);
+        QueryResult insertResult = jobCollection.insert(jobObject); //TODO: Check results.get(0).getN() != 0
 
         return endQuery("Create Job", startTime, getJob(jobId));
     }
@@ -1788,6 +1789,19 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     }
 
+    @Override
+    public int getAnalysisIdByJobId(int jobId){
+        DBObject query = new BasicDBObject("id", jobId);
+        DBObject returnFields = new BasicDBObject("analysisId", true);
+        QueryResult<DBObject> id = jobCollection.find(query, null, null, returnFields);
+
+        if (id.getNumResults() != 0) {
+            int analysisId = Integer.parseInt(id.getResult().get(0).get("analysisId").toString());
+            return analysisId;
+        } else {
+            return -1;
+        }
+    }
 
     /*
     * Helper methods
