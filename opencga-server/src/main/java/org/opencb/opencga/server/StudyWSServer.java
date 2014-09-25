@@ -7,6 +7,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.Project;
+import org.opencb.opencga.catalog.core.beans.Study;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 
@@ -17,36 +18,36 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
-@Path("/projects")
-@Api(value = "projects", description = "projects")
-public class ProjectWSServer extends OpenCGAWSServer {
+@Path("/study")
+@Api(value = "study", description = "studies")
+public class StudyWSServer extends OpenCGAWSServer {
 
-    public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public StudyWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
     @Produces("text/plain")
-    @ApiOperation(value = "Create project")
+    @ApiOperation(value = "Create study")
 
-    public Response createProject(
-            @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
+    public Response createStudy(
+            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") int projectId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
+            @ApiParam(value = "type", required = true) @QueryParam("type") String type,
             @ApiParam(value = "description", required = true) @QueryParam("description") String description,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status,
-            @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
+            @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
 
 
         QueryResult queryResult;
         try {
-            Project p = new Project(name, alias, description, status, organization);
-            queryResult = catalogManager.createProject(userId, p, sessionId);
+            Study study = new Study(name, alias, type, description, status);
+            queryResult = catalogManager.createStudy(projectId, study, sessionId);
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogManagerException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -54,16 +55,16 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/info")
+    @Path("/{studyId}/info")
     @Produces("text/plain")
-    @ApiOperation(value = "Project information")
+    @ApiOperation(value = "Study information")
 
     public Response info(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
             ){
         QueryResult queryResult;
         try {
-                queryResult = catalogManager.getProject(projectId, sessionId);
+                queryResult = catalogManager.getStudy(studyId, sessionId);
                 return createOkResponse(queryResult);
         } catch (CatalogManagerException e) {
             e.printStackTrace();

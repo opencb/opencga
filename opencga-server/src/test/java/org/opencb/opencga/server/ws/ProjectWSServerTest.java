@@ -1,36 +1,67 @@
 package org.opencb.opencga.server.ws;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Test;
+import org.opencb.datastore.core.QueryResponse;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 public class ProjectWSServerTest {
 
-    //
-//http://localhost:8080/opencga/rest/test/echo/hola
-
-
-    @Test
-    public void testCreateProject(){
-        //http://localhost:8080/opencga/rest/projects/create?userId=ralonso&sessionId=NTZb8IUKtKSyci4jj5gN&name=v&alias=v&description=v&organization=v
-
-        Client client = Client.create();
-
-        WebResource webResource = client.resource("http://localhost:8080/opencga/rest/projects/create");
-
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("userId", "ralonso");
-        queryParams.add("sessionId", "uCLzBJL6QOqUX32DHxGV");
-        queryParams.add("name", "prName");
-        queryParams.add("alias", "prAlias");
-        queryParams.add("description", "prDescr");
-        queryParams.add("organization", "prOrg");
-        String s = webResource.queryParams(queryParams).get(String.class);
-
-        System.out.println("s = " + s);
+    private UserWSServerTest userTest;
+    private int projectId;
+    public ProjectWSServerTest(UserWSServerTest uTest ){
+        userTest = uTest;
     }
 
+    public void createProject(){
+        ObjectMapper objectMapper = new ObjectMapper();
+        String prName = "pr_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
 
+        System.out.println("\nTesting project creation...");
+        System.out.println("---------------------");
+        System.out.println("\nINPUT PARAMS");
+        System.out.println("\tuserId: "+ userTest.getUserId());
+        System.out.println("\tsid: "+ userTest.getSessionId());
+        System.out.println("\tname: "+ prName);
+        System.out.println("\talias: "+ prName);
+        System.out.println("\tdescription: description");
+        System.out.println("\tstatus: status");
+        System.out.println("\torganization: organization");
+        MultivaluedMap queryParams = new MultivaluedMapImpl();
+        queryParams.add("userId", userTest.getUserId());
+        queryParams.add("sid", userTest.getSessionId());
+        queryParams.add("name", prName);
+        queryParams.add("alias", prName);
+        queryParams.add("description", "description");
+        queryParams.add("status", "status");
+        queryParams.add("organization", "organization");
+        String s = userTest.getWebResource().path("projects").path("create").queryParams(queryParams).get(String.class);
+        try {
+            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
+            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
+            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+            System.out.println("\nOUTPUT PARAMS");
+            projectId = Integer.parseInt(WSServerTestUtils.getField(queryResponse,"id"));
+            System.out.println("\tprojectId: "+ projectId);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("\nJSON RESPONSE");
+        System.out.println(s);
+
+    }
+    public int getProjectId(){
+        return projectId;
+    }
+    public UserWSServerTest getUserTest(){
+        return userTest;
+    }
 }

@@ -5,10 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
@@ -34,14 +31,14 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Just to create the api")
 
     public Response createUser(
-            @ApiParam(value = "id", required = true) @QueryParam("id") String id,
+            @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "email", required = true) @QueryParam("email") String email,
             @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
             @ApiParam(value = "role", required = true) @QueryParam("role") String role,
             @ApiParam(value = "password", required = true) @QueryParam("password") String password,
             @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
-        User user = new User(id, name, email, password, organization, role, status);
+        User user = new User(userId, name, email, password, organization, role, status);
         QueryResult queryResult;
         try {
             queryResult = catalogManager.createUser(user);
@@ -82,8 +79,8 @@ public class UserWSServer extends OpenCGAWSServer {
     @Produces("text/plain")
     @ApiOperation(value = "User login")
     public Response logout(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "sessionId", required = true) @QueryParam("sessionId") String sessionId) throws IOException {
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId
+            ) throws IOException {
         try {
             QueryResult result;
             if (userId.toLowerCase().equals("anonymous")) {
@@ -103,7 +100,6 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "User info")
     public Response getInfo(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "sessionId", required = true) @QueryParam("sessionId") String sessionId,
             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
             QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId);
