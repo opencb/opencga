@@ -235,8 +235,9 @@ public class CatalogManager {
      *   name
      *   email
      *   organization
-     *   attributes.*
-     *   configs.*
+     *
+     *   attributes
+     *   configs
      *
      * @param userId userId
      * @param parameters Parameters to change.
@@ -254,6 +255,9 @@ public class CatalogManager {
             if (!s.matches("name|email|organization|attributes|configs")) {
                 throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
             }
+        }
+        if(parameters.containsKey("email")) {
+            checkEmail(parameters.getString("email"));
         }
         return catalogDBAdaptor.modifyUser(userId, parameters);
     }
@@ -543,7 +547,10 @@ public class CatalogManager {
         String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
 
-        //TODO: Check ACL
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't create files or folders in this study");
+        }
+
         Path folder = ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
         File f = new File(folder.getFileName().toString()+"/", File.FOLDER, "", "", folderPath.toString(), userId
                 , TimeUtils.getTime(), "", "", 0);
@@ -669,6 +676,43 @@ public class CatalogManager {
             throw new CatalogManagerException(e);
         }
         return catalogDBAdaptor.deleteFile(fileId);
+    }
+
+
+
+    /**
+     * Modify some params from the specified file:
+     *
+     *   name
+     *   type
+     *   format
+     *   bioformat
+     *   description
+     *   status
+     *
+     *   attributes
+     *   stats
+     *
+     * @param fileId File identifier
+     * @param parameters Parameters to change.
+     * @param sessionId sessionId to check permissions
+     * @return
+     * @throws CatalogManagerException
+     */
+    public QueryResult modifyFile(int fileId, ObjectMap parameters, String sessionId)
+            throws CatalogManagerException {
+        checkObj(parameters, "Parameters");
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!getFileAcl(userId, fileId).isWrite()) {
+            throw new CatalogManagerException("User " + userId + " can't modify the file " + fileId);
+        }
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|type|format|bioformat|description|status|attributes|stats")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            }
+        }
+        return catalogDBAdaptor.modifyFile(fileId, parameters);
     }
 //
 //    public DataInputStream getFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String start, String limit)
@@ -842,29 +886,99 @@ public class CatalogManager {
 //        return jobStatus;
 //    }
 //
-//    /**
-//     * Project methods
-//     * ***************************
-//     */
-//    public QueryResult getAllProjects(String userId, String sessionId) throws CatalogManagerException {
-//        return catalogDBAdaptor.getAllProjects(userId, sessionId);
-//    }
-//
-//    public QueryResult createProject(String userId, Project project, String sessionId) throws CatalogManagerException,
-//            CatalogIOManagerException, JsonProcessingException {
-//        checkParameter(project.getId(), "projectName");
-//        checkParameter(userId, "userId");
-//        checkParameter(sessionId, "sessionId");
-//
-//        ioManager.createProject(userId, project.getId());
-//        try {
-//            return catalogDBAdaptor.createProject(userId, project, sessionId);
-//        } catch (CatalogManagerException e) {
-//            ioManager.deleteProject(userId, project.getId());
-//            throw e;
-//        }
-//    }
-//
+
+
+    /**
+     * Analysis methods
+     * ***************************
+     */
+
+    public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis, String sessionId) throws CatalogManagerException {
+        checkObj(analysis, "analysis");
+        checkParameter(sessionId, "sessionId");
+        checkParameter(analysis.getAlias(), "analysis.getAlias()");
+        checkParameter(analysis.getName(), "analysis.getName()");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't write in this study");
+        }
+
+        if(analysis.getCreatorId() == null || analysis.getCreatorId().isEmpty()){
+            analysis.setCreatorId(userId);
+        }
+        if(analysis.getCreationDate() == null || analysis.getCreationDate().isEmpty()){
+            analysis.setCreationDate(TimeUtils.getTime());
+        }
+
+        return catalogDBAdaptor.createAnalysis(studyId, analysis);
+    }
+
+    public QueryResult<Analysis> getAnalysis(int analysisId, String sessionId) throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
+
+        if (!getStudyAcl(userId, studyId).isRead()) {
+            throw new CatalogManagerException("Permission denied. Can't read from this study"); //TODO: Should Analysis have ACL?
+        }
+
+        return catalogDBAdaptor.getAnalysis(analysisId);
+
+    }
+
+    public QueryResult<Analysis> getAllAnalysis(int studyId, String sessionId) throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (!getStudyAcl(userId, studyId).isRead()) {
+            throw new CatalogManagerException("Permission denied. Can't read from this study"); //TODO: Should Analysis have ACL?
+        }
+
+        return catalogDBAdaptor.getAllAnalysis(studyId);
+    }
+
+    /**
+     * Modify some params from the specified file:
+     *
+     *   name
+     *   date
+     *   description
+     *
+     *   attributes
+     *
+     * @param analysisId Analysis identifier
+     * @param parameters Parameters to change.
+     * @param sessionId sessionId to check permissions
+     * @return
+     * @throws CatalogManagerException
+     */
+    public QueryResult modifyAnalysis(int analysisId, ObjectMap parameters, String sessionId) throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+        checkObj(parameters, "Parameters");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
+
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|date|description|attributes")) {
+                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+            }
+        }
+
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't modify this analysis"); //TODO: Should Analysis have ACL?
+        }
+
+        return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
+    }
+
+
+
+    /**
+     * Job methods
+     * ***************************
+     */
+
 //    public String checkJobStatus(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException {
 //        return catalogDBAdaptor.getJobStatus(userId, jobId, sessionId);
 //    }
@@ -987,17 +1101,6 @@ public class CatalogManager {
 //        }
 //    }
 //
-//    public QueryResult getJobFolder(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException {
-//        String projectId = catalogDBAdaptor.getJobProject(userId, jobId, sessionId).getId();
-//        String jobFolder = ioManager.getJobPath(userId, projectId, null, jobId).toString();
-//
-//
-//        QueryResult<String> result = new QueryResult();
-//        result.setResult(Arrays.asList(jobFolder));
-//        result.setNumResults(1);
-//
-//        return result;
-//    }
 //
 //    public List<AnalysisPlugin> getUserAnalysis(String sessionId) throws CatalogManagerException, IOException {
 //        return catalogDBAdaptor.getUserAnalysis(sessionId);
@@ -1015,15 +1118,6 @@ public class CatalogManager {
 //    }
 //
 
-
-    /**
-     * Analysis methods
-     * ***************************
-     */
-
-    public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
-        return catalogDBAdaptor.createAnalysis(studyId, analysis);
-    }
 
     /**
      * ****************

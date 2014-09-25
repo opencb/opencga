@@ -50,7 +50,7 @@ public interface CatalogDBAdaptor {
 
 //    public boolean checkSessionId(String userId, String sessionId);
 
-    QueryResult getSession(String userId, String sessionId) throws IOException;
+    QueryResult getSession(String userId, String sessionId) throws CatalogManagerException;
 
     String getUserIdBySessionId(String sessionId);
 
@@ -157,6 +157,9 @@ public interface CatalogDBAdaptor {
     QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 
     QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
+
+    int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
+
     /**
      * Job methods
      * ***************************
