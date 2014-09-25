@@ -23,7 +23,7 @@ import java.util.*;
 @FixMethodOrder(MethodSorters.JVM)
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
-    private static CatalogMongoDBAdaptor catalog;
+    private static CatalogDBAdaptor catalog;
 
     @BeforeClass
     public static void before() throws IllegalOpenCGACredentialsException, JsonProcessingException {
@@ -229,12 +229,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getProjectAclTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "1000G");
-        Acl jmmut = catalog.getProjectAcl(projectId, "jmmut");
-        System.out.println(jmmut);
-        assertNotNull(jmmut);
-        Acl noUser = catalog.getProjectAcl(projectId, "noUser");
-        System.out.println(noUser);
-        assertNull(noUser);
+        List<Acl> acls = catalog.getProjectAcl(projectId, "jmmut").getResult();
+        assertTrue(!acls.isEmpty());
+        System.out.println(acls.get(0));
+        List<Acl> acls2 = catalog.getProjectAcl(projectId, "noUser").getResult();
+        assertTrue(acls2.isEmpty());
     }
 
 
@@ -350,12 +349,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getStudyAclTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        Acl jmmut = catalog.getStudyAcl(studyId, "jmmut");
-        System.out.println(jmmut);
-        assertNotNull(jmmut);
-        Acl noUser = catalog.getStudyAcl(studyId, "noUser");
-        System.out.println(noUser);
-        assertNull(noUser);
+        List<Acl> jmmut = catalog.getStudyAcl(studyId, "jmmut").getResult();
+        assertTrue(!jmmut.isEmpty());
+        System.out.println(jmmut.get(0));
+        List<Acl> noUser = catalog.getStudyAcl(studyId, "noUser").getResult();
+        assertTrue(noUser.isEmpty());
     }
 
     @Test
@@ -483,12 +481,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void getFileAclsTest() throws CatalogManagerException {
         int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
 
-        Acl fileAcl = catalog.getFileAcl(fileId, "jcoll");
-        assertNotNull(fileAcl);
-        System.out.println(fileAcl);
-        Acl fileAcl1 = catalog.getFileAcl(fileId, "imedina");
-        System.out.println(fileAcl1);
-        assertNull(fileAcl1);
+        List<Acl> jcoll = catalog.getFileAcl(fileId, "jcoll").getResult();
+        assertTrue(!jcoll.isEmpty());
+        System.out.println(jcoll.get(0));
+        List<Acl> imedina = catalog.getFileAcl(fileId, "imedina").getResult();
+        assertTrue(imedina.isEmpty());
     }
 
     @Test

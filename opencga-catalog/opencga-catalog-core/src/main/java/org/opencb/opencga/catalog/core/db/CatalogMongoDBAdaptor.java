@@ -114,6 +114,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    @Override
     public void disconnect(){
          mongoManager.close(db.getDatabaseName());
     }
@@ -703,7 +704,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * {"$unwind": "$projects.acl"},
      * {"$match": {"projects.acl.userId": "jmmut"}}).pretty()
      */
-    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+    @Override
+    public QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+        long startTime = startQuery();
         DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
         DBObject project = new BasicDBObject("$project", BasicDBObjectBuilder
                 .start("_id", false)
@@ -722,20 +725,22 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         operations.add(unwind2);
         operations.add(match3);
         QueryResult aggregate = userCollection.aggregate(null, operations, null);
-        if (aggregate.getNumResults() == 0) {
-            return null;
-        }
 
-        Object aclObject = ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
-        Acl acl;
-        try {
-            acl = jsonObjectMapper.reader(Acl.class).readValue(aclObject.toString());
-        } catch (IOException e) {
-            throw new CatalogManagerException("get Project ACL: error parsing ACL");
+        List<Acl> acls = new LinkedList<>();
+        if (aggregate.getNumResults() != 0) {
+            Object aclObject = ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
+            Acl acl;
+            try {
+                acl = jsonObjectMapper.reader(Acl.class).readValue(aclObject.toString());
+                acls.add(acl);
+            } catch (IOException e) {
+                throw new CatalogManagerException("get Project ACL: error parsing ACL");
+            }
         }
-        return acl;
+        return endQuery("get project ACL", startTime, acls);
     }
 
+    @Override
     public void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException {
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
@@ -749,10 +754,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("could not put ACL: parsing error");
         }
 
-        Acl projectAcl = getProjectAcl(projectId, userId);
+        List<Acl> projectAcls = getProjectAcl(projectId, userId).getResult();
         DBObject match;
         DBObject updateOperation;
-        if (projectAcl == null) {  // there is no acl for that user in that project. push
+        if (projectAcls.isEmpty()) {  // there is no acl for that user in that project. push
             match = new BasicDBObject("projects.id", projectId);
             updateOperation = new BasicDBObject("$push", new BasicDBObject("projects.acl", newAclObject));
         } else {    // there is already another ACL: overwrite
@@ -1097,17 +1102,21 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getStudyAcl(int studyId, String userId) throws CatalogManagerException {
+    @Override
+    public QueryResult<Acl> getStudyAcl(int studyId, String userId) throws CatalogManagerException {
+        long startTime = startQuery();
+        List<Acl> acls = new LinkedList<>();
         QueryResult<Study> studyQuery = getStudy(studyId);
         List<Acl> acl = studyQuery.getResult().get(0).getAcl();
         for (Acl acl1 : acl) {
             if (userId.equals(acl1.getUserId())) {
-                return acl1;
+                acls.add(acl1);
             }
         }
-        return null;
+        return endQuery("get study ACL", startTime, acls);
     }
 
+//    @Override
     public void setStudyAcl(int studyId, Acl newAcl) throws CatalogManagerException {
         /*
         String userId = newAcl.getUserId();
@@ -1392,7 +1401,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     /**
      * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
      */
-    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {
+    @Override
+    public QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException {
+        long startTime = startQuery();
         DBObject projection = BasicDBObjectBuilder
                 .start("acl",
                         new BasicDBObject("$elemMatch",
@@ -1405,10 +1416,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("getFileAcl: There is no file with fileId = " + fileId);
         }
         List<Acl> acl = parseFile(queryResult).getAcl();
-        return acl == null ? null : acl.get(0);
+        return endQuery("get file acl", startTime, acl);
     }
 
 
+    @Override
     public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException {
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
@@ -1422,10 +1434,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("could not put ACL: parsing error");
         }
 
-        Acl fileAcl = getFileAcl(fileId, userId);
+        List<Acl> acls = getFileAcl(fileId, userId).getResult();
         DBObject match;
         DBObject updateOperation;
-        if (fileAcl == null) {  // there is no acl for that user in that file. push
+        if (acls.isEmpty()) {  // there is no acl for that user in that file. push
             match = new BasicDBObject("id", fileId);
             updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
         } else {    // there is already another ACL: overwrite
@@ -1504,6 +1516,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * query: db.user.find({"analyses.alias":"analysis1Alias", "analyses.studyId":8}
      * , {"analyses":{$elemMatch:{studyId:8,alias:"analysis1Alias"}},"analyses.id":1}).pretty()
      */
+    @Override
     public int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException {
         DBObject elem = new BasicDBObject("$elemMatch", BasicDBObjectBuilder
                 .start("studyId", studyId)
@@ -1603,6 +1616,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     }
 
+    @Override
     public QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException {
         long startTime = startQuery();
         if(!analysisExists(analysisId)){
@@ -1725,6 +1739,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    @Override
     public QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException {
         long startTime = startQuery();
         QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null, null);

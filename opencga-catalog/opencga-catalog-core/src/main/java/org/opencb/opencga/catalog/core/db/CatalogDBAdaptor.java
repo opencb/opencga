@@ -13,6 +13,8 @@ import java.util.Map;
 
 public interface CatalogDBAdaptor {
 
+
+    void disconnect();
     /**
      * User methods
      * ***************************
@@ -70,6 +72,8 @@ public interface CatalogDBAdaptor {
 
     String getProjectOwner(int projectId) throws CatalogManagerException;
 
+    QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException;
+    void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException;
     /**
      * Study methods
      * ***************************
@@ -96,12 +100,14 @@ public interface CatalogDBAdaptor {
 
     int getStudyId(int projectId, String studyAlias) throws CatalogManagerException;
 
-    int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogManagerException, IOException;
+    int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
 
     int getProjectIdByStudyId(int studyId) throws CatalogManagerException;
 
     String getStudyOwner(int studyId) throws CatalogManagerException;
 
+    QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogManagerException;
+//    void setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;   // TODO
     /**
      * File methods
      * ***************************
@@ -134,8 +140,8 @@ public interface CatalogDBAdaptor {
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
     String getFileOwner(int fileId) throws CatalogManagerException;
 
-    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException;
-    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
+    QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException;
+    void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
 
 
 
@@ -146,9 +152,10 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
     QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
+    int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException;
     QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
 
-    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException, IOException;
+    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
     QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 
     QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
@@ -166,6 +173,8 @@ public interface CatalogDBAdaptor {
     QueryResult deleteJob(int jobId) throws CatalogManagerException;
 
     QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
+
+    QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException;
 
     String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
 
