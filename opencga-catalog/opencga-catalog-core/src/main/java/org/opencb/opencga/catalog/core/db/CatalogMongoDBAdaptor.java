@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -53,8 +52,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static ObjectWriter jsonObjectWriter;
     private static ObjectReader jsonFileReader;
     private static ObjectReader jsonUserReader;
+    private static ObjectReader jsonJobReader;
     private static ObjectReader jsonProjectReader;
     private static ObjectReader jsonStudyReader;
+    private static ObjectReader jsonAnalysisReader;
     private static ObjectReader jsonSampleReader;
 
     private Properties catalogProperties;
@@ -65,8 +66,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonFileReader = jsonObjectMapper.reader(File.class);
         jsonUserReader = jsonObjectMapper.reader(User.class);
+        jsonJobReader = jsonObjectMapper.reader(Job.class);
         jsonProjectReader = jsonObjectMapper.reader(Project.class);
         jsonStudyReader = jsonObjectMapper.reader(Study.class);
+        jsonAnalysisReader = jsonObjectMapper.reader(Job.class);
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
     }
 
@@ -111,6 +114,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    @Override
     public void disconnect(){
          mongoManager.close(db.getDatabaseName());
     }
@@ -212,8 +216,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
+        user.setLastActivity(TimeUtils.getTimeMillis());
         DBObject userDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
-//        userDBObject.put("_id", user.getId());
+        userDBObject.put("_id", user.getId());
 
         QueryResult insert;
         try {
@@ -229,8 +234,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
 
-//        nativeUserCollection.findAndModify(new BasicDBObject("id", user.getId()),)
-
         //Get the inserted user.
         List<User> result = getUser(user.getId(), "").getResult();
 
@@ -240,8 +243,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override //TODO
     public QueryResult deleteUser(String userId) throws CatalogManagerException {
         long startTime = startQuery();
-        //throw new UnsupportedOperationException();
-        return null;
+
+        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
+        if (id.getN() == 0) {
+            throw new CatalogManagerException("user {id:" + userId + "} not found");
+        } else {
+            return endQuery("Delete user", startTime, Arrays.asList(id.getN()));
+        }
     }
 
     @Override
@@ -338,8 +346,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<User> getUser(String userId, String lastActivityg) throws CatalogManagerException{
         long startTime = startQuery();
-        //TODO: ManageSession
-        //TODO: Check "lastActivity". If lastActivity == user.getLastActivity, return []
         DBObject query = new BasicDBObject("id", userId);
         QueryResult result = userCollection.find(query, null, null);
 
@@ -347,13 +353,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(user == null){
             throw new CatalogManagerException("User  {id:" + userId + "} not found");
         }
-        return endQuery("Get user", startTime, Arrays.asList(user));
+        if(user.getLastActivity().equals(lastActivityg)) {
+            return endQuery("Get user", startTime);
+        } else {
+            return endQuery("Get user", startTime, Arrays.asList(user));
+        }
     }
 
     @Override
     public QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogManagerException {
         long startTime = startQuery();
-        //TODO: ManageSession
 
         BasicDBObject query = new BasicDBObject("id", userId);
         query.put("password", oldPassword);
@@ -368,35 +377,67 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException {
-        return null;
+        return modifyUser(userId, new ObjectMap("email", newEmail));
     }
 
     @Override
-    public QueryResult modifyUser(String userId, Map<String, String> parameters) throws CatalogManagerException {
+    public void updateUserLastActivity(String userId) throws CatalogManagerException {
+        modifyUser(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
+    }
+
+    @Override
+    public QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogManagerException {
         long startTime = startQuery();
+        Map<String, Object> userParameters = new HashMap<>();
 
-        if(!userExists(userId)){
-            throw new CatalogManagerException("User {id:\""+userId+"\"} not found");
+        String[] acceptedParams = {"name", "email", "organization", "lastActivity", "role", "status"};
+        for (String s : acceptedParams) {
+            if(parameters.containsKey(s)) {
+                userParameters.put(s, parameters.getString(s));
+            }
         }
-
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|email|organization|attributes\\..+|configs\\..+")) {
-                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+        for (String s : acceptedIntParams) {
+            if(parameters.containsKey(s)) {
+                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
+                if(anInt != Integer.MIN_VALUE) {
+                    userParameters.put(s, anInt);
+                }
+            }
+        }
+        Map<String, Object> attributes = parameters.getMap("attributes");
+        if(attributes != null) {
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                userParameters.put("attributes." + entry.getKey(), entry.getValue());
+            }
+        }
+        Map<String, Object> configs = parameters.getMap("configs");
+        if(configs != null) {
+            for (Map.Entry<String, Object> entry : configs.entrySet()) {
+                userParameters.put("configs." + entry.getKey(), entry.getValue());
             }
         }
 
-        userCollection.update(new BasicDBObject("id", userId), new BasicDBObject("$set", parameters), false, false);
+        if(!userParameters.isEmpty()) {
+            QueryResult<WriteResult> update = userCollection.update(
+                    new BasicDBObject("id", userId),
+                    new BasicDBObject("$set", userParameters), false, false);
+            if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
+                throw new CatalogManagerException("User {id:'" + userId + "'} not found");
+            }
+        }
+
         return endQuery("Modify user", startTime);
     }
 
     @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogManagerException {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public QueryResult getSession(String userId, String sessionId) throws IOException {
-        return null;
+    public QueryResult getSession(String userId, String sessionId) throws CatalogManagerException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -422,6 +463,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * ***************************
      */
 
+    public boolean projectExists(int projectId) {
+        QueryResult count = userCollection.count(new BasicDBObject("projects.id", projectId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
     public QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException {
         long startTime = startQuery();
@@ -442,6 +489,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(count.getResult().get(0) != 0){
             throw new CatalogManagerException( "Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
         }
+//        if(getProjectId(userId, project.getAlias()) >= 0){
+//            throw new CatalogManagerException( "Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
+//        }
 
         //Generate json
         int projectId = getNewProjectId();
@@ -495,8 +545,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult deleteProject(int projecetId) throws CatalogManagerException {
-        return null;
+    public QueryResult deleteProject(int projectId) throws CatalogManagerException {
+        long startTime = startQuery();
+        DBObject query = new BasicDBObject("projects.id", projectId);
+        DBObject pull = new BasicDBObject("$pull",
+                new BasicDBObject("projects",
+                        new BasicDBObject("id", projectId)));
+
+        QueryResult update = userCollection.update(query, pull, false, false);
+        return update;
     }
 
     @Override
@@ -514,65 +571,104 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 user.getProjects());
     }
 
+
+    /**
+    db.user.update(
+        {
+            "projects.id" : projectId,
+            "projects.alias" : {
+                $ne : newAlias
+            }
+        },
+        {
+            $set:{
+                "projects.$.alias":newAlias
+            }
+        })
+    */
     @Override
     public QueryResult renameProjectAlias(int projectId, String newProjectAlias) throws CatalogManagerException {
-        boolean alreadyUsed = true;
-        String projectOwner = getProjectOwner(projectId);
+        long startTime = startQuery();
+//        String projectOwner = getProjectOwner(projectId);
+//
+//        int collisionProjectId = getProjectId(projectOwner, newProjectAlias);
+//        if (collisionProjectId != -1) {
+//            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
+//        }
 
-        try {   // check that the user doesn't have another project with that alias
-            getProject(projectOwner, newProjectAlias);
-        } catch (CatalogManagerException e) {
-            alreadyUsed = false;
-        }
-
-        if (alreadyUsed) {
-            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
-        }
-
-        QueryResult<Project> projectResult = getProject(projectId);
+        QueryResult<Project> projectResult = getProject(projectId); // if projectId doesn't exist, an exception is raised
         Project project = projectResult.getResult().get(0);
 
         String oldAlias = project.getAlias();
         project.setAlias(newProjectAlias);
 
         DBObject query = BasicDBObjectBuilder
-                .start("id", projectOwner)
-                .append("projects.$.alias", oldAlias).get();
+                .start("projects.id", projectId)
+                .append("projects.alias", new BasicDBObject("$ne", newProjectAlias))    // check that any other project in the user has the new name
+                .get();
         DBObject update = new BasicDBObject("$set",
                 new BasicDBObject("projects.$.alias", newProjectAlias));
 
-        return userCollection.update(query, update, false, false);
+        QueryResult<WriteResult> result = userCollection.update(query, update, false, false);
+        if (result.getResult().get(0).getN() == 0) {    //Check if the the study has been inserted
+            throw new CatalogManagerException("Project {alias:\"" + newProjectAlias+ "\"} already exists");
+        }
+        return endQuery("rename project alias", startTime, result);
     }
 
     @Override
-    public QueryResult modifyProject(int projectId, Map<String, String> parameters) throws CatalogManagerException {
+    public QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogManagerException {
         long startTime = startQuery();
 
-        //TODO: Check projectExists?
+        if (!projectExists(projectId)) {
+            throw new CatalogManagerException("Project {id:"+projectId+"} does not exist");
+        }
         BasicDBObject projectParameters = new BasicDBObject();
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|description|organization|status|attributes\\..+")) {
-                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
-            } else {
-                projectParameters.put("projects.$."+s, parameters.get(s));
+
+        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
+        for (String s : acceptedParams) {
+            if(parameters.containsKey(s)) {
+                projectParameters.put("projects.$."+s, parameters.getString(s));
             }
         }
+        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+        for (String s : acceptedIntParams) {
+            if(parameters.containsKey(s)) {
+                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
+                if(anInt != Integer.MIN_VALUE) {
+                    projectParameters.put(s, anInt);
+                }
+            }
+        }
+        Map<String, Object> attributes = parameters.getMap("attributes");
+        if(attributes != null) {
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                projectParameters.put("projects.$.attributes."+entry.getKey(), entry.getValue());
+            }
+//            projectParameters.put("projects.$.attributes", attributes);
+        }
 
-        userCollection.update(new BasicDBObject("projects.id", projectId), new BasicDBObject("$set", projectParameters), false, false);
-        return endQuery("Modify user", startTime);
+        if(!projectParameters.isEmpty()) {
+            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
+            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, false, false);
+            if(updateResult.getResult().get(0).getN() == 0){
+                throw new CatalogManagerException("Project {id:"+projectId+"} does not exist");
+            }
+        }
+        return endQuery("Modify project", startTime);
     }
 
-
     @Override
-    public int getProjectId(String userId, String project) throws CatalogManagerException {
+    public int getProjectId(String userId, String projectAlias) throws CatalogManagerException {
         QueryResult queryResult = userCollection.find(
                 BasicDBObjectBuilder
-                        .start("projects.alias", project)
+                        .start("projects.alias", projectAlias)
                         .append("id", userId).get(),
                 null,
                 null,
                 BasicDBObjectBuilder.start("projects.id", true)
-                        .append("projects", new BasicDBObject("$elemMatch", new BasicDBObject("alias", project))).get()
+                        .append("projects", new BasicDBObject("$elemMatch", new BasicDBObject("alias", projectAlias))).get()
         );
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
@@ -595,7 +691,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+    public Acl getFullProjectAcl(int projectId, String userId) throws CatalogManagerException {
         QueryResult<Project> project = getProject(projectId);
         if (project.getNumResults() != 0) {
             List<Acl> acl = project.getResult().get(0).getAcl();
@@ -606,6 +702,79 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
         return null;
+    }
+    /**
+     * db.user.aggregate(
+     * {"$match": {"projects.id": 2}},
+     * {"$project": {"projects.acl":1, "projects.id":1}},
+     * {"$unwind": "$projects"},
+     * {"$match": {"projects.id": 2}},
+     * {"$unwind": "$projects.acl"},
+     * {"$match": {"projects.acl.userId": "jmmut"}}).pretty()
+     */
+    @Override
+    public QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException {
+        long startTime = startQuery();
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
+        DBObject project = new BasicDBObject("$project", BasicDBObjectBuilder
+                .start("_id", false)
+                .append("projects.acl", true)
+                .append("projects.id", true).get());
+        DBObject unwind1 = new BasicDBObject("$unwind", "$projects");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
+        DBObject unwind2 = new BasicDBObject("$unwind", "$projects.acl");
+        DBObject match3 = new BasicDBObject("$match", new BasicDBObject("projects.acl.userId", userId));
+
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match1);
+        operations.add(project);
+        operations.add(unwind1);
+        operations.add(match2);
+        operations.add(unwind2);
+        operations.add(match3);
+        QueryResult aggregate = userCollection.aggregate(null, operations, null);
+
+        List<Acl> acls = new LinkedList<>();
+        if (aggregate.getNumResults() != 0) {
+            Object aclObject = ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
+            Acl acl;
+            try {
+                acl = jsonObjectMapper.reader(Acl.class).readValue(aclObject.toString());
+                acls.add(acl);
+            } catch (IOException e) {
+                throw new CatalogManagerException("get Project ACL: error parsing ACL");
+            }
+        }
+        return endQuery("get project ACL", startTime, acls);
+    }
+
+    @Override
+    public void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        List<Acl> projectAcls = getProjectAcl(projectId, userId).getResult();
+        DBObject match;
+        DBObject updateOperation;
+        if (projectAcls.isEmpty()) {  // there is no acl for that user in that project. push
+            match = new BasicDBObject("projects.id", projectId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("projects.acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", projectId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
     }
 
     /**
@@ -618,27 +787,37 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(projectId < 0){
             throw new CatalogManagerException("Project {id:"+projectId+"} not found");
         }
-        //TODO: remove files and replace them with ids
-        //TODO: Generate default folders.
 
         // Check if study.alias already exists.
         DBObject countQuery = BasicDBObjectBuilder
-                .start("projects.id", projectId)
-                .append("projects.studies.alias", study.getAlias())
+                .start()
+                .append("projects", new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                                .start("id", projectId)
+                                .append("alias", study.getAlias()).get()))
                 .get();
         QueryResult<Long> queryResult = userCollection.count(countQuery);
         if (queryResult.getResult().get(0) != 0) {
             throw new CatalogManagerException("Study {alias:\"" + study.getAlias() + "\"} already exists");
         }
-
+//        if (getStudyId(projectId, study.getAlias()) >= 0) {
+//            throw new CatalogManagerException("Study {alias:\"" + study.getAlias() + "\"} already exists");
+//        }
         study.setId(getNewStudyId());
         List<Analysis> analyses = study.getAnalyses();
         List<File> files = study.getFiles();
         study.setAnalyses(Collections.<Analysis>emptyList());
         study.setFiles(Collections.<File>emptyList());
 
-        DBObject query = new BasicDBObject("projects.id", projectId);
-        query.put("projects.studies.alias", new BasicDBObject("$ne", study.getAlias()));
+        DBObject query = new BasicDBObject();
+//        query.put("projects.id", projectId);
+//        query.put("projects.studies.alias", new BasicDBObject("$ne", study.getAlias()));
+        query.put("projects", new BasicDBObject(
+                "$elemMatch", BasicDBObjectBuilder.start()
+                .append("id", projectId)
+                .append("studies.alias", new BasicDBObject("$ne", study.getAlias()))
+                .get()
+        ));
+
         DBObject studyObject = null;
         try {
             studyObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study));
@@ -679,7 +858,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException {
         long startTime = startQuery();
-        //TODO: ManageSession
 
         DBObject query = new BasicDBObject("projects.id", projectId);
         DBObject projection = BasicDBObjectBuilder
@@ -696,7 +874,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 , userCollection.find(query, null, null, projection));
 
         User user = parseUser(queryResult);
-		if(user == null || user.getProjects().isEmpty()) {
+        if(user == null || user.getProjects().isEmpty()) {
             throw new CatalogManagerException("Project {id:"+projectId+"} not found");
         }
         List<Study> studies = user.getProjects().get(0).getStudies();
@@ -777,6 +955,88 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return null;
     }
 
+//    @Override
+//    public QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes,
+//                                   Map<String, Object> stats) throws CatalogManagerException {
+//
+//        for (String s : parameters.keySet()) {
+//            if (!s.matches("name|type|description|status" +
+//                 //   "|attributes\\..+|stats\\..+" +
+//                    "")) {
+//                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+//            }
+//        }
+//
+//        int projectIdByStudyId = getProjectIdByStudyId(studyId);
+//        QueryResult<Study> studyResult = getStudy(studyId);
+//        if(studyResult.getResult().isEmpty()){
+//            throw new CatalogManagerException("Can't find study");
+//        }
+//
+//        Study study = studyResult.getResult().get(0);
+//        if(attributes != null) {
+//            study.getAttributes().putAll(attributes);
+//        }
+//        if (stats != null) {
+//            study.getStats().putAll(stats);
+//        }
+//
+//        DBObject dbObject = null;
+//        try {
+//            dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study));
+//        } catch (JsonProcessingException e) {
+//            throw new CatalogManagerException("");//TODO
+//        }
+//        dbObject.putAll(parameters);
+//        //return userCollection.insert(dbObject);
+//
+//        BasicDBObject query = new BasicDBObject("projects.id", projectIdByStudyId);
+//        //Pull study
+//        userCollection.update(query, new BasicDBObject("$pull", new BasicDBObject("projects.$.studies", new BasicDBObject("id", studyId))), false, false);
+//        //Put study
+//        return userCollection.update(query, new BasicDBObject("$push", new BasicDBObject("projects.$.studies", dbObject)), false, false);
+//    }
+
+    @Override
+    public QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogManagerException{
+
+        long startTime = startQuery();
+        int projectIdByStudyId = getProjectIdByStudyId(studyId);
+        QueryResult<Study> studyResult = getStudy(studyId);
+        if(studyResult.getResult().isEmpty()){
+            throw new CatalogManagerException("Can't find study");
+        }
+
+        Study study = studyResult.getResult().get(0);
+        study.setName(params.getString("name", study.getName()));
+        study.setType(params.getString("type", study.getType()));
+        study.setCreatorId(params.getString("creatorId", study.getCreatorId()));
+        study.setCreationDate(params.getString("creationDate", study.getCreationDate()));
+        study.setDescription(params.getString("description", study.getDescription()));
+        study.setStatus(params.getString("status", study.getStatus()));
+        study.setDiskUsage(params.getInt("diskUsage", (int) study.getDiskUsage())); //Fixme: may lost precision
+        study.setCipher(params.getString("cipher", study.getCipher()));
+        study.getStats().putAll(params.getMap("stats", Collections.<String, Object>emptyMap()));
+        study.getAttributes().putAll(params.getMap("attributes", Collections.<String, Object>emptyMap()));
+
+        DBObject dbObject = null;
+        try {
+            dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(study));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("Fail parse study to json");
+        }
+//        dbObject.putAll(parameters);
+
+        BasicDBObject query = new BasicDBObject("projects.id", projectIdByStudyId);
+        //Pull study
+        userCollection.update(query, new BasicDBObject("$pull", new BasicDBObject("projects.$.studies", new BasicDBObject("id", studyId))), false, false);
+        //Put study
+        userCollection.update(query, new BasicDBObject("$push", new BasicDBObject("projects.$.studies", dbObject)), false, false);
+
+        return endQuery("Modify Study", startTime);
+    }
+
+
     @Override
     public QueryResult deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
         return null;
@@ -793,7 +1053,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 BasicDBObjectBuilder
                         .start("projects.id", projectId)
                         .append("projects.studies.alias", studyAlias)
-                       // .append("id", userId)
+                                // .append("id", userId)
                         .get(),
                 null,
                 null,
@@ -850,15 +1110,49 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
-    public Acl getStudyAcl(int studyId, String userId) throws CatalogManagerException {
+    @Override
+    public QueryResult<Acl> getStudyAcl(int studyId, String userId) throws CatalogManagerException {
+        long startTime = startQuery();
+        List<Acl> acls = new LinkedList<>();
         QueryResult<Study> studyQuery = getStudy(studyId);
         List<Acl> acl = studyQuery.getResult().get(0).getAcl();
         for (Acl acl1 : acl) {
             if (userId.equals(acl1.getUserId())) {
-                return acl1;
+                acls.add(acl1);
             }
         }
-        return null;
+        return endQuery("get study ACL", startTime, acls);
+    }
+
+//    @Override
+    public void setStudyAcl(int studyId, Acl newAcl) throws CatalogManagerException {
+        /*
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        Acl studyAcl = getStudyAcl(studyId, userId);
+        DBObject match;
+        DBObject updateOperation;
+        if (studyAcl == null) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", studyId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", studyId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
+        */
     }
     /**
      * File methods
@@ -1013,15 +1307,50 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult setFileStatus(int fileId, String status) throws CatalogManagerException, IOException {
         long startTime = startQuery();
-        System.out.println(fileId);
-        BasicDBObject query = new BasicDBObject("id", fileId);
-        BasicDBObject updates = new BasicDBObject("$set",
-                new BasicDBObject("status", status));
-        QueryResult<WriteResult> update = fileCollection.update(query, updates, false, false);
-        if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
-            throw new CatalogManagerException("File {id:"+fileId+"} not found");
+//        BasicDBObject query = new BasicDBObject("id", fileId);
+//        BasicDBObject updates = new BasicDBObject("$set",
+//                new BasicDBObject("status", status));
+//        QueryResult<WriteResult> update = fileCollection.update(query, updates, false, false);
+//        if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
+//            throw new CatalogManagerException("File {id:"+fileId+"} not found");
+//        }
+//        return endQuery("Set file status", startTime);
+        return endQuery("Set file status", startTime, modifyFile(fileId, new ObjectMap("status", status)));
+    }
+
+    @Override
+    public QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        Map<String, Object> fileParameters = new HashMap<>();
+
+        String[] acceptedParams = {"name", "type", "format", "bioformat", "status", "description"};
+        for (String s : acceptedParams) {
+            if(parameters.containsKey(s)) {
+                fileParameters.put(s, parameters.getString(s));
+            }
         }
-        return endQuery("Set file status", startTime);
+        Map<String, Object> attributes = parameters.getMap("attributes");
+        if(attributes != null) {
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                fileParameters.put("attributes." + entry.getKey(), entry.getValue());
+            }
+        }
+        Map<String, Object> stats = parameters.getMap("stats");
+        if(stats != null) {
+            for (Map.Entry<String, Object> entry : stats.entrySet()) {
+                fileParameters.put("stats." + entry.getKey(), entry.getValue());
+            }
+        }
+
+        if(!fileParameters.isEmpty()) {
+            QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId), new BasicDBObject("$set", fileParameters), false, false);
+            if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
+                throw new CatalogManagerException("File {id:"+fileId+"} not found");
+            }
+        }
+
+        return endQuery("Modify file", startTime);
     }
 
     @Override
@@ -1080,7 +1409,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     /**
      * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
      */
-    public Acl getFileAcl(int fileId, String userId) throws CatalogManagerException {
+    @Override
+    public QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException {
+        long startTime = startQuery();
         DBObject projection = BasicDBObjectBuilder
                 .start("acl",
                         new BasicDBObject("$elemMatch",
@@ -1093,22 +1424,60 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("getFileAcl: There is no file with fileId = " + fileId);
         }
         List<Acl> acl = parseFile(queryResult).getAcl();
-        return acl == null ? null : acl.get(0);
+        return endQuery("get file acl", startTime, acl);
     }
+
+
+    @Override
+    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+        String userId = newAcl.getUserId();
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
+        }
+
+        DBObject newAclObject;
+        try {
+            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("could not put ACL: parsing error");
+        }
+
+        List<Acl> acls = getFileAcl(fileId, userId).getResult();
+        DBObject match;
+        DBObject updateOperation;
+        if (acls.isEmpty()) {  // there is no acl for that user in that file. push
+            match = new BasicDBObject("id", fileId);
+            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            match = BasicDBObjectBuilder
+                    .start("id", fileId)
+                    .append("acl.userId", userId).get();
+            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+        QueryResult update = fileCollection.update(match, updateOperation, false, false);
+    }
+
+
 
     /**
      * Analysis methods
      * ***************************
      */
+    public boolean analysisExists(int analysisId) {
+        QueryResult count = userCollection.count(new BasicDBObject("analyses.id", analysisId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
     @Override
     public QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
         long startTime = startQuery();
-        //TODO: ManageSession
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         if (studyId < 0) {
             throw new CatalogManagerException("Study not found");
         } else {
-            return getAllAnalysis(studyId);
+            QueryResult<Analysis> allAnalysis = getAllAnalysis(studyId);
+            return endQuery("Get all Analysis", startTime, allAnalysis);
         }
     }
 
@@ -1119,10 +1488,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException {
         long startTime = startQuery();
 
-        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject match1 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", studyId));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("analyses", 1));
         DBObject unwind = new BasicDBObject("$unwind", "$analyses");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", 8));
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("analyses.studyId", studyId));
         DBObject group = new BasicDBObject(
                 "$group",
                 BasicDBObjectBuilder
@@ -1144,10 +1513,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 analyses = study.getAnalyses();
                 // TODO fill analyses with jobs
             }
-            return endQuery("User analyses list", startTime, analyses);
+            return endQuery("get all analyses", startTime, analyses);
         } catch (IOException e) {
             e.printStackTrace();
-            throw new CatalogManagerException("Fail to parse mongo : " + e.getMessage());
+            throw new CatalogManagerException("Failed to parse mongo : " + e.getMessage());
         }
     }
 
@@ -1155,21 +1524,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * query: db.user.find({"analyses.alias":"analysis1Alias", "analyses.studyId":8}
      * , {"analyses":{$elemMatch:{studyId:8,alias:"analysis1Alias"}},"analyses.id":1}).pretty()
      */
+    @Override
     public int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException {
-        DBObject match = BasicDBObjectBuilder
-                .start("analyses.alias", analysisAlias)
-                .append("analyses.studyId", studyId).get();
+        DBObject elem = new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                .start("studyId", studyId)
+                .append("alias", analysisAlias).get()
+        );
+        DBObject match = new BasicDBObject("analyses", elem);
         DBObject projection = BasicDBObjectBuilder
-                .start("analyses",
-                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
-                                .start("studyId", studyId)
-                                .append("alias", analysisAlias)
-                                .get()
-                        )
-                )
-                .append("analyses.id", true)
-                .get();
-
+                .start("analyses", elem)
+                .append("_id", false).get();
         QueryResult result = userCollection.find(match, null, null, projection);
         List<Analysis> analyses = parseAnalyses(result);
         return analyses.size() == 0? -1: analyses.get(0).getId();
@@ -1203,7 +1567,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException {
+    public QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException {
         long startTime = startQuery();
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         if (studyId < 0) {
@@ -1214,16 +1578,20 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
+    public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException {
         long startTime = startQuery();
-        // TODO manage session
 
         // Check if analysis.alias already exists.
-        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder
-                .start("analyses.studyId", studyId)
-                .append("analyses.alias", analysis.getAlias()).get());
+        QueryResult<Long> count = userCollection.count(
+                new BasicDBObject("analyses",
+                        new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+                                .start("studyId", studyId)
+                                .append("alias", analysis.getAlias()).get()
+                        )
+                )
+        );
         if(count.getResult().get(0) != 0) {
-            throw new CatalogManagerException("Analysis alias already exists in this study");
+            throw new CatalogManagerException("Analysis alias " + analysis.getAlias() + " already exists in study " + studyId);
         }
 
         // complete and push Analysis: id, studyId, jobs...
@@ -1243,7 +1611,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         DBObject update = new BasicDBObject("$push", new BasicDBObject("analyses", analysisObject));
         QueryResult updateResult = userCollection.update(query, update, false, false);
 
-        System.out.println(updateResult.getResult());
         // fill other collections: jobs
         if (jobs == null) {
             jobs = Collections.<Job>emptyList();
@@ -1253,40 +1620,210 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //        for (Job job : jobs) {
 //        }
 
-        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId())); // seguir2 vuelve cuando hayas hecho el test de analysis
+        return endQuery("Create Analysis", startTime, getAnalysis(analysis.getId()));
 
     }
 
     @Override
-    public QueryResult<Job> createJob(int studyId, String analysisName, Job job, String sessionId) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException {
+        long startTime = startQuery();
+        if(!analysisExists(analysisId)){
+            throw new CatalogManagerException("Analysis {id:"+analysisId+"} does not exist");
+        }
+
+        BasicDBObject analysisParameters = new BasicDBObject();
+
+        String[] acceptedParams = {"name", "date", "description"};
+        for (String s : acceptedParams) {
+            if(parameters.containsKey(s)) {
+                analysisParameters.put("analyses.$." + s, parameters.getString(s));
+            }
+        }
+        Map<String, Object> attributes = parameters.getMap("attributes");
+        if(attributes != null) {
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                analysisParameters.put("analyses.$.attributes." + entry.getKey(), entry.getValue());
+            }
+//            analysisParameters.put("projects.$.attributes", attributes);
+        }
+
+        if(!analysisParameters.isEmpty()) {
+            BasicDBObject query = new BasicDBObject("analyses.id", analysisId);
+            BasicDBObject updates = new BasicDBObject("$set", analysisParameters);
+            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, false, false);
+            if(updateResult.getResult().get(0).getN() == 0){
+                throw new CatalogManagerException("Analysis {id:"+analysisId+"} does not exist");
+            }
+        }
+        return endQuery("Modify analysis", startTime);
+    }
+
+    public int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException {
+        DBObject query = new BasicDBObject("analyses.id", analysisId);
+        DBObject returnFields = BasicDBObjectBuilder
+                .start("analyses.studyId", true)
+                .append("analyses",
+                    new BasicDBObject(
+                            "$elemMatch",
+                            new BasicDBObject("id", analysisId)
+                    ))
+                .get();
+        QueryResult id = userCollection.find(query, null, null, returnFields);
+
+        if (id.getNumResults() != 0) {
+            List<DBObject> analyses = (List<DBObject>) ((DBObject) id.getResult().get(0)).get("analyses");
+            if(analyses.isEmpty()) {
+                return -1;
+            } else {
+                return Integer.parseInt(analyses.get(0).get("studyId").toString());
+            }
+        } else {
+            return -1;
+        }
+    }
+
+    public String getAnalysisOwner(int analysisId) throws CatalogManagerException {
+        DBObject query = new BasicDBObject("analyses.id", analysisId);
+        DBObject returnFields = new BasicDBObject("id", analysisId);
+        QueryResult id = userCollection.find(query, null, null, returnFields);
+
+        User user = parseUser(id);
+        if (user != null) {
+            return user.getId();
+        } else {
+            throw new CatalogManagerException("Study {id:"+analysisId+"} not found");
+        }
+    }
+
+    /**
+     * Job methods
+     * ***************************
+     */
+
+    public boolean jobExists(int jobId) {
+        QueryResult count = jobCollection.count(new BasicDBObject("id", jobId));
+        long l = (Long) count.getResult().get(0);
+        return l != 0;
+    }
+
+    @Override
+    public QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        if (!analysisExists(analysisId)) {
+            throw new CatalogManagerException("Analysis {id:" + analysisId + "} does not exist");
+        }
+
+        int jobId = getNewJobId();
+        job.setId(jobId);
+
+        DBObject jobObject;
+        try {
+            jobObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(job));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("job " + job + " could not be parsed into json", e);
+        }
+        jobObject.put("_id", jobId);
+        jobObject.put("analysisId", analysisId);
+        QueryResult insertResult = jobCollection.insert(jobObject); //TODO: Check results.get(0).getN() != 0
+
+        return endQuery("Create Job", startTime, getJob(jobId));
+    }
+
+    @Override
+    public QueryResult deleteJob(int jobId) throws CatalogManagerException {
         return null;
     }
 
     @Override
-    public QueryResult deleteJob(int jobId, String sessionId) throws CatalogManagerException {
+    public QueryResult<Job> getJob(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null, null);
+        Job job = parseJob(queryResult);
+        if(job != null) {
+            return endQuery("Get job", startTime, Arrays.asList(job));
+        } else {
+            throw new CatalogManagerException("Job {id:" + jobId + "} not found");
+        }
+    }
+
+    @Override
+    public QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException {
+        long startTime = startQuery();
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null, null);
+        List<Job> jobs = parseJobs(queryResult);
+        return endQuery("Get all jobs", startTime, jobs);
+    }
+
+    @Override
+    public String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException {   // TODO remove?
         return null;
     }
 
     @Override
-    public Job getJob(int jobId, String sessionId) throws CatalogManagerException, IOException {
-        return null;
+    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("id", jobId);
+        Job job = parseJob(jobCollection.find(query, null, null, new BasicDBObject("visits", true)));
+        int visits;
+        if (job != null) {
+            visits = job.getVisits()+1;
+            BasicDBObject set = new BasicDBObject("$set", new BasicDBObject("visits", visits));
+            jobCollection.update(query, set, false, false);
+        } else {
+            throw new CatalogManagerException("Job {id: " + jobId + "} not found");
+        }
+        return endQuery("Inc visits", startTime, Arrays.asList(new ObjectMap("visits", visits)));
+    }
+
+    public QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogManagerException {
+        long startTime = startQuery();
+        Map<String, Object> jobParameters = new HashMap<>();
+
+        String[] acceptedParams = {"name", "userId", "toolName", "date", "description", "outputError", "commandLine", "status", "outdir"};
+        for (String s : acceptedParams) {
+            if(parameters.containsKey(s)) {
+                jobParameters.put(s, parameters.getString(s));
+            }
+        }
+        String[] acceptedIntParams = {"startTime", "endTime", "visits", "diskUsage"};
+        for (String s : acceptedIntParams) {
+            if(parameters.containsKey(s)) {
+                jobParameters.put(s, parameters.getInt(s));
+            }
+        }
+
+
+        if(!jobParameters.isEmpty()) {
+            BasicDBObject query = new BasicDBObject("id", jobId);
+            BasicDBObject updates = new BasicDBObject("$set", jobParameters);
+            QueryResult<WriteResult> update = jobCollection.update(query, updates, false, false);
+            if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
+                throw new CatalogManagerException("Job {id:'" + jobId + "'} not found");
+            }
+        }
+        return endQuery("Modify job", startTime);
     }
 
     @Override
-    public String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException {
-        return null;
-    }
-
-    @Override
-    public void incJobVisites(int jobId, String sessionId) throws CatalogManagerException, IOException {
+    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException {   // TODO remove?
 
     }
 
     @Override
-    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException {
+    public int getAnalysisIdByJobId(int jobId){
+        DBObject query = new BasicDBObject("id", jobId);
+        DBObject returnFields = new BasicDBObject("analysisId", true);
+        QueryResult<DBObject> id = jobCollection.find(query, null, null, returnFields);
 
+        if (id.getNumResults() != 0) {
+            int analysisId = Integer.parseInt(id.getResult().get(0).get("analysisId").toString());
+            return analysisId;
+        } else {
+            return -1;
+        }
     }
-
 
     /*
     * Helper methods
@@ -1314,6 +1851,28 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    private Job parseJob(QueryResult result) throws CatalogManagerException {
+        if(result.getResult().isEmpty()) {
+            return null;
+        }
+        try {
+            return jsonJobReader.readValue(result.getResult().get(0).toString());
+        } catch (IOException e) {
+            throw new CatalogManagerException("Error parsing job", e);
+        }
+    }
+    private List<Job> parseJobs(QueryResult<DBObject> result) throws CatalogManagerException {
+        LinkedList<Job> jobs = new LinkedList<>();
+        try {
+            for (Object object : result.getResult()) {
+                jobs.add((Job) jsonJobReader.readValue(object.toString()));
+            }
+        } catch (IOException e) {
+            throw new CatalogManagerException("Error parsing job", e);
+        }
+        return jobs;
+    }
+
     /**
      * must receive in the result: [{analyses:[{},...]}].
      * other keys in the object, besides "analyses", will throw
@@ -1324,7 +1883,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         try {
             if (result.getNumResults() != 0) {
                 Study study = jsonStudyReader.readValue(result.getResult().get(0).toString());
-                analyses = study.getAnalyses();
+                analyses.addAll(study.getAnalyses());
                 // TODO fill analyses with jobs
             }
         } catch (IOException e) {
