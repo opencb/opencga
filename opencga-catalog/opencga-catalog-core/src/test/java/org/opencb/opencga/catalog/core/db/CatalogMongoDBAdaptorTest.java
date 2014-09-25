@@ -619,4 +619,18 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     }
 
+    @Test
+    public void incJobVisits () throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        int id = catalog.getAllJobs(analysisId).getResult().get(0).getId();
+        Job jobBefore = catalog.getJob(id).getResult().get(0);
+
+        Integer visits = (Integer) catalog.incJobVisits(jobBefore.getId()).getResult().get(0).get("visits");
+
+        Job jobAfter = catalog.getJob(id).getResult().get(0);
+        assertTrue(jobBefore.getVisits() == jobAfter.getVisits() - 1);
+        assertTrue(visits == jobAfter.getVisits());
+    }
+
 }

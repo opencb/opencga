@@ -1709,13 +1709,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         long startTime = startQuery();
 
         BasicDBObject query = new BasicDBObject("id", jobId);
-        Job job = parseJob(jobCollection.find(query, null, null, new BasicDBObject("visits", 1)));
+        Job job = parseJob(jobCollection.find(query, null, null, new BasicDBObject("visits", true)));
         int visits;
         if (job != null) {
             visits = job.getVisits()+1;
-            jobCollection.update(query, new BasicDBObject("visits", visits), false, false);
+            BasicDBObject set = new BasicDBObject("$set", new BasicDBObject("visits", visits));
+            jobCollection.update(query, set, false, false);
         } else {
-            throw new CatalogManagerException("Job {id:"+ jobId +"} not found");
+            throw new CatalogManagerException("Job {id: " + jobId + "} not found");
         }
         return endQuery("Inc visits", startTime, Arrays.asList(new ObjectMap("visits", visits)));
     }
