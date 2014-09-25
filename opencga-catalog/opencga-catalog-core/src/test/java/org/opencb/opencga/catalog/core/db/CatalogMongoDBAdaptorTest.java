@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
+import com.mongodb.WriteResult;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -187,6 +188,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         }
     }
 
+    @Test
+    public void deleteProjectTest () throws CatalogManagerException {
+        int projectId = catalog.getProjectId("jcoll", "pmp");
+        QueryResult<WriteResult> queryResult = catalog.deleteProject(projectId);
+        assertTrue(queryResult.getResult().get(0).getN() == 1);
+        QueryResult<WriteResult> queryResult1 = catalog.deleteProject(-1);
+        assertTrue(queryResult1.getResult().get(0).getN() == 0);
+
+    }
     @Test
     public void getAllProjects() throws CatalogManagerException {
         System.out.println(catalog.getAllProjects("jcoll"));

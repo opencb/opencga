@@ -544,8 +544,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult deleteProject(int projecetId) throws CatalogManagerException {
-        return null;
+    public QueryResult deleteProject(int projectId) throws CatalogManagerException {
+        long startTime = startQuery();
+        DBObject query = new BasicDBObject("projects.id", projectId);
+        DBObject pull = new BasicDBObject("$pull",
+                new BasicDBObject("projects",
+                        new BasicDBObject("id", projectId)));
+
+        QueryResult update = userCollection.update(query, pull, false, false);
+        return update;
     }
 
     @Override
