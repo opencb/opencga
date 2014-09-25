@@ -47,7 +47,7 @@ public class OpenCGAWSServerTest {
 
     /** User tests **/
     @Test
-    public void tests(){
+    public void workflowCreation(){
         UserWSServerTest userTest = new UserWSServerTest(webResource);
         userTest.createUser();
         userTest.loginUser();
