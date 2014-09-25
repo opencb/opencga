@@ -51,6 +51,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult createUser2 = catalog.createUser(jmmut);
         System.out.println(createUser2.toString());
 
+        User deletedUser = new User("deletedUser", "name", "email", "pass", "org", "rol", "status");
+        catalog.createUser(deletedUser);
 
         User fullUser = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", "BOSS", "active", "", 1222, 122222,
                 Arrays.asList( new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
@@ -65,6 +67,18 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.createUser(fullUser).toString());
 
 
+    }
+
+    @Test
+    public void deleteUserTest() throws CatalogManagerException {
+        QueryResult queryResult = catalog.deleteUser("deletedUser");
+        System.out.println(queryResult);
+        try {
+            catalog.deleteUser("noUser");
+            fail("error: expected exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
     }
 
     @Test
@@ -573,7 +587,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertEquals(analysis.getAttributes(), attributes);
 
     }
+//    getStudyIdByAnalysisId    // TODO
 
+
+    /**
+     * Job methods
+     * ***************************
+     */
     @Test
     public void createJobTest () throws CatalogManagerException {
         Job job = new Job();

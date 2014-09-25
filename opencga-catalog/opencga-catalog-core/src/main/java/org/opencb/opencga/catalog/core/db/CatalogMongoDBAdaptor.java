@@ -241,8 +241,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override //TODO
     public QueryResult deleteUser(String userId) throws CatalogManagerException {
         long startTime = startQuery();
-        //throw new UnsupportedOperationException();
-        return null;
+
+        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
+        if (id.getN() == 0) {
+            throw new CatalogManagerException("user {id:" + userId + "} not found");
+        } else {
+            return endQuery("Delete user", startTime, Arrays.asList(id.getN()));
+        }
     }
 
     @Override
@@ -1648,7 +1653,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                     ))
                 .get();
         QueryResult id = userCollection.find(query, null, null, returnFields);
-
 
         if (id.getNumResults() != 0) {
             return Integer.parseInt(((List<DBObject>) ((DBObject) id.getResult().get(0)).get("analyses")).get(0).get("studyId").toString());
