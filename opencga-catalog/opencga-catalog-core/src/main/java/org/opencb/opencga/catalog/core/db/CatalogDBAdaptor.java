@@ -25,7 +25,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult<User> createUser(User user) throws CatalogManagerException, JsonProcessingException;
 
-    QueryResult deleteUser(String userId) throws CatalogManagerException;
+    QueryResult<Integer> deleteUser(String userId) throws CatalogManagerException;
 
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogManagerException, IOException;
 
@@ -62,7 +62,7 @@ public interface CatalogDBAdaptor {
     QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogManagerException;
     QueryResult<Project> getProject(int project) throws CatalogManagerException;
 
-    QueryResult deleteProject(int projecetId) throws CatalogManagerException;
+    QueryResult<Integer> deleteProject(int projecetId) throws CatalogManagerException;
 
     QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogManagerException;
 
@@ -94,9 +94,9 @@ public interface CatalogDBAdaptor {
 
     QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogManagerException;
 
-    QueryResult deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+    QueryResult<Integer> deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
 
-    QueryResult deleteStudy(int studyId) throws CatalogManagerException;
+    QueryResult<Integer> deleteStudy(int studyId) throws CatalogManagerException;
 
     int getStudyId(int projectId, String studyAlias) throws CatalogManagerException;
 
@@ -117,9 +117,9 @@ public interface CatalogDBAdaptor {
     QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogManagerException;
     QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogManagerException;
 
-    QueryResult deleteFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException;
-    QueryResult deleteFile(int studyId, String uri) throws CatalogManagerException;
-    QueryResult deleteFile(int fileId) throws CatalogManagerException;
+    QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException;
+    QueryResult<Integer> deleteFile(int studyId, String uri) throws CatalogManagerException;
+    QueryResult<Integer> deleteFile(int fileId) throws CatalogManagerException;
 
     QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
     QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogManagerException;
@@ -170,7 +170,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException;
 
-    QueryResult deleteJob(int jobId) throws CatalogManagerException;
+    QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException;
 
     QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
 
