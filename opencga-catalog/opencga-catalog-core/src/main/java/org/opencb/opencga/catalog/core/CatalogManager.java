@@ -76,7 +76,12 @@ public class CatalogManager {
         this.properties = properties;
 
         try {
-            MongoCredentials mongoCredentials = new MongoCredentials(properties.getProperty("HOST"), Integer.parseInt(properties.getProperty("PORT")), properties.getProperty("DATABASE"), properties.getProperty("USER"), properties.getProperty("PASSWORD"));
+            MongoCredentials mongoCredentials = new MongoCredentials(
+                    properties.getProperty("HOST"),
+                    Integer.parseInt(properties.getProperty("PORT")),
+                    properties.getProperty("DATABASE"),
+                    properties.getProperty("USER"),
+                    properties.getProperty("PASSWORD"));
             catalogDBAdaptor = new CatalogMongoDBAdaptor(mongoCredentials);
             ioManager = new PosixIOManager(properties.getProperty("ROOTDIR"));
         } catch (IllegalOpenCGACredentialsException e) {
@@ -312,8 +317,13 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (getProjectAcl(userId, projectId).isRead()) {
-            return catalogDBAdaptor.getProject(projectId);
+        Acl projectAcl = getProjectAcl(userId, projectId);
+        if (projectAcl.isRead()) {
+            QueryResult<Project> projectResult = catalogDBAdaptor.getProject(projectId);
+            if(!projectResult.getResult().isEmpty()){
+                filterStudies(userId, projectAcl, projectResult.getResult().get(0).getStudies());
+            }
+            return projectResult;
         } else {
             throw new CatalogManagerException("Permission denied. Can't read project.");
         }
@@ -328,13 +338,10 @@ public class CatalogManager {
 
         QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(ownerId);
 
-        Iterator<Project> it = allProjects.getResult().iterator();
-        while (it.hasNext()) {
-            Project p = it.next();
-            if (!getProjectAcl(userId, p.getId()).isRead()) { //Remove all projects that can't be redden
-                it.remove();
-            }
-        }
+        List<Project> projects = allProjects.getResult();
+        filterProjects(userId, projects);
+        allProjects.setResult(projects);
+
         return allProjects;
     }
 
@@ -347,14 +354,8 @@ public class CatalogManager {
 
         Acl projectAcl = getProjectAcl(userId, projectId);
         if(projectAcl.isWrite()) {
-//            ioManager.renameProject(userId, projectAlias, newProjectAlias);
-//            try {
-                catalogDBAdaptor.updateUserLastActivity(ownerId);
-                return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
-//            } catch (CatalogManagerException e) {
-//                ioManager.renameProject(userId, newProjectAlias, projectAlias);
-//                throw e;
-//            }
+            catalogDBAdaptor.updateUserLastActivity(ownerId);
+            return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
         } else {
             throw new CatalogManagerException("Permission denied. Can't rename project");
         }
@@ -437,8 +438,13 @@ public class CatalogManager {
             throws CatalogManagerException{
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (getStudyAcl(userId, studyId).isRead()) {
-            return catalogDBAdaptor.getStudy(studyId);
+        Acl studyAcl = getStudyAcl(userId, studyId);
+        if (studyAcl.isRead()) {
+            QueryResult<Study> studyResult = catalogDBAdaptor.getStudy(studyId);
+            if(!studyResult.getResult().isEmpty()) {
+                filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
+            }
+            return studyResult;
         } else {
             throw new CatalogManagerException("Permission denied. Can't read this study");
         }
@@ -448,19 +454,17 @@ public class CatalogManager {
             throws CatalogManagerException, JsonProcessingException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        Acl projectAcl = getProjectAcl(userId, projectAlias, sessionId);
-//        if(!projectAcl.isRead()) {
-//            throw new CatalogManagerException("Permission denied. Can't read project");
-//        }
+
+        Acl projectAcl = getProjectAcl(userId, projectId);
+        if(!projectAcl.isRead()) {
+            throw new CatalogManagerException("Permission denied. Can't read project");
+        }
 
         QueryResult<Study> allStudies = catalogDBAdaptor.getAllStudies(projectId);
+        List<Study> studies = allStudies.getResult();
+        filterStudies(userId, projectAcl, studies);
+        allStudies.setResult(studies);
 
-        for (Iterator<Study> iterator = allStudies.getResult().iterator(); iterator.hasNext(); ) {
-            Study study = iterator.next();
-            if (!getStudyAcl(userId, study.getId()).isRead()) {
-                iterator.remove();
-            }
-        }
         return allStudies;
 
 
@@ -476,14 +480,10 @@ public class CatalogManager {
         if (!getStudyAcl(userId, studyId).isWrite()) {  //User can't write/modify the study
             throw new CatalogManagerException("Permission denied. Can't write in project");
         }
-//        ioManager.renameStudy(userId, projectAlias, studyAlias, newStudAlias);
-//        try {
-            catalogDBAdaptor.updateUserLastActivity(ownerId);
-            return catalogDBAdaptor.renameStudy(studyId, newStudAlias);
-//        } catch (CatalogManagerException e) {
-//            ioManager.renameProject(userId, newStudAlias, studyAlias);
-//            throw e;
-//        }
+
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        return catalogDBAdaptor.renameStudy(studyId, newStudAlias);
+
     }
     /**
      * Modify some params from the specified study:
@@ -681,6 +681,22 @@ public class CatalogManager {
 
         return catalogDBAdaptor.getFile(fileId);
     }
+
+    public QueryResult<File> getAllFiles(int studyId, String sessionId) throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl studyAcl = getStudyAcl(userId, studyId);
+        if (!studyAcl.isRead()) {
+            throw new CatalogManagerException("Permission denied. User can't read file");
+        }
+        QueryResult<File> allFilesResult = catalogDBAdaptor.getAllFiles(studyId);
+        List<File> files = allFilesResult.getResult();
+        filterFiles(userId, studyAcl, files);
+        allFilesResult.setResult(files);
+        return allFilesResult;
+    }
+
     public DataInputStream downloadFile(int fileId, String start, String limit, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1255,6 +1271,70 @@ public class CatalogManager {
      *  ****************
      */
 
+    /**
+     * Removes from the list the projects that the user can not read.
+     * From the remaining projects, filters the studies and files.
+     *
+     * @param userId    UserId
+     * @param projects  Projects list
+     * @throws CatalogManagerException
+     */
+    private void filterProjects(String userId, List<Project> projects) throws CatalogManagerException {
+        Iterator<Project> projectIt = projects.iterator();
+        while (projectIt.hasNext()) {
+            Project p = projectIt.next();
+            Acl projectAcl = getProjectAcl(userId, p.getId());
+            if (!projectAcl.isRead()) {
+                projectIt.remove();
+            } else {
+                List<Study> studies = p.getStudies();
+                filterStudies(userId, projectAcl, studies);
+            }
+        }
+    }
+
+    /**
+     * Removes from the list the studies that the user can not read.
+     * From the remaining studies, filters the files.
+     *
+     * @param userId        UserId
+     * @param projectAcl    Project ACL
+     * @param studies       Studies list
+     * @throws CatalogManagerException
+     */
+    private void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogManagerException {
+        Iterator<Study> studyIt = studies.iterator();
+        while(studyIt.hasNext()){
+            Study s = studyIt.next();
+            Acl studyAcl = getStudyAcl(userId, s.getId(), projectAcl);
+            if(!studyAcl.isRead()) {
+                studyIt.remove();
+            } else {
+                List<File> files = s.getFiles();
+                filterFiles(userId, studyAcl, files);
+            }
+        }
+    }
+
+    /**
+     * Removes from the list the files that the user can not read.
+     *
+     * @param userId    UserId
+     * @param studyAcl  Study ACL
+     * @param files     Files list
+     * @throws CatalogManagerException
+     */
+    private void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogManagerException {
+        Iterator<File> fileIt = files.iterator();
+        while(fileIt.hasNext()){
+            File f = fileIt.next();
+            Acl fileAcl = getFileAcl(userId, f.getId(), studyAcl);
+            if(!fileAcl.isRead()){
+                fileIt.remove();
+            }
+        }
+    }
+
     private Acl mergeAcl(String userId, Acl acl1, Acl acl2) {
         return new Acl(
                 userId,
@@ -1340,24 +1420,6 @@ public class CatalogManager {
         }
         return mergeAcl(userId, fileAcl, studyAcl);
     }
-
-//    private Acl getProjectAcl(String userId, String projectAlias, String sessionId){
-//        String sessionUser = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        boolean sameOwner = userId.equals(sessionUser);
-//        return new Acl(userId, sameOwner, sameOwner, sameOwner, sameOwner);
-//    }
-
-//    private Acl getStudyAcl(String userId, String projectAlias, String studyAlias, String sessionId){
-//        String sessionUser = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        boolean sameOwner = userId.equals(sessionUser);
-//        return new Acl(userId, sameOwner, sameOwner, sameOwner, sameOwner);
-//    }
-//
-//    private Acl getFileAcl(String userId, String projectAlias, String studyAlias, Path objectId, String sessionId) {
-//        String sessionUser = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        boolean sameOwner = userId.equals(sessionUser);
-//        return new Acl(userId, sameOwner, sameOwner, sameOwner, sameOwner);
-//    }
 
 
 }
