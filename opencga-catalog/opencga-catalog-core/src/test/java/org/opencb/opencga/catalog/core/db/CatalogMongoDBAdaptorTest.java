@@ -72,11 +72,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void deleteUserTest() throws CatalogManagerException {
-        QueryResult queryResult = catalog.deleteUser("deletedUser");
+        QueryResult<Integer> queryResult = catalog.deleteUser("deletedUser");
         System.out.println(queryResult);
+        assertTrue(queryResult.getResult().get(0) == 1);
         try {
             catalog.deleteUser("noUser");
-            fail("error: expected exception");
+            fail("error: expected \"userId not found\" exception");
         } catch (CatalogManagerException e) {
             System.out.println("correct exception: " + e);
         }
@@ -191,12 +192,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void deleteProjectTest () throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "pmp");
-        QueryResult<WriteResult> queryResult = catalog.deleteProject(projectId);
-        assertTrue(queryResult.getResult().get(0).getN() == 1);
-        QueryResult<WriteResult> queryResult1 = catalog.deleteProject(-1);
-        assertTrue(queryResult1.getResult().get(0).getN() == 0);
-
+        QueryResult<Integer> queryResult = catalog.deleteProject(projectId);
+        System.out.println(queryResult);
+        assertTrue(queryResult.getResult().get(0) == 1);
+        try {
+            QueryResult<Integer> queryResult1 = catalog.deleteProject(-1);
+            fail("error: Expected \"Project not found\" exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
     }
+
     @Test
     public void getAllProjects() throws CatalogManagerException {
         System.out.println(catalog.getAllProjects("jcoll"));
@@ -299,6 +305,20 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             fail("Expected \"bad project id\" exception");
         } catch (CatalogManagerException e) {
             System.out.println(e);
+        }
+    }
+
+    @Test
+    public void deleteStudyTest () throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "2000G", "ph1");
+        QueryResult<Integer> queryResult = catalog.deleteStudy(studyId);
+        System.out.println(queryResult);
+        assertTrue(queryResult.getResult().get(0) == 1);
+        try {
+            QueryResult<Integer> queryResult1 = catalog.deleteStudy(-1);
+            fail("error: Expected \"Study not found\" exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
         }
     }
 
@@ -479,12 +499,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void deleteFileTest() throws CatalogManagerException, IOException {
-        System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", "/data/file.sam"));
+        QueryResult<Integer> delete = catalog.deleteFile("jcoll", "1000G", "ph1", "/data/file.sam");
+        System.out.println(delete);
+        assertTrue(delete.getResult().get(0) == 1);
         try {
             System.out.println(catalog.deleteFile("jcoll", "1000G", "ph1", "/data/noExists"));
-            fail("Expected \"FileId not found\" exception");
+            fail("error: Expected \"FileId not found\" exception");
         } catch (CatalogManagerException e) {
-            System.out.println(e);
+            System.out.println("correct exception: " + e);
         }
     }
     @Test
@@ -620,6 +642,21 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         }
     }
 
+    @Test
+    public void deleteJobTest () throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        int jobId = catalog.getAllJobs(analysisId).getResult().get(0).getId();
+        QueryResult<Integer> queryResult = catalog.deleteJob(jobId);
+        System.out.println(queryResult);
+        assertTrue(queryResult.getResult().get(0) == 1);
+        try {
+            System.out.println(catalog.deleteJob(-1));
+            fail("error: Expected \"Job not found\" exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+    }
     @Test
     public void getAllJobTest () throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");

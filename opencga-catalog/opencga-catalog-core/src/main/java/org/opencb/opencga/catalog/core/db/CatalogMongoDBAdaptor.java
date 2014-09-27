@@ -46,6 +46,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private DBCollection nativeMetaCollection;
     private DBCollection nativeUserCollection;
     private DBCollection nativeFileCollection;
+    private DBCollection nativeJobCollection;
 
     private static final Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
     private static ObjectMapper jsonObjectMapper;
@@ -86,6 +87,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName());
         nativeMetaCollection = db.getDb().getCollection(METADATA_COLLECTION);
         nativeFileCollection = db.getDb().getCollection(FILE_COLLECTION);
+        nativeJobCollection = db.getDb().getCollection(JOB_COLLECTION);
         nativeUserCollection = db.getDb().getCollection(USER_COLLECTION);
 
         metaCollection = db.getCollection(METADATA_COLLECTION);
@@ -111,6 +113,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             BasicDBObject unique = new BasicDBObject("unique", true);
             nativeUserCollection.createIndex(new BasicDBObject("id", 1), unique);
             nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("uri", 1).get(), unique);
+            nativeJobCollection.createIndex(new BasicDBObject("id", 1), unique);
         }
     }
 
@@ -240,8 +243,22 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("createUser", startTime, result, errorMsg, null);
     }
 
-    @Override //TODO
-    public QueryResult deleteUser(String userId) throws CatalogManagerException {
+    /**
+     * TODO: delete user from:
+     *      project acl and owner
+     *      study acl and owner
+     *      file acl and creator
+     *      analysis creator
+     *      job userid
+     * also, delete his:
+     *      projects
+     *      studies
+     *      analysesS
+     *      jobs
+     *      files
+     */
+    @Override
+    public QueryResult<Integer> deleteUser(String userId) throws CatalogManagerException {
         long startTime = startQuery();
 
         WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
@@ -544,16 +561,25 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Get project", startTime, user.getProjects());
     }
 
+    /**
+     * At the moment it does not clean external references to itself.
+     */
     @Override
-    public QueryResult deleteProject(int projectId) throws CatalogManagerException {
+    public QueryResult<Integer> deleteProject(int projectId) throws CatalogManagerException {
         long startTime = startQuery();
         DBObject query = new BasicDBObject("projects.id", projectId);
         DBObject pull = new BasicDBObject("$pull",
                 new BasicDBObject("projects",
                         new BasicDBObject("id", projectId)));
 
-        QueryResult update = userCollection.update(query, pull, false, false);
-        return update;
+        QueryResult<WriteResult> update = userCollection.update(query, pull, false, false);
+        List<Integer> deletes = new LinkedList<>();
+        if (update.getResult().get(0).getN() == 0) {
+            throw new CatalogManagerException("project {id:" + projectId + "} not found");
+        } else {
+            deletes.add(update.getResult().get(0).getN());
+            return endQuery("delete project", startTime, deletes);
+        }
     }
 
     @Override
@@ -936,7 +962,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName) throws CatalogManagerException {
-        throw new CatalogManagerException("Unsupported opperation");
+        throw new CatalogManagerException("Unsupported operation");
     }
 
     @Override
@@ -986,14 +1012,28 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Modify Study", startTime);
     }
 
+    /**
+     * At the moment it does not clean external references to itself.
+     */
     @Override
-    public QueryResult deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
-        return null;
+    public QueryResult<Integer> deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException {
+        int studyId = getStudyId(userId, projectAlias, studyAlias);
+        return deleteStudy(studyId);
     }
 
     @Override
-    public QueryResult deleteStudy(int studyId) throws CatalogManagerException {
-        return null;
+    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogManagerException {
+        long startTime = startQuery();
+        DBObject query = new BasicDBObject("projects.studies.id", studyId);
+        DBObject pull =  new BasicDBObject("$pull", new BasicDBObject("projects.$.studies", new BasicDBObject("id", studyId)));
+        QueryResult<WriteResult> update = userCollection.update(query, pull, false, false);
+        List<Integer> deletes = new LinkedList<>();
+        if (update.getResult().get(0).getN() == 0) {
+            throw new CatalogManagerException("study {id:" + studyId + "} not found");
+        } else {
+            deletes.add(update.getResult().get(0).getN());
+            return endQuery("delete study", startTime, deletes);
+        }
     }
 
     @Override
@@ -1158,25 +1198,30 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Create file", startTime, Arrays.asList(file));
     }
 
+    /**
+     * At the moment it does not clean external references to itself.
+     */
     @Override
-    public QueryResult deleteFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException {
+    public QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException {
         return deleteFile(getFileId(userId, projectAlias, studyAlias, uri));
     }
 
     @Override
-    public QueryResult deleteFile(int studyId, String uri) throws CatalogManagerException {
+    public QueryResult<Integer> deleteFile(int studyId, String uri) throws CatalogManagerException {
         return deleteFile(getFileId(studyId, uri));
     }
 
     @Override
-    public QueryResult deleteFile(int fileId) throws CatalogManagerException {
+    public QueryResult<Integer> deleteFile(int fileId) throws CatalogManagerException {
         long startTime = startQuery();
 
         WriteResult id = nativeFileCollection.remove(new BasicDBObject("id", fileId));
-        if(id.getN() == 0){
-            throw new CatalogManagerException("file {id:"+fileId+"} not found");
+        List<Integer> deletes = new LinkedList<>();
+        if(id.getN() == 0) {
+            throw new CatalogManagerException("file {id:" + fileId + "} not found");
         } else {
-            return endQuery("Delete file", startTime, Arrays.asList(id.getN()));
+            deletes.add(id.getN());
+            return endQuery("delete file", startTime, deletes);
         }
     }
 
@@ -1687,9 +1732,21 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Create Job", startTime, getJob(jobId));
     }
 
+    /**
+     * At the moment it does not clean external references to itself.
+     */
     @Override
-    public QueryResult deleteJob(int jobId) throws CatalogManagerException {
-        return null;
+    public QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        WriteResult id = nativeJobCollection.remove(new BasicDBObject("id", jobId));
+        List<Integer> deletes = new LinkedList<>();
+        if (id.getN() == 0) {
+            throw new CatalogManagerException("job {id: " + jobId + "} not found");
+        } else {
+            deletes.add(id.getN());
+            return endQuery("delete job", startTime, deletes);
+        }
     }
 
     @Override
