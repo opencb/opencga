@@ -1,8 +1,6 @@
 package org.opencb.opencga.catalog.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
@@ -130,7 +128,8 @@ public class CatalogManager {
      * ***************************
      */
 
-    public QueryResult createUser(User user)
+
+    public QueryResult<User> createUser(User user)
             throws CatalogManagerException, CatalogIOManagerException, JsonProcessingException {
         checkObj(user, "user");
         checkParameter(user.getId(), "id");
@@ -229,7 +228,7 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        //FIXME: Should other users get access to other user information?
+        //FIXME: Should other users get access to other user information? (If so, then filter projects)
         //FIXME: Should setPassword(null)??
         return catalogDBAdaptor.getUser(userId, lastActivity);
     }
@@ -299,6 +298,11 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         checkSessionId(ownerId, sessionId);    //Only the user can create a project
 
+        /* Add default ACL */
+        //Add generic permissions to the project.
+        project.getAcl().add(new Acl(USER_OTHERS_ID, false, false, false, false));
+
+
         QueryResult<Project> result = catalogDBAdaptor.createProject(ownerId, project);
         project = result.getResult().get(0);
 
@@ -361,7 +365,6 @@ public class CatalogManager {
         }
     }
 
-
     /**
      * Modify some params from the specified project:
      *
@@ -384,7 +387,7 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
         if (!getProjectAcl(userId, projectId).isWrite()) {
-            throw new CatalogManagerException("User '" + userId + "' can't modify the project " + projectId);
+            throw new CatalogManagerException("Permission denied. Can't modify project");
         }
         for (String s : parameters.keySet()) {
             if (!s.matches("name|description|organization|status|attributes")) {
@@ -393,6 +396,19 @@ public class CatalogManager {
         }
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyProject(projectId, parameters);
+    }
+
+    public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogManagerException {
+        checkObj(acl, "acl");
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl projectAcl = getProjectAcl(userId, projectId);
+        if (!projectAcl.isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't modify project");
+        }
+
+        return catalogDBAdaptor.setProjectAcl(projectId, acl);
     }
 
     /**
@@ -410,13 +426,25 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
+        if(study.getCreatorId() != null && !study.getCreatorId().equals(userId)){
+            throw new CatalogManagerException("CreatorId must be the userId");
+        }
+        study.setCreatorId(userId);
+
+
+        /* Check project permissions */
         if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
             throw new CatalogManagerException("Permission denied. Can't write in project");
         }
 
-        if(study.getCreatorId() == null){
-            study.setCreatorId(userId);
+
+        /* Add default ACL */
+        if(!userId.equals(ownerId)) {
+            //Add full permissions for the creator if he is not the owner
+            study.getAcl().add(new Acl(userId, true, true, true, true));    //Todo: Check duplicity
         }
+        //Copy generic permissions from the project.
+        study.getAcl().add(getProjectAcl(USER_OTHERS_ID, projectId));
 
         QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study);
         study = result.getResult().get(0);
@@ -521,6 +549,18 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyStudy(studyId, parameters);
     }
 
+//    public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogManagerException {
+//        checkObj(acl, "acl");
+//        checkParameter(sessionId, "sessionId");
+//
+//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+//        Acl studyAcl = getStudyAcl(userId, studyId);
+//        if (!studyAcl.isWrite()) {
+//            throw new CatalogManagerException("Permission denied. Can't modify project");
+//        }
+//
+//        return catalogDBAdaptor.setSudyAcl(studyId, acl);
+//    }
 
     /**
      * File methods
@@ -710,6 +750,20 @@ public class CatalogManager {
 
 //        return ioManager.getFileObject(userId, bucketId, objectId, start, limit);
         throw new UnsupportedOperationException();
+    }
+
+
+    public QueryResult shareFile(int fileId, Acl acl, String sessionId) throws CatalogManagerException {
+        checkObj(acl, "acl");
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl fileAcl = getFileAcl(userId, fileId);
+        if (!fileAcl.isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't modify file");
+        }
+
+        return catalogDBAdaptor.setFileAcl(fileId, acl);
     }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
@@ -1387,7 +1441,8 @@ public class CatalogManager {
                 if (!resultAll.getResult().isEmpty()) {
                     studyAcl = resultAll.getResult().get(0);
                 } else {
-                    studyAcl = new Acl(userId, false, false, false, false);
+                    //studyAcl = new Acl(userId, false, false, false, false);
+                    studyAcl = projectAcl;
                 }
             }
         }
@@ -1414,7 +1469,8 @@ public class CatalogManager {
                 if (!resultAll.getResult().isEmpty()) {
                     fileAcl = resultAll.getResult().get(0);
                 } else {
-                    fileAcl = new Acl(userId, false, false, false, false);
+                    //fileAcl = new Acl(userId, false, false, false, false);
+                    fileAcl = studyAcl;
                 }
             }
         }

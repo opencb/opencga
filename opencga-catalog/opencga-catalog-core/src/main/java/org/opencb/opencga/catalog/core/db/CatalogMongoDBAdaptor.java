@@ -749,7 +749,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException {
+    public QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException {
+        long startTime = startQuery();
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
             throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
@@ -775,6 +776,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
         QueryResult update = fileCollection.update(match, updateOperation, false, false);
+        return endQuery("Set project acl", startTime);
     }
 
     /**
@@ -1380,7 +1382,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+    public QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException {
+        long startTime = startQuery();
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
             throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
@@ -1406,6 +1409,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
         QueryResult update = fileCollection.update(match, updateOperation, false, false);
+        return endQuery("set file acl", startTime);
     }
 
 

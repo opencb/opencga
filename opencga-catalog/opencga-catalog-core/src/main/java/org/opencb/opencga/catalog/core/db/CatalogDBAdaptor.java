@@ -73,7 +73,8 @@ public interface CatalogDBAdaptor {
     String getProjectOwner(int projectId) throws CatalogManagerException;
 
     QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException;
-    void setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException;
+
+    QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException;
     /**
      * Study methods
      * ***************************
@@ -143,7 +144,7 @@ public interface CatalogDBAdaptor {
     String getFileOwner(int fileId) throws CatalogManagerException;
 
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException;
-    void setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
+    QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
 
 
 
