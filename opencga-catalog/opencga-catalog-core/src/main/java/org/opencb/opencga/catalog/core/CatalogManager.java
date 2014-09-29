@@ -40,7 +40,7 @@ public class CatalogManager {
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
 
 
-    public CatalogManager() throws IOException, CatalogIOManagerException {
+    public CatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
         this(System.getenv("OPENCGA_HOME"));
     }
 
@@ -50,7 +50,7 @@ public class CatalogManager {
         this.properties = catalogProperties;
     }
 
-    public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException {
+    public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException, CatalogManagerException {
 //        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
@@ -70,7 +70,7 @@ public class CatalogManager {
         ioManager = new PosixIOManager(rootdir);
     }
 
-    public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException {
+    public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException, CatalogManagerException {
         this.properties = properties;
 
         try {

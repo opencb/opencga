@@ -27,7 +27,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     private static CatalogDBAdaptor catalog;
 
     @BeforeClass
-    public static void before() throws IllegalOpenCGACredentialsException, JsonProcessingException {
+    public static void before() throws IllegalOpenCGACredentialsException, JsonProcessingException, CatalogManagerException {
         MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, "catalog", "", "");
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
     }

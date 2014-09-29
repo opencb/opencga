@@ -32,7 +32,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser2;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException {
+    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException {
         catalogManager = new CatalogManager("/tmp/opencga");
     }
 

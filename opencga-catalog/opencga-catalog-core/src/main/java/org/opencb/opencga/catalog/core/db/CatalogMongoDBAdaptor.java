@@ -74,7 +74,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
     }
 
-    public CatalogMongoDBAdaptor(MongoCredentials credentials) {
+    public CatalogMongoDBAdaptor(MongoCredentials credentials) throws CatalogManagerException {
         super();
         this.mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         this.credentials = credentials;
@@ -83,8 +83,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         connect();
     }
 
-    private void connect()  {
+    private void connect() throws CatalogManagerException {
         db = mongoManager.get(credentials.getMongoDbName());
+        if(db == null){
+            throw new CatalogManagerException("Unable to connect to MongoDB");
+        }
         nativeMetaCollection = db.getDb().getCollection(METADATA_COLLECTION);
         nativeFileCollection = db.getDb().getCollection(FILE_COLLECTION);
         nativeJobCollection = db.getDb().getCollection(JOB_COLLECTION);
@@ -98,7 +101,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
         //If "metadata" document doesn't exist, create.
-        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_COLLECTION));
+        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_OBJECT_ID));
         if(queryResult.getResult().get(0) == 0){
             try {
                 DBObject metadataObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(new Metadata()));
