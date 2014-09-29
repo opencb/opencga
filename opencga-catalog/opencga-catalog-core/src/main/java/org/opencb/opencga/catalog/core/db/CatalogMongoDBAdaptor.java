@@ -211,7 +211,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
     @Override
-    public QueryResult<User> createUser(User user) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult<User> createUser(User user) throws CatalogManagerException {
         long startTime = startQuery();
 
         if(userExists(user.getId())){
@@ -220,7 +220,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
         user.setLastActivity(TimeUtils.getTimeMillis());
-        DBObject userDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
+        DBObject userDBObject;
+        try {
+            userDBObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("create user failed at parsing user " + user.getId());
+        }
         userDBObject.put("_id", user.getId());
 
         QueryResult insert;
@@ -487,7 +492,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException {
+    public QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException {
         long startTime = startQuery();
 
         List<Study> studies = project.getStudies();
@@ -515,7 +520,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         project.setId(projectId);
         DBObject query = new BasicDBObject("id", userId);
         query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
-        DBObject update = new BasicDBObject("$push", new BasicDBObject ("projects", JSON.parse(jsonObjectWriter.writeValueAsString(project))));
+        DBObject update;
+        try {
+            update = new BasicDBObject("$push", new BasicDBObject ("projects", JSON.parse(jsonObjectWriter.writeValueAsString(project))));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("Create project failed at parsing project " + project.getAlias());
+        }
 
         //Update object
         QueryResult<WriteResult> queryResult = userCollection.update(query, update, false, false);

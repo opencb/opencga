@@ -142,6 +142,23 @@ public class CatalogManager {
         }
     }
 
+    public QueryResult createUser(String id, String name, String email, String password)
+            throws CatalogManagerException, CatalogIOManagerException {  // TOTHINK ask for organization, etc?
+        checkParameter(id, "id");
+        checkParameter(password, "password");
+        checkParameter(name, "name");
+        checkParameter(email, "email");
+        User user = new User(id, name, email, password, "", "", "");
+
+        try {
+            ioManager.createUser(user.getId());
+            return catalogDBAdaptor.createUser(user);
+        } catch (CatalogIOManagerException | CatalogManagerException e) {
+            ioManager.deleteUser(user.getId());
+            throw e;
+        }
+    }
+
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogManagerException, CatalogIOManagerException, IOException {
         checkParameter(sessionIp, "sessionIp");
@@ -294,6 +311,30 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         checkSessionId(ownerId, sessionId);    //Only the user can create a project
 
+        QueryResult<Project> result = catalogDBAdaptor.createProject(ownerId, project);
+        project = result.getResult().get(0);
+
+        try {
+            ioManager.createProject(ownerId, Integer.toString(project.getId()));
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            catalogDBAdaptor.deleteProject(project.getId());
+        }
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        return result;
+    }
+    public QueryResult<Project> createProject(String ownerId, String name, String alias, String description, String organization, String sessionId)
+            throws CatalogManagerException,
+            CatalogIOManagerException, JsonProcessingException {
+        checkParameter(ownerId, "ownerId");
+        checkParameter(name, "name");
+        checkAlias(alias, "alias");
+        checkAlias(description, "description");
+        checkAlias(organization, "organization");
+        checkParameter(sessionId, "sessionId");
+        checkSessionId(ownerId, sessionId);    //Only the user can create a project
+
+        Project project = new Project(name, alias, description, "", organization);
         QueryResult<Project> result = catalogDBAdaptor.createProject(ownerId, project);
         project = result.getResult().get(0);
 
