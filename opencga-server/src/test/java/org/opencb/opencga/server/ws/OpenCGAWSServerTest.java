@@ -46,6 +46,13 @@ public class OpenCGAWSServerTest {
     }
 
     /** User tests **/
+   //@Test
+    public void userTests(){
+        UserWSServerTest userTest = new UserWSServerTest(webResource);
+        userTest.createUser();
+        userTest.loginUser();
+        userTest.modifyUser();
+    }
     @Test
     public void workflowCreation(){
         UserWSServerTest userTest = new UserWSServerTest(webResource);
@@ -54,9 +61,15 @@ public class OpenCGAWSServerTest {
 
         ProjectWSServerTest prTest = new ProjectWSServerTest(userTest);
         prTest.createProject();
+        prTest.modifyProject();
+        prTest.info();
+        prTest.getAllProjects();
 
         StudyWSServerTest stTest = new StudyWSServerTest(prTest);
         stTest.createStudy();
+        stTest.modifyStudy();
+        stTest.info();
+        stTest.getAllStudies();
     }
 
 //

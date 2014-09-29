@@ -19,8 +19,14 @@ public class WSServerTestUtils {
         String[] firstElement = arrayList.get(0).toString().replace("{","").replace("}","").split(",");
         for (int i = 0; i < firstElement.length; i++) {
             String[] tuple = firstElement[i].split("=");
-            if(tuple[0].equalsIgnoreCase(field))
-                return tuple[1];
+//            System.out.println("tuple[0] = " + tuple[0]);
+//            System.out.println("tuple[1] = " + tuple[1]);
+            String fieldInTuple = new String(tuple[0]);
+            fieldInTuple = fieldInTuple.trim();
+            if(fieldInTuple.equalsIgnoreCase(field)) {
+                String valueInTuple = new String(tuple[1]);
+                return valueInTuple;
+            }
         }
         return "";
     }

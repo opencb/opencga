@@ -140,10 +140,10 @@ public class OpenCGAWSServer {
         // Guarantee that the QueryResponse object contains a coll of results
         Collection coll;
         if (obj instanceof Collection) {
-            System.out.println("collection");
+            //System.out.println("collection");
             coll = (Collection) obj;
         } else {
-            System.out.println("list");
+            //System.out.println("list");
             coll = new ArrayList();
             coll.add(obj);
         }

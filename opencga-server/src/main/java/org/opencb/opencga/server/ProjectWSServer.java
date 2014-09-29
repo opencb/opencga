@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.Project;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
@@ -70,27 +71,49 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
-
     @GET
-    @Path("/{userId}/logout")
+    @Path("/{ownerId}/all-projects")
     @Produces("text/plain")
-    @ApiOperation(value = "User login")
-    public Response logout(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "sessionId", required = true) @QueryParam("sessionId") String sessionId) throws IOException {
+    @ApiOperation(value = "Project information")
+
+    public Response getAllProjects(
+            @ApiParam(value = "ownerId", required = true) @PathParam("ownerId") String ownerId
+    ){
+        QueryResult queryResult;
         try {
-            QueryResult result;
-            if (userId.toLowerCase().equals("anonymous")) {
-                result = catalogManager.logoutAnonymous(sessionId);
-            } else {
-                result = catalogManager.logout(userId, sessionId);
-            }
-            return createOkResponse(result);
-        } catch (CatalogManagerException | IOException | CatalogIOManagerException e) {
+            queryResult = catalogManager.getAllProjects(ownerId, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogManagerException | JsonProcessingException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
     }
+    @GET
+    @Path("/{projectId}/modify")
+    @Produces("text/plain")
+    @ApiOperation(value = "Project modify")
+    public Response modifyUser(
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId,
+            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+            @ApiParam(value = "status", required = false) @QueryParam("status") String status,
+            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes)
+            throws IOException {
+        try {
+            ObjectMap objectMap = new ObjectMap();
+            objectMap.put("name", name);
+            objectMap.put("description", description);
+            objectMap.put("organization", organization);
+            objectMap.put("status", status);
+            objectMap.put("attributes", attributes);
 
+            QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
 
 }

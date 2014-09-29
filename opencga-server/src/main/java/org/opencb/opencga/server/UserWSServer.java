@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.User;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
@@ -94,6 +95,85 @@ public class UserWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+    @GET
+    @Path("/{userId}/change-password")
+    @Produces("text/plain")
+    @ApiOperation(value = "User password change")
+    public Response changePassword(
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+            @ApiParam(value = "password", required = true) @QueryParam("password") String password,
+            @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1
+    ) throws IOException {
+        try {
+            QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{userId}/change-email")
+    @Produces("text/plain")
+    @ApiOperation(value = "User email change")
+    public Response changeEmail(
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+            @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail
+    ) throws IOException {
+        try {
+            QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+    @GET
+    @Path("/{userId}/reset-password")
+    @Produces("text/plain")
+    @ApiOperation(value = "User email change")
+    public Response resetPassword(
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+            @ApiParam(value = "email", required = true) @QueryParam("email") String email
+    ) throws IOException {
+        try {
+            QueryResult result = catalogManager.resetPassword(userId, email);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{userId}/modify")
+    @Produces("text/plain")
+    @ApiOperation(value = "User modify")
+    public Response modifyUser(
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
+            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
+            @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs)
+    throws IOException {
+        try {
+            ObjectMap objectMap = new ObjectMap();
+            objectMap.put("name", name);
+            objectMap.put("email", email);
+            objectMap.put("organization", organization);
+            objectMap.put("attributes", attributes);
+            objectMap.put("configs", configs);
+
+            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
     @GET
     @Path("/{userId}/info")
     @Produces("text/plain")
