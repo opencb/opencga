@@ -30,6 +30,7 @@ public class CatalogManagerTest extends GenericTest {
     static CatalogManager catalogManager;
     private String sessionIdUser;
     private String sessionIdUser2;
+    private String sessionIdUser3;
 
     @BeforeClass
     public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException {
@@ -69,6 +70,7 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.createUser(user));
         user = new User("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", "", "");
         System.out.println(catalogManager.createUser(user));
+        System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD));
     }
 
     @Test
@@ -174,6 +176,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateProject() throws Exception {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
         System.out.println(catalogManager.createProject("user", p, sessionIdUser));
+        System.out.println(catalogManager.createProject("user3", "Project Management Project", "pmp", "life art intelligent system", "myorg", sessionIdUser3));
     }
 
     @Test

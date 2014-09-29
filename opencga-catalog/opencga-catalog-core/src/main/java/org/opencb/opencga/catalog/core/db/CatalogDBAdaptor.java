@@ -23,7 +23,7 @@ public interface CatalogDBAdaptor {
 
     boolean userExists(String userId);
 
-    QueryResult<User> createUser(User user) throws CatalogManagerException, JsonProcessingException;
+    QueryResult<User> createUser(User user) throws CatalogManagerException;
 
     QueryResult<Integer> deleteUser(String userId) throws CatalogManagerException;
 
