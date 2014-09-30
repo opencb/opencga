@@ -4,14 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
-import org.junit.*;
-import static org.junit.Assert.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
@@ -21,19 +23,24 @@ import org.opencb.opencga.lib.common.TimeUtils;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.Assert.*;
+
 @FixMethodOrder(MethodSorters.JVM)
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     private static CatalogDBAdaptor catalog;
+    private static String catalogDBNAme = "opencga-catalog-test";
 
     @BeforeClass
     public static void before() throws IllegalOpenCGACredentialsException, JsonProcessingException {
-        MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, "catalog", "", "");
+        MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, catalogDBNAme, "", "");
+        clearDB(mongoCredentials);
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
     }
 
+
     @AfterClass
-    public static void after(){
+    public static void after() {
         catalog.disconnect();
     }
 
@@ -56,12 +63,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalog.createUser(deletedUser);
 
         User fullUser = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", "BOSS", "active", "", 1222, 122222,
-                Arrays.asList( new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
-                        Arrays.asList( new Study(-1, "Study name", "ph1", "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
-                                        Arrays.asList( new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000)
-                                        ), Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP
-                                )
-                        ), Collections.EMPTY_MAP)
+                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
+                                Arrays.asList(new Study(-1, "Study name", "ph1", "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
+                                                Arrays.asList(new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000)
+                                                ), Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP
+                                        )
+                                ), Collections.EMPTY_MAP)
                 ),
                 Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP);
 
@@ -114,14 +121,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             System.out.println(catalog.loginAsAnonymous(sessionANONY));
             fail("Expected \"invalid sessionId or userId\" exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println(e);
         }
 
         try {
             System.out.println(catalog.login("jmmut", "1111", sessionJMMUT));
             fail("Expected \"invalid sessionId\" exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println(e);
         }
 
@@ -148,7 +155,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      */
     @Test
     public void createProjectTest() throws CatalogManagerException, JsonProcessingException {
-        Project p ;
+        Project p;
         p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", true, false, true, true));
@@ -164,7 +171,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             System.out.println(catalog.createProject("jcoll", p));
             fail("Expected \"projectAlias already exists\" exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println(e);
         }
     }
@@ -190,7 +197,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void deleteProjectTest () throws CatalogManagerException {
+    public void deleteProjectTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "pmp");
         QueryResult<Integer> queryResult = catalog.deleteProject(projectId);
         System.out.println(queryResult);
@@ -210,10 +217,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     /**
      * cases:
-     *      ok: correct projectId, correct newName
-     *      error: non-existent projectId
-     *      error: newName already used
-     *      error: newName == oldName
+     * ok: correct projectId, correct newName
+     * error: non-existent projectId
+     * error: newName already used
+     * error: newName == oldName
+     *
      * @throws CatalogManagerException
      */
     @Test
@@ -230,7 +238,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             System.out.println(catalog.renameProjectAlias(catalog.getProjectId("jcoll", "1000G"), "2000G"));
             fail("renamed project with name collision");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println("correct exception: " + e);
         }
 
@@ -272,7 +280,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
 
-
     /**
      * Study methods
      * ***************************
@@ -309,7 +316,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void deleteStudyTest () throws CatalogManagerException {
+    public void deleteStudyTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "2000G", "ph1");
         QueryResult<Integer> queryResult = catalog.deleteStudy(studyId);
         System.out.println(queryResult);
@@ -327,7 +334,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId = catalog.getProjectId("jcoll", "1000G");
         assertTrue(catalog.getStudyId("jcoll", "1000G", "ph3") != -1);
         assertTrue(catalog.getStudyId(projectId, "ph3") != -1);
-        assertTrue(catalog.getStudyId( -20, "ph3") == -1);
+        assertTrue(catalog.getStudyId(-20, "ph3") == -1);
         assertTrue(catalog.getStudyId(projectId, "badStudy") == -1);
     }
 
@@ -351,7 +358,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             catalog.getStudy(-100);
             fail("Expected \"StudyId not found\" exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println(e);
         }
     }
@@ -429,7 +436,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             System.out.println(catalog.createFileToStudy(-20, f));
             fail("Expected \"StudyId not found\" exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println(e);
         }
 
@@ -438,7 +445,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         try {
             System.out.println(catalog.createFileToStudy(studyId, f));
             fail("Expected \"File already exist\" exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogManagerException e) {
             System.out.println(e);
         }
     }
@@ -481,8 +488,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void modifyFileTest() throws CatalogManagerException, IOException {
         int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
-        String newName = "newName-"+ StringUtils.randomString(10);
-        DBObject stats = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok"+StringUtils.randomString(20)).get();
+        String newName = "newName-" + StringUtils.randomString(10);
+        DBObject stats = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20)).get();
 
         ObjectMap parameters = new ObjectMap();
         parameters.put("name", newName);
@@ -509,6 +516,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             System.out.println("correct exception: " + e);
         }
     }
+
     @Test
     public void getFileAclsTest() throws CatalogManagerException {
         int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
@@ -537,7 +545,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             System.out.println("correct exception: " + e);
         }
     }
-
 
 
     /**
@@ -599,9 +606,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void modifyAnalysisTest() throws CatalogManagerException, IOException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
         int analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
-        String newName = "newName-"+ StringUtils.randomString(10);
-        String description = "description-"+ StringUtils.randomString(50);
-        DBObject attributes = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok"+StringUtils.randomString(20)).get();
+        String newName = "newName-" + StringUtils.randomString(10);
+        String description = "description-" + StringUtils.randomString(50);
+        DBObject attributes = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20)).get();
 
         ObjectMap parameters = new ObjectMap();
         parameters.put("name", newName);
@@ -624,7 +631,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * ***************************
      */
     @Test
-    public void createJobTest () throws CatalogManagerException {
+    public void createJobTest() throws CatalogManagerException {
         Job job = new Job();
         job.setVisits(0);
         job.setName("jobName1");
@@ -643,7 +650,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void deleteJobTest () throws CatalogManagerException {
+    public void deleteJobTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
         int jobId = catalog.getAllJobs(analysisId).getResult().get(0).getId();
@@ -657,8 +664,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             System.out.println("correct exception: " + e);
         }
     }
+
     @Test
-    public void getAllJobTest () throws CatalogManagerException {
+    public void getAllJobTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
         QueryResult<Job> allJobs = catalog.getAllJobs(analysisId);
@@ -667,7 +675,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
 
     @Test
-    public void getJobTest () throws CatalogManagerException {
+    public void getJobTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
         QueryResult<Job> allJobs = catalog.getAllJobs(analysisId);
@@ -684,7 +692,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void incJobVisits () throws CatalogManagerException {
+    public void incJobVisits() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
         int id = catalog.getAllJobs(analysisId).getResult().get(0).getId();
@@ -695,6 +703,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         Job jobAfter = catalog.getJob(id).getResult().get(0);
         assertTrue(jobBefore.getVisits() == jobAfter.getVisits() - 1);
         assertTrue(visits == jobAfter.getVisits());
+    }
+
+    private static void clearDB(MongoCredentials mongoCredentials) {
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(mongoCredentials.getMongoHost(), mongoCredentials.getMongoPort());
+        MongoDataStore db = mongoManager.get(mongoCredentials.getMongoDbName());
+        db.getDb().dropDatabase();
     }
 
 }
