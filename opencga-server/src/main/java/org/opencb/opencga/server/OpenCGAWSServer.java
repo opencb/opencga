@@ -38,7 +38,6 @@ public class OpenCGAWSServer {
 
     protected String version;
     protected UriInfo uriInfo;
-    protected String userId;
     protected String sessionIp;
 
     // Common input arguments
@@ -113,7 +112,6 @@ public class OpenCGAWSServer {
     public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;
-
         this.uriInfo = uriInfo;
         logger.debug(uriInfo.getRequestUri().toString());
 
@@ -142,8 +140,10 @@ public class OpenCGAWSServer {
         // Guarantee that the QueryResponse object contains a coll of results
         Collection coll;
         if (obj instanceof Collection) {
+            //System.out.println("collection");
             coll = (Collection) obj;
         } else {
+            //System.out.println("list");
             coll = new ArrayList();
             coll.add(obj);
         }

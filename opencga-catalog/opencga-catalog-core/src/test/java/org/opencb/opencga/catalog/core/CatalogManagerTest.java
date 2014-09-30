@@ -33,7 +33,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser3;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException {
+    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -81,7 +81,7 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.createUser(user));
         user = new User("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", "", "");
         System.out.println(catalogManager.createUser(user));
-        System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD));
+        System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME"));
     }
 
     @Test
@@ -244,11 +244,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateStudy() throws Exception {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        Study study;
-        study = new Study("Phase 3", "phase3", "", "d", "");
-        System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
-        study = new Study("Phase 1", "phase1", "", "Done", "");
-        System.out.println(catalogManager.createStudy(projectId, study, sessionIdUser));
+        System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", "type", "d", sessionIdUser));
+        System.out.println(catalogManager.createStudy(projectId, "Phase 1", "phase1", "type", "Done", sessionIdUser));
     }
 
     @Test
