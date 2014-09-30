@@ -623,16 +623,13 @@ public class CatalogManager {
                                         boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        checkParameter(format, "format");
+        checkParameter(bioformat, "bioformat");
+        checkParameter(description, "description");
+        checkParameter(sessionId, "sessionId");
+        checkPath(path, "filePath");
         File file = new File(Paths.get(path).getFileName().toString(), File.FILE, format, bioformat, "void://", path, userId, description, File.UPLOADING, 0);
 
-//    }
-//    public QueryResult<File> createFile(int studyId, File file, boolean parents, String sessionId)
-//        checkObj(file, "file");
-//        checkParameter(file.getPath(), "file path");
-//        checkParameter(file.getName(), "file name");
-//        checkParameter(sessionId, "sessionId");
-
-//        Path path = Paths.get(file.getPath());
         Path parent = Paths.get(path).getParent();
 
 //        if null acl de study
@@ -656,56 +653,41 @@ public class CatalogManager {
         } else {
             throw new CatalogManagerException("Permission denied, " + userId + " can not write in " + parent.toString());
         }
-
-//        objectId = ioManager.createFile(userId, bucketId, objectId, file, fileIs, parents);
-
-        // set id and name to the itemObject
-//        file.setUri(uri);
-
-//        try {
-//            return catalogDBAdaptor.createFileToStudy(userId, projectAlias, studyAlias, file, sessionId);
-////            return objectId.toString();
-//        } catch (CatalogManagerException e) {
-//            ioManager.deleteFile(userId, projectAlias, studyAlias, objectId.toString());
-//            throw e;
-//        }
     }
 
-    public QueryResult uploadFile(int fileId, InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
+    public QueryResult<File> uploadFile(int studyId, String format, String bioformat, String path, String description,
+                                  boolean parents, InputStream fileIs, String sessionId) throws CatalogManagerException,
+            CatalogIOManagerException, IOException, InterruptedException {
+        QueryResult<File> fileResult = createFile(studyId, format, bioformat, path, description, parents, sessionId);
+        fileResult = uploadFile(fileResult.getResult().get(0).getId(), fileIs, sessionId);
+        return fileResult;
+    }
+
+    public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogManagerException,
             CatalogIOManagerException, IOException, InterruptedException {
 
-        //TODO: ACLs, createFolder (if parents), etc
+        checkObj(fileIs, "InputStream");
+        checkParameter(sessionId, "SessionId");
 
         String userId = catalogDBAdaptor.getFileOwner(fileId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
 
-        File file = catalogDBAdaptor.getFile(fileId).getResult().get(0);    //todo: check notnull
+        List<File> result = catalogDBAdaptor.getFile(fileId).getResult();
+        if(result.isEmpty()) {
+            throw new CatalogManagerException("FileId '" + fileId + "' for found");
+        }
+        File file = result.get(0);
+        if(!file.getStatus().equals(File.UPLOADING)) {
+            throw new CatalogManagerException("File '" + fileId + "' already uploaded.");
+        }
+        if(!file.getCreatorId().equals(userId)){
+            throw new CatalogManagerException("UserId mismatch with file creator");
+        }
         ioManager.createFile(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath(), fileIs);
 
-        return catalogDBAdaptor.modifyFile(fileId, new ObjectMap("status", File.UPLOADED));
-
-
-//        checkAlias(projectAlias, "projectAlias");
-//        checkAlias(studyAlias, "studyAlias");
-//        checkParameter(userId, "userId");
-//        checkParameter(sessionId, "sessionId");
-//        checkParameter(objectId.toString(), "objectId");
-//        checkObj(file, "file");
-//
-//        file.setStatus("ready");
-////        objectId = ioManager.createFile(userId, bucketId, objectId, file, fileIs, parents);
-//
-//        // set id and name to the itemObject
-//        file.setUri(uri);
-//
-//        try {
-//            return catalogDBAdaptor.createFileToStudy(userId, projectAlias, studyAlias, file, sessionId);
-////            return objectId.toString();
-//        } catch (CatalogManagerException e) {
-//            ioManager.deleteFile(userId, projectAlias, studyAlias, objectId.toString());
-//            throw e;
-//        }
+        catalogDBAdaptor.modifyFile(fileId, new ObjectMap("status", File.UPLOADED));
+        return catalogDBAdaptor.getFile(fileId);
     }
 
     public QueryResult createFolder(int studyId, Path folderPath, boolean parents, String sessionId)
@@ -857,19 +839,31 @@ public class CatalogManager {
         return allFilesResult;
     }
 
-    public DataInputStream downloadFile(int fileId, String start, String limit, String sessionId)
+    public DataInputStream downloadFile(int fileId, String sessionId)
+            throws CatalogIOManagerException, IOException, CatalogManagerException {
+        return downloadFile(fileId, -1, -1, sessionId);
+    }
+    private DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         checkParameter(sessionId, "sessionId");
-        checkParameter(start, "start");
-        checkParameter(limit, "limit");
+
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         if (!getFileAcl(userId, fileId).isRead()) {
             throw new CatalogManagerException("Permission denied. User can't download file");
         }
+        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        if(fileResult.getResult().isEmpty()){
+            throw new CatalogManagerException("File not found");
+        }
+        File file = fileResult.getResult().get(0);
 
-//        return ioManager.getFileObject(userId, bucketId, objectId, start, limit);
-        throw new UnsupportedOperationException();
+        return ioManager.getFileObject(userId,
+                Integer.toString(projectId),
+                Integer.toString(studyId),
+                file.getPath(), start, limit);
     }
 
 

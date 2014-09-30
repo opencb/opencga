@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -10,6 +11,8 @@ import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.catalog.core.beans.File;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
@@ -19,6 +22,7 @@ import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -36,6 +40,7 @@ public class CatalogManagerTest extends GenericTest {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
+        clearCatalog(properties);
         catalogManager = new CatalogManager(properties);
     }
 
@@ -292,24 +297,60 @@ public class CatalogManagerTest extends GenericTest {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
 
-        String fileTest = "/tmp/" + StringUtils.randomString(5);
-        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTest));
+        FileInputStream is;
+        java.io.File fileTest;
 
+        String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        QueryResult<File> file = catalogManager.createFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, sessionIdUser);
+
+        is = new FileInputStream(fileTest = createDebugFile());
+        System.out.println(catalogManager.uploadFile(file.getResult().get(0).getId(), is, sessionIdUser));
+        is.close();
+        fileTest.delete();
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        is = new FileInputStream(fileTest = createDebugFile());
+        System.out.println(catalogManager.uploadFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, is, sessionIdUser));
+        is.close();
+        fileTest.delete();
+
+    }
+
+    @Test
+    public void testDownloadFile() throws CatalogManagerException, IOException, InterruptedException, CatalogIOManagerException {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+
+        String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        java.io.File fileTest;
+        InputStream is = new FileInputStream(fileTest = createDebugFile());
+        int fileId = catalogManager.uploadFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, is, sessionIdUser).getResult().get(0).getId();
+        is.close();
+        fileTest.delete();
+
+        DataInputStream dis = catalogManager.downloadFile(fileId, sessionIdUser);
+
+        System.out.println(fileTest.getAbsolutePath());
+        byte[] bytes = new byte[100];
+        dis.read(bytes, 0, 100);
+        System.out.println(Bytes.toString(bytes));
+    }
+
+    /* FILE UTILS */
+    private java.io.File createDebugFile() throws IOException {
+        String fileTestName = "/tmp/fileTest" + StringUtils.randomString(5);
+        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
+
+        os.writeBytes("Debug file name: " + fileTestName + "\n");
+        for (int i = 0; i < 100; i++) {
+            os.writeBytes(i + ", ");
+        }
         for (int i = 0; i < 200; i++) {
             os.writeBytes(StringUtils.randomString(500));
         }
         os.close();
 
-        InputStream is = new FileInputStream(Paths.get(fileTest).toFile());
-
-        String fileName = "item." + TimeUtils.getTime() + ".vcf";
-        File preFile = new File(fileName, File.FILE, "", "", "", "data/", "", "", "", 12);
-        QueryResult<File> file = catalogManager.createFile(studyId, "txt", "vcf", preFile.getPath() + fileName, preFile.getDescription(), true, sessionIdUser);
-
-        catalogManager.uploadFile(file.getResult().get(0).getId(), is, false, sessionIdUser);
-        is.close();
-
-        Files.delete(Paths.get(fileTest));
+        return Paths.get(fileTestName).toFile();
     }
 
     /**
@@ -345,5 +386,28 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
         System.out.println(catalogManager.createJob(
                 analysisId, "mySecondJob", "samtool", "description", "#rm -rf .*", "jobs/myJob", null, sessionIdUser));
+    }
+
+    private static void clearCatalog(Properties properties) throws IOException {
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("HOST"), Integer.parseInt(properties.getProperty("PORT")));
+        MongoDataStore db = mongoManager.get(properties.getProperty("DATABASE"));
+        db.getDb().dropDatabase();
+        Path rootdir = Paths.get(properties.getProperty("ROOTDIR"));
+        deleteFolderTree(rootdir.toFile());
+        Files.createDirectory(rootdir);
+    }
+
+    public static void deleteFolderTree(java.io.File folder) {
+        java.io.File[] files = folder.listFiles();
+        if(files!=null) {
+            for(java.io.File f: files) {
+                if(f.isDirectory()) {
+                    deleteFolderTree(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        folder.delete();
     }
 }

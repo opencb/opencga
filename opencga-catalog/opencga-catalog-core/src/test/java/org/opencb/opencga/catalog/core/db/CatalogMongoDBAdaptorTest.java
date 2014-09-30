@@ -21,6 +21,7 @@ import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -29,11 +30,18 @@ import static org.junit.Assert.*;
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     private static CatalogDBAdaptor catalog;
-    private static String catalogDBNAme = "opencga-catalog-test";
 
     @BeforeClass
-    public static void before() throws IllegalOpenCGACredentialsException, JsonProcessingException, CatalogManagerException {
-        MongoCredentials mongoCredentials = new MongoCredentials("localhost", 27017, catalogDBNAme, "", "");
+    public static void before() throws IllegalOpenCGACredentialsException, IOException, CatalogManagerException {
+        InputStream is = CatalogMongoDBAdaptorTest.class.getClassLoader().getResourceAsStream("catalog.properties");
+        Properties properties = new Properties();
+        properties.load(is);
+        MongoCredentials mongoCredentials = new MongoCredentials(
+                properties.getProperty("HOST"),
+                Integer.parseInt(properties.getProperty("PORT")),
+                properties.getProperty("DATABASE"),
+                properties.getProperty("USER", ""),
+                properties.getProperty("PASSWORD", ""));
         clearDB(mongoCredentials);
         catalog = new CatalogMongoDBAdaptor(mongoCredentials);
     }
