@@ -2,12 +2,12 @@ package org.opencb.opencga.catalog.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.runners.MethodSorters;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
@@ -294,23 +294,33 @@ public class CatalogManagerTest extends GenericTest {
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
 
         String fileTest = "/tmp/" + StringUtils.randomString(5);
-        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTest));
+        FileInputStream is;
+
+        String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        QueryResult<File> file = catalogManager.createFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, sessionIdUser);
+
+        is = createTestFile(fileTest);
+        System.out.println(catalogManager.uploadFile(file.getResult().get(0).getId(), is, sessionIdUser));
+        is.close();
+        Files.delete(Paths.get(fileTest));
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        is = createTestFile(fileTest);
+        System.out.println(catalogManager.uploadFile(studyId, "txt", "vcf", "data/" + fileName, "description" , true, is, sessionIdUser));
+        is.close();
+        Files.delete(Paths.get(fileTest));
+
+    }
+
+    private FileInputStream createTestFile(String fileTestName) throws IOException {
+        FileOutputStream os =new FileOutputStream(fileTestName);
 
         for (int i = 0; i < 200; i++) {
-            os.writeBytes(StringUtils.randomString(500));
+            os.write(Bytes.toBytes(StringUtils.randomString(500)));
         }
         os.close();
 
-        InputStream is = new FileInputStream(Paths.get(fileTest).toFile());
-
-        String fileName = "item." + TimeUtils.getTime() + ".vcf";
-        File preFile = new File(fileName, File.FILE, "", "", "", "data/", "", "", "", 12);
-        QueryResult<File> file = catalogManager.createFile(studyId, "txt", "vcf", preFile.getPath() + fileName, preFile.getDescription(), true, sessionIdUser);
-
-        catalogManager.uploadFile(file.getResult().get(0).getId(), is, false, sessionIdUser);
-        is.close();
-
-        Files.delete(Paths.get(fileTest));
+        return new FileInputStream(Paths.get(fileTestName).toFile());
     }
 
     /**
