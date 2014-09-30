@@ -1137,6 +1137,7 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Deprecated
     public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis, String sessionId) throws CatalogManagerException {
         checkObj(analysis, "analysis");
         checkParameter(sessionId, "sessionId");
@@ -1159,6 +1160,26 @@ public class CatalogManager {
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.createAnalysis(studyId, analysis);
     }
+
+    public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String creatorId, String description, String sessionId) throws CatalogManagerException {
+        checkParameter(name, "name");
+        checkAlias(alias, "alias");
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (creatorId == null || "".equals(creatorId)) {
+            creatorId = userId;
+        }
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't write in this study");
+        }
+        Analysis analysis = new Analysis(name, alias, TimeUtils.getTime(), creatorId, description);
+
+        String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        return catalogDBAdaptor.createAnalysis(studyId, analysis);
+    }
+
 
     public QueryResult<Analysis> getAnalysis(int analysisId, String sessionId) throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1227,12 +1248,13 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Deprecated
     public QueryResult<Job> createJob(int analysisId, Job job, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
         checkObj(job, "Job");
         checkParameter(sessionId, "sessionId");
         checkParameter(job.getName(), "job.getName()");
-        checkPath(job.getOutdir(), "job.getOutdir()");
+        checkPath(job.getOutDir(), "job.getOutDir()");
 //        checkParameter(job.getToolName(), "job.getToolName()");
         //TODO: Add check for required parameters
 
@@ -1247,13 +1269,45 @@ public class CatalogManager {
             job.setUserId(userId);
         }
 
-//        if(!job.getOutdir().endsWith("/")){
-//            job.setOutdir(job.getOutdir()+"/");
+//        if(!job.getOutDir().endsWith("/")){
+//            job.setOutDir(job.getOutDir()+"/");
 //        }
-        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutdir());
+        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
 
         if(fileId < 0){
-            createFolder(studyId, Paths.get(job.getOutdir()), true, sessionId);
+            createFolder(studyId, Paths.get(job.getOutDir()), true, sessionId);
+        }
+
+        return catalogDBAdaptor.createJob(analysisId, job);
+    }
+
+
+    public QueryResult<Job> createJob(int analysisId, String name, String toolName, String description, String commandLine,
+                                      String outDir, List<Integer> inputFiles, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
+        checkParameter(sessionId, "sessionId");
+        checkParameter(name, "name");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        checkParameter(toolName, "toolName");
+        checkParameter(description, "description");
+        checkParameter(commandLine, "commandLine");
+        checkPath(outDir, "outDir");
+        // FIXME check inputFiles? is a null conceptually valid?
+
+        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
+
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't create job");
+        }
+
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir, inputFiles);
+
+//        if(!job.getOutDir().endsWith("/")){
+//            job.setOutDir(job.getOutDir()+"/");
+//        }
+        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
+
+        if(fileId < 0){
+            createFolder(studyId, Paths.get(outDir), true, sessionId);
         }
 
         return catalogDBAdaptor.createJob(analysisId, job);

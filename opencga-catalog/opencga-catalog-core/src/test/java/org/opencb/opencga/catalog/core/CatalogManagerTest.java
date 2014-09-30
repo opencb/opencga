@@ -7,7 +7,6 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.runners.MethodSorters;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
@@ -326,6 +325,8 @@ public class CatalogManagerTest extends GenericTest {
 
         System.out.println(catalogManager.createAnalysis(studyId, analysis, sessionIdUser));
 
+        System.out.println(catalogManager.createAnalysis(
+                studyId, "MyAnalysis2", "analysis2", "user", "description", sessionIdUser));
     }
 
     /**
@@ -342,6 +343,7 @@ public class CatalogManagerTest extends GenericTest {
         Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", "jobs/myJob", Collections.<Integer>emptyList());
 
         System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
-
+        System.out.println(catalogManager.createJob(
+                analysisId, "mySecondJob", "samtool", "description", "#rm -rf .*", "jobs/myJob", null, sessionIdUser));
     }
 }
