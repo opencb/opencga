@@ -565,21 +565,8 @@ public class PosixIOManager implements CatalogIOManager {
 //    }
 
     public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,
-                                         String startString, String limitString) throws CatalogIOManagerException,
-            IOException {
-
-        int limit;
-        try {
-            limit = Integer.parseInt(limitString);
-        } catch (NumberFormatException e) {
-            limit = -1;
-        }
-        int start;
-        try {
-            start = Integer.parseInt(startString);
-        } catch (NumberFormatException e) {
-            start = -1;
-        }
+                                         int start, int limit)
+            throws CatalogIOManagerException, IOException {
 
         Path objectPath = getFilePath(userid, projectId, studyId, objectId);
         if (Files.isRegularFile(objectPath)) {
