@@ -128,7 +128,7 @@ public class CatalogManager {
      * ***************************
      */
 
-
+    @Deprecated
     public QueryResult<User> createUser(User user)
             throws CatalogManagerException, CatalogIOManagerException, JsonProcessingException {
         checkObj(user, "user");
@@ -146,13 +146,14 @@ public class CatalogManager {
         }
     }
 
-    public QueryResult createUser(String id, String name, String email, String password)
-            throws CatalogManagerException, CatalogIOManagerException {  // TOTHINK ask for organization, etc?
+    public QueryResult createUser(String id, String name, String email, String password, String organization)
+            throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(id, "id");
         checkParameter(password, "password");
         checkParameter(name, "name");
         checkParameter(email, "email");
-        User user = new User(id, name, email, password, "", "", "");
+        checkParameter(organization, "organization");
+        User user = new User(id, name, email, password, organization, User.ROLE_USER, "");
 
         try {
             ioManager.createUser(user.getId());
@@ -304,7 +305,7 @@ public class CatalogManager {
      * Project methods
      * ***************************
      */
-
+    @Deprecated
     public QueryResult<Project> createProject(String ownerId, Project project, String sessionId)
             throws CatalogManagerException,
             CatalogIOManagerException, JsonProcessingException {
@@ -332,7 +333,9 @@ public class CatalogManager {
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         return result;
     }
-    public QueryResult<Project> createProject(String ownerId, String name, String alias, String description, String organization, String sessionId)
+
+    public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
+                                              String organization, String sessionId)
             throws CatalogManagerException,
             CatalogIOManagerException, JsonProcessingException {
         checkParameter(ownerId, "ownerId");
@@ -457,19 +460,20 @@ public class CatalogManager {
      * ***************************
      */
 
-    public QueryResult<Study> createStudy(int projectId, Study study, String sessionId)
+    public QueryResult<Study> createStudy(int projectId, String name, String alias, String type, String description,
+                                          String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
-        checkObj(study, "Study");
-        checkParameter(study.getName(), "studyName");
-        checkAlias(study.getAlias(), "studyAlias");
+        checkParameter(name, "name");
+        checkParameter(alias, "alias");
+        checkParameter(type, "type");
+        checkParameter(description, "description");
+        checkAlias(alias, "alias");
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
-        if(study.getCreatorId() != null && !study.getCreatorId().equals(userId)){
-            throw new CatalogManagerException("CreatorId must be the userId");
-        }
+        Study study = new Study(name, alias, type, description, "");
         study.setCreatorId(userId);
 
 
@@ -482,11 +486,17 @@ public class CatalogManager {
         /* Add default ACL */
         if(!userId.equals(ownerId)) {
             //Add full permissions for the creator if he is not the owner
-            study.getAcl().add(new Acl(userId, true, true, true, true));    //Todo: Check duplicity
+            study.getAcl().add(new Acl(userId, true, true, true, true));
         }
         //Copy generic permissions from the project.
-        study.getAcl().add(getProjectAcl(USER_OTHERS_ID, projectId));
+        QueryResult<Acl> aclQueryResult = catalogDBAdaptor.getProjectAcl(projectId, USER_OTHERS_ID);
+        if (!aclQueryResult.getResult().isEmpty()) {
+            study.getAcl().add(aclQueryResult.getResult().get(0));
+        } else {
+            throw new CatalogManagerException("Project " + projectId + " must have generic ACL");
+        }
 
+        /* CreateStudy */
         QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study);
         study = result.getResult().get(0);
 
@@ -667,17 +677,47 @@ public class CatalogManager {
         String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
 
-        if (!getStudyAcl(userId, studyId).isWrite()) {
+        LinkedList<File> folders = new LinkedList<>();
+        Path parent = folderPath.getParent();
+        int parentId = -1;
+        if(parent != null) {
+            parentId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+        }
+        if(!parents && parentId < 0 && parent != null){  //If !parents and parent does not exist in the DB (but should exist)
+            throw new CatalogManagerException("Path '" + parent + "' does not exist");
+        }
+        while(parentId < 0 && parent != null){  //Add all the parents that should be created
+            folders.addFirst(new File(parent.getFileName().toString(), File.FOLDER, "", "", parent.toString(), userId
+                    , "", File.READY, 0));
+            parent = parent.getParent();
+            if(parent != null) {
+                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+            }
+        }
+
+        Acl fileAcl;
+        if(parentId < 0) { //If it hasn't got parent, take the StudyAcl
+            fileAcl = getStudyAcl(userId, studyId);
+        } else {
+            fileAcl = getFileAcl(userId, parentId);
+        }
+
+        if (!fileAcl.isWrite()) {
             throw new CatalogManagerException("Permission denied. Can't create files or folders in this study");
         }
 
-        Path folder = ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
-        File f = new File(folder.getFileName().toString(), File.FOLDER, "", "", folderPath.toString(), userId
+
+        ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
+        File lastFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", folderPath.toString(), userId
                 , "", File.READY, 0);
 
         QueryResult<File> result;
         try {
-            result = catalogDBAdaptor.createFileToStudy(studyId, f);
+            assert folders.size() == 0 && !parents;
+            for (File folder : folders) {
+                catalogDBAdaptor.createFileToStudy(studyId, folder);
+            }
+            result = catalogDBAdaptor.createFileToStudy(studyId, lastFolder);
         } catch (CatalogManagerException e) {
             ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString());
             throw e;
@@ -1495,6 +1535,7 @@ public class CatalogManager {
         return getStudyAcl(userId, studyId);
     }
 
+    //TODO: Check folder ACLs
     private Acl getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogManagerException {
         Acl fileAcl;
         boolean sameOwner = catalogDBAdaptor.getFileOwner(fileId).equals(userId);
@@ -1518,5 +1559,13 @@ public class CatalogManager {
         return mergeAcl(userId, fileAcl, studyAcl);
     }
 
+//    private Acl getFileAcl(String userId, int studyId, Path filePath, Acl studyAcl) throws CatalogManagerException {
+//        int fileId = catalogDBAdaptor.getFileId(studyId, filePath.toString());
+//        QueryResult<Acl> fileAcl = catalogDBAdaptor.getFileAcl(fileId, userId);
+//        if(fileAcl.getResult().isEmpty()) {
+//            return getFileAcl(userId, studyId, filePath.getParent(), studyAcl);
+//        }
+//
+//    }
 
 }
