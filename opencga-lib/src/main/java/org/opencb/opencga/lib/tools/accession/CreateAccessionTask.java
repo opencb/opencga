@@ -74,7 +74,7 @@ public class CreateAccessionTask extends Task<VcfRecord> {
             for (Variant v : variants) {
                 Map<String, String> variantAccession = currentAccessions.get(getKey(v));
                 if (variantAccession != null) {
-                    String accessionGroup = variantAccession.get(v.getAlternate());
+                    String accessionGroup = variantAccession.get(getValue(v));
                     if (accessionGroup != null) {
                         allAccessionsInRecord = appendAccession(allAccessionsInRecord, accessionGroup);
                     } else {
@@ -98,6 +98,10 @@ public class CreateAccessionTask extends Task<VcfRecord> {
         return v.getChromosome() + "_" + v.getStart();
     }
     
+    private String getValue(Variant v) {
+        return v.getReference() + "_" + v.getAlternate();
+    }
+    
     private void resetAccessions(Variant v) {
         Character[] next = (Character[]) iterator.next();
         StringBuilder sb = new StringBuilder(next.length);
@@ -109,12 +113,12 @@ public class CreateAccessionTask extends Task<VcfRecord> {
         Map<String, String> variantAccession = currentAccessions.get(getKey(v));
         if (variantAccession == null) {
             variantAccession = new HashMap<>();
-            variantAccession.put(v.getAlternate(), lastAccession);
+            variantAccession.put(getValue(v), lastAccession);
             currentAccessions.put(getKey(v), variantAccession);
         } else {
-            String accessionGroup = variantAccession.get(v.getAlternate());
+            String accessionGroup = variantAccession.get(getValue(v));
             if (accessionGroup == null) {
-                variantAccession.put(v.getAlternate(), lastAccession);
+                variantAccession.put(getValue(v), lastAccession);
             }
         }
     }
