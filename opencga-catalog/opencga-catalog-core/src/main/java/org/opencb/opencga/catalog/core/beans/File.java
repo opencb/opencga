@@ -23,7 +23,11 @@ public class File {
      * BAM, VCF, ...
      */
     private String bioformat;
-    private String uri;
+    /**
+     * file://, hdfs://
+     */
+    private String uriScheme;
+    private String path;
     private String creatorId;
     private String creationDate;
     private String description;
@@ -49,9 +53,11 @@ public class File {
     public static final String UPLOADED = "uploaded";
     public static final String READY = "ready";
 
-    /* Formats */
+    /* Type */
     public static final String FOLDER = "folder";
     public static final String FILE = "file";
+
+    /* Formats */
     public static final String PLAIN = "plain";
     public static final String GZIP = "gzip";
     public static final String EXECUTABLE = "executable";
@@ -65,27 +71,28 @@ public class File {
     public File() {
     }
 
-    public File(String name, String type, String format, String bioformat, String uri, String creatorId,
+    public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
                 String description, String status, long diskUsage) {
-        this(-1, name, type, format, bioformat, uri, creatorId, TimeUtils.getTime(), description, status, diskUsage,
+        this(-1, name, type, format, bioformat, uriScheme, path, creatorId, TimeUtils.getTime(), description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public File(String name, String type, String format, String bioformat, String uri, String creatorId,
+    public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
                 String creationDate, String description, String status, long diskUsage) {
-        this(-1, name, type, format, bioformat, uri, creatorId, creationDate, description, status, diskUsage,
+        this(-1, name, type, format, bioformat, uriScheme, path, creatorId, creationDate, description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public File(int id, String name, String type, String format, String bioformat, String uri, String creatorId,
-                String creationDate, String description, String status, long diskUsage, int experimentId, List<Integer>
-            sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats, Map<String, Object> attributes) {
+    public File(int id, String name, String type, String format, String bioformat, String uriScheme, String path,
+                String creatorId, String creationDate, String description, String status, long diskUsage, int experimentId,
+                List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.format = format;
         this.bioformat = bioformat;
-        this.uri = uri;
+        this.uriScheme = uriScheme;
+        this.path = path;
         this.creatorId = creatorId;
         this.creationDate = creationDate;
         this.description = description;
@@ -97,29 +104,6 @@ public class File {
         this.acl = acl;
         this.stats = stats;
         this.attributes = attributes;
-    }
-
-    @Override
-    public String toString() {
-        return "File{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", type='" + type + '\'' +
-                ", format='" + format + '\'' +
-                ", bioformat='" + bioformat + '\'' +
-                ", uri='" + uri + '\'' +
-                ", creatorId='" + creatorId + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", status='" + status + '\'' +
-                ", diskUsage=" + diskUsage +
-          //      ", studyId=" + studyId +
-                ", experimentId=" + experimentId +
-                ", sampleIds=" + sampleIds +
-                ", jobId=" + jobId +
-                ", stats=" + stats +
-                ", attributes=" + attributes +
-                '}';
     }
 
     public int getId() {
@@ -162,12 +146,20 @@ public class File {
         this.bioformat = bioformat;
     }
 
-    public String getUri() {
-        return uri;
+    public String getUriScheme() {
+        return uriScheme;
     }
 
-    public void setUri(String uri) {
-        this.uri = uri;
+    public void setUriScheme(String uriScheme) {
+        this.uriScheme = uriScheme;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public String getCreatorId() {

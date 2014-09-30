@@ -329,8 +329,8 @@ public class CatalogManager {
         checkParameter(ownerId, "ownerId");
         checkParameter(name, "name");
         checkAlias(alias, "alias");
-        checkAlias(description, "description");
-        checkAlias(organization, "organization");
+        checkParameter(description, "description");
+        checkParameter(organization, "organization");
         checkParameter(sessionId, "sessionId");
         checkSessionId(ownerId, sessionId);    //Only the user can create a project
 
@@ -569,16 +569,44 @@ public class CatalogManager {
      */
 
 
-    public QueryResult<ObjectMap> createFile(String studyAlias, File file, boolean parents, String sessionId)
-            throws CatalogManagerException,
-            CatalogIOManagerException, IOException, InterruptedException {
-        checkObj(file, "file");
-        checkAlias(studyAlias, "studyAlias");
-        checkParameter(sessionId, "sessionId");
-
+    public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
+                                        boolean parents, String sessionId)
+            throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        File file = new File(Paths.get(path).getFileName().toString(), File.FILE, format, bioformat, "void://", path, userId, description, File.UPLOADING, 0);
 
-//        file.setStatus("ready");
+//    }
+//    public QueryResult<File> createFile(int studyId, File file, boolean parents, String sessionId)
+//        checkObj(file, "file");
+//        checkParameter(file.getPath(), "file path");
+//        checkParameter(file.getName(), "file name");
+//        checkParameter(sessionId, "sessionId");
+
+//        Path path = Paths.get(file.getPath());
+        Path parent = Paths.get(path).getParent();
+
+//        if null acl de study
+        int fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+        if (fileId < 0) {
+            if (parents) {
+                createFolder(studyId, parent, true, sessionId);
+                fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+            } else {
+                throw new CatalogManagerException("Directory not found " + parent.toString());
+            }
+        }
+
+        Acl parentAcl = getFileAcl(userId, fileId);
+
+        if (parentAcl.isWrite()) {
+            file.setStatus(File.UPLOADING);
+            file.setCreatorId(userId);
+            file.setCreationDate(TimeUtils.getTime());
+            return catalogDBAdaptor.createFileToStudy(studyId, file);
+        } else {
+            throw new CatalogManagerException("Permission denied, " + userId + " can not write in " + parent.toString());
+        }
+
 //        objectId = ioManager.createFile(userId, bucketId, objectId, file, fileIs, parents);
 
         // set id and name to the itemObject
@@ -591,11 +619,23 @@ public class CatalogManager {
 //            ioManager.deleteFile(userId, projectAlias, studyAlias, objectId.toString());
 //            throw e;
 //        }
-        throw new UnsupportedOperationException();
     }
-    public QueryResult<ObjectMap> uploadFile(String userId, String projectAlias, String studyAlias, Path objectId, File file,
-                                            InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
+
+    public QueryResult uploadFile(int fileId, InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
             CatalogIOManagerException, IOException, InterruptedException {
+
+        //TODO: ACLs, createFolder (if parents), etc
+
+        String userId = catalogDBAdaptor.getFileOwner(fileId);
+        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+
+        File file = catalogDBAdaptor.getFile(fileId).getResult().get(0);    //todo: check notnull
+        ioManager.createFile(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath(), fileIs);
+
+        return catalogDBAdaptor.modifyFile(fileId, new ObjectMap("status", File.UPLOADED));
+
+
 //        checkAlias(projectAlias, "projectAlias");
 //        checkAlias(studyAlias, "studyAlias");
 //        checkParameter(userId, "userId");
@@ -616,7 +656,6 @@ public class CatalogManager {
 //            ioManager.deleteFile(userId, projectAlias, studyAlias, objectId.toString());
 //            throw e;
 //        }
-        throw new UnsupportedOperationException();
     }
 
     public QueryResult createFolder(int studyId, Path folderPath, boolean parents, String sessionId)
@@ -664,7 +703,7 @@ public class CatalogManager {
         }
         File file = fileResult.getResult().get(0);
         try {
-            ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), file.getUri());
+            ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
         } catch (CatalogIOManagerException e) {
             throw new CatalogManagerException(e);
         }

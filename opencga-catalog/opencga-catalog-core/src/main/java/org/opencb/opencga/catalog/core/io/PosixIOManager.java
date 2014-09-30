@@ -8,9 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -160,14 +158,19 @@ public class PosixIOManager implements CatalogIOManager {
 
         return path;
     }
-
-    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
+    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
         checkParam(relativeFilePath);
 
         Path path = getStudyPath(userId, projectId, studyId).resolve(relativeFilePath);
-        checkPath(path);
+        if(check) {
+            checkPath(path);
+        }
 
         return path;
+    }
+
+    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
+        return getFilePath(userId, projectId, studyId, relativeFilePath, true);
     }
 
     // TODO Jobs are stored in the workspace right?
@@ -193,7 +196,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     /**
-     * User methods ···
+     * User methods
      * ***************************
      */
     public Path createUser(String userId) throws CatalogIOManagerException {
@@ -320,7 +323,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     /**
-     * Project Study ···
+     * Project Study
      * ***************************
      */
     public Path createStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
@@ -373,7 +376,7 @@ public class PosixIOManager implements CatalogIOManager {
 
 
     /**
-     * Folder and file methods ···
+     * Folder and file methods
      * ***************************
      */
     public Path createFolder(String userid, String projectId, String studyId, String fileId, boolean parent)
@@ -401,6 +404,15 @@ public class PosixIOManager implements CatalogIOManager {
         return filePath;
     }
 
+    public void createFile(String userId, String projectId, String studyId, String objectId, InputStream inputStream) throws CatalogIOManagerException {
+        Path filePath = getFilePath(userId, projectId, studyId, objectId, false);
+
+        try {
+            Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new CatalogIOManagerException("create file failed at copying file " + filePath);
+        }
+    }
     public void deleteFile(String userId, String projectId, String studyId, String objectId) throws CatalogIOManagerException {
         Path filePath = getFilePath(userId, projectId, studyId, objectId);
         checkPath(filePath);
@@ -418,7 +430,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     /**
-     * Job methods ···
+     * Job methods
      * ***************************
      */
 //    public URI createJob(String accountId, String projectId, String jobId) throws CatalogIOManagerException {
@@ -717,7 +729,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     /**
-     * Bucket methods ···
+     * Bucket methods
      * ***************************
      */
 //    public URI createBucket(String accountId, String bucketId) throws CatalogIOManagerException {

@@ -17,4 +17,15 @@
     <modules>
         <module>opencga-catalog-core</module>
     </modules>
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+        <resources>
+
+        </resources>
+    </build>
 </project>

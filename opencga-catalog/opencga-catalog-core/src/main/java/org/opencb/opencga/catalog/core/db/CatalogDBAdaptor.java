@@ -117,22 +117,22 @@ public interface CatalogDBAdaptor {
     QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogManagerException;
     QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogManagerException;
 
-    QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException;
-    QueryResult<Integer> deleteFile(int studyId, String uri) throws CatalogManagerException;
+    QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException, IOException;
+    QueryResult<Integer> deleteFile(int studyId, String path) throws CatalogManagerException;
     QueryResult<Integer> deleteFile(int fileId) throws CatalogManagerException;
 
     QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
     QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogManagerException;
 
-    int getFileId(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException;
-    int getFileId(int studyId, String uri) throws CatalogManagerException;
+    int getFileId(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException;
+    int getFileId(int studyId, String path) throws CatalogManagerException;
 
-    QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException;
-    QueryResult<File> getFile(int studyId, String uri) throws CatalogManagerException;
+    QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException;
+    QueryResult<File> getFile(int studyId, String path) throws CatalogManagerException;
     QueryResult<File> getFile(int fileId) throws CatalogManagerException;
 
-    QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String uri, String status) throws CatalogManagerException, IOException;
-    QueryResult setFileStatus(int studyId, String uri, String status) throws CatalogManagerException, IOException;
+    QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String path, String status) throws CatalogManagerException, IOException;
+    QueryResult setFileStatus(int studyId, String path, String status) throws CatalogManagerException, IOException;
     QueryResult setFileStatus(int fileId, String status) throws CatalogManagerException, IOException;
 
     QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException;

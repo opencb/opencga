@@ -416,15 +416,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         assertTrue(studyId >= 0);
         File f;
-        f = new File("data/", File.FOLDER, "f", "bam", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("data/", File.FOLDER, "f", "bam", "file://", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", true, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, true));
         f.setAcl(acl);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.sam", File.FILE, "sam", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("file.sam", File.FILE, "sam", "bam", "file://", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.vcf", File.FILE, "vcf", "bam", "/data/file.vfc", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("file.vcf", File.FILE, "vcf", "bam", "file://", "/data/file.vfc", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
 
         try {
             System.out.println(catalog.createFileToStudy(-20, f));

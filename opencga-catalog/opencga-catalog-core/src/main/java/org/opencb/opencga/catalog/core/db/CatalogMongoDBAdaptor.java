@@ -112,7 +112,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             //Set indexes
             BasicDBObject unique = new BasicDBObject("unique", true);
             nativeUserCollection.createIndex(new BasicDBObject("id", 1), unique);
-            nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("uri", 1).get(), unique);
+            nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
             nativeJobCollection.createIndex(new BasicDBObject("id", 1), unique);
         }
     }
@@ -1230,10 +1230,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("StudyID " + studyId + " not found");
         }
         BasicDBObject query = new BasicDBObject("studyId", studyId);
-        query.put("uri", file.getUri());
+        query.put("path", file.getPath());
         QueryResult<Long> count = fileCollection.count(query);
         if(count.getResult().get(0) != 0){
-            throw new CatalogManagerException("File {studyId:"+ studyId +", uri:\""+file.getUri()+"\"} already exists");
+            throw new CatalogManagerException("File {studyId:"+ studyId +", path:\""+file.getPath()+"\"} already exists");
         }
 
 
@@ -1252,7 +1252,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         try {
             fileCollection.insert(fileDBObject);
         } catch (MongoException.DuplicateKey e) {
-            throw new CatalogManagerException("File {studyId:"+ studyId +", uri:\""+file.getUri()+"\"} already exists");
+            throw new CatalogManagerException("File {studyId:"+ studyId +", path:\""+file.getPath()+"\"} already exists");
         }
 
         return endQuery("Create file", startTime, Arrays.asList(file));
@@ -1262,13 +1262,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
      * At the moment it does not clean external references to itself.
      */
     @Override
-    public QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException, IOException {
-        return deleteFile(getFileId(userId, projectAlias, studyAlias, uri));
+    public QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException, IOException {
+        return deleteFile(getFileId(userId, projectAlias, studyAlias, path));
     }
 
     @Override
-    public QueryResult<Integer> deleteFile(int studyId, String uri) throws CatalogManagerException {
-        return deleteFile(getFileId(studyId, uri));
+    public QueryResult<Integer> deleteFile(int studyId, String path) throws CatalogManagerException {
+        return deleteFile(getFileId(studyId, path));
     }
 
     @Override
@@ -1296,17 +1296,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public int getFileId(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException {
+    public int getFileId(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException {
         int studyId = getStudyId(userId, projectAlias, studyAlias);
-        return getFileId(studyId, uri);
+        return getFileId(studyId, path);
     }
 
     @Override
-    public int getFileId(int studyId, String uri) throws CatalogManagerException {
+    public int getFileId(int studyId, String path) throws CatalogManagerException {
 
         DBObject query = BasicDBObjectBuilder
                 .start("studyId", studyId)
-                .append("uri", uri).get();
+                .append("path", path).get();
         BasicDBObject fields = new BasicDBObject("id", true);
         QueryResult queryResult = fileCollection.find(query, null, null, fields);
         File file = parseFile(queryResult);
@@ -1318,13 +1318,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String uri) throws CatalogManagerException {
-        return getFile(getStudyId(userId, projectAlias, studyAlias), uri);
+    public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException {
+        return getFile(getStudyId(userId, projectAlias, studyAlias), path);
     }
 
     @Override
-    public QueryResult<File> getFile(int studyId, String uri) throws CatalogManagerException {
-        return getFile(getFileId(studyId, uri));
+    public QueryResult<File> getFile(int studyId, String path) throws CatalogManagerException {
+        return getFile(getFileId(studyId, path));
     }
 
     @Override
@@ -1348,14 +1348,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String uri, String status) throws CatalogManagerException, IOException {
-        int fileId = getFileId(userId, projectAlias, studyAlias, uri);
+    public QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String path, String status) throws CatalogManagerException, IOException {
+        int fileId = getFileId(userId, projectAlias, studyAlias, path);
         return setFileStatus(fileId, status);
     }
 
     @Override
-    public QueryResult setFileStatus(int studyId, String uri, String status) throws CatalogManagerException, IOException {
-        int fileId = getFileId(studyId, uri);
+    public QueryResult setFileStatus(int studyId, String path, String status) throws CatalogManagerException, IOException {
+        int fileId = getFileId(studyId, path);
         return setFileStatus(fileId, status);
     }
 

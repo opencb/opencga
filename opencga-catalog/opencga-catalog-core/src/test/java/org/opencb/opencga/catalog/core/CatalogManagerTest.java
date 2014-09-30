@@ -12,16 +12,16 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
+import org.opencb.opencga.catalog.core.beans.File;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class CatalogManagerTest extends GenericTest {
@@ -34,7 +34,10 @@ public class CatalogManagerTest extends GenericTest {
 
     @BeforeClass
     public static void init() throws IOException, CatalogIOManagerException {
-        catalogManager = new CatalogManager("/tmp/opencga");
+        InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
+        Properties properties = new Properties();
+        properties.load(is);
+        catalogManager = new CatalogManager(properties);
     }
 
     @Before
@@ -51,6 +54,11 @@ public class CatalogManagerTest extends GenericTest {
         } catch (CatalogManagerException | IOException ignore) {
         }
 
+        try {
+            result = catalogManager.login("user3", PASSWORD, "127.0.0.1").getResult();
+            sessionIdUser3 = result.get(0).getString("sessionId");
+        } catch (CatalogManagerException | IOException ignore) {
+        }
     }
 
     @After
@@ -60,6 +68,9 @@ public class CatalogManagerTest extends GenericTest {
         }
         if(sessionIdUser2 != null) {
             catalogManager.logout("user2", sessionIdUser2);
+        }
+        if(sessionIdUser3 != null) {
+            catalogManager.logout("user3", sessionIdUser3);
         }
     }
 
@@ -277,7 +288,32 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateFolder() throws Exception {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
-        System.out.println(catalogManager.createFolder(studyId, Paths.get("data", "nueva", "carpeta"), true, sessionIdUser));
+        System.out.println(catalogManager.createFolder(studyId, Paths.get("data", "new", "folder"), true, sessionIdUser));
+    }
+
+    @Test
+    public void testCreateAndUpload() throws Exception {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+
+        String fileTest = "/tmp/" + StringUtils.randomString(5);
+        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTest));
+
+        for (int i = 0; i < 200; i++) {
+            os.writeBytes(StringUtils.randomString(500));
+        }
+        os.close();
+
+        InputStream is = new FileInputStream(Paths.get(fileTest).toFile());
+
+        String fileName = "item." + TimeUtils.getTime() + ".vcf";
+        File preFile = new File(fileName, File.FILE, "", "", "", "data/", "", "", "", 12);
+        QueryResult<File> file = catalogManager.createFile(studyId, "txt", "vcf", preFile.getPath() + fileName, preFile.getDescription(), true, sessionIdUser);
+
+        catalogManager.uploadFile(file.getResult().get(0).getId(), is, false, sessionIdUser);
+        is.close();
+
+        Files.delete(Paths.get(fileTest));
     }
 
     /**
