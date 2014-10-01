@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.core.beans;
 
 import org.opencb.opencga.lib.common.TimeUtils;
 
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -25,6 +26,8 @@ public class Study {
     private List<File> files;
     private List<Analysis> analyses;
 
+    private URI uri;
+
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -40,15 +43,16 @@ public class Study {
     public Study() {
     }
 
-    public Study(String name, String alias, String type, String description, String status) {
+    public Study(String name, String alias, String type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, 0, "", new ArrayList<Acl>(),
                 new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Analysis>(),
-                new HashMap<String, Object>(), new HashMap<String, Object>());
+                uri, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public Study(int id, String name, String alias, String type, String creatorId, String creationDate, String description,
-                 String status, long diskUsage, String cipher, List<Acl> acl, List<Experiment> experiments,
-                 List<File> files, List<Analysis> analyses, Map<String, Object> attributes, Map<String, Object> stats) {
+    public Study(int id, String name, String alias, String type, String creatorId, String creationDate,
+                 String description, String status, long diskUsage, String cipher, List<Acl> acl,
+                 List<Experiment> experiments, List<File> files, List<Analysis> analyses, URI uri,
+                 Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -63,8 +67,9 @@ public class Study {
         this.experiments = experiments;
         this.files = files;
         this.analyses = analyses;
-        this.attributes = attributes;
+        this.uri = uri;
         this.stats = stats;
+        this.attributes = attributes;
     }
 
     @Override
@@ -84,6 +89,7 @@ public class Study {
                 ", experiments=" + experiments +
                 ", files=" + files +
                 ", analyses=" + analyses +
+                ", uri=" + uri +
                 ", stats=" + stats +
                 ", attributes=" + attributes +
                 '}';
@@ -199,6 +205,14 @@ public class Study {
 
     public void setFiles(List<File> files) {
         this.files = files;
+    }
+
+    public URI getUri() {
+        return uri;
+    }
+
+    public void setUri(URI uri) {
+        this.uri = uri;
     }
 
     public Map<String, Object> getStats() {

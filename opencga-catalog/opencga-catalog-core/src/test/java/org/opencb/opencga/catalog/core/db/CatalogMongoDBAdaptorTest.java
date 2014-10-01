@@ -74,7 +74,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
                                 Arrays.asList(new Study(-1, "Study name", "ph1", "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
                                                 Arrays.asList(new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000)
-                                                ), Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP
+                                                ), Collections.EMPTY_LIST, null, Collections.EMPTY_MAP, Collections.EMPTY_MAP
                                         )
                                 ), Collections.EMPTY_MAP)
                 ),
@@ -297,16 +297,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId = catalog.getProjectId("jcoll", "1000G");
         int projectId2 = catalog.getProjectId("jcoll", "2000G");
 
-        Study s = new Study("Phase 1", "ph1", "TEST", "", "");
+        Study s = new Study("Phase 1", "ph1", "TEST", "", "", null);
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", false, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, false));
         s.setAcl(acl);
         System.out.println(catalog.createStudy(projectId, s));
         System.out.println(catalog.createStudy(projectId2, s));
-        s = new Study("Phase 3", "ph3", "TEST", "", "");
+        s = new Study("Phase 3", "ph3", "TEST", "", "", null);
         System.out.println(catalog.createStudy(projectId, s));
-        s = new Study("Phase 7", "ph7", "TEST", "", "");
+        s = new Study("Phase 7", "ph7", "TEST", "", "", null);
         System.out.println(catalog.createStudy(projectId, s));
 
         try {

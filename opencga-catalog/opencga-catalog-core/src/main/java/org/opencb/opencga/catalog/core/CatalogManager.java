@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -146,7 +148,7 @@ public class CatalogManager {
         }
     }
 
-    public QueryResult createUser(String id, String name, String email, String password, String organization)
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization)
             throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(id, "id");
         checkParameter(password, "password");
@@ -473,7 +475,8 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
-        Study study = new Study(name, alias, type, description, "");
+        URI uri = ioManager.getStudyUri(ownerId, Integer.toString(projectId), "_");
+        Study study = new Study(name, alias, type, description, "", uri);
         study.setCreatorId(userId);
 
 
@@ -628,13 +631,19 @@ public class CatalogManager {
         checkParameter(description, "description");
         checkParameter(sessionId, "sessionId");
         checkPath(path, "filePath");
-        File file = new File(Paths.get(path).getFileName().toString(), File.FILE, format, bioformat, "void://", path, userId, description, File.UPLOADING, 0);
+
+
+        File file = new File(Paths.get(path).getFileName().toString(), File.FILE, format, bioformat,
+                "", path, userId, description, File.UPLOADING, 0);//TODO: Take scheme from study
 
         Path parent = Paths.get(path).getParent();
 
 //        if null acl de study
-        int fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
-        if (fileId < 0) {
+        int fileId = -1;
+        if(parent != null) {
+            fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+        }
+        if (fileId < 0 && parent != null) {
             if (parents) {
                 createFolder(studyId, parent, true, sessionId);
                 fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
@@ -643,7 +652,12 @@ public class CatalogManager {
             }
         }
 
-        Acl parentAcl = getFileAcl(userId, fileId);
+        Acl parentAcl;
+        if(fileId < 0){
+            parentAcl = getStudyAcl(userId, studyId);
+        } else {
+            parentAcl = getFileAcl(userId, fileId);
+        }
 
         if (parentAcl.isWrite()) {
             file.setStatus(File.UPLOADING);
@@ -651,13 +665,14 @@ public class CatalogManager {
             file.setCreationDate(TimeUtils.getTime());
             return catalogDBAdaptor.createFileToStudy(studyId, file);
         } else {
-            throw new CatalogManagerException("Permission denied, " + userId + " can not write in " + parent.toString());
+            throw new CatalogManagerException("Permission denied, " + userId + " can not write in " +
+                    (parent!=null? "directory " + parent.toString() : "study " + studyId));
         }
     }
 
     public QueryResult<File> uploadFile(int studyId, String format, String bioformat, String path, String description,
-                                  boolean parents, InputStream fileIs, String sessionId) throws CatalogManagerException,
-            CatalogIOManagerException, IOException, InterruptedException {
+                                  boolean parents, InputStream fileIs, String sessionId)
+            throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
         QueryResult<File> fileResult = createFile(studyId, format, bioformat, path, description, parents, sessionId);
         fileResult = uploadFile(fileResult.getResult().get(0).getId(), fileIs, sessionId);
         return fileResult;
@@ -686,7 +701,9 @@ public class CatalogManager {
         }
         ioManager.createFile(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath(), fileIs);
 
-        catalogDBAdaptor.modifyFile(fileId, new ObjectMap("status", File.UPLOADED));
+        ObjectMap modifyParameters = new ObjectMap("status", File.UPLOADED);
+        modifyParameters.put("uriScheme", "file");  //TODO: Take scheme from study
+        catalogDBAdaptor.modifyFile(fileId, modifyParameters);
         return catalogDBAdaptor.getFile(fileId);
     }
 
@@ -708,8 +725,9 @@ public class CatalogManager {
             throw new CatalogManagerException("Path '" + parent + "' does not exist");
         }
         while(parentId < 0 && parent != null){  //Add all the parents that should be created
-            folders.addFirst(new File(parent.getFileName().toString(), File.FOLDER, "", "", "void://", parent.toString(), userId
-                    , "", File.READY, 0));
+            folders.addFirst(new File(parent.getFileName().toString(), File.FOLDER, "", "", "file",//TODO: Take scheme from study
+                    parent.toString(),
+                    userId, "", File.READY, 0));
             parent = parent.getParent();
             if(parent != null) {
                 parentId = catalogDBAdaptor.getFileId(studyId, parent.toString());
@@ -727,9 +745,9 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. Can't create files or folders in this study");
         }
 
-
+        //TODO: Take scheme from study
         ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
-        File lastFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", "void://", folderPath.toString(), userId
+        File mainFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", "file", folderPath.toString(), userId
                 , "", File.READY, 0);
 
         QueryResult<File> result;
@@ -738,7 +756,7 @@ public class CatalogManager {
             for (File folder : folders) {
                 catalogDBAdaptor.createFileToStudy(studyId, folder);
             }
-            result = catalogDBAdaptor.createFileToStudy(studyId, lastFolder);
+            result = catalogDBAdaptor.createFileToStudy(studyId, mainFolder);
         } catch (CatalogManagerException e) {
             ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString());
             throw e;
@@ -867,7 +885,10 @@ public class CatalogManager {
     }
 
 
-    public QueryResult shareFile(int fileId, Acl acl, String sessionId) throws CatalogManagerException {
+    /**
+     * TODO: Set per-file ACL
+     **/
+    private QueryResult shareFile(int fileId, Acl acl, String sessionId) throws CatalogManagerException {
         checkObj(acl, "acl");
         checkParameter(sessionId, "sessionId");
 
@@ -1417,7 +1438,9 @@ public class CatalogManager {
     }
 
     private void checkPath(String path, String name) throws CatalogManagerException {
-        checkParameter(path, name);
+        if(path == null){
+            throw new CatalogManagerException("parameter '" + name + "' is null.");
+        }
         checkPath(Paths.get(path), name);
     }
 
@@ -1425,6 +1448,8 @@ public class CatalogManager {
         checkObj(path, name);
         if (path.isAbsolute()) {
             throw new CatalogManagerException("Error in path: Path '"+name+"' can't be absolute");
+        } else if (path.toString().matches("\\.|\\.\\.")){
+            throw new CatalogManagerException("Error in path: Path '"+name+"' can't have relative names '.' or '..'");
         }
     }
 
@@ -1568,8 +1593,15 @@ public class CatalogManager {
         return getStudyAcl(userId, studyId);
     }
 
-    //TODO: Check folder ACLs
+    /**
+     * Use StudyACL for all files.
+     */
     private Acl getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogManagerException {
+        return studyAcl;
+    }
+
+    //TODO: Check folder ACLs
+    private Acl __getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogManagerException {
         Acl fileAcl;
         boolean sameOwner = catalogDBAdaptor.getFileOwner(fileId).equals(userId);
 
@@ -1592,13 +1624,5 @@ public class CatalogManager {
         return mergeAcl(userId, fileAcl, studyAcl);
     }
 
-//    private Acl getFileAcl(String userId, int studyId, Path filePath, Acl studyAcl) throws CatalogManagerException {
-//        int fileId = catalogDBAdaptor.getFileId(studyId, filePath.toString());
-//        QueryResult<Acl> fileAcl = catalogDBAdaptor.getFileAcl(fileId, userId);
-//        if(fileAcl.getResult().isEmpty()) {
-//            return getFileAcl(userId, studyId, filePath.getParent(), studyAcl);
-//        }
-//
-//    }
 
 }

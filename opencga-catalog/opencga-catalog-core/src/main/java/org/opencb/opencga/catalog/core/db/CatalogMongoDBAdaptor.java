@@ -1186,7 +1186,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         query.put("path", file.getPath());
         QueryResult<Long> count = fileCollection.count(query);
         if(count.getResult().get(0) != 0){
-            throw new CatalogManagerException("File {studyId:"+ studyId +", path:\""+file.getPath()+"\"} already exists");
+            throw new CatalogManagerException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 
 
@@ -1205,7 +1205,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         try {
             fileCollection.insert(fileDBObject);
         } catch (MongoException.DuplicateKey e) {
-            throw new CatalogManagerException("File {studyId:"+ studyId +", path:\""+file.getPath()+"\"} already exists");
+            throw new CatalogManagerException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 
         return endQuery("Create file", startTime, Arrays.asList(file));
@@ -1336,7 +1336,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         Map<String, Object> fileParameters = new HashMap<>();
 
-        String[] acceptedParams = {"name", "type", "format", "bioformat", "status", "description"};
+        String[] acceptedParams = {"uriScheme", "type", "format", "bioformat", "status", "description"};
         for (String s : acceptedParams) {
             if(parameters.containsKey(s)) {
                 fileParameters.put(s, parameters.getString(s));
