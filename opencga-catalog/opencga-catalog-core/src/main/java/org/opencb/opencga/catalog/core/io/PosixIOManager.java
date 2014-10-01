@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,6 +160,27 @@ public class PosixIOManager implements CatalogIOManager {
 
         return path;
     }
+
+    public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
+        checkParam(userId);
+        checkParam(projectId);
+        checkParam(studyId);
+        //TODO: Create URI as
+        // file://<userId>@localhost/ROOTDIR/users/<userId>/projects/<projectId>/<studyId>
+        // file://localhost/<userId>/<projectId>/<studyId>
+        // file://<userId>@localhost/<projectId>/<studyId>
+        // file://<userId>@localhost/<projectId>/<studyId>
+
+        try {
+            //return new URI("file", userId, "localhost", -1, getProjectPath(userId, projectId).toString(), null, null);
+            //return new URI("file", userId, "localhost", -1, Paths.get("/ROOTDIR" , OPENCGA_USER_FOLDER, userId, USER_PROJECT_FOLDER ,projectId, studyId).toString(), null, null);
+            return new URI("file", userId, "localhost", -1, Paths.get("/", projectId, studyId).toString(), null, null);
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
         checkParam(relativeFilePath);
 

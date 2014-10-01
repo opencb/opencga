@@ -1188,7 +1188,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         query.put("path", file.getPath());
         QueryResult<Long> count = fileCollection.count(query);
         if(count.getResult().get(0) != 0){
-            throw new CatalogManagerException("File {studyId:"+ studyId +", path:\""+file.getPath()+"\"} already exists");
+            throw new CatalogManagerException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 
 
@@ -1207,7 +1207,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         try {
             fileCollection.insert(fileDBObject);
         } catch (MongoException.DuplicateKey e) {
-            throw new CatalogManagerException("File {studyId:"+ studyId +", path:\""+file.getPath()+"\"} already exists");
+            throw new CatalogManagerException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 
         return endQuery("Create file", startTime, Arrays.asList(file));
@@ -1392,8 +1392,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
                 .start("name", fileName)
                 .append("path", name).get());
-        QueryResult update1 = fileCollection.update(query, set, false, false);
-        QueryResult<WriteResult> update = update1;
+        QueryResult<WriteResult> update = fileCollection.update(query, set, false, false);
         if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
             throw new CatalogManagerException("File {id:" + fileId + "} not found");
         }

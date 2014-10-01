@@ -13,7 +13,13 @@ import java.util.Map;
 public class File {
 
     private int id;
+    /**
+     * File name.
+     */
     private String name;
+    /**
+     * Formats: file, folder
+     */
     private String type;
     /**
      * Formats: txt, executable, image, ...
