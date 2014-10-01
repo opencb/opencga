@@ -106,6 +106,30 @@ public class File {
         this.attributes = attributes;
     }
 
+    @Override
+    public String toString() {
+        return "File{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", format='" + format + '\'' +
+                ", bioformat='" + bioformat + '\'' +
+                ", uriScheme='" + uriScheme + '\'' +
+                ", path='" + path + '\'' +
+                ", creatorId='" + creatorId + '\'' +
+                ", creationDate='" + creationDate + '\'' +
+                ", description='" + description + '\'' +
+                ", status='" + status + '\'' +
+                ", diskUsage=" + diskUsage +
+                ", experimentId=" + experimentId +
+                ", sampleIds=" + sampleIds +
+                ", jobId=" + jobId +
+                ", acl=" + acl +
+                ", stats=" + stats +
+                ", attributes=" + attributes +
+                '}';
+    }
+
     public int getId() {
         return id;
     }
