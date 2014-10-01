@@ -439,6 +439,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.createFileToStudy(studyId, f));
         f = new File("file.sam", File.FILE, "sam", "bam", "file://", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         System.out.println(catalog.createFileToStudy(studyId, f));
+        f = new File("file.bam", File.FILE, "sam", "bam", "file://", "/data/file.bam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        System.out.println(catalog.createFileToStudy(studyId, f));
         f = new File("file.vcf", File.FILE, "vcf", "bam", "file://", "/data/file.vfc", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
 
         try {
@@ -496,20 +498,44 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void modifyFileTest() throws CatalogManagerException, IOException {
         int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
-        String newName = "newName-" + StringUtils.randomString(10);
         DBObject stats = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20)).get();
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put("name", newName);
         parameters.put("status", File.READY);
         parameters.put("stats", stats);
         System.out.println(catalog.modifyFile(fileId, parameters));
 
         File file = catalog.getFile(fileId).getResult().get(0);
-        assertEquals(file.getName(), newName);
         assertEquals(file.getStatus(), File.READY);
         assertEquals(file.getStats(), stats);
 
+    }
+
+    @Test
+    public void renameFileTest() throws CatalogManagerException {
+        String newName = "newFile.bam";
+        String parentPath = "/data/";
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.bam");
+        System.out.println(catalog.renameFile(fileId, parentPath + newName));
+
+        File file = catalog.getFile(fileId).getResult().get(0);
+        assertEquals(file.getName(), newName);
+        assertEquals(file.getPath(), parentPath + newName);
+
+        try {
+            catalog.renameFile(-1, "noFile");
+            fail("error: expected \"file not found\"exception");
+        } catch (CatalogManagerException e) {
+            System.out.println("correct exception: " + e);
+        }
+
+        int folderId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/");
+        try {
+            catalog.renameFile(folderId, "notRenamed");
+            fail("error: expected \"unsupported\"exception");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("correct exception: " + e);
+        }
     }
 
     @Test
