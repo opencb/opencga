@@ -5,12 +5,11 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.CatalogManager;
 import org.opencb.opencga.catalog.core.beans.*;
+import org.opencb.opencga.catalog.core.beans.File;
 import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -19,12 +18,51 @@ import java.util.Properties;
  * Created by jacobo on 29/09/14.
  */
 public class Main {
-    private static String userId;
-    private static String sessionId;
-    private static CatalogManager catalogManager;
+    private String userId;
+    private static String shellUserId;
+    private static String shellSessionId;
+    private CatalogManager catalogManager;
+    public String sessionId;
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException {
+
+        Main opencgaMain = new Main();
+
+        //DEBUG SHELL
+        if(args[0].equals("shell")){
+            BufferedReader reader;//create BufferedReader object
+
+            reader=new BufferedReader(new InputStreamReader(System.in));
+
+            do {
+                if(shellUserId != null && !shellUserId.isEmpty()){
+                    System.out.print("(" + shellUserId + ")> ");
+                } else {
+                    System.out.print("> ");
+                }
+                String line = reader.readLine();
+                args = line.split("[ \\t\\n]+");
+
+                if(args.length == 0 || args[0].isEmpty()) {
+                    continue;
+                }
+                if(args[0].equals("exit")){
+                    break;
+                }
+                try {
+                    opencgaMain.runCommand(args);
+                } catch(CatalogManagerException | CatalogIOManagerException e){
+                    //e.printStackTrace();
+                    System.out.println(e.getMessage());
+                }
+            } while(!args[0].equals("exit"));
+        } else {
+            System.exit(opencgaMain.runCommand(args));
+        }
+    }
+
+    private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException {
         OptionsParser optionsParser = new OptionsParser();
         //args = "projects share -u user -p asdf -U user2 -r true -d true -w true -x true --id 1".split(" "); System.out.println("HARCODE ARGS!");
         try {
@@ -34,15 +72,16 @@ public class Main {
                 System.out.println(e.getMessage());
             }
             optionsParser.printUsage();
-            System.exit(1);
+            return 1;
         }
         if(optionsParser.generalOptions.help) {
             optionsParser.printUsage();
-            System.exit(1);
+            return 1;
         }
 
-        catalogManager = getCatalogManager();
-
+        if(catalogManager == null) {
+            catalogManager = getCatalogManager();
+        }
 
 //        optionsParser.parseCommand("user create -u jcoll --name jacobo --organization EBI --email mimail".split(" "));
 //        logger.info(optionsParser.getCommand());
@@ -64,10 +103,37 @@ public class Main {
                         OptionsParser.CommandUser.CommandUserInfo c = optionsParser.commandUserInfo;
                         login(c.up);
 
-                        QueryResult<User> user = catalogManager.getUser(userId, null, sessionId);
+                        QueryResult<User> user = catalogManager.getUser(c.up.user, null, sessionId);
                         System.out.println(user);
 
                         logout();
+                        break;
+                    }
+                    case "login": {
+                        OptionsParser.CommandUser.CommandUserLogin c = optionsParser.commandUserLogin;
+
+                        if(shellSessionId == null || shellUserId == null || !shellUserId.equals(c.up.user)){
+                            shellSessionId = login(c.up);
+                            if(shellSessionId != null) {
+                                shellUserId = c.up.user;
+                            }
+                            System.out.println(shellSessionId);
+                        }
+                        break;
+                    }
+                    case "logout": {
+                        OptionsParser.CommandUser.CommandUserLogout c = optionsParser.commandUserLogout;
+
+                        QueryResult logout;
+                        if(c.user == null && c.sessionId == null) {
+                            logout = catalogManager.logout(shellUserId, shellSessionId);
+                            shellUserId = null;
+                            shellSessionId = null;
+                        } else {
+                            logout = catalogManager.logout(c.user, c.sessionId);
+                        }
+                        System.out.println(logout);
+
                         break;
                     }
                     default:
@@ -183,6 +249,17 @@ public class Main {
                         logout();
                         break;
                     }
+                    case "list": {
+                        OptionsParser.CommandFile.CommandFileList c = optionsParser.commandFileList;
+                        login(c.up);
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, sessionId);
+                        System.out.println(file);
+
+                        logout();
+                        break;
+                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -193,17 +270,26 @@ public class Main {
 //                logger.info("Unknown command");
                 break;
         }
+        return 0;
     }
 
-    private static void login(OptionsParser.UserPassword up) throws CatalogManagerException, IOException {
-        userId = up.user;
-        QueryResult<ObjectMap> login = catalogManager.login(userId, up.password, "localhost");
-        sessionId = login.getResult().get(0).getString("sessionId");
+    private String login(OptionsParser.UserPassword up) throws CatalogManagerException, IOException {
+        String sessionId;
+        if(up.user != null) {
+            QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
+            sessionId = login.getResult().get(0).getString("sessionId");
+            userId = up.user;
+        } else {
+            sessionId = shellSessionId;
+        }
+        return sessionId;
+
     }
 
-    private static void logout() throws CatalogManagerException, IOException {
-        catalogManager.logout(userId, sessionId);
-        sessionId = null;
+    private void logout() throws CatalogManagerException, IOException {
+        if(sessionId != null && !sessionId.equals(shellSessionId)){
+            catalogManager.logout(userId, sessionId);
+        }
     }
 
     private static CatalogManager getCatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {

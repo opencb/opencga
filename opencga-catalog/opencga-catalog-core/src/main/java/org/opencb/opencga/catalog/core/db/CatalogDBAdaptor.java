@@ -131,6 +131,8 @@ public interface CatalogDBAdaptor {
 
     QueryResult<File> getAllFiles(int studyId) throws CatalogManagerException;
 
+    QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogManagerException;
+
     QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException;
     QueryResult<File> getFile(int studyId, String path) throws CatalogManagerException;
     QueryResult<File> getFile(int fileId) throws CatalogManagerException;
