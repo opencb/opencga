@@ -815,20 +815,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         List<Acl> projectAcls = getProjectAcl(projectId, userId).getResult();
-        DBObject query;
-        DBObject updateOperation;
-        if (projectAcls.isEmpty()) {  // there is no acl for that user in that project. push
-            query = new BasicDBObject("projects.id", projectId);
-            updateOperation = new BasicDBObject("$push", new BasicDBObject("projects.$.acl", newAclObject));
-        } else {    // there is already another ACL: overwrite
-            query = BasicDBObjectBuilder
-                    .start("id", projectId)
-                    .append("acl.userId", userId).get();
-            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        DBObject query = new BasicDBObject("projects.id", projectId);
+        BasicDBObject push = new BasicDBObject("$push", new BasicDBObject("projects.$.acl", newAclObject));
+        if (!projectAcls.isEmpty()) {  // ensure that there is no acl for that user in that project. pull
+            DBObject pull = new BasicDBObject("$pull", new BasicDBObject("projects.$.acl", new BasicDBObject("userId", userId)));
+            userCollection.update(query, pull, false, false);
         }
-        QueryResult update = userCollection.update(query, updateOperation, false, false);
-        //TODO: What if update.writeResult.getN() == 0?
-        return endQuery("Set project acl", startTime);
+        //Put study
+        QueryResult pushResult = userCollection.update(query, push, false, false);
+        return endQuery("Set project acl", startTime, pushResult);
     }
 
     /**

@@ -273,15 +273,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void setProjectAclTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "1000G");
         System.out.println(projectId);
-
         Acl granted = new Acl("jmmut", true, true, true, false);
-        catalog.setProjectAcl(projectId, granted);
 
-        Acl jcoll = catalog.getProjectAcl(projectId, "jcoll").getResult().get(0);
-        assertTrue(jcoll.equals(granted));
+        System.out.println(catalog.setProjectAcl(projectId, granted));  // overwrites
+        Acl jmmut = catalog.getProjectAcl(projectId, "jmmut").getResult().get(0);
+        System.out.println(jmmut);
+        assertTrue(jmmut.equals(granted));
+
         granted.setUserId("imedina");
-        catalog.setProjectAcl(projectId, granted);
+        System.out.println(catalog.setProjectAcl(projectId, granted));  // just pushes
         Acl imedina = catalog.getProjectAcl(projectId, "imedina").getResult().get(0);
+        System.out.println(imedina);
         assertTrue(imedina.equals(granted));
         try {
             granted.setUserId("noUser");
