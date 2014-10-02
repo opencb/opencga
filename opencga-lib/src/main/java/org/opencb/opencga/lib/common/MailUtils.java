@@ -1,18 +1,55 @@
 package org.opencb.opencga.lib.common;
 
-import java.util.Date;
-import java.util.Properties;
-import javax.mail.Message;
-import javax.mail.Session;
-import javax.mail.Transport;
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.util.Date;
+import java.util.Properties;
 
 public class MailUtils {
 
-    public static void sendResetPasswordMail(String to, String message) {
-        sendMail("correo.cipf.es", to, "babelomics@cipf.es", "Genomic cloud storage analysis password reset",
-                message.toString());
+    public static void sendResetPasswordMail(String to, String newPassword, final String mailUser, final String mailPassword, String mailHost, String mailPort) {
+
+
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", mailHost);
+        props.put("mail.smtp.port", mailPort);
+
+        Session session = Session.getInstance(props,
+                new javax.mail.Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(mailUser, mailPassword);
+                    }
+                });
+
+        try {
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(mailUser));
+            message.setRecipients(Message.RecipientType.TO,
+                    InternetAddress.parse(to));
+
+            message.setSubject("Your password has been reset");
+            message.setText("Hello, \n" +
+                    "You can now login using this new password:" +
+                    "\n\n" +
+                    newPassword +
+                    "\n\n\n" +
+                    "Please change it when you first login" +
+                    "\n\n" +
+                    "Best regards,\n\n" +
+                    "Systems Genomics Laboratory" +
+                    "\n");
+
+            Transport.send(message);
+
+            System.out.println("Password reset: " + to);
+
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void sendMail(String smtpServer, String to, String from, String subject, String body) {

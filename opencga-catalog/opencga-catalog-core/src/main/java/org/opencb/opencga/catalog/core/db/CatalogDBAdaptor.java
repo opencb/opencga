@@ -46,7 +46,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogManagerException;
 
-    QueryResult resetPassword(String userId, String email) throws CatalogManagerException;
+    QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogManagerException;
 
     QueryResult getSession(String userId, String sessionId) throws CatalogManagerException;
 
