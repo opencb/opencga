@@ -276,8 +276,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         Acl granted = new Acl("jmmut", true, true, true, false);
         catalog.setProjectAcl(projectId, granted);
+
+        Acl jcoll = catalog.getProjectAcl(projectId, "jcoll").getResult().get(0);
+        assertTrue(jcoll.equals(granted));
         granted.setUserId("imedina");
         catalog.setProjectAcl(projectId, granted);
+        Acl imedina = catalog.getProjectAcl(projectId, "imedina").getResult().get(0);
+        assertTrue(imedina.equals(granted));
         try {
             granted.setUserId("noUser");
             catalog.setProjectAcl(projectId, granted);

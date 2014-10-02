@@ -24,7 +24,7 @@ public class Project {
     private String lastActivity;
     private long diskUsage;
 
-    private List<Acl> acl;
+    private List<Acl> acl;      // roles?
     private List<Study> studies;
 
     private Map<String, Object> attributes;

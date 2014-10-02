@@ -291,9 +291,7 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         String userIdBySessionId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if(userIdBySessionId == userId
-                //|| catalogDBAdaptor.getRole(userIdBySessionId) == User.ROLE_ADMIN
-                ) {
+        if(userIdBySessionId.equals(userId) ) { //|| catalogDBAdaptor.getRole(userIdBySessionId) == User.ROLE_ADMIN
             try {
                 ioManager.deleteUser(userId);
             } catch (CatalogIOManagerException e) {

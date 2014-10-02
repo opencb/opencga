@@ -35,6 +35,22 @@ public class Acl {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Acl)) return false;
+
+        Acl acl = (Acl) o;
+
+        if (delete != acl.delete) return false;
+        if (execute != acl.execute) return false;
+        if (read != acl.read) return false;
+        if (write != acl.write) return false;
+        if (!userId.equals(acl.userId)) return false;
+
+        return true;
+    }
+
     public String getUserId() {
         return userId;
     }
