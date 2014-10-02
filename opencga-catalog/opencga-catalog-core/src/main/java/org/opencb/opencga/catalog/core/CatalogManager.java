@@ -47,12 +47,14 @@ public class CatalogManager {
     }
 
     public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, PosixIOManager ioManager, Properties catalogProperties) {
+        super();
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.ioManager = ioManager;
         this.properties = catalogProperties;
     }
 
     public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException, CatalogManagerException {
+        super();
 //        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
@@ -73,11 +75,12 @@ public class CatalogManager {
     }
 
     public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException, CatalogManagerException {
+        super();
         this.properties = properties;
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(
-                    properties.getProperty("HOST"),
+                    properties.getProperty("HOST"),     //TODO: Add prefixes
                     Integer.parseInt(properties.getProperty("PORT")),
                     properties.getProperty("DATABASE"),
                     properties.getProperty("USER"),
@@ -124,6 +127,57 @@ public class CatalogManager {
 //            return (File) queryResult.getResult().get(0);
 //        }
 //    }
+
+    /**
+     * Id methods
+     * <user>@project:study:directories:filePath
+     * ***************************
+     */
+
+    public int getProjectId(String id) throws CatalogManagerException {
+        try{
+            return Integer.parseInt(id);
+        } catch(NumberFormatException ignore){}
+
+        String[] split = id.split("@");
+        if(split.length != 2){
+            return -1;
+        }
+        return catalogDBAdaptor.getProjectId(split[0], split[1]);
+    }
+
+    public int getStudyId(String id) throws CatalogManagerException {
+        try{
+            return Integer.parseInt(id);
+        } catch(NumberFormatException ignore){}
+
+        String[] split = id.split("@");
+        if(split.length != 2){
+            return -1;
+        }
+        String[] projectStudy = split[1].replace(':', '/').split("/", 2);
+        if(projectStudy.length != 2){
+            return -1;
+        }
+        return catalogDBAdaptor.getStudyId(split[0], projectStudy[0], projectStudy[1]);
+    }
+
+    public int getFileId(String id) throws CatalogManagerException {
+        try{
+            return Integer.parseInt(id);
+        } catch(NumberFormatException ignore){}
+
+        String[] split = id.split("@", 2);
+        if(split.length != 2){
+            return -1;
+        }
+        String[] projectStudyPath = split[1].replace(':', '/').split("/", 3);
+        if(projectStudyPath.length <= 2){
+            return -1;
+        }
+        return catalogDBAdaptor.getFileId(split[0], projectStudyPath[0], projectStudyPath[1], projectStudyPath[2]);
+    }
+
 
     /**
      * User methods
@@ -494,7 +548,7 @@ public class CatalogManager {
         //Copy generic permissions from the project.
         QueryResult<Acl> aclQueryResult = catalogDBAdaptor.getProjectAcl(projectId, USER_OTHERS_ID);
         if (!aclQueryResult.getResult().isEmpty()) {
-            study.getAcl().add(aclQueryResult.getResult().get(0));
+            //study.getAcl().add(aclQueryResult.getResult().get(0));
         } else {
             throw new CatalogManagerException("Project " + projectId + " must have generic ACL");
         }
