@@ -147,7 +147,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //        return endQuery(queryId, startTime, Collections.<T>emptyList(), errorMessage, null);
 //    }
 
-    //TODO: Shoud throw error if errorMessage != null?
     private <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result) throws CatalogManagerException {
         long end = System.currentTimeMillis();
         result.setId(queryId);
@@ -157,7 +156,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         return result;
     }
-    //TODO: Shoud throw error if errorMessage != null?
+
     private <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result, String errorMessage, String warnMessage) throws CatalogManagerException {
         long end = System.currentTimeMillis();
         if(result == null){
@@ -1922,9 +1921,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     private List<File> parseFiles(QueryResult result) throws CatalogManagerException {
         List<File> files = new LinkedList<>();
-        if(result.getResult().isEmpty()) {
-            return null;		// TODO sure?
-        }
         try {
             for (Object o : result.getResult()) {
                 files.add(jsonFileReader.<File>readValue(o.toString()));

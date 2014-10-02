@@ -448,7 +448,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(catalog.createFileToStudy(studyId, f));
         f = new File("file.bam", File.FILE, "sam", "bam", "file://", "/data/file.bam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.vcf", File.FILE, "vcf", "bam", "file://", "/data/file.vfc", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("file.vcf", File.FILE, "vcf", "bam", "file://", "/data/file.vcf", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
 
         try {
             System.out.println(catalog.createFileToStudy(-20, f));
@@ -486,8 +486,21 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
+    public void getAllFilesTest() throws CatalogManagerException {
+        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+        QueryResult<File> allFiles = catalog.getAllFiles(studyId);
+        List<File> files = allFiles.getResult();
+        System.out.println(files);
+        assertTrue(!files.isEmpty());
+
+        studyId = catalog.getStudyId("jcoll", "1000G", "ph7");
+        allFiles = catalog.getAllFiles(studyId);
+        assertTrue(allFiles.getResult().isEmpty());
+    }
+
+    @Test
     public void setFileStatus() throws CatalogManagerException, IOException {
-        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vcf");
         System.out.println(catalog.setFileStatus(fileId, File.UPLOADING));
         assertEquals(catalog.getFile(fileId).getResult().get(0).getStatus(), File.UPLOADING);
         System.out.println(catalog.setFileStatus(fileId, File.UPLOADED));
@@ -504,7 +517,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void modifyFileTest() throws CatalogManagerException, IOException {
-        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vcf");
         DBObject stats = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20)).get();
 
         ObjectMap parameters = new ObjectMap();
@@ -571,7 +584,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void setFileAclsTest() throws CatalogManagerException {
-        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vfc");
+        int fileId = catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.vcf");
         System.out.println(fileId);
 
         Acl granted = new Acl("jmmut", true, true, true, false);
