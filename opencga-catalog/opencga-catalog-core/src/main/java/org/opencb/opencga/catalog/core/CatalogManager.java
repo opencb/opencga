@@ -14,6 +14,8 @@ import org.opencb.opencga.catalog.core.io.PosixIOManager;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
+import org.opencb.opencga.lib.common.MailUtils;
+import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -219,7 +222,25 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkEmail(email);
         catalogDBAdaptor.updateUserLastActivity(userId);
-        return catalogDBAdaptor.resetPassword(userId, email);
+
+        String newPassword = StringUtils.randomString(6);
+        String newCryptPass;
+        try {
+            newCryptPass = StringUtils.sha1(newPassword);
+        } catch (NoSuchAlgorithmException e) {
+            throw new CatalogManagerException("could not encode password");
+        }
+
+        QueryResult qr = catalogDBAdaptor.resetPassword(userId, email, newCryptPass);
+
+        String mailUser = properties.getProperty("MAILUSER");
+        String mailPassword = properties.getProperty("MAILPASSWORD");
+        String mailHost = properties.getProperty("MAILHOST");
+        String mailPort = properties.getProperty("MAILPORT");
+
+        MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
+
+        return qr;
     }
 
 
@@ -235,17 +256,17 @@ public class CatalogManager {
 
     /**
      * Modify some params from the user profile:
+     * <p/>
+     * name
+     * email
+     * organization
+     * <p/>
+     * attributes
+     * configs
      *
-     *   name
-     *   email
-     *   organization
-     *
-     *   attributes
-     *   configs
-     *
-     * @param userId userId
+     * @param userId     userId
      * @param parameters Parameters to change.
-     * @param sessionId sessionId must match with the userId
+     * @param sessionId  sessionId must match with the userId
      * @return
      * @throws CatalogManagerException
      */
@@ -260,7 +281,7 @@ public class CatalogManager {
                 throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
             }
         }
-        if(parameters.containsKey("email")) {
+        if (parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
         catalogDBAdaptor.updateUserLastActivity(userId);
@@ -271,8 +292,8 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         String userIdBySessionId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if(userIdBySessionId == userId
-                //|| catalogDBAdaptor.getRole(userIdBySessionId) == User.ROLE_ADMIN
+        if (userIdBySessionId == userId
+            //|| catalogDBAdaptor.getRole(userIdBySessionId) == User.ROLE_ADMIN
                 ) {
             try {
                 ioManager.deleteUser(userId);
@@ -350,11 +371,11 @@ public class CatalogManager {
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
         Acl projectAcl = getProjectAcl(userId, projectId);
-        if(projectAcl.isWrite()) {
+        if (projectAcl.isWrite()) {
 //            ioManager.renameProject(userId, projectAlias, newProjectAlias);
 //            try {
-                catalogDBAdaptor.updateUserLastActivity(ownerId);
-                return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
+            catalogDBAdaptor.updateUserLastActivity(ownerId);
+            return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
 //            } catch (CatalogManagerException e) {
 //                ioManager.renameProject(userId, newProjectAlias, projectAlias);
 //                throw e;
@@ -367,16 +388,16 @@ public class CatalogManager {
 
     /**
      * Modify some params from the specified project:
+     * <p/>
+     * name
+     * description
+     * organization
+     * status
+     * attributes
      *
-     *   name
-     *   description
-     *   organization
-     *   status
-     *   attributes
-     *
-     * @param projectId Project identifier
+     * @param projectId  Project identifier
      * @param parameters Parameters to change.
-     * @param sessionId sessionId to check permissions
+     * @param sessionId  sessionId to check permissions
      * @return
      * @throws CatalogManagerException
      */
@@ -417,7 +438,7 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. Can't write in project");
         }
 
-        if(study.getCreatorId() == null){
+        if (study.getCreatorId() == null) {
             study.setCreatorId(userId);
         }
 
@@ -438,7 +459,7 @@ public class CatalogManager {
     }
 
     public QueryResult<Study> getStudy(int studyId, String sessionId)
-            throws CatalogManagerException{
+            throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         if (getStudyAcl(userId, studyId).isRead()) {
@@ -482,27 +503,28 @@ public class CatalogManager {
         }
 //        ioManager.renameStudy(userId, projectAlias, studyAlias, newStudAlias);
 //        try {
-            catalogDBAdaptor.updateUserLastActivity(ownerId);
-            return catalogDBAdaptor.renameStudy(studyId, newStudAlias);
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        return catalogDBAdaptor.renameStudy(studyId, newStudAlias);
 //        } catch (CatalogManagerException e) {
 //            ioManager.renameProject(userId, newStudAlias, studyAlias);
 //            throw e;
 //        }
     }
+
     /**
      * Modify some params from the specified study:
+     * <p/>
+     * name
+     * description
+     * organization
+     * status
+     * <p/>
+     * attributes
+     * stats
      *
-     *   name
-     *   description
-     *   organization
-     *   status
-     *
-     *   attributes
-     *   stats
-     *
-     * @param studyId Study identifier
+     * @param studyId    Study identifier
      * @param parameters Parameters to change.
-     * @param sessionId sessionId to check permissions
+     * @param sessionId  sessionId to check permissions
      * @return
      * @throws CatalogManagerException
      */
@@ -556,8 +578,9 @@ public class CatalogManager {
 //        }
         throw new UnsupportedOperationException();
     }
+
     public QueryResult<ObjectMap> uploadFile(String userId, String projectAlias, String studyAlias, Path objectId, File file,
-                                            InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
+                                             InputStream fileIs, boolean parents, String sessionId) throws CatalogManagerException,
             CatalogIOManagerException, IOException, InterruptedException {
 //        checkParameter(projectAlias, "projectAlias");
 //        checkParameter(studyAlias, "studyAlias");
@@ -625,7 +648,7 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. User can't delete this file");
         }
         QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
-        if(fileResult.getResult().isEmpty()){
+        if (fileResult.getResult().isEmpty()) {
             return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
         }
         File file = fileResult.getResult().get(0);
@@ -639,23 +662,22 @@ public class CatalogManager {
     }
 
 
-
     /**
      * Modify some params from the specified file:
+     * <p/>
+     * name
+     * type
+     * format
+     * bioformat
+     * description
+     * status
+     * <p/>
+     * attributes
+     * stats
      *
-     *   name
-     *   type
-     *   format
-     *   bioformat
-     *   description
-     *   status
-     *
-     *   attributes
-     *   stats
-     *
-     * @param fileId File identifier
+     * @param fileId     File identifier
      * @param parameters Parameters to change.
-     * @param sessionId sessionId to check permissions
+     * @param sessionId  sessionId to check permissions
      * @return
      * @throws CatalogManagerException
      */
@@ -688,6 +710,7 @@ public class CatalogManager {
 
         return catalogDBAdaptor.getFile(fileId);
     }
+
     public DataInputStream downloadFile(int fileId, String start, String limit, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         checkParameter(sessionId, "sessionId");
@@ -949,6 +972,7 @@ public class CatalogManager {
 //
 //        return result;
 //    }
+
     /**
      * Analysis methods
      * ***************************
@@ -965,10 +989,10 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. Can't write in this study");
         }
 
-        if(analysis.getCreatorId() == null || analysis.getCreatorId().isEmpty()){
+        if (analysis.getCreatorId() == null || analysis.getCreatorId().isEmpty()) {
             analysis.setCreatorId(userId);
         }
-        if(analysis.getCreationDate() == null || analysis.getCreationDate().isEmpty()){
+        if (analysis.getCreationDate() == null || analysis.getCreationDate().isEmpty()) {
             analysis.setCreationDate(TimeUtils.getTime());
         }
 
@@ -1003,16 +1027,16 @@ public class CatalogManager {
 
     /**
      * Modify some params from the specified file:
-     *
-     *   name
-     *   date
-     *   description
-     *
-     *   attributes
+     * <p/>
+     * name
+     * date
+     * description
+     * <p/>
+     * attributes
      *
      * @param analysisId Analysis identifier
      * @param parameters Parameters to change.
-     * @param sessionId sessionId to check permissions
+     * @param sessionId  sessionId to check permissions
      * @return
      * @throws CatalogManagerException
      */
@@ -1036,7 +1060,6 @@ public class CatalogManager {
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
     }
-
 
 
     /**
@@ -1069,7 +1092,7 @@ public class CatalogManager {
 //        }
         int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutdir());
 
-        if(fileId < 0){
+        if (fileId < 0) {
             createFolder(studyId, Paths.get(job.getOutdir()), true, sessionId);
         }
 
@@ -1080,7 +1103,7 @@ public class CatalogManager {
 //        return catalogDBAdaptor.getJobStatus(userId, jobId, sessionId);
 //    }
 
-    public QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogManagerException{
+    public QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int analysisId = catalogDBAdaptor.getAnalysisIdByJobId(jobId);
@@ -1250,7 +1273,7 @@ public class CatalogManager {
     private void checkPath(Path path, String name) throws CatalogManagerException {
         checkObj(path, name);
         if (path.isAbsolute()) {
-            throw new CatalogManagerException("Error in path: Path '"+name+"' can't be absolute");
+            throw new CatalogManagerException("Error in path: Path '" + name + "' can't be absolute");
         }
     }
 

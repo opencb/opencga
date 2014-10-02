@@ -431,8 +431,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email) throws CatalogManagerException {
-        throw new UnsupportedOperationException();
+    public QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("id", userId);
+        query.put("email", email);
+        BasicDBObject fields = new BasicDBObject("password", newCryptPass);
+        BasicDBObject action = new BasicDBObject("$set", fields);
+        QueryResult<WriteResult> update = userCollection.update(query, action, false, false);
+        if(update.getResult().get(0).getN() == 0){  //0 query matches.
+            throw new CatalogManagerException("Bad user or email");
+        }
+        return endQuery("Reset Password", startTime, update);
     }
 
     @Override
