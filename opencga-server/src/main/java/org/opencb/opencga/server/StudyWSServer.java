@@ -37,14 +37,14 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
             @ApiParam(value = "type", required = true) @QueryParam("type") String type,
-            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
+            @ApiParam(value = "description", required = true) @QueryParam("description") String description
+    ) {
 
 
         QueryResult queryResult;
         try {
-            Study study = new Study(name, alias, type, description, status);
-            queryResult = catalogManager.createStudy(projectId, study, sessionId);
+
+            queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
 
             return createOkResponse(queryResult);
 
@@ -62,11 +62,11 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     public Response info(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
-            ){
+    ) {
         QueryResult queryResult;
         try {
-                queryResult = catalogManager.getStudy(studyId, sessionId);
-                return createOkResponse(queryResult);
+            queryResult = catalogManager.getStudy(studyId, sessionId);
+            return createOkResponse(queryResult);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
@@ -80,7 +80,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     public Response getAllStudies(
             @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
-    ){
+    ) {
         QueryResult queryResult;
         try {
             queryResult = catalogManager.getAllStudies(projectId, sessionId);
@@ -90,6 +90,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
     @GET
     @Path("/{studyId}/modify")
     @Produces("text/plain")

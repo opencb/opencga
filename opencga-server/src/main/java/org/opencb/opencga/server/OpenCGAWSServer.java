@@ -10,6 +10,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.CatalogManager;
+import org.opencb.opencga.catalog.core.db.CatalogManagerException;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
@@ -100,6 +101,9 @@ public class OpenCGAWSServer {
             System.out.println(e.getMessage());
             e.printStackTrace();
         } catch (CatalogIOManagerException e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        } catch (CatalogManagerException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }

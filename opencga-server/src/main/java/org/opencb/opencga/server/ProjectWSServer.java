@@ -36,14 +36,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
             @ApiParam(value = "description", required = true) @QueryParam("description") String description,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status,
             @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
 
 
         QueryResult queryResult;
         try {
-            Project p = new Project(name, alias, description, status, organization);
-            queryResult = catalogManager.createProject(userId, p, sessionId);
+
+            queryResult = catalogManager.createProject(userId, name, alias, description, organization, sessionId);
 
             return createOkResponse(queryResult);
 
@@ -61,16 +60,17 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     public Response info(
             @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
-            ){
+    ) {
         QueryResult queryResult;
         try {
-                queryResult = catalogManager.getProject(projectId, sessionId);
-                return createOkResponse(queryResult);
+            queryResult = catalogManager.getProject(projectId, sessionId);
+            return createOkResponse(queryResult);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
     }
+
     @GET
     @Path("/{ownerId}/all-projects")
     @Produces("text/plain")
@@ -78,7 +78,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     public Response getAllProjects(
             @ApiParam(value = "ownerId", required = true) @PathParam("ownerId") String ownerId
-    ){
+    ) {
         QueryResult queryResult;
         try {
             queryResult = catalogManager.getAllProjects(ownerId, sessionId);
@@ -88,6 +88,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
     @GET
     @Path("/{projectId}/modify")
     @Produces("text/plain")
