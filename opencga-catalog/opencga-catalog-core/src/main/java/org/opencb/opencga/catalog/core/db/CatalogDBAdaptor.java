@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.core.db;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.QueryOptions;
@@ -139,6 +140,7 @@ public interface CatalogDBAdaptor {
     QueryResult setFileStatus(int fileId, String status) throws CatalogManagerException, IOException;
 
     QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException;
+    QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException;
 
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
     String getFileOwner(int fileId) throws CatalogManagerException;

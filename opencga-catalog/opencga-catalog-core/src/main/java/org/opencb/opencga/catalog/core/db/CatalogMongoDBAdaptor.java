@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -1337,7 +1339,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         Map<String, Object> fileParameters = new HashMap<>();
 
-        String[] acceptedParams = {"uriScheme", "type", "format", "bioformat", "status", "description"};
+        String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status"};
         for (String s : acceptedParams) {
             if(parameters.containsKey(s)) {
                 fileParameters.put(s, parameters.getString(s));
@@ -1365,6 +1367,39 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         return endQuery("Modify file", startTime);
     }
+
+    /**
+     * @param name assuming 'pathRelativeToStudy + name'
+     */
+    @Override
+    public QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        Path path = Paths.get(name);
+        String fileName = path.getFileName().toString();
+
+        File file = getFile(fileId).getResult().get(0);
+        if (file.getType().equals(File.FOLDER)) {
+            throw new UnsupportedOperationException("Renaming folders still not supported");  // no renaming folders. it will be a future feature
+        }
+
+        int studyId = getStudyIdByFileId(fileId);
+        int collisionFileId = getFileId(studyId, name);
+        if (collisionFileId >= 0) {
+            throw new CatalogManagerException("Can not rename: " + name + " already exists");
+        }
+
+        BasicDBObject query = new BasicDBObject("id", fileId);
+        BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
+                .start("name", fileName)
+                .append("path", name).get());
+        QueryResult<WriteResult> update = fileCollection.update(query, set, false, false);
+        if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+            throw new CatalogManagerException("File {id:" + fileId + "} not found");
+        }
+        return endQuery("rename file", startTime, update);
+    }
+
 
     @Override
     public int getStudyIdByFileId(int fileId) throws CatalogManagerException {

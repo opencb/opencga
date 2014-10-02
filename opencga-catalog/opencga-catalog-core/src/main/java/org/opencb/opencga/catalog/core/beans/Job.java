@@ -24,7 +24,7 @@ public class Job {
     private String status;
     private long diskUsage;
 
-    private String outdir;
+    private String outDir;
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
 
@@ -40,13 +40,13 @@ public class Job {
     public Job() {
     }
     public Job(String name, String userId, String toolName, String description, String commandLine,
-               String outdir,  List<Integer> input) {
+               String outDir,  List<Integer> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                outdir, input, new LinkedList<Integer>());
+                outDir, input, new LinkedList<Integer>());
     }
     public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
-               long diskUsage, String outdir, List<Integer> input, List<Integer> output) {
+               long diskUsage, String outDir, List<Integer> input, List<Integer> output) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -60,7 +60,7 @@ public class Job {
         this.visits = visits;
         this.status = status;
         this.diskUsage = diskUsage;
-        this.outdir = outdir;
+        this.outDir = outDir;
         this.input = input;
         this.output = output;
     }
@@ -82,7 +82,7 @@ public class Job {
                 ", visits=" + visits +
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
-                ", outdir='" + outdir + '\'' +
+                ", outDir='" + outDir + '\'' +
                 ", input=" + input +
                 ", output=" + output +
                 '}';
@@ -200,12 +200,12 @@ public class Job {
         this.diskUsage = diskUsage;
     }
 
-    public String getOutdir() {
-        return outdir;
+    public String getOutDir() {
+        return outDir;
     }
 
-    public void setOutdir(String outdir) {
-        this.outdir = outdir;
+    public void setOutDir(String outDir) {
+        this.outDir = outDir;
     }
 
     public List<Integer> getInput() {
