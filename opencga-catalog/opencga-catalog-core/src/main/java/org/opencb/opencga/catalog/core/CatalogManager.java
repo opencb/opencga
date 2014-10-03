@@ -108,6 +108,10 @@ public class CatalogManager {
         return ioManager.getProjectPath(userId, projectId);
     }
 
+    public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
+        return ioManager.getStudyPath(userId, projectId, studyId);
+    }
+
     public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath)
             throws CatalogIOManagerException {
         return ioManager.getFilePath(userId, projectId, studyId, relativeFilePath);
