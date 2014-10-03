@@ -970,7 +970,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 study.setDiskUsage(getDiskUsageByStudy(study.getId()));
                 study.setAnalyses(getAllAnalysis(studyId).getResult());
             }
-            // TODO study.setAnalysis
             // TODO study.setfiles
             studies = new LinkedList<>();
             studies.add(study);
@@ -1286,6 +1285,28 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         return endQuery("Get all files", startTime, files);
     }
+
+    @Override
+    public QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        QueryResult<DBObject> folderResult = fileCollection.find( new BasicDBObject("id", folderId), null, null, null);
+
+        File folder = parseFile(folderResult);
+        if (!folder.getType().equals(File.FOLDER)) {
+            throw new CatalogManagerException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
+        }
+        Object studyId = folderResult.getResult().get(0).get("studyId");
+
+
+        BasicDBObject query = new BasicDBObject("studyId", studyId);
+        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "/[^/]*$"));
+        QueryResult filesResult = fileCollection.find(query, null, null, null);
+        List<File> files = parseFiles(filesResult);
+
+        return endQuery("Get all files", startTime, files);
+    }
+
 
     @Override
     public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException {

@@ -929,6 +929,22 @@ public class CatalogManager {
         return allFilesResult;
     }
 
+    public QueryResult<File> getAllFilesInFolder(int folderId, String sessionId) throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByFileId(folderId);
+        Acl studyAcl = getStudyAcl(userId, studyId);
+        if (!studyAcl.isRead()) {
+            throw new CatalogManagerException("Permission denied. User can't read file");
+        }
+        QueryResult<File> allFilesResult = catalogDBAdaptor.getAllFilesInFolder(folderId);
+        List<File> files = allFilesResult.getResult();
+        filterFiles(userId, studyAcl, files);
+        allFilesResult.setResult(files);
+        return allFilesResult;
+    }
+
     public DataInputStream downloadFile(int fileId, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         return downloadFile(fileId, -1, -1, sessionId);
