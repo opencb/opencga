@@ -3,11 +3,11 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.ParameterException;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.CatalogManager;
-import org.opencb.opencga.catalog.core.beans.*;
-import org.opencb.opencga.catalog.core.beans.File;
-import org.opencb.opencga.catalog.core.db.CatalogManagerException;
-import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import java.io.*;
 import java.nio.file.Path;

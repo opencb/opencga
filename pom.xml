@@ -83,7 +83,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-catalog-core</artifactId>
+                <artifactId>opencga-catalog</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
 
