@@ -16,6 +16,8 @@ public class OptionsParser {
     public final CommandUser commandUser;
     public final CommandUser.CommandUserCreate commandUserCreate;
     public final CommandUser.CommandUserInfo commandUserInfo;
+    public final CommandUser.CommandUserLogin commandUserLogin;
+    public final CommandUser.CommandUserLogout commandUserLogout;
     public final CommandProject commandProject;
     public final CommandProject.CommandProjectCreate commandProjectCreate;
     public final CommandProject.CommandProjectInfo commandProjectInfo;
@@ -24,7 +26,9 @@ public class OptionsParser {
     public final CommandStudy.CommandStudyCreate commandStudyCreate;
     public final CommandFile commandFile;
     public final CommandFile.CommandFileCreate commandFileCreate;
+    public final CommandFile.CommandFileList commandFileList;
     public final CommandFile.CommandFileInfo commandFileInfo;
+
     public final CommandShareResource commandShareResource;
 
 
@@ -44,6 +48,8 @@ public class OptionsParser {
         JCommander users = jcommander.getCommands().get("users");
         users.addCommand(commandUserCreate = new CommandUser.CommandUserCreate());
         users.addCommand(commandUserInfo = new CommandUser.CommandUserInfo());
+        users.addCommand(commandUserLogin = new CommandUser.CommandUserLogin());
+        users.addCommand(commandUserLogout = new CommandUser.CommandUserLogout());
 
         JCommander projects = jcommander.getCommands().get("projects");
         projects.addCommand(commandProjectCreate = new CommandProject.CommandProjectCreate());
@@ -58,6 +64,8 @@ public class OptionsParser {
         JCommander files = jcommander.getCommands().get("files");
         files.addCommand(commandFileCreate = new CommandFile.CommandFileCreate());
         files.addCommand(commandFileInfo = new CommandFile.CommandFileInfo());
+        files.addCommand(commandFileList = new CommandFile.CommandFileList());
+
 //        files.addCommand(commandShareResource);
 
     }
@@ -112,10 +120,10 @@ public class OptionsParser {
     }
 
     static class UserPassword{
-        @Parameter(names = {"-u", "--user"}, description = "UserId", required = true, arity = 1)
+        @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
         String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true,  password = false)
+        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = false)
         String password;
     }
 
@@ -143,37 +151,53 @@ public class OptionsParser {
             @ParametersDelegate
             public UserPassword up = new UserPassword();
         }
+
+        @Parameters(commandNames = {"login"}, commandDescription = "Description")
+        static public class CommandUserLogin {
+            @ParametersDelegate
+            public UserPassword up = new UserPassword();
+        }
+
+        @Parameters(commandNames = {"logout"}, commandDescription = "Description")
+        static public class CommandUserLogout {
+
+            @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
+            String user;
+
+            @Parameter(names = {"--sessionId", "-sid"}, description = "SessionId", required = true, arity = 1)
+            public String sessionId;
+        }
     }
 
 
-    @Parameters(commandNames = {"projects"}, commandDescription = "Description")
+    @Parameters(commandNames = {"projects"}, commandDescription = "Project commands")
     static class CommandProject {
 
-        @Parameters(commandNames = {"create"}, commandDescription = "Description")
+        @Parameters(commandNames = {"create"}, commandDescription = "Create new project")
         static class CommandProjectCreate {
 
             @ParametersDelegate
             public UserPassword up = new UserPassword();
 
-            @Parameter(names = {"--name"}, description = "Project name", required = true, arity = 1)
+            @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
             String name;
 
-            @Parameter(names = {"--alias"}, description = "alias", required = true, arity = 1)
+            @Parameter(names = {"-a", "--alias"}, description = "Alias", required = true, arity = 1)
             String alias;
 
-            @Parameter(names = {"--description"}, description = "Description", required = true, arity = 1)
+            @Parameter(names = {"-d", "--description"}, description = "Description", required = true, arity = 1)
             String description;
 
-            @Parameter(names = {"--organization"}, description = "Organization", required = true, arity = 1)
+            @Parameter(names = {"-o", "--org", "--organization"}, description = "Organization", required = true, arity = 1)
             String organization;
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Description")
+        @Parameters(commandNames = {"info"}, commandDescription = "Get project info")
         static class CommandProjectInfo {
             @ParametersDelegate
             public UserPassword up = new UserPassword();
 
-            @Parameter(names = {"--id"}, description = "Project id", required = true, arity = 1)
+            @Parameter(names = {"-i", "--id"}, description = "Project identifier", required = true, arity = 1)
             String id;
 
         }
@@ -245,6 +269,15 @@ public class OptionsParser {
 
             @Parameter(names = {"--parents"}, description = "parents", required = false, arity = 1)
             public boolean parents;
+        }
+
+        @Parameters(commandNames = {"list"}, commandDescription = "List files")
+        static class CommandFileList {
+            @ParametersDelegate
+            public UserPassword up = new UserPassword();
+
+            @Parameter(names = {"--id"}, description = "Folder id", required = true, arity = 1)
+            String id;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get file information")

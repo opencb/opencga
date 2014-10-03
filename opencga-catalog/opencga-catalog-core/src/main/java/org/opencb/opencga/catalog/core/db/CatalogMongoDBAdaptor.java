@@ -147,7 +147,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //        return endQuery(queryId, startTime, Collections.<T>emptyList(), errorMessage, null);
 //    }
 
-    //TODO: Shoud throw error if errorMessage != null?
     private <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result) throws CatalogManagerException {
         long end = System.currentTimeMillis();
         result.setId(queryId);
@@ -157,7 +156,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         return result;
     }
-    //TODO: Shoud throw error if errorMessage != null?
+
     private <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result, String errorMessage, String warnMessage) throws CatalogManagerException {
         long end = System.currentTimeMillis();
         if(result == null){
@@ -815,20 +814,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         List<Acl> projectAcls = getProjectAcl(projectId, userId).getResult();
-        DBObject query;
-        DBObject updateOperation;
-        if (projectAcls.isEmpty()) {  // there is no acl for that user in that project. push
-            query = new BasicDBObject("projects.id", projectId);
-            updateOperation = new BasicDBObject("$push", new BasicDBObject("projects.$.acl", newAclObject));
-        } else {    // there is already another ACL: overwrite
-            query = BasicDBObjectBuilder
-                    .start("id", projectId)
-                    .append("acl.userId", userId).get();
-            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        DBObject query = new BasicDBObject("projects.id", projectId);
+        BasicDBObject push = new BasicDBObject("$push", new BasicDBObject("projects.$.acl", newAclObject));
+        if (!projectAcls.isEmpty()) {  // ensure that there is no acl for that user in that project. pull
+            DBObject pull = new BasicDBObject("$pull", new BasicDBObject("projects.$.acl", new BasicDBObject("userId", userId)));
+            userCollection.update(query, pull, false, false);
         }
-        QueryResult update = userCollection.update(query, updateOperation, false, false);
-        //TODO: What if update.writeResult.getN() == 0?
-        return endQuery("Set project acl", startTime);
+        //Put study
+        QueryResult pushResult = userCollection.update(query, push, false, false);
+        return endQuery("Set project acl", startTime, pushResult);
     }
 
     /**
@@ -976,7 +970,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 study.setDiskUsage(getDiskUsageByStudy(study.getId()));
                 study.setAnalyses(getAllAnalysis(studyId).getResult());
             }
-            // TODO study.setAnalysis
             // TODO study.setfiles
             studies = new LinkedList<>();
             studies.add(study);
@@ -1292,6 +1285,28 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         return endQuery("Get all files", startTime, files);
     }
+
+    @Override
+    public QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        QueryResult<DBObject> folderResult = fileCollection.find( new BasicDBObject("id", folderId), null, null, null);
+
+        File folder = parseFile(folderResult);
+        if (!folder.getType().equals(File.FOLDER)) {
+            throw new CatalogManagerException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
+        }
+        Object studyId = folderResult.getResult().get(0).get("studyId");
+
+
+        BasicDBObject query = new BasicDBObject("studyId", studyId);
+        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "/[^/]*$"));
+        QueryResult filesResult = fileCollection.find(query, null, null, null);
+        List<File> files = parseFiles(filesResult);
+
+        return endQuery("Get all files", startTime, files);
+    }
+
 
     @Override
     public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException {
@@ -1927,9 +1942,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     private List<File> parseFiles(QueryResult result) throws CatalogManagerException {
         List<File> files = new LinkedList<>();
-        if(result.getResult().isEmpty()) {
-            return null;		// TODO sure?
-        }
         try {
             for (Object o : result.getResult()) {
                 files.add(jsonFileReader.<File>readValue(o.toString()));

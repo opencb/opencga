@@ -114,25 +114,25 @@ public class File {
 
     @Override
     public String toString() {
-        return "File{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", type='" + type + '\'' +
-                ", format='" + format + '\'' +
-                ", bioformat='" + bioformat + '\'' +
-                ", uriScheme='" + uriScheme + '\'' +
-                ", path='" + path + '\'' +
-                ", creatorId='" + creatorId + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", status='" + status + '\'' +
-                ", diskUsage=" + diskUsage +
-                ", experimentId=" + experimentId +
-                ", sampleIds=" + sampleIds +
-                ", jobId=" + jobId +
-                ", acl=" + acl +
-                ", stats=" + stats +
-                ", attributes=" + attributes +
+        return "File{" + "\n\t" +
+                "id=" + id + "\n\t" +
+                ", name='" + name + '\'' + "\n\t" +
+                ", type='" + type + '\'' + "\n\t" +
+                ", format='" + format + '\'' + "\n\t" +
+                ", bioformat='" + bioformat + '\'' + "\n\t" +
+                ", uriScheme='" + uriScheme + '\'' + "\n\t" +
+                ", path='" + path + '\'' + "\n\t" +
+                ", creatorId='" + creatorId + '\'' + "\n\t" +
+                ", creationDate='" + creationDate + '\'' + "\n\t" +
+                ", description='" + description + '\'' + "\n\t" +
+                ", status='" + status + '\'' + "\n\t" +
+                ", diskUsage=" + diskUsage + "\n\t" +
+                ", experimentId=" + experimentId + "\n\t" +
+                ", sampleIds=" + sampleIds + "\n\t" +
+                ", jobId=" + jobId + "\n\t" +
+                ", acl=" + acl + "\n\t" +
+                ", stats=" + stats + "\n\t" +
+                ", attributes=" + attributes + "\n" +
                 '}';
     }
 
