@@ -6,11 +6,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Properties;
 
 /**
  * Created by imedina on 03/10/14.
  */
-public class HdfsIOManager implements CatalogIOManager {
+public class HdfsCatalogIOManager extends CatalogIOManager {
 
 
     /**
@@ -19,8 +20,7 @@ public class HdfsIOManager implements CatalogIOManager {
      *   http://linuxjunkies.wordpress.com/2011/11/21/a-hdfsclient-for-hadoop-using-the-native-java-api-a-tutorial/
      */
 
-    @Override
-    public void setup() throws IOException {
+    public void HdfsCatalogIOManager() throws IOException {
         /**
          * Hadoop XML need to be loaded:
          Configuration conf = new Configuration();
@@ -33,28 +33,33 @@ public class HdfsIOManager implements CatalogIOManager {
 
     }
 
+
+    public HdfsCatalogIOManager(String propertiesFile) {
+        super(propertiesFile);
+    }
+
+    public HdfsCatalogIOManager(Properties properties) {
+        super(properties);
+    }
+
+
     @Override
-    public Path getUserPath(String userId) throws CatalogIOManagerException {
+    public URI getUserUri(String userId) throws CatalogIOManagerException {
         return null;
     }
 
     @Override
-    public Path getAnonmousUserPath(String userId) throws CatalogIOManagerException {
+    public URI getAnonymousUserUri(String userId) throws CatalogIOManagerException {
         return null;
     }
 
     @Override
-    public Path getProjectRootPath(String userId) throws CatalogIOManagerException {
+    public URI getProjectsUri(String userId) throws CatalogIOManagerException {
         return null;
     }
 
     @Override
-    public Path getProjectPath(String userId, String projectId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
+    public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
         return null;
     }
 
@@ -64,22 +69,17 @@ public class HdfsIOManager implements CatalogIOManager {
     }
 
     @Override
-    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
+    public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
         return null;
     }
 
     @Override
-    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
+    public URI getTmpUri() {
         return null;
     }
 
     @Override
-    public Path getTmpPath() {
-        return null;
-    }
-
-    @Override
-    public Path createUser(String userId) throws CatalogIOManagerException {
+    public URI createUser(String userId) throws CatalogIOManagerException {
         return null;
     }
 
@@ -171,5 +171,30 @@ public class HdfsIOManager implements CatalogIOManager {
     @Override
     public InputStream getJobZipped(Path jobPath, String jobId) throws CatalogIOManagerException, IOException {
         return null;
+    }
+
+    @Override
+    public boolean exists(URI uri) {
+        return false;
+    }
+
+    @Override
+    public boolean createDirectory(URI uri) throws IOException {
+        return false;
+    }
+
+    @Override
+    protected void checkParam(String param) throws CatalogIOManagerException {
+
+    }
+
+    @Override
+    protected void checkUri(URI param) throws CatalogIOManagerException {
+
+    }
+
+    @Override
+    protected void checkDirectoryUri(URI param, boolean writable) throws CatalogIOManagerException {
+
     }
 }

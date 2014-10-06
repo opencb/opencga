@@ -8,7 +8,8 @@ import org.opencb.opencga.catalog.db.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.catalog.io.PosixIOManager;
+import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.io.PosixCatalogIOManager;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
@@ -32,8 +33,14 @@ import java.util.regex.Pattern;
 public class CatalogManager {
 
     private CatalogDBAdaptor catalogDBAdaptor;
+
+
+    private PosixCatalogIOManager ioManager;
     //    private CatalogIOManager ioManager; //TODO: Generify API
-    private PosixIOManager ioManager;
+
+    private CatalogIOManagerFactory catalogIOManagerFactory;
+
+
 
     private Properties properties;
 
@@ -48,11 +55,14 @@ public class CatalogManager {
         this(System.getenv("OPENCGA_HOME"));
     }
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, PosixIOManager ioManager, Properties catalogProperties) {
+    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, PosixCatalogIOManager ioManager, Properties catalogProperties) {
         super();
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.ioManager = ioManager;
         this.properties = catalogProperties;
+
+        // TODO fill factory:
+        this.catalogIOManagerFactory = new CatalogIOManagerFactory(catalogProperties);
     }
 
     public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException, CatalogManagerException {
@@ -73,7 +83,7 @@ public class CatalogManager {
 //            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
 //        }
         catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
-        ioManager = new PosixIOManager(rootdir);
+        ioManager = new PosixCatalogIOManager(rootdir);
     }
 
     public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException, CatalogManagerException {
@@ -88,7 +98,7 @@ public class CatalogManager {
                     properties.getProperty("CATALOG.USER"),
                     properties.getProperty("CATALOG.PASSWORD"));
             catalogDBAdaptor = new CatalogMongoDBAdaptor(mongoCredentials);
-            ioManager = new PosixIOManager(properties.getProperty("ROOTDIR"));
+            ioManager = new PosixCatalogIOManager(properties.getProperty("ROOTDIR"));
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();
         }
@@ -100,11 +110,11 @@ public class CatalogManager {
      */
 
     public Path getUserPath(String userId) throws CatalogIOManagerException {
-        return ioManager.getUserPath(userId);
+        return ioManager.getUserUri(userId);
     }
 
     public Path getProjectPath(String userId, String projectId) throws CatalogIOManagerException {
-        return ioManager.getProjectPath(userId, projectId);
+        return ioManager.getProjectUri(userId, projectId);
     }
 
     public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
@@ -113,7 +123,7 @@ public class CatalogManager {
 
     public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath)
             throws CatalogIOManagerException {
-        return ioManager.getFilePath(userId, projectId, studyId, relativeFilePath);
+        return ioManager.getFileUri(userId, projectId, studyId, relativeFilePath);
     }
 
 //    public Path getJobFolderPath(String userId, String projectId, Path JobId) {
@@ -121,7 +131,7 @@ public class CatalogManager {
 //    }
 
     public Path getTmpPath() {
-        return ioManager.getTmpPath();
+        return ioManager.getTmpUri();
     }
 
 //    public File getFile(String userId, String projectAlias, String studyAlias, Path filePath,
@@ -1116,16 +1126,16 @@ public class CatalogManager {
 //        boolean indexReady;
 //        switch (objectItem.getFileFormat()) {
 //            case "bam":
-//                indexReady = BamManager.checkIndex(ioManager.getFilePath(userId, bucketId, objectId));
+//                indexReady = BamManager.checkIndex(ioManager.getFileUri(userId, bucketId, objectId));
 //                if (force || !indexReady) {
-//                    sgeJobName = BamManager.createIndex(getFilePath(userId, bucketId, objectId));
+//                    sgeJobName = BamManager.createIndex(getFileUri(userId, bucketId, objectId));
 //                    catalogDBAdaptor.setObjectStatus(userId, bucketId, objectId, sgeJobName, sessionId);
 //                }
 //                break;
 //            case "vcf":
-//                indexReady = VcfManager.checkIndex(ioManager.getFilePath(userId, bucketId, objectId));
+//                indexReady = VcfManager.checkIndex(ioManager.getFileUri(userId, bucketId, objectId));
 //                if (force || !indexReady) {
-//                    sgeJobName = VcfManager.createIndex(getFilePath(userId, bucketId, objectId));
+//                    sgeJobName = VcfManager.createIndex(getFileUri(userId, bucketId, objectId));
 //                    catalogDBAdaptor.setObjectStatus(userId, bucketId, objectId, sgeJobName, sessionId);
 //                }
 //                break;
@@ -1470,7 +1480,7 @@ public class CatalogManager {
 //        checkParameter(sessionId, "sessionId");
 //
 //
-//        Path jobPath = getUserPath(userId).resolve(catalogDBAdaptor.getJobPath(userId, jobId, sessionId));
+//        Path jobPath = getUserUri(userId).resolve(catalogDBAdaptor.getJobPath(userId, jobId, sessionId));
 //
 //        return ioManager.getGrepFileFromJob(jobPath, filename, pattern, ignoreCase, multi);
 //    }
@@ -1481,7 +1491,7 @@ public class CatalogManager {
 //        checkParameter(jobId, "jobId");
 //        checkParameter(sessionId, "sessionId");
 //
-//        Path jobPath = getUserPath(userId).resolve(catalogDBAdaptor.getJobPath(userId, jobId, sessionId));
+//        Path jobPath = getUserUri(userId).resolve(catalogDBAdaptor.getJobPath(userId, jobId, sessionId));
 //        logger.info("getJobZipped");
 //        logger.info(jobPath.toString());
 //        logger.info(jobId);

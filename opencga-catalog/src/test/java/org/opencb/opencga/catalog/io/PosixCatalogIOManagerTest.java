@@ -10,9 +10,9 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
-public class PosixIOManagerTest {
+public class PosixCatalogIOManagerTest {
 
-    static PosixIOManager posixIOManager;
+    static PosixCatalogIOManager posixCatalogIOManager;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -23,7 +23,7 @@ public class PosixIOManagerTest {
                 IOUtils.deleteDirectory(path);
             }
             Files.createDirectory(path);
-            posixIOManager = new PosixIOManager("/tmp/opencga", true);
+            posixCatalogIOManager = new PosixCatalogIOManager("/tmp/opencga", true);
         }catch(Exception e) {
             e.printStackTrace();
         }
@@ -32,11 +32,11 @@ public class PosixIOManagerTest {
     @Test
     public void testCreateAccount() throws Exception {
         String userId = "imedina";
-        Path userPath = posixIOManager.createUser(userId);
+        Path userPath = posixCatalogIOManager.createUser(userId);
         assertTrue(Files.exists(userPath));
         assertEquals("/tmp/opencga/users/"+userId, userPath.toString());
 
-        posixIOManager.deleteUser(userId);
+        posixCatalogIOManager.deleteUser(userId);
         assertFalse(Files.exists(userPath));
     }
 
@@ -45,13 +45,13 @@ public class PosixIOManagerTest {
         String userId = "imedina";
         String projectId = "1000g";
 
-        Path userPath = posixIOManager.createUser(userId);
+        Path userPath = posixCatalogIOManager.createUser(userId);
 
-        Path projectPath = posixIOManager.createProject(userId, projectId);
+        Path projectPath = posixCatalogIOManager.createProject(userId, projectId);
         assertTrue(Files.exists(projectPath));
         assertEquals(userPath.toString()+"/projects/"+projectId, projectPath.toString());
 
-        Path studyPath = posixIOManager.createStudy(userId, projectId, "phase1");
+        Path studyPath = posixCatalogIOManager.createStudy(userId, projectId, "phase1");
         assertTrue(Files.exists(studyPath));
         assertTrue(Files.exists(studyPath.resolve("data")));
         assertTrue(Files.exists(studyPath.resolve("analysis")));

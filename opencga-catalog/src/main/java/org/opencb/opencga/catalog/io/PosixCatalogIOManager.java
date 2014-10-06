@@ -14,14 +14,14 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PosixIOManager implements CatalogIOManager {
+public class PosixCatalogIOManager extends CatalogIOManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(PosixIOManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(PosixCatalogIOManager.class);
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
 
 //    private Properties accountProperties;
-
+/*  jmmut: refactoring
     //    private String appHomePath;
     private String opencgaRootDir;
     //    private Path opencgaRootDirPath;
@@ -29,28 +29,28 @@ public class PosixIOManager implements CatalogIOManager {
 
 //    private static String BUCKETS_FOLDER = "buckets";
     /**
-     * OPENCGA_USER_FOLDER and OPENCGA_BIN_FOLDER are created in the ROOTDIR of OpenCGA.
-     * OPENCGA_USER_FOLDER contains users workspaces organized by 'userId'
+     * OPENCGA_USERS_FOLDER and OPENCGA_BIN_FOLDER are created in the ROOTDIR of OpenCGA.
+     * OPENCGA_USERS_FOLDER contains users workspaces organized by 'userId'
      * OPENCGA_BIN_FOLDER contains all packaged binaries delivered with OpenCGA
-     */
-    private static String OPENCGA_USER_FOLDER = "users";
-    private static String OPENCGA_ANONYMOUS_USER_FOLDER = "anonymous";
+     *
+    private static String OPENCGA_USERS_FOLDER = "users";
+    private static String OPENCGA_ANONYMOUS_USERS_FOLDER = "anonymous";
     private static String OPENCGA_BIN_FOLDER = "bin";
 
     /**
-     * USER_PROJECT_FOLDER and USER_BIN_FOLDER are created in the user workspace to store the projects with studies
+     * USER_PROJECTS_FOLDER and USER_BIN_FOLDER are created in the user workspace to store the projects with studies
      * and files, and the user binaries.
-     */
-    private static String USER_PROJECT_FOLDER = "projects";
+     *
+    private static String USER_PROJECTS_FOLDER = "projects";
     private static String USER_BIN_FOLDER = "bin";
     private static String SHARED_DATA_FOLDER = "shared_data";
 //    private static String ANALYSIS_FOLDER = "analysis";
 
-
-    public PosixIOManager(String rootdir) throws IOException, CatalogIOManagerException {
+*/
+    public PosixCatalogIOManager(String rootdir) throws IOException, CatalogIOManagerException {
 //        accountProperties = Config.getAccountProperties();
 //        appHomePath = Config.getGcsaHome();
-//		opencgaRootDir = appHomePath + accountProperties.getProperty("OPENCGA.ACCOUNT.PATH");
+//      opencgaRootDir = appHomePath + accountProperties.getProperty("OPENCGA.ACCOUNT.PATH");
 //        opencgaRootDir = accountProperties.getProperty("OPENCGA.ACCOUNT.PATH");
 //        tmp = accountProperties.getProperty("OPENCGA.TMP.PATH");
 
@@ -62,91 +62,78 @@ public class PosixIOManager implements CatalogIOManager {
 //        }
     }
 
-    public PosixIOManager(String rootdir, boolean setup) throws IOException, CatalogIOManagerException {
-        this.opencgaRootDir = rootdir;
+    public PosixCatalogIOManager(String rootdir, boolean setup) throws IOException, CatalogIOManagerException {
+        this.opencgaRootDir = Paths.get(rootdir).toUri();
 //        this.opencgaRootDirPath = Paths.get(this.opencgaRootDir);
 
-        if(setup) {
-            setup();
+//        if(setup) {
+//            setup();
+//        }
+    }
+
+
+    // TOTHINK jmmut: these should be about URIs, not Paths
+    @Override
+    protected void checkUri(URI uri) throws CatalogIOManagerException {
+        if(uri == null || !Files.exists(Paths.get(uri))) {
+            throw new CatalogIOManagerException("Path '" + uri.toString() + "' is null or it does not exist");
         }
     }
 
-    public void setup() throws IOException {
-        Path opencgaRootDirPath = Paths.get(this.opencgaRootDir);
-        if(!Files.exists(opencgaRootDirPath) && Files.isDirectory(opencgaRootDirPath) && Files.isWritable(opencgaRootDirPath)) {
-            new IOException("OpenCGA ROOTDIR does not exist or it is not a writable directory");
-        }
-
-        if(!Files.exists(opencgaRootDirPath.resolve(OPENCGA_USER_FOLDER))) {
-            Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_USER_FOLDER));
-        }
-
-        if(!Files.exists(opencgaRootDirPath.resolve(OPENCGA_ANONYMOUS_USER_FOLDER))) {
-            Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_ANONYMOUS_USER_FOLDER));
-        }
-
-        if(!Files.exists(opencgaRootDirPath.resolve(OPENCGA_BIN_FOLDER))) {
-            Files.createDirectory(opencgaRootDirPath.resolve(OPENCGA_BIN_FOLDER));
-        }
-
-    }
-
-    private void checkParam(String param) throws CatalogIOManagerException {
-        if(param == null || param.equals("")) {
-            throw new CatalogIOManagerException("Parameter '" + param + "' not valid");
-        }
-    }
-
-    private void checkPath(Path path) throws CatalogIOManagerException {
-        if(path == null || !Files.exists(path)) {
-            throw new CatalogIOManagerException("Path '" + path.toString() + "' is null or it does not exist");
-        }
-    }
-
-    private void checkDirectoryPath(Path path, boolean writable) throws CatalogIOManagerException {
-        if(path == null || !Files.exists(path) || !Files.isDirectory(path)) {
-            throw new CatalogIOManagerException("Path '" + path.toString() + "' is null, it does not exist or it's not a directory");
+    @Override
+    protected void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOManagerException {
+        Path path = Paths.get(uri);
+        if(uri == null || !Files.exists(path) || !Files.isDirectory(path)) {
+            throw new CatalogIOManagerException("Path '" + uri.toString() + "' is null, it does not exist or it's not a directory");
         }
 
         if(writable && !Files.isWritable(path)) {
-            throw new CatalogIOManagerException("Path '" + path.toString() + "' is not writable");
+            throw new CatalogIOManagerException("Path '" + uri.toString() + "' is not writable");
         }
     }
+
 
     /*****************************
      * Get Path methods
      * ***************************
      */
-    public Path getUserPath(String userId) throws CatalogIOManagerException {
+
+    @Override
+    public URI getUserUri(String userId) throws CatalogIOManagerException {
         checkParam(userId);
 
-        Path path = Paths.get(opencgaRootDir, OPENCGA_USER_FOLDER, userId);
-        checkPath(path);
+        URI uri = Paths.get(opencgaRootDir).resolve(OPENCGA_USERS_FOLDER).resolve(userId).toUri();
+        checkUri(uri);
 
-        return path;
+        return uri;
     }
 
-    public Path getAnonmousUserPath(String userId) throws CatalogIOManagerException {
+    @Override
+    public URI getAnonymousUserUri(String userId) throws CatalogIOManagerException {
         checkParam(userId);
 
-        Path path = Paths.get(opencgaRootDir, OPENCGA_ANONYMOUS_USER_FOLDER, userId);
-        checkPath(path);
+        URI uri = Paths.get(opencgaRootDir).resolve(OPENCGA_ANONYMOUS_USERS_FOLDER).resolve(userId).toUri();
+        checkUri(uri);
+
+        return uri;
+    }
+
+    @Override
+    public URI getProjectsUri(String userId) throws CatalogIOManagerException {
+        checkParam(userId);
+
+        URI path = getUserUri(userId).resolve(USER_PROJECTS_FOLDER);
+        checkUri(path);
 
         return path;
     }
 
-    public Path getProjectRootPath(String userId) throws CatalogIOManagerException {
-        Path path = getUserPath(userId).resolve(PosixIOManager.USER_PROJECT_FOLDER);
-        checkPath(path);
-
-        return path;
-    }
-
-    public Path getProjectPath(String userId, String projectId) throws CatalogIOManagerException {
+    @Override
+    public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
         checkParam(projectId);
 
-        Path path = getUserPath(userId).resolve(PosixIOManager.USER_PROJECT_FOLDER).resolve(projectId);
-        checkPath(path);
+        URI path = getUserUri(userId).resolve(USER_PROJECTS_FOLDER).resolve(projectId);
+        checkUri(path);
 
         return path;
     }
@@ -155,12 +142,13 @@ public class PosixIOManager implements CatalogIOManager {
         checkParam(projectId);
         checkParam(studyId);
 
-        Path path = getUserPath(userId).resolve(PosixIOManager.USER_PROJECT_FOLDER).resolve(projectId).resolve(studyId);
-        checkPath(path);
+        URI path = getUserUri(userId).resolve(USER_PROJECTS_FOLDER).resolve(projectId).resolve(studyId);
+        checkUri(path);
 
-        return path;
+        return null;
     }
 
+    @Override
     public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         checkParam(userId);
         checkParam(projectId);
@@ -172,8 +160,8 @@ public class PosixIOManager implements CatalogIOManager {
         // file://<userId>@localhost/<projectId>/<studyId>
 
         try {
-            //return new URI("file", userId, "localhost", -1, getProjectPath(userId, projectId).toString(), null, null);
-            //return new URI("file", userId, "localhost", -1, Paths.get("/ROOTDIR" , OPENCGA_USER_FOLDER, userId, USER_PROJECT_FOLDER ,projectId, studyId).toString(), null, null);
+            //return new URI("file", userId, "localhost", -1, getProjectUri(userId, projectId).toString(), null, null);
+            //return new URI("file", userId, "localhost", -1, Paths.get("/ROOTDIR" , OPENCGA_USERS_FOLDER, userId, USER_PROJECTS_FOLDER ,projectId, studyId).toString(), null, null);
             return new URI("file", userId, "localhost", -1, Paths.get("/", projectId, studyId).toString(), null, null);
         } catch (URISyntaxException e) {
             e.printStackTrace();
@@ -181,24 +169,29 @@ public class PosixIOManager implements CatalogIOManager {
         }
     }
 
-    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
+//    public Path getFileUri(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
+//        checkParam(relativeFilePath);
+//
+//        Path path = getStudyPath(userId, projectId, studyId).resolve(relativeFilePath);
+//        if(check) {
+//            checkPath(path);
+//        }
+//
+//        return path;
+//    }
+
+    @Override
+    public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
         checkParam(relativeFilePath);
 
-        Path path = getStudyPath(userId, projectId, studyId).resolve(relativeFilePath);
-        if(check) {
-            checkPath(path);
-        }
+        URI uri = getStudyPath(userId, projectId, studyId).resolve(relativeFilePath).toUri();
 
-        return path;
-    }
-
-    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
-        return getFilePath(userId, projectId, studyId, relativeFilePath, true);
+        return uri;
     }
 
     // TODO Jobs are stored in the workspace right?
 //    public Path getJobFolderPath(String accountId, String projectId, Path jobId) {
-//        return getProjectPath(accountId, projectId).resolve(jobId);
+//        return getProjectUri(accountId, projectId).resolve(jobId);
 //    }
 //
 //    // TODO tener en cuenta las demás implementaciones de la interfaz.
@@ -208,68 +201,65 @@ public class PosixIOManager implements CatalogIOManager {
 //        if (bucketId != null && !bucketId.equals("")) {
 //            jobFolder = Paths.get(opencgaRootDir, accountId, PosixIOManager.BUCKETS_FOLDER, jobId);
 //        } else {
-//            jobFolder = getProjectPath(accountId, projectId).resolve(jobId);
+//            jobFolder = getProjectUri(accountId, projectId).resolve(jobId);
 //        }
 //        return jobFolder;
 //    }
 
 
-    public Path getTmpPath() {
-        return Paths.get(tmp);
+    public URI getTmpUri() {
+        return Paths.get(tmp).toUri();
     }
 
     /**
      * User methods
      * ***************************
      */
-    public Path createUser(String userId) throws CatalogIOManagerException {
-        checkParam(userId);
-
-        Path usersPath = Paths.get(opencgaRootDir, OPENCGA_USER_FOLDER);
-        checkDirectoryPath(usersPath, true);
-
-        Path userPath = usersPath.resolve(userId);
+//    public Path createUser(String userId) throws CatalogIOManagerException {
+//        checkParam(userId);
+//
+//        Path usersPath = Paths.get(opencgaRootDir, OPENCGA_USERS_FOLDER);
+//        checkDirectoryPath(usersPath, true);
+//
+//        Path userPath = usersPath.resolve(userId);
+//        try {
+//            if(!Files.exists(userPath)) {
+//                Files.createDirectory(userPath);
+//                Files.createDirectory(Paths.get(userPath.toString(), PosixCatalogIOManager.USER_PROJECTS_FOLDER));
+//                Files.createDirectory(Paths.get(userPath.toString(), PosixCatalogIOManager.USER_BIN_FOLDER));
+//
+//                return userPath;
+//            }
+//        } catch (IOException e) {
+//            throw new CatalogIOManagerException("IOException" + e.toString());
+//        }
+//        return null;
+//    }
+/*
+    public void deleteUser(String userId) throws CatalogIOManagerException {
+        URI userUri = getUserUri(userId);
+        checkUri(userUri);
         try {
-            if(!Files.exists(userPath)) {
-                Files.createDirectory(userPath);
-                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER));
-                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_BIN_FOLDER));
-
-                return userPath;
-            }
+            IOUtils.deleteDirectory(Paths.get(userUri));
         } catch (IOException e) {
-            throw new CatalogIOManagerException("IOException" + e.toString());
+            throw new CatalogIOManagerException("IOException: " + e.toString());
         }
-        return null;
     }
 
-    public Path deleteUser(String userId) throws CatalogIOManagerException {
-        Path userPath = getUserPath(userId);
-        checkPath(userPath);
-
-        try {
-            IOUtils.deleteDirectory(userPath);
-        } catch (IOException e1) {
-            throw new CatalogIOManagerException("IOException: " + e1.toString());
-        }
-
-        return userPath;
-    }
-
-    public Path createAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
+    public URI createAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
         checkParam(anonymousUserId);
 
-        Path usersPath = Paths.get(opencgaRootDir, OPENCGA_ANONYMOUS_USER_FOLDER);
-        checkDirectoryPath(usersPath, true);
+        URI usersUri = opencgaRootDir.resolve(OPENCGA_ANONYMOUS_USERS_FOLDER);
+        checkDirectoryUri(usersUri, true);
 
-        Path userPath = usersPath.resolve(anonymousUserId);
+        URI userUri = usersUri.resolve(anonymousUserId);
         try {
-            if(!Files.exists(userPath)) {
-                Files.createDirectory(userPath);
-                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_PROJECT_FOLDER));
-                Files.createDirectory(Paths.get(userPath.toString(), PosixIOManager.USER_BIN_FOLDER));
+            if(!exists(userUri)) {
+                createDirectory(userUri);
+                createDirectory(userUri.resolve(USER_PROJECTS_FOLDER));
+                createDirectory(userUri.resolve(USER_BIN_FOLDER));
 
-                return userPath;
+                return userUri;
             }
         } catch (IOException e) {
             throw new CatalogIOManagerException("IOException" + e.toString());
@@ -277,19 +267,18 @@ public class PosixIOManager implements CatalogIOManager {
         return null;
     }
 
-    public Path deleteAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
-        Path anonymousUserPath = getAnonmousUserPath(anonymousUserId);
-        checkPath(anonymousUserPath);
+    public void deleteAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
+        URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
+        checkUri(anonymousUserUri);
 
         try {
-            IOUtils.deleteDirectory(anonymousUserPath);
+            IOUtils.deleteDirectory(anonymousUserUri);
         } catch (IOException e1) {
             throw new CatalogIOManagerException("IOException: " + e1.toString());
         }
-
-        return anonymousUserPath;
+//        return anonymousUserPath;
     }
-
+*/
     /*****************************
      * Project methods ***********
      * ***************************
@@ -297,7 +286,7 @@ public class PosixIOManager implements CatalogIOManager {
     public Path createProject(String userId, String projectId) throws CatalogIOManagerException {
         checkParam(projectId);
 
-        Path projectRootPath = getProjectRootPath(userId);
+        Path projectRootPath = getProjectsUri(userId);
         checkDirectoryPath(projectRootPath, true);
 
         Path projectPath = projectRootPath.resolve(projectId);
@@ -314,7 +303,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     public Path deleteProject(String userId, String projectId) throws CatalogIOManagerException {
-        Path projectPath = getProjectPath(userId, projectId);
+        Path projectPath = getProjectUri(userId, projectId);
         checkPath(projectPath);
 
         try {
@@ -327,8 +316,8 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     public void renameProject(String userId, String oldProjectId, String newProjectId) throws CatalogIOManagerException {
-        Path oldFolder =  getProjectPath(userId, oldProjectId);
-        Path newFolder =  getProjectPath(userId, newProjectId);
+        Path oldFolder =  getProjectUri(userId, oldProjectId);
+        Path newFolder =  getProjectUri(userId, newProjectId);
         checkPath(oldFolder);
         checkDirectoryPath(oldFolder.getParent(), true);
 
@@ -342,7 +331,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     public boolean existProject(String userId, String projectId) throws CatalogIOManagerException {
-        return Files.exists(getProjectPath(userId, projectId));
+        return Files.exists(getProjectUri(userId, projectId));
     }
 
     /**
@@ -352,7 +341,7 @@ public class PosixIOManager implements CatalogIOManager {
     public Path createStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         checkParam(studyId);
 
-        Path projectPath = getProjectPath(userId, projectId);
+        Path projectPath = getProjectUri(userId, projectId);
         checkDirectoryPath(projectPath, true);
 
         Path studyPath = projectPath.resolve(studyId);
@@ -409,7 +398,7 @@ public class PosixIOManager implements CatalogIOManager {
         Path studyPath = getStudyPath(userid, projectId, studyId);
         checkDirectoryPath(studyPath, true);
 
-//        Path fullFolderPath = getFilePath(userid, projectId, studyId, objectId);
+//        Path fullFolderPath = getFileUri(userid, projectId, studyId, objectId);
         Path filePath = studyPath.resolve(fileId);
         try {
             if(!Files.exists(filePath)) {
@@ -428,7 +417,7 @@ public class PosixIOManager implements CatalogIOManager {
     }
 
     public void createFile(String userId, String projectId, String studyId, String objectId, InputStream inputStream) throws CatalogIOManagerException {
-        Path filePath = getFilePath(userId, projectId, studyId, objectId, false);
+        Path filePath = getFileUri(userId, projectId, studyId, objectId, false);
 
         try {
             Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
@@ -437,7 +426,7 @@ public class PosixIOManager implements CatalogIOManager {
         }
     }
     public void deleteFile(String userId, String projectId, String studyId, String objectId) throws CatalogIOManagerException {
-        Path filePath = getFilePath(userId, projectId, studyId, objectId);
+        Path filePath = getFileUri(userId, projectId, studyId, objectId);
         checkPath(filePath);
 
         logger.debug("Deleting {}", filePath.toString());
@@ -457,7 +446,7 @@ public class PosixIOManager implements CatalogIOManager {
      * ***************************
      */
 //    public URI createJob(String accountId, String projectId, String jobId) throws CatalogIOManagerException {
-//        // String path = getUserPath(accountId) + "/jobs";
+//        // String path = getUserUri(accountId) + "/jobs";
 //        Path jobFolder = getJobPath(accountId, projectId, null, jobId);
 //        logger.debug("PAKO " + jobFolder);
 //
@@ -522,8 +511,8 @@ public class PosixIOManager implements CatalogIOManager {
 //    public Path createObject(String userId, String projectId, String studyId, Path objectId, File file,
 //                             InputStream fileIs, boolean parents) throws CatalogIOManagerException, IOException {
 //
-//        Path auxFullFilePath = getFilePath(userId, projectId, studyId, objectId);
-//        Path fullFilePath = getFilePath(userId, projectId, objectId);
+//        Path auxFullFilePath = getFileUri(userId, projectId, studyId, objectId);
+//        Path fullFilePath = getFileUri(userId, projectId, objectId);
 //
 //        // if parents is
 //        // true, folders
@@ -591,7 +580,7 @@ public class PosixIOManager implements CatalogIOManager {
                                          int start, int limit)
             throws CatalogIOManagerException, IOException {
 
-        Path objectPath = getFilePath(userid, projectId, studyId, objectId);
+        Path objectPath = getFileUri(userid, projectId, studyId, objectId);
         if (Files.isRegularFile(objectPath)) {
             DataInputStream is;
             if (start == -1 && limit == -1) {
@@ -609,7 +598,7 @@ public class PosixIOManager implements CatalogIOManager {
 
     public DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId,
                                              String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
-        Path objectPath = getFilePath(userId, projectId, studyId, objectId);
+        Path objectPath = getFileUri(userId, projectId, studyId, objectId);
         if (Files.isRegularFile(objectPath)) {
             return new DataInputStream(IOUtils.grepFile(objectPath, pattern, ignoreCase, multi));
         } else {
@@ -697,6 +686,21 @@ public class PosixIOManager implements CatalogIOManager {
         return Files.newInputStream(zipPath);
     }
 
+    @Override
+    public boolean exists(URI uri) {
+        return Files.exists(Paths.get(uri));
+    }
+
+    @Override
+    public URI createDirectory(URI uri) throws IOException {
+        return Files.createDirectory(Paths.get(uri)).toUri();
+    }
+
+    @Override
+    public void deleteDirectory(URI uri) throws IOException {
+        IOUtils.deleteDirectory(Paths.get(uri));
+    }
+
     /**
      * **********
      */
@@ -707,7 +711,7 @@ public class PosixIOManager implements CatalogIOManager {
 
     // public String getJobPath(String accountId, String bucketId, String jobId)
     // {
-    // return getUserPath(accountId) + "/jobs/" + jobId;
+    // return getUserUri(accountId) + "/jobs/" + jobId;
     // }
     private Path renameExistingFileIfNeeded(Path fullFilePath) {
         if (Files.exists(fullFilePath)) {
