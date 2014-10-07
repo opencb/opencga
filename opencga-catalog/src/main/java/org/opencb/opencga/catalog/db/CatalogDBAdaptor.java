@@ -7,6 +7,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.beans.*;
 
 import java.io.IOException;
+import java.net.URI;
 
 public interface CatalogDBAdaptor {
 

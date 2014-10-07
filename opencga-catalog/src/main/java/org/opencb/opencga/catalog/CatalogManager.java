@@ -10,7 +10,6 @@ import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.io.PosixCatalogIOManager;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
@@ -33,14 +32,12 @@ import java.util.regex.Pattern;
 
 public class CatalogManager {
 
-    public static final String DEFAULT_USERS_SCHEME = "file";
+    public static final String DEFAULT_CATALOG_MODE = "file";
     private CatalogDBAdaptor catalogDBAdaptor;
     private CatalogIOManager ioManager;
-
+    private CatalogIOManagerFactory catalogIOManagerFactory;
 
 //    private PosixCatalogIOManager ioManager;
-
-    private CatalogIOManagerFactory catalogIOManagerFactory;
 
 
 
@@ -61,12 +58,12 @@ public class CatalogManager {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
-        // TODO fill factory:
-        this.catalogIOManagerFactory = new CatalogIOManagerFactory(catalogProperties);
-        ioManager = this.catalogIOManagerFactory.get(DEFAULT_USERS_SCHEME);
+        configureIOManager(properties);
     }
 
-    public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException, CatalogManagerException {
+    @Deprecated
+    public CatalogManager(String rootdir)
+            throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
 //        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
@@ -75,21 +72,29 @@ public class CatalogManager {
             properties.load(Files.newInputStream(path));
         } catch (IOException e) {
             logger.error("Failed to load account.properties: " + e.getMessage());
+            throw e;
         }
 
-//        if (properties.getProperty("OPENCGA.ACCOUNT.MODE").equals("file")) {
-//            catalogDBAdaptor = (CatalogDBAdaptor) new CatalogMongoDBAdaptor( --- );
-//        } else {
-//            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
-//        }
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
-        this.catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-        ioManager = this.catalogIOManagerFactory.get("file");
+        configureDBAdaptor(properties);
+        configureIOManager(properties);
     }
 
-    public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException, CatalogManagerException {
+    public CatalogManager(Properties properties)
+            throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
         this.properties = properties;
 
+        configureDBAdaptor(properties);
+        configureIOManager(properties);
+    }
+
+    private void configureIOManager(Properties properties)
+            throws IOException, CatalogIOManagerException {
+        catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
+        ioManager = this.catalogIOManagerFactory.get(properties.getProperty("CATALOG.MODE", DEFAULT_CATALOG_MODE));
+    }
+
+    private void configureDBAdaptor(Properties properties)
+            throws CatalogManagerException, IllegalOpenCGACredentialsException {
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(
                     properties.getProperty("CATALOG.HOST"),
@@ -98,10 +103,9 @@ public class CatalogManager {
                     properties.getProperty("CATALOG.USER"),
                     properties.getProperty("CATALOG.PASSWORD"));
             catalogDBAdaptor = new CatalogMongoDBAdaptor(mongoCredentials);
-            this.catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-            ioManager = this.catalogIOManagerFactory.get("file");
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();
+            throw e;
         }
     }
 
@@ -550,22 +554,29 @@ public class CatalogManager {
      * Study methods
      * ***************************
      */
-
     public QueryResult<Study> createStudy(int projectId, String name, String alias, String type, String description,
-                                         /* String uriScheme,*/ String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException {
+                                          String sessionId)
+            throws CatalogManagerException, CatalogIOManagerException, IOException {
+        return createStudy(projectId, name, alias, type, description, DEFAULT_CATALOG_MODE, sessionId);
+    }
+
+    private QueryResult<Study> createStudy(int projectId, String name, String alias, String type, String description,
+                                          String uriScheme, String sessionId)
+            throws CatalogManagerException, CatalogIOManagerException, IOException {
         checkParameter(name, "name");
         checkParameter(alias, "alias");
         checkParameter(type, "type");
         checkParameter(description, "description");
         checkAlias(alias, "alias");
-//        checkParameter(uriScheme, "uriScheme");   // TODO
+        checkParameter(uriScheme, "uriScheme");   // TODO
         checkParameter(sessionId, "sessionId");
+
+        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
-        URI uri = ioManager.getStudyUri(ownerId, Integer.toString(projectId), "_");
+        URI uri = catalogIOManager.getProjectUri(ownerId, Integer.toString(projectId));
         Study study = new Study(name, alias, type, description, "", uri);
         study.setCreatorId(userId);
 
@@ -594,7 +605,7 @@ public class CatalogManager {
         study = result.getResult().get(0);
 
         try {
-            ioManager.createStudy(userId, Integer.toString(projectId), Integer.toString(study.getId()));
+            catalogIOManager.createStudy(userId, Integer.toString(projectId), Integer.toString(study.getId()));
         } catch (CatalogIOManagerException e) {
             e.printStackTrace();
             catalogDBAdaptor.deleteStudy(study.getId());
