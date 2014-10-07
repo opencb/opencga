@@ -28,7 +28,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Just to create the api")
 
     public Response createUser(
@@ -54,7 +54,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/login")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User login")
 
     public Response login(
@@ -77,7 +77,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/logout")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User login")
     public Response logout(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId
@@ -97,7 +97,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
     @GET
     @Path("/{userId}/change-password")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User password change")
     public Response changePassword(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
@@ -115,7 +115,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/change-email")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User email change")
     public Response changeEmail(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
@@ -131,7 +131,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
     @GET
     @Path("/{userId}/reset-password")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User email change")
     public Response resetPassword(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
@@ -148,7 +148,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/modify")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User modify")
     public Response modifyUser(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
@@ -176,7 +176,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/info")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "User info")
     public Response getInfo(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,

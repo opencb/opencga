@@ -29,7 +29,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Create study")
 
     public Response createStudy(
@@ -57,7 +57,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/info")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Study information")
 
     public Response info(
@@ -75,7 +75,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/all-studies")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Study information")
 
     public Response getAllStudies(
@@ -93,7 +93,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/modify")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Study modify")
     public Response modifyUser(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,

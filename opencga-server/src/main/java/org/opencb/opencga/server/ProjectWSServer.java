@@ -28,9 +28,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Create project")
-
     public Response createProject(
             @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
@@ -55,9 +54,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/info")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Project information")
-
     public Response info(
             @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
     ) {
@@ -73,7 +71,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{ownerId}/all-projects")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Project information")
 
     public Response getAllProjects(
@@ -91,7 +89,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/modify")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Project modify")
     public Response modifyUser(
             @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId,
