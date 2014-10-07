@@ -42,35 +42,44 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
         super(properties);
     }
 
+    @Override
+    protected void checkUri(URI param) throws CatalogIOManagerException {
+
+    }
 
     @Override
-    public URI getUserUri(String userId) throws CatalogIOManagerException {
+    protected void checkDirectoryUri(URI param, boolean writable) throws CatalogIOManagerException {
+
+    }
+
+    @Override
+    public boolean exists(URI uri) {
+        return false;
+    }
+
+    @Override
+    public URI createDirectory(URI uri, boolean parents) throws IOException {
         return null;
     }
 
     @Override
-    public URI getAnonymousUserUri(String userId) throws CatalogIOManagerException {
-        return null;
+    public void deleteDirectory(URI uri) throws IOException {
+
     }
 
     @Override
-    public URI getProjectsUri(String userId) throws CatalogIOManagerException {
-        return null;
+    protected void deleteFile(URI fileUri) throws IOException {
+
     }
 
     @Override
-    public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
-        return null;
+    public void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException {
+
     }
 
     @Override
-    public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
-        return null;
+    public boolean isDirectory(URI uri) {
+        return false;
     }
 
     @Override
@@ -79,72 +88,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public URI createUser(String userId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path deleteUser(String userId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path createAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path deleteAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path createProject(String userId, String projectId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path deleteProject(String userId, String projectId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public void renameProject(String userId, String oldProjectId, String newProjectId) throws CatalogIOManagerException {
-
-    }
-
-    @Override
-    public boolean existProject(String userId, String projectId) throws CatalogIOManagerException {
-        return false;
-    }
-
-    @Override
-    public Path createStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public Path deleteStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId) throws CatalogIOManagerException {
-
-    }
-
-    @Override
-    public Path createFolder(String userid, String projectId, String studyId, String fileId, boolean parent) throws CatalogIOManagerException {
-        return null;
-    }
-
-    @Override
-    public void createFile(String userId, String projectId, String studyId, String objectId, InputStream inputStream) throws CatalogIOManagerException {
-
-    }
-
-    @Override
-    public void deleteFile(String userId, String projectId, String studyId, String objectId) throws CatalogIOManagerException {
+    public void createFile(String userId, String projectId, String studyId, String filePath, InputStream inputStream) throws CatalogIOManagerException {
 
     }
 
@@ -158,43 +102,5 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
         return null;
     }
 
-    @Override
-    public DataInputStream getFileFromJob(Path jobPath, String filename, String zip) throws CatalogIOManagerException, FileNotFoundException {
-        return null;
-    }
 
-    @Override
-    public DataInputStream getGrepFileFromJob(Path jobPath, String filename, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
-        return null;
-    }
-
-    @Override
-    public InputStream getJobZipped(Path jobPath, String jobId) throws CatalogIOManagerException, IOException {
-        return null;
-    }
-
-    @Override
-    public boolean exists(URI uri) {
-        return false;
-    }
-
-    @Override
-    public boolean createDirectory(URI uri) throws IOException {
-        return false;
-    }
-
-    @Override
-    protected void checkParam(String param) throws CatalogIOManagerException {
-
-    }
-
-    @Override
-    protected void checkUri(URI param) throws CatalogIOManagerException {
-
-    }
-
-    @Override
-    protected void checkDirectoryUri(URI param, boolean writable) throws CatalogIOManagerException {
-
-    }
 }

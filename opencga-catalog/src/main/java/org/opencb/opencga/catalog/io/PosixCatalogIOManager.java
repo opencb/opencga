@@ -13,6 +13,7 @@ import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class PosixCatalogIOManager extends CatalogIOManager {
 
@@ -47,6 +48,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //    private static String ANALYSIS_FOLDER = "analysis";
 
 */
+    /*
     public PosixCatalogIOManager(String rootdir) throws IOException, CatalogIOManagerException {
 //        accountProperties = Config.getAccountProperties();
 //        appHomePath = Config.getGcsaHome();
@@ -70,9 +72,29 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //            setup();
 //        }
     }
+    */
 
+    public PosixCatalogIOManager(String propertiesFile) throws IOException, CatalogIOManagerException {
+        super(propertiesFile);
+    }
 
-    // TOTHINK jmmut: these should be about URIs, not Paths
+    public PosixCatalogIOManager(Properties properties) throws CatalogIOManagerException {
+        super(properties);
+    }
+
+    @Override
+    protected void setProperties(Properties properties) throws CatalogIOManagerException {
+        this.rootDir = URI.create(properties.getProperty("FILE.ROOTDIR"));
+        if (!rootDir.getScheme().equals("file")) {
+            throw new CatalogIOManagerException("wrong posix file system in catalog.properties: " + rootDir);
+        }
+    }
+
+    /**********************
+     * FS Utils
+     * ********************
+     */
+
     @Override
     protected void checkUri(URI uri) throws CatalogIOManagerException {
         if(uri == null || !Files.exists(Paths.get(uri))) {
@@ -92,51 +114,65 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
     }
 
+    private void checkDirectoryPath(Path path, boolean writable) throws CatalogIOManagerException {
+        if(path == null || !Files.exists(path) || !Files.isDirectory(path)) {
+            throw new CatalogIOManagerException("Path '" + path.toString() + "' is null, it does not exist or it's not a directory");
+        }
+
+        if(writable && !Files.isWritable(path)) {
+            throw new CatalogIOManagerException("Path '" + path.toString() + "' is not writable");
+        }
+    }
+
+    @Override
+    public boolean exists(URI uri) {
+        return Files.exists(Paths.get(uri));
+    }
+
+    @Override
+    public URI createDirectory(URI uri, boolean parents) throws IOException {
+        if (parents) {
+            return Files.createDirectories(Paths.get(uri)).toUri();
+        } else {
+            return Files.createDirectory(Paths.get(uri)).toUri();
+        }
+    }
+
+    @Override
+    public void deleteDirectory(URI uri) throws IOException {
+        IOUtils.deleteDirectory(Paths.get(uri));
+    }
+
+    @Override
+    protected void deleteFile(URI fileUri) throws IOException {
+        Files.delete(Paths.get(fileUri));
+    }
+
+    @Override
+    public void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException {
+        String parent;
+        if (isDirectory(oldName)) { // if oldName is a file
+            parent = "..";
+        } else {
+            parent = ".";
+        }
+        checkUri(oldName);
+        checkDirectoryUri(oldName.resolve(parent), true);
+
+        if (!Files.exists(Paths.get(newName))) {
+            Files.move(Paths.get(oldName), Paths.get(newName));
+        }
+    }
+
+    @Override
+    public boolean isDirectory(URI uri) {
+        return uri.resolve(".").equals(uri);
+    }
 
     /*****************************
      * Get Path methods
      * ***************************
      */
-
-    @Override
-    public URI getUserUri(String userId) throws CatalogIOManagerException {
-        checkParam(userId);
-
-        URI uri = Paths.get(opencgaRootDir).resolve(OPENCGA_USERS_FOLDER).resolve(userId).toUri();
-        checkUri(uri);
-
-        return uri;
-    }
-
-    @Override
-    public URI getAnonymousUserUri(String userId) throws CatalogIOManagerException {
-        checkParam(userId);
-
-        URI uri = Paths.get(opencgaRootDir).resolve(OPENCGA_ANONYMOUS_USERS_FOLDER).resolve(userId).toUri();
-        checkUri(uri);
-
-        return uri;
-    }
-
-    @Override
-    public URI getProjectsUri(String userId) throws CatalogIOManagerException {
-        checkParam(userId);
-
-        URI path = getUserUri(userId).resolve(USER_PROJECTS_FOLDER);
-        checkUri(path);
-
-        return path;
-    }
-
-    @Override
-    public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
-        checkParam(projectId);
-
-        URI path = getUserUri(userId).resolve(USER_PROJECTS_FOLDER).resolve(projectId);
-        checkUri(path);
-
-        return path;
-    }
 
     public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         checkParam(projectId);
@@ -188,24 +224,6 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
         return uri;
     }
-
-    // TODO Jobs are stored in the workspace right?
-//    public Path getJobFolderPath(String accountId, String projectId, Path jobId) {
-//        return getProjectUri(accountId, projectId).resolve(jobId);
-//    }
-//
-//    // TODO tener en cuenta las demás implementaciones de la interfaz.
-//    public Path getJobPath(String accountId, String projectId, String bucketId, String jobId) {
-//        Path jobFolder;
-//        // If a bucket is passed then outdir is set
-//        if (bucketId != null && !bucketId.equals("")) {
-//            jobFolder = Paths.get(opencgaRootDir, accountId, PosixIOManager.BUCKETS_FOLDER, jobId);
-//        } else {
-//            jobFolder = getProjectUri(accountId, projectId).resolve(jobId);
-//        }
-//        return jobFolder;
-//    }
-
 
     public URI getTmpUri() {
         return Paths.get(tmp).toUri();
@@ -283,6 +301,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * Project methods ***********
      * ***************************
      */
+    /*
     public Path createProject(String userId, String projectId) throws CatalogIOManagerException {
         checkParam(projectId);
 
@@ -338,106 +357,14 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * Project Study
      * ***************************
      */
-    public Path createStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        checkParam(studyId);
-
-        Path projectPath = getProjectUri(userId, projectId);
-        checkDirectoryPath(projectPath, true);
-
-        Path studyPath = projectPath.resolve(studyId);
-        try {
-            if(!Files.exists(studyPath)) {
-                studyPath = Files.createDirectory(studyPath);
-//                Files.createDirectory(studyPath.resolve("data"));
-//                Files.createDirectory(studyPath.resolve("analysis"));
-            }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString());
-        }
-
-        return studyPath;
-    }
-
-    public Path deleteStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        Path studyPath = getStudyPath(userId, projectId, studyId);
-        checkPath(studyPath);
-
-        try {
-            IOUtils.deleteDirectory(studyPath);
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("deleteProject(): could not delete the project folder: " + e.toString());
-        }
-
-        return studyPath;
-    }
-
-    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId) throws CatalogIOManagerException {
-        Path oldFolder =  getStudyPath(userId, projectId, oldStudyId);
-        Path newFolder =  getStudyPath(userId, projectId, newStudyId);
-        checkPath(oldFolder);
-        checkDirectoryPath(oldFolder.getParent(), true);
-
-        try {
-            if(!Files.exists(newFolder)) {
-                Files.move(oldFolder, newFolder);
-            }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("renameProject(): could not rename the project folder: " + e.toString());
-        }
-    }
-
-
-    /**
-     * Folder and file methods
-     * ***************************
-     */
-    public Path createFolder(String userid, String projectId, String studyId, String fileId, boolean parent)
-            throws CatalogIOManagerException {
-        checkParam(fileId);
-
-        Path studyPath = getStudyPath(userid, projectId, studyId);
-        checkDirectoryPath(studyPath, true);
-
-//        Path fullFolderPath = getFileUri(userid, projectId, studyId, objectId);
-        Path filePath = studyPath.resolve(fileId);
-        try {
-            if(!Files.exists(filePath)) {
-                if(parent) {
-                    Files.createDirectories(filePath);
-                }else {
-                    checkDirectoryPath(filePath.getParent(), true);
-                    Files.createDirectory(filePath);
-                }
-            }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("createFolder(): could not create the directory " + e.toString());
-        }
-
-        return filePath;
-    }
-
+    @Override
     public void createFile(String userId, String projectId, String studyId, String objectId, InputStream inputStream) throws CatalogIOManagerException {
-        Path filePath = getFileUri(userId, projectId, studyId, objectId, false);
+        URI fileUri = getFileUri(userId, projectId, studyId, objectId);
 
         try {
-            Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(inputStream, Paths.get(fileUri), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new CatalogIOManagerException("create file failed at copying file " + filePath);
-        }
-    }
-    public void deleteFile(String userId, String projectId, String studyId, String objectId) throws CatalogIOManagerException {
-        Path filePath = getFileUri(userId, projectId, studyId, objectId);
-        checkPath(filePath);
-
-        logger.debug("Deleting {}", filePath.toString());
-        try {
-            if(Files.isDirectory(filePath)) {
-                IOUtils.deleteDirectory(filePath);
-            }else {
-                Files.delete(filePath);
-            }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("deleteFile(): could not delete the object " + e.toString());
+            throw new CatalogIOManagerException("create file failed at copying file " + fileUri);
         }
     }
 
@@ -576,11 +503,14 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //        }
 //    }
 
+    @Override
     public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,
                                          int start, int limit)
             throws CatalogIOManagerException, IOException {
 
-        Path objectPath = getFileUri(userid, projectId, studyId, objectId);
+        URI fileUri = getFileUri(userid, projectId, studyId, objectId);
+        Path objectPath = Paths.get(fileUri);
+
         if (Files.isRegularFile(objectPath)) {
             DataInputStream is;
             if (start == -1 && limit == -1) {
@@ -593,16 +523,18 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         } else {
             throw new CatalogIOManagerException("Not a regular file: " + objectPath.toAbsolutePath().toString());
         }
-
     }
 
+
+    @Override
     public DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId,
                                              String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
-        Path objectPath = getFileUri(userId, projectId, studyId, objectId);
-        if (Files.isRegularFile(objectPath)) {
-            return new DataInputStream(IOUtils.grepFile(objectPath, pattern, ignoreCase, multi));
+        URI fileUri = getFileUri(userId, projectId, studyId, objectId);
+        Path path = Paths.get(fileUri);
+        if (Files.isRegularFile(path)) {
+            return new DataInputStream(IOUtils.grepFile(path, pattern, ignoreCase, multi));
         } else {
-            throw new CatalogIOManagerException("Not a regular file: " + objectPath.toAbsolutePath().toString());
+            throw new CatalogIOManagerException("Not a regular file: " + path.toAbsolutePath().toString());
         }
     }
 
@@ -613,6 +545,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //        return JobFileIOUtils.getSenchaTable(jobFile, filename, start, limit, colNames, colVisibility, sort);
 //    }
 
+/*    @Override
     public DataInputStream getFileFromJob(Path jobPath, String filename, String zip) throws CatalogIOManagerException,
             FileNotFoundException {
 
@@ -657,7 +590,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             return is;
         }
     }
-
+*/
+    /*
     public DataInputStream getGrepFileFromJob(Path jobPath, String filename, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException,
             IOException {
 
@@ -685,21 +619,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
         return Files.newInputStream(zipPath);
     }
+    */
 
-    @Override
-    public boolean exists(URI uri) {
-        return Files.exists(Paths.get(uri));
-    }
-
-    @Override
-    public URI createDirectory(URI uri) throws IOException {
-        return Files.createDirectory(Paths.get(uri)).toUri();
-    }
-
-    @Override
-    public void deleteDirectory(URI uri) throws IOException {
-        IOUtils.deleteDirectory(Paths.get(uri));
-    }
 
     /**
      * **********

@@ -7,6 +7,7 @@ import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.io.PosixCatalogIOManager;
@@ -32,11 +33,12 @@ import java.util.regex.Pattern;
 
 public class CatalogManager {
 
+    public static final String DEFAULT_USERS_SCHEME = "file";
     private CatalogDBAdaptor catalogDBAdaptor;
+    private CatalogIOManager ioManager;
 
 
-    private PosixCatalogIOManager ioManager;
-    //    private CatalogIOManager ioManager; //TODO: Generify API
+//    private PosixCatalogIOManager ioManager;
 
     private CatalogIOManagerFactory catalogIOManagerFactory;
 
@@ -51,22 +53,20 @@ public class CatalogManager {
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
 
 
-    public CatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
+    /*public CatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
         this(System.getenv("OPENCGA_HOME"));
-    }
+    }*/
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, PosixCatalogIOManager ioManager, Properties catalogProperties) {
-        super();
+    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOManagerException {
         this.catalogDBAdaptor = catalogDBAdaptor;
-        this.ioManager = ioManager;
         this.properties = catalogProperties;
 
         // TODO fill factory:
         this.catalogIOManagerFactory = new CatalogIOManagerFactory(catalogProperties);
+        ioManager = this.catalogIOManagerFactory.get(DEFAULT_USERS_SCHEME);
     }
 
     public CatalogManager(String rootdir) throws IOException, CatalogIOManagerException, CatalogManagerException {
-        super();
 //        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
@@ -83,22 +83,23 @@ public class CatalogManager {
 //            catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
 //        }
         catalogDBAdaptor = new CatalogMongoDBAdaptor(new MongoCredentials(properties));
-        ioManager = new PosixCatalogIOManager(rootdir);
+        this.catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
+        ioManager = this.catalogIOManagerFactory.get("file");
     }
 
     public CatalogManager(Properties properties) throws IOException, CatalogIOManagerException, CatalogManagerException {
-        super();
         this.properties = properties;
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(
-                    properties.getProperty("CATALOG.HOST"),     //TODO: Add prefixes
+                    properties.getProperty("CATALOG.HOST"),
                     Integer.parseInt(properties.getProperty("CATALOG.PORT")),
                     properties.getProperty("CATALOG.DATABASE"),
                     properties.getProperty("CATALOG.USER"),
                     properties.getProperty("CATALOG.PASSWORD"));
             catalogDBAdaptor = new CatalogMongoDBAdaptor(mongoCredentials);
-            ioManager = new PosixCatalogIOManager(properties.getProperty("ROOTDIR"));
+            this.catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
+            ioManager = this.catalogIOManagerFactory.get("file");
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();
         }
@@ -109,6 +110,7 @@ public class CatalogManager {
      * ***************************
      */
 
+    /* jmmut uncomment
     public Path getUserPath(String userId) throws CatalogIOManagerException {
         return ioManager.getUserUri(userId);
     }
@@ -133,6 +135,7 @@ public class CatalogManager {
     public Path getTmpPath() {
         return ioManager.getTmpUri();
     }
+    */
 
 //    public File getFile(String userId, String projectAlias, String studyAlias, Path filePath,
 //                                    String sessionId) throws CatalogManagerException, IOException {

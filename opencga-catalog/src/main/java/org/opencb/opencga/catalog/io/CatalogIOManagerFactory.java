@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.io;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.Properties;
 
@@ -9,30 +11,32 @@ import java.util.Properties;
 public class CatalogIOManagerFactory {
 
     private static Map<String, CatalogIOManager> catalogIOManagers;
+    private final Properties properties;
+    private String defaultIo;
 
 
     public CatalogIOManagerFactory(Properties properties) {
-
-
+        this.properties = properties;
     }
 
+    public CatalogIOManager get() throws IOException, CatalogIOManagerException {
+        return get(defaultIo);
+    }
 
-    public CatalogIOManager get(String io) {
+    public CatalogIOManager get(String io) throws IOException, CatalogIOManagerException {
         if(!catalogIOManagers.containsKey(io)) {
             switch(io) {
                 case "file":
-                    catalogIOManagers.put(new PosixCatalogIOManager(""));
+                    catalogIOManagers.put("file", new PosixCatalogIOManager(properties));
                     break;
                 case "hdfs":
-                    catalogIOManagers.put(new HdfsCatalogIOManager(""));
+                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(properties));
                     break;
                 default:
-                    System.out.println("mmm...");
-                    break;
+                    System.out.println("mmm... that shouldn't be happening.");
+                    throw new UnsupportedOperationException("Unsupported file system : " + io);
             }
-
         }
         return catalogIOManagers.get(io);
     }
-
 }
