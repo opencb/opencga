@@ -31,6 +31,10 @@ import java.util.*;
 public abstract class VariantStorageManager /*implements StorageManager<VariantReader, VariantWriter, VariantDBAdaptor>*/ {
 
 
+    public static final String INCLUDE_EFFECT = "includeEffect";
+    public static final String INCLUDE_STATS = "includeStats";
+    public static final String INCLUDE_SAMPLES = "includeSamples";
+    public static final String SOURCE = "source";
     protected Properties properties;
 
     public VariantStorageManager() {
@@ -66,7 +70,7 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         return null;
     }
 
-    //TODO: Remove VariantSource
+    //TODO: Try to remove VariantSource
     abstract public VariantWriter getDBWriter(Path credentials, VariantSource source);
 
 
@@ -86,11 +90,11 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
         boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
         boolean includeStats = Boolean.parseBoolean(params.get("includeStats").toString());
-        String aggregated = (String) params.get("aggregated");
-        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        VariantSource source = (VariantSource) params.get("source");
 
         //Reader
-        VariantReader reader;
+        VariantReader reader = null;
         PedigreeReader pedReader = null;
         if(pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
             pedReader = new PedigreePedReader(pedigree.toString());
@@ -98,22 +102,16 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
 
         // TODO Create a utility to determine which extensions are variants files
         if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
-            if (aggregated != null) {
-                includeStats = false;
-                switch (aggregated.toLowerCase()) {
-                    case "basic":
-                        reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
-                        break;
-                    case "evs":
-                        reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantVcfEVSFactory());
-                        break;
-                    default:
-                        reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
-                        break;
-
-                }
-            } else {
-                reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+            switch (source.getAggregation()) {
+                case NONE:
+                    reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+                    break;
+                case BASIC:
+                    reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
+                    break;
+                case EVS:
+                    reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantVcfEVSFactory());
+                    break;
             }
         } else {
             throw new IOException("Variants input file format not supported");
@@ -158,7 +156,8 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
             return;
         }
 
-        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        VariantSource source = (VariantSource) params.get("source");
 
         //Reader
         String sourceFile = input.toAbsolutePath().toString().replace("variant.json", "file.json");
@@ -186,7 +185,8 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
         boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
         boolean includeStats = Boolean.parseBoolean(params.get("includeStats").toString());
-        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+//        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        VariantSource source = (VariantSource) params.get("source");
 
         //Reader
         VariantReader variantDBSchemaReader = this.getDBSchemaReader(input);

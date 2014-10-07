@@ -1,6 +1,8 @@
 package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,7 +15,7 @@ import java.util.Map;
  */
 public class OptionsParser {
     private final JCommander jcommander;
-    
+
     private final CommandCreateAccessions accessions;
     private final CommandTransformVariants transform;
     private final CommandLoadVariants load;
@@ -66,25 +68,25 @@ public class OptionsParser {
     }
 
 
-    @Parameters(commandNames = { "create-accessions" }, commandDescription = "Creates accession IDs for an input file")
+    @Parameters(commandNames = {"create-accessions"}, commandDescription = "Creates accession IDs for an input file")
     class CommandCreateAccessions implements Command {
-        
-        @Parameter(names = { "-i", "--input" }, description = "File to annotation with accession IDs", required = true, arity = 1)
+
+        @Parameter(names = {"-i", "--input"}, description = "File to annotation with accession IDs", required = true, arity = 1)
         String input;
-        
-        @Parameter(names = { "-p", "--prefix" }, description = "Accession IDs prefix", arity = 1)
+
+        @Parameter(names = {"-p", "--prefix"}, description = "Accession IDs prefix", arity = 1)
         String prefix;
-        
-        @Parameter(names = { "-s", "--study-alias" }, description = "Unique ID for the study where the file is classified (used for prefixes)", 
+
+        @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for prefixes)",
                 required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
         String studyId;
-        
-        @Parameter(names = { "-r", "--resume-from-accession" }, description = "Starting point to generate accessions (will not be included)", arity = 1)
+
+        @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)", arity = 1)
         String resumeFromAccession;
-        
-        @Parameter(names = { "-o", "--outdir" }, description = "Directory where the output file will be saved", arity = 1)
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where the output file will be saved", arity = 1)
         String outdir;
-        
+
         class StudyIdValidator implements IValueValidator<String> {
 
             @Override
@@ -93,12 +95,12 @@ public class OptionsParser {
                     throw new ParameterException("The study ID must be at least 6 characters long");
                 }
             }
-            
+
         }
     }
-    
-    
-    @Parameters(commandNames = { "transform-variants" }, commandDescription = "Generates a data model from an input file")
+
+
+    @Parameters(commandNames = {"transform-variants"}, commandDescription = "Generates a data model from an input file")
     class CommandTransformVariants implements Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to transform into the OpenCGA data model", required = true, arity = 1)
@@ -129,8 +131,10 @@ public class OptionsParser {
         boolean includeStats = false;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
-        String aggregated;
+        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
+        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
     }
 
     @Parameters(commandNames = {"load-variants"}, commandDescription = "Loads an already generated data model into a backend")
@@ -153,7 +157,9 @@ public class OptionsParser {
 
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
-        
+
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
+        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
     }
     
     @Parameters(commandNames = {"transform-alignments"}, commandDescription = "Generates the Alignment data model from an input file")
@@ -267,21 +273,19 @@ public class OptionsParser {
         boolean remove;
         
         
-        
-        
     }
     
-    
+
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
         String parsedCommand = jcommander.getParsedCommand();
-        return parsedCommand!=null?parsedCommand:"";
+        return parsedCommand != null? parsedCommand: "";
     }
 
     String usage() {
         StringBuilder builder = new StringBuilder();
         jcommander.usage(builder);
-        return builder.toString().replaceAll("\\^.*Default: false\\$\n", "");
+        return builder.toString();
     }
 
     CommandCreateAccessions getAccessionsCommand() {
@@ -291,7 +295,7 @@ public class OptionsParser {
     CommandLoadVariants getLoadCommand() {
         return load;
     }
-    
+
     CommandTransformVariants getTransformCommand() {
         return transform;
     }

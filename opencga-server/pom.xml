@@ -14,7 +14,6 @@
     <packaging>war</packaging>
     <version>${opencga.version}</version>
 
-
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -30,7 +29,8 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-core</artifactId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <version>${opencga.version}</version>
         </dependency>
 
         <!--<dependency>-->
@@ -75,10 +75,11 @@
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>nl.bitwalker</groupId>-->
-        <!--<artifactId>user-agent-util</artifactId>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>3.3.1</version>
+        </dependency>
     </dependencies>
 
 </project>

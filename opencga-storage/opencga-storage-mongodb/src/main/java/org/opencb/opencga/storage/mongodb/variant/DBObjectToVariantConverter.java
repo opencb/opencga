@@ -91,7 +91,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
                 .append(TYPE_FIELD, object.getType().name())
                 .append(CHROMOSOME_FIELD, object.getChromosome())
                 .append(START_FIELD, object.getStart())
-                .append(END_FIELD, object.getStart())
+                .append(END_FIELD, object.getEnd())
                 .append(LENGTH_FIELD, object.getLength())
                 .append(REFERENCE_FIELD, object.getReference())
                 .append(ALTERNATE_FIELD, object.getAlternate());
