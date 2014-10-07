@@ -21,64 +21,12 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     protected static ObjectMapper jsonObjectMapper;
     protected static ObjectWriter jsonObjectWriter;
 
-//    private Properties accountProperties;
-/*  jmmut: refactoring
-    //    private String appHomePath;
-    private String opencgaRootDir;
-    //    private Path opencgaRootDirPath;
-    private String tmp;
-
-//    private static String BUCKETS_FOLDER = "buckets";
-    /**
-     * OPENCGA_USERS_FOLDER and OPENCGA_BIN_FOLDER are created in the ROOTDIR of OpenCGA.
-     * OPENCGA_USERS_FOLDER contains users workspaces organized by 'userId'
-     * OPENCGA_BIN_FOLDER contains all packaged binaries delivered with OpenCGA
-     *
-    private static String OPENCGA_USERS_FOLDER = "users";
-    private static String OPENCGA_ANONYMOUS_USERS_FOLDER = "anonymous";
-    private static String OPENCGA_BIN_FOLDER = "bin";
-
-    /**
-     * USER_PROJECTS_FOLDER and USER_BIN_FOLDER are created in the user workspace to store the projects with studies
-     * and files, and the user binaries.
-     *
-    private static String USER_PROJECTS_FOLDER = "projects";
-    private static String USER_BIN_FOLDER = "bin";
-    private static String SHARED_DATA_FOLDER = "shared_data";
-//    private static String ANALYSIS_FOLDER = "analysis";
-
-*/
-    /*
-    public PosixCatalogIOManager(String rootdir) throws IOException, CatalogIOManagerException {
-//        accountProperties = Config.getAccountProperties();
-//        appHomePath = Config.getGcsaHome();
-//      opencgaRootDir = appHomePath + accountProperties.getProperty("OPENCGA.ACCOUNT.PATH");
-//        opencgaRootDir = accountProperties.getProperty("OPENCGA.ACCOUNT.PATH");
-//        tmp = accountProperties.getProperty("OPENCGA.TMP.PATH");
-
-        this(rootdir, true);
-//        this.opencgaRootDir = rootdir;
-//
-//        if (!Files.exists(Paths.get(opencgaRootDir))) {
-//            throw new IOManagementException("ERROR: The accounts folder not exists");
-//        }
-    }
-
-    public PosixCatalogIOManager(String rootdir, boolean setup) throws IOException, CatalogIOManagerException {
-        this.opencgaRootDir = Paths.get(rootdir).toUri();
-//        this.opencgaRootDirPath = Paths.get(this.opencgaRootDir);
-
-//        if(setup) {
-//            setup();
-//        }
-    }
-    */
 
     public PosixCatalogIOManager(String propertiesFile) throws IOException, CatalogIOManagerException {
         super(propertiesFile);
     }
 
-    public PosixCatalogIOManager(Properties properties) throws CatalogIOManagerException {
+    public PosixCatalogIOManager(Properties properties) throws IOException, CatalogIOManagerException {
         super(properties);
     }
 
@@ -173,7 +121,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * Get Path methods
      * ***************************
      */
-
+/*
     public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         checkParam(projectId);
         checkParam(studyId);
@@ -182,28 +130,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         checkUri(path);
 
         return null;
-    }
+    }*/
 
-    @Override
-    public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        checkParam(userId);
-        checkParam(projectId);
-        checkParam(studyId);
-        //TODO: Create URI as
-        // file://<userId>@localhost/ROOTDIR/users/<userId>/projects/<projectId>/<studyId>
-        // file://localhost/<userId>/<projectId>/<studyId>
-        // file://<userId>@localhost/<projectId>/<studyId>
-        // file://<userId>@localhost/<projectId>/<studyId>
-
-        try {
-            //return new URI("file", userId, "localhost", -1, getProjectUri(userId, projectId).toString(), null, null);
-            //return new URI("file", userId, "localhost", -1, Paths.get("/ROOTDIR" , OPENCGA_USERS_FOLDER, userId, USER_PROJECTS_FOLDER ,projectId, studyId).toString(), null, null);
-            return new URI("file", userId, "localhost", -1, Paths.get("/", projectId, studyId).toString(), null, null);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
 //    public Path getFileUri(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
 //        checkParam(relativeFilePath);
@@ -215,7 +143,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //
 //        return path;
 //    }
-
+/*
     @Override
     public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath) throws CatalogIOManagerException {
         checkParam(relativeFilePath);
@@ -223,7 +151,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         URI uri = getStudyPath(userId, projectId, studyId).resolve(relativeFilePath).toUri();
 
         return uri;
-    }
+    }*/
 
     public URI getTmpUri() {
         return Paths.get(tmp).toUri();

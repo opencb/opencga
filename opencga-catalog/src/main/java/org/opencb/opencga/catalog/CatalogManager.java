@@ -552,13 +552,14 @@ public class CatalogManager {
      */
 
     public QueryResult<Study> createStudy(int projectId, String name, String alias, String type, String description,
-                                          String sessionId)
+                                         /* String uriScheme,*/ String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(name, "name");
         checkParameter(alias, "alias");
         checkParameter(type, "type");
         checkParameter(description, "description");
         checkAlias(alias, "alias");
+//        checkParameter(uriScheme, "uriScheme");   // TODO
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);

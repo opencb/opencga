@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.io;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -10,17 +11,11 @@ import java.util.Properties;
  */
 public class CatalogIOManagerFactory {
 
-    private static Map<String, CatalogIOManager> catalogIOManagers;
+    private static Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
     private final Properties properties;
-    private String defaultIo;
-
 
     public CatalogIOManagerFactory(Properties properties) {
         this.properties = properties;
-    }
-
-    public CatalogIOManager get() throws IOException, CatalogIOManagerException {
-        return get(defaultIo);
     }
 
     public CatalogIOManager get(String io) throws IOException, CatalogIOManagerException {

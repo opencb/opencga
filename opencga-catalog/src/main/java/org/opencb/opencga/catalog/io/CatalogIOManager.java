@@ -48,13 +48,13 @@ public abstract class CatalogIOManager {
         this();
         this.properties = new Properties();
         this.properties.load(new FileInputStream(propertiesFile));
-        setProperties(properties);
+        setup();
     }
 
-    public CatalogIOManager(Properties properties) throws CatalogIOManagerException {
+    public CatalogIOManager(Properties properties) throws IOException, CatalogIOManagerException {
         this();
         this.properties = properties;
-        setProperties(properties);
+        setup();
     }
 
     protected abstract void setProperties(Properties properties) throws CatalogIOManagerException;
@@ -64,7 +64,7 @@ public abstract class CatalogIOManager {
      * @throws IOException
      */
     public void setup() throws CatalogIOManagerException, IOException {
-        //TODO set rootDir
+        setProperties(properties);
         checkDirectoryUri(rootDir, true);
 
         if(!exists(rootDir.resolve(OPENCGA_USERS_FOLDER))) {
@@ -206,7 +206,7 @@ public abstract class CatalogIOManager {
         URI usersUri = getAnonymousUsersUri();
         checkDirectoryUri(usersUri, true);
 
-        URI userUri = usersUri.resolve(anonymousUserId);
+        URI userUri = getAnonymousUserUri(anonymousUserId);
         try {
             if(!exists(userUri)) {
                 createDirectory(userUri);

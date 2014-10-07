@@ -34,12 +34,17 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
 
-    public HdfsCatalogIOManager(String propertiesFile) {
+    public HdfsCatalogIOManager(String propertiesFile) throws IOException, CatalogIOManagerException {
         super(propertiesFile);
     }
 
-    public HdfsCatalogIOManager(Properties properties) {
+    public HdfsCatalogIOManager(Properties properties) throws IOException, CatalogIOManagerException {
         super(properties);
+    }
+
+    @Override
+    protected void setProperties(Properties properties) throws CatalogIOManagerException {
+
     }
 
     @Override
