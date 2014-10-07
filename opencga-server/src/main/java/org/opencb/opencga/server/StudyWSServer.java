@@ -7,10 +7,8 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.beans.Project;
-import org.opencb.opencga.catalog.core.beans.Study;
-import org.opencb.opencga.catalog.core.db.CatalogManagerException;
-import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

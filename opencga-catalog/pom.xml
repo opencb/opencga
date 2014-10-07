@@ -11,12 +11,42 @@
     </parent>
 
     <artifactId>opencga-catalog</artifactId>
-    <packaging>pom</packaging>
-    <version>0.3.2</version>
+    <!--<packaging>pom</packaging>-->
+    <packaging>jar</packaging>
+    <version>${opencga.version}</version>
 
-    <modules>
-        <module>opencga-catalog-core</module>
-    </modules>
+    <!--<modules>-->
+        <!--<module>opencga-catalog-core</module>-->
+    <!--</modules>-->
+
+    <dependencies>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-lib</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-mongodb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+        </dependency>
+
+    </dependencies>
+
     <build>
         <testResources>
             <testResource>
