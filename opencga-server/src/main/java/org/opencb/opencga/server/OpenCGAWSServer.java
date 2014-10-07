@@ -97,13 +97,7 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(properties);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        } catch (CatalogIOManagerException e) {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        } catch (CatalogManagerException e) {
+        } catch (IOException | CatalogIOManagerException | CatalogManagerException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
@@ -144,10 +138,8 @@ public class OpenCGAWSServer {
         // Guarantee that the QueryResponse object contains a coll of results
         Collection coll;
         if (obj instanceof Collection) {
-            //System.out.println("collection");
             coll = (Collection) obj;
         } else {
-            //System.out.println("list");
             coll = new ArrayList();
             coll.add(obj);
         }
