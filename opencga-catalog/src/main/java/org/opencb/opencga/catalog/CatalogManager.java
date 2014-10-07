@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 
 public class CatalogManager {
 
-    public static final String DEFAULT_CATALOG_MODE = "file";
+    public static final String DEFAULT_CATALOG_SCHEME = "file";
     private CatalogDBAdaptor catalogDBAdaptor;
     private CatalogIOManager ioManager;
     private CatalogIOManagerFactory catalogIOManagerFactory;
@@ -91,7 +91,9 @@ public class CatalogManager {
     private void configureIOManager(Properties properties)
             throws IOException, CatalogIOManagerException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-        ioManager = this.catalogIOManagerFactory.get(properties.getProperty("CATALOG.MODE", DEFAULT_CATALOG_MODE));
+//        ioManager = this.catalogIOManagerFactory.get(properties.getProperty("CATALOG.MODE", DEFAULT_CATALOG_SCHEME));
+        String scheme = URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")).getScheme();
+        ioManager = this.catalogIOManagerFactory.get(scheme);
     }
 
     private void configureDBAdaptor(Properties properties)
@@ -563,7 +565,7 @@ public class CatalogManager {
     public QueryResult<Study> createStudy(int projectId, String name, String alias, String type, String description,
                                           String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException {
-        return createStudy(projectId, name, alias, type, description, DEFAULT_CATALOG_MODE, sessionId);
+        return createStudy(projectId, name, alias, type, description, DEFAULT_CATALOG_SCHEME, sessionId);
     }
 
     private QueryResult<Study> createStudy(int projectId, String name, String alias, String type, String description,

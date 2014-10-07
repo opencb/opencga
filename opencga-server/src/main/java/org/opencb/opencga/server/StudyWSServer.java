@@ -46,7 +46,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException e) {
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

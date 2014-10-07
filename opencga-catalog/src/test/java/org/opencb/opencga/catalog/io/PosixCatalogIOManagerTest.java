@@ -26,7 +26,7 @@ public class PosixCatalogIOManagerTest {
             }
             Files.createDirectory(path);
             Properties properties = new Properties();
-            properties.setProperty("FILE.ROOTDIR", path.toUri().toString());
+            properties.setProperty("CATALOG.FILE.ROOTDIR", path.toUri().toString());
             posixCatalogIOManager = new PosixCatalogIOManager(properties);
         }catch(Exception e) {
             e.printStackTrace();

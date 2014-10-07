@@ -18,10 +18,12 @@ import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,7 +39,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser3;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException {
+    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -199,6 +201,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogManagerException {
         String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").getResult().get(0).getString("sessionId");
 //        catalogManager.createProject()
+          //TODO: Finish test
     }
 
     @Test
@@ -351,7 +354,7 @@ public class CatalogManagerTest extends GenericTest {
         QueryOptions options;
         QueryResult<File> result;
 
-        options = new QueryOptions("startsWith", "my");
+        options = new QueryOptions("startsWith", "new");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
         System.out.println(result);
         assertTrue(result.getNumResults() == 1);
@@ -437,7 +440,7 @@ public class CatalogManagerTest extends GenericTest {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("CATALOG.HOST"), Integer.parseInt(properties.getProperty("CATALOG.PORT")));
         MongoDataStore db = mongoManager.get(properties.getProperty("CATALOG.DATABASE"));
         db.getDb().dropDatabase();
-        Path rootdir = Paths.get(properties.getProperty("ROOTDIR"));
+        Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
         deleteFolderTree(rootdir.toFile());
         Files.createDirectory(rootdir);
     }

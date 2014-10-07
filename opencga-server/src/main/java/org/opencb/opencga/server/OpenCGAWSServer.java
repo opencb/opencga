@@ -12,6 +12,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +98,7 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(properties);
-        } catch (IOException | CatalogIOManagerException | CatalogManagerException e) {
+        } catch (IOException | CatalogIOManagerException | CatalogManagerException | IllegalOpenCGACredentialsException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }

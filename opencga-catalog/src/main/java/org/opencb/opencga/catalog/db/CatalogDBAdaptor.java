@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.beans.*;
 
