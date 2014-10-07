@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -825,6 +826,46 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Set project acl", startTime, pushResult);
     }
 
+
+    public QueryResult<File> searchProject(QueryOptions options) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        BasicDBList filters = new BasicDBList();
+
+        if(options.containsKey("name")){
+            filters.add(new BasicDBObject("name", options.getString("name")));
+        }
+        if(options.containsKey("like")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", options.getString("like"))));
+        }
+        if(options.containsKey("startsWith")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+options.getString("startsWith"))));
+        }
+        if(options.containsKey("alias")){
+            filters.add(new BasicDBObject("alias", options.getString("alias")));
+        }
+//        if(options.containsKey("maxSize")){
+//            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", options.getInt("maxSize"))));
+//        }
+//        if(options.containsKey("minSize")){
+//            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", options.getInt("minSize"))));
+//        }
+        if(options.containsKey("startDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", options.getString("startDate"))));
+        }
+        if(options.containsKey("endDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", options.getString("endDate"))));
+        }
+
+        DBObject query = new BasicDBObject("$and", filters);
+
+        QueryResult<WriteResult> queryResult = fileCollection.find(query, null, null);
+
+        List<File> files = parseFiles(queryResult);
+
+        return endQuery("Search File", startTime, files);
+    }
+
     /**
      * Study methods
      * ***************************
@@ -1531,6 +1572,53 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("set file acl", startTime);
     }
 
+    public QueryResult<File> searchFile(QueryOptions options) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        BasicDBList filters = new BasicDBList();
+
+        if(options.containsKey("name")){
+            filters.add(new BasicDBObject("name", options.getString("name")));
+        }
+        if(options.containsKey("type")){
+            filters.add(new BasicDBObject("type", options.getString("type")));
+        }
+        if(options.containsKey("bioformat")){
+            filters.add(new BasicDBObject("bioformat", options.getString("bioformat")));
+        }
+        if(options.containsKey("maxSize")){
+            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", options.getInt("maxSize"))));
+        }
+        if(options.containsKey("minSize")){
+            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", options.getInt("minSize"))));
+        }
+        if(options.containsKey("startDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", options.getString("startDate"))));
+        }
+        if(options.containsKey("endDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", options.getString("endDate"))));
+        }
+        if(options.containsKey("like")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", options.getString("like"))));
+        }
+        if(options.containsKey("startsWith")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+options.getString("startsWith"))));
+        }
+        if(options.containsKey("directory")){
+            filters.add(new BasicDBObject("path", new BasicDBObject("$regex", "^"+options.getString("directory")+"/[^/]*$")));
+        }
+        if(options.containsKey("studyId")){
+            filters.add(new BasicDBObject("studyId", options.getInt("studyId")));
+        }
+
+        DBObject query = new BasicDBObject("$and", filters);
+
+        QueryResult<WriteResult> queryResult = fileCollection.find(query, null, null);
+
+        List<File> files = parseFiles(queryResult);
+
+        return endQuery("Search File", startTime, files);
+    }
 
 
     /**

@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -40,7 +41,7 @@ public class CatalogManagerTest extends GenericTest {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
-        clearCatalog(properties);
+        //clearCatalog(properties);
         catalogManager = new CatalogManager(properties);
     }
 
@@ -335,6 +336,30 @@ public class CatalogManagerTest extends GenericTest {
         dis.read(bytes, 0, 100);
         System.out.println(Bytes.toString(bytes));
     }
+
+    @Test
+    public void searchFileTest() throws CatalogManagerException, CatalogIOManagerException, IOException {
+
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        QueryOptions options;
+        QueryResult<File> result;
+
+        options = new QueryOptions("startsWith", "my");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        System.out.println(result);
+        assertTrue(result.getNumResults() == 1);
+
+        options = new QueryOptions("directory", "jobs");
+        System.out.println(catalogManager.searchFile(studyId, options, sessionIdUser));
+
+        options = new QueryOptions("directory", "data");
+        System.out.println(catalogManager.searchFile(studyId, options, sessionIdUser));
+
+        options = new QueryOptions("directory", "data.*");
+        System.out.println(catalogManager.searchFile(studyId, options, sessionIdUser));
+    }
+
 
     /* FILE UTILS */
     private java.io.File createDebugFile() throws IOException {

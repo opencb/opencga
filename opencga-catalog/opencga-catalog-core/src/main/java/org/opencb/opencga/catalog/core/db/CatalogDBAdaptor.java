@@ -150,7 +150,7 @@ public interface CatalogDBAdaptor {
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException;
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
 
-
+    QueryResult<File> searchFile(QueryOptions options) throws CatalogManagerException;
 
     /**
      * Analysis methods

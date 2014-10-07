@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.beans.*;
 import org.opencb.opencga.catalog.core.db.CatalogDBAdaptor;
@@ -22,7 +23,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -426,6 +426,11 @@ public class CatalogManager {
         checkSessionId(ownerId, sessionId);    //Only the user can create a project
 
         Project project = new Project(name, alias, description, "", organization);
+
+        /* Add default ACL */
+        //Add generic permissions to the project.
+        project.getAcl().add(new Acl(USER_OTHERS_ID, false, false, false, false));
+
         QueryResult<Project> result = catalogDBAdaptor.createProject(ownerId, project);
         project = result.getResult().get(0);
 
@@ -991,6 +996,16 @@ public class CatalogManager {
         }
 
         return catalogDBAdaptor.setFileAcl(fileId, acl);
+    }
+
+    public QueryResult<File> searchFile(int studyId, QueryOptions options, String sessionId) throws CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        getStudyAcl(userId, studyId);
+
+        options.put("studyId", studyId);
+        return catalogDBAdaptor.searchFile(options);
     }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
