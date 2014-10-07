@@ -866,7 +866,15 @@ public class CatalogManager {
         return result;
     }
 
+    public QueryResult deleteFile(int fileId, String sessionId) throws CatalogManagerException {
+        return deleteDataFromStudy(fileId ,sessionId);
+    }
 
+    public QueryResult deleteFolder(int folderId, String sessionId) throws CatalogManagerException {
+        return deleteFile(folderId, sessionId);
+    }
+
+    @Deprecated
     public QueryResult deleteDataFromStudy(int fileId, String sessionId)
             throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");

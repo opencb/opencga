@@ -195,6 +195,12 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogManagerException {
+        String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").getResult().get(0).getString("sessionId");
+//        catalogManager.createProject()
+    }
+
+    @Test
     public void testGetAllProjects() throws Exception {
         System.out.println(catalogManager.getAllProjects("user", sessionIdUser));
         System.out.println(catalogManager.getAllProjects("user", sessionIdUser2));
@@ -336,6 +342,21 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(Bytes.toString(bytes));
     }
 
+    @Test
+    public void testDeleteFile () throws CatalogManagerException, JsonProcessingException {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
+        File file = null;
+        for (int i = 0; i < result.size(); i++) {
+            if (result.get(i).getType().equals(File.FILE)) {
+                file = result.get(i);
+            }
+        }
+        if (file != null) {
+            catalogManager.deleteFile(file.getId(), sessionIdUser);
+        }
+    }
     /* FILE UTILS */
     private java.io.File createDebugFile() throws IOException {
         String fileTestName = "/tmp/fileTest" + StringUtils.randomString(5);
