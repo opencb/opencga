@@ -138,7 +138,7 @@ public class CatalogManager {
     }
     public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check)
             throws CatalogIOManagerException {
-        return ioManager.getFilePath(userId, projectId, studyId, relativeFilePath, check);
+        return null;
     }
 
 

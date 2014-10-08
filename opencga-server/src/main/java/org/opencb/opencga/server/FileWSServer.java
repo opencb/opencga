@@ -7,7 +7,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.IOUtils;
 
 import javax.servlet.http.HttpServletRequest;
