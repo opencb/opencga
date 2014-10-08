@@ -5,6 +5,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.IOUtils;
@@ -36,7 +37,6 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/upload")
     @Produces("application/json")
-    @ApiOperation(value = "Upload a file to an study")
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
@@ -55,17 +55,15 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") int studyId,
                                 @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = true) @DefaultValue("") @FormDataParam("description") String description,
-                                @ApiParam(value = "parents", required = true) @DefaultValue("true") @FormDataParam("parents") boolean parents,
-
-
-    ) {
+                                @ApiParam(value = "parents", required = true) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         long t = System.currentTimeMillis();
 
         java.nio.file.Path filePath = null;
         try {
-            filePath = catalogManager.getFilePath(userId, projectId, String.valueOf(studyId), relativeFilePath);
+            filePath = catalogManager.getFilePath(userId, projectId, String.valueOf(studyId), relativeFilePath, false);
         } catch (CatalogIOManagerException e) {
+            System.out.println("catalogManager.getFilePath");
             e.printStackTrace();
         }
 
@@ -82,7 +80,7 @@ public class FileWSServer extends OpenCGAWSServer {
             logger.info("---resume is: " + resume);
             if (resume) {
                 logger.info("Resume ms :" + (System.currentTimeMillis() - t));
-                return createOkResponse(getResumeFileJSON(folderPath).toString());
+                return createOkResponse(getResumeFileJSON(folderPath));
             }
 
             int chunkId = Integer.parseInt(chunk_id);
@@ -117,23 +115,10 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
                 IOUtils.deleteDirectory(folderPath);
                 try {
-//                    ObjectItem objectItem = new ObjectItem(null, null, null);// TODO PAKO
-//                    // COMPROBAR
-//                    // CONSTRUCTOR
-//                    objectItem.setFileFormat(fileFormat);
-//                    objectItem.setFileType("r");
-//                    objectItem.setResponsible("");
-//                    objectItem.setOrganization("");
-//                    objectItem.setDate(TimeUtils.getTime());
-//                    objectItem.setDescription("");
 
-
-                    QueryResult queryResult = catalogManager.uploadFile(
-                            studyId, fileFormat, bioFormat, relativeFilePath, description, parents, Files.newInputStream(completedFilePath), sessionId
-                    );
-
-
+                    QueryResult queryResult = catalogManager.uploadFile(studyId, fileFormat, bioFormat, relativeFilePath, description, parents, Files.newInputStream(completedFilePath), sessionId);
                     IOUtils.deleteDirectory(completedFilePath);
+
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
                     logger.error(e.toString());
@@ -150,30 +135,20 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse("ok");
     }
 
-    private StringBuilder getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {
-        StringBuilder sb = new StringBuilder();
+    private ObjectMap getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {
+        ObjectMap objectMap = new ObjectMap();
 
-        if (!Files.exists(folderPath)) {
-            sb.append("{}");
-            return sb;
+        if (Files.exists(folderPath)) {
+            DirectoryStream<java.nio.file.Path> folderStream = Files.newDirectoryStream(folderPath, "*_partial");
+            for (java.nio.file.Path partPath : folderStream) {
+                String[] nameSplit = partPath.getFileName().toString().split("_");
+                ObjectMap chunkInfo = new ObjectMap();
+                chunkInfo.put("size", Integer.parseInt(nameSplit[1]));
+                objectMap.put(nameSplit[0], chunkInfo);
+            }
         }
 
-        String c = "\"";
-        DirectoryStream<java.nio.file.Path> folderStream = Files.newDirectoryStream(folderPath, "*_partial");
-        sb.append("{");
-        for (java.nio.file.Path partPath : folderStream) {
-            String[] nameSplit = partPath.getFileName().toString().split("_");
-            sb.append(c + nameSplit[0] + c + ":{");
-            sb.append(c + "size" + c + ":" + nameSplit[1]);
-            // sb.append(c + "hash" + c + ":" + c + nameSplit[2] + c);
-            sb.append("},");
-        }
-        // Remove last comma
-        if (sb.length() > 1) {
-            sb.replace(sb.length() - 1, sb.length(), "");
-        }
-        sb.append("}");
-        return sb;
+        return objectMap;
     }
 
     private List<java.nio.file.Path> getSortedChunkList(java.nio.file.Path folderPath) throws IOException {
