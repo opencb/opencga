@@ -365,7 +365,7 @@ public class AccountMongoDBManager implements AccountManager {
         message.append("Best regards,").append("\n\n");
         message.append("Computational Biology Unit at Computational Medicine Institute").append("\n");
 
-        MailUtils.sendResetPasswordMail(email, message.toString());
+//        MailUtils.sendResetPasswordMail(email, message.toString());
 
         return result;
     }
