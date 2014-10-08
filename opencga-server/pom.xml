@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.3.2</version>
+        <version>0.4.0</version>
         <relativePath>..</relativePath>
     </parent>
 
@@ -29,13 +29,21 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage</artifactId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <version>${opencga.version}</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog-core</artifactId>
+            <artifactId>opencga-catalog</artifactId>
             <version>${opencga.version}</version>
         </dependency>
+
+        <!--<dependency>-->
+        <!--<groupId>org.opencb.variant</groupId>-->
+        <!--<artifactId>variant-cli</artifactId>-->
+        <!--<version>1.0.0</version>-->
+        <!--</dependency>-->
+
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

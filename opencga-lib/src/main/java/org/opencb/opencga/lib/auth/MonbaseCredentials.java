@@ -1,6 +1,6 @@
 package org.opencb.opencga.lib.auth;
 
-import com.mongodb.MongoCredential;
+//import com.mongodb.MongoCredential;
 import java.util.Map;
 import java.util.Properties;
 
@@ -8,6 +8,7 @@ import java.util.Properties;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
+@Deprecated
 public class MonbaseCredentials implements OpenCGACredentials {
 
     private final String hbaseMasterHost;
@@ -18,7 +19,7 @@ public class MonbaseCredentials implements OpenCGACredentials {
     private final String mongoHost;
     private final int mongoPort;
     private final String mongoDbName;
-    private final MongoCredential mongoCredentials;
+//    private final MongoCredential mongoCredentials;
     
     
     public MonbaseCredentials(String hbaseMasterHost, int hbaseMasterPort, String hbaseZookeeperQuorum, int hbaseZookeeperClientPort, 
@@ -31,7 +32,7 @@ public class MonbaseCredentials implements OpenCGACredentials {
         this.mongoHost = mongoHost;
         this.mongoPort = mongoPort;
         this.mongoDbName = mongoDbName;
-        mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
+//        mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
         
         check();
     }
@@ -44,10 +45,10 @@ public class MonbaseCredentials implements OpenCGACredentials {
         this.mongoHost = properties.getProperty("mongo_host");
         this.mongoPort = Integer.parseInt(properties.getProperty("mongo_port", "-1"));
         this.mongoDbName = properties.getProperty("mongo_db_name");
-        mongoCredentials = MongoCredential.createMongoCRCredential(
-                properties.getProperty("mongo_user"), 
-                mongoDbName, 
-                properties.getProperty("mongo_password", "").toCharArray());
+//        mongoCredentials = MongoCredential.createMongoCRCredential(
+//                properties.getProperty("mongo_user"),
+//                mongoDbName,
+//                properties.getProperty("mongo_password", "").toCharArray());
         check();
     }
     
@@ -92,9 +93,9 @@ public class MonbaseCredentials implements OpenCGACredentials {
         return hbaseZookeeperQuorum;
     }
 
-    public MongoCredential getMongoCredentials() {
-        return mongoCredentials;
-    }
+//    public MongoCredential getMongoCredentials() {
+//        return mongoCredentials;
+//    }
 
     public String getMongoDbName() {
         return mongoDbName;

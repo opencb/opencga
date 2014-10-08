@@ -9,9 +9,9 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.CatalogManager;
-import org.opencb.opencga.catalog.core.db.CatalogManagerException;
-import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,11 +83,11 @@ public class OpenCGAWSServer {
         try {
             properties.load(is);
             System.out.println("catalog.properties");
-            System.out.println(properties.getProperty("HOST"));
-            System.out.println(properties.getProperty("PORT"));
-            System.out.println(properties.getProperty("DATABASE"));
-            System.out.println(properties.getProperty("USER"));
-            System.out.println(properties.getProperty("PASSWORD"));
+            System.out.println(properties.getProperty("CATALOG.HOST"));
+            System.out.println(properties.getProperty("CATALOG.PORT"));
+            System.out.println(properties.getProperty("CATALOG.DATABASE"));
+            System.out.println(properties.getProperty("CATALOG.USER"));
+            System.out.println(properties.getProperty("CATALOG.PASSWORD"));
             System.out.println(properties.getProperty("ROOTDIR"));
         } catch (IOException e) {
             System.out.println("Error loading properties");

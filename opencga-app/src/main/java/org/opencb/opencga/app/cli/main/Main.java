@@ -3,11 +3,12 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.ParameterException;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.CatalogManager;
-import org.opencb.opencga.catalog.core.beans.*;
-import org.opencb.opencga.catalog.core.beans.File;
-import org.opencb.opencga.catalog.core.db.CatalogManagerException;
-import org.opencb.opencga.catalog.core.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -25,7 +26,8 @@ public class Main {
     public String sessionId;
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException {
+    public static void main(String[] args)
+            throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException {
 
         Main opencgaMain = new Main();
 
@@ -62,7 +64,7 @@ public class Main {
         }
     }
 
-    private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException {
+    private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException {
         OptionsParser optionsParser = new OptionsParser();
         //args = "projects share -u user -p asdf -U user2 -r true -d true -w true -x true --id 1".split(" "); System.out.println("HARCODE ARGS!");
         try {
@@ -292,7 +294,8 @@ public class Main {
         }
     }
 
-    private static CatalogManager getCatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
+    private static CatalogManager getCatalogManager()
+            throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
         CatalogManager catalogManager;InputStream is = Main.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         //try {

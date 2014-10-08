@@ -6,15 +6,36 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.3.2</version>
+        <version>0.4.0</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>opencga-storage</artifactId>
-    <packaging>jar</packaging>
-    <version>${opencga.version}</version>
+    <packaging>pom</packaging>
+    <version>0.4.0</version>
 
+    <modules>
+        <module>opencga-storage-core</module>
+        <module>opencga-storage-mongodb</module>
+        <module>opencga-storage-hbase</module>
+    </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-core</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-core</artifactId>
+                <version>0.2.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+<!--
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -49,24 +70,20 @@
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <!--<optional>true</optional>-->
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>bioformats</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-common</artifactId>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
@@ -76,7 +93,20 @@
             <artifactId>jersey-client</artifactId>
             <version>2.11</version>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.variant</groupId>
+            <artifactId>variant-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>formats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>models</artifactId>
+        </dependency>
     </dependencies>
+-->
 
     <build>
         <testResources>
@@ -84,7 +114,7 @@
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
-        
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -93,17 +123,17 @@
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>
-                        <excludes>
-                            <exclude>**/VariantSqliteWriter.java</exclude>
-                            <exclude>**/VariantSqliteDBAdaptor.java</exclude>
-                            <exclude>**/VariantHbaseWriter.java</exclude>
-                            <exclude>**/VariantHbaseDBAdaptor.java</exclude>
-                        </excludes>
-                        <testExcludes>
-                            <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
-                            <exclude>**/VariantHbaseWriterTest.java</exclude>
-                            <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
-                        </testExcludes>
+                    <excludes>
+                        <exclude>**/VariantSqliteWriter.java</exclude>
+                        <exclude>**/VariantSqliteDBAdaptor.java</exclude>
+                        <exclude>**/VariantHbaseWriter.java</exclude>
+                        <exclude>**/VariantHbaseDBAdaptor.java</exclude>
+                    </excludes>
+                    <testExcludes>
+                        <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
+                        <exclude>**/VariantHbaseWriterTest.java</exclude>
+                        <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
+                    </testExcludes>
                 </configuration>
             </plugin>
         </plugins>

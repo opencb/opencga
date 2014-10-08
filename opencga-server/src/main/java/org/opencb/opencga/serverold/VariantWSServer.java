@@ -8,12 +8,12 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.json.ArchivedVariantFileJsonMixin;
-import org.opencb.opencga.storage.variant.json.GenotypeJsonMixin;
-import org.opencb.opencga.storage.variant.json.VariantSourceJsonMixin;
-import org.opencb.opencga.storage.variant.json.VariantStatsJsonMixin;
-import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.json.ArchivedVariantFileJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -40,7 +40,14 @@ public class VariantWSServer extends GenericWSServer {
     static {
 
         try {
-            credentials = new MongoCredentials("localhost", 27017, "test", "user", "pass");
+
+            String host = properties.getProperty("VARIANT.STORAGE.HOST");
+            int port = Integer.parseInt(properties.getProperty("VARIANT.STORAGE.PORT"));
+            String db = properties.getProperty("VARIANT.STORAGE.DB");
+            String user = properties.getProperty("VARIANT.STORAGE.USER");
+            String pass = properties.getProperty("VARIANT.STORAGE.PASS");
+
+            credentials = new MongoCredentials(host, port, db, user, pass);
             variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials);
 
 
