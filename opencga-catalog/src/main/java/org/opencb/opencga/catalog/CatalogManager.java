@@ -116,32 +116,53 @@ public class CatalogManager {
      * ***************************
      */
 
-    /* jmmut uncomment
+    @Deprecated
     public Path getUserPath(String userId) throws CatalogIOManagerException {
+        return null;
+    }
+
+    @Deprecated
+    public Path getProjectPath(String userId, String projectId) throws CatalogIOManagerException {
+        return null;
+    }
+
+    @Deprecated
+    public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
+        return null;
+    }
+
+    @Deprecated
+    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath)
+            throws CatalogIOManagerException {
+        return null;
+    }
+
+
+    public URI getUserUri(String userId) throws CatalogIOManagerException {
         return ioManager.getUserUri(userId);
     }
 
-    public Path getProjectPath(String userId, String projectId) throws CatalogIOManagerException {
+    public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
         return ioManager.getProjectUri(userId, projectId);
     }
 
-    public Path getStudyPath(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        return ioManager.getStudyPath(userId, projectId, studyId);
+    public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
+        return ioManager.getStudyUri(userId, projectId, studyId);
     }
 
-    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath)
+    public URI getFileUri(String userId, String projectId, String studyId, String relativeFileUri)
             throws CatalogIOManagerException {
-        return ioManager.getFileUri(userId, projectId, studyId, relativeFilePath);
+        return ioManager.getFileUri(userId, projectId, studyId, relativeFileUri);
     }
 
-//    public Path getJobFolderPath(String userId, String projectId, Path JobId) {
-//        return ioManager.getJobFolderPath(userId, projectId, JobId);
+    /* jmmut uncomment
+//    public Uri getJobFolderUri(String userId, String projectId, Uri JobId) {
+//        return ioManager.getJobFolderUri(userId, projectId, JobId);
 //    }
 
-    public Path getTmpPath() {
-        return ioManager.getTmpUri();
-    }
-    */
+//    public URI getTmpUri() {
+//        return ioManager.getTmpUri();
+//    }
 
 //    public File getFile(String userId, String projectAlias, String studyAlias, Path filePath,
 //                                    String sessionId) throws CatalogManagerException, IOException {
