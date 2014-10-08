@@ -411,8 +411,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void setStudyAclTest() throws CatalogManagerException {
-        // unimplemented yet
-        /*
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         System.out.println(studyId);
 
@@ -427,7 +425,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         } catch (CatalogManagerException e) {
             System.out.println("correct exception: " + e);
         }
-        */
     }
 
     /**
