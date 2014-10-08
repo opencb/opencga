@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.effect.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
@@ -21,7 +22,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
     
-    private VariantSource file;
+    private VariantSource source;
 
     private MongoClient mongoClient;
     private DB db;
@@ -63,7 +64,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
-        this.file = source;
+        this.source = source;
         this.credentials = credentials;
         this.filesCollectionName = filesCollection;
         this.variantsCollectionName = variantsCollection;
@@ -141,7 +142,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             
             BasicDBList mongoFiles = new BasicDBList();
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                if (!archiveFile.getFileId().equals(file.getFileId())) {
+                if (!archiveFile.getFileId().equals(source.getFileId())) {
                     continue;
                 }
                 
@@ -185,10 +186,9 @@ public class VariantMongoWriter extends VariantDBWriter {
                     for (VariantEffect effect : effects) {
                         BasicDBObject object = getVariantEffectDBObject(effect);
                         effectsSet.add(object);
-                        // TODO Do this once the new variant effect API is well-defined
-//                        addConsequenceType(effect.getConsequenceTypeObo());
-
-                        soSet.add(object.get("so").toString());
+                        
+                        addConsequenceType(effect);
+                        soSet.addAll(Arrays.asList((String[]) object.get("so")));
                         if (object.containsField("geneName")) {
                             genesSet.add(object.get("geneName").toString());
                         }
@@ -216,11 +216,12 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private BasicDBObject getVariantEffectDBObject(VariantEffect effect) {
-        // TODO Do this once the new variant effect API is well-defined
-        BasicDBObject object = new BasicDBObject(
-//        "so", effect.getConsequenceTypeObo());
-//        object.append(
-                "featureId", effect.getFeatureId());
+        String[] consequenceTypes = new String[effect.getConsequenceTypes().length];
+        for (int i = 0; i < effect.getConsequenceTypes().length; i++) {
+            consequenceTypes[i] = ConsequenceTypeMappings.accessionToTerm.get(effect.getConsequenceTypes()[i]);
+        }
+        
+        BasicDBObject object = new BasicDBObject("so", consequenceTypes).append("featureId", effect.getFeatureId());
         if (effect.getGeneName() != null && !effect.getGeneName().isEmpty()) {
             object.append("geneName", effect.getGeneName());
         }
@@ -258,7 +259,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 } catch(MongoInternalException ex) {
                     System.out.println(v);
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
-                } catch(MongoException.DuplicateKey ex) {
+                } catch(DuplicateKeyException ex) {
                     Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
                             "Variant already existed: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
@@ -301,7 +302,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     @Override
     public boolean post() {
-        writeSourceSummary(file);
+        writeSourceSummary(source);
         return true;
     }
 
@@ -330,9 +331,25 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private void setConverters(boolean includeStats, boolean includeSamples, boolean includeEffect) {
+        boolean compressSamples;
+        switch (source.getType()) {
+            case FAMILY:
+            case TRIO:
+                compressSamples = false;
+                break;
+            case CONTROL:
+            case CASE:
+            case CASE_CONTROL:
+            case COLLECTION:
+            default:
+                compressSamples = true;
+        }
+        
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
+        // TODO Allow to configure samples compression
         archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+                compressSamples,
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);
         // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
@@ -340,9 +357,12 @@ public class VariantMongoWriter extends VariantDBWriter {
         variantConverter = new DBObjectToVariantConverter();
     }
     
-    private void addConsequenceType(String ct) {
-        int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct) : 1;
-        conseqTypes.put(ct, ctCount);
+    private void addConsequenceType(VariantEffect effect) {
+        for (int so : effect.getConsequenceTypes()) {
+            String ct = ConsequenceTypeMappings.accessionToTerm.get(so);
+            int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct)+1 : 1;
+            conseqTypes.put(ct, ctCount);
+        }
     }
 
 }

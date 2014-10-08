@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.opencb.opencga</groupId>
+        <artifactId>opencga</artifactId>
+        <version>0.4.0</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <artifactId>opencga-catalog</artifactId>
+    <!--<packaging>pom</packaging>-->
+    <packaging>jar</packaging>
+    <version>${opencga.version}</version>
+
+    <!--<modules>-->
+        <!--<module>opencga-catalog-core</module>-->
+    <!--</modules>-->
+
+    <dependencies>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-lib</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-mongodb</artifactId>
+            <version>0.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
+        <resources>
+
+        </resources>
+    </build>
+</project>

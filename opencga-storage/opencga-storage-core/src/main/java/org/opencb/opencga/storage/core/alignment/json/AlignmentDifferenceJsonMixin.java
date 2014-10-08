@@ -9,7 +9,7 @@ package org.opencb.opencga.storage.core.alignment.json;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ * @author Jacobo Coll MoragÃ³n <jcoll@ebi.ac.uk>
  */
 public abstract class AlignmentDifferenceJsonMixin {
 

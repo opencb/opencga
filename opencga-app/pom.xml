@@ -33,6 +33,11 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+        </dependency>
+
         <!--<dependency>-->
             <!--<groupId>org.opencb.opencga</groupId>-->
             <!--<artifactId>opencga-storage-mongodb</artifactId>-->
@@ -81,6 +86,13 @@
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
         <finalName>opencga-app</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
 
         <plugins>
             <plugin>
@@ -193,6 +205,10 @@
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.OpenCGAMain</mainClass>
                             <name>${app.name}</name>
+                        </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.cli.main.Main</mainClass>
+                            <name>opencga-manager.sh</name>
                         </program>
                     </programs>
                 </configuration>

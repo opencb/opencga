@@ -28,7 +28,11 @@ public class CreateAccessionTask extends Task<VcfRecord> {
     private String globalPrefix;
     private String studyPrefix;
 
-    private LRUCache<String, Map<Variant.VariantType, String>> currentAccessions;
+    /**
+     * Last accessions used, in case they would need to be reused. They are 
+     * grouped by chromosome, position and alternate allele.
+     */
+    private LRUCache<String, Map<String, String>> currentAccessions;
     private String lastAccession;
 
     private CombinationIterator<Character> iterator;
@@ -68,11 +72,11 @@ public class CreateAccessionTask extends Task<VcfRecord> {
             List<Variant> variants = variantFactory.create(source, record.toString());
             StringBuilder allAccessionsInRecord = new StringBuilder();
             for (Variant v : variants) {
-                Map<Variant.VariantType, String> variantAccession = currentAccessions.get(getKey(v));
+                Map<String, String> variantAccession = currentAccessions.get(getKey(v));
                 if (variantAccession != null) {
-                    String typeAccession = variantAccession.get(v.getType());
-                    if (typeAccession != null) {
-                        allAccessionsInRecord = appendAccession(allAccessionsInRecord, typeAccession);
+                    String accessionGroup = variantAccession.get(getValue(v));
+                    if (accessionGroup != null) {
+                        allAccessionsInRecord = appendAccession(allAccessionsInRecord, accessionGroup);
                     } else {
                         resetAccessions(v);
                         allAccessionsInRecord = appendAccession(allAccessionsInRecord, lastAccession);
@@ -94,6 +98,10 @@ public class CreateAccessionTask extends Task<VcfRecord> {
         return v.getChromosome() + "_" + v.getStart();
     }
     
+    private String getValue(Variant v) {
+        return v.getReference() + "_" + v.getAlternate();
+    }
+    
     private void resetAccessions(Variant v) {
         Character[] next = (Character[]) iterator.next();
         StringBuilder sb = new StringBuilder(next.length);
@@ -102,15 +110,15 @@ public class CreateAccessionTask extends Task<VcfRecord> {
         }
         lastAccession = sb.toString();
         
-        Map<Variant.VariantType, String> variantAccession = currentAccessions.get(getKey(v));
+        Map<String, String> variantAccession = currentAccessions.get(getKey(v));
         if (variantAccession == null) {
             variantAccession = new HashMap<>();
-            variantAccession.put(v.getType(), lastAccession);
+            variantAccession.put(getValue(v), lastAccession);
             currentAccessions.put(getKey(v), variantAccession);
         } else {
-            String typeAccession = variantAccession.get(v.getType());
-            if (typeAccession == null) {
-                variantAccession.put(v.getType(), lastAccession);
+            String accessionGroup = variantAccession.get(getValue(v));
+            if (accessionGroup == null) {
+                variantAccession.put(getValue(v), lastAccession);
             }
         }
     }

@@ -18,6 +18,7 @@ import java.util.Properties;
  * Takes the index from a properties file where "key" is the index, and "value" is the path to the file.
  * If missing, it's created in "/tmp/files-index.properties"
  */
+@Deprecated
 public class AlignmentMetaDataDBAdaptor {
     private Properties bamFiles;
     private String bamFilesPath;
