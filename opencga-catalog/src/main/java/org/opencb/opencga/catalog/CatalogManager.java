@@ -136,6 +136,10 @@ public class CatalogManager {
             throws CatalogIOManagerException {
         return null;
     }
+    public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check)
+            throws CatalogIOManagerException {
+        return ioManager.getFilePath(userId, projectId, studyId, relativeFilePath, check);
+    }
 
 
     public URI getUserUri(String userId) throws CatalogIOManagerException {
