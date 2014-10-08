@@ -22,6 +22,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
+    private final String collectionName = "variants";
 
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration
@@ -32,13 +33,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         
         // Converters from DBObject to Java classes
-        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, new DBObjectToVariantStatsConverter(), credentials);
+        // TODO Allow to configure depending on the type of study?
+        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(true, 
+                new DBObjectToVariantStatsConverter(), credentials);
         variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }
 
     @Override
     public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         getRegionFilter(region, qb);
@@ -50,16 +53,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public List<QueryResult> getAllVariantsByRegionList(List<Region> regions, QueryOptions options) {
         List<QueryResult> allResults = new LinkedList<>();
-        for (Region r : regions) {
-            QueryResult queryResult = getAllVariantsByRegion(r, options);
-            allResults.add(queryResult);
+        // If the user asks to merge the results, run only one query,
+        // otherwise delegate in the method to query regions one by one
+        if (options.getBoolean("merge", false)) {
+            MongoDBCollection coll = db.getCollection(collectionName);
+            QueryBuilder qb = QueryBuilder.start();
+            getRegionFilter(regions, qb);
+            parseQueryOptions(options, qb);
+            allResults.add(coll.find(qb.get(), options, variantConverter));
+        } else {
+            for (Region r : regions) {
+                QueryResult queryResult = getAllVariantsByRegion(r, options);
+                allResults.add(queryResult);
+            }
         }
         return allResults;
     }
 
     @Override
     public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyId, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
 
         // Aggregation for filtering when more than one study is present
         QueryBuilder qb = QueryBuilder.start(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD).in(studyId);
@@ -80,7 +93,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }}, 
         //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]}, 20000] } ] }, 
         //                                  totalCount: {$sum: 1}}})
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         int interval = options.getInt("interval", 20000);
 
@@ -176,7 +189,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
 
         QueryBuilder qb = QueryBuilder.start("_at.gn").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
@@ -199,7 +212,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         //                        { $group : { _id : "$genes", count: { $sum : 1 } }},
         //                        { $sort : { "count" : -1 }},
         //                        { $limit : 10 } )
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
@@ -226,7 +239,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult getConsequenceTypesRanking(int numConsequenceTypes, int order, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
@@ -244,7 +257,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     @Override
     public QueryResult getVariantById(String id, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("variants");
+        MongoDBCollection coll = db.getCollection(collectionName);
 
         BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
         return coll.find(query, options, variantConverter);
@@ -319,6 +332,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         builder.and("_at.chunkIds").in(chunkIds);
         builder.and(DBObjectToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
         builder.and(DBObjectToVariantConverter.START_FIELD).lessThanEquals(region.getEnd());
+        return builder;
+    }
+    
+    private QueryBuilder getRegionFilter(List<Region> regions, QueryBuilder builder) {
+        DBObject[] objects = new DBObject[regions.size()];
+        
+        int i = 0;
+        for (Region region : regions) {
+            List<String> chunkIds = getChunkIds(region);
+            DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
+                    .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
+                    .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
+            objects[i] = regionObject;
+            i++;
+        }
+        builder.or(objects);
         return builder;
     }
     

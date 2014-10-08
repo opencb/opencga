@@ -3,14 +3,6 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -19,10 +11,7 @@ import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
+import org.opencb.biodata.models.variant.*;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -31,7 +20,9 @@ import org.opencb.opencga.app.cli.OptionsParser.Command;
 import org.opencb.opencga.app.cli.OptionsParser.CommandCreateAccessions;
 import org.opencb.opencga.app.cli.OptionsParser.CommandLoadVariants;
 import org.opencb.opencga.app.cli.OptionsParser.CommandTransformVariants;
-import org.opencb.opencga.lib.auth.*;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.lib.auth.OpenCGACredentials;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.variant.json.VariantJsonReader;
 import org.opencb.opencga.storage.variant.json.VariantJsonWriter;
@@ -39,6 +30,15 @@ import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 //import org.opencb.opencga.storage.variant.VariantVcfHbaseWriter;
 
 /**
@@ -77,21 +77,12 @@ public class OpenCGAMain {
         }
         if (command instanceof CommandCreateAccessions) {
             CommandCreateAccessions c = (CommandCreateAccessions) command;
-            
+
             Path variantsPath = Paths.get(c.input);
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
-            
+
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
             createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
-            
-        } else if (command instanceof CommandLoadVariants) {
-            CommandLoadVariants c = (CommandLoadVariants) command;
-
-            Path variantsPath = Paths.get(c.input + ".variants.json.gz");
-            Path filePath = Paths.get(c.input + ".file.json.gz");
-
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
-            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
 
         } else if (command instanceof CommandTransformVariants) {
             CommandTransformVariants c = (CommandTransformVariants) command;
@@ -100,8 +91,19 @@ public class OpenCGAMain {
             Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
 
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
-            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
+            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
+            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples);
+        
+        } else if (command instanceof CommandLoadVariants) {
+            CommandLoadVariants c = (CommandLoadVariants) command;
+
+            Path variantsPath = Paths.get(c.input + ".variants.json.gz");
+            Path filePath = Paths.get(c.input + ".file.json.gz");
+            VariantStudy.StudyType st = c.studyType;
+
+            // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
+            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null, st, VariantSource.Aggregation.NONE);
+            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
         }
     }
 
@@ -109,50 +111,44 @@ public class OpenCGAMain {
         String studyId = source.getStudyId();
         String studyPrefix = studyId.substring(studyId.length() - 6);
         VcfRawReader reader = new VcfRawReader(variantsPath.toString());
-        
+
         List<DataWriter> writers = new ArrayList<>();
         String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
         if (variantsPath.toString().endsWith(".gz")) {
             variantsFilename = Files.getNameWithoutExtension(variantsFilename);
         }
         writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
-        
+
         List<Task<VcfRecord>> taskList = new ArrayList<>();
         taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));
-        
+
         Runner vr = new Runner(reader, writers, taskList);
-        
+
         System.out.println("Accessioning variants with prefix " + studyPrefix + "...");
         vr.run();
         System.out.println("Variants accessioned!");
     }
 
-    
+
     private static void indexVariants(String step, VariantSource source, Path mainFilePath, Path auxiliaryFilePath, Path outdir, String backend,
-                                      Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples, String aggregated)
+                                      Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples)//, String aggregated)
             throws IOException, IllegalOpenCGACredentialsException {
 
-        VariantReader reader;
+        VariantReader reader = null;
         PedigreeReader pedReader = ("transform".equals(step) && auxiliaryFilePath != null) ?
                 new PedigreePedReader(auxiliaryFilePath.toString()) : null;
 
         if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
-
-            if (aggregated != null) {
-                includeStats = false;
-                switch (aggregated.toLowerCase()) {
-                    case "basic":
-                        reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
-                        break;
-                    case "evs":
-                        reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantVcfEVSFactory());
-                        break;
-                    default:
-                        reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString());
-
-                }
-            } else {
-                reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString());
+            switch (source.getAggregation()) {
+                case NONE:
+                    reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString());
+                    break;
+                case BASIC:
+                    reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
+                    break;
+                case EVS:
+                    reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantVcfEVSFactory());
+                    break;
             }
         } else if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
             assert (auxiliaryFilePath != null);

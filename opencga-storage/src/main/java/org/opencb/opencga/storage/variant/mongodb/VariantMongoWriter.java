@@ -22,7 +22,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
     
-    private VariantSource file;
+    private VariantSource source;
 
     private MongoClient mongoClient;
     private DB db;
@@ -64,7 +64,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
-        this.file = source;
+        this.source = source;
         this.credentials = credentials;
         this.filesCollectionName = filesCollection;
         this.variantsCollectionName = variantsCollection;
@@ -142,7 +142,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             
             BasicDBList mongoFiles = new BasicDBList();
             for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
-                if (!archiveFile.getFileId().equals(file.getFileId())) {
+                if (!archiveFile.getFileId().equals(source.getFileId())) {
                     continue;
                 }
                 
@@ -302,7 +302,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
     @Override
     public boolean post() {
-        writeSourceSummary(file);
+        writeSourceSummary(source);
         return true;
     }
 
@@ -331,9 +331,25 @@ public class VariantMongoWriter extends VariantDBWriter {
     }
 
     private void setConverters(boolean includeStats, boolean includeSamples, boolean includeEffect) {
+        boolean compressSamples;
+        switch (source.getType()) {
+            case FAMILY:
+            case TRIO:
+                compressSamples = false;
+                break;
+            case CONTROL:
+            case CASE:
+            case CASE_CONTROL:
+            case COLLECTION:
+            default:
+                compressSamples = true;
+        }
+        
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
+        // TODO Allow to configure samples compression
         archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+                compressSamples,
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);
         // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
