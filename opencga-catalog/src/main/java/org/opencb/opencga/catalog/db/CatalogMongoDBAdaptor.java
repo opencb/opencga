@@ -10,11 +10,11 @@ import com.mongodb.util.JSON;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private static final String METADATA_OBJECT_ID = "METADATA";
 
     private final MongoDataStoreManager mongoManager;
-    private final MongoCredentials credentials;
+    private final MongoCredential credentials;
+    private final DataStoreServerAddress dataStoreServerAddress;
     private MongoDataStore db;
 
     private MongoDBCollection metaCollection;
@@ -78,9 +79,11 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         jsonSampleReader = jsonObjectMapper.reader(Sample.class);
     }
 
-    public CatalogMongoDBAdaptor(MongoCredentials credentials) throws CatalogManagerException {
+    public CatalogMongoDBAdaptor(DataStoreServerAddress dataStoreServerAddress, MongoCredential credentials)
+            throws CatalogManagerException {
         super();
-        this.mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
+        this.dataStoreServerAddress = dataStoreServerAddress;
+        this.mongoManager = new MongoDataStoreManager(this.dataStoreServerAddress.getHost(), this.dataStoreServerAddress.getPort());
         this.credentials = credentials;
         //catalogProperties = Config.getAccountProperties();
 
@@ -88,7 +91,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     private void connect() throws CatalogManagerException {
-        db = mongoManager.get(credentials.getMongoDbName());
+        db = mongoManager.get(credentials.getSource());
         if(db == null){
             throw new CatalogManagerException("Unable to connect to MongoDB");
         }

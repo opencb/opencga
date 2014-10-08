@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
+import com.mongodb.MongoCredential;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -12,11 +13,10 @@ import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MongoCredentials;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 
@@ -32,18 +32,19 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     private static CatalogDBAdaptor catalog;
 
     @BeforeClass
-    public static void before() throws IllegalOpenCGACredentialsException, IOException, CatalogManagerException {
+    public static void before() throws IOException, CatalogManagerException {
         InputStream is = CatalogMongoDBAdaptorTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
-        MongoCredentials mongoCredentials = new MongoCredentials(
-                properties.getProperty("CATALOG.HOST"),
-                Integer.parseInt(properties.getProperty("CATALOG.PORT")),
-                properties.getProperty("CATALOG.DATABASE"),
+        MongoCredential mongoCredentials = MongoCredential.createMongoCRCredential(
                 properties.getProperty("CATALOG.USER", ""),
-                properties.getProperty("CATALOG.PASSWORD", ""));
-        clearDB(mongoCredentials);
-        catalog = new CatalogMongoDBAdaptor(mongoCredentials);
+                properties.getProperty("CATALOG.DATABASE"),
+                properties.getProperty("CATALOG.PASSWORD", "").toCharArray());
+        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
+                properties.getProperty("CATALOG.HOST"),
+                Integer.parseInt(properties.getProperty("CATALOG.PORT")));
+        clearDB(dataStoreServerAddress, mongoCredentials);
+        catalog = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredentials);
     }
 
 
@@ -759,9 +760,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(visits == jobAfter.getVisits());
     }
 
-    private static void clearDB(MongoCredentials mongoCredentials) {
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(mongoCredentials.getMongoHost(), mongoCredentials.getMongoPort());
-        MongoDataStore db = mongoManager.get(mongoCredentials.getMongoDbName());
+    private static void clearDB(DataStoreServerAddress dataStoreServerAddress, MongoCredential mongoCredentials) {
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort());
+        MongoDataStore db = mongoManager.get(mongoCredentials.getSource());
         db.getDb().dropDatabase();
     }
 

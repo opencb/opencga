@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -18,7 +17,6 @@ import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 
@@ -39,7 +37,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser3;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
+    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -343,7 +341,8 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(fileTest.getAbsolutePath());
         byte[] bytes = new byte[100];
         dis.read(bytes, 0, 100);
-        System.out.println(Bytes.toString(bytes));
+        System.out.println(new String(bytes));
+//        System.out.println(Bytes.toString(bytes));
     }
 
     @Test

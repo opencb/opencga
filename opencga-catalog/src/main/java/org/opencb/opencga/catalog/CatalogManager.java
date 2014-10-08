@@ -1,9 +1,11 @@
 package org.opencb.opencga.catalog;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.mongodb.MongoCredential;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
@@ -11,8 +13,6 @@ import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MongoCredentials;
 
 import org.opencb.opencga.lib.common.MailUtils;
 import org.opencb.opencga.lib.common.StringUtils;
@@ -64,7 +64,7 @@ public class CatalogManager {
 
     @Deprecated
     public CatalogManager(String rootdir)
-            throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
+            throws IOException, CatalogIOManagerException, CatalogManagerException {
 //        properties = Config.getAccountProperties();
 
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
@@ -81,7 +81,7 @@ public class CatalogManager {
     }
 
     public CatalogManager(Properties properties)
-            throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
+            throws IOException, CatalogIOManagerException, CatalogManagerException {
         this.properties = properties;
 
         configureDBAdaptor(properties);
@@ -97,19 +97,18 @@ public class CatalogManager {
     }
 
     private void configureDBAdaptor(Properties properties)
-            throws CatalogManagerException, IllegalOpenCGACredentialsException {
-        try {
-            MongoCredentials mongoCredentials = new MongoCredentials(
-                    properties.getProperty("CATALOG.HOST"),
-                    Integer.parseInt(properties.getProperty("CATALOG.PORT")),
-                    properties.getProperty("CATALOG.DATABASE"),
-                    properties.getProperty("CATALOG.USER"),
-                    properties.getProperty("CATALOG.PASSWORD"));
-            catalogDBAdaptor = new CatalogMongoDBAdaptor(mongoCredentials);
-        } catch (IllegalOpenCGACredentialsException e) {
-            e.printStackTrace();
-            throw e;
-        }
+            throws CatalogManagerException {
+
+        MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
+                properties.getProperty("CATALOG.USER"),
+                properties.getProperty("CATALOG.DATABASE"),
+                properties.getProperty("CATALOG.PASSWORD").toCharArray());
+        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
+                properties.getProperty("CATALOG.HOST"),
+                Integer.parseInt(properties.getProperty("CATALOG.PORT")));
+
+        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
+
     }
 
     /**
