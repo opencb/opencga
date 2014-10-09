@@ -30,22 +30,32 @@
         <developer>
             <id>imedina</id>
             <name>Nacho</name>
-            <email>imedina@ebi.ac.uk</email>
+            <email>igmecas@gmail.com</email>
         </developer>
         <developer>
             <id>frasator</id>
             <name>Francisco</name>
-            <email>fsalavert@cipf.es</email>
-        </developer>
-        <developer>
-            <id>aaleman</id>
-            <name>Alejandro</name>
-            <email>aaleman@cipf.es</email>
+            <email>frasator@gmail.com</email>
         </developer>
         <developer>
             <id>cyenyxe</id>
             <name>Cristina</name>
-            <email>cyenyxe@ebi.ac.uk</email>
+            <email>cristina.yenyxe@gmail.com</email>
+        </developer>
+        <developer>
+            <id>aaleman</id>
+            <name>Alejandro</name>
+            <email>alejandro.aleman.ramos@gmail.com</email>
+        </developer>
+        <developer>
+            <id>j-coll</id>
+            <name>jacobo</name>
+            <email>jacobo167@gmail.com</email>
+        </developer>
+        <developer>
+            <id>jmmut</id>
+            <name>Josemi</name>
+            <email>jomutlo@gmail.com</email>
         </developer>
     </developers>
 
