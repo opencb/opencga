@@ -5,10 +5,16 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -17,6 +23,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -29,8 +36,30 @@ import java.util.List;
 @Api(value = "files", description = "files")
 public class FileWSServer extends OpenCGAWSServer {
 
-    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+
+
+
+    private static AlignmentStorageManager alignmentStorageManager = null;
+    private static AlignmentQueryBuilder dbAdaptor = null;
+    private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
+    private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
+
+
+
+    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         super(version, uriInfo, httpServletRequest);
+//        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
+        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
+        if(alignmentStorageManager == null) {
+//            try {
+                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+//            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+//                e.printStackTrace();
+//                logger.error(e.getMessage(), e);
+//            }
+            dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
+        }
     }
 
     @POST
@@ -134,6 +163,80 @@ public class FileWSServer extends OpenCGAWSServer {
         logger.info("chunk saved ms :" + (System.currentTimeMillis() - t));
         return createOkResponse("ok");
     }
+
+    @GET
+    @Path("/{fileId}/info")
+    @Produces("application/json")
+    @ApiOperation(value = "File info")
+    public Response info(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId
+    ) {
+        try {
+            QueryResult result = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{fileId}/list")
+    @Produces("application/json")
+    @ApiOperation(value = "List folder")
+    public Response list(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId
+    ) {
+        try {
+            int fileIdNum = catalogManager.getFileId(fileId);
+            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+
+    @GET
+    @Path("/{fileId}/fetch")
+    @Produces("application/json")
+    @ApiOperation(value = "File fetch")
+    public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
+                          @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                          @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
+                          @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
+                          @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences
+    ) {
+        int fileIdNum;
+        File file;
+        URI fileUri;
+        Region r = new Region(region);
+
+        try {
+            fileIdNum = catalogManager.getFileId(fileId);
+            QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
+            file = queryResult.getResult().get(0);
+            fileUri = catalogManager.getFileUri(file);
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+
+        switch(file.getBioformat()) {
+            case "bam":
+                //TODO: Check indexed
+                QueryOptions options = new QueryOptions();
+                options.put(AlignmentQueryBuilder.QO_FILE_ID, fileIdNum);
+                options.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
+                options.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
+                options.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
+                options.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
+                QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, options);
+                return createOkResponse(alignmentsByRegion);
+            default:
+                return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');
+        }
+    }
+
 
     private ObjectMap getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {
         ObjectMap objectMap = new ObjectMap();

@@ -39,8 +39,9 @@ import java.util.*;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     public static final String MONGO_DB_NAME = "opencga";
+    public static final String COPY_FILE = "copy";
 
-//    private MongoCredentials mongoCredentials = null;
+    //    private MongoCredentials mongoCredentials = null;
     private final Properties properties = new Properties();
     //private AlignmentMetaDataDBAdaptor metadata;
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
@@ -168,6 +169,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         String fileId = params.containsKey(FILE_ID)? params.get(FILE_ID).toString(): input.getFileName().toString().split("\\.")[0];
         String encrypt = params.containsKey(ENCRYPT)? params.get(ENCRYPT).toString(): "null";
         boolean plain = params.containsKey(PLAIN)? Boolean.parseBoolean(params.get(PLAIN).toString()): false;
+//        boolean copy = params.containsKey(COPY_FILE)? Boolean.parseBoolean(params.get(COPY_FILE).toString()): false;
         int regionSize = params.containsKey(REGION_SIZE)? Integer.parseInt(params.get(REGION_SIZE).toString()): 200000;
         List<String> meanCoverageSizeList = (List<String>) (params.containsKey(MEAN_COVERAGE_SIZE_LIST)? params.get(MEAN_COVERAGE_SIZE_LIST): new LinkedList<String>());
         //String fileName = inputPath.getFileName().toString();

@@ -39,16 +39,7 @@ import java.util.*;
  */
 public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
-    //Query Options
-    public static final String QO_BAM_PATH = "bam_path";
-    public static final String QO_BAI_PATH = "bai_path";
-    public static final String QO_VIEW_AS_PAIRS = "view_as_pairs";
-    public static final String QO_PROCESS_DIFFERENCES = "process_differences";
-    public static final String QO_FILE_ID = "file_id";
-    public static final String QO_HISTOGRAM = "histogram";
-    public static final String QO_INCLUDE_COVERAGE = "include_coverage";
-    //public static final String QO_AVERAGE = "average";
-    public static final String QO_BATCH_SIZE = "batch_size";
+
 
 
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(IndexedAlignmentDBAdaptor.class);
