@@ -39,7 +39,7 @@ public class Main {
 
             do {
                 if(shellUserId != null && !shellUserId.isEmpty()){
-                    System.out.print("(" + shellUserId + ")> ");
+                    System.out.print("(" + shellUserId + "," + shellSessionId + ")> ");
                 } else {
                     System.out.print("> ");
                 }
@@ -276,7 +276,7 @@ public class Main {
     }
 
     private String login(OptionsParser.UserPassword up) throws CatalogManagerException, IOException {
-        String sessionId;
+        //String sessionId;
         if(up.user != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
             sessionId = login.getResult().get(0).getString("sessionId");

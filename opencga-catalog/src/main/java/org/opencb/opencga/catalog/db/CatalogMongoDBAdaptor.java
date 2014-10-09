@@ -1343,9 +1343,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         Object studyId = folderResult.getResult().get(0).get("studyId");
 
-
         BasicDBObject query = new BasicDBObject("studyId", studyId);
-        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "/[^/]*$"));
+        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "[^/]+/?$"));
         QueryResult filesResult = fileCollection.find(query, null, null, null);
         List<File> files = parseFiles(filesResult);
 
@@ -1609,7 +1608,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+options.getString("startsWith"))));
         }
         if(options.containsKey("directory")){
-            filters.add(new BasicDBObject("path", new BasicDBObject("$regex", "^"+options.getString("directory")+"/[^/]*$")));
+            filters.add(new BasicDBObject("path", new BasicDBObject("$regex", "^"+options.getString("directory")+"[^/]+/?$")));
         }
         if(options.containsKey("studyId")){
             filters.add(new BasicDBObject("studyId", options.getInt("studyId")));
