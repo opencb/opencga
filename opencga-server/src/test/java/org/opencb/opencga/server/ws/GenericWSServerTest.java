@@ -19,7 +19,7 @@ public class GenericWSServerTest {
     String keyStoreFileLocation, storePass, alias, keyPass, iv;
     String message = "this is message";
 
-    @Test
+//    @Test
     public void testCipherWithoutIv() {
 
         loadCredentials();
@@ -36,7 +36,7 @@ public class GenericWSServerTest {
         System.out.println(decryptedMessage);
         assertEquals(message, decryptedMessage);
     }
-    @Test
+//    @Test
     public void testCipherWithIv() {
 
         loadCredentials();

@@ -15,6 +15,7 @@
         <module>opencga-storage</module>
         <module>opencga-analysis</module>
         <module>opencga-server</module>
+        <module>opencga-catalog</module>
     </modules>
 
     <mailingLists>
@@ -78,6 +79,11 @@
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-storage</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
 
