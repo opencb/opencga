@@ -19,6 +19,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,7 +62,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
         java.nio.file.Path filePath = null;
         try {
-            filePath = catalogManager.getFilePath(userId, projectId, String.valueOf(studyId), relativeFilePath, false);
+            filePath = Paths.get(catalogManager.getFileUri(userId, projectId, String.valueOf(studyId), relativeFilePath));
+            System.out.println(filePath);
         } catch (CatalogIOManagerException e) {
             System.out.println("catalogManager.getFilePath");
             e.printStackTrace();
