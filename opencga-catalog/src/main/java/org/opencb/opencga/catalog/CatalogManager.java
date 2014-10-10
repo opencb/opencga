@@ -100,12 +100,13 @@ public class CatalogManager {
             throws CatalogManagerException {
 
         MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
-                properties.getProperty("CATALOG.USER"),
-                properties.getProperty("CATALOG.DATABASE"),
-                properties.getProperty("CATALOG.PASSWORD").toCharArray());
+                properties.getProperty("CATALOG.USER", ""),
+                properties.getProperty("CATALOG.DATABASE", ""),
+                properties.getProperty("CATALOG.PASSWORD", "").toCharArray());
+
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty("CATALOG.HOST"),
-                Integer.parseInt(properties.getProperty("CATALOG.PORT")));
+                properties.getProperty("CATALOG.HOST", ""),
+                Integer.parseInt(properties.getProperty("CATALOG.PORT", "0")));
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
 
@@ -136,6 +137,8 @@ public class CatalogManager {
             throws CatalogIOManagerException {
         return null;
     }
+
+    @Deprecated
     public Path getFilePath(String userId, String projectId, String studyId, String relativeFilePath, boolean check)
             throws CatalogIOManagerException {
         return null;
@@ -159,6 +162,12 @@ public class CatalogManager {
         return ioManager.getFileUri(userId, projectId, studyId, relativeFileUri);
     }
 
+    public URI getFileUri(File file) throws CatalogManagerException, CatalogIOManagerException {
+        int studyId = catalogDBAdaptor.getStudyIdByFileId(file.getId());
+        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+        String userId = catalogDBAdaptor.getProjectOwner(projectId);
+        return getFileUri(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
+    }
     /* jmmut uncomment
 //    public Uri getJobFolderUri(String userId, String projectId, Uri JobId) {
 //        return ioManager.getJobFolderUri(userId, projectId, JobId);
@@ -207,7 +216,7 @@ public class CatalogManager {
         }
         String[] projectStudy = split[1].replace(':', '/').split("/", 2);
         if(projectStudy.length != 2){
-            return -1;
+            return -2;
         }
         return catalogDBAdaptor.getStudyId(split[0], projectStudy[0], projectStudy[1]);
     }
@@ -223,7 +232,7 @@ public class CatalogManager {
         }
         String[] projectStudyPath = split[1].replace(':', '/').split("/", 3);
         if(projectStudyPath.length <= 2){
-            return -1;
+            return -2;
         }
         return catalogDBAdaptor.getFileId(split[0], projectStudyPath[0], projectStudyPath[1], projectStudyPath[2]);
     }
@@ -610,6 +619,7 @@ public class CatalogManager {
 
         URI uri = catalogIOManager.getProjectUri(ownerId, Integer.toString(projectId));
         Study study = new Study(name, alias, type, description, "", uri);
+        study.getFiles().add(new File(".", File.FOLDER, "", "", "file", "", userId, "", "", 0));//TODO: Take scheme from study
         study.setCreatorId(userId);
 
 
@@ -774,12 +784,12 @@ public class CatalogManager {
 //        if null acl de study
         int fileId = -1;
         if(parent != null) {
-            fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+            fileId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
         }
         if (fileId < 0 && parent != null) {
             if (parents) {
                 createFolder(studyId, parent, true, sessionId);
-                fileId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+                fileId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
             } else {
                 throw new CatalogManagerException("Directory not found " + parent.toString());
             }
@@ -805,9 +815,15 @@ public class CatalogManager {
 
     public QueryResult<File> uploadFile(int studyId, String format, String bioformat, String path, String description,
                                   boolean parents, InputStream fileIs, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
+            throws CatalogIOManagerException, InterruptedException, IOException, CatalogManagerException {
         QueryResult<File> fileResult = createFile(studyId, format, bioformat, path, description, parents, sessionId);
-        fileResult = uploadFile(fileResult.getResult().get(0).getId(), fileIs, sessionId);
+        int fileId = fileResult.getResult().get(0).getId();
+        try {
+            fileResult = uploadFile(fileId, fileIs, sessionId);
+        } catch (CatalogIOManagerException | InterruptedException | CatalogManagerException | IOException e) {
+            deleteFile(fileId, sessionId);
+            e.printStackTrace();
+        }
         return fileResult;
     }
 
@@ -852,18 +868,18 @@ public class CatalogManager {
         Path parent = folderPath.getParent();
         int parentId = -1;
         if(parent != null) {
-            parentId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+            parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
         }
         if(!parents && parentId < 0 && parent != null){  //If !parents and parent does not exist in the DB (but should exist)
             throw new CatalogManagerException("Path '" + parent + "' does not exist");
         }
         while(parentId < 0 && parent != null){  //Add all the parents that should be created
             folders.addFirst(new File(parent.getFileName().toString(), File.FOLDER, "", "", "file",//TODO: Take scheme from study
-                    parent.toString(),
+                    parent.toString() + "/",
                     userId, "", File.READY, 0));
             parent = parent.getParent();
             if(parent != null) {
-                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString());
+                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
             }
         }
 
@@ -880,7 +896,7 @@ public class CatalogManager {
 
         //TODO: Take scheme from study
         ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
-        File mainFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", "file", folderPath.toString(), userId
+        File mainFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", "file", folderPath.toString() + "/", userId
                 , "", File.READY, 0);
 
         QueryResult<File> result;
@@ -999,6 +1015,7 @@ public class CatalogManager {
 
     public QueryResult<File> getAllFilesInFolder(int folderId, String sessionId) throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
+        checkId(folderId, "folderId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(folderId);
@@ -1618,6 +1635,13 @@ public class CatalogManager {
     private void checkEmail(String email) throws CatalogManagerException {
         if (email == null || !emailPattern.matcher(email).matches()) {
             throw new CatalogManagerException("email not valid");
+        }
+    }
+
+    private void checkId(int id, String name) throws CatalogManagerException {
+        if (id < 0) {
+            throw new CatalogManagerException("Error in id: '" + name + "' is not valid: "
+                    + id + ".");
         }
     }
 

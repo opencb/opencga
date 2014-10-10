@@ -142,7 +142,7 @@ public abstract class CatalogIOManager {
     public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
             throws CatalogIOManagerException {
         checkParam(relativeFilePath);
-        return getStudyUri(userId, projectId, studyId).resolve(relativeFilePath + "/");
+        return getStudyUri(userId, projectId, studyId).resolve(relativeFilePath);
     }
 
     public abstract URI getTmpUri();    // FIXME Still used?
