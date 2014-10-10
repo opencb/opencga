@@ -15,20 +15,30 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-core</artifactId>
-        </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.opencb.commons</groupId>-->
-            <!--<artifactId>commons-lib</artifactId>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.opencb.biodata</groupId>-->
-            <!--<artifactId>biodata-formats</artifactId>-->
-        <!--</dependency>-->
-        <dependency>
             <groupId>org.opencb.variant</groupId>
             <artifactId>variant-lib</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.opencb.commons</groupId>
+                    <artifactId>bioformats</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-server</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey.contribs</groupId>
+                    <artifactId>jersey-multipart</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -36,8 +46,8 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>org.mongodb</groupId>-->
-            <!--<artifactId>mongo-java-driver</artifactId>-->
+        <!--<groupId>org.mongodb</groupId>-->
+        <!--<artifactId>mongo-java-driver</artifactId>-->
         <!--</dependency>-->
         <dependency>
             <groupId>com.amazonaws</groupId>

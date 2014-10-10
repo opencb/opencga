@@ -4,7 +4,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.cellbase.core.lib.dbquery.DBObjectMap;
+//import org.opencb.cellbase.core.lib.dbquery.DBObjectMap;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.networks.Layout;
@@ -23,6 +24,8 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 @Path("/utils")
@@ -116,7 +119,8 @@ public class UtilsWSServer extends GenericWSServer {
         String command = "Rscript " + scriptPath.toString() + " " + method + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
 
         logger.info(command);
-        DBObjectMap result = new DBObjectMap();
+//        DBObjectMap result = new DBObjectMap();
+        Map<String, Object> result = new HashMap<>();
         try {
             Process process = Runtime.getRuntime().exec(command);
             process.waitFor();
@@ -176,7 +180,8 @@ public class UtilsWSServer extends GenericWSServer {
         String command = "Rscript " + scriptPath.toString() + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
 
         logger.info(command);
-        DBObjectMap result = new DBObjectMap();
+//        DBObjectMap result = new DBObjectMap();
+        Map<String, Object> result = new HashMap<>();
         try {
             Process process = Runtime.getRuntime().exec(command);
             process.waitFor();
