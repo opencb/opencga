@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli;
+package org.opencb.opencga.app.cli.storage;
 
 
 import com.beust.jcommander.ParameterException;
@@ -11,16 +11,16 @@ import org.opencb.biodata.models.variant.*;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.app.cli.OptionsParser.Command;
-import org.opencb.opencga.app.cli.OptionsParser.CommandCreateAccessions;
-import org.opencb.opencga.app.cli.OptionsParser.CommandLoadVariants;
-import org.opencb.opencga.app.cli.OptionsParser.CommandTransformVariants;
-import org.opencb.opencga.app.cli.OptionsParser.CommandLoadAlignments;
-import org.opencb.opencga.app.cli.OptionsParser.CommandTransformAlignments;
-import org.opencb.opencga.app.cli.OptionsParser.CommandDownloadAlignments;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.app.cli.storage.OptionsParser.Command;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandCreateAccessions;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandLoadVariants;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformVariants;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandLoadAlignments;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformAlignments;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandDownloadAlignments;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
-import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
  */
-public class OpenCGAMain {
+public class OpenCGAStorageMain {
 
     private static final String APPLICATION_PROPERTIES_FILE = "application.properties";
     private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
@@ -45,7 +45,7 @@ public class OpenCGAMain {
     private static VariantStorageManager variantStorageManager = null;
     //private static StorageManager storageManager = null; //TODO: Use only one generic StorageManager instead of one for variant and other for alignment
 
-    protected static Logger logger = LoggerFactory.getLogger(OpenCGAMain.class);
+    protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
 
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException {

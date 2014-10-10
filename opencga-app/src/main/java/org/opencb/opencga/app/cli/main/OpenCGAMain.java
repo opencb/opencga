@@ -18,7 +18,7 @@ import java.util.Properties;
 /**
  * Created by jacobo on 29/09/14.
  */
-public class Main {
+public class OpenCGAMain {
     private String userId;
     private static String shellUserId;
     private static String shellSessionId;
@@ -29,7 +29,7 @@ public class Main {
     public static void main(String[] args)
             throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException {
 
-        Main opencgaMain = new Main();
+        OpenCGAMain opencgaMain = new OpenCGAMain();
 
         //DEBUG SHELL
         if(args[0].equals("shell")){
@@ -296,7 +296,7 @@ public class Main {
 
     private static CatalogManager getCatalogManager()
             throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
-        CatalogManager catalogManager;InputStream is = Main.class.getClassLoader().getResourceAsStream("catalog.properties");
+        CatalogManager catalogManager;InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         //try {
             properties.load(is);

@@ -120,7 +120,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.opencb.opencga.app.cli.OpenCGAMain</mainClass>
+                            <mainClass>org.opencb.opencga.app.cli.storage.OpenCGAStorageMain</mainClass>
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
@@ -203,12 +203,12 @@
                     <useWildcardClassPath>true</useWildcardClassPath>
                     <programs>
                         <program>
-                            <mainClass>org.opencb.opencga.app.cli.OpenCGAMain</mainClass>
-                            <name>${app.name}</name>
+                            <mainClass>org.opencb.opencga.app.cli.storage.OpenCGAStorageMain</mainClass>
+                            <name>opencga-storage.sh</name>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.app.cli.main.Main</mainClass>
-                            <name>opencga-manager.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
+                            <name>${app.name}</name>
                         </program>
                     </programs>
                 </configuration>
