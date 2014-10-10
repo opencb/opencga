@@ -30,22 +30,37 @@
         <developer>
             <id>imedina</id>
             <name>Nacho</name>
-            <email>imedina@ebi.ac.uk</email>
+            <email>igmecas@gmail.com</email>
         </developer>
         <developer>
             <id>frasator</id>
             <name>Francisco</name>
-            <email>fsalavert@cipf.es</email>
-        </developer>
-        <developer>
-            <id>aaleman</id>
-            <name>Alejandro</name>
-            <email>aaleman@cipf.es</email>
+            <email>frasator@gmail.com</email>
         </developer>
         <developer>
             <id>cyenyxe</id>
             <name>Cristina</name>
-            <email>cyenyxe@ebi.ac.uk</email>
+            <email>cristina.yenyxe@gmail.com</email>
+        </developer>
+        <developer>
+            <id>aaleman</id>
+            <name>Alejandro</name>
+            <email>alejandro.aleman.ramos@gmail.com</email>
+        </developer>
+        <developer>
+            <id>j-coll</id>
+            <name>jacobo</name>
+            <email>jacobo167@gmail.com</email>
+        </developer>
+        <developer>
+            <id>jmmut</id>
+            <name>Josemi</name>
+            <email>jomutlo@gmail.com</email>
+        </developer>
+        <developer>
+            <id>roalva1</id>
+            <name>Roberto</name>
+            <email>roalva1@gmail.com</email>
         </developer>
     </developers>
 
@@ -86,29 +101,6 @@
                 <artifactId>opencga-catalog</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-core</artifactId>
-                <version>3.0.0</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-lib</artifactId>
-                <version>3.0.0</version>
-                <scope>compile</scope>
-            </dependency>
-            <!--<dependency>-->
-                <!--<groupId>org.opencb.biodata</groupId>-->
-                <!--<artifactId>biodata-formats</artifactId>-->
-                <!--<version>0.2.0</version>-->
-            <!--</dependency>-->
-            <!--<dependency>-->
-                <!--<groupId>org.opencb.biodata</groupId>-->
-                <!--<artifactId>biodata-models</artifactId>-->
-                <!--<version>0.2.0</version>-->
-            <!--</dependency>-->
-
             <dependency>
                 <groupId>org.opencb.variant</groupId>
                 <artifactId>variant-lib</artifactId>
@@ -158,7 +150,7 @@
                 <!--<groupId>org.mongodb</groupId>-->
                 <!--<artifactId>mongo-java-driver</artifactId>-->
                 <!--<version>2.12.1</version>-->
-                <!--&lt;!&ndash;<version>2.11.4</version>&ndash;&gt;-->
+                <!--<version>2.11.4</version>-->
             <!--</dependency>-->
 
             <dependency>

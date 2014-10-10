@@ -103,6 +103,7 @@ public class CatalogManager {
                 properties.getProperty("CATALOG.USER", ""),
                 properties.getProperty("CATALOG.DATABASE", ""),
                 properties.getProperty("CATALOG.PASSWORD", "").toCharArray());
+
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
                 properties.getProperty("CATALOG.HOST", ""),
                 Integer.parseInt(properties.getProperty("CATALOG.PORT", "0")));
