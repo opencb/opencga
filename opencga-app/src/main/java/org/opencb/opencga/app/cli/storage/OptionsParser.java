@@ -207,15 +207,18 @@ public class OptionsParser {
     @Parameters(commandNames = {"load-alignments"}, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadAlignments implements Command {
         
-//        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be loaded", required = true, arity = 1)
-//        String fileId;
-        
-//        @Parameter(names = {"-i", "--input"}, description = "Prefix of files to save in the selected backend", required = true, arity = 1)
-//        String input;
+        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be loaded", required = true, arity = 1)
+        String fileId;
 
         @Parameter(names = {"-i", "--input"}, description = "Main file to save in the selected backend", required = true, arity = 1)
         String input;
-        
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials = "";
+
+//        @Parameter(names = {"-d --dbName"}, description = "DataBase name", required = true, arity = 1)
+//        String dbName;
+
 //        @Parameter(names = {"--indir"}, description = "Directory of the input files", required = false, arity = 1)
 //        String dir = "";
 
@@ -224,16 +227,13 @@ public class OptionsParser {
 
 //        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
 //        String studyId;
-        
+
 //        @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
 //        boolean plain = false;
-        
+
 //        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required = false, arity = 1)
 //        String backend = "hbase";
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = true, arity = 1)
-        String credentials;
-        
 //        @Parameter(names = {"--include-coverage"}, description = "Save coverage information (optional)", required = false, arity = 0)
 //        boolean includeCoverage = false;
     }

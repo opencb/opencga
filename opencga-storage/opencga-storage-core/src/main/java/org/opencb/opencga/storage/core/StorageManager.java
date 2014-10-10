@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,10 +16,10 @@ public interface StorageManager<READER, WRITER, ADAPTOR> {
 
     public WRITER getDBSchemaWriter(Path output);
     public READER getDBSchemaReader(Path input);
-    public WRITER getDBWriter(Path credentials, String fileId);
-    public ADAPTOR getDBAdaptor(Path credentials);
+    public WRITER getDBWriter(Path credentials, String dbName, String fileId);
+    public ADAPTOR getDBAdaptor(String dbName);
 
-    public void transform(Path input, Path pedigree, Path output, Map<String, Object> params) throws IOException, FileFormatException;
-    public void preLoad(Path input, Path output, Map<String, Object> params) throws IOException;
-    public void load(Path input, Path credentials, Map<String, Object> params) throws IOException;
+    public void transform(Path input, Path pedigree, Path output, ObjectMap params) throws IOException, FileFormatException;
+    public void preLoad(Path input, Path output, ObjectMap params) throws IOException;
+    public void load(Path input, Path credentials, ObjectMap params) throws IOException;
 }

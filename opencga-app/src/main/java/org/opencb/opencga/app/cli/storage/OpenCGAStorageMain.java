@@ -183,7 +183,7 @@ public class OpenCGAStorageMain {
 
             CommandTransformAlignments c = (CommandTransformAlignments) command;
 
-            Map<String, Object> params = new LinkedHashMap<>();
+            ObjectMap params = new ObjectMap();
 
             if(c.fileId != null) {
                 params.put(AlignmentStorageManager.FILE_ID, c.fileId);
@@ -220,9 +220,11 @@ public class OpenCGAStorageMain {
         } else if (command instanceof CommandLoadAlignments){
             CommandLoadAlignments c = (CommandLoadAlignments) command;
 
-            Map<String, Object> params = new LinkedHashMap<>();
+            ObjectMap params = new ObjectMap();
 
-            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true/*c.includeCoverage*/);
+//            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true/*c.includeCoverage*/);
+            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+//            params.put(AlignmentStorageManager.DB_NAME, c.dbName);
 
             Path input = Paths.get(c.input);
             Path credentials = Paths.get(c.credentials);

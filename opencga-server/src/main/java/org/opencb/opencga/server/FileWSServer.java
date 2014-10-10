@@ -40,7 +40,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
     private static AlignmentStorageManager alignmentStorageManager = null;
-    private static AlignmentQueryBuilder dbAdaptor = null;
+//    private static AlignmentQueryBuilder dbAdaptor = null;
     private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
     private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
 
@@ -58,7 +58,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //                e.printStackTrace();
 //                logger.error(e.getMessage(), e);
 //            }
-            dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
+            //dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
         }
     }
 
@@ -209,6 +209,7 @@ public class FileWSServer extends OpenCGAWSServer {
         int fileIdNum;
         File file;
         URI fileUri;
+        String dbName = null;   //TODO: getDBName from fileStats?   dbName == userId
         Region r = new Region(region);
 
         try {
@@ -230,6 +231,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 options.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
                 options.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
                 options.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
+
+                AlignmentQueryBuilder dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                 QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, options);
                 return createOkResponse(alignmentsByRegion);
             default:

@@ -17,7 +17,9 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBCollection;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.lib.common.IOUtils;
@@ -39,15 +41,12 @@ import java.util.*;
  */
 public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
-
-
-
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(IndexedAlignmentDBAdaptor.class);
 
     private AlignmentConverter converter;
-    private MongoDataStoreManager mongoManager;
+    private static MongoDataStoreManager mongoManager = null;
     private MongoDataStore mongoDataStore;
-    private MongoDBCollection collection;
+    private MongoCredentials credentials;
 
 
     public IndexedAlignmentDBAdaptor(SequenceDBAdaptor adaptor, MongoCredentials credentials) {
@@ -57,11 +56,20 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             e.printStackTrace();
         }
 
-        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        mongoDataStore = mongoManager.get(credentials.getMongoDbName());
-        collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
-
+        this.credentials = credentials;
+        if(mongoManager == null){
+            mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
+        }
+        MongoDBConfiguration configuration = MongoDBConfiguration
+                .builder()
+                .init()
+                .add("serverAddress", Arrays.asList(new DataStoreServerAddress(credentials.getMongoHost(), credentials.getMongoPort())))
+                .add("username", credentials.getUsername())
+                .add("password", credentials.getPassword())
+                .build();
+        mongoDataStore = mongoManager.get(credentials.getMongoDbName(), configuration);
     }
+
     public IndexedAlignmentDBAdaptor(MongoCredentials credentials) {
         this(new CellBaseSequenceDBAdaptor(), credentials);
     }
@@ -164,6 +172,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         String fileId = options.getString(QO_FILE_ID);
         List<DBObject> operations = new LinkedList<>();
         int chunkSize = 200;
+        MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
 
         //List<DBObject> operations = Arrays.asList(
         operations.add(new BasicDBObject(
@@ -248,6 +257,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
     public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
         long startTime = System.currentTimeMillis();
+        MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
 
         int size = region.getEnd()-region.getStart();
         String fileId = options.getString(QO_FILE_ID);

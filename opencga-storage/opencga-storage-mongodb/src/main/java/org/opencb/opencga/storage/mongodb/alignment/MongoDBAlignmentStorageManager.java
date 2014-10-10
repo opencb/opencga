@@ -14,6 +14,7 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
@@ -39,7 +40,7 @@ import java.util.*;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     public static final String MONGO_DB_NAME = "opencga";
-    public static final String COPY_FILE = "copy";
+    public static final String STORAGE_SEQUENCE_DBADAPTOR = "OPENCGA.STORAGE.SEQUENCE.DBADAPTOR";
 
     //    private MongoCredentials mongoCredentials = null;
     private final Properties properties = new Properties();
@@ -99,14 +100,18 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
     @Override
-    public DataWriter<AlignmentRegion> getDBWriter(Path credentials, String fileId) {
+    public DataWriter<AlignmentRegion> getDBWriter(Path credentials, String dbName, String fileId) {
+        if (dbName == null || dbName.isEmpty()) {
+            dbName = MONGO_DB_NAME;
+            logger.info("Using default dbName in MongoDBAlignmentStorageManager,getDBWriter. fileId : " + fileId);
+        }
         try {
-            if(credentials != null) {
+            if(credentials != null && credentials.toFile().exists()) {
                 Properties credentialsProperties = new Properties();
                 credentialsProperties.load(new InputStreamReader(new FileInputStream(credentials.toString())));
                 return new CoverageMongoWriter(new MongoCredentials(credentialsProperties), fileId);
             } else {
-                return new CoverageMongoWriter(getMongoCredentials(), fileId);
+                return new CoverageMongoWriter(getMongoCredentials(dbName), fileId);
             }
         } catch (IOException e) {
             logger.error(e.toString(), e);
@@ -114,27 +119,15 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         return null;
     }
 
-
-    private MongoCredentials getMongoCredentials(){
-        try {
-            return new MongoCredentials(
-                    properties.getProperty("mongo_host","localhost"),
-                    Integer.parseInt(properties.getProperty("mongo_port", "27017")),
-                    properties.getProperty("mongo_db_name",MONGO_DB_NAME),
-                    properties.getProperty("mongo_user",null),
-                    properties.getProperty("mongo_password",null)
-            );
-            //this.mongoCredentials = new MongoCredentials(properties);
-        } catch (IllegalOpenCGACredentialsException e) {
-            logger.error(e.getMessage(), e);
-            return null;
-        }
-    }
-
     @Override
-    public AlignmentQueryBuilder getDBAdaptor(Path path) {
+    public AlignmentQueryBuilder getDBAdaptor(String dbName) {
         SequenceDBAdaptor adaptor;
-        if (path == null) {
+        if (dbName == null) {
+            dbName = MONGO_DB_NAME;
+            logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
+        }
+        Path path = Paths.get(properties.getProperty(STORAGE_SEQUENCE_DBADAPTOR, ""));
+        if (path == null || path.toString() == null || path.toString().isEmpty()) {
             adaptor = new CellBaseSequenceDBAdaptor();
         } else {
             if(path.toString().endsWith("sqlite.db")){
@@ -144,10 +137,25 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             }
         }
 
-        return new IndexedAlignmentDBAdaptor(adaptor, getMongoCredentials());
-
+        return new IndexedAlignmentDBAdaptor(adaptor, getMongoCredentials(dbName));
     }
 
+    private MongoCredentials getMongoCredentials(String mongoDbName){
+        try {
+            return new MongoCredentials(
+                    properties.getProperty("mongo_host", "localhost"),
+                    Integer.parseInt(properties.getProperty("mongo_port", "27017")),
+//                    properties.getProperty("mongo_db_name", mongoDbName),
+                    mongoDbName,
+                    properties.getProperty("mongo_user", null),
+                    properties.getProperty("mongo_password", null)
+            );
+            //this.mongoCredentials = new MongoCredentials(properties);
+        } catch (IllegalOpenCGACredentialsException e) {
+            logger.error(e.getMessage(), e);
+            return null;
+        }
+    }
 
     /**
      * Copy into the output path                   : <outputPath>/<FILE_ID>.bam
@@ -163,15 +171,16 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
      * @throws FileFormatException
      */
     @Override
-    public void transform(Path input, Path pedigree, Path outputPath, Map<String, Object> params) throws IOException, FileFormatException {
+    public void transform(Path input, Path pedigree, Path outputPath, ObjectMap params) throws IOException, FileFormatException {
 
-       // String study = params.containsKey(STUDY)? params.get(STUDY).toString(): null;
-        String fileId = params.containsKey(FILE_ID)? params.get(FILE_ID).toString(): input.getFileName().toString().split("\\.")[0];
-        String encrypt = params.containsKey(ENCRYPT)? params.get(ENCRYPT).toString(): "null";
-        boolean plain = params.containsKey(PLAIN)? Boolean.parseBoolean(params.get(PLAIN).toString()): false;
-//        boolean copy = params.containsKey(COPY_FILE)? Boolean.parseBoolean(params.get(COPY_FILE).toString()): false;
-        int regionSize = params.containsKey(REGION_SIZE)? Integer.parseInt(params.get(REGION_SIZE).toString()): 200000;
-        List<String> meanCoverageSizeList = (List<String>) (params.containsKey(MEAN_COVERAGE_SIZE_LIST)? params.get(MEAN_COVERAGE_SIZE_LIST): new LinkedList<String>());
+//        String study = params.containsKey(STUDY)? params.get(STUDY).toString(): null;
+        String defaultFileId = input.getFileName().toString().split("\\.")[0];
+        String fileId = params.getString(FILE_ID, defaultFileId);
+        String encrypt = params.getString(ENCRYPT, "null");
+        boolean plain = params.getBoolean(PLAIN, false);
+        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
+        int regionSize = params.getInt(REGION_SIZE, 200000);
+        List<String> meanCoverageSizeList = params.getListAs(MEAN_COVERAGE_SIZE_LIST, String.class, new LinkedList<String>());
         //String fileName = inputPath.getFileName().toString();
         //Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
 
@@ -251,7 +260,12 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
                     break;
                 case "":
                 default:
-                    Files.copy(sortBam, bamFile);
+                    if(copy) {
+                        Files.copy(sortBam, bamFile);
+                    } else {
+                        bamFile = sortBam;
+                        logger.info("copy = false. Don't copy file.");
+                    }
             }
             long end = System.currentTimeMillis();
             logger.info("end - start = " + (end - start)/1000.0+"s");

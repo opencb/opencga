@@ -12,7 +12,6 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 
 import java.io.FileOutputStream;
@@ -37,7 +36,8 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
         Path adaptorPath = null;
         adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
-        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(adaptorPath);
+        manager.getProperties().setProperty(MongoDBAlignmentStorageManager.STORAGE_SEQUENCE_DBADAPTOR, adaptorPath.toString());
+        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(MongoDBAlignmentStorageManager.MONGO_DB_NAME);
     }
 
     @Test

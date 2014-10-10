@@ -7,16 +7,18 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.Map;
 
 /**
  * Created by jacobo on 14/08/14.
@@ -31,6 +33,10 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     public static final String FILE_ID = "fileId";
     public static final String INCLUDE_COVERAGE = "includeCoverage";
     public static final String ENCRYPT = "encrypt";
+    public static final String COPY_FILE = "copy";
+    public static final String DB_NAME = "dbName";
+
+    protected static Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
 
 
     @Override
@@ -48,32 +54,36 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     }
 
     @Override
-    abstract public DataWriter<AlignmentRegion> getDBWriter(Path credentials, String fileId);
+    abstract public DataWriter<AlignmentRegion> getDBWriter(Path credentials, String dbName, String fileId);
 
     @Override
-    abstract public AlignmentQueryBuilder getDBAdaptor(Path credentials);
+    abstract public AlignmentQueryBuilder getDBAdaptor(String dbName);
 
     @Override
-    abstract public void transform(Path input, Path pedigree, Path output, Map<String, Object> params) throws IOException, FileFormatException;
+    abstract public void transform(Path input, Path pedigree, Path output, ObjectMap params) throws IOException, FileFormatException;
 
     @Override
-    public void preLoad(Path input, Path output, Map<String, Object> params) throws IOException {
+    public void preLoad(Path input, Path output, ObjectMap params) throws IOException {
 
     }
 
     @Override
-    public void load(Path input, Path credentials, Map<String, Object> params) throws IOException {
+    public void load(Path input, Path credentials, ObjectMap params) throws IOException {
 
-        String fileId = params.containsKey(FILE_ID)? params.get(FILE_ID).toString(): input.getFileName().toString().split("\\.")[0];
+        String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
+        String dbName = params.getString(DB_NAME);
 
         DataReader<AlignmentRegion> schemaReader = this.getDBSchemaReader(input);
-        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(credentials, fileId);
+        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(credentials, dbName, fileId);
 
-        Runner runner = new Runner(schemaReader, Arrays.asList(dbWriter), new LinkedList<Task>(), 1);
+        Runner<AlignmentRegion> runner = new Runner<>(schemaReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>(), 1);
 
-        System.out.println("Loading alignments...");
+        logger.info("Loading alignments...");
+        long start = System.currentTimeMillis();
         runner.run();
-        System.out.println("Alignments loaded!");
+        long end = System.currentTimeMillis();
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+        logger.info("Alignments loaded!");
 
     }
 }
