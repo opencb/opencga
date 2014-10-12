@@ -1,13 +1,10 @@
 package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.commons.lang.RandomStringUtils;
-import org.junit.Test;
 import org.opencb.datastore.core.QueryResponse;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 
@@ -17,11 +14,12 @@ public class ProjectWSServerTest {
 
     private UserWSServerTest userTest;
     private int projectId;
+
     public ProjectWSServerTest(UserWSServerTest uTest ){
         userTest = uTest;
     }
 
-    public void createProject(){
+    public void createProject() {
         ObjectMapper objectMapper = new ObjectMapper();
         String prName = "pr_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
 
@@ -35,15 +33,23 @@ public class ProjectWSServerTest {
         System.out.println("\tdescription: description");
         System.out.println("\tstatus: status");
         System.out.println("\torganization: organization");
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("userId", userTest.getUserId());
-        queryParams.add("sid", userTest.getSessionId());
-        queryParams.add("name", prName);
-        queryParams.add("alias", prName);
-        queryParams.add("description", "description");
-        queryParams.add("status", "status");
-        queryParams.add("organization", "organization");
-        String s = userTest.getWebResource().path("projects").path("create").queryParams(queryParams).get(String.class);
+//        MultivaluedMap queryParams = new MultivaluedHashMap();
+//        queryParams.add("userId", userTest.getUserId());
+//        queryParams.add("sid", userTest.getSessionId());
+//        queryParams.add("name", prName);
+//        queryParams.add("alias", prName);
+//        queryParams.add("description", "description");
+//        queryParams.add("status", "status");
+//        queryParams.add("organization", "organization");
+        String s = userTest.getWebTarget().path("projects").path("create")
+                .queryParam("userId", userTest.getUserId())
+                .queryParam("sid", userTest.getSessionId())
+                .queryParam("name", prName)
+                .queryParam("alias", prName)
+                .queryParam("description", "description")
+                .queryParam("status", "status")
+                .queryParam("organization", "organization")
+                .request().get(String.class);
         try {
             QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
             //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
@@ -67,10 +73,11 @@ public class ProjectWSServerTest {
         System.out.println("\tsid: " + userTest.getSessionId());
         System.out.println("\tprojectId: " + projectId);
 
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("sid", userTest.getSessionId());
+//        MultivaluedMap queryParams = new MultivaluedMapImpl();
+//        queryParams.add("sid", userTest.getSessionId());
 
-        String s = userTest.getWebResource().path("projects").path(String.valueOf(projectId)).path("info").queryParams(queryParams).get(String.class);
+        String s = userTest.getWebTarget().path("projects").path(String.valueOf(projectId)).path("info")
+                .queryParam("sid", userTest.getSessionId()).request().get(String.class);
         try {
             QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
             //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
@@ -94,10 +101,11 @@ public class ProjectWSServerTest {
         System.out.println("\tsid: "+ userTest.getSessionId());
         System.out.println("\townerId: "+ ownerId);
 
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("sid", userTest.getSessionId());
+//        MultivaluedMap queryParams = new MultivaluedMapImpl();
+//        queryParams.add("sid", userTest.getSessionId());
 
-        String s = userTest.getWebResource().path("projects").path(String.valueOf(ownerId)).path("all-projects").queryParams(queryParams).get(String.class);
+        String s = userTest.getWebTarget().path("projects").path(String.valueOf(ownerId)).path("all-projects")
+                .queryParam("sid", userTest.getSessionId()).request().get(String.class);
         try {
             QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
             //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
@@ -125,12 +133,17 @@ public class ProjectWSServerTest {
         System.out.println("\tdescription: " + description);
         System.out.println("\torganization: " + organization);
 
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("sid", userTest.getSessionId());
-        queryParams.add("name", name);
-        queryParams.add("description", description);
-        queryParams.add("organization", organization);
-        String s = userTest.getWebResource().path("projects").path(String.valueOf(projectId)).path("modify").queryParams(queryParams).get(String.class);
+//        MultivaluedMap queryParams = new MultivaluedMapImpl();
+//        queryParams.add("sid", userTest.getSessionId());
+//        queryParams.add("name", name);
+//        queryParams.add("description", description);
+//        queryParams.add("organization", organization);
+        String s = userTest.getWebTarget().path("projects").path(String.valueOf(projectId)).path("modify")
+                .queryParam("sid", userTest.getSessionId())
+                .queryParam("name", name)
+                .queryParam("description", description)
+                .queryParam("organization", organization)
+                .request().get(String.class);
 
         System.out.println("\nJSON RESPONSE");
         System.out.println(s);
