@@ -180,8 +180,13 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
         
         return queryResult;
     }
-    
-    
+
+    @Override
+    public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
+        return null;
+    }
+
+
     @Override
     public QueryResult getAlignmentRegionInfo(Region region, QueryOptions options) {
         AlignmentRegion alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());

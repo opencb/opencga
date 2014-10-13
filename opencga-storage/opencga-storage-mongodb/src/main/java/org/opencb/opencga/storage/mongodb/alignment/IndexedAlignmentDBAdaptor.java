@@ -106,7 +106,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             queryResult.setErrorMsg("Unsupported extension for \"" + QO_BAM_PATH + "=" + bam + "\"");
             logger.warn("Unsupported extension for \"" + QO_BAM_PATH + "=" + bam + "\"");
         } else if(!bamFile.toFile().exists()) {
-            queryResult.setErrorMsg("BAM file not found");
+            queryResult.setErrorMsg("BAM file '" + bam + "' not found");
             logger.warn("BAM file " + bamFile + " not found");
         } else if(!bai.endsWith(".bai")){
             queryResult.setErrorMsg("Can't find BAM index file. Expected parameter \"" + QO_BAI_PATH + "=*.bai\"");
@@ -165,8 +165,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         return queryResult;
     }
 
-
-    public QueryResult getAllIntervalFrequenciesAggregate(Region region, QueryOptions options) {
+    @Override
+    public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         int size = options.getInt(QO_BATCH_SIZE, 2000);
         String fileId = options.getString(QO_FILE_ID);
@@ -228,13 +228,14 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
                 "$sort",
                 new BasicDBObject("_id", 1)
         ));
-        System.out.print("db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [");
+        String mongoAggregate = "db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [";
         for (DBObject operation : operations) {
-            System.out.print(operation.toString() + " , ");
+            mongoAggregate += operation.toString() + " , ";
         }
-        System.out.println("])");
+        mongoAggregate += "])";
+        System.out.println(mongoAggregate);
         QueryResult<DBObject> result = collection.aggregate(null, operations, null);
-
+        result.setId("getAllIntervalFrequencies, " + region.toString()/* + "  " + mongoAggregate*/);
         for (DBObject object : result.getResult()) {
             int id;
             Object oid = object.get("_id");
@@ -255,7 +256,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     }
 
 
-    public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
+    private QueryResult _getAllIntervalFrequencies(Region region, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
 

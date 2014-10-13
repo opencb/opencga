@@ -206,7 +206,9 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
-                          @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences
+                          @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
+                          @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                          @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval
     ) {
         int fileIdNum;
         File file;
@@ -215,6 +217,7 @@ public class FileWSServer extends OpenCGAWSServer {
         Region r = new Region(region);
 
         try {
+            System.out.println("catalogManager = " + catalogManager);
             fileIdNum = catalogManager.getFileId(fileId);
             QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
             file = queryResult.getResult().get(0);
@@ -228,14 +231,21 @@ public class FileWSServer extends OpenCGAWSServer {
             case "bam":
                 //TODO: Check indexed
                 QueryOptions options = new QueryOptions();
-                options.put(AlignmentQueryBuilder.QO_FILE_ID, fileIdNum);
+                options.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
                 options.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
                 options.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
                 options.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
                 options.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
+                options.put(AlignmentQueryBuilder.QO_BATCH_SIZE, interval);
+                options.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
 
                 AlignmentQueryBuilder dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
-                QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, options);
+                QueryResult alignmentsByRegion;
+                if(histogram){
+                    alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, options);
+                } else {
+                    alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, options);
+                }
                 return createOkResponse(alignmentsByRegion);
             default:
                 return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');

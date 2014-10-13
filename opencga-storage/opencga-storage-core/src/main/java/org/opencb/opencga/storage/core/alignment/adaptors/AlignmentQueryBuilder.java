@@ -33,8 +33,11 @@ public interface AlignmentQueryBuilder {
     
     QueryResult getCoverageByRegion(Region region, QueryOptions options);
     
+    @Deprecated
     QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
-    
+
+    QueryResult getAllIntervalFrequencies(Region region, QueryOptions options);
+
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
     
 }

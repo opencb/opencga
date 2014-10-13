@@ -94,7 +94,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         QueryOptions qo = new QueryOptions();
         qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG00096");
 
-        jsonQueryResult("aggregate", dbAdaptor.getAllIntervalFrequenciesAggregate(new Region("20", 50000, 100000), qo));
+        jsonQueryResult("aggregate", dbAdaptor.getAllIntervalFrequencies(new Region("20", 50000, 100000), qo));
 
 
     }
