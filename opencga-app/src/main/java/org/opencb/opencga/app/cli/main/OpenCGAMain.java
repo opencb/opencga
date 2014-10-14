@@ -296,7 +296,8 @@ public class OpenCGAMain {
 
     private static CatalogManager getCatalogManager()
             throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
-        CatalogManager catalogManager;InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
+        CatalogManager catalogManager;
+        InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         //try {
             properties.load(is);

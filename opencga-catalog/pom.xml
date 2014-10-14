@@ -16,7 +16,7 @@
     <version>${opencga.version}</version>
 
     <!--<modules>-->
-        <!--<module>opencga-catalog-core</module>-->
+    <!--<module>opencga-catalog-core</module>-->
     <!--</modules>-->
 
     <dependencies>

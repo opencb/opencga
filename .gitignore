@@ -1,4 +1,5 @@
 # OpenCGA folders
+opencga-app/build/conf
 opencga-app/build/libs
 
 # General
