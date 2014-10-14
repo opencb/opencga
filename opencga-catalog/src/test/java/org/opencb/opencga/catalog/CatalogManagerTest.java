@@ -430,7 +430,7 @@ public class CatalogManagerTest extends GenericTest {
 
         Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", "jobs/myJob", Collections.<Integer>emptyList());
 
-        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
+//        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
         System.out.println(catalogManager.createJob(
                 analysisId, "mySecondJob", "samtool", "description", "#rm -rf .*", "jobs/myJob", null, sessionIdUser));
     }

@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -1056,6 +1055,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         study.setStatus(params.getString("status", study.getStatus()));
         study.setDiskUsage(params.getInt("diskUsage", (int) study.getDiskUsage())); //Fixme: may lost precision
         study.setCipher(params.getString("cipher", study.getCipher()));
+        study.setAcl(params.getListAs("acl", Acl.class, study.getAcl()));
         study.getStats().putAll(params.getMap("stats", Collections.<String, Object>emptyMap()));
         study.getAttributes().putAll(params.getMap("attributes", Collections.<String, Object>emptyMap()));
 
@@ -1177,35 +1177,34 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("get study ACL", startTime, acls);
     }
 
-//    @Override
-    public void setStudyAcl(int studyId, Acl newAcl) throws CatalogManagerException {
-        /*
+    @Override
+    public QueryResult setStudyAcl(int studyId, Acl newAcl) throws CatalogManagerException {
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
             throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
         }
 
-        DBObject newAclObject;
-        try {
-            newAclObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(newAcl));
-        } catch (JsonProcessingException e) {
-            throw new CatalogManagerException("could not put ACL: parsing error");
+        List<Acl> studyAcl = getStudy(studyId).getResult().get(0).getAcl();
+
+        boolean exists = false;
+        for (Acl acl : studyAcl) {
+            if (acl.getUserId().equals(newAcl.getUserId())) {
+                acl.setUserId(newAcl.getUserId());
+                acl.setDelete(newAcl.isDelete());
+                acl.setExecute(newAcl.isExecute());
+                acl.setRead(newAcl.isRead());
+                acl.setWrite(newAcl.isWrite());
+                exists = true;
+            }
+        }
+        if (!exists) {
+            studyAcl.add(newAcl);
         }
 
-        Acl studyAcl = getStudyAcl(studyId, userId);
-        DBObject match;
-        DBObject updateOperation;
-        if (studyAcl == null) {  // there is no acl for that user in that file. push
-            match = new BasicDBObject("id", studyId);
-            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
-        } else {    // there is already another ACL: overwrite
-            match = BasicDBObjectBuilder
-                    .start("id", studyId)
-                    .append("acl.userId", userId).get();
-            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
-        }
-        QueryResult update = userCollection.update(match, updateOperation, false, false);
-        */
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put("acl", studyAcl);
+        modifyStudy(studyId, objectMap);
+        return getStudyAcl(studyId, userId);
     }
 
     /**

@@ -107,7 +107,7 @@ public interface CatalogDBAdaptor {
     String getStudyOwner(int studyId) throws CatalogManagerException;
 
     QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogManagerException;
-//    void setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;   // TODO
+    QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;
     /**
      * File methods
      * ***************************
