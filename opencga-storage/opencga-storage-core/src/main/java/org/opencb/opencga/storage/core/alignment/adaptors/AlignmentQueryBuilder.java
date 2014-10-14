@@ -18,7 +18,8 @@ public interface AlignmentQueryBuilder {
     public static final String QO_HISTOGRAM = "histogram";
     public static final String QO_INCLUDE_COVERAGE = "include_coverage";
     //public static final String QO_AVERAGE = "average";
-    public static final String QO_BATCH_SIZE = "batch_size";
+    public static final String QO_INTERVAL_SIZE = "interval_size";
+    public static final String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
 
     QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options);
 

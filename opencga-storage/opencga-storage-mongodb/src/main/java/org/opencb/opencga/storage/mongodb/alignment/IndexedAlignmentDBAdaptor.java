@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.NumberFormat;
 import java.util.*;
 
 /**
@@ -168,10 +167,15 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     @Override
     public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
         long startTime = System.currentTimeMillis();
-        int size = options.getInt(QO_BATCH_SIZE, 2000);
+        int size = options.getInt(QO_INTERVAL_SIZE, 2000);
         String fileId = options.getString(QO_FILE_ID);
         List<DBObject> operations = new LinkedList<>();
-        int chunkSize = 200;
+        int chunkSize = options.getInt(QO_COVERAGE_CHUNK_SIZE, 200);
+
+        if(size%chunkSize != 0){
+            size -= size%chunkSize;
+        }
+
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
 
         //List<DBObject> operations = Arrays.asList(
@@ -195,15 +199,17 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
                 "$match",
                 new BasicDBObject(CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.FILE_ID_FIELD, fileId)
         ));
+        String startField = "$" + CoverageMongoWriter.START_FIELD;
+        String averageField = "$" + CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.AVERAGE_FIELD;
         operations.add(new BasicDBObject(
                 "$group", BasicDBObjectBuilder.start(
                         "_id", new BasicDBObject(
                                 "$divide", Arrays.asList(
                                         new BasicDBObject(
                                                 "$subtract", Arrays.asList(
-                                                        "$start",
+                                                startField,
                                                         new BasicDBObject(
-                                                                "$mod", Arrays.asList("$start", size)
+                                                                "$mod", Arrays.asList(startField, size)
                                                         )
                                                 )
                                         ),
@@ -213,14 +219,15 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
                 )
                 .append(
                         "feature_count", new BasicDBObject(
-                                "$sum" ,
-                                new BasicDBObject(
-                                        "$divide",
-                                        Arrays.asList(
-                                                "$"+ CoverageMongoWriter.FILES_FIELD +"." + CoverageMongoWriter.AVERAGE_FIELD,
-                                                size/chunkSize
-                                        )
-                                )
+                                "$sum",
+                                averageField
+//                                new BasicDBObject(
+//                                        "$divide",
+//                                        Arrays.asList(
+//                                                averageField,
+//                                                size / chunkSize
+//                                        )
+//                                )
                         )
                 ).get()
         ));
@@ -237,22 +244,48 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         QueryResult<DBObject> result = collection.aggregate(null, operations, null);
         result.setId("getAllIntervalFrequencies, " + region.toString()/* + "  " + mongoAggregate*/);
         for (DBObject object : result.getResult()) {
-            int id;
-            Object oid = object.get("_id");
-            if(oid instanceof Double){
-                id = (int) (double)oid;
-            } else if(oid instanceof Float){
-                id = (int) (float)oid;
-            } else {
-                id = Integer.parseInt(oid.toString());
-            }
+            int id = getInt(object, "_id");
+            int start = id * size + 1;
+            int end = id * size + size;
             object.put("chromosome", region.getChromosome());
-            object.put("start", id * size + 1);
-            object.put("end", id * size + size);
+            object.put("start", start);
+            object.put("end", end);
+            double featureCount = getDouble(object, "feature_count");
+//            object.put("feature_count_old", featureCount);
+            featureCount /= 1 + (end-1)/chunkSize - (start+chunkSize-2)/chunkSize;
+            object.put("feature_count", featureCount);
+//            object.put("div1", end/chunkSize - start/chunkSize);
+//            object.put("div2", end/chunkSize - (start+chunkSize)/chunkSize);
+//            object.put("div3", (end-1)/chunkSize - (start+chunkSize-2)/chunkSize);
         }
 
         return result;
+    }
 
+    private int getInt(DBObject object, String key) {
+        int i;
+        Object oi = object.get(key);
+        if(oi instanceof Double){
+            i = (int) (double)oi;
+        } else if(oi instanceof Float){
+            i = (int) (float)oi;
+        } else {
+            i = Integer.parseInt(oi.toString());
+        }
+        return i;
+    }
+
+    private double getDouble(DBObject object, String key) {
+        double d;
+        Object od = object.get(key);
+        if(od instanceof Double){
+            d = (double)od;
+        } else if(od instanceof Float){
+            d = (float)od;
+        } else {
+            d = Double.parseDouble(od.toString());
+        }
+        return d;
     }
 
 
@@ -264,7 +297,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         String fileId = options.getString(QO_FILE_ID);
 //        boolean histogram = options.getBoolean(QO_HISTOGRAM, size < 2000);
         boolean histogram = true;
-        int batchSize = histogram? options.getInt(QO_BATCH_SIZE, 1000) : 1000;
+        int batchSize = histogram? options.getInt(QO_INTERVAL_SIZE, 1000) : 1000;
         String batchName = MeanCoverage.sizeToNameConvert(batchSize);
 
         String coverageType;

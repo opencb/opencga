@@ -213,7 +213,8 @@ public class FileWSServer extends OpenCGAWSServer {
         int fileIdNum;
         File file;
         URI fileUri;
-        String dbName = null;   //TODO: getDBName from fileStats?   dbName == userId
+        String dbName = null;   //TODO: getDBName from file.attributes?   dbName == userId
+        int chunkSize = 200;   //TODO: getChunkSize from file.attributes?  use to be 200
         Region r = new Region(region);
 
         try {
@@ -230,14 +231,21 @@ public class FileWSServer extends OpenCGAWSServer {
         switch(file.getBioformat()) {
             case "bam":
                 //TODO: Check indexed
+//                ObjectMap attributes = new ObjectMap(file.getAttributes());
+//                if(!attributes.getBoolean("indexed")){
+//                    return createErrorResponse("File " + file.getId() + " '" + file.getName() + "' is not indexed.");
+//                }
+//                dbName = attributes.getString("dbName");
+//                chunkSize = attributes.getInt("coverageChunkSize");
                 QueryOptions options = new QueryOptions();
                 options.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
                 options.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
                 options.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
                 options.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
                 options.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
-                options.put(AlignmentQueryBuilder.QO_BATCH_SIZE, interval);
+                options.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
                 options.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
+                options.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
                 AlignmentQueryBuilder dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                 QueryResult alignmentsByRegion;

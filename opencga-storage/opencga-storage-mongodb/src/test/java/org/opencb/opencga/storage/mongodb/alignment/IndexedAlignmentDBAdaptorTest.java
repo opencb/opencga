@@ -76,7 +76,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 //29337216, 29473005
         QueryOptions qo = new QueryOptions();
         qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG01551");
-        qo.put(IndexedAlignmentDBAdaptor.QO_BATCH_SIZE, 10000);
+        qo.put(IndexedAlignmentDBAdaptor.QO_INTERVAL_SIZE, 10000);
         qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, "/media/jacobo/Nusado/opencga_bam_files/HG01551.bam");
         jsonQueryResult("HG01551.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29829001, 29830000), qo));
         jsonQueryResult("HG01551.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29830001, 29833000), qo));
@@ -113,7 +113,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 29829000, 29850000), qo));
         qo.put(IndexedAlignmentDBAdaptor.QO_HISTOGRAM, false);
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 29829000, 29830000), qo));
-        qo.put(IndexedAlignmentDBAdaptor.QO_BATCH_SIZE, 1000000);
+        qo.put(IndexedAlignmentDBAdaptor.QO_INTERVAL_SIZE, 1000000);
         printQueryResult(dbAdaptor.getCoverageByRegion(new Region("20", 1, 65000000), qo));
 
 //        System.out.println(coverageByRegion);
