@@ -1,12 +1,13 @@
 package org.opencb.opencga.server.ws;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
+
 import org.apache.commons.lang.RandomStringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.Test;
 import org.opencb.datastore.core.QueryResponse;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 
@@ -16,12 +17,15 @@ public class UserWSServerTest {
 
     private String userId;
     private String sessionId;
-    private WebResource webResource;
+    Client client = ClientBuilder.newClient();
+
+//    private WebResource webTarget;
+    private WebTarget webTarget;
     //private ObjectMapper objectMapper;
 
-    public UserWSServerTest(WebResource webResource){
+    public UserWSServerTest(WebTarget webTarget){
         userId = "user_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
-        this.webResource = webResource;
+        this.webTarget = webTarget;
     }
 
     public void createUser(){
@@ -36,7 +40,8 @@ public class UserWSServerTest {
         System.out.println("\trole: none");
         System.out.println("\tstatus: none");
 
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
+//        MultivaluedMap queryParams = new MultivaluedMapImpl();
+        MultivaluedMap queryParams = new MultivaluedHashMap();
         queryParams.add("userId", userId);
         queryParams.add("password", userId);
         queryParams.add("name", userId);
@@ -44,7 +49,16 @@ public class UserWSServerTest {
         queryParams.add("organization", "cipf");
         queryParams.add("role", "none");
         queryParams.add("status", "none");
-        String s = webResource.path("users").path("create").queryParams(queryParams).get(String.class);
+
+//        String s = webTarget.path("users").path("create").queryParams(queryParams).get(String.class);
+        String s =this.webTarget.path("users").path("create").queryParam("userId", userId)
+                .queryParam("password", userId)
+                .queryParam("name", userId)
+                .queryParam("email", "email@cipf.es")
+                .queryParam("organization", "cipf")
+                .queryParam("role", "none")
+                .queryParam("status", "none")
+                .request().get(String.class);
 
         System.out.println("\nJSON RESPONSE");
         System.out.println(s);
@@ -66,9 +80,9 @@ public class UserWSServerTest {
         System.out.println("\tuserId: " + userId);
         System.out.println("\tpassword: " + userId);
         ObjectMapper objectMapper = new ObjectMapper();
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("password", userId);
-        String s = webResource.path("users").path(userId).path("login").queryParams(queryParams).get(String.class);
+//        MultivaluedMap queryParams = new MultivaluedMapImpl();
+//        queryParams.add("password", userId);
+        String s = webTarget.path("users").path(userId).path("login").queryParam("password", userId).request().get(String.class);
         try {
             QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
             assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
@@ -97,12 +111,14 @@ public class UserWSServerTest {
         System.out.println("\temail: " + email);
         System.out.println("\torganization: " + organization);
 
-        MultivaluedMap queryParams = new MultivaluedMapImpl();
-        queryParams.add("sid", sessionId);
-        queryParams.add("name", name);
-        queryParams.add("email", email);
-        queryParams.add("organization", organization);
-        String s = webResource.path("users").path(userId).path("modify").queryParams(queryParams).get(String.class);
+//        MultivaluedMap queryParams = new MultivaluedMapImpl();
+//        queryParams.add("sid", sessionId);
+//        queryParams.add("name", name);
+//        queryParams.add("email", email);
+//        queryParams.add("organization", organization);
+        String s = webTarget.path("users").path(userId).path("modify").queryParam("sid", sessionId)
+                .queryParam("name", name).queryParam("email", email).queryParam("organization", organization)
+                .request().get(String.class);
 
         System.out.println("\nJSON RESPONSE");
         System.out.println(s);
@@ -124,7 +140,7 @@ public class UserWSServerTest {
     public String getSessionId(){
         return sessionId;
     }
-    public WebResource getWebResource(){
-        return webResource;
+    public WebTarget getWebTarget(){
+        return webTarget;
     }
 }

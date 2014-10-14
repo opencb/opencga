@@ -617,8 +617,9 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwner(projectId);
 
-        URI uri = catalogIOManager.getProjectUri(ownerId, Integer.toString(projectId));
-        Study study = new Study(name, alias, type, description, "", uri);
+        URI projectUri = catalogIOManager.getProjectUri(ownerId, Integer.toString(projectId));
+        Study study = new Study(name, alias, type, description, "", projectUri);
+
         study.getFiles().add(new File(".", File.FOLDER, "", "", "file", "", userId, "", "", 0));//TODO: Take scheme from study
         study.setCreatorId(userId);
 
@@ -746,18 +747,18 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyStudy(studyId, parameters);
     }
 
-//    public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogManagerException {
-//        checkObj(acl, "acl");
-//        checkParameter(sessionId, "sessionId");
-//
-//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        Acl studyAcl = getStudyAcl(userId, studyId);
-//        if (!studyAcl.isWrite()) {
-//            throw new CatalogManagerException("Permission denied. Can't modify project");
-//        }
-//
-//        return catalogDBAdaptor.setSudyAcl(studyId, acl);
-//    }
+    public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogManagerException {
+        checkObj(acl, "acl");
+        checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl studyAcl = getStudyAcl(userId, studyId);
+        if (!studyAcl.isWrite()) {
+            throw new CatalogManagerException("Permission denied. Can't modify project");
+        }
+
+        return catalogDBAdaptor.setStudyAcl(studyId, acl);
+    }
 
     /**
      * File methods
@@ -775,9 +776,10 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         checkPath(path, "filePath");
 
+        Study study = catalogDBAdaptor.getStudy(studyId).getResult().get(0); // if no studies are found, an exception is raised
 
         File file = new File(Paths.get(path).getFileName().toString(), File.FILE, format, bioformat,
-                "", path, userId, description, File.UPLOADING, 0);//TODO: Take scheme from study
+                study.getUri().getScheme(), path, userId, description, File.UPLOADING, 0);
 
         Path parent = Paths.get(path).getParent();
 
@@ -849,9 +851,10 @@ public class CatalogManager {
             throw new CatalogManagerException("UserId mismatch with file creator");
         }
         ioManager.createFile(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath(), fileIs);
+        Study study = catalogDBAdaptor.getStudy(studyId).getResult().get(0);
 
         ObjectMap modifyParameters = new ObjectMap("status", File.UPLOADED);
-        modifyParameters.put("uriScheme", "file");  //TODO: Take scheme from study
+        modifyParameters.put("uriScheme", study.getUri().getScheme());
         catalogDBAdaptor.modifyFile(fileId, modifyParameters);
         return catalogDBAdaptor.getFile(fileId);
     }
@@ -873,10 +876,13 @@ public class CatalogManager {
         if(!parents && parentId < 0 && parent != null){  //If !parents and parent does not exist in the DB (but should exist)
             throw new CatalogManagerException("Path '" + parent + "' does not exist");
         }
+
+        Study study = catalogDBAdaptor.getStudy(studyId).getResult().get(0);
+        String studyScheme = study.getUri().getScheme();
+
         while(parentId < 0 && parent != null){  //Add all the parents that should be created
-            folders.addFirst(new File(parent.getFileName().toString(), File.FOLDER, "", "", "file",//TODO: Take scheme from study
-                    parent.toString() + "/",
-                    userId, "", File.READY, 0));
+            folders.addFirst(new File(parent.getFileName().toString(), File.FOLDER, "", "", studyScheme,
+                    parent.toString() + "/", userId, "", File.READY, 0));
             parent = parent.getParent();
             if(parent != null) {
                 parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
@@ -894,9 +900,8 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. Can't create files or folders in this study");
         }
 
-        //TODO: Take scheme from study
         ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
-        File mainFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", "file", folderPath.toString() + "/", userId
+        File mainFolder = new File(folderPath.getFileName().toString(), File.FOLDER, "", "", studyScheme, folderPath.toString() + "/", userId
                 , "", File.READY, 0);
 
         QueryResult<File> result;
