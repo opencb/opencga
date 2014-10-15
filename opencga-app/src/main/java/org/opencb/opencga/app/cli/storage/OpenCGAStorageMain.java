@@ -19,6 +19,7 @@ import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformVariants
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandLoadAlignments;
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformAlignments;
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandDownloadAlignments;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndex;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -26,6 +27,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,20 +38,17 @@ import java.util.*;
  */
 public class OpenCGAStorageMain {
 
-    private static final String APPLICATION_PROPERTIES_FILE = "application.properties";
-    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
-
-    private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
-    private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
-
-    private static AlignmentStorageManager alignmentStorageManager = null;
-    private static VariantStorageManager variantStorageManager = null;
-    //private static StorageManager storageManager = null; //TODO: Use only one generic StorageManager instead of one for variant and other for alignment
+//    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
+    private static final String appHome = System.getProperty("app.home");
 
     protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
 
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException {
+        AlignmentStorageManager alignmentStorageManager = null;
+        VariantStorageManager variantStorageManager = null;
+        //StorageManager storageManager = null; //TODO: Use only one generic StorageManager instead of one for variant and other for alignment
+
         OptionsParser parser = new OptionsParser();
         boolean variantCommand = false;
         boolean alignmentCommand = false;
@@ -63,6 +62,11 @@ public class OpenCGAStorageMain {
             }
 
             switch (parsedCommand) {
+                case "index":
+                    command = parser.getCommandIndex();
+                    alignmentCommand = true;
+                    variantCommand = true;
+                    break;
                 case "create-accessions":
                     command = parser.getAccessionsCommand();
                     break;
@@ -82,9 +86,9 @@ public class OpenCGAStorageMain {
                     alignmentCommand = true;
                     command = parser.getLoadAlignments();
                     break;
-                case "download-alignments":
-                    command = parser.getDownloadAlignments();
-                    break;
+//                case "download-alignments":
+//                    command = parser.getDownloadAlignments();
+//                    break;
                 default:
                     System.out.println("Command not implemented");
                     System.exit(1);
@@ -95,37 +99,73 @@ public class OpenCGAStorageMain {
             System.exit(1);
         }
 
-
-        Path defaultPropertiesPath = Paths.get(OPENCGA_HOME, APPLICATION_PROPERTIES_FILE);
-        Path propertiesPath = null;
-        if(parser.getGeneralParameters().propertiesPath != null) {
-            propertiesPath = Paths.get(parser.getGeneralParameters().propertiesPath);
+        /*
+            Get properties conf
+         */
+        Path storagePropertiesPath = Paths.get(appHome, "conf", "storage.properties");
+        Properties storageProperties = new Properties();
+        if(storagePropertiesPath.toFile().exists()) {
+            storageProperties.load(new FileInputStream(storagePropertiesPath.toFile()));
         }
 
 
         //Get the StorageManager
         try {
             if(variantCommand) {
-                String variantManagerName = parser.getGeneralParameters().storageManagerName !=null?
+                String defaultVariantStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.MANAGER.DEFAULT.VARIANT");
+                String variantManagerName = parser.getGeneralParameters().storageManagerName !=null ?
                         parser.getGeneralParameters().storageManagerName :
-                        MONGODB_VARIANT_MANAGER;
+                        storageProperties.getProperty(defaultVariantStorageManager);
                 variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
-                variantStorageManager.addPropertiesPath(defaultPropertiesPath);
-                variantStorageManager.addPropertiesPath(propertiesPath);
-            } else if(alignmentCommand) {
-                String alignmentManagerName = parser.getGeneralParameters().storageManagerName !=null?
+                variantStorageManager.addPropertiesPath(storagePropertiesPath);
+            }
+            if(alignmentCommand) {
+                String defaultAlignmentStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.MANAGER.DEFAULT.ALIGNMENT");
+                String alignmentManagerName = parser.getGeneralParameters().storageManagerName != null ?
                         parser.getGeneralParameters().storageManagerName :
-                        MONGODB_ALIGNMENT_MANAGER;
+                        storageProperties.getProperty(defaultAlignmentStorageManager);
                 alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
-                alignmentStorageManager.addPropertiesPath(defaultPropertiesPath);
-                alignmentStorageManager.addPropertiesPath(propertiesPath);
+                alignmentStorageManager.addPropertiesPath(storagePropertiesPath);
             }
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             logger.error("Error during the reflexion",e);
             e.printStackTrace();
         }
 
-        if (command instanceof CommandCreateAccessions) {
+        if (command instanceof CommandIndex) {
+            CommandIndex c = (CommandIndex) command;
+            if(c.input.endsWith(".bam") || c.input.endsWith(".sam")) {
+                ObjectMap params = new ObjectMap();
+
+                if(c.fileId != null) {
+                    params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+                }
+                params.put(AlignmentStorageManager.PLAIN,   false);
+                params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, Arrays.asList("200"));
+                params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true);
+                params.put(AlignmentStorageManager.DB_NAME, c.dbName);
+                params.put(AlignmentStorageManager.COPY_FILE, false);
+                params.put(AlignmentStorageManager.ENCRYPT, "null");
+
+                Path input = Paths.get(c.input);
+                Path output = Paths.get(c.tmp);
+                Path credentials = Paths.get(c.credentials);
+
+                assert alignmentStorageManager != null;
+                logger.info("Transform alignments");
+                alignmentStorageManager.transform(input, null, output, params);
+
+                logger.info("PreLoad alignments");
+                alignmentStorageManager.preLoad(input, output, params);
+
+                logger.info("Load alignments");
+                alignmentStorageManager.load(input, credentials, params);
+
+            } else if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
+                throw new UnsupportedOperationException();
+            }
+
+        } else if (command instanceof CommandCreateAccessions) {
             CommandCreateAccessions c = (CommandCreateAccessions) command;
 
             Path variantsPath = Paths.get(c.input);
@@ -145,7 +185,7 @@ public class OpenCGAStorageMain {
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS,   c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.SOURCE,          source);
+            params.put(VariantStorageManager.SOURCE, source);
 
             variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
 
@@ -162,9 +202,9 @@ public class OpenCGAStorageMain {
 
             Map<String, Object> params = new LinkedHashMap<>();
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
-            params.put(VariantStorageManager.INCLUDE_STATS,   c.includeStats);
+            params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.SOURCE,          source);
+            params.put(VariantStorageManager.SOURCE, source);
 
             // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
             variantStorageManager.load(variantsPath, credentials, params);
@@ -176,11 +216,9 @@ public class OpenCGAStorageMain {
             indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
 */
 
-
 //            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
 
         } else if (command instanceof CommandTransformAlignments) {
-
 
             CommandTransformAlignments c = (CommandTransformAlignments) command;
 
@@ -225,40 +263,13 @@ public class OpenCGAStorageMain {
 
 //            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true/*c.includeCoverage*/);
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
-//            params.put(AlignmentStorageManager.DB_NAME, c.dbName);
+            params.put(AlignmentStorageManager.DB_NAME, c.dbName);
 
             Path input = Paths.get(c.input);
             Path credentials = Paths.get(c.credentials);
 
             alignmentStorageManager.load(input, credentials, params);
 
-            /*
-            //Path filePath = Paths.get(c.dir, c.input + ".alignment" + (c.plain ? ".json" : ".json.gz"));
-            Path filePath = Paths.get(c.input);
-            Path credentialsPath = Paths.get(c.credentials);
-            
-            Configuration config = null;
-//            config = HBaseConfiguration.create();
-//            config.set("hbase.zookeeper.quorum", "mem10,mem09");
-//            config.set("hbase.zookeeper.property.clientPort", "2181");
-//            config.set("zookeeper.znode.parent", "/hbase-unsecure");
-            
-            if (!filePath.toFile().exists()) {
-                throw new IOException("[Error] Input paile not found : " + c.input);
-            }
-            if (!credentialsPath.toFile().exists()) {
-                throw new IOException("[Error] Credentials file not found : " + c.credentials);
-            }
-            
-            indexAlignments(
-                    null, //c.study, //c.studyId,
-                    filePath,
-                    null, null, null,         //No output file
-                    c.backend, credentialsPath, config,
-                    false,
-                    c.includeCoverage, 
-                    false, null);       //Coverage calculation is in transform, not in load.
-            */
             
         } else if(command instanceof CommandDownloadAlignments){
             CommandDownloadAlignments c = (CommandDownloadAlignments) command;

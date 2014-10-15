@@ -150,11 +150,12 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         // output: getDBSchemaWriter
 
         //Writers
-        List<VariantWriter> writers = Arrays.asList(this.getDBSchemaWriter(output));
-        if(writers.isEmpty()){
+        VariantWriter dbSchemaWriter = this.getDBSchemaWriter(output);
+        if(dbSchemaWriter == null){
             System.out.println("[ALERT] preLoad method not supported in this plugin");
             return;
         }
+        List<VariantWriter> writers = Arrays.asList(dbSchemaWriter);
 
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
         VariantSource source = (VariantSource) params.get("source");

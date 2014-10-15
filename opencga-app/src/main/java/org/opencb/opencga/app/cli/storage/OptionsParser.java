@@ -22,7 +22,8 @@ public class OptionsParser {
     private final CommandLoadVariants load;
     private final CommandTransformAlignments transformAlignments;
     private final CommandLoadAlignments loadAlignments;
-    private CommandDownloadAlignments downloadAlignments;
+    private final CommandIndex commandIndex;
+//    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
         jcommander = new JCommander();
@@ -32,6 +33,7 @@ public class OptionsParser {
         jcommander.addCommand(load = new CommandLoadVariants());
         jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
         jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
+        jcommander.addCommand(commandIndex = new CommandIndex());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -216,26 +218,8 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-//        @Parameter(names = {"-d --dbName"}, description = "DataBase name", required = true, arity = 1)
-//        String dbName;
-
-//        @Parameter(names = {"--indir"}, description = "Directory of the input files", required = false, arity = 1)
-//        String dir = "";
-
-//        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
-//        String study;
-
-//        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-//        String studyId;
-
-//        @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
-//        boolean plain = false;
-
-//        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required = false, arity = 1)
-//        String backend = "hbase";
-
-//        @Parameter(names = {"--include-coverage"}, description = "Save coverage information (optional)", required = false, arity = 0)
-//        boolean includeCoverage = false;
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
     }
 
     
@@ -274,8 +258,37 @@ public class OptionsParser {
         
         
     }
-    
-    
+
+    @Parameters(commandNames = {"index"}, commandDescription = "Index file")
+    class CommandIndex implements Command {
+
+        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
+        String input;
+
+        @Parameter(names = {"-t", "--temporal-dir"}, description = "Directory where place temporal files", required = false, arity = 1)
+        String tmp = "/tmp";
+
+        @Parameter(names = {"--delete-temporal"}, description = "Delete temporal files (TODO)", required = false)
+        boolean delete = false;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
+        String outdir;
+
+        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file", required = true, arity = 1)
+        String fileId;
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials = "";
+
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongo (default), hbase (pending)", required = false, arity = 1)
+        String backend = "mongo";
+
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
+
+    }
+
+
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
         String parsedCommand = jcommander.getParsedCommand();
@@ -284,8 +297,17 @@ public class OptionsParser {
 
     String usage() {
         StringBuilder builder = new StringBuilder();
-        jcommander.usage(builder);
+        String parsedCommand = jcommander.getParsedCommand();
+        if(parsedCommand != null || !parsedCommand.isEmpty()){
+            jcommander.usage(parsedCommand, builder);
+        } else {
+            jcommander.usage(builder);
+        }
         return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
+    }
+
+    public CommandIndex getCommandIndex() {
+        return commandIndex;
     }
 
     CommandCreateAccessions getAccessionsCommand() {
@@ -308,9 +330,9 @@ public class OptionsParser {
         return loadAlignments;
     }
 
-    CommandDownloadAlignments getDownloadAlignments() {
-        return downloadAlignments;
-    }
+//    CommandDownloadAlignments getDownloadAlignments() {
+//        return downloadAlignments;
+//    }
 
     GeneralParameters getGeneralParameters() {
         return generalParameters;

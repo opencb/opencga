@@ -103,7 +103,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public DataWriter<AlignmentRegion> getDBWriter(Path credentials, String dbName, String fileId) {
         if (dbName == null || dbName.isEmpty()) {
             dbName = MONGO_DB_NAME;
-            logger.info("Using default dbName in MongoDBAlignmentStorageManager,getDBWriter. fileId : " + fileId);
+            logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBWriter with fileId : " + fileId);
         }
         try {
             if(credentials != null && credentials.toFile().exists()) {
