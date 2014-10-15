@@ -19,11 +19,13 @@ import java.util.Properties;
  * Created by jacobo on 29/09/14.
  */
 public class OpenCGAMain {
+
     private String userId;
     private static String shellUserId;
     private static String shellSessionId;
     private CatalogManager catalogManager;
     public String sessionId;
+
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args)
@@ -31,8 +33,8 @@ public class OpenCGAMain {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
-        //DEBUG SHELL
-        if(args[0].equals("shell")){
+        // Interactive mode
+        if(args.length != 0 && args[0].equals("shell")){
             BufferedReader reader;//create BufferedReader object
 
             reader=new BufferedReader(new InputStreamReader(System.in));
@@ -66,17 +68,18 @@ public class OpenCGAMain {
 
     private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException {
         OptionsParser optionsParser = new OptionsParser();
-        //args = "projects share -u user -p asdf -U user2 -r true -d true -w true -x true --id 1".split(" "); System.out.println("HARCODE ARGS!");
         try {
             optionsParser.parse(args);
         } catch (ParameterException e){
-            if(!optionsParser.generalOptions.help) {
+
+            if(!optionsParser.getGeneralOptions().help && !optionsParser.getCommonOptions().help ) {
                 System.out.println(e.getMessage());
             }
+
             optionsParser.printUsage();
             return 1;
         }
-        if(optionsParser.generalOptions.help) {
+        if(optionsParser.getCommonOptions().help) {
             optionsParser.printUsage();
             return 1;
         }
@@ -95,14 +98,14 @@ public class OpenCGAMain {
             case "users":
                 switch (optionsParser.getSubcommand()) {
                     case "create": {
-                        OptionsParser.CommandUser.CommandUserCreate c = optionsParser.commandUserCreate;
+                        OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
                         //QueryResult<User> user = catalogManager.createUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.ROLE_USER, ""));
                         QueryResult<User> user = catalogManager.createUser(c.up.user, c.name, c.email, c.up.password, c.organization);
                         System.out.println(user);
                         break;
                     }
                     case "info": {
-                        OptionsParser.CommandUser.CommandUserInfo c = optionsParser.commandUserInfo;
+                        OptionsParser.UserCommands.InfoCommand c = optionsParser.getUserCommands().infoCommand;
                         login(c.up);
 
                         QueryResult<User> user = catalogManager.getUser(c.up.user, null, sessionId);
@@ -112,7 +115,7 @@ public class OpenCGAMain {
                         break;
                     }
                     case "login": {
-                        OptionsParser.CommandUser.CommandUserLogin c = optionsParser.commandUserLogin;
+                        OptionsParser.UserCommands.LoginCommand c = optionsParser.getUserCommands().loginCommand;
 
                         if(shellSessionId == null || shellUserId == null || !shellUserId.equals(c.up.user)){
                             shellSessionId = login(c.up);
@@ -124,7 +127,7 @@ public class OpenCGAMain {
                         break;
                     }
                     case "logout": {
-                        OptionsParser.CommandUser.CommandUserLogout c = optionsParser.commandUserLogout;
+                        OptionsParser.UserCommands.LogoutCommand c = optionsParser.getUserCommands().logoutCommand;
 
                         QueryResult logout;
                         if(c.user == null && c.sessionId == null) {
@@ -146,7 +149,7 @@ public class OpenCGAMain {
             case "projects":
                 switch (optionsParser.getSubcommand()) {
                     case "create": {
-                        OptionsParser.CommandProject.CommandProjectCreate c = optionsParser.commandProjectCreate;
+                        OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
                         login(c.up);
 
                         QueryResult<Project> project = catalogManager.createProject(userId, c.name, c.alias, c.description, c.organization, sessionId);
@@ -156,7 +159,7 @@ public class OpenCGAMain {
                         break;
                     }
                     case "info": {
-                        OptionsParser.CommandProject.CommandProjectInfo c = optionsParser.commandProjectInfo;
+                        OptionsParser.ProjectCommands.InfoCommand c = optionsParser.getProjectCommands().infoCommand;
                         login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.id);
@@ -185,7 +188,7 @@ public class OpenCGAMain {
             case "studies":
                 switch (optionsParser.getSubcommand()) {
                     case "create": {
-                        OptionsParser.CommandStudy.CommandStudyCreate c = optionsParser.commandStudyCreate;
+                        OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
                         login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.projectId);
@@ -196,7 +199,7 @@ public class OpenCGAMain {
                         break;
                     }
                     case "info": {
-                        OptionsParser.CommandStudy.CommandStudyInfo c = optionsParser.commandStudyInfo;
+                        OptionsParser.StudyCommands.InfoCommand c = optionsParser.getStudyCommands().infoCommand;
                         login(c.up);
 
                         int studyId = catalogManager.getStudyId(c.id);
@@ -225,7 +228,7 @@ public class OpenCGAMain {
             case "files":
                 switch (optionsParser.getSubcommand()) {
                     case "create": {
-                        OptionsParser.CommandFile.CommandFileCreate c = optionsParser.commandFileCreate;
+                        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
                         login(c.up);
 
                         int studyId = catalogManager.getStudyId(c.studyId);
@@ -241,7 +244,7 @@ public class OpenCGAMain {
                         break;
                     }
                     case "info": {
-                        OptionsParser.CommandFile.CommandFileInfo c = optionsParser.commandFileInfo;
+                        OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
                         login(c.up);
 
                         int fileId = catalogManager.getFileId(c.id);
@@ -252,7 +255,7 @@ public class OpenCGAMain {
                         break;
                     }
                     case "list": {
-                        OptionsParser.CommandFile.CommandFileList c = optionsParser.commandFileList;
+                        OptionsParser.FileCommands.ListCommand c = optionsParser.getFileCommands().listCommand;
                         login(c.up);
 
                         int fileId = catalogManager.getFileId(c.id);
@@ -275,7 +278,7 @@ public class OpenCGAMain {
         return 0;
     }
 
-    private String login(OptionsParser.UserPassword up) throws CatalogManagerException, IOException {
+    private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogManagerException, IOException {
         //String sessionId;
         if(up.user != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
@@ -297,10 +300,12 @@ public class OpenCGAMain {
     private static CatalogManager getCatalogManager()
             throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
         CatalogManager catalogManager;
-        InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
+//        InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
+
         Properties properties = new Properties();
         //try {
-            properties.load(is);
+//            properties.load(is);
+            properties.load(new FileInputStream(new java.io.File("")));
 //            System.out.println("catalog.properties");
 //            System.out.println("HOST "+properties.getProperty("HOST"));
 //            System.out.println("PORT "+properties.getProperty("PORT"));

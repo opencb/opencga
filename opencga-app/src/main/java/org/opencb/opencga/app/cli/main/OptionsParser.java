@@ -2,70 +2,69 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 
-import java.io.File;
-import java.io.InputStream;
-
 /**
  * Created by jacobo on 29/09/14.
  */
 public class OptionsParser {
 
-
     private final JCommander jcommander;
-    public final GeneralOptions generalOptions;
-    public final CommandUser commandUser;
-    public final CommandUser.CommandUserCreate commandUserCreate;
-    public final CommandUser.CommandUserInfo commandUserInfo;
-    public final CommandUser.CommandUserLogin commandUserLogin;
-    public final CommandUser.CommandUserLogout commandUserLogout;
-    public final CommandProject commandProject;
-    public final CommandProject.CommandProjectCreate commandProjectCreate;
-    public final CommandProject.CommandProjectInfo commandProjectInfo;
-    public final CommandStudy commandStudy;
-    public final CommandStudy.CommandStudyInfo commandStudyInfo;
-    public final CommandStudy.CommandStudyCreate commandStudyCreate;
-    public final CommandFile commandFile;
-    public final CommandFile.CommandFileCreate commandFileCreate;
-    public final CommandFile.CommandFileList commandFileList;
-    public final CommandFile.CommandFileInfo commandFileInfo;
+
+    private final GeneralOptions generalOptions;
+    private final CommonOptions commonOptions;
+
+    private final UserAndPasswordOptions userAndPasswordOptions;
+
+    private UserCommands userCommands;
+    private ProjectCommands projectCommands;
+    private StudyCommands studyCommands;
+    private FileCommands fileCommands;
 
     public final CommandShareResource commandShareResource;
 
 
+
     public OptionsParser() {
         generalOptions = new GeneralOptions();
+
         jcommander = new JCommander(generalOptions);
-        commandUser = new CommandUser();
-        commandProject = new CommandProject();
-        commandStudy = new CommandStudy();
-        commandFile = new CommandFile();
+
+        commonOptions = new CommonOptions();
+        userAndPasswordOptions = new UserAndPasswordOptions();
+
+        userCommands = new UserCommands();
+        projectCommands = new ProjectCommands();
+        studyCommands = new StudyCommands();
+        fileCommands = new FileCommands();
+
         commandShareResource = new CommandShareResource();
-        jcommander.addCommand(commandUser);
-        jcommander.addCommand(commandProject);
-        jcommander.addCommand(commandStudy);
-        jcommander.addCommand(commandFile);
 
+        jcommander.addCommand(userCommands);
         JCommander users = jcommander.getCommands().get("users");
-        users.addCommand(commandUserCreate = new CommandUser.CommandUserCreate());
-        users.addCommand(commandUserInfo = new CommandUser.CommandUserInfo());
-        users.addCommand(commandUserLogin = new CommandUser.CommandUserLogin());
-        users.addCommand(commandUserLogout = new CommandUser.CommandUserLogout());
+        users.addCommand(userCommands.createCommand);
+        users.addCommand(userCommands.infoCommand);
+//        users.addCommand(commandUserLogin = new CommandUser.CommandUserLogin());
+//        users.addCommand(commandUserLogout = new CommandUser.CommandUserLogout());
 
+
+        jcommander.addCommand(projectCommands);
         JCommander projects = jcommander.getCommands().get("projects");
-        projects.addCommand(commandProjectCreate = new CommandProject.CommandProjectCreate());
-        projects.addCommand(commandProjectInfo = new CommandProject.CommandProjectInfo());
-        projects.addCommand(commandShareResource);
+        projects.addCommand(projectCommands.createCommand);
+        projects.addCommand(projectCommands.infoCommand);
+//        projects.addCommand(commandShareResource);
 
+        jcommander.addCommand(studyCommands);
         JCommander studies = jcommander.getCommands().get("studies");
-        studies.addCommand(commandStudyInfo = new CommandStudy.CommandStudyInfo());
-        studies.addCommand(commandStudyCreate = new CommandStudy.CommandStudyCreate());
+        studies.addCommand(studyCommands.createCommand);
+        studies.addCommand(studyCommands.infoCommand);
         studies.addCommand(commandShareResource);
 
-        JCommander files = jcommander.getCommands().get("files");
-        files.addCommand(commandFileCreate = new CommandFile.CommandFileCreate());
-        files.addCommand(commandFileInfo = new CommandFile.CommandFileInfo());
-        files.addCommand(commandFileList = new CommandFile.CommandFileList());
 
+        jcommander.addCommand(fileCommands);
+        JCommander files = jcommander.getCommands().get("files");
+        files.addCommand(fileCommands.createCommand);
+        files.addCommand(fileCommands.infoCommand);
+        files.addCommand(fileCommands.listCommand);
+//        files.addCommand(commandFileList = new CommandFile.CommandFileList());
 //        files.addCommand(commandShareResource);
 
     }
@@ -74,16 +73,16 @@ public class OptionsParser {
         jcommander.parse(args);
     }
 
-    public String getCommand(){
+    public String getCommand() {
         String parsedCommand = jcommander.getParsedCommand();
-        return parsedCommand != null? parsedCommand: "";
+        return parsedCommand != null ? parsedCommand: "";
     }
 
-    public String getSubcommand(){
+    public String getSubcommand() {
         String parsedCommand = jcommander.getParsedCommand();
         if (jcommander.getCommands().containsKey(parsedCommand)) {
-            String subcommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subcommand != null? subcommand: "";
+            String subCommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
         } else {
             return "";
         }
@@ -102,24 +101,45 @@ public class OptionsParser {
         }
     }
 
-//    public void usage(){
-//        jcommander.usage();
-//    }
-//
-//    public void usage(String command){
-//        jcommander.usage(command);
-//    }
-//
-//    public void usage(String command, String subcommand){
-//        jcommander.getCommands().get(command).usage(subcommand);
-//    }
-
-    public class GeneralOptions {
-        @Parameter(names = {"--help", "-h"}, help = true)
-        public boolean help;
+    public GeneralOptions getGeneralOptions() {
+        return generalOptions;
     }
 
-    static class UserPassword{
+    public CommonOptions getCommonOptions() {
+        return commonOptions;
+    }
+
+    public UserAndPasswordOptions getUserAndPasswordOptions() {
+        return userAndPasswordOptions;
+    }
+
+    public UserCommands getUserCommands() {
+        return userCommands;
+    }
+
+    public ProjectCommands getProjectCommands() {
+        return projectCommands;
+    }
+
+    public StudyCommands getStudyCommands() {
+        return studyCommands;
+    }
+
+    public FileCommands getFileCommands() {
+        return fileCommands;
+    }
+
+
+    public class GeneralOptions {
+        @Parameter(names = {"-h", "--help"}, help = true)
+        public boolean help;
+
+        @Parameter(names = {"-V", "--version"})
+        public boolean version;
+    }
+
+
+    class UserAndPasswordOptions {
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
         String user;
 
@@ -127,14 +147,42 @@ public class OptionsParser {
         String password;
     }
 
+    class CommonOptions {
+        @Parameter(names = {"-C", "--conf"}, description = "This parameter set the level of the logging", required = false, arity = 1)
+        public String conf;
+
+        @Parameter(names = {"-h", "--help"}, help = true)
+        public boolean help;
+
+        @Parameter(names = {"-v", "--verbose"}, description = "This parameter set the level of the logging", required = false, arity = 1)
+        public boolean verbose;
+
+        @Parameter(names = {"-L", "--log-level"}, description = "This parameter set the level of the logging", required = false, arity = 1)
+        public int logLevel;
+
+    }
+
+
+
     @Parameters(commandNames = {"users"}, commandDescription = "Description")
-    static class CommandUser {
+    class UserCommands {
+
+        CreateCommand createCommand = new CreateCommand();
+        InfoCommand infoCommand = new InfoCommand();
+        LoginCommand loginCommand = new LoginCommand();
+        LogoutCommand logoutCommand = new LogoutCommand();
+
+        @ParametersDelegate
+        CommonOptions cOpt = commonOptions;
 
         @Parameters(commandNames = {"create"}, commandDescription = "Description")
-        static class CommandUserCreate {
+        class CreateCommand {
 
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"--name"}, description = "User name", required = true, arity = 1)
             String name;
@@ -147,19 +195,27 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Description")
-        static class CommandUserInfo {
+        class InfoCommand {
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
         }
 
         @Parameters(commandNames = {"login"}, commandDescription = "Description")
-        static public class CommandUserLogin {
+        public class LoginCommand {
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
         }
 
         @Parameters(commandNames = {"logout"}, commandDescription = "Description")
-        static public class CommandUserLogout {
+        public class LogoutCommand {
 
             @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
             String user;
@@ -171,13 +227,22 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"projects"}, commandDescription = "Project commands")
-    static class CommandProject {
+    class ProjectCommands {
+
+        CreateCommand createCommand = new CreateCommand();
+        InfoCommand infoCommand = new InfoCommand();
+
+        @ParametersDelegate
+        CommonOptions cOpt = commonOptions;
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create new project")
-        static class CommandProjectCreate {
+        class CreateCommand {
 
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
             String name;
@@ -193,9 +258,12 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get project info")
-        static class CommandProjectInfo {
+        class InfoCommand {
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-i", "--id"}, description = "Project identifier", required = true, arity = 1)
             String id;
@@ -204,13 +272,19 @@ public class OptionsParser {
     }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Description")
-    static class CommandStudy {
+    class StudyCommands {
+
+        CreateCommand createCommand = new CreateCommand();
+        InfoCommand infoCommand = new InfoCommand();
 
         @Parameters(commandNames = {"create"}, commandDescription = "Description")
-        static class CommandStudyCreate {
+        class CreateCommand {
 
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"--pid", "--projectId"}, description = "Project identifier", required = true, arity = 1)
             String projectId;
@@ -229,9 +303,12 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Description")
-        static class CommandStudyInfo {
+        class InfoCommand {
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"--id"}, description = "Study id", required = true, arity = 1)
             String id;
@@ -241,13 +318,20 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"files"}, commandDescription = "File methods")
-    static class CommandFile {
+    class FileCommands {
+
+        CreateCommand createCommand = new CreateCommand();
+        InfoCommand infoCommand = new InfoCommand();
+        ListCommand listCommand = new ListCommand();
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create file")
-        static class CommandFileCreate {
+        class CreateCommand {
 
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"--input"}, description = "Input file", required = true, arity = 1)
             public String file;
@@ -271,29 +355,35 @@ public class OptionsParser {
             public boolean parents;
         }
 
-        @Parameters(commandNames = {"list"}, commandDescription = "List files")
-        static class CommandFileList {
+        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
+        class InfoCommand {
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
 
-            @Parameter(names = {"--id"}, description = "Folder id", required = true, arity = 1)
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
             String id;
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
-        static class CommandFileInfo {
+        @Parameters(commandNames = {"list"}, commandDescription = "List files")
+        class ListCommand {
             @ParametersDelegate
-            public UserPassword up = new UserPassword();
+            UserAndPasswordOptions up = userAndPasswordOptions;
 
-            @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--id"}, description = "Folder id", required = true, arity = 1)
             String id;
         }
     }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share resource")
-    static class CommandShareResource {
+    class CommandShareResource {
         @ParametersDelegate
-        public UserPassword up = new UserPassword();
+        UserAndPasswordOptions up = userAndPasswordOptions;
 
         @Parameter(names = {"--id"}, description = "Unique identifier", required = true, arity = 1)
         public String id;

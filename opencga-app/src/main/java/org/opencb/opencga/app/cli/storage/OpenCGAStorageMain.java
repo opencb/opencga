@@ -38,6 +38,7 @@ public class OpenCGAStorageMain {
 
     private static final String APPLICATION_PROPERTIES_FILE = "application.properties";
     private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
+
     private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
     private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
 
