@@ -363,10 +363,10 @@ public class CatalogManager {
 
         QueryResult qr = catalogDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        String mailUser = properties.getProperty("MAILUSER");
-        String mailPassword = properties.getProperty("MAILPASSWORD");
-        String mailHost = properties.getProperty("MAILHOST");
-        String mailPort = properties.getProperty("MAILPORT");
+        String mailUser = properties.getProperty("CATALOG.MAIL.USER");
+        String mailPassword = properties.getProperty("CATALOG.MAIL.PASSWORD");
+        String mailHost = properties.getProperty("CATALOG.MAIL.HOST");
+        String mailPort = properties.getProperty("CATALOG.MAIL.PORT");
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
