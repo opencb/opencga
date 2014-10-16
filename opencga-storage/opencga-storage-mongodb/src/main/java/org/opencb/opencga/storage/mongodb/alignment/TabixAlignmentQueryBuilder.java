@@ -32,7 +32,7 @@ import org.opencb.opencga.lib.auth.TabixCredentials;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.lib.common.XObject;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
-import org.opencb.opencga.storage.mongodb.utils.SqliteManager;
+import org.opencb.opencga.storage.core.utils.SqliteManager;
 import org.slf4j.LoggerFactory;
 
 /**

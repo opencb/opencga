@@ -266,13 +266,13 @@ public class OptionsParser {
         String input;
 
         @Parameter(names = {"-t", "--temporal-dir"}, description = "Directory where place temporal files", required = false, arity = 1)
-        String tmp = "/tmp";
+        String tmp = "";
 
         @Parameter(names = {"--delete-temporal"}, description = "Delete temporal files (TODO)", required = false)
         boolean delete = false;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
-        String outdir;
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        String outdir = "";
 
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file", required = true, arity = 1)
         String fileId;

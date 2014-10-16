@@ -4,6 +4,7 @@ package org.opencb.opencga.app.cli.storage;
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
@@ -23,14 +24,17 @@ import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndex;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -148,19 +152,39 @@ public class OpenCGAStorageMain {
                 params.put(AlignmentStorageManager.ENCRYPT, "null");
 
                 Path input = Paths.get(c.input);
-                Path output = Paths.get(c.tmp);
+                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(c.outdir);
+                Path tmp = c.tmp.isEmpty()? outdir : Paths.get(c.tmp);
                 Path credentials = Paths.get(c.credentials);
 
                 assert alignmentStorageManager != null;
-                logger.info("Transform alignments");
-                alignmentStorageManager.transform(input, null, output, params);
+                logger.info("1 -- Transform alignments");
+                alignmentStorageManager.transform(input, null, outdir, params);
 
-                logger.info("PreLoad alignments");
-                alignmentStorageManager.preLoad(input, output, params);
+                logger.info("2 -- PreLoad alignments");
+                alignmentStorageManager.preLoad(input, tmp, params);
 
-                logger.info("Load alignments");
+                logger.info("3 -- Load alignments");
                 alignmentStorageManager.load(input, credentials, params);
 
+            } else if(c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
+                Path input = Paths.get(c.input);
+                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(c.outdir);
+
+                logger.info("Indexing Fasta : " + input.toString());
+                long start = System.currentTimeMillis();
+                SqliteSequenceDBAdaptor sqliteSequenceDBAdaptor = new SqliteSequenceDBAdaptor();
+                File index = null;
+                try {
+                    index = sqliteSequenceDBAdaptor.index(input.toFile(), outdir);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+                long end = System.currentTimeMillis();
+                logger.info(
+                        "Fasta file '" + input + "' indexed. " +
+                        "Result: '" + index + "' . " +
+                        "Time = " + (end-start) + "ms");
             } else if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
                 throw new UnsupportedOperationException();
             }

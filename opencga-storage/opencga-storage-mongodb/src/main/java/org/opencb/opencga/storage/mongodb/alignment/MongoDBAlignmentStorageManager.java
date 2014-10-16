@@ -21,7 +21,7 @@ import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
-import org.opencb.opencga.storage.mongodb.sequence.SqliteSequenceDBAdaptor;
+import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import java.util.*;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     public static final String MONGO_DB_NAME = "opencga";
-    public static final String STORAGE_SEQUENCE_DBADAPTOR = "OPENCGA.STORAGE.SEQUENCE.DBADAPTOR";
+    public static final String STORAGE_SEQUENCE_DBADAPTOR = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
 
     //    private MongoCredentials mongoCredentials = null;
     private final Properties properties = new Properties();
@@ -127,7 +127,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
         }
         Path path = Paths.get(properties.getProperty(STORAGE_SEQUENCE_DBADAPTOR, ""));
-        if (path == null || path.toString() == null || path.toString().isEmpty()) {
+        if (path == null || path.toString() == null || path.toString().isEmpty() || !path.toFile().exists()) {
             adaptor = new CellBaseSequenceDBAdaptor();
         } else {
             if(path.toString().endsWith("sqlite.db")){
