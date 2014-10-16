@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.mongodb.sequence;
+package org.opencb.opencga.storage.core.sequence;
 
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.Fasta;
@@ -6,8 +6,10 @@ import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.io.FastaReader;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.opencga.lib.common.XObject;
-import org.opencb.opencga.storage.mongodb.utils.SqliteManager;
+import org.opencb.opencga.storage.core.utils.SqliteManager;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -145,17 +147,26 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
     }
 
     /**
-     * Creates a <input>.sqlite.db.
+     * Creates a <input>.sqlite.db
      *
      * Contents 2 tables:
      * SEQUENCES:
-     *      id TEXT  : <chromosome>_<pos/CHUNK_SIZE>
-     *      seq TEXT : sequence [ chunk_id*CHUNK_SIZE , (chunk_id+1)*CHUNK_SIZE )
-     *
-     * @param fastaInputFile Accept formats: *.fasta, *.fasta.gz
+     *      id          TEXT : <chromosome>_<pos/CHUNK_SIZE>
+     *      seq         TEXT : sequence [ chunk_id*CHUNK_SIZE , (chunk_id+1)*CHUNK_SIZE )
+     * META:
+     *      id          TEXT :
+     *      description TEXT :
+     *      length      TEXT :
+     * @param fastaInput Accept formats: *.fasta, *.fasta.gz
      */
-    public void createDB(Path fastaInputFile) throws IOException, SQLException, FileFormatException {
-        Path output = Paths.get(fastaInputFile.toAbsolutePath().toString() + ".sqlite.db");
+    public File index(File fastaInput, Path outdir) throws IOException, SQLException, FileFormatException {
+        if(fastaInput == null || !fastaInput.exists()) {
+            throw new FileNotFoundException("Fasta '" + fastaInput + "' file not found");
+        }
+        if(outdir == null) {
+            outdir = Paths.get(fastaInput.toPath().toAbsolutePath().getParent().toString());
+        }
+        Path output = Paths.get(outdir.toAbsolutePath().toString(), fastaInput.getName() + ".sqlite.db");
 
         try {
             sqliteManager.connect(output, false);
@@ -184,7 +195,7 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 
 
         //Insert Sequences
-        reader = new FastaReader(fastaInputFile);
+        reader = new FastaReader(fastaInput.toPath());
         while((fasta = reader.read()) != null) {
             serializeGenomeSequence(fasta);
         }
@@ -200,7 +211,7 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 
         sqliteManager.disconnect(true);
 
-
+        return output.toFile();
     }
 
 

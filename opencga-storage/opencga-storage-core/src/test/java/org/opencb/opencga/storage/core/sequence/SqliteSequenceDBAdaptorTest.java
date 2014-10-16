@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.mongodb.sequence;
+package org.opencb.opencga.storage.core.sequence;
 
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
@@ -6,8 +6,8 @@ import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAda
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.storage.mongodb.sequence.SqliteSequenceDBAdaptor;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,7 +20,11 @@ public class SqliteSequenceDBAdaptorTest extends GenericTest {
 
     @Test
     public void queryDB() throws IOException, SQLException {
-        SequenceDBAdaptor sql = new SqliteSequenceDBAdaptor(Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db"));
+        Path input = Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
+        if(!input.toFile().exists()){
+            return;
+        }
+        SequenceDBAdaptor sql = new SqliteSequenceDBAdaptor(input);
         SequenceDBAdaptor cellbase = new CellBaseSequenceDBAdaptor();
         long start;
         long end;
@@ -45,9 +49,13 @@ public class SqliteSequenceDBAdaptorTest extends GenericTest {
     }
 
     @Test
-    public void createDB() throws IOException, SQLException, FileFormatException {
+    public void indexDB() throws IOException, SQLException, FileFormatException {
         SqliteSequenceDBAdaptor sql = new SqliteSequenceDBAdaptor();
-        sql.createDB(Paths.get("/home/jacobo/Documentos/bioinfo/human_g1k_v37.fasta.gz"));
+        File file = Paths.get("/home/jacobo/Documentos/bioinfo/human_g1k_v37.fasta.gz").toFile();
+        if(!file.exists()){
+            return;
+        }
+        sql.index(file, null);
     }
 
 }

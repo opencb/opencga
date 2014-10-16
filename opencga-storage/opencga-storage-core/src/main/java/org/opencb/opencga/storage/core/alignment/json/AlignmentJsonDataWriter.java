@@ -17,7 +17,7 @@ import java.util.zip.GZIPOutputStream;
 
 /**
  * Date: 8/06/14
- * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  *
  * AlignmentsFileName     : <name>.alignments.json.gz
  * HeaderFileName         : <name>.header.json.gz

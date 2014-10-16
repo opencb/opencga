@@ -29,10 +29,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 @Path("/files")
 @Api(value = "files", description = "files")
@@ -174,9 +171,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File info")
     public Response info(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId
     ) {
+        String[] splitedFileId = fileId.split(",");
         try {
-            QueryResult result = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId);
-            return createOkResponse(result);
+            List<QueryResult> results = new LinkedList<>();
+            for (String id : splitedFileId) {
+                results.add(catalogManager.getFile(catalogManager.getFileId(id), sessionId));
+            }
+            return createOkResponse(results);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());

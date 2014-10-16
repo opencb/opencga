@@ -114,18 +114,29 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             queryResult.setErrorMsg("BAM index file (.bai) not found");
             logger.warn("BAM index file (.bai) " + baiFile + " for file " + bamFile + " not found");
         } else {
+            AlignmentRegion alignmentRegion;
+            AlignmentRegion filteredAlignmentRegion;
+
             List<SAMRecord> recordList = getSamRecordsByRegion(bamFile, baiFile, region);
             List<Alignment> alignmentList = getAlignmentsFromSamRecords(recordList, options);
-//            queryResult.setResult(alignmentList);
-//            queryResult.setNumResults(alignmentList.size());
+            List<Alignment> alignmentsInRegion = getAlignmentsInRegion(alignmentList, region);
 
-            AlignmentRegion alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd(), alignmentList, null, null);
-
-            if(includeCoverage){
-                RegionCoverage regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
-                alignmentRegion.setCoverage(regionCoverage);
+            if(!alignmentList.isEmpty()) {
+                alignmentRegion = new AlignmentRegion(
+                        alignmentList, null);
+            } else {
+                alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());
+                alignmentRegion.setAlignments(new LinkedList<Alignment>());
             }
-            queryResult.setResult(Arrays.asList(alignmentRegion));
+            RegionCoverage regionCoverage = null;
+            if(includeCoverage){
+                regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
+            }
+
+            filteredAlignmentRegion = new AlignmentRegion(
+                    region.getChromosome(), region.getStart(), region.getEnd(), alignmentsInRegion, regionCoverage, null);
+
+            queryResult.setResult(Arrays.asList(filteredAlignmentRegion));
             queryResult.setNumResults(1);
         }
 
@@ -393,11 +404,21 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         return alignments;
     }
 
+    private List<Alignment> getAlignmentsInRegion(List<Alignment> alignments, Region region) {
+        LinkedList<Alignment> filteredAlignments = new LinkedList<Alignment>();
+        for (Alignment alignment : alignments) {
+            if(alignment.getStart() >= region.getStart() /*&& alignment.getEnd() <= region.getEnd()*/) {
+                filteredAlignments.addLast(alignment);
+            }
+        }
+        return filteredAlignments;
+    }
+
     private static String getIndexFromBam(String bam) {
         String bai;
         if(Paths.get((bai = bam+".bai")).toFile().exists()){
             return bai;
-        } else if(Paths.get(bai = (IOUtils.removeExtension(bam) + ".bai")).toFile().exists()){
+        } else if(Paths.get(bai = (IOUtils.removeExtension(bam) + ".bai")).toFile().exists()) {
             return bai;
         } else {
             return "";

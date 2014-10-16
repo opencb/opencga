@@ -14,11 +14,15 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Created by jacobo on 14/08/14.
@@ -45,12 +49,9 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     }
 
     @Override
-    public DataReader<AlignmentRegion> getDBSchemaReader(Path input) {
-        String headerFile = input.toString()
-                .replaceFirst("alignment\\.json$", "header.json")
-                .replaceFirst("alignment\\.json\\.gz$", "header.json.gz");
-        Path header = Paths.get(headerFile);
-        return new AlignmentRegionDataReader(new AlignmentJsonDataReader(input.toString(),header.toString()));
+    public DataReader<AlignmentRegion> getDBSchemaReader(Path input) throws IOException {
+        AlignmentJsonDataReader alignmentDataReader = getAlignmentJsonDataReader(input);
+        return new AlignmentRegionDataReader(alignmentDataReader);
     }
 
     @Override
@@ -64,7 +65,32 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
 
     @Override
     public void preLoad(Path input, Path output, ObjectMap params) throws IOException {
+        // input: JsonVariatnReader
+        // output: getDBSchemaWriter
 
+        //Writers
+        DataWriter<AlignmentRegion> dbSchemaWriter = this.getDBSchemaWriter(output);
+        if(dbSchemaWriter == null){
+            logger.info("Nothing to do in preLoad method");
+            return;
+        }
+        List<DataWriter<AlignmentRegion>> writers = Arrays.asList(dbSchemaWriter);
+
+        //Reader
+        AlignmentJsonDataReader alignmentDataReader = getAlignmentJsonDataReader(input);
+        DataReader<AlignmentRegion> jsonReader = new AlignmentRegionDataReader(alignmentDataReader);
+
+
+        //Tasks
+        List<Task<AlignmentRegion>> taskList = Collections.emptyList();
+
+
+        //Runner
+        Runner<AlignmentRegion> r = new Runner<>(jsonReader, writers, taskList);
+
+        System.out.println("PreLoading alignments...");
+        r.run();
+        System.out.println("Alignments preloaded!");
     }
 
     @Override
@@ -86,4 +112,33 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
         logger.info("Alignments loaded!");
 
     }
+
+    private AlignmentJsonDataReader getAlignmentJsonDataReader(Path input) throws IOException {
+        String baseFileName = input.toString();
+        String alignmentFile = baseFileName;
+        String headerFile;
+        if(baseFileName.endsWith(".bam")){
+            alignmentFile = baseFileName + (Paths.get(baseFileName + ".alignments.json").toFile().exists() ?
+                    ".alignments.json" :
+                    ".alignments.json.gz");
+            headerFile = baseFileName + (Paths.get(baseFileName + ".header.json").toFile().exists() ?
+                    ".header.json" :
+                    ".header.json.gz");
+        } else if(baseFileName.endsWith(".alignments.json")){
+            headerFile = baseFileName.replaceFirst("alignments\\.json$", "header.json");
+        } else if(baseFileName.endsWith(".alignments.json.gz")){
+            headerFile = baseFileName.replaceFirst("alignments\\.json\\.gz$", "header.json.gz");
+        } else {
+            throw new IOException("Invalid input file : " + input.toString());
+        }
+        if (!Paths.get(alignmentFile).toFile().exists()) {
+            throw new FileNotFoundException(alignmentFile);
+        }
+        if (!Paths.get(headerFile).toFile().exists()) {
+            throw new FileNotFoundException(headerFile);
+        }
+
+        return new AlignmentJsonDataReader(alignmentFile, headerFile);
+    }
+
 }

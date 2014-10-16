@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.datastore.core.ObjectMap;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -15,7 +16,7 @@ public interface StorageManager<READER, WRITER, ADAPTOR> {
     public void addPropertiesPath(Path propertiesPath);
 
     public WRITER getDBSchemaWriter(Path output);
-    public READER getDBSchemaReader(Path input);
+    public READER getDBSchemaReader(Path input) throws IOException;
     public WRITER getDBWriter(Path credentials, String dbName, String fileId);
     public ADAPTOR getDBAdaptor(String dbName);
 
