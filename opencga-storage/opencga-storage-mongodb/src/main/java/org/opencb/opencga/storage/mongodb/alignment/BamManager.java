@@ -16,7 +16,7 @@ import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.XObject;
-import org.opencb.opencga.storage.mongodb.utils.SqliteManager;
+import org.opencb.opencga.storage.core.utils.SqliteManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

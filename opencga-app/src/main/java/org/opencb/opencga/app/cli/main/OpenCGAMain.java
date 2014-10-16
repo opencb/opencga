@@ -84,19 +84,14 @@ public class OpenCGAMain {
             return 1;
         }
 
-        if(catalogManager == null) {
+        if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
             catalogManager = getCatalogManager();
         }
 
-//        optionsParser.parseCommand("user create -u jcoll --name jacobo --organization EBI --email mimail".split(" "));
-//        logger.info(optionsParser.getCommand());
-//        logger.info(optionsParser.getSubcommand());
-//        System.out.println(optionsParser.getCommand());
-//        System.out.println(optionsParser.getSubcommand());
 
         switch (optionsParser.getCommand()) {
             case "users":
-                switch (optionsParser.getSubcommand()) {
+                switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
                         //QueryResult<User> user = catalogManager.createUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.ROLE_USER, ""));
@@ -147,7 +142,7 @@ public class OpenCGAMain {
                 }
                 break;
             case "projects":
-                switch (optionsParser.getSubcommand()) {
+                switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
                         login(c.up);
@@ -186,7 +181,7 @@ public class OpenCGAMain {
                 }
                 break;
             case "studies":
-                switch (optionsParser.getSubcommand()) {
+                switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
                         login(c.up);
@@ -226,7 +221,7 @@ public class OpenCGAMain {
                 }
                 break;
             case "files":
-                switch (optionsParser.getSubcommand()) {
+                switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
                         login(c.up);
@@ -305,7 +300,7 @@ public class OpenCGAMain {
         Properties properties = new Properties();
         //try {
 //            properties.load(is);
-            properties.load(new FileInputStream(new java.io.File("")));
+            properties.load(new FileInputStream(Paths.get(System.getProperty("app.home"), "conf", "catalog.properties").toFile()));
 //            System.out.println("catalog.properties");
 //            System.out.println("HOST "+properties.getProperty("HOST"));
 //            System.out.println("PORT "+properties.getProperty("PORT"));

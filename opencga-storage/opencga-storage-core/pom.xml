@@ -16,6 +16,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-lib</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-core</artifactId>
             <exclusions>

@@ -28,7 +28,7 @@ import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.commons.io.DataWriter;
 
 /**
- * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  *
  * CoverageFileName     : <name>.coverage.json.gz
  * MeanCoverageFileName : <name>.mean-coverage.json.gz
@@ -116,6 +116,7 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         try {
             writeRegionCoverageJson(bufferedCoverage);
             coverageGenerator.flush();
+            meanCoverageGenerator.flush();
         } catch (IOException ex) {
             Logger.getLogger(AlignmentCoverageJsonDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -127,6 +128,7 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
     public boolean close() {
         try {
             coverageGenerator.close();
+            meanCoverageGenerator.close();
         } catch (IOException ex) {
             Logger.getLogger(AlignmentCoverageJsonDataWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;

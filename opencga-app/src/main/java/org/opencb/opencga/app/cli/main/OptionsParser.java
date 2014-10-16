@@ -78,7 +78,7 @@ public class OptionsParser {
         return parsedCommand != null ? parsedCommand: "";
     }
 
-    public String getSubcommand() {
+    public String getSubCommand() {
         String parsedCommand = jcommander.getParsedCommand();
         if (jcommander.getCommands().containsKey(parsedCommand)) {
             String subCommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
@@ -90,9 +90,9 @@ public class OptionsParser {
 
     public void printUsage(){
         if(!getCommand().isEmpty()) {
-            if(!getSubcommand().isEmpty()){
+            if(!getSubCommand().isEmpty()){
 //                usage(getCommand(), getSubcommand());
-                jcommander.getCommands().get(getCommand()).usage(getSubcommand());
+                jcommander.getCommands().get(getCommand()).usage(getSubCommand());
             } else {
                 jcommander.usage(getCommand());
             }
@@ -333,25 +333,25 @@ public class OptionsParser {
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"--input"}, description = "Input file", required = true, arity = 1)
+            @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
             public String file;
 
-            @Parameter(names = {"--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
+            @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
             public String path  = "";
 
-            @Parameter(names = {"--description"}, description = "Organization", required = true, arity = 1)
+            @Parameter(names = {"-d", "--description"}, description = "Organization", required = true, arity = 1)
             public String description;
 
-            @Parameter(names = {"--studyId"}, description = "studyId", required = true, arity = 1)
+            @Parameter(names = {"-s", "--studyId"}, description = "studyId", required = true, arity = 1)
             public String studyId;
 
-            @Parameter(names = {"--format"}, description = "format", required = true, arity = 1)
+            @Parameter(names = {"-f", "--format"}, description = "format", required = true, arity = 1)
             public String format;
 
-            @Parameter(names = {"--bioformat"}, description = "bioformat", required = true, arity = 1)
+            @Parameter(names = {"-b", "--bioformat"}, description = "bioformat", required = true, arity = 1)
             public String bioformat;
 
-            @Parameter(names = {"--parents"}, description = "parents", required = false, arity = 1)
+            @Parameter(names = {"-P", "--parents"}, description = "parents", required = false)
             public boolean parents;
         }
 
