@@ -275,6 +275,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         //4
         //Path bamIndexFile = Paths.get(inputPath.toString() + ".bai");
         Path bamIndexFile = Paths.get(bamFile.toString() + ".bai");
+//        Path bamIndexFile = Paths.get(outputPath.toString() , bamFile.toFile().getName().toString() + ".bai");
         if (!Files.exists(bamIndexFile)) {
             long start = System.currentTimeMillis();
             String indexBai = "samtools index " + bamFile.toString();
@@ -314,7 +315,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         //Writer
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
         //writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, output.toString(), !plain)));
-        writers.add(new AlignmentCoverageJsonDataWriter(bamFile.toString(), !plain));
+        String jsonOutputFiles = Paths.get(outputPath.toString(), bamFile.toFile().getName()).toString();
+        writers.add(new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain));
 
 
 
