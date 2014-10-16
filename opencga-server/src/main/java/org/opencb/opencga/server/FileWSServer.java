@@ -8,6 +8,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
@@ -67,6 +68,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/upload")
     @Produces("application/json")
+    @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = QueryResponse.class, nickname="chunkUpload")
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
