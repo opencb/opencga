@@ -4,7 +4,6 @@ package org.opencb.opencga.app.cli.storage;
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
@@ -20,7 +19,9 @@ import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformVariants
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandLoadAlignments;
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformAlignments;
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandDownloadAlignments;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndex;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexAlignments;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexVariants;
+import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexSequence;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -66,10 +68,16 @@ public class OpenCGAStorageMain {
             }
 
             switch (parsedCommand) {
-                case "index":
-                    command = parser.getCommandIndex();
-                    alignmentCommand = true;
+                case "index-variants":
+                    command = parser.getCommandIndexVariants();
                     variantCommand = true;
+                    break;
+                case "index-alignments":
+                    command = parser.getCommandIndexAlignments();
+                    alignmentCommand = true;
+                    break;
+                case "index-sequences":
+                    command = parser.getCommandIndexSequence();
                     break;
                 case "create-accessions":
                     command = parser.getAccessionsCommand();
@@ -136,24 +144,25 @@ public class OpenCGAStorageMain {
             e.printStackTrace();
         }
 
-        if (command instanceof CommandIndex) {
-            CommandIndex c = (CommandIndex) command;
-            if(c.input.endsWith(".bam") || c.input.endsWith(".sam")) {
+        if (command instanceof CommandIndexAlignments) {
+            CommandIndexAlignments c = (CommandIndexAlignments) command;
+            if (c.input.endsWith(".bam") || c.input.endsWith(".sam")) {
                 ObjectMap params = new ObjectMap();
+                params.putAll(c.params);
 
-                if(c.fileId != null) {
+                if (c.fileId != null) {
                     params.put(AlignmentStorageManager.FILE_ID, c.fileId);
                 }
-                params.put(AlignmentStorageManager.PLAIN,   false);
+                params.put(AlignmentStorageManager.PLAIN, false);
                 params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, Arrays.asList("200"));
                 params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true);
                 params.put(AlignmentStorageManager.DB_NAME, c.dbName);
                 params.put(AlignmentStorageManager.COPY_FILE, false);
                 params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-                Path input = Paths.get(c.input);
-                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(c.outdir);
-                Path tmp = c.tmp.isEmpty()? outdir : Paths.get(c.tmp);
+                Path input = Paths.get(URI.create(c.input).getPath());
+                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(URI.create(c.outdir).getPath());
+                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
                 Path credentials = Paths.get(c.credentials);
 
                 assert alignmentStorageManager != null;
@@ -166,9 +175,14 @@ public class OpenCGAStorageMain {
                 logger.info("3 -- Load alignments");
                 alignmentStorageManager.load(input, credentials, params);
 
-            } else if(c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
-                Path input = Paths.get(c.input);
-                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(c.outdir);
+            } else {
+                throw new IOException("Unknown file type");
+            }
+        } else if (command instanceof CommandIndexSequence) {
+            CommandIndexSequence c = (CommandIndexSequence) command;
+            if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
+                Path input = Paths.get(URI.create(c.input).getPath());
+                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(URI.create(c.outdir).getPath());
 
                 logger.info("Indexing Fasta : " + input.toString());
                 long start = System.currentTimeMillis();
@@ -183,9 +197,14 @@ public class OpenCGAStorageMain {
                 long end = System.currentTimeMillis();
                 logger.info(
                         "Fasta file '" + input + "' indexed. " +
-                        "Result: '" + index + "' . " +
-                        "Time = " + (end-start) + "ms");
-            } else if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
+                                "Result: '" + index + "' . " +
+                                "Time = " + (end - start) + "ms");
+            } else {
+                throw new IOException("Unknown file type");
+            }
+        } else if (command instanceof CommandIndexVariants) {
+            CommandIndexVariants c = (CommandIndexVariants) command;
+            if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
                 throw new UnsupportedOperationException();
             }
 
@@ -198,7 +217,7 @@ public class OpenCGAStorageMain {
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
             createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
 
-        } else if (command instanceof CommandTransformVariants) {
+        } else if (command instanceof CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
             CommandTransformVariants c = (CommandTransformVariants) command;
             Path variantsPath = Paths.get(c.file);
             Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
@@ -216,7 +235,7 @@ public class OpenCGAStorageMain {
 //            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
 //            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
 
-        } else if (command instanceof CommandLoadVariants) {
+        } else if (command instanceof CommandLoadVariants) {    //TODO: Add "preLoad" call
             CommandLoadVariants c = (CommandLoadVariants) command;
 
             Path variantsPath = Paths.get(c.input + ".variants.json.gz");
@@ -242,7 +261,7 @@ public class OpenCGAStorageMain {
 
 //            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
 
-        } else if (command instanceof CommandTransformAlignments) {
+        } else if (command instanceof CommandTransformAlignments) { //TODO: Add "preTransform and postTransform" call
 
             CommandTransformAlignments c = (CommandTransformAlignments) command;
 
@@ -280,7 +299,7 @@ public class OpenCGAStorageMain {
                     false,              //Can't be loaded
                     c.includeCoverage, c.meanCoverage);*/
 
-        } else if (command instanceof CommandLoadAlignments){
+        } else if (command instanceof CommandLoadAlignments){ //TODO: Add "preLoad" call
             CommandLoadAlignments c = (CommandLoadAlignments) command;
 
             ObjectMap params = new ObjectMap();
