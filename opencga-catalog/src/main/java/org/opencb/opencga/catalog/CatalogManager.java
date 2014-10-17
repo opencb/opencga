@@ -384,6 +384,10 @@ public class CatalogManager {
         return catalogDBAdaptor.getUser(userId, lastActivity);
     }
 
+    public String getUserIdBySessionId(String sessionId){
+        return catalogDBAdaptor.getUserIdBySessionId(sessionId);
+    }
+
     /**
      * Modify some params from the user profile:
      * <p/>
@@ -765,6 +769,13 @@ public class CatalogManager {
      * ***************************
      */
 
+    public String getFileOwner(int fileId) throws CatalogManagerException {
+        return catalogDBAdaptor.getFileOwner(fileId);
+    }
+
+    public int getStudyIdByFileId(int fileId) throws CatalogManagerException {
+        return catalogDBAdaptor.getStudyIdByFileId(fileId);
+    }
 
     public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
                                         boolean parents, String sessionId)
@@ -859,7 +870,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getFile(fileId);
     }
 
-    public QueryResult createFolder(int studyId, Path folderPath, boolean parents, String sessionId)
+    public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
         checkPath(folderPath, "folderPath");
         checkParameter(sessionId, "sessionId");
@@ -989,6 +1000,20 @@ public class CatalogManager {
         String ownerId = catalogDBAdaptor.getFileOwner(fileId);
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         return catalogDBAdaptor.modifyFile(fileId, parameters);
+    }
+
+    public QueryResult setIndexFile(int fileId, String backend, Index index, String sessionId) throws CatalogManagerException {
+        checkObj(backend, "backend");
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!getFileAcl(userId, fileId).isWrite()) {
+            throw new CatalogManagerException("User " + userId + " can't modify the file " + fileId);
+        }
+        return catalogDBAdaptor.setIndexFile(fileId, backend, index);
+    }
+
+    public QueryResult<File> getFileByIndexJobId(String indexJobId) throws CatalogManagerException {
+        return catalogDBAdaptor.searchFile(new QueryOptions("indexJobId", indexJobId));
     }
 
     public QueryResult<File> getFile(int fileId, String sessionId)
@@ -1248,10 +1273,11 @@ public class CatalogManager {
 //    }
 //
 
-//    public QueryResult refreshBucket(final String userId, final String bucketId, final String sessionId)
-//            throws CatalogManagerException, IOException {
-//
-//        final Path bucketPath = ioManager.getBucketPath(userId, bucketId);
+    public QueryResult refreshFolder(final int folderId, final String sessionId)
+            throws CatalogManagerException, IOException {
+
+        throw new UnsupportedOperationException();
+//        final Path bucketPath = ioManager.getFileUri(userId, bucketId);
 //        final List<ObjectItem> newObjects = new ArrayList<ObjectItem>();
 //
 //        Files.walkFileTree(bucketPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
@@ -1334,7 +1360,7 @@ public class CatalogManager {
 //        result.setNumResults(1);
 //
 //        return result;
-//    }
+    }
 
     /**
      * Analysis methods

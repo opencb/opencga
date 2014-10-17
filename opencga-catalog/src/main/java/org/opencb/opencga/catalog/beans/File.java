@@ -50,9 +50,10 @@ public class File {
     private int jobId;
     private List<Acl> acl;
 
-
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
+
+    private List<Index> indices;
 
     /* Status */
     public static final String UPLOADING = "uploading";
@@ -80,18 +81,21 @@ public class File {
     public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
                 String description, String status, long diskUsage) {
         this(-1, name, type, format, bioformat, uriScheme, path, creatorId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
+                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>(), new LinkedList<Index>());
     }
 
     public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
                 String creationDate, String description, String status, long diskUsage) {
         this(-1, name, type, format, bioformat, uriScheme, path, creatorId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
+                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>(), new LinkedList<Index>());
     }
 
     public File(int id, String name, String type, String format, String bioformat, String uriScheme, String path,
                 String creatorId, String creationDate, String description, String status, long diskUsage, int experimentId,
-                List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats, Map<String, Object> attributes) {
+                List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats,
+                Map<String, Object> attributes, List<Index> indices) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -110,29 +114,31 @@ public class File {
         this.acl = acl;
         this.stats = stats;
         this.attributes = attributes;
+        this.indices = indices;
     }
 
     @Override
     public String toString() {
-        return "File{" + "\n\t" +
-                "id=" + id + "\n\t" +
-                ", name='" + name + '\'' + "\n\t" +
-                ", type='" + type + '\'' + "\n\t" +
-                ", format='" + format + '\'' + "\n\t" +
-                ", bioformat='" + bioformat + '\'' + "\n\t" +
-                ", uriScheme='" + uriScheme + '\'' + "\n\t" +
-                ", path='" + path + '\'' + "\n\t" +
-                ", creatorId='" + creatorId + '\'' + "\n\t" +
-                ", creationDate='" + creationDate + '\'' + "\n\t" +
-                ", description='" + description + '\'' + "\n\t" +
-                ", status='" + status + '\'' + "\n\t" +
-                ", diskUsage=" + diskUsage + "\n\t" +
-                ", experimentId=" + experimentId + "\n\t" +
-                ", sampleIds=" + sampleIds + "\n\t" +
-                ", jobId=" + jobId + "\n\t" +
-                ", acl=" + acl + "\n\t" +
-                ", stats=" + stats + "\n\t" +
-                ", attributes=" + attributes + "\n" +
+        return "File {" + "\n\t" +
+                "id:" + id + "\n\t" +
+                ", name:'" + name + '\'' + "\n\t" +
+                ", type:'" + type + '\'' + "\n\t" +
+                ", format:'" + format + '\'' + "\n\t" +
+                ", bioformat:'" + bioformat + '\'' + "\n\t" +
+                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
+                ", path:'" + path + '\'' + "\n\t" +
+                ", creatorId:'" + creatorId + '\'' + "\n\t" +
+                ", creationDate:'" + creationDate + '\'' + "\n\t" +
+                ", description:'" + description + '\'' + "\n\t" +
+                ", status:'" + status + '\'' + "\n\t" +
+                ", diskUsage:" + diskUsage + "\n\t" +
+                ", experimentId:" + experimentId + "\n\t" +
+                ", sampleIds:" + sampleIds + "\n\t" +
+                ", jobId:" + jobId + "\n\t" +
+                ", acl:" + acl + "\n\t" +
+                ", stats:" + stats + "\n\t" +
+                ", attributes:" + attributes + "\n\t" +
+                ", indices:" + indices + "\n" +
                 '}';
     }
 
@@ -278,5 +284,13 @@ public class File {
 
     public void setStats(Map<String, Object> stats) {
         this.stats = stats;
+    }
+
+    public List<Index> getIndices() {
+        return indices;
+    }
+
+    public void setIndices(List<Index> indices) {
+        this.indices = indices;
     }
 }
