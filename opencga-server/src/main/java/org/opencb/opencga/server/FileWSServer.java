@@ -10,7 +10,9 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.IOUtils;
@@ -198,6 +200,43 @@ public class FileWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+    }
+
+    @GET
+    @Path("/{fileId}/index")
+    @Produces("application/json")
+    @ApiOperation(value = "File index")
+    public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
+                          @ApiParam(value = "outdir", required = true) @DefaultValue("") @QueryParam("outdir") String outdir
+                          ) {
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
+        Index index = null;
+        try {
+            outdir = outdir.replace(":", "/");
+            index = analysisFileIndexer.index(catalogManager.getFileId(fileId), Paths.get(outdir), "", sessionId, queryOptions);
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(index);
+    }
+
+    @GET
+    @Path("/{fileId}/index-finish")
+    @Produces("application/json")
+    @ApiOperation(value = "File index")
+    public Response indexFinish(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
+                          @ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+                          ) {
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
+        String index = "";
+        try {
+            analysisFileIndexer.finishIndex(jobid, sessionId);
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(index);
     }
 
 
