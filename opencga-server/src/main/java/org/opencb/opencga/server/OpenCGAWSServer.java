@@ -78,22 +78,33 @@ public class OpenCGAWSServer {
 
     static {
 
-        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
+//        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
+//        properties = new Properties();
+//        try {
+//            properties.load(is);
+//            System.out.println("catalog.properties");
+//            System.out.println(properties.getProperty("CATALOG.HOST"));
+//            System.out.println(properties.getProperty("CATALOG.PORT"));
+//            System.out.println(properties.getProperty("CATALOG.DATABASE"));
+//            System.out.println(properties.getProperty("CATALOG.USER"));
+//            System.out.println(properties.getProperty("CATALOG.PASSWORD"));
+//            System.out.println(properties.getProperty("ROOTDIR"));
+//        } catch (IOException e) {
+//            System.out.println("Error loading properties");
+//            System.out.println(e.getMessage());
+//            e.printStackTrace();
+//        }
+        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
         properties = new Properties();
         try {
             properties.load(is);
-            System.out.println("catalog.properties");
-            System.out.println(properties.getProperty("CATALOG.HOST"));
-            System.out.println(properties.getProperty("CATALOG.PORT"));
-            System.out.println(properties.getProperty("CATALOG.DATABASE"));
-            System.out.println(properties.getProperty("CATALOG.USER"));
-            System.out.println(properties.getProperty("CATALOG.PASSWORD"));
-            System.out.println(properties.getProperty("ROOTDIR"));
         } catch (IOException e) {
             System.out.println("Error loading properties");
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+        Config.setGcsaHome(properties.getProperty("OPENCGA.INSTALLATION.DIR"));    //TODO: Check instalation dir.
+        properties = Config.getCatalogProperties();
 
         try {
             catalogManager = new CatalogManager(properties);

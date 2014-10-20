@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
@@ -207,7 +208,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
-                          @ApiParam(value = "outdir", required = true) @DefaultValue("") @QueryParam("outdir") String outdir
+                          @ApiParam(value = "outdir", required = false) @DefaultValue("") @QueryParam("outdir") String outdir
                           ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
         Index index = null;
@@ -222,12 +223,11 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/index-finish")
+    @Path("/index-finish")
     @Produces("application/json")
-    @ApiOperation(value = "File index")
-    public Response indexFinish(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
-                          @ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
-                          ) {
+    @ApiOperation(value = "File finish index")
+    public Response indexFinish(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+    ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
         String index = "";
         try {
@@ -237,6 +237,22 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
         return createOkResponse(index);
+    }
+
+    @GET
+    @Path("/index-status")
+    @Produces("application/json")
+    @ApiOperation(value = "File index status")
+    public Response indexStatus(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+    ) {
+        String status;
+        try {
+            status = SgeManager.status(jobid);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(status);
     }
 
 
