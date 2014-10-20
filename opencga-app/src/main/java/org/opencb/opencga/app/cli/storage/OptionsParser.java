@@ -22,7 +22,9 @@ public class OptionsParser {
     private final CommandLoadVariants load;
     private final CommandTransformAlignments transformAlignments;
     private final CommandLoadAlignments loadAlignments;
-    private final CommandIndex commandIndex;
+    private final CommandIndexVariants commandIndexVariants;
+    private final CommandIndexAlignments commandIndexAlignments;
+    private final CommandIndexSequence commandIndexSequence;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -33,7 +35,9 @@ public class OptionsParser {
         jcommander.addCommand(load = new CommandLoadVariants());
         jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
         jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
-        jcommander.addCommand(commandIndex = new CommandIndex());
+        jcommander.addCommand(commandIndexVariants = new CommandIndexVariants());
+        jcommander.addCommand(commandIndexAlignments = new CommandIndexAlignments());
+        jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -259,7 +263,6 @@ public class OptionsParser {
         
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Index file")
     class CommandIndex implements Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
@@ -283,8 +286,34 @@ public class OptionsParser {
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongo (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongo";
 
+
+        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+        Map<String, String> params = new HashMap<>();
+    }
+
+    @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
+    class CommandIndexVariants extends CommandIndex implements Command {
+
+    }
+
+    @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
+    class CommandIndexAlignments extends CommandIndex implements Command {
+
+//        @ParametersDelegate
+//        CommandIndex ci = new CommandIndex();
+
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
+
+
+        //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
+        @Parameter(names = "--mean-coverage", description = "Add mean coverage values (optional)", required = false)
+        List<String> meanCoverage = new LinkedList<String>();
+
+    }
+
+    @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
+    class CommandIndexSequence extends CommandIndex implements Command {
 
     }
 
@@ -298,7 +327,7 @@ public class OptionsParser {
     String usage() {
         StringBuilder builder = new StringBuilder();
         String parsedCommand = jcommander.getParsedCommand();
-        if(parsedCommand != null || !parsedCommand.isEmpty()){
+        if(parsedCommand != null && !parsedCommand.isEmpty()){
             jcommander.usage(parsedCommand, builder);
         } else {
             jcommander.usage(builder);
@@ -306,8 +335,16 @@ public class OptionsParser {
         return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
     }
 
-    public CommandIndex getCommandIndex() {
-        return commandIndex;
+    public CommandIndexVariants getCommandIndexVariants() {
+        return commandIndexVariants;
+    }
+
+    CommandIndexAlignments getCommandIndexAlignments() {
+        return commandIndexAlignments;
+    }
+
+    public CommandIndexSequence getCommandIndexSequence() {
+        return commandIndexSequence;
     }
 
     CommandCreateAccessions getAccessionsCommand() {

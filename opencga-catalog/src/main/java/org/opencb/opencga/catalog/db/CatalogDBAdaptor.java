@@ -140,6 +140,9 @@ public interface CatalogDBAdaptor {
     QueryResult setFileStatus(int fileId, String status) throws CatalogManagerException, IOException;
 
     QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException;
+
+    QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException;
+
     QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException;
 
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;

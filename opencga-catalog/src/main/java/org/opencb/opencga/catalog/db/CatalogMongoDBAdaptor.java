@@ -1436,6 +1436,36 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Modify file", startTime);
     }
 
+    @Override
+    public QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException {
+        long startTime = startQuery();
+
+
+        fileCollection.update(
+                new BasicDBObject("id", fileId),
+                new BasicDBObject("$pull",
+                        new BasicDBObject("indices",
+                                new BasicDBObject("backend",
+                                        backend
+                                )
+                        )
+                ), false, false);
+        if(index != null){
+            try {
+                fileCollection.update(
+                        new BasicDBObject("id", fileId),
+                        new BasicDBObject("$push",
+                                new BasicDBObject("indices",
+                                        JSON.parse(jsonObjectWriter.writeValueAsString(index))
+                                )
+                        ), false, false);
+            } catch (JsonProcessingException e) {
+                throw new CatalogManagerException(e);
+            }
+        }
+
+        return endQuery("Set index file", startTime);
+    }
     /**
      * @param name assuming 'pathRelativeToStudy + name'
      */
@@ -1611,6 +1641,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         if(options.containsKey("studyId")){
             filters.add(new BasicDBObject("studyId", options.getInt("studyId")));
+        }
+        if(options.containsKey("indexJobId")){
+            filters.add(new BasicDBObject("indices.jobId", options.getString("indexJobId")));
         }
 
         DBObject query = new BasicDBObject("$and", filters);
