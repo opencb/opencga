@@ -2,13 +2,16 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.common.Config;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -260,6 +263,18 @@ public class OpenCGAMain {
                         logout();
                         break;
                     }
+                    case "index": {
+                        OptionsParser.FileCommands.IndexCommand c = optionsParser.getFileCommands().indexCommand;
+                        login(c.up);
+
+                        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, Config.getAnalysisProperties());
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        Index index = analysisFileIndexer.index(fileId, Paths.get(c.path), c.backend, sessionId, new QueryOptions());
+                        System.out.println(index);
+
+                        logout();
+                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -295,37 +310,41 @@ public class OpenCGAMain {
     private static CatalogManager getCatalogManager()
             throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
         CatalogManager catalogManager;
-//        InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
+        String appHome = System.getProperty("app.home");
+        Config.setGcsaHome(appHome);
+        Properties catalogProperties = Config.getCatalogProperties();
+        catalogManager = new CatalogManager(catalogProperties);
 
-        Properties properties = new Properties();
-        //try {
-//            properties.load(is);
-            properties.load(new FileInputStream(Paths.get(System.getProperty("app.home"), "conf", "catalog.properties").toFile()));
-//            System.out.println("catalog.properties");
-//            System.out.println("HOST "+properties.getProperty("HOST"));
-//            System.out.println("PORT "+properties.getProperty("PORT"));
-//            System.out.println("DATABASE "+properties.getProperty("DATABASE"));
-//            System.out.println("USER "+properties.getProperty("USER"));
-//            System.out.println("PASS "+properties.getProperty("PASSWORD"));
-//            System.out.println("ROOTDIR "+properties.getProperty("ROOTDIR"));
-//        } catch (IOException e) {
-//            System.out.println("Error loading properties");
-//            System.out.println(e.getMessage());
-//            e.printStackTrace();
-//        }
-
-        catalogManager = new CatalogManager(properties);
-//        try {
-//            catalogManager = new CatalogManager(properties);
-//        } catch (IOException e) {
-//            System.out.println(e.getMessage());
-//            e.printStackTrace();
-//        } catch (CatalogIOManagerException e) {
-//            System.out.println(e.getMessage());
-//            e.printStackTrace();
-//        } catch (CatalogManagerException e) {
-//            e.printStackTrace();
-//        }
+////        InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
+//        Properties properties = new Properties();
+//        //try {
+////            properties.load(is);
+//            properties.load(new FileInputStream(Paths.get(System.getProperty("app.home"), "conf", "catalog.properties").toFile()));
+////            System.out.println("catalog.properties");
+////            System.out.println("HOST "+properties.getProperty("HOST"));
+////            System.out.println("PORT "+properties.getProperty("PORT"));
+////            System.out.println("DATABASE "+properties.getProperty("DATABASE"));
+////            System.out.println("USER "+properties.getProperty("USER"));
+////            System.out.println("PASS "+properties.getProperty("PASSWORD"));
+////            System.out.println("ROOTDIR "+properties.getProperty("ROOTDIR"));
+////        } catch (IOException e) {
+////            System.out.println("Error loading properties");
+////            System.out.println(e.getMessage());
+////            e.printStackTrace();
+////        }
+//
+//        catalogManager = new CatalogManager(properties);
+////        try {
+////            catalogManager = new CatalogManager(properties);
+////        } catch (IOException e) {
+////            System.out.println(e.getMessage());
+////            e.printStackTrace();
+////        } catch (CatalogIOManagerException e) {
+////            System.out.println(e.getMessage());
+////            e.printStackTrace();
+////        } catch (CatalogManagerException e) {
+////            e.printStackTrace();
+////        }
         return catalogManager;
     }
 

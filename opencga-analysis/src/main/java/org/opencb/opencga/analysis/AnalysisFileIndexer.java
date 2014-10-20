@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -54,6 +55,10 @@ public class AnalysisFileIndexer {
     public Index index(int fileId, Path outDir, String backend, String sessionId, QueryOptions options) throws IOException, CatalogIOManagerException, CatalogManagerException {
         QueryResult<File> fileResult = catalogManager.getFile(fileId, sessionId);
         File file = fileResult.getResult().get(0);
+        String jobId = "J_"+StringUtils.randomString(5);
+        if(outDir == null || outDir.toString().isEmpty()) {
+            outDir = Paths.get(jobId);
+        }
 
         //1º Check indexed
         List<Index> indices = file.getIndices();
@@ -92,16 +97,19 @@ public class AnalysisFileIndexer {
 //                    .append(" --delete-temporal ")
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --mean-coverage ").append(chunkSize)
-                    .append(" --outdir ").append(catalogManager.getFileUri(folder))
+   //                 .append(" --outdir ").append(catalogManager.getFileUri(folder))
 //                    .append(" --temporal-dir ")
                     ;
 //            commandLine.append(" --sm-name ");
 
 
             //4º Run command
-//            SgeManager.queueJob();
+            try {
+                SgeManager.queueJob("alignment_indexer", jobId, 0, catalogManager.getFileUri(folder).getPath(), commandLine.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 //            int jobId = new Random(System.nanoTime()).nextInt();
-            String jobId = "J_"+StringUtils.randomString(5);
 
 
 
@@ -130,6 +138,11 @@ public class AnalysisFileIndexer {
         }
         File file = fileResult.getResult().get(0);
 
+        try {
+            SgeManager.status(indexJobId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         //6º Find files
 //        catalogManager.refreshFolder();
 

@@ -23,6 +23,7 @@ import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexAlignments;
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexVariants;
 import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexSequence;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
@@ -45,10 +46,14 @@ import java.util.*;
 public class OpenCGAStorageMain {
 
 //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
-    private static final String appHome = System.getProperty("app.home");
+    private static final String appHome;
 
     protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
 
+    static {
+        appHome = System.getProperty("app.home");
+        Config.setGcsaHome(appHome);
+    }
 
     public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException {
         AlignmentStorageManager alignmentStorageManager = null;
