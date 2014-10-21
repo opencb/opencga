@@ -18,6 +18,8 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,6 +38,8 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
     public static final String INCLUDE_SAMPLES = "includeSamples";
     public static final String SOURCE = "source";
     protected Properties properties;
+    protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
+
 
     public VariantStorageManager() {
         this.properties = new Properties();
@@ -139,9 +143,12 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         //Runner
         VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
 
-        System.out.println("Indexing variants...");
+        logger.info("Transforming variants...");
+        long start = System.currentTimeMillis();
         vr.run();
-        System.out.println("Variants indexed!");
+        long end = System.currentTimeMillis();
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+        logger.info("Variants transformed!");
     }
 
 
@@ -161,7 +168,7 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         VariantSource source = (VariantSource) params.get("source");
 
         //Reader
-        String sourceFile = input.toAbsolutePath().toString().replace("variant.json", "file.json");
+        String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
         VariantReader jsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString() , sourceFile);
 
 
@@ -172,9 +179,13 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         //Runner
         VariantRunner vr = new VariantRunner(source, jsonReader, null, writers, taskList);
 
-        System.out.println("Indexing variants...");
+        System.out.println("Preloading variants...");
+        logger.info("Transforming variants...");
+        long start = System.currentTimeMillis();
         vr.run();
-        System.out.println("Variants indexed!");
+        long end = System.currentTimeMillis();
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+        System.out.println("Variants preloaded!");
 
     }
 
@@ -193,7 +204,7 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         VariantReader variantDBSchemaReader = this.getDBSchemaReader(input);
         if (variantDBSchemaReader == null) {
             if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
-                String sourceFile = input.toAbsolutePath().toString().replace("variant.json", "file.json");
+                String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
                 variantDBSchemaReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
             } else {
                 throw new IOException("Variants input file format not supported");
@@ -218,9 +229,13 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         //Runner
         VariantRunner vr = new VariantRunner(source, variantDBSchemaReader, null, writers, taskList);
 
-        System.out.println("Indexing variants...");
+        System.out.println("Loading variants...");
+        logger.info("Transforming variants...");
+        long start = System.currentTimeMillis();
         vr.run();
-        System.out.println("Variants indexed!");
+        long end = System.currentTimeMillis();
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+        System.out.println("Variants loaded!");
     }
 
 

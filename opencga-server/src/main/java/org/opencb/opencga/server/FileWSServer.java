@@ -16,22 +16,24 @@ import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.*;
 
 @Path("/files")
@@ -42,6 +44,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
     private static AlignmentStorageManager alignmentStorageManager = null;
+    private static VariantStorageManager variantStorageManager = null;
 //    private static AlignmentQueryBuilder dbAdaptor = null;
     private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
     private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
@@ -53,9 +56,14 @@ public class FileWSServer extends OpenCGAWSServer {
         super(version, uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
         String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
+        String variantManagerName = MONGODB_VARIANT_MANAGER;
+        if (variantStorageManager == null) {
+            variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
+        }
         if(alignmentStorageManager == null) {
+            alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
 //            try {
-                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+//                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
 //            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
 //                e.printStackTrace();
 //                logger.error(e.getMessage(), e);
@@ -272,7 +280,6 @@ public class FileWSServer extends OpenCGAWSServer {
         File file;
         URI fileUri;
         String dbName = null;   //TODO: getDBName from file.attributes?   dbName == userId
-        int chunkSize = 200;   //TODO: getChunkSize from file.attributes?  use to be 200
         Region r = new Region(region);
 
         try {
@@ -287,7 +294,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
 
         switch(file.getBioformat()) {
-            case "bam":
+            case "bam": {
                 //TODO: Check indexed
 //                ObjectMap attributes = new ObjectMap(file.getAttributes());
 //                if(!attributes.getBoolean("indexed")){
@@ -295,24 +302,38 @@ public class FileWSServer extends OpenCGAWSServer {
 //                }
 //                dbName = attributes.getString("dbName");
 //                chunkSize = attributes.getInt("coverageChunkSize");
-                QueryOptions options = new QueryOptions();
-                options.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
-                options.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
-                options.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
-                options.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
-                options.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
-                options.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
-                options.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
-                options.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
+                int chunkSize = 200;   //TODO: getChunkSize from file.attributes?  use to be 200
+                QueryOptions queryOptions = new QueryOptions();
+                queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
+                queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
+                queryOptions.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
+                queryOptions.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
+                queryOptions.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
+                queryOptions.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
+                queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
+                queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
                 AlignmentQueryBuilder dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                 QueryResult alignmentsByRegion;
-                if(histogram){
-                    alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, options);
+                if (histogram) {
+                    alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, queryOptions);
                 } else {
-                    alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, options);
+                    alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, queryOptions);
                 }
                 return createOkResponse(alignmentsByRegion);
+            }
+            case "vcf": {
+                QueryOptions queryOptions = new QueryOptions();
+                queryOptions.put("interval", interval);
+
+                //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
+                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(null);
+                if (histogram) {
+                    dbAdaptor.getVariantsHistogramByRegion(r, queryOptions);
+                } else {
+                    dbAdaptor.getAllVariantsByRegion(r, queryOptions);
+                }
+            }
             default:
                 return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');
         }

@@ -119,7 +119,8 @@ public class OpenCGAStorageMain {
         /*
             Get properties conf
          */
-        Path storagePropertiesPath = Paths.get(appHome, "conf", "storage.properties");
+        Path confPath = Paths.get("opencga-app", "build", "conf");
+        Path storagePropertiesPath = Paths.get(confPath.toString() , "storage.properties");
         Properties storageProperties = new Properties();
         if(storagePropertiesPath.toFile().exists()) {
             storageProperties.load(new FileInputStream(storagePropertiesPath.toFile()));
@@ -129,20 +130,32 @@ public class OpenCGAStorageMain {
         //Get the StorageManager
         try {
             if(variantCommand) {
-                String defaultVariantStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.MANAGER.DEFAULT.VARIANT");
+                //Get Storage Manager name
+                String defaultVariantStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.DEFAULT.VARIANT");
                 String variantManagerName = parser.getGeneralParameters().storageManagerName !=null ?
                         parser.getGeneralParameters().storageManagerName :
                         storageProperties.getProperty(defaultVariantStorageManager);
+                //New instance
                 variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
+                //Add configuration files
+                String pluginPropertiesName = storageProperties.getProperty(defaultVariantStorageManager + ".PROPERTIES");
+                Path pluginPropertiesPath = confPath.resolve(pluginPropertiesName);
                 variantStorageManager.addPropertiesPath(storagePropertiesPath);
+                variantStorageManager.addPropertiesPath(pluginPropertiesPath);
             }
             if(alignmentCommand) {
-                String defaultAlignmentStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.MANAGER.DEFAULT.ALIGNMENT");
+                //Get Storage Manager name
+                String defaultAlignmentStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.DEFAULT.ALIGNMENT");
                 String alignmentManagerName = parser.getGeneralParameters().storageManagerName != null ?
                         parser.getGeneralParameters().storageManagerName :
                         storageProperties.getProperty(defaultAlignmentStorageManager);
+                //New instance
                 alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+                //Add configuration files
+                String pluginPropertiesName = storageProperties.getProperty(defaultAlignmentStorageManager + ".PROPERTIES");
+                Path pluginPropertiesPath = confPath.resolve(pluginPropertiesName);
                 alignmentStorageManager.addPropertiesPath(storagePropertiesPath);
+                alignmentStorageManager.addPropertiesPath(pluginPropertiesPath);
             }
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             logger.error("Error during the reflexion",e);
@@ -175,7 +188,7 @@ public class OpenCGAStorageMain {
                 alignmentStorageManager.transform(input, null, outdir, params);
 
                 logger.info("2 -- PreLoad alignments");
-                alignmentStorageManager.preLoad(input, tmp, params);
+                alignmentStorageManager.preLoad(input, outdir, params);
 
                 logger.info("3 -- Load alignments");
                 alignmentStorageManager.load(input, credentials, params);
@@ -210,7 +223,31 @@ public class OpenCGAStorageMain {
         } else if (command instanceof CommandIndexVariants) {
             CommandIndexVariants c = (CommandIndexVariants) command;
             if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
-                throw new UnsupportedOperationException();
+                Path variantsPath = Paths.get(c.input);
+                Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
+                Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
+                Path credentials = Paths.get(c.credentials);
+                VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
+
+                Map<String, Object> params = new LinkedHashMap<>();
+                params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
+                params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
+                params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
+                params.put(VariantStorageManager.SOURCE, source);
+
+                assert variantStorageManager != null;
+                logger.info("1 -- Transform variants");
+                variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
+
+                String fileName;
+                fileName = outdir != null
+                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variant.json.gz").toString()
+                        : source.getFileName() + ".variant.json.gz";
+                source.setFileName(fileName);
+                logger.info("2 -- Preload variants");
+
+                logger.info("3 -- Transform variants");
+                variantStorageManager.load(variantsPath, credentials, params);
             }
 
         } else if (command instanceof CommandCreateAccessions) {
@@ -243,8 +280,9 @@ public class OpenCGAStorageMain {
         } else if (command instanceof CommandLoadVariants) {    //TODO: Add "preLoad" call
             CommandLoadVariants c = (CommandLoadVariants) command;
 
-            Path variantsPath = Paths.get(c.input + ".variants.json.gz");
-            Path credentials = Paths.get(c.credentials);
+            //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
+            Path variantsPath = Paths.get(c.input);
+            Path credentials = c.credentials == null? null : Paths.get(c.credentials);
             VariantStudy.StudyType st = c.studyType;
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null, st, VariantSource.Aggregation.NONE);
 
