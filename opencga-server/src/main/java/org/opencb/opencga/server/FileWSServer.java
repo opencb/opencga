@@ -196,6 +196,48 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @Produces("application/json")
+    @ApiOperation(value = "File info")
+    public Response search(@ApiParam(value = "name", required = false)       @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "studyId", required = true)     @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "type", required = false)       @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "bioformat", required = false)  @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "maxSize", required = false)    @DefaultValue("") @QueryParam("maxSize") String maxSize,
+                           @ApiParam(value = "minSize", required = false)    @DefaultValue("") @QueryParam("minSize") String minSize,
+                           @ApiParam(value = "startDate", required = false)  @DefaultValue("") @QueryParam("startDate") String startDate,
+                           @ApiParam(value = "endDate", required = false)    @DefaultValue("") @QueryParam("endDate") String endDate,
+                           @ApiParam(value = "like", required = false)       @DefaultValue("") @QueryParam("like") String like,
+                           @ApiParam(value = "startsWith", required = false) @DefaultValue("") @QueryParam("startsWith") String startsWith,
+                           @ApiParam(value = "directory", required = false)  @DefaultValue("") @QueryParam("directory") String directory,
+                           @ApiParam(value = "indexJobId", required = false) @DefaultValue("") @QueryParam("indexJobId") String indexJobId
+
+    ) {
+        try {
+            int studyIdNum = catalogManager.getStudyId(studyId);
+            QueryOptions queryOptions = new QueryOptions();
+            if( !name.isEmpty() )       { queryOptions.put("name", name); }
+            if( !type.isEmpty() )       { queryOptions.put("type", type); }
+            if( !bioformat.isEmpty() )  { queryOptions.put("bioformat", bioformat); }
+            if( !maxSize.isEmpty() )    { queryOptions.put("maxSize", maxSize); }
+            if( !minSize.isEmpty() )    { queryOptions.put("minSize", minSize); }
+            if( !startDate.isEmpty() )  { queryOptions.put("startDate", startDate); }
+            if( !endDate.isEmpty() )    { queryOptions.put("endDate", endDate); }
+            if( !like.isEmpty() )       { queryOptions.put("like", like); }
+            if( !startsWith.isEmpty() ) { queryOptions.put("startsWith", startsWith); }
+            if( !directory.isEmpty() )  { queryOptions.put("directory", directory); }
+            if( !indexJobId.isEmpty() ) { queryOptions.put("indexJobId", indexJobId); }
+
+
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/{fileId}/list")
     @Produces("application/json")
     @ApiOperation(value = "List folder")
