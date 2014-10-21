@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -42,34 +43,26 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
 
-
-    private static AlignmentStorageManager alignmentStorageManager = null;
-    private static VariantStorageManager variantStorageManager = null;
-//    private static AlignmentQueryBuilder dbAdaptor = null;
-    private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
-    private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
-
-
-
     public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
             throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         super(version, uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
-        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
-        String variantManagerName = MONGODB_VARIANT_MANAGER;
-        if (variantStorageManager == null) {
-            variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
-        }
-        if(alignmentStorageManager == null) {
-            alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
-//            try {
-//                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
-//            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-//                e.printStackTrace();
-//                logger.error(e.getMessage(), e);
-//            }
-            //dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
-        }
+//        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
+//        String variantManagerName = MONGODB_VARIANT_MANAGER;
+
+//        if (variantStorageManager == null) {
+//            variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
+//        }
+//        if(alignmentStorageManager == null) {
+//            alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+////            try {
+////                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+////            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+////                e.printStackTrace();
+////                logger.error(e.getMessage(), e);
+////            }
+//            //dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
+//        }
     }
 
     @POST
@@ -312,6 +305,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File fetch")
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
                           @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                          @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
@@ -321,8 +315,11 @@ public class FileWSServer extends OpenCGAWSServer {
         int fileIdNum;
         File file;
         URI fileUri;
-        String dbName = null;   //TODO: getDBName from file.attributes?   dbName == userId
         Region r = new Region(region);
+        String defaultBackend = "mongo";   //TODO: getDefault backend
+        if(backend.isEmpty()) {
+            backend = defaultBackend;
+        }
 
         try {
             System.out.println("catalogManager = " + catalogManager);
@@ -335,16 +332,23 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
 
+        //TODO: Check indexed
+        List<Index> indices = file.getIndices();
+        Index index = null;
+        for (Index i : indices) {
+            if(i.getBackend().equals(backend)) {
+                index = i;
+            }
+        }
+        if(index == null || !index.getState().equals(Index.INDEXED)) {
+            return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
+                    " is not indexed in the selected backend.");
+        }
+        ObjectMap indexAttributes = new ObjectMap(index.getAttributes());
         switch(file.getBioformat()) {
             case "bam": {
-                //TODO: Check indexed
-//                ObjectMap attributes = new ObjectMap(file.getAttributes());
-//                if(!attributes.getBoolean("indexed")){
-//                    return createErrorResponse("File " + file.getId() + " '" + file.getName() + "' is not indexed.");
-//                }
-//                dbName = attributes.getString("dbName");
-//                chunkSize = attributes.getInt("coverageChunkSize");
-                int chunkSize = 200;   //TODO: getChunkSize from file.attributes?  use to be 200
+                //TODO: getChunkSize from file.index.attributes?  use to be 200
+                int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
                 QueryOptions queryOptions = new QueryOptions();
                 queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
                 queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
@@ -355,7 +359,12 @@ public class FileWSServer extends OpenCGAWSServer {
                 queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
                 queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
-                AlignmentQueryBuilder dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
+                AlignmentQueryBuilder dbAdaptor;
+                try {
+                    dbAdaptor = StorageManagerFactory.getAlignmentStorageManager(backend).getDBAdaptor(index.getDbName());
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    return createErrorResponse(e.getMessage());
+                }
                 QueryResult alignmentsByRegion;
                 if (histogram) {
                     alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, queryOptions);
@@ -369,7 +378,12 @@ public class FileWSServer extends OpenCGAWSServer {
                 queryOptions.put("interval", interval);
 
                 //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
-                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(null);
+                VariantDBAdaptor dbAdaptor;
+                try {
+                    dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(null);
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    return createErrorResponse(e.getMessage());
+                }
                 if (histogram) {
                     dbAdaptor.getVariantsHistogramByRegion(r, queryOptions);
                 } else {
