@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -47,13 +46,27 @@ import java.util.*;
 public class OpenCGAStorageMain {
 
 //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
-    private static final String appHome;
+    private static final String opencgaHome;
 
     protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
 
     static {
-        appHome = System.getProperty("app.home");
-        Config.setGcsaHome(appHome);
+        // Finds the installation directory (opencgaHome).
+        // Searches first in System Property "app.home" set by the shell script.
+        // If not found, then in the environment variable "OPENCGA_HOME".
+        // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
+        String propertyAppHome = System.getProperty("app.home");
+        if (propertyAppHome != null) {
+            opencgaHome = propertyAppHome;
+        } else {
+            String envAppHome = System.getenv("OPENCGA_HOME");
+            if (envAppHome != null) {
+                opencgaHome = envAppHome;
+            } else {
+                opencgaHome = Paths.get("opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
+            }
+        }
+        Config.setGcsaHome(opencgaHome);
     }
 
     public static void main(String[] args)
@@ -108,15 +121,6 @@ public class OpenCGAStorageMain {
             System.exit(1);
         }
 
-        /*
-            Get properties conf
-         */
-        Path confPath = Paths.get("opencga-app", "build", "conf");
-        Path storagePropertiesPath = Paths.get(confPath.toString() , "storage.properties");
-        Properties storageProperties = new Properties();
-        if(storagePropertiesPath.toFile().exists()) {
-            storageProperties.load(new FileInputStream(storagePropertiesPath.toFile()));
-        }
 
         if (command instanceof CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
             CommandIndexAlignments c = (CommandIndexAlignments) command;
