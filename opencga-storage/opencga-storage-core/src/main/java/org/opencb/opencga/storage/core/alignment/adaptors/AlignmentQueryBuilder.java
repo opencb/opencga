@@ -4,6 +4,8 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
+import java.util.List;
+
 /**
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -21,7 +23,7 @@ public interface AlignmentQueryBuilder {
     public static final String QO_INTERVAL_SIZE = "interval_size";
     public static final String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
 
-    QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options);
+    QueryResult getAllAlignmentsByRegion(List<Region> regions, QueryOptions options);
 
 //    List<QueryResult> getAllAlignmentsByRegionList(List<Region> region, QueryOptions options);
     
@@ -37,7 +39,7 @@ public interface AlignmentQueryBuilder {
     @Deprecated
     QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
 
-    QueryResult getAllIntervalFrequencies(Region region, QueryOptions options);
+    QueryResult getAllIntervalFrequencies(List<Region> regions, QueryOptions options);
 
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
     

@@ -303,7 +303,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/fetch")
     @Produces("application/json")
     @ApiOperation(value = "File fetch")
-    public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
+    public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds,
                           @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
@@ -312,87 +312,104 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                           @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval
     ) {
-        int fileIdNum;
-        File file;
-        URI fileUri;
-        Region r = new Region(region);
-        String defaultBackend = "mongo";   //TODO: getDefault backend
-        if(backend.isEmpty()) {
-            backend = defaultBackend;
+        List<Region> regions = new LinkedList<>();
+        String[] splitFileId = fileIds.split(",");
+        List<Object> results = new LinkedList<>();
+        for (String r : region.split(",")) {
+            regions.add(new Region(r));
         }
 
-        try {
-            System.out.println("catalogManager = " + catalogManager);
-            fileIdNum = catalogManager.getFileId(fileId);
-            QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
-            file = queryResult.getResult().get(0);
-            fileUri = catalogManager.getFileUri(file);
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
+        for (String fileId : splitFileId) {
+            int fileIdNum;
+            File file;
+            URI fileUri;
 
-        //TODO: Check indexed
-        List<Index> indices = file.getIndices();
-        Index index = null;
-        for (Index i : indices) {
-            if(i.getBackend().equals(backend)) {
-                index = i;
+            try {
+                fileIdNum = catalogManager.getFileId(fileId);
+                QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
+                file = queryResult.getResult().get(0);
+                fileUri = catalogManager.getFileUri(file);
+            } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+                e.printStackTrace();
+                return createErrorResponse(e.getMessage());
             }
-        }
-        if(index == null || !index.getState().equals(Index.INDEXED)) {
-            return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
-                    " is not indexed in the selected backend.");
-        }
-        ObjectMap indexAttributes = new ObjectMap(index.getAttributes());
-        switch(file.getBioformat()) {
-            case "bam": {
-                //TODO: getChunkSize from file.index.attributes?  use to be 200
-                int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
-                QueryOptions queryOptions = new QueryOptions();
-                queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
-                queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
-                queryOptions.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
-                queryOptions.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
-                queryOptions.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
-                queryOptions.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
-                queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
-                queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
-                AlignmentQueryBuilder dbAdaptor;
-                try {
-                    dbAdaptor = StorageManagerFactory.getAlignmentStorageManager(backend).getDBAdaptor(index.getDbName());
-                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    return createErrorResponse(e.getMessage());
-                }
-                QueryResult alignmentsByRegion;
-                if (histogram) {
-                    alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, queryOptions);
-                } else {
-                    alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, queryOptions);
-                }
-                return createOkResponse(alignmentsByRegion);
+            if(backend.isEmpty()) {
+                backend = "mongo";  //TODO: Get default backend from properties.
             }
-            case "vcf": {
-                QueryOptions queryOptions = new QueryOptions();
-                queryOptions.put("interval", interval);
 
-                //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
-                VariantDBAdaptor dbAdaptor;
-                try {
-                    dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(null);
-                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    return createErrorResponse(e.getMessage());
-                }
-                if (histogram) {
-                    dbAdaptor.getVariantsHistogramByRegion(r, queryOptions);
-                } else {
-                    dbAdaptor.getAllVariantsByRegion(r, queryOptions);
+            List<Index> indices = file.getIndices();
+            Index index = null;
+            for (Index i : indices) {
+                if (i.getBackend().equals(backend)) {
+                    index = i;
                 }
             }
-            default:
-                return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');
+            if (index == null || !index.getState().equals(Index.INDEXED)) {
+                return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
+                        " is not indexed in the selected backend.");
+            }
+            ObjectMap indexAttributes = new ObjectMap(index.getAttributes());
+            switch (file.getBioformat()) {
+                case "bam": {
+                    //TODO: getChunkSize from file.index.attributes?  use to be 200
+                    int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
+                    QueryOptions queryOptions = new QueryOptions();
+                    queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
+                    queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
+                    queryOptions.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
+                    queryOptions.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
+                    queryOptions.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
+                    queryOptions.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
+                    queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
+                    queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
+
+                    AlignmentQueryBuilder dbAdaptor;
+                    try {
+                        AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(backend);
+                        System.out.println("using db " + index.getDbName());
+                        dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName());
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        return createErrorResponse(e.getMessage());
+                    }
+                    QueryResult alignmentsByRegion;
+                    if (histogram) {
+                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions, queryOptions);
+                    } else {
+                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, queryOptions);
+                    }
+                    results.add(alignmentsByRegion);
+                    break;
+                }
+
+                case "vcf": {
+                    return createErrorResponse("Unimplemented bioformat '" + file.getBioformat() + '\'');
+                    /*
+                    QueryOptions queryOptions = new QueryOptions();
+                    queryOptions.put("interval", interval);
+
+                    //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
+                    VariantDBAdaptor dbAdaptor;
+                    try {
+                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(null);
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        return createErrorResponse(e.getMessage());
+                    }
+                    QueryResult variantsByRegion;
+                    if (histogram) {
+                        variantsByRegion = dbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions);
+                    } else {
+                        variantsByRegion = dbAdaptor.getAllVariantsByRegion(regions.get(0), queryOptions);
+                    }
+                    results.add(variantsByRegion);
+                    break;
+                    */
+                }
+                default:
+                    return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');
+            }
         }
+        return createOkResponse(results);
     }
 
 

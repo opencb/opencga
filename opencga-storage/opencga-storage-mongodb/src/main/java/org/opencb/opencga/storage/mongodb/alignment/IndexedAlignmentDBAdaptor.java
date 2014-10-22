@@ -75,12 +75,12 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
     /**
      *
-     * @param region Query Region
+     * @param regions Query Region
      * @param options Query Options: Expected bam_path. Optionally bai_path and view_as_pairs
      * @return
      */
     @Override
-    public QueryResult getAllAlignmentsByRegion(Region region, QueryOptions options) {
+    public QueryResult getAllAlignmentsByRegion(List<Region> regions, QueryOptions options) {
 
 
         String bam = options.getString(QO_BAM_PATH, "");
@@ -92,8 +92,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         Path bamFile = Paths.get(bam);
         Path baiFile = Paths.get(bai);
 
-        QueryResult<AlignmentRegion> queryResult = new QueryResult<>(
-                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
+        QueryResult<AlignmentRegion> queryResult = new QueryResult<>(Arrays.toString(regions.toArray()));
 
         long startTime = System.currentTimeMillis();
 
@@ -114,30 +113,35 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             queryResult.setErrorMsg("BAM index file (.bai) not found");
             logger.warn("BAM index file (.bai) " + baiFile + " for file " + bamFile + " not found");
         } else {
-            AlignmentRegion alignmentRegion;
-            AlignmentRegion filteredAlignmentRegion;
+            List<AlignmentRegion> results = new LinkedList<>();
+            for (Region region : regions) {
 
-            List<SAMRecord> recordList = getSamRecordsByRegion(bamFile, baiFile, region);
-            List<Alignment> alignmentList = getAlignmentsFromSamRecords(recordList, options);
-            List<Alignment> alignmentsInRegion = getAlignmentsInRegion(alignmentList, region);
+                AlignmentRegion alignmentRegion;
+                AlignmentRegion filteredAlignmentRegion;
 
-            if(!alignmentList.isEmpty()) {
-                alignmentRegion = new AlignmentRegion(
-                        alignmentList, null);
-            } else {
-                alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());
-                alignmentRegion.setAlignments(new LinkedList<Alignment>());
+                List<SAMRecord> recordList = getSamRecordsByRegion(bamFile, baiFile, region);
+                List<Alignment> alignmentList = getAlignmentsFromSamRecords(recordList, options);
+                List<Alignment> alignmentsInRegion = getAlignmentsInRegion(alignmentList, region);
+
+                if (!alignmentList.isEmpty()) {
+                    alignmentRegion = new AlignmentRegion(
+                            alignmentList, null);
+                } else {
+                    alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());
+                    alignmentRegion.setAlignments(new LinkedList<Alignment>());
+                }
+                RegionCoverage regionCoverage = null;
+                if (includeCoverage) {
+                    regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
+                }
+
+                filteredAlignmentRegion = new AlignmentRegion(
+                        region.getChromosome(), region.getStart(), region.getEnd(), alignmentsInRegion, regionCoverage, null);
+
+                results.add(filteredAlignmentRegion);
             }
-            RegionCoverage regionCoverage = null;
-            if(includeCoverage){
-                regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
-            }
 
-            filteredAlignmentRegion = new AlignmentRegion(
-                    region.getChromosome(), region.getStart(), region.getEnd(), alignmentsInRegion, regionCoverage, null);
-
-            queryResult.setResult(Arrays.asList(filteredAlignmentRegion));
-            queryResult.setNumResults(1);
+            queryResult.setResult(results);
         }
 
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
@@ -157,7 +161,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         options.put(QO_PROCESS_DIFFERENCES, false);
         options.put(QO_INCLUDE_COVERAGE, true);
 
-        QueryResult alignmentsResult = this.getAllAlignmentsByRegion(region, options);
+        QueryResult alignmentsResult = this.getAllAlignmentsByRegion(Arrays.asList(region), options);
         if(alignmentsResult.getResultType().equals(AlignmentRegion.class.getCanonicalName())) {
 //            AlignmentRegion alignmentRegion = new AlignmentRegion(alignmentsResult.getResult(), null);
 //
@@ -176,11 +180,10 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     }
 
     @Override
-    public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
+    public QueryResult getAllIntervalFrequencies(List<Region> regions, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         int size = options.getInt(QO_INTERVAL_SIZE, 2000);
         String fileId = options.getString(QO_FILE_ID);
-        List<DBObject> operations = new LinkedList<>();
         int chunkSize = options.getInt(QO_COVERAGE_CHUNK_SIZE, 200);
 
         if(size%chunkSize != 0){
@@ -188,50 +191,51 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         }
 
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
-
-        //List<DBObject> operations = Arrays.asList(
-        operations.add(new BasicDBObject(
-                "$match",
-                new BasicDBObject(
-                        "$and",
-                        Arrays.asList(
-                                new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$gt", region.getStart())),
-                                new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$lt", region.getEnd())),
-                                new BasicDBObject(CoverageMongoWriter.CHR_FIELD, region.getChromosome()),
-                                new BasicDBObject(CoverageMongoWriter.SIZE_FIELD, chunkSize)
-                        )
-                )
-        ));
-        operations.add(new BasicDBObject(
-                "$unwind",
-                "$" + CoverageMongoWriter.FILES_FIELD
-        ));
-        operations.add(new BasicDBObject(
-                "$match",
-                new BasicDBObject(CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.FILE_ID_FIELD, fileId)
-        ));
-        String startField = "$" + CoverageMongoWriter.START_FIELD;
-        String averageField = "$" + CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.AVERAGE_FIELD;
-        operations.add(new BasicDBObject(
-                "$group", BasicDBObjectBuilder.start(
-                        "_id", new BasicDBObject(
-                                "$divide", Arrays.asList(
-                                        new BasicDBObject(
-                                                "$subtract", Arrays.asList(
-                                                startField,
-                                                        new BasicDBObject(
-                                                                "$mod", Arrays.asList(startField, size)
-                                                        )
-                                                )
-                                        ),
-                                        size
-                                )
-                        )
-                )
-                .append(
-                        "feature_count", new BasicDBObject(
-                                "$sum",
-                                averageField
+        QueryResult<List<DBObject>> result = new QueryResult<>("getAllIntervalFrequencies " + Arrays.toString(regions.toArray()));
+        for (Region region : regions) {
+            List<DBObject> operations = new LinkedList<>();
+            operations.add(new BasicDBObject(
+                    "$match",
+                    new BasicDBObject(
+                            "$and",
+                            Arrays.asList(
+                                    new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$gt", region.getStart())),
+                                    new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$lt", region.getEnd())),
+                                    new BasicDBObject(CoverageMongoWriter.CHR_FIELD, region.getChromosome()),
+                                    new BasicDBObject(CoverageMongoWriter.SIZE_FIELD, chunkSize)
+                            )
+                    )
+            ));
+            operations.add(new BasicDBObject(
+                    "$unwind",
+                    "$" + CoverageMongoWriter.FILES_FIELD
+            ));
+            operations.add(new BasicDBObject(
+                    "$match",
+                    new BasicDBObject(CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.FILE_ID_FIELD, fileId)
+            ));
+            String startField = "$" + CoverageMongoWriter.START_FIELD;
+            String averageField = "$" + CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.AVERAGE_FIELD;
+            operations.add(new BasicDBObject(
+                    "$group", BasicDBObjectBuilder.start(
+                    "_id", new BasicDBObject(
+                            "$divide", Arrays.asList(
+                            new BasicDBObject(
+                                    "$subtract", Arrays.asList(
+                                    startField,
+                                    new BasicDBObject(
+                                            "$mod", Arrays.asList(startField, size)
+                                    )
+                            )
+                            ),
+                            size
+                    )
+                    )
+            )
+                    .append(
+                            "feature_count", new BasicDBObject(
+                                    "$sum",
+                                    averageField
 //                                new BasicDBObject(
 //                                        "$divide",
 //                                        Arrays.asList(
@@ -239,37 +243,38 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 //                                                size / chunkSize
 //                                        )
 //                                )
-                        )
-                ).get()
-        ));
-        operations.add(new BasicDBObject(
-                "$sort",
-                new BasicDBObject("_id", 1)
-        ));
-        String mongoAggregate = "db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [";
-        for (DBObject operation : operations) {
-            mongoAggregate += operation.toString() + " , ";
-        }
-        mongoAggregate += "])";
-        System.out.println(mongoAggregate);
-        QueryResult<DBObject> result = collection.aggregate(null, operations, null);
-        result.setId("getAllIntervalFrequencies, " + region.toString()/* + "  " + mongoAggregate*/);
-        for (DBObject object : result.getResult()) {
-            int id = getInt(object, "_id");
-            int start = id * size + 1;
-            int end = id * size + size;
-            object.put("chromosome", region.getChromosome());
-            object.put("start", start);
-            object.put("end", end);
-            double featureCount = getDouble(object, "feature_count");
+                            )
+                    ).get()
+            ));
+            operations.add(new BasicDBObject(
+                    "$sort",
+                    new BasicDBObject("_id", 1)
+            ));
+            String mongoAggregate = "db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [";
+            for (DBObject operation : operations) {
+                mongoAggregate += operation.toString() + " , ";
+            }
+            mongoAggregate += "])";
+            System.out.println(mongoAggregate);
+            QueryResult<DBObject> aggregate = collection.aggregate(null, operations, null);
+
+            for (DBObject object : aggregate.getResult()) {
+                int id = getInt(object, "_id");
+                int start = id * size + 1;
+                int end = id * size + size;
+                object.put("chromosome", region.getChromosome());
+                object.put("start", start);
+                object.put("end", end);
+                double featureCount = getDouble(object, "feature_count");
 //            object.put("feature_count_old", featureCount);
-            featureCount /= 1 + (end-1)/chunkSize - (start+chunkSize-2)/chunkSize;
-            object.put("feature_count", featureCount);
+                featureCount /= 1 + (end - 1) / chunkSize - (start + chunkSize - 2) / chunkSize;
+                object.put("feature_count", featureCount);
 //            object.put("div1", end/chunkSize - start/chunkSize);
 //            object.put("div2", end/chunkSize - (start+chunkSize)/chunkSize);
 //            object.put("div3", (end-1)/chunkSize - (start+chunkSize-2)/chunkSize);
+            }
+            result.addResult(aggregate.getResult());
         }
-
         return result;
     }
 
