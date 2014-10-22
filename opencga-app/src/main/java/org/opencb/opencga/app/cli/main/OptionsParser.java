@@ -64,7 +64,7 @@ public class OptionsParser {
         files.addCommand(fileCommands.createCommand);
         files.addCommand(fileCommands.infoCommand);
         files.addCommand(fileCommands.listCommand);
-//        files.addCommand(commandFileList = new CommandFile.CommandFileList());
+        files.addCommand(fileCommands.indexCommand);
 //        files.addCommand(commandShareResource);
 
     }
@@ -323,6 +323,7 @@ public class OptionsParser {
         CreateCommand createCommand = new CreateCommand();
         InfoCommand infoCommand = new InfoCommand();
         ListCommand listCommand = new ListCommand();
+        IndexCommand indexCommand = new IndexCommand();
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create file")
         class CreateCommand {
@@ -334,25 +335,25 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-            public String file;
+            String file;
 
             @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
-            public String path  = "";
+            String path  = "";
 
             @Parameter(names = {"-d", "--description"}, description = "Organization", required = true, arity = 1)
-            public String description;
+            String description;
 
             @Parameter(names = {"-s", "--studyId"}, description = "studyId", required = true, arity = 1)
-            public String studyId;
+            String studyId;
 
             @Parameter(names = {"-f", "--format"}, description = "format", required = true, arity = 1)
-            public String format;
+            String format;
 
             @Parameter(names = {"-b", "--bioformat"}, description = "bioformat", required = true, arity = 1)
-            public String bioformat;
+            String bioformat;
 
             @Parameter(names = {"-P", "--parents"}, description = "parents", required = false)
-            public boolean parents;
+            boolean parents;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
@@ -377,6 +378,22 @@ public class OptionsParser {
 
             @Parameter(names = {"--id"}, description = "Folder id", required = true, arity = 1)
             String id;
+        }
+
+        @Parameters(commandNames = {"index"}, commandDescription = "Index files")
+        class IndexCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
+            String id;
+
+            @Parameter(names = {"-b", "--backend"}, description = "", required = true, arity = 1)
+            String backend;
+
+            @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
+            String path  = "";
+
         }
     }
 

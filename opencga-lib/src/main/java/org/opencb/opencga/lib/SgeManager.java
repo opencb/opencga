@@ -28,7 +28,7 @@ public class SgeManager {
     public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine,
                                 String queue) throws Exception {
         // init sge job
-        String sgeCommandLine = "qsub -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
+        String sgeCommandLine = "qsub -V -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
                 + outdir + "/sge_err.log -q " + queue + " -b y " + commandLine;
         logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
 
@@ -42,7 +42,7 @@ public class SgeManager {
             throws Exception {
 
         // init sge job
-        String sgeCommandLine = "qsub -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
+        String sgeCommandLine = "qsub -V -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
                 + outdir + "/sge_err.log -q " + getQueueName(toolName) + " -b y " + commandLine;
         logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
 

@@ -15,22 +15,26 @@ import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.SgeManager;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.*;
 
 @Path("/files")
@@ -39,28 +43,26 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
 
-
-    private static AlignmentStorageManager alignmentStorageManager = null;
-//    private static AlignmentQueryBuilder dbAdaptor = null;
-    private static final String MONGODB_VARIANT_MANAGER = "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager";
-    private static final String MONGODB_ALIGNMENT_MANAGER = "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager";
-
-
-
     public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
             throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         super(version, uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
-        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
-        if(alignmentStorageManager == null) {
-//            try {
-                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
-//            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-//                e.printStackTrace();
-//                logger.error(e.getMessage(), e);
-//            }
-            //dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
-        }
+//        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
+//        String variantManagerName = MONGODB_VARIANT_MANAGER;
+
+//        if (variantStorageManager == null) {
+//            variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
+//        }
+//        if(alignmentStorageManager == null) {
+//            alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+////            try {
+////                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
+////            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+////                e.printStackTrace();
+////                logger.error(e.getMessage(), e);
+////            }
+//            //dbAdaptor = alignmentStorageManager.getDBAdaptor(null);
+//        }
     }
 
     @POST
@@ -187,6 +189,48 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @Produces("application/json")
+    @ApiOperation(value = "File info")
+    public Response search(@ApiParam(value = "name", required = false)       @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "studyId", required = true)     @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "type", required = false)       @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "bioformat", required = false)  @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "maxSize", required = false)    @DefaultValue("") @QueryParam("maxSize") String maxSize,
+                           @ApiParam(value = "minSize", required = false)    @DefaultValue("") @QueryParam("minSize") String minSize,
+                           @ApiParam(value = "startDate", required = false)  @DefaultValue("") @QueryParam("startDate") String startDate,
+                           @ApiParam(value = "endDate", required = false)    @DefaultValue("") @QueryParam("endDate") String endDate,
+                           @ApiParam(value = "like", required = false)       @DefaultValue("") @QueryParam("like") String like,
+                           @ApiParam(value = "startsWith", required = false) @DefaultValue("") @QueryParam("startsWith") String startsWith,
+                           @ApiParam(value = "directory", required = false)  @DefaultValue("") @QueryParam("directory") String directory,
+                           @ApiParam(value = "indexJobId", required = false) @DefaultValue("") @QueryParam("indexJobId") String indexJobId
+
+    ) {
+        try {
+            int studyIdNum = catalogManager.getStudyId(studyId);
+            QueryOptions queryOptions = new QueryOptions();
+            if( !name.isEmpty() )       { queryOptions.put("name", name); }
+            if( !type.isEmpty() )       { queryOptions.put("type", type); }
+            if( !bioformat.isEmpty() )  { queryOptions.put("bioformat", bioformat); }
+            if( !maxSize.isEmpty() )    { queryOptions.put("maxSize", maxSize); }
+            if( !minSize.isEmpty() )    { queryOptions.put("minSize", minSize); }
+            if( !startDate.isEmpty() )  { queryOptions.put("startDate", startDate); }
+            if( !endDate.isEmpty() )    { queryOptions.put("endDate", endDate); }
+            if( !like.isEmpty() )       { queryOptions.put("like", like); }
+            if( !startsWith.isEmpty() ) { queryOptions.put("startsWith", startsWith); }
+            if( !directory.isEmpty() )  { queryOptions.put("directory", directory); }
+            if( !indexJobId.isEmpty() ) { queryOptions.put("indexJobId", indexJobId); }
+
+
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/{fileId}/list")
     @Produces("application/json")
     @ApiOperation(value = "List folder")
@@ -207,7 +251,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
-                          @ApiParam(value = "outdir", required = true) @DefaultValue("") @QueryParam("outdir") String outdir
+                          @ApiParam(value = "outdir", required = false) @DefaultValue("") @QueryParam("outdir") String outdir
                           ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
         Index index = null;
@@ -222,12 +266,11 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/index-finish")
+    @Path("/index-finish")
     @Produces("application/json")
-    @ApiOperation(value = "File index")
-    public Response indexFinish(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
-                          @ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
-                          ) {
+    @ApiOperation(value = "File finish index")
+    public Response indexFinish(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+    ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
         String index = "";
         try {
@@ -239,6 +282,22 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse(index);
     }
 
+    @GET
+    @Path("/index-status")
+    @Produces("application/json")
+    @ApiOperation(value = "File index status")
+    public Response indexStatus(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+    ) {
+        String status;
+        try {
+            status = SgeManager.status(jobid);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(status);
+    }
+
 
     @GET
     @Path("/{fileId}/fetch")
@@ -246,6 +305,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File fetch")
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
                           @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                          @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
@@ -255,9 +315,11 @@ public class FileWSServer extends OpenCGAWSServer {
         int fileIdNum;
         File file;
         URI fileUri;
-        String dbName = null;   //TODO: getDBName from file.attributes?   dbName == userId
-        int chunkSize = 200;   //TODO: getChunkSize from file.attributes?  use to be 200
         Region r = new Region(region);
+        String defaultBackend = "mongo";   //TODO: getDefault backend
+        if(backend.isEmpty()) {
+            backend = defaultBackend;
+        }
 
         try {
             System.out.println("catalogManager = " + catalogManager);
@@ -270,33 +332,64 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
 
+        //TODO: Check indexed
+        List<Index> indices = file.getIndices();
+        Index index = null;
+        for (Index i : indices) {
+            if(i.getBackend().equals(backend)) {
+                index = i;
+            }
+        }
+        if(index == null || !index.getState().equals(Index.INDEXED)) {
+            return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
+                    " is not indexed in the selected backend.");
+        }
+        ObjectMap indexAttributes = new ObjectMap(index.getAttributes());
         switch(file.getBioformat()) {
-            case "bam":
-                //TODO: Check indexed
-//                ObjectMap attributes = new ObjectMap(file.getAttributes());
-//                if(!attributes.getBoolean("indexed")){
-//                    return createErrorResponse("File " + file.getId() + " '" + file.getName() + "' is not indexed.");
-//                }
-//                dbName = attributes.getString("dbName");
-//                chunkSize = attributes.getInt("coverageChunkSize");
-                QueryOptions options = new QueryOptions();
-                options.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
-                options.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
-                options.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
-                options.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
-                options.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
-                options.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
-                options.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
-                options.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
+            case "bam": {
+                //TODO: getChunkSize from file.index.attributes?  use to be 200
+                int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
+                QueryOptions queryOptions = new QueryOptions();
+                queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
+                queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
+                queryOptions.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
+                queryOptions.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
+                queryOptions.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
+                queryOptions.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
+                queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
+                queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
-                AlignmentQueryBuilder dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
+                AlignmentQueryBuilder dbAdaptor;
+                try {
+                    dbAdaptor = StorageManagerFactory.getAlignmentStorageManager(backend).getDBAdaptor(index.getDbName());
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    return createErrorResponse(e.getMessage());
+                }
                 QueryResult alignmentsByRegion;
-                if(histogram){
-                    alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, options);
+                if (histogram) {
+                    alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(r, queryOptions);
                 } else {
-                    alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, options);
+                    alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(r, queryOptions);
                 }
                 return createOkResponse(alignmentsByRegion);
+            }
+            case "vcf": {
+                QueryOptions queryOptions = new QueryOptions();
+                queryOptions.put("interval", interval);
+
+                //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
+                VariantDBAdaptor dbAdaptor;
+                try {
+                    dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(null);
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    return createErrorResponse(e.getMessage());
+                }
+                if (histogram) {
+                    dbAdaptor.getVariantsHistogramByRegion(r, queryOptions);
+                } else {
+                    dbAdaptor.getAllVariantsByRegion(r, queryOptions);
+                }
+            }
             default:
                 return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');
         }

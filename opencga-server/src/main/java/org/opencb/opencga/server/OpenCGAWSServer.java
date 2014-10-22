@@ -94,6 +94,17 @@ public class OpenCGAWSServer {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+//        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
+//        properties = new Properties();
+//        try {
+//            properties.load(is);
+//        } catch (IOException e) {
+//            System.out.println("Error loading properties");
+//            System.out.println(e.getMessage());
+//            e.printStackTrace();
+//        }
+//        Config.setGcsaHome(properties.getProperty("OPENCGA.INSTALLATION.DIR"));    //TODO: Check instalation dir.
+//        properties = Config.getCatalogProperties();
 
         try {
             catalogManager = new CatalogManager(properties);

@@ -20,6 +20,7 @@ public class Config {
     private static Properties accountProperties = null;
     private static Properties analysisProperties = null;
     private static Properties storageProperties = null;
+    private static Properties catalogProperties = null;
 
     private static long lastPropertyLoad = System.currentTimeMillis();
 
@@ -33,6 +34,7 @@ public class Config {
         accountProperties = null;
         analysisProperties = null;
         storageProperties = null;
+        catalogProperties = null;
 
         log4jReady = false;
 //        LogManager.resetConfiguration();
@@ -67,6 +69,21 @@ public class Config {
         return accountProperties;
     }
 
+    public static Properties getCatalogProperties() {
+        // checkPopertiesStatus();
+        if (catalogProperties == null) {
+            Path path = Paths.get(opencgaHome, "conf", "catalog.properties");
+            catalogProperties = new Properties();
+            try {
+                catalogProperties.load(Files.newInputStream(path));
+            } catch (IOException e) {
+                logger.error("Failed to load catalog.properties: " + e.getMessage());
+                return null;
+            }
+        }
+        return catalogProperties;
+    }
+
     public static Properties getAnalysisProperties() {
         // checkPopertiesStatus();
         if (analysisProperties == null) {
@@ -82,6 +99,9 @@ public class Config {
         return analysisProperties;
     }
 
+    public static Properties getStorageProperties() {
+        return getStorageProperties(opencgaHome);
+    }
     public static Properties getStorageProperties(String basePath) {
 //        opencgaLightHome = basePath;
 

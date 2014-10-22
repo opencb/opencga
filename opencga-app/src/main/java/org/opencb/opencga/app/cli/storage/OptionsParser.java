@@ -152,7 +152,7 @@ public class OptionsParser {
         @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongo (default) or hbase (pending)", required = false, arity = 1)
         String backend;
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = true, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials;
 
         @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
@@ -224,6 +224,9 @@ public class OptionsParser {
 
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
+
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongo (default), hbase (pending)", required = false, arity = 1)
+        String backend = "mongo";
     }
 
     
@@ -268,7 +271,7 @@ public class OptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
 
-        @Parameter(names = {"-t", "--temporal-dir"}, description = "Directory where place temporal files", required = false, arity = 1)
+        @Parameter(names = {"-T", "--temporal-dir"}, description = "Directory where place temporal files", required = false, arity = 1)
         String tmp = "";
 
         @Parameter(names = {"--delete-temporal"}, description = "Delete temporal files (TODO)", required = false)
@@ -294,6 +297,29 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
     class CommandIndexVariants extends CommandIndex implements Command {
 
+        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        String study;
+
+        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        String studyId;
+
+        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+        String pedigree;
+
+        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
+        boolean includeEffect = false;
+
+        @Parameter(names = {"--include-samples"}, description = "Save samples information (optional)")
+        boolean includeSamples = false;
+
+        @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
+        boolean includeStats = false;
+
+        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
+        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
+        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
