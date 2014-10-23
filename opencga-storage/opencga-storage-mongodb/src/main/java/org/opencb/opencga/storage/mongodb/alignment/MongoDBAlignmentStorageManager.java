@@ -109,9 +109,9 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             if(credentials != null && credentials.toFile().exists()) {
                 Properties credentialsProperties = new Properties();
                 credentialsProperties.load(new InputStreamReader(new FileInputStream(credentials.toString())));
-                return new CoverageMongoWriter(new MongoCredentials(credentialsProperties), fileId);
+                return new CoverageMongoDBWriter(new MongoCredentials(credentialsProperties), fileId);
             } else {
-                return new CoverageMongoWriter(getMongoCredentials(dbName), fileId);
+                return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);
             }
         } catch (IOException e) {
             logger.error(e.toString(), e);

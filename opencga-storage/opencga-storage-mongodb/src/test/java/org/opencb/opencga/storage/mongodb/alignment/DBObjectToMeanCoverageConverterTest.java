@@ -8,9 +8,6 @@ import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.test.GenericTest;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-
 import static org.junit.Assert.*;
 
 public class DBObjectToMeanCoverageConverterTest extends GenericTest {
@@ -30,7 +27,7 @@ public class DBObjectToMeanCoverageConverterTest extends GenericTest {
         DBObject id = converter.getIdObject(meancoverage);
         BasicDBList filesList = new BasicDBList(); filesList.add(object);
 
-        DBObject objectInFile = new BasicDBObject(CoverageMongoWriter.FILES_FIELD, filesList); objectInFile.putAll(id);
+        DBObject objectInFile = new BasicDBObject(CoverageMongoDBWriter.FILES_FIELD, filesList); objectInFile.putAll(id);
         DBObject objectWithId = new BasicDBObject();    objectWithId.putAll(id); objectWithId.putAll(object);
 
         MeanCoverage mc1 = converter.convertToDataModelType(objectInFile);

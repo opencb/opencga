@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.storage;
+package org.opencb.opencga.storage.app;
 
 import com.beust.jcommander.*;
 import org.opencb.biodata.models.variant.VariantSource;

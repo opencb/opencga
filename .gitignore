@@ -1,6 +1,7 @@
 # OpenCGA folders
 opencga-app/build/conf
 opencga-app/build/libs
+opencga-storage/opencga-storage-app/build
 
 # General
 *.jar
