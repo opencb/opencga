@@ -26,7 +26,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public VariantDBAdaptor getDBAdaptor(Path credentialsPath) {
-        Properties credentialsProperties = new Properties();
+        Properties credentialsProperties = new Properties(properties);
         if(credentialsPath != null) {
             try {
                 credentialsProperties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));

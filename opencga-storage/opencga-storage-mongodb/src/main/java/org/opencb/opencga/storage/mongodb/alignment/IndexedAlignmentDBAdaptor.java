@@ -83,6 +83,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     public QueryResult getAllAlignmentsByRegion(List<Region> regions, QueryOptions options) {
 
 
+        String fileId = options.getString(QO_FILE_ID, "");
         String bam = options.getString(QO_BAM_PATH, "");
         String bai = options.getString(QO_BAI_PATH, "");
         boolean includeCoverage = options.getBoolean(QO_INCLUDE_COVERAGE, true);
@@ -92,7 +93,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         Path bamFile = Paths.get(bam);
         Path baiFile = Paths.get(bai);
 
-        QueryResult<AlignmentRegion> queryResult = new QueryResult<>(Arrays.toString(regions.toArray()));
+        QueryResult<AlignmentRegion> queryResult = new QueryResult<>(fileId);
 
         long startTime = System.currentTimeMillis();
 
@@ -180,8 +181,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
     }
 
     @Override
-    public QueryResult getAllIntervalFrequencies(List<Region> regions, QueryOptions options) {
-        long startTime = System.currentTimeMillis();
+    public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
         int size = options.getInt(QO_INTERVAL_SIZE, 2000);
         String fileId = options.getString(QO_FILE_ID);
         int chunkSize = options.getInt(QO_COVERAGE_CHUNK_SIZE, 200);
@@ -191,51 +191,50 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
         }
 
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
-        QueryResult<List<DBObject>> result = new QueryResult<>("getAllIntervalFrequencies " + Arrays.toString(regions.toArray()));
-        for (Region region : regions) {
-            List<DBObject> operations = new LinkedList<>();
-            operations.add(new BasicDBObject(
-                    "$match",
-                    new BasicDBObject(
-                            "$and",
-                            Arrays.asList(
-                                    new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$gt", region.getStart())),
-                                    new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$lt", region.getEnd())),
-                                    new BasicDBObject(CoverageMongoWriter.CHR_FIELD, region.getChromosome()),
-                                    new BasicDBObject(CoverageMongoWriter.SIZE_FIELD, chunkSize)
-                            )
-                    )
-            ));
-            operations.add(new BasicDBObject(
-                    "$unwind",
-                    "$" + CoverageMongoWriter.FILES_FIELD
-            ));
-            operations.add(new BasicDBObject(
-                    "$match",
-                    new BasicDBObject(CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.FILE_ID_FIELD, fileId)
-            ));
-            String startField = "$" + CoverageMongoWriter.START_FIELD;
-            String averageField = "$" + CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.AVERAGE_FIELD;
-            operations.add(new BasicDBObject(
-                    "$group", BasicDBObjectBuilder.start(
-                    "_id", new BasicDBObject(
-                            "$divide", Arrays.asList(
-                            new BasicDBObject(
-                                    "$subtract", Arrays.asList(
-                                    startField,
-                                    new BasicDBObject(
-                                            "$mod", Arrays.asList(startField, size)
-                                    )
-                            )
-                            ),
-                            size
-                    )
-                    )
-            )
-                    .append(
-                            "feature_count", new BasicDBObject(
-                                    "$sum",
-                                    averageField
+
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(new BasicDBObject(
+                "$match",
+                new BasicDBObject(
+                        "$and",
+                        Arrays.asList(
+                                new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$gt", region.getStart())),
+                                new BasicDBObject(CoverageMongoWriter.START_FIELD, new BasicDBObject("$lt", region.getEnd())),
+                                new BasicDBObject(CoverageMongoWriter.CHR_FIELD, region.getChromosome()),
+                                new BasicDBObject(CoverageMongoWriter.SIZE_FIELD, chunkSize)
+                        )
+                )
+        ));
+        operations.add(new BasicDBObject(
+                "$unwind",
+                "$" + CoverageMongoWriter.FILES_FIELD
+        ));
+        operations.add(new BasicDBObject(
+                "$match",
+                new BasicDBObject(CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.FILE_ID_FIELD, fileId)
+        ));
+        String startField = "$" + CoverageMongoWriter.START_FIELD;
+        String averageField = "$" + CoverageMongoWriter.FILES_FIELD + "." + CoverageMongoWriter.AVERAGE_FIELD;
+        operations.add(new BasicDBObject(
+                "$group", BasicDBObjectBuilder.start(
+                "_id", new BasicDBObject(
+                        "$divide", Arrays.asList(
+                        new BasicDBObject(
+                                "$subtract", Arrays.asList(
+                                startField,
+                                new BasicDBObject(
+                                        "$mod", Arrays.asList(startField, size)
+                                )
+                        )
+                        ),
+                        size
+                )
+                )
+        )
+                .append(
+                        "feature_count", new BasicDBObject(
+                                "$sum",
+                                averageField
 //                                new BasicDBObject(
 //                                        "$divide",
 //                                        Arrays.asList(
@@ -243,39 +242,40 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 //                                                size / chunkSize
 //                                        )
 //                                )
-                            )
-                    ).get()
-            ));
-            operations.add(new BasicDBObject(
-                    "$sort",
-                    new BasicDBObject("_id", 1)
-            ));
-            String mongoAggregate = "db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [";
-            for (DBObject operation : operations) {
-                mongoAggregate += operation.toString() + " , ";
-            }
-            mongoAggregate += "])";
-            System.out.println(mongoAggregate);
-            QueryResult<DBObject> aggregate = collection.aggregate(null, operations, null);
+                        )
+                ).get()
+        ));
+        operations.add(new BasicDBObject(
+                "$sort",
+                new BasicDBObject("_id", 1)
+        ));
+        String mongoAggregate = "db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [";
+        for (DBObject operation : operations) {
+            mongoAggregate += operation.toString() + " , ";
+        }
+        mongoAggregate += "])";
+        System.out.println(mongoAggregate);
+        QueryResult<DBObject> aggregate = collection.aggregate(null, operations, null);
 
-            for (DBObject object : aggregate.getResult()) {
-                int id = getInt(object, "_id");
-                int start = id * size + 1;
-                int end = id * size + size;
-                object.put("chromosome", region.getChromosome());
-                object.put("start", start);
-                object.put("end", end);
-                double featureCount = getDouble(object, "feature_count");
+        for (DBObject object : aggregate.getResult()) {
+            int id = getInt(object, "_id");
+            int start = id * size + 1;
+            int end = id * size + size;
+            object.put("chromosome", region.getChromosome());
+            object.put("start", start);
+            object.put("end", end);
+            double featureCount = getDouble(object, "feature_count");
 //            object.put("feature_count_old", featureCount);
-                featureCount /= 1 + (end - 1) / chunkSize - (start + chunkSize - 2) / chunkSize;
-                object.put("feature_count", featureCount);
+            featureCount /= 1 + (end - 1) / chunkSize - (start + chunkSize - 2) / chunkSize;
+            object.put("feature_count", featureCount);
 //            object.put("div1", end/chunkSize - start/chunkSize);
 //            object.put("div2", end/chunkSize - (start+chunkSize)/chunkSize);
 //            object.put("div3", (end-1)/chunkSize - (start+chunkSize-2)/chunkSize);
-            }
-            result.addResult(aggregate.getResult());
         }
-        return result;
+
+        aggregate.setId(fileId);
+
+        return aggregate;
     }
 
     private int getInt(DBObject object, String key) {

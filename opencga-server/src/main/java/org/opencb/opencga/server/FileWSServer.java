@@ -350,6 +350,7 @@ public class FileWSServer extends OpenCGAWSServer {
                         " is not indexed in the selected backend.");
             }
             ObjectMap indexAttributes = new ObjectMap(index.getAttributes());
+            QueryResult result;
             switch (file.getBioformat()) {
                 case "bam": {
                     //TODO: getChunkSize from file.index.attributes?  use to be 200
@@ -374,19 +375,24 @@ public class FileWSServer extends OpenCGAWSServer {
                     }
                     QueryResult alignmentsByRegion;
                     if (histogram) {
-                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions, queryOptions);
+                        if(regions.size() != 1) {
+                            return createErrorResponse("Histogram fetch only accepts one region.");
+                        }
+                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), queryOptions);
                     } else {
                         alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, queryOptions);
                     }
-                    results.add(alignmentsByRegion);
+                    result = alignmentsByRegion;
                     break;
                 }
 
                 case "vcf": {
-                    return createErrorResponse("Unimplemented bioformat '" + file.getBioformat() + '\'');
-                    /*
                     QueryOptions queryOptions = new QueryOptions();
                     queryOptions.put("interval", interval);
+                    queryOptions.put("merge", true);
+                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+//                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
+//                    queryOptions.put("include", Arrays.asList(include.split(",")));
 
                     //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
                     VariantDBAdaptor dbAdaptor;
@@ -399,15 +405,19 @@ public class FileWSServer extends OpenCGAWSServer {
                     if (histogram) {
                         variantsByRegion = dbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions);
                     } else {
-                        variantsByRegion = dbAdaptor.getAllVariantsByRegion(regions.get(0), queryOptions);
+                        //With merge = true, will return only one result.
+                        variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
                     }
-                    results.add(variantsByRegion);
+                    result = variantsByRegion;
                     break;
-                    */
+
                 }
                 default:
                     return createErrorResponse("Unknown bioformat '" + file.getBioformat() + '\'');
             }
+
+            result.setId(Integer.toString(fileIdNum));
+            results.add(result);
         }
         return createOkResponse(results);
     }

@@ -183,7 +183,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     }
 
     @Override
-    public QueryResult getAllIntervalFrequencies(List<Region> regions, QueryOptions options) {
+    public QueryResult getAllIntervalFrequencies(Region region, QueryOptions options) {
         return null;
     }
 

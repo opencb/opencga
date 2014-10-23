@@ -39,7 +39,7 @@ public interface AlignmentQueryBuilder {
     @Deprecated
     QueryResult getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax);
 
-    QueryResult getAllIntervalFrequencies(List<Region> regions, QueryOptions options);
+    QueryResult getAllIntervalFrequencies(Region region, QueryOptions options);
 
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
     
