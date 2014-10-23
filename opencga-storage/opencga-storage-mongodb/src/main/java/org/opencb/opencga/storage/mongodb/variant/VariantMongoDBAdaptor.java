@@ -306,7 +306,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 System.out.println("# studies = " + options.getList("studies").size());
                 getStudyFilter(options.getListAs("studies", String.class), builder);
             }
-            
+
+            if (options.containsKey("files") && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
+                System.out.println("# files = " + options.getList("files").size());
+                getFileFilter(options.getListAs("files", String.class), builder);
+            }
+
             if (options.containsKey("maf") && options.containsKey("opMaf")
                     && options.getFloat("maf") >= 0 && !options.getString("opMaf").isEmpty()) {
                 getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
@@ -369,6 +374,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     
     private QueryBuilder getStudyFilter(List<String> studies, QueryBuilder builder) {
         return builder.and(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD).in(studies);
+    }
+
+    private QueryBuilder getFileFilter(List<String> files, QueryBuilder builder) {
+        return builder.put(DBObjectToVariantConverter.FILES_FIELD)
+                .elemMatch(new BasicDBObject(DBObjectToArchivedVariantFileConverter.FILEID_FIELD, files.get(0)));
     }
     
     private QueryBuilder getMafFilter(float maf, ComparisonOperator op, QueryBuilder builder) {

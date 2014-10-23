@@ -10,7 +10,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-
+/**
+ * Creates StorageManagers by reflexion.
+ *
+ * The StorageManager's className is read from <opencga-home>/conf/storage.properties
+ *
+ *
+ */
 public class StorageManagerFactory {
 
     private static Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
@@ -27,7 +33,7 @@ public class StorageManagerFactory {
             name = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.DEFAULT.ALIGNMENT");
         }
         name = name.toUpperCase();
-        if(alignmentStorageManagerMap.containsKey(name)) {
+        if(!alignmentStorageManagerMap.containsKey(name)) {
             String key = "OPENCGA.STORAGE." + name + ".ALIGNMENT";
             Properties storageProperties = Config.getStorageProperties();
             String storageManagerName = storageProperties.getProperty(key);
@@ -52,7 +58,7 @@ public class StorageManagerFactory {
             name = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.DEFAULT.ALIGNMENT");
         }
         name = name.toUpperCase();
-        if(variantStorageManagerMap.containsKey(name)) {
+        if(!variantStorageManagerMap.containsKey(name)) {
             String key = "OPENCGA.STORAGE." + name + ".VARIANT";
             Properties storageProperties = Config.getStorageProperties();
             String storageManagerName = storageProperties.getProperty(key);
