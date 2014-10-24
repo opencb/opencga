@@ -76,19 +76,36 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult getSamplesBySource(String fileId, String studyId, QueryOptions options) {
+    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {
         if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
                 if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
                     QueryResult queryResult = populateSamplesInSources();
-                    populateSamplesInSourcesQueryResult(fileId, studyId, queryResult);
+                    populateSamplesQueryResult(fileId, queryResult);
                     return queryResult;
                 }
             }
         } 
         
         QueryResult queryResult = new QueryResult();
-        populateSamplesInSourcesQueryResult(fileId, studyId, queryResult);
+        populateSamplesQueryResult(fileId, queryResult);
+        return queryResult;
+    }
+    
+    @Override
+    public QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options) {
+        if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+            synchronized (StudyMongoDBAdaptor.class) {
+                if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+                    QueryResult queryResult = populateSamplesInSources();
+                    populateSamplesQueryResult(fileIds, queryResult);
+                    return queryResult;
+                }
+            }
+        } 
+        
+        QueryResult queryResult = new QueryResult();
+        populateSamplesQueryResult(fileIds, queryResult);
         return queryResult;
     }
     
@@ -128,14 +145,12 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private QueryResult populateSamplesInSources() {
         MongoDBCollection coll = db.getCollection("files");
         DBObject returnFields = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
-                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
         QueryResult queryResult = coll.find(null, null, null, returnFields);
         
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
-            String key = dbo.get(DBObjectToVariantSourceConverter.STUDYID_FIELD).toString() + "_" 
-                    + dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
+            String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
             DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
             samplesInSources.put(key, new ArrayList<>(value.toMap().keySet()));
         }
@@ -143,18 +158,44 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         return queryResult;
     }
     
-    private void populateSamplesInSourcesQueryResult(String fileId, String studyId, QueryResult queryResult) {
+    private void populateSamplesQueryResult(String fileId, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(1);
-        List<String> samplesInSource = samplesInSources.get(studyId + "_" + fileId);
+        List<String> samplesInSource = samplesInSources.get(fileId);
 
         if (samplesInSource == null || samplesInSource.isEmpty()) {
-            queryResult.setWarningMsg("Source " + fileId + " in study " + studyId + " not found");
+            queryResult.setWarningMsg("Source " + fileId + " not found");
             queryResult.setNumTotalResults(0);
         } else {
             samples.add(samplesInSource);
             queryResult.setResult(samples);
             queryResult.setNumTotalResults(1);
         }
+    }
+
+    private void populateSamplesQueryResult(List<String> fileIds, QueryResult queryResult) {
+        List<List> samples = new ArrayList<>(fileIds.size());
+        
+        for (String fileId : fileIds) {
+            List<String> samplesInSource = samplesInSources.get(fileId);
+
+            if (samplesInSource == null || samplesInSource.isEmpty()) {
+                // Samples not found
+                samples.add(new ArrayList<>());
+                if (queryResult.getWarningMsg() == null) {
+                    queryResult.setWarningMsg("Source " + fileId + " not found");
+                } else {
+                    queryResult.setWarningMsg(queryResult.getWarningMsg().concat("\nSource " + fileId + " not found"));
+                }
+//                queryResult.setNumTotalResults(0);
+            } else {
+                // Add new list of samples
+                samples.add(samplesInSource);
+//                queryResult.setNumTotalResults(1);
+            }
+        }
+        
+        queryResult.setResult(samples);
+        queryResult.setNumTotalResults(fileIds.size());
     }
 
 }
