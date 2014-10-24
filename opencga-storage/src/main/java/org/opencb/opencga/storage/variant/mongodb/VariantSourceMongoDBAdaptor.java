@@ -66,6 +66,16 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
+    public QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options) {
+        MongoDBCollection coll = db.getCollection("files");
+        QueryBuilder qb = QueryBuilder.start();
+        getStudyIdFilter(studyIds, qb);
+//        parseQueryOptions(options, qb);
+        
+        return coll.find(qb.get(), options, variantSourceConverter);
+    }
+
+    @Override
     public QueryResult getSamplesBySource(String fileId, String studyId, QueryOptions options) {
         if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
@@ -104,6 +114,10 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     
     private QueryBuilder getStudyIdFilter(String id, QueryBuilder builder) {
         return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).is(id);
+    }
+    
+    private QueryBuilder getStudyIdFilter(List<String> ids, QueryBuilder builder) {
+        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).in(ids);
     }
     
     /**
