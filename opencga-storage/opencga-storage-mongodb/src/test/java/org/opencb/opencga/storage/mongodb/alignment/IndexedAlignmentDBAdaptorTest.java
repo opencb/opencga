@@ -82,7 +82,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         jsonQueryResult("HG01551.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29829001, 29830000), qo));
         jsonQueryResult("HG01551.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29830001, 29833000), qo));
         //qo.put(IndexedAlignmentDBAdaptor.QO_HISTOGRAM, false);
-        jsonQueryResult("HG01551.mean-coverage.10k",dbAdaptor.getAllIntervalFrequencies(Arrays.asList(new Region("20", 29800000, 29900000)), qo));
+        jsonQueryResult("HG01551.mean-coverage.10k",dbAdaptor.getAllIntervalFrequencies(new Region("20", 29800000, 29900000), qo));
         qo.put(IndexedAlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
         jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829001, 29830000)), qo));
         jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29828951, 29830000)), qo));
@@ -95,7 +95,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         QueryOptions qo = new QueryOptions();
         qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG00096");
 
-        jsonQueryResult("aggregate", dbAdaptor.getAllIntervalFrequencies(Arrays.asList(new Region("20", 50000, 100000)), qo));
+        jsonQueryResult("aggregate", dbAdaptor.getAllIntervalFrequencies(new Region("20", 50000, 100000), qo));
 
 
     }

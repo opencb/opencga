@@ -66,11 +66,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     private MongoCredentials getMongoCredentials(Properties properties) {
-        String host = properties.getProperty("OPENCGA.STORAGE.MONGO.VARIANT.DB.HOST");
-        int port = Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.MONGO.VARIANT.DB.PORT"));
-        String db = properties.getProperty("OPENCGA.STORAGE.MONGO.VARIANT.DB.NAME");
-        String user = properties.getProperty("OPENCGA.STORAGE.MONGO.VARIANT.DB.USER", null);
-        String pass = properties.getProperty("OPENCGA.STORAGE.MONGO.VARIANT.DB.PASS", null);
+        String host = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOST");
+        int port = Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.PORT", "27017"));
+        String db = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME");
+        String user = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER", null);
+        String pass = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS", null);
 
         try {
             return new MongoCredentials(host, port, db, user, pass);

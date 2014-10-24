@@ -46,6 +46,7 @@ public class OpenCGAStorageMain {
         // If not found, then in the environment variable "OPENCGA_HOME".
         // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
         String propertyAppHome = System.getProperty("app.home");
+        logger.debug("propertyAppHome = {}", propertyAppHome);
         if (propertyAppHome != null) {
             opencgaHome = propertyAppHome;
         } else {

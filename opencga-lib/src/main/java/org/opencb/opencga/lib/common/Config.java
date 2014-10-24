@@ -141,6 +141,7 @@ public class Config {
         }
     }
 
+
     private static void checkPopertiesStatus() {
         if (System.currentTimeMillis() - lastPropertyLoad > 60000) {
             loadProperties(accountProperties, Paths.get(opencgaHome, "conf", "account.properties"));

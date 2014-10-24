@@ -94,6 +94,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             } else {
                 mongoClient = new MongoClient(address);
             }
+            System.out.println("credentials.getMongoDbName() = " + credentials.getMongoDbName());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);

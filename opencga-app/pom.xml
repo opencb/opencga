@@ -257,7 +257,7 @@
         <profile>
             <id>STORAGE-MONGODB</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>
