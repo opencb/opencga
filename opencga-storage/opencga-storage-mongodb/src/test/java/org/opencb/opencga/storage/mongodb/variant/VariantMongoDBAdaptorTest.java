@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
  */
 public class VariantMongoDBAdaptorTest {
 
-    private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile = VariantMongoDBWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static VariantSource study = new VariantSource(inputFile, "testAlias", "testStudy", "Study for testing purposes");
     private static MongoCredentials credentials;
     private static VariantDBAdaptor vqb;
@@ -49,7 +49,7 @@ public class VariantMongoDBAdaptorTest {
         // Initialize dataset to query
 //        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFileName());
         VariantVcfReader reader = new VariantVcfReader(study, inputFile);
-        VariantMongoWriter vdw = new VariantMongoWriter(study, (MongoCredentials) credentials);
+        VariantMongoDBWriter vdw = new VariantMongoDBWriter(study, (MongoCredentials) credentials);
         vdw.includeEffect(true); vdw.includeSamples(true); vdw.includeStats(true);
         List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
         VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));

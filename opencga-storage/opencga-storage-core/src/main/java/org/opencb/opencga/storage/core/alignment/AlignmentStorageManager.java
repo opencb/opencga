@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Created by jacobo on 14/08/14.
  */
-public abstract class AlignmentStorageManager implements StorageManager<DataReader<AlignmentRegion>, DataWriter<AlignmentRegion>, AlignmentQueryBuilder> {
+public abstract class AlignmentStorageManager implements StorageManager<DataWriter<AlignmentRegion>, AlignmentQueryBuilder> { //DataReader<AlignmentRegion>,
 
 
     public static final String MEAN_COVERAGE_SIZE_LIST = "meanCoverageSizeList";
@@ -40,15 +40,15 @@ public abstract class AlignmentStorageManager implements StorageManager<DataRead
     public static final String COPY_FILE = "copy";
     public static final String DB_NAME = "dbName";
 
-    protected static Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+    protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
 
 
-    @Override
+//    @Override
     public DataWriter<AlignmentRegion> getDBSchemaWriter(Path output) {
         return null;
     }
 
-    @Override
+//    @Override
     public DataReader<AlignmentRegion> getDBSchemaReader(Path input) throws IOException {
         AlignmentJsonDataReader alignmentDataReader = getAlignmentJsonDataReader(input);
         return new AlignmentRegionDataReader(alignmentDataReader);

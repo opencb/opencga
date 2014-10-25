@@ -101,8 +101,8 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         mongoVariant.append("_at", _at);
         
         // ChunkID (1k and 10k)
-        String chunkSmall = object.getChromosome() + "_" + object.getStart() / VariantMongoWriter.CHUNK_SIZE_SMALL + "_" + VariantMongoWriter.CHUNK_SIZE_SMALL / 1000 + "k";
-        String chunkBig = object.getChromosome() + "_" + object.getStart() / VariantMongoWriter.CHUNK_SIZE_BIG + "_" + VariantMongoWriter.CHUNK_SIZE_BIG / 1000 + "k";
+        String chunkSmall = object.getChromosome() + "_" + object.getStart() / VariantMongoDBWriter.CHUNK_SIZE_SMALL + "_" + VariantMongoDBWriter.CHUNK_SIZE_SMALL / 1000 + "k";
+        String chunkBig = object.getChromosome() + "_" + object.getStart() / VariantMongoDBWriter.CHUNK_SIZE_BIG + "_" + VariantMongoDBWriter.CHUNK_SIZE_BIG / 1000 + "k";
         BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
         _at.append("chunkIds", chunkIds);
         

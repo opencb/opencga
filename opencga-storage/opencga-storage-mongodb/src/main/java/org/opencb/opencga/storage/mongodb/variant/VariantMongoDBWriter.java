@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoWriter extends VariantDBWriter {
+public class VariantMongoDBWriter extends VariantDBWriter {
 
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
@@ -51,16 +51,16 @@ public class VariantMongoWriter extends VariantDBWriter {
     
     private long numVariantsWritten;
     
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
+    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials) {
         this(source, credentials, "variants", "files");
     }
     
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
+    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
         this(source, credentials, variantsCollection, filesCollection, false, false, false);
     }
 
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
-            boolean includeSamples, boolean includeStats, boolean includeEffect) {
+    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
+                                boolean includeSamples, boolean includeStats, boolean includeEffect) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -97,7 +97,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             System.out.println("credentials.getMongoDbName() = " + credentials.getMongoDbName());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
 
@@ -255,13 +255,13 @@ public class VariantMongoWriter extends VariantDBWriter {
                     wr = variantsCollection.insert(mongoVariant);
                     if (!wr.getLastError().ok()) {
                         // TODO If not correct, retry?
-                        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                        Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
                     }
                 } catch(MongoInternalException ex) {
                     System.out.println(v);
-                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
+                    Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
                 } catch(DuplicateKeyException ex) {
-                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
+                    Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.WARNING,
                             "Variant already existed: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
                 
@@ -275,7 +275,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                     wr = variantsCollection.update(query, changes, true, false);
                     if (!wr.getLastError().ok()) {
                         // TODO If not correct, retry?
-                        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                        Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
                     }
                 }
             }
@@ -287,7 +287,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
         numVariantsWritten += batch.size();
         Variant lastVariantInBatch = batch.get(batch.size()-1);
-        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
+        Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}",
                 new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
         
         return true;

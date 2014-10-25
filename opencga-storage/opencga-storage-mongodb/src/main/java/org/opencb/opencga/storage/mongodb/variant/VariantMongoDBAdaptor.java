@@ -404,8 +404,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private List<String> getChunkIds(Region region) {
         List<String> chunkIds = new LinkedList<>();
         
-        int chunkSize = (region.getEnd() - region.getStart() > VariantMongoWriter.CHUNK_SIZE_BIG) ?
-                VariantMongoWriter.CHUNK_SIZE_BIG : VariantMongoWriter.CHUNK_SIZE_SMALL;
+        int chunkSize = (region.getEnd() - region.getStart() > VariantMongoDBWriter.CHUNK_SIZE_BIG) ?
+                VariantMongoDBWriter.CHUNK_SIZE_BIG : VariantMongoDBWriter.CHUNK_SIZE_SMALL;
         int ks = chunkSize / 1000;
         int chunkStart = region.getStart() / chunkSize;
         int chunkEnd = region.getEnd() / chunkSize;

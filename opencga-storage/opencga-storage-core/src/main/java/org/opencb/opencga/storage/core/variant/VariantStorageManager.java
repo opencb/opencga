@@ -61,6 +61,9 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         return null;
     }
 
+    //TODO: Try to remove VariantSource
+    abstract public VariantWriter getDBWriter(Path credentials, VariantSource source);
+
     //@Override
     abstract public VariantDBAdaptor getDBAdaptor(Path credentials);
 
@@ -74,12 +77,10 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         return null;
     }
 
-    //TODO: Try to remove VariantSource
-    abstract public VariantWriter getDBWriter(Path credentials, VariantSource source);
 
 
     /**
-     * Transform raw variant files into Biodata model.
+     * Transform raw variant files into biodata model.
      *
      * @param input         Input file. Accepted formats: *.vcf, *.vcf.gz
      * @param pedigree      Pedigree input file. Accepted formats: *.ped
@@ -236,5 +237,8 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         logger.info("Variants loaded!");
     }
 
+    public void postLoad(Path input, Path credentials, Map<String, Object> params) throws IOException {
+
+    }
 
 }

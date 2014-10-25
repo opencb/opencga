@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,6 +68,16 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
                 logger.error(e.getMessage(), e);
             }
         }
+    }
+
+    @Override
+    public void extract(Path from, Path to) {
+
+    }
+
+    @Override
+    public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+
     }
 
 
@@ -333,6 +344,16 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
 
         logger.info("done!");
+    }
+
+    @Override
+    public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException {
+
+    }
+
+    @Override
+    public void postLoad(Path input, Path output, ObjectMap params) throws IOException {
+
     }
 
 
