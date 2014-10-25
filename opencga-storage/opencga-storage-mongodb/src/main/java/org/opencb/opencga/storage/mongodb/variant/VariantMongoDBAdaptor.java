@@ -377,8 +377,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryBuilder getFileFilter(List<String> files, QueryBuilder builder) {
-        return builder.put(DBObjectToVariantConverter.FILES_FIELD)
-                .elemMatch(new BasicDBObject(DBObjectToArchivedVariantFileConverter.FILEID_FIELD, files.get(0)));
+        return builder.and(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceConverter.FILEID_FIELD).in(files);
     }
     
     private QueryBuilder getMafFilter(float maf, ComparisonOperator op, QueryBuilder builder) {

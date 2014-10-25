@@ -16,7 +16,11 @@ public interface VariantSourceDBAdaptor {
     
     QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options);
     
-    QueryResult getSamplesBySource(String fileId, String studyId, QueryOptions options);
+    QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options);
+    
+    QueryResult getSamplesBySource(String fileId, QueryOptions options);
+
+    QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options);
 
     QueryResult getSourceDownloadUrlByName(String filename);
     
