@@ -251,13 +251,17 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
-                          @ApiParam(value = "outdir", required = false) @DefaultValue("") @QueryParam("outdir") String outdir
+                          @ApiParam(value = "outdir", required = false) @DefaultValue("") @QueryParam("outdir") String outdir,
+                          @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend
                           ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
         Index index = null;
+        if(backend.isEmpty()) {
+            backend = "mongo"; //TODO: Get default backend from properties.
+        }
         try {
             outdir = outdir.replace(":", "/");
-            index = analysisFileIndexer.index(catalogManager.getFileId(fileId), Paths.get(outdir), "", sessionId, queryOptions);
+            index = analysisFileIndexer.index(catalogManager.getFileId(fileId), Paths.get(outdir), backend, sessionId, queryOptions);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
