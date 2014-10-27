@@ -40,6 +40,7 @@ import java.util.*;
  */
 public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
 
+    public static final String FEATURES_COUNT = "features_count";
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(IndexedAlignmentDBAdaptor.class);
 
     private AlignmentConverter converter;
@@ -232,7 +233,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
                 )
         )
                 .append(
-                        "feature_count", new BasicDBObject(
+                        FEATURES_COUNT, new BasicDBObject(
                                 "$sum",
                                 averageField
 //                                new BasicDBObject(
@@ -264,10 +265,10 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             object.put("chromosome", region.getChromosome());
             object.put("start", start);
             object.put("end", end);
-            double featureCount = getDouble(object, "feature_count");
-//            object.put("feature_count_old", featureCount);
-            featureCount /= 1 + (end - 1) / chunkSize - (start + chunkSize - 2) / chunkSize;
-            object.put("feature_count", featureCount);
+            double featuresCount = getDouble(object, FEATURES_COUNT);
+//            object.put("features_count_old", featureCount);
+            featuresCount /= 1 + (end - 1) / chunkSize - (start + chunkSize - 2) / chunkSize;
+            object.put(FEATURES_COUNT, featuresCount);
 //            object.put("div1", end/chunkSize - start/chunkSize);
 //            object.put("div2", end/chunkSize - (start+chunkSize)/chunkSize);
 //            object.put("div3", (end-1)/chunkSize - (start+chunkSize-2)/chunkSize);
