@@ -107,9 +107,11 @@ public class VariantJsonWriter implements VariantWriter {
         }
         
         numVariantsWritten += batch.size();
-        Variant lastVariantInBatch = batch.get(batch.size()-1);
-        Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
-                new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
+        if (numVariantsWritten % 1000 == 0) {
+            Variant lastVariantInBatch = batch.get(batch.size()-1);
+            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
+                    new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
+        }
         
         return true;
     }

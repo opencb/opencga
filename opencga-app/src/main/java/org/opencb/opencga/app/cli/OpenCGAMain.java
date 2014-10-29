@@ -198,7 +198,7 @@ public class OpenCGAMain {
             variantWriter.includeStats(includeStats);
         }
 
-        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
+        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, 100);
 
         System.out.println("Indexing variants...");
         vr.run();
