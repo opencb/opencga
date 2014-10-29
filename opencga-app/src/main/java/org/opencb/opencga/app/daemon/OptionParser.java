@@ -62,8 +62,14 @@ public class OptionParser {
         //---------------------
 
 
-        @Parameter(names = {"-p", "--port"}, description = "Port", required = false, arity = 1)
+        @Parameter(names = {"-P", "--port"}, description = "Port", required = false, arity = 1)
         int port = 0;
+
+        @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
+        String userId = null;
+
+        @Parameter(names = {"-p", "--password"}, description = "Password", required = false, arity = 1, password = true)
+        String password = null;
 
     }
 

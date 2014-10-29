@@ -21,7 +21,7 @@ import java.util.Collection;
 /**
  * Created by jacobo on 23/10/14.
  */
-@Path("/")
+//@Path("/")
 public class DaemonServlet {
 
     private final ObjectMapper jsonObjectMapper;

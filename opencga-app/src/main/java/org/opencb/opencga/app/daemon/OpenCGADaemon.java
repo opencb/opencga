@@ -71,16 +71,23 @@ public class OpenCGADaemon {
         if (opts.port != 0) {
             properties.setProperty(DaemonLoop.PORT, Integer.toString(opts.port));
         }
-
-        try {
-            //Thread
-            OpenCGADaemon.daemon = new DaemonLoop(properties);
-            int status = OpenCGADaemon.daemon.start();
-            System.exit(status);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (opts.userId != null) {
+            properties.setProperty(DaemonLoop.USER, opts.userId);
+        }
+        if (opts.password != null) {
+            properties.setProperty(DaemonLoop.PASSWORD, opts.password);
         }
 
+        int status;
+        try {
+            OpenCGADaemon.daemon = new DaemonLoop(properties);
+            OpenCGADaemon.daemon.start();
+            status = OpenCGADaemon.daemon.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+            status = 3;
+        }
+        System.exit(status);
     }
 
     public static DaemonLoop getDaemon() {

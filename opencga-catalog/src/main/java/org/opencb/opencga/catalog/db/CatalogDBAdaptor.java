@@ -34,7 +34,7 @@ public interface CatalogDBAdaptor {
 
     QueryResult logoutAnonymous(String sessionId) throws CatalogManagerException;
 
-    QueryResult<User> getUser(String userId, String lastActivity) throws CatalogManagerException;
+    QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogManagerException;
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogManagerException;
 
@@ -193,6 +193,8 @@ public interface CatalogDBAdaptor {
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 
     int getAnalysisIdByJobId(int jobId);
+
+    QueryResult<Job> searchJob(QueryOptions options) throws CatalogManagerException;
 
 //    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
 
