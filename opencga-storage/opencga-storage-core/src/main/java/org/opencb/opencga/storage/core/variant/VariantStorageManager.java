@@ -179,13 +179,12 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         //Runner
         VariantRunner vr = new VariantRunner(source, jsonReader, null, writers, taskList);
 
-        System.out.println("Preloading variants...");
-        logger.info("Transforming variants...");
+        logger.info("Preloading variants...");
         long start = System.currentTimeMillis();
         vr.run();
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        System.out.println("Variants preloaded!");
+        logger.info("Variants preloaded!");
 
     }
 
@@ -229,13 +228,12 @@ public abstract class VariantStorageManager /*implements StorageManager<VariantR
         //Runner
         VariantRunner vr = new VariantRunner(source, variantDBSchemaReader, null, writers, taskList);
 
-        System.out.println("Loading variants...");
-        logger.info("Transforming variants...");
+        logger.info("Loading variants...");
         long start = System.currentTimeMillis();
         vr.run();
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        System.out.println("Variants loaded!");
+        logger.info("Variants loaded!");
     }
 
 

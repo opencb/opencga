@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
@@ -56,16 +57,16 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         //Region region = new Region("20", 20000000, 20000100);
         Region region = new Region("20", 29829000, 29830000);
 
-        QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(region, qo);
+        QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(region), qo);
         printQueryResult(alignmentsByRegion);
         jsonQueryResult("HG04239",alignmentsByRegion);
 
         qo.put(IndexedAlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, true);
-        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(new Region("20", 29829000, 29829500), qo);
+        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829000, 29829500)), qo);
         printQueryResult(alignmentsByRegion);
         jsonQueryResult("HG04239",alignmentsByRegion);
 
-        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(new Region("20", 29829500, 29830000), qo);
+        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829500, 29830000)), qo);
         printQueryResult(alignmentsByRegion);
         jsonQueryResult("HG04239",alignmentsByRegion);
 
@@ -83,8 +84,8 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         //qo.put(IndexedAlignmentDBAdaptor.QO_HISTOGRAM, false);
         jsonQueryResult("HG01551.mean-coverage.10k",dbAdaptor.getAllIntervalFrequencies(new Region("20", 29800000, 29900000), qo));
         qo.put(IndexedAlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
-        jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(new Region("20", 29829001, 29830000), qo));
-        jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(new Region("20", 29828951, 29830000), qo));
+        jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829001, 29830000)), qo));
+        jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29828951, 29830000)), qo));
 
     }
 

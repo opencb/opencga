@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexSequence;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -32,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -46,23 +46,34 @@ import java.util.*;
 public class OpenCGAStorageMain {
 
 //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
-    private static final String appHome;
+    private static final String opencgaHome;
 
     protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
 
     static {
-        appHome = System.getProperty("app.home");
-        Config.setGcsaHome(appHome);
+        // Finds the installation directory (opencgaHome).
+        // Searches first in System Property "app.home" set by the shell script.
+        // If not found, then in the environment variable "OPENCGA_HOME".
+        // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
+        String propertyAppHome = System.getProperty("app.home");
+        if (propertyAppHome != null) {
+            opencgaHome = propertyAppHome;
+        } else {
+            String envAppHome = System.getenv("OPENCGA_HOME");
+            if (envAppHome != null) {
+                opencgaHome = envAppHome;
+            } else {
+                opencgaHome = Paths.get("opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
+            }
+        }
+        Config.setGcsaHome(opencgaHome);
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException {
-        AlignmentStorageManager alignmentStorageManager = null;
-        VariantStorageManager variantStorageManager = null;
-        //StorageManager storageManager = null; //TODO: Use only one generic StorageManager instead of one for variant and other for alignment
+    public static void main(String[] args)
+            throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
+            IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         OptionsParser parser = new OptionsParser();
-        boolean variantCommand = false;
-        boolean alignmentCommand = false;
         Command command = null;
         try {
             String parsedCommand = parser.parse(args);
@@ -75,11 +86,9 @@ public class OpenCGAStorageMain {
             switch (parsedCommand) {
                 case "index-variants":
                     command = parser.getCommandIndexVariants();
-                    variantCommand = true;
                     break;
                 case "index-alignments":
                     command = parser.getCommandIndexAlignments();
-                    alignmentCommand = true;
                     break;
                 case "index-sequences":
                     command = parser.getCommandIndexSequence();
@@ -88,19 +97,15 @@ public class OpenCGAStorageMain {
                     command = parser.getAccessionsCommand();
                     break;
                 case "load-variants":
-                    variantCommand = true;
                     command = parser.getLoadCommand();
                     break;
                 case "transform-variants":
-                    variantCommand = true;
                     command = parser.getTransformCommand();
                     break;
                 case "transform-alignments":
-                    alignmentCommand = true;
                     command = parser.getTransformAlignments();
                     break;
                 case "load-alignments":
-                    alignmentCommand = true;
                     command = parser.getLoadAlignments();
                     break;
 //                case "download-alignments":
@@ -116,55 +121,11 @@ public class OpenCGAStorageMain {
             System.exit(1);
         }
 
-        /*
-            Get properties conf
-         */
-        Path confPath = Paths.get("opencga-app", "build", "conf");
-        Path storagePropertiesPath = Paths.get(confPath.toString() , "storage.properties");
-        Properties storageProperties = new Properties();
-        if(storagePropertiesPath.toFile().exists()) {
-            storageProperties.load(new FileInputStream(storagePropertiesPath.toFile()));
-        }
 
-
-        //Get the StorageManager
-        try {
-            if(variantCommand) {
-                //Get Storage Manager name
-                String defaultVariantStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.DEFAULT.VARIANT");
-                String variantManagerName = parser.getGeneralParameters().storageManagerName !=null ?
-                        parser.getGeneralParameters().storageManagerName :
-                        storageProperties.getProperty(defaultVariantStorageManager);
-                //New instance
-                variantStorageManager = (VariantStorageManager) Class.forName(variantManagerName).newInstance();
-                //Add configuration files
-                String pluginPropertiesName = storageProperties.getProperty(defaultVariantStorageManager + ".PROPERTIES");
-                Path pluginPropertiesPath = confPath.resolve(pluginPropertiesName);
-                variantStorageManager.addPropertiesPath(storagePropertiesPath);
-                variantStorageManager.addPropertiesPath(pluginPropertiesPath);
-            }
-            if(alignmentCommand) {
-                //Get Storage Manager name
-                String defaultAlignmentStorageManager = storageProperties.getProperty("OPENCGA.STORAGE.DEFAULT.ALIGNMENT");
-                String alignmentManagerName = parser.getGeneralParameters().storageManagerName != null ?
-                        parser.getGeneralParameters().storageManagerName :
-                        storageProperties.getProperty(defaultAlignmentStorageManager);
-                //New instance
-                alignmentStorageManager = (AlignmentStorageManager) Class.forName(alignmentManagerName).newInstance();
-                //Add configuration files
-                String pluginPropertiesName = storageProperties.getProperty(defaultAlignmentStorageManager + ".PROPERTIES");
-                Path pluginPropertiesPath = confPath.resolve(pluginPropertiesName);
-                alignmentStorageManager.addPropertiesPath(storagePropertiesPath);
-                alignmentStorageManager.addPropertiesPath(pluginPropertiesPath);
-            }
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-            logger.error("Error during the reflexion",e);
-            e.printStackTrace();
-        }
-
-        if (command instanceof CommandIndexAlignments) {
+        if (command instanceof CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
             CommandIndexAlignments c = (CommandIndexAlignments) command;
             if (c.input.endsWith(".bam") || c.input.endsWith(".sam")) {
+                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
                 ObjectMap params = new ObjectMap();
                 params.putAll(c.params);
 
@@ -183,7 +144,7 @@ public class OpenCGAStorageMain {
                 Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
                 Path credentials = Paths.get(c.credentials);
 
-                assert alignmentStorageManager != null;
+
                 logger.info("1 -- Transform alignments");
                 alignmentStorageManager.transform(input, null, outdir, params);
 
@@ -196,7 +157,7 @@ public class OpenCGAStorageMain {
             } else {
                 throw new IOException("Unknown file type");
             }
-        } else if (command instanceof CommandIndexSequence) {
+        } else if (command instanceof CommandIndexSequence) {    //TODO: Create method AlignmentStorageManager.index() ??
             CommandIndexSequence c = (CommandIndexSequence) command;
             if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
                 Path input = Paths.get(URI.create(c.input).getPath());
@@ -223,6 +184,7 @@ public class OpenCGAStorageMain {
         } else if (command instanceof CommandIndexVariants) {
             CommandIndexVariants c = (CommandIndexVariants) command;
             if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
+                VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
                 Path variantsPath = Paths.get(c.input);
                 Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
                 Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
@@ -235,7 +197,6 @@ public class OpenCGAStorageMain {
                 params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
                 params.put(VariantStorageManager.SOURCE, source);
 
-                assert variantStorageManager != null;
                 logger.info("1 -- Transform variants");
                 variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
 
@@ -261,6 +222,7 @@ public class OpenCGAStorageMain {
 
         } else if (command instanceof CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
             CommandTransformVariants c = (CommandTransformVariants) command;
+            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
             Path variantsPath = Paths.get(c.file);
             Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
@@ -279,6 +241,7 @@ public class OpenCGAStorageMain {
 
         } else if (command instanceof CommandLoadVariants) {    //TODO: Add "preLoad" call
             CommandLoadVariants c = (CommandLoadVariants) command;
+            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
 
             //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path variantsPath = Paths.get(c.input);
@@ -305,8 +268,8 @@ public class OpenCGAStorageMain {
 //            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
 
         } else if (command instanceof CommandTransformAlignments) { //TODO: Add "preTransform and postTransform" call
-
             CommandTransformAlignments c = (CommandTransformAlignments) command;
+            AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
 
             ObjectMap params = new ObjectMap();
 
@@ -344,6 +307,7 @@ public class OpenCGAStorageMain {
 
         } else if (command instanceof CommandLoadAlignments){ //TODO: Add "preLoad" call
             CommandLoadAlignments c = (CommandLoadAlignments) command;
+            AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
 
             ObjectMap params = new ObjectMap();
 

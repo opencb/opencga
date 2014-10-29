@@ -224,6 +224,9 @@ public class OptionsParser {
 
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
+
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongo (default), hbase (pending)", required = false, arity = 1)
+        String backend = "mongo";
     }
 
     

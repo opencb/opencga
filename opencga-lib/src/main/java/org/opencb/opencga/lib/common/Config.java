@@ -99,6 +99,9 @@ public class Config {
         return analysisProperties;
     }
 
+    public static Properties getStorageProperties() {
+        return getStorageProperties(opencgaHome);
+    }
     public static Properties getStorageProperties(String basePath) {
 //        opencgaLightHome = basePath;
 

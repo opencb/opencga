@@ -59,7 +59,8 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     }
     
     @Override
-    public QueryResult<Alignment> getAllAlignmentsByRegion(Region region, QueryOptions options) {
+    public QueryResult<Alignment> getAllAlignmentsByRegion(List<Region> regions, QueryOptions options) {
+        Region region = regions.get(0);
         QueryResult<Alignment> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
         long startTime = System.currentTimeMillis();
@@ -120,7 +121,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             long startDbTime = System.currentTimeMillis(); 
             sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
             System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
-            String queryString = "SELECT * FROM chunk WHERE chromosome='" + region.getChromosome() + 
+            String queryString = "SELECT * FROM chunk WHERE chromosome='" + region.getChromosome() +
                     "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
             List<XObject> queryResults = sqliteManager.query(queryString);
             sqliteManager.disconnect(true);

@@ -17,7 +17,7 @@ import org.opencb.commons.run.Task;
 
 /**
  * Date: 11/21/13
- * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  *
  * Calculates coverage and mean coverage for AlignmentRegion
  *

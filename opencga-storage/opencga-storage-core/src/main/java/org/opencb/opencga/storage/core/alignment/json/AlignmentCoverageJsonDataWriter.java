@@ -50,7 +50,7 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
     private JsonGenerator coverageGenerator;
     private JsonGenerator meanCoverageGenerator;
 
-    private final RegionCoverage bufferedCoverage = new RegionCoverage(chunkSize);
+    private final RegionCoverage bufferedCoverage;
     
     public AlignmentCoverageJsonDataWriter(String coverageFilename) {
         this.coverageFilename = coverageFilename;
@@ -58,6 +58,8 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         this.gzip = this.coverageFilename.endsWith(".gz");
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
+        bufferedCoverage = new RegionCoverage(chunkSize);
+        bufferedCoverage.setChromosome("");
     }
     
     public AlignmentCoverageJsonDataWriter(String baseFilename, boolean gzip) {
@@ -66,6 +68,8 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         this.gzip = gzip;
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
+        bufferedCoverage = new RegionCoverage(chunkSize);
+        bufferedCoverage.setChromosome("");
     }
 
     @Override
@@ -186,7 +190,8 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
             return false;
         }
 
-        if(coverage.getStart() - bufferedCoverage.getStart() > chunkSize || !bufferedCoverage.getChromosome().equals(coverage.getChromosome())){
+        if(coverage.getStart() - bufferedCoverage.getStart() > chunkSize ||
+                !bufferedCoverage.getChromosome().equals(coverage.getChromosome())) {
             //Current coverage is out of the bufferedCoverage region.
             //Write all the bufferedCoverage.
             if(bufferedCoverage.getChromosome() != null) {  //If it's a valid coverage
@@ -209,6 +214,9 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
 
         int offset = (int) (coverage.getStart() - bufferedCoverage.getStart()); //Difference between the bufferedCoverage and the current coverage
         int lim = coverage.getAll().length;
+        if(coverageIndex < -offset ) {
+            coverageIndex = -offset;
+        }
         for(; coverageIndex < lim; coverageIndex++){
             if(coverageIndex + offset == chunkSize) {  //Buffer filled. Write and move start and end of the region.
                 try {
@@ -238,21 +246,21 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         return true;
     }
 
+//    public boolean write_old(AlignmentRegion elem) {
+//        RegionCoverage coverage = elem.getCoverage();
+//        List<MeanCoverage> meanCoverage = elem.getMeanCoverage();
+//
+//        try {
+//            coverageGenerator.writeObject(coverage);
+//            coverageGenerator.writeObject(meanCoverage);
+//            coverageGenerator.writeRaw("\n");
+//        } catch (IOException ex) {
+//            Logger.getLogger(AlignmentCoverageJsonDataWriter.class.getName()).log(Level.SEVERE, null, ex);
+//            return false;
+//        }
+//        return true;
+//    }
 
-    public boolean write_old(AlignmentRegion elem) {
-        RegionCoverage coverage = elem.getCoverage();
-        List<MeanCoverage> meanCoverage = elem.getMeanCoverage();
-
-        try {
-            coverageGenerator.writeObject(coverage);
-            coverageGenerator.writeObject(meanCoverage);
-            coverageGenerator.writeRaw("\n");
-        } catch (IOException ex) {
-            Logger.getLogger(AlignmentCoverageJsonDataWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
-        return true;
-    }
     @Override
     public boolean write(List<AlignmentRegion> batch) {
         for(AlignmentRegion ar : batch){
