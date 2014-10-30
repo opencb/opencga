@@ -18,6 +18,7 @@ public class OptionsParser {
     private ProjectCommands projectCommands;
     private StudyCommands studyCommands;
     private FileCommands fileCommands;
+    private ToolCommands toolCommands;
 
     public final CommandShareResource commandShareResource;
 
@@ -35,6 +36,7 @@ public class OptionsParser {
         projectCommands = new ProjectCommands();
         studyCommands = new StudyCommands();
         fileCommands = new FileCommands();
+        toolCommands = new ToolCommands();
 
         commandShareResource = new CommandShareResource();
 
@@ -66,6 +68,11 @@ public class OptionsParser {
         files.addCommand(fileCommands.listCommand);
         files.addCommand(fileCommands.indexCommand);
 //        files.addCommand(commandShareResource);
+
+        jcommander.addCommand(toolCommands);
+        JCommander tools = jcommander.getCommands().get("tools");
+        tools.addCommand(toolCommands.createCommand);
+        tools.addCommand(toolCommands.infoCommand);
 
     }
 
@@ -129,6 +136,9 @@ public class OptionsParser {
         return fileCommands;
     }
 
+    public ToolCommands getToolCommands() {
+        return toolCommands;
+    }
 
     public class GeneralOptions {
         @Parameter(names = {"-h", "--help"}, help = true)
@@ -394,6 +404,52 @@ public class OptionsParser {
             @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
             String path  = "";
 
+        }
+    }
+
+
+
+    @Parameters(commandNames = {"tools"}, commandDescription = "Tools methods")
+    class ToolCommands {
+
+        CreateCommand createCommand = new CreateCommand();
+        InfoCommand infoCommand = new InfoCommand();
+
+        @Parameters(commandNames = {"create"}, commandDescription = "Regist existint tool in catalog")
+        class CreateCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
+            String alias;
+
+            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+            String description = "";
+
+//            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
+//            String name;
+
+            @Parameter(names = {"-P", "--path"}, description = "Path", required = true, arity = 1)
+            String path;
+
+            @Parameter(names = {"--open"}, description = "Set usability", required = false, arity = 0)
+            boolean openTool = false;
+        }
+
+        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
+        class InfoCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--id"}, description = "Tool id", required = true, arity = 1)
+            int id;
         }
     }
 

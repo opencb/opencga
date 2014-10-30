@@ -71,9 +71,9 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
     @Override
     public boolean pre() {
         collection = db.createCollection(collectionName);
-        DBCollection nativeCollection = db.getDb().getCollection(collectionName);
-        nativeCollection.createIndex(new BasicDBObject(FILES_FIELD + "." + FILE_ID_FIELD, "text"));
-        nativeCollection.createIndex(new BasicDBObject(FILES_FIELD, 1));
+//        DBCollection nativeCollection = db.getDb().getCollection(collectionName);
+//        nativeCollection.createIndex(new BasicDBObject(FILES_FIELD + "." + FILE_ID_FIELD, "text"));
+//        nativeCollection.createIndex(new BasicDBObject(FILES_FIELD, 1));
         return true;
     }
 

@@ -151,7 +151,7 @@ public interface CatalogDBAdaptor {
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException;
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
 
-    QueryResult<File> searchFile(QueryOptions options) throws CatalogManagerException;
+    QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogManagerException;
 
     /**
      * Analysis methods
@@ -193,6 +193,17 @@ public interface CatalogDBAdaptor {
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 
     int getAnalysisIdByJobId(int jobId);
+
+    /**
+     * Tool methods
+     * ***************************
+     */
+
+    QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogManagerException;
+
+    QueryResult<Tool> getTool(int id) throws CatalogManagerException;
+
+//    QueryResult<Tool> searchTool(QueryOptions options);
 
 //    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
 

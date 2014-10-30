@@ -414,7 +414,7 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.createAnalysis(studyId, analysis, sessionIdUser));
 
         System.out.println(catalogManager.createAnalysis(
-                studyId, "MyAnalysis2", "analysis2", "user", "description", sessionIdUser));
+                studyId, "MyAnalysis2", "analysis2", "description", sessionIdUser));
     }
 
     /**

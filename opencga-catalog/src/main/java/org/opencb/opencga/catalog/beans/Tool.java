@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -7,6 +8,7 @@ import java.util.List;
  */
 public class Tool {
 
+    private int id;
     private String alias;
     private String name;
     private String description;
@@ -16,9 +18,14 @@ public class Tool {
     private List<Acl> acl;
 
     public Tool() {
+        this("", "", "", null, null, "");
     }
 
-    public Tool(String alias, String name, String description, Object manifest, Object result, String path, List<Acl> acl) {
+    public Tool(String alias, String name, String description, Object manifest, Object result, String path) {
+        this(-1 , alias, name, description, manifest, result, path, new LinkedList());
+    }
+    public Tool(int id, String alias, String name, String description, Object manifest, Object result, String path, List<Acl> acl) {
+        this.id = id;
         this.alias = alias;
         this.name = name;
         this.description = description;
@@ -31,6 +38,7 @@ public class Tool {
     @Override
     public String toString() {
         return "Tool{" +
+                "id=" + id +
                 "alias='" + alias + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
@@ -39,6 +47,22 @@ public class Tool {
                 ", path='" + path + '\'' +
                 ", acl=" + acl +
                 '}';
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     public String getName() {
@@ -81,6 +105,7 @@ public class Tool {
         this.path = path;
     }
 
+
     public List<Acl> getAcl() {
         return acl;
     }
@@ -89,11 +114,4 @@ public class Tool {
         this.acl = acl;
     }
 
-    public String getAlias() {
-        return alias;
-    }
-
-    public void setAlias(String alias) {
-        this.alias = alias;
-    }
 }
