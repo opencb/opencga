@@ -17,16 +17,18 @@ public class Metadata {
     private int analysisCounter;
     private int jobCounter;
     private int sampleCounter;
+    private int toolCounter;
 
     public Metadata() {
         this("v2", TimeUtils.getTime(), "public");
     }
 
     public Metadata(String version, String date, String open) {
-        this(version, date, open, 0, 0, 0, 0, 0, 0);
+        this(version, date, open, 0, 0, 0, 0, 0, 0, 0);
     }
 
-    public Metadata(String version, String date, String open, int projectCounter, int studyCounter, int fileCounter, int analysisCounter, int jobCounter, int sampleCounter) {
+    public Metadata(String version, String date, String open, int projectCounter, int studyCounter, int fileCounter,
+                    int analysisCounter, int jobCounter, int sampleCounter, int toolCounter) {
         this.version = version;
         this.date = date;
         this.open = open;
@@ -36,6 +38,7 @@ public class Metadata {
         this.analysisCounter = analysisCounter;
         this.jobCounter = jobCounter;
         this.sampleCounter = sampleCounter;
+        this.toolCounter = toolCounter;
     }
 
     @Override
@@ -50,6 +53,7 @@ public class Metadata {
                 ", analysisCounter=" + analysisCounter +
                 ", jobCounter=" + jobCounter +
                 ", sampleCounter=" + sampleCounter +
+                ", toolCounter=" + toolCounter +
                 '}';
     }
 
@@ -115,6 +119,14 @@ public class Metadata {
 
     public void setSampleCounter(int sampleCounter) {
         this.sampleCounter = sampleCounter;
+    }
+
+    public int getToolCounter() {
+        return toolCounter;
+    }
+
+    public void setToolCounter(int toolCounter) {
+        this.toolCounter = toolCounter;
     }
 
     public String getOpen() {

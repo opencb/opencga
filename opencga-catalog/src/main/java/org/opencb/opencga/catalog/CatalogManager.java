@@ -1013,7 +1013,7 @@ public class CatalogManager {
     }
 
     public QueryResult<File> getFileByIndexJobId(String indexJobId) throws CatalogManagerException {
-        return catalogDBAdaptor.searchFile(new QueryOptions("indexJobId", indexJobId));
+        return catalogDBAdaptor.searchFile(new QueryOptions("indexJobId", indexJobId), null);
     }
 
     public QueryResult<File> getFile(int fileId, String sessionId)
@@ -1104,14 +1104,17 @@ public class CatalogManager {
         return catalogDBAdaptor.setFileAcl(fileId, acl);
     }
 
-    public QueryResult<File> searchFile(int studyId, QueryOptions options, String sessionId) throws CatalogManagerException {
+    public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId) throws CatalogManagerException {
+        return searchFile(studyId, query, null, sessionId);
+    }
+    public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
         getStudyAcl(userId, studyId);
 
         options.put("studyId", studyId);
-        return catalogDBAdaptor.searchFile(options);
+        return catalogDBAdaptor.searchFile(query, options);
     }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
@@ -1391,19 +1394,16 @@ public class CatalogManager {
         return catalogDBAdaptor.createAnalysis(studyId, analysis);
     }
 
-    public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String creatorId, String description, String sessionId) throws CatalogManagerException {
+    public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String description, String sessionId) throws CatalogManagerException {
         checkParameter(name, "name");
         checkAlias(alias, "alias");
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (creatorId == null || "".equals(creatorId)) {
-            creatorId = userId;
-        }
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogManagerException("Permission denied. Can't write in this study");
         }
-        Analysis analysis = new Analysis(name, alias, TimeUtils.getTime(), creatorId, description);
+        Analysis analysis = new Analysis(name, alias, TimeUtils.getTime(), userId, description);
 
         String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
         catalogDBAdaptor.updateUserLastActivity(ownerId);
@@ -1659,6 +1659,41 @@ public class CatalogManager {
 //    }
 //
 
+    public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
+                                        String path, boolean openTool, String sessionId) throws CatalogManagerException {
+        checkParameter(alias, "alias");
+        checkObj(description, "description"); //description can be empty
+        checkParameter(path, "path");
+        checkParameter(sessionId, "sessionId");
+        //TODO: Check Path
+
+        String userId = getUserIdBySessionId(sessionId);
+
+        List<Acl> acl = Arrays.asList(new Acl(userId, true, true, true, true));
+        if(openTool) {
+            acl.add(new Acl(USER_OTHERS_ID, true, false, true, false));
+        }
+
+        String name = Paths.get(path).getFileName().toString();
+
+        Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
+
+        return catalogDBAdaptor.createTool(userId, tool);
+    }
+
+    public QueryResult<Tool> getTool(int id, String sessionId) throws CatalogManagerException {
+        String userId = getUserIdBySessionId(sessionId);
+        checkParameter(sessionId, "sessionId");
+
+        //TODO: Check ACLs
+        return catalogDBAdaptor.getTool(id);
+    }
+
+//    public QueryResult<Tool> searchTool(QueryOptions options, String sessionId) {
+//        String userId = getUserIdBySessionId(sessionId);
+//
+//        catalogDBAdaptor.searchTool(options);
+//    }
 
     /**
      * ****************

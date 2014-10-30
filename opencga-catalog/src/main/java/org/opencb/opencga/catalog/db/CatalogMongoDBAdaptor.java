@@ -183,6 +183,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private int getNewFileId()     {return getNewId("fileCounter");}
     private int getNewAnalysisId() {return getNewId("analysisCounter");}
     private int getNewJobId()      {return getNewId("jobCounter");}
+    private int getNewToolId()      {return getNewId("toolCounter");}
     private int getNewSampleId()   {return getNewId("sampleCounter");}
 
     private int getNewId(String field){
@@ -830,43 +831,41 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
 
-    public QueryResult<File> searchProject(QueryOptions options) throws CatalogManagerException {
+    public QueryResult<File> searchProject(QueryOptions query, QueryOptions options) throws CatalogManagerException {
         long startTime = startQuery();
 
         BasicDBList filters = new BasicDBList();
 
-        if(options.containsKey("name")){
-            filters.add(new BasicDBObject("name", options.getString("name")));
+        if(query.containsKey("name")){
+            filters.add(new BasicDBObject("name", query.getString("name")));
         }
-        if(options.containsKey("like")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", options.getString("like"))));
+        if(query.containsKey("like")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", query.getString("like"))));
         }
-        if(options.containsKey("startsWith")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+options.getString("startsWith"))));
+        if(query.containsKey("startsWith")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+query.getString("startsWith"))));
         }
-        if(options.containsKey("alias")){
-            filters.add(new BasicDBObject("alias", options.getString("alias")));
+        if(query.containsKey("alias")){
+            filters.add(new BasicDBObject("alias", query.getString("alias")));
         }
-//        if(options.containsKey("maxSize")){
-//            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", options.getInt("maxSize"))));
+//        if(query.containsKey("maxSize")){
+//            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", query.getInt("maxSize"))));
 //        }
-//        if(options.containsKey("minSize")){
-//            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", options.getInt("minSize"))));
+//        if(query.containsKey("minSize")){
+//            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
 //        }
-        if(options.containsKey("startDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", options.getString("startDate"))));
+        if(query.containsKey("startDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", query.getString("startDate"))));
         }
-        if(options.containsKey("endDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", options.getString("endDate"))));
+        if(query.containsKey("endDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
         }
 
-        DBObject query = new BasicDBObject("$and", filters);
-
-        QueryResult<WriteResult> queryResult = fileCollection.find(query, null, null);
+        QueryResult<WriteResult> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
 
         List<File> files = parseFiles(queryResult);
 
-        return endQuery("Search File", startTime, files);
+        return endQuery("Search Proyect", startTime, files);
     }
 
     /**
@@ -1604,51 +1603,49 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("set file acl", startTime);
     }
 
-    public QueryResult<File> searchFile(QueryOptions options) throws CatalogManagerException {
+    public QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogManagerException {
         long startTime = startQuery();
 
         BasicDBList filters = new BasicDBList();
 
-        if(options.containsKey("name")){
-            filters.add(new BasicDBObject("name", options.getString("name")));
+        if(query.containsKey("name")){
+            filters.add(new BasicDBObject("name", query.getString("name")));
         }
-        if(options.containsKey("type")){
-            filters.add(new BasicDBObject("type", options.getString("type")));
+        if(query.containsKey("type")){
+            filters.add(new BasicDBObject("type", query.getString("type")));
         }
-        if(options.containsKey("bioformat")){
-            filters.add(new BasicDBObject("bioformat", options.getString("bioformat")));
+        if(query.containsKey("bioformat")){
+            filters.add(new BasicDBObject("bioformat", query.getString("bioformat")));
         }
-        if(options.containsKey("maxSize")){
-            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", options.getInt("maxSize"))));
+        if(query.containsKey("maxSize")){
+            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", query.getInt("maxSize"))));
         }
-        if(options.containsKey("minSize")){
-            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", options.getInt("minSize"))));
+        if(query.containsKey("minSize")){
+            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
         }
-        if(options.containsKey("startDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", options.getString("startDate"))));
+        if(query.containsKey("startDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", query.getString("startDate"))));
         }
-        if(options.containsKey("endDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", options.getString("endDate"))));
+        if(query.containsKey("endDate")){
+            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
         }
-        if(options.containsKey("like")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", options.getString("like"))));
+        if(query.containsKey("like")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", query.getString("like"))));
         }
-        if(options.containsKey("startsWith")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+options.getString("startsWith"))));
+        if(query.containsKey("startsWith")){
+            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+query.getString("startsWith"))));
         }
-        if(options.containsKey("directory")){
-            filters.add(new BasicDBObject("path", new BasicDBObject("$regex", "^"+options.getString("directory")+"[^/]+/?$")));
+        if(query.containsKey("directory")){
+            filters.add(new BasicDBObject("path", new BasicDBObject("$regex", "^"+query.getString("directory")+"[^/]+/?$")));
         }
-        if(options.containsKey("studyId")){
-            filters.add(new BasicDBObject("studyId", options.getInt("studyId")));
+        if(query.containsKey("studyId")){
+            filters.add(new BasicDBObject("studyId", query.getInt("studyId")));
         }
-        if(options.containsKey("indexJobId")){
-            filters.add(new BasicDBObject("indices.jobId", options.getString("indexJobId")));
+        if(query.containsKey("indexJobId")){
+            filters.add(new BasicDBObject("indices.jobId", query.getString("indexJobId")));
         }
 
-        DBObject query = new BasicDBObject("$and", filters);
-
-        QueryResult<WriteResult> queryResult = fileCollection.find(query, null, null);
+        QueryResult<WriteResult> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
 
         List<File> files = parseFiles(queryResult);
 
@@ -2037,6 +2034,79 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    /**
+     * Tool methods
+     * ***************************
+     */
+
+    @Override
+    public QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        if (!userExists(userId)) {
+            throw new CatalogManagerException("User {id:" + userId + "} does not exist");
+        }
+
+        // Check if tools.alias already exists.
+        DBObject countQuery = BasicDBObjectBuilder
+                .start("id", userId)
+                .append("tools.alias", tool.getAlias())
+                .get();
+        QueryResult<Long> count = userCollection.count(countQuery);
+        if(count.getResult().get(0) != 0){
+            throw new CatalogManagerException( "Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
+        }
+
+        tool.setId(getNewToolId());
+
+        DBObject toolObject;
+        try {
+            toolObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(tool));
+        } catch (JsonProcessingException e) {
+            throw new CatalogManagerException("tool " + tool + " could not be parsed into json", e);
+        }
+
+        DBObject query = new BasicDBObject("id", userId);
+        query.put("tools.alias", new BasicDBObject("$ne", tool.getAlias()));
+        DBObject update = new BasicDBObject("$push", new BasicDBObject ("tools", toolObject));
+
+        //Update object
+        QueryResult<WriteResult> queryResult = userCollection.update(query, update, false, false);
+
+        if (queryResult.getResult().get(0).getN() == 0) { // Check if the project has been inserted
+            throw new CatalogManagerException("Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
+        }
+
+
+        return endQuery("Create Job", startTime, getTool(tool.getId()).getResult());
+    }
+
+
+    public QueryResult<Tool> getTool(int id) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject("tools.id", id);
+        QueryResult queryResult = userCollection.find(query, new QueryOptions("include", Arrays.asList("tools")), null);
+
+        if(queryResult.getNumResults() != 1 ) {
+            throw new CatalogManagerException("Tool {id:" + id + "} no exists");
+        }
+
+        User user = parseUser(queryResult);
+        return endQuery("Get tool", startTime, user.getTools());
+    }
+
+//    @Override
+//    public QueryResult<Tool> searchTool(QueryOptions query, QueryOptions options) {
+//        long startTime = startQuery();
+//
+//        QueryResult queryResult = userCollection.find(new BasicDBObject(options),
+//                new QueryOptions("include", Arrays.asList("tools")), null);
+//
+//        User user = parseUser(queryResult);
+//
+//        return endQuery("Get tool", startTime, user.getTools());
+//    }
     /*
     * Helper methods
     ********************/
