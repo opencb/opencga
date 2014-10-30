@@ -170,6 +170,27 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/create-folder")
+    @Produces("application/json")
+    @ApiOperation(value = "Create folder")
+    public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
+                                 @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder
+    ) {
+
+        java.nio.file.Path folderPath = Paths.get(folder);
+        boolean parents = true;
+
+        QueryResult queryResult;
+        try {
+            queryResult = catalogManager.createFolder(studyId, folderPath, parents, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogManagerException | CatalogIOManagerException  e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/{fileId}/info")
     @Produces("application/json")
     @ApiOperation(value = "File info")
