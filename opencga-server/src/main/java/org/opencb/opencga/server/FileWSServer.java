@@ -372,7 +372,6 @@ public class FileWSServer extends OpenCGAWSServer {
                     AlignmentQueryBuilder dbAdaptor;
                     try {
                         AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(backend);
-                        System.out.println("using db " + index.getDbName());
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());

@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
+import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
@@ -118,22 +119,23 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             List<AlignmentRegion> results = new LinkedList<>();
             for (Region region : regions) {
 
-                AlignmentRegion alignmentRegion;
                 AlignmentRegion filteredAlignmentRegion;
 
                 List<SAMRecord> recordList = getSamRecordsByRegion(bamFile, baiFile, region);
                 List<Alignment> alignmentList = getAlignmentsFromSamRecords(recordList, options);
                 List<Alignment> alignmentsInRegion = getAlignmentsInRegion(alignmentList, region);
 
-                if (!alignmentList.isEmpty()) {
-                    alignmentRegion = new AlignmentRegion(
-                            alignmentList, null);
-                } else {
-                    alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());
-                    alignmentRegion.setAlignments(new LinkedList<Alignment>());
-                }
                 RegionCoverage regionCoverage = null;
                 if (includeCoverage) {
+                    AlignmentRegion alignmentRegion;
+                    if (!alignmentList.isEmpty()) {
+                        alignmentRegion = new AlignmentRegion(
+                                alignmentList, null);
+                        alignmentRegion.setEnd(region.getEnd());
+                    } else {
+                        alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());
+                        alignmentRegion.setAlignments(new LinkedList<Alignment>());
+                    }
                     regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
                 }
 
@@ -191,7 +193,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
             size -= size%chunkSize;
         }
 
-        MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
+
 
         List<DBObject> operations = new LinkedList<>();
         operations.add(new BasicDBObject(
@@ -250,13 +252,38 @@ public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
                 "$sort",
                 new BasicDBObject("_id", 1)
         ));
-        String mongoAggregate = "db." + CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [";
+        StringBuilder mongoAggregate = new StringBuilder("db.").append(CoverageMongoWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [");
         for (DBObject operation : operations) {
-            mongoAggregate += operation.toString() + " , ";
+            mongoAggregate.append(operation.toString()).append(" , ");
         }
-        mongoAggregate += "])";
-        System.out.println(mongoAggregate);
-        QueryResult<DBObject> aggregate = collection.aggregate(null, operations, null);
+        mongoAggregate.append("])");
+        System.out.println("use " + mongoDataStore.getDatabaseName());
+        System.out.println(mongoAggregate.toString());
+
+
+    /*************/     //TODO: This should work, but doesn't
+//        System.out.println("dbName" + mongoDataStore.getDb().getName().toString());
+//        MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
+//        QueryResult<DBObject> aggregate = collection.aggregate(null, operations, null);
+    /*************/
+
+    /*************/     //TODO: What's going on?
+        long startTime = System.currentTimeMillis();
+        AggregationOutput aggregationOutput = mongoDataStore.getDb().getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME).aggregate(operations);
+
+        List<DBObject> results = new LinkedList<>();
+        for (DBObject object : aggregationOutput.results()) {
+            results.add(object);
+        }
+
+        long endTime = System.currentTimeMillis();
+        QueryResult<DBObject> aggregate = new QueryResult<>(fileId, ((int) (endTime - startTime)), results.size(), results.size(), "", "", results);
+    /*************/
+
+//        System.out.println(collection.find(new BasicDBObject(), new QueryOptions("limit", 2), null));
+//        System.out.println(collection.find(new BasicDBObject("files.id", "34"), new QueryOptions("limit", 2), null));
+//        System.out.println(collection.find(new BasicDBObject("files.id", "7"), new QueryOptions("limit", 2), null));
+//        System.out.println(collection.find(new BasicDBObject("files.id", "4"), new QueryOptions("limit", 2), null));
 
         for (DBObject object : aggregate.getResult()) {
             int id = getInt(object, "_id");
