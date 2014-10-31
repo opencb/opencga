@@ -20,9 +20,9 @@ import java.util.*;
 
 public class AnalysisJobExecuter {
 
-    protected Properties analysisProperties;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecuter.class);
-    protected String home;
+    protected final Properties analysisProperties;
+    protected final String home;
     protected String analysisName;
     protected String executionName;
     protected Path analysisRootPath;
@@ -35,32 +35,47 @@ public class AnalysisJobExecuter {
 
     protected static ObjectMapper jsonObjectMapper  = new ObjectMapper();
 
+    private AnalysisJobExecuter() throws  IOException, AnalysisExecutionException {
+        home = Config.getGcsaHome();
+        analysisProperties = Config.getAnalysisProperties();
+        executionName = null;
+    }
+
     public AnalysisJobExecuter(String analysisStr) throws  IOException, AnalysisExecutionException {
         this(analysisStr, "system");
     }
 
     public AnalysisJobExecuter(String analysisStr, String analysisOwner) throws IOException,  AnalysisExecutionException {
-
-        home = Config.getGcsaHome();
-        analysisProperties = Config.getAnalysisProperties();
-
-
-        if (analysisOwner.equals("system"))
-            analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
-        else
-            analysisRootPath = Paths.get(home, "accounts", analysisOwner);
-
-        analysisName = analysisStr;
-        executionName = null;
+        this();
+        if (analysisOwner.equals("system")) {
+            this.analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
+        }
+        else {
+            this.analysisRootPath = Paths.get(home, "accounts", analysisOwner);
+        }
+        this.analysisName = analysisStr;
         if (analysisName.contains(".")) {
             executionName = analysisName.split("\\.")[1];
             analysisName = analysisName.split("\\.")[0];
         }
 
+        load();
+    }
+    public AnalysisJobExecuter(Path analysisRootPath, String analysisName, String executionName) throws IOException,  AnalysisExecutionException {
+        this();
+        this.analysisRootPath = analysisRootPath;
+        this.analysisName = analysisName;
+        if (executionName != null && executionName.isEmpty()) {
+            this.executionName = executionName;
+        }
+
+        load();
+    }
+
+    private void load()  throws IOException,  AnalysisExecutionException {
+
         analysisPath = Paths.get(home).resolve(analysisRootPath).resolve(analysisName);
-//		manifestFile = analysisPath + "manifest.json";
         manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
-//		resultsFile = analysisPath + "results.json";
         resultsFile = analysisPath.resolve(Paths.get("results.js"));
 
         analysis = getAnalysis();

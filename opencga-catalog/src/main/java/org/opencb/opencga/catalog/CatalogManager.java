@@ -237,6 +237,17 @@ public class CatalogManager {
         return catalogDBAdaptor.getFileId(split[0], projectStudyPath[0], projectStudyPath[1], projectStudyPath[2]);
     }
 
+    public int getToolId(String id) throws CatalogManagerException {
+        try{
+            return Integer.parseInt(id);
+        } catch(NumberFormatException ignore){}
+
+        String[] split = id.split("@");
+        if(split.length != 2){
+            return -1;
+        }
+        return catalogDBAdaptor.getToolId(split[0], split[1]);
+    }
 
     /**
      * User methods

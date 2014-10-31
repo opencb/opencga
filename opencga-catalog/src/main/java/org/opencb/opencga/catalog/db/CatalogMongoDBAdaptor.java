@@ -2096,6 +2096,25 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Get tool", startTime, user.getTools());
     }
 
+    @Override
+    public int getToolId(String userId, String toolAlias) throws CatalogManagerException {
+        DBObject query = BasicDBObjectBuilder
+                .start("id", userId)
+                .append("tools.alias", toolAlias).get();
+        DBObject projection = new BasicDBObject("tools",
+                new BasicDBObject("$elemMatch",
+                        new BasicDBObject("alias", toolAlias)
+                )
+        );
+
+        QueryResult queryResult = userCollection.find(query, null, null, projection);
+        if(queryResult.getNumResults() != 1 ) {
+            throw new CatalogManagerException("Tool {alias:" + toolAlias + "} no exists");
+        }
+        User user = parseUser(queryResult);
+        return user.getTools().get(0).getId();
+    }
+
 //    @Override
 //    public QueryResult<Tool> searchTool(QueryOptions query, QueryOptions options) {
 //        long startTime = startQuery();

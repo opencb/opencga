@@ -203,6 +203,8 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Tool> getTool(int id) throws CatalogManagerException;
 
+    int getToolId(String userId, String toolAlias) throws CatalogManagerException;
+
 //    QueryResult<Tool> searchTool(QueryOptions options);
 
 //    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
