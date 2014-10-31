@@ -1,6 +1,8 @@
 package org.opencb.opencga.server;
 
 
+import com.amazonaws.services.elasticache.model.SourceType;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.wordnik.swagger.annotations.Api;
@@ -11,6 +13,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
@@ -22,9 +25,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Path("/job")
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
@@ -42,9 +43,6 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create job")
 
     public Response createJob(
-            @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
-            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectId,
-            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyId,
             @ApiParam(value = "analysisId", required = true) @QueryParam("analysisId") int analysisId,
             @ApiParam(value = "jobName", required = true) @QueryParam("jobName") String jobName,
             @ApiParam(value = "toolName", required = true) @QueryParam("toolName") String toolName,
@@ -62,12 +60,13 @@ public class JobWSServer extends OpenCGAWSServer {
             Execution execution = aje.getExecution();
             int outputFileId = 7;
             boolean example = false;
-
+            Map<String, List<String>> paramsLocal = new HashMap<>();
+            paramsLocal.putAll(params);
             // Set input param
             List<String> dataList = new ArrayList<>();
             for (InputParam inputParam : execution.getInputParams()) {
-                if (params.containsKey(inputParam.getName())) {
-                    List<String> dataIds = Arrays.asList(params.get(inputParam.getName()).get(0).split(","));
+                if (paramsLocal.containsKey(inputParam.getName())) {
+                    List<String> dataIds = Arrays.asList(paramsLocal.get(inputParam.getName()).get(0).split(","));
                     List<String> dataPaths = new ArrayList<>();
                     for (String dataId : dataIds) {
                         String dataPath;
@@ -76,9 +75,10 @@ public class JobWSServer extends OpenCGAWSServer {
                             dataPath = aje.getExamplePath(dataId);
                         } else { // is a dataId
 //                            dataPath = cloudSessionManager.getAccountPath(accountId).resolve(StringUtils.parseObjectId(dataId)).toString();
-                            QueryResult queryFile = catalogManager.getFile(outputFileId, sessionId);
-                            String relativePath = ((org.opencb.opencga.catalog.beans.File)queryFile.getResult().get(0)).getPath();
-                            dataPath = catalogManager.getFileUri(userId, projectId, studyId, relativePath).toString();
+                            QueryResult queryFile = catalogManager.getFile(Integer.parseInt(dataId), sessionId);
+                            File f = (File)(queryFile.getResult().get(0));
+                            dataPath = catalogManager.getFileUri(f).getPath();
+
                         }
 
                         if (dataPath.contains("ERROR")) {
@@ -88,11 +88,16 @@ public class JobWSServer extends OpenCGAWSServer {
                             dataList.add(dataPath);
                         }
                     }
-                    params.put(inputParam.getName(), dataPaths);
+                    paramsLocal.put(inputParam.getName(), dataPaths);
                 }
             }
 
-
+            int outdirId = Integer.parseInt(paramsLocal.get(execution.getOutputParam()).get(0));
+            System.out.println("outdirId: "+outdirId);
+            QueryResult queryFile = catalogManager.getFile(outdirId, sessionId);
+            File f = (File)(queryFile.getResult().get(0));
+            String dataPath = catalogManager.getFileUri(f).getPath();
+            paramsLocal.put(execution.getOutputParam(), Arrays.asList(dataPath));
 
             String inputFilesStr = "5";
             String outDir = "";
@@ -100,11 +105,16 @@ public class JobWSServer extends OpenCGAWSServer {
             List<Integer> inputFiles = new ArrayList<>();
 
             for(String s : inputFilesList) inputFiles.add(Integer.valueOf(s));
-            String commandLine = aje.createCommandLine(execution.getExecutable(), params);
+
+//            Joiner.MapJoiner mapJoiner = Joiner.on(',').withKeyValueSeparator("=");
+//            System.out.println(mapJoiner.join(paramsLocal));
+
+            String commandLine = aje.createCommandLine(execution.getExecutable(), paramsLocal);
+
             System.out.println(commandLine);
             queryResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir, inputFiles, sessionId);
             int jobId = ((Job)queryResult.getResult().get(0)).getId();
-
+            aje.execute(jobId+"","/tmp",commandLine);
 //            params.put("jobid", Arrays.asList(jobId+""));
 
             return createOkResponse(queryResult);
