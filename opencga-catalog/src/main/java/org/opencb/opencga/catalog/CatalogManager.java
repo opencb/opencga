@@ -1032,6 +1032,10 @@ public class CatalogManager {
     }
 
     public QueryResult<File> getFile(int fileId, String sessionId)
+            throws IOException, CatalogIOManagerException, CatalogManagerException {
+        return getFile(fileId, null, sessionId);
+    }
+    public QueryResult<File> getFile(int fileId, QueryOptions options, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         checkParameter(sessionId, "sessionId");
 
@@ -1040,7 +1044,7 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. User can't read file");
         }
 
-        return catalogDBAdaptor.getFile(fileId);
+        return catalogDBAdaptor.getFile(fileId, options);
     }
 
     public QueryResult<File> getAllFiles(int studyId, String sessionId) throws CatalogManagerException {
@@ -1527,14 +1531,13 @@ public class CatalogManager {
 
 
     public QueryResult<Job> createJob(int analysisId, String name, String toolName, String description, String commandLine,
-                                      String outDir, List<Integer> inputFiles, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
+                                      int outDirId, int tmpOutDirId, List<Integer> inputFiles, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(toolName, "toolName");
         checkParameter(description, "description");
         checkParameter(commandLine, "commandLine");
-        checkPath(outDir, "outDir");
         // FIXME check inputFiles? is a null conceptually valid?
 
         int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
@@ -1542,17 +1545,27 @@ public class CatalogManager {
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogManagerException("Permission denied. Can't create job");
         }
+        QueryOptions options = new QueryOptions("include", Arrays.asList("id", "type", "path"));
+        File outDir = catalogDBAdaptor.getFile(outDirId, options).getResult().get(0);
+        File tmpOutDir = catalogDBAdaptor.getFile(tmpOutDirId, options).getResult().get(0);
 
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir, inputFiles);
+        if(!outDir.getType().equals(File.FOLDER) || !tmpOutDir.getType().equals(File.FOLDER)) {
+            throw new CatalogManagerException("Bad outDir type. Required type : " + File.FOLDER);
+        }
+
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getPath(), inputFiles);
+        job.setOutDirId(outDir.getId());
+        job.setTmpOutDirId(tmpOutDir.getId());
+        job.setStartTime(System.currentTimeMillis());
 
 //        if(!job.getOutDir().endsWith("/")){
 //            job.setOutDir(job.getOutDir()+"/");
 //        }
-        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
-
-        if (fileId < 0) {
-            createFolder(studyId, Paths.get(outDir), true, sessionId);
-        }
+//        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
+//
+//        if (fileId < 0) {
+//            createFolder(studyId, Paths.get(outDirId), true, sessionId);
+//        }
 
         return catalogDBAdaptor.createJob(analysisId, job);
     }

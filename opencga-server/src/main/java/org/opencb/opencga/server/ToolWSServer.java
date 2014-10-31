@@ -35,16 +35,18 @@ public class ToolWSServer extends OpenCGAWSServer{
     @Path("/{toolId}/info")
     @Produces("application/json")
     @ApiOperation(value = "Tool info")
-    public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId
+    public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
+                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution
     ) {
         String[] splitedToolId = toolId.split(",");
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : splitedToolId) {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
-                AnalysisJobExecuter analysisJobExecuter = new AnalysisJobExecuter(toolResult.getResult().get(0).getName());
-                toolResult.getResult().get(0).setManifest(analysisJobExecuter.getAnalysis());
-                toolResult.getResult().get(0).setResult(analysisJobExecuter.getResult());
+                Tool tool = toolResult.getResult().get(0);
+                AnalysisJobExecuter analysisJobExecuter = new AnalysisJobExecuter(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                tool.setManifest(analysisJobExecuter.getAnalysis());
+                tool.setResult(analysisJobExecuter.getResult());
                 results.add(toolResult);
             }
             return createOkResponse(results);

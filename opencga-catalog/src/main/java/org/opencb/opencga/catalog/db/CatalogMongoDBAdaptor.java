@@ -1351,20 +1351,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
 
     @Override
-    public QueryResult<File> getFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException {
-        return getFile(getStudyId(userId, projectAlias, studyAlias), path);
-    }
-
-    @Override
-    public QueryResult<File> getFile(int studyId, String path) throws CatalogManagerException {
-        return getFile(getFileId(studyId, path));
-    }
-
-    @Override
     public QueryResult<File> getFile(int fileId) throws CatalogManagerException {
+        return getFile(fileId, null);
+    }
+
+    @Override
+    public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogManagerException {
         long startTime = startQuery();
 
-        QueryResult queryResult = fileCollection.find( new BasicDBObject("id", fileId), null, null, null);
+        QueryResult queryResult = fileCollection.find( new BasicDBObject("id", fileId), options, null);
 
         File file = parseFile(queryResult);
         if(file != null) {
@@ -1475,7 +1470,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         Path path = Paths.get(name);
         String fileName = path.getFileName().toString();
 
-        File file = getFile(fileId).getResult().get(0);
+        File file = getFile(fileId, null).getResult().get(0);
         if (file.getType().equals(File.FOLDER)) {
             throw new UnsupportedOperationException("Renaming folders still not supported");  // no renaming folders. it will be a future feature
         }

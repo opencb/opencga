@@ -41,11 +41,12 @@ public class AnalysisJobExecuter {
         executionName = null;
     }
 
-    public AnalysisJobExecuter(String analysisStr) throws  IOException, AnalysisExecutionException {
-        this(analysisStr, "system");
+    public AnalysisJobExecuter(String analysisStr, String execution) throws  IOException, AnalysisExecutionException {
+        this(analysisStr, execution, "system");
     }
 
-    public AnalysisJobExecuter(String analysisStr, String analysisOwner) throws IOException,  AnalysisExecutionException {
+    @Deprecated
+    public AnalysisJobExecuter(String analysisStr, String execution, String analysisOwner) throws IOException,  AnalysisExecutionException {
         this();
         if (analysisOwner.equals("system")) {
             this.analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
@@ -57,10 +58,13 @@ public class AnalysisJobExecuter {
         if (analysisName.contains(".")) {
             executionName = analysisName.split("\\.")[1];
             analysisName = analysisName.split("\\.")[0];
+        } else {
+            executionName = execution;
         }
 
         load();
     }
+
     public AnalysisJobExecuter(Path analysisRootPath, String analysisName, String executionName) throws IOException,  AnalysisExecutionException {
         this();
         this.analysisRootPath = analysisRootPath;

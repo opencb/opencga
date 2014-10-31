@@ -24,6 +24,8 @@ public class Job {
     private String status;
     private long diskUsage;
 
+    private int outDirId;
+    private int tmpOutDirId;
     private String outDir;
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
@@ -36,17 +38,18 @@ public class Job {
     public static final String QUEUED = "queued";
     public static final String RUNNING = "running";
     public static final String DONE = "done";
+    public static final String READY = "ready";
 
     public Job() {
     }
     public Job(String name, String userId, String toolName, String description, String commandLine,
-               String outDir,  List<Integer> input) {
+               String outDir, List<Integer> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                outDir, input, new LinkedList<Integer>());
+                -1, -1, outDir, input, new LinkedList<Integer>());
     }
     public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
-               long diskUsage, String outDir, List<Integer> input, List<Integer> output) {
+               long diskUsage, int outDirId, int tmpOutDirId, String outDir, List<Integer> input, List<Integer> output) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -60,6 +63,8 @@ public class Job {
         this.visits = visits;
         this.status = status;
         this.diskUsage = diskUsage;
+        this.outDirId = outDirId;
+        this.tmpOutDirId = tmpOutDirId;
         this.outDir = outDir;
         this.input = input;
         this.output = output;
@@ -82,6 +87,8 @@ public class Job {
                 ", visits=" + visits +
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
+                ", outDirId=" + outDirId +
+                ", tmpOutDirId=" + tmpOutDirId +
                 ", outDir='" + outDir + '\'' +
                 ", input=" + input +
                 ", output=" + output +
@@ -198,6 +205,22 @@ public class Job {
 
     public void setDiskUsage(long diskUsage) {
         this.diskUsage = diskUsage;
+    }
+
+    public int getOutDirId() {
+        return outDirId;
+    }
+
+    public void setOutDirId(int outDirId) {
+        this.outDirId = outDirId;
+    }
+
+    public int getTmpOutDirId() {
+        return tmpOutDirId;
+    }
+
+    public void setTmpOutDirId(int tmpOutDirId) {
+        this.tmpOutDirId = tmpOutDirId;
     }
 
     public String getOutDir() {

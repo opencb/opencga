@@ -1,30 +1,28 @@
 package org.opencb.opencga.server;
 
 
-import com.amazonaws.services.elasticache.model.SourceType;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
+
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
-import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.beans.Tool;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.common.IOUtils;
-import org.opencb.opencga.analysis.beans.Analysis;
+import org.opencb.opencga.lib.common.StringUtils;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/job")
@@ -43,91 +41,80 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create job")
 
     public Response createJob(
-            @ApiParam(value = "analysisId", required = true) @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "jobName", required = true) @QueryParam("jobName") String jobName,
-            @ApiParam(value = "toolName", required = true) @QueryParam("toolName") String toolName,
-            @ApiParam(value = "description", required = true) @QueryParam("description") String description
-            //@ApiParam(value = "commandLine", required = true) @QueryParam("commandLine") String commandLine,
-//            @ApiParam(value = "outDir", required = true) @QueryParam("outDir") String outDir,
-//            @ApiParam(value = "inputFiles", required = true) @QueryParam("inputFiles") String inputFilesStr
+            @ApiParam(value = "analysisId", required = true)    @QueryParam("analysisId") int analysisId,
+            @ApiParam(value = "toolId", required = true)        @QueryParam("toolId") String toolIdStr,
+            @ApiParam(value = "execution", required = false)    @DefaultValue("") @QueryParam("execution") String execution,
+            @ApiParam(value = "description", required = false)  @DefaultValue("") @QueryParam("description") String description
     ) {
-        QueryResult queryResult;
+        QueryResult<Job> jobResult;
         try {
+            AnalysisJobExecuter analysisJobExecuter;
+            String toolName;
+            int toolId = catalogManager.getToolId(toolIdStr);
+            if(toolId < 0) {
+                analysisJobExecuter = new AnalysisJobExecuter(toolIdStr, execution);    //LEGACY MODE, AVOID USING
+                toolName = toolIdStr;
+            } else {
+                Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
+                analysisJobExecuter = new AnalysisJobExecuter(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                toolName = tool.getName();
+            }
 
-            String analysis = toolName;
-            String analysisOwner = "system";
-            AnalysisJobExecuter aje = new AnalysisJobExecuter(analysis, analysisOwner);
-            Execution execution = aje.getExecution();
-            int outputFileId = 7;
-            boolean example = false;
-            Map<String, List<String>> paramsLocal = new HashMap<>();
-            paramsLocal.putAll(params);
+            List<Integer> inputFiles = new LinkedList<>();
+            Map<String, List<String>> localParams = new HashMap<>(params);
+
             // Set input param
-            List<String> dataList = new ArrayList<>();
-            for (InputParam inputParam : execution.getInputParams()) {
-                if (paramsLocal.containsKey(inputParam.getName())) {
-                    List<String> dataIds = Arrays.asList(paramsLocal.get(inputParam.getName()).get(0).split(","));
-                    List<String> dataPaths = new ArrayList<>();
-                    for (String dataId : dataIds) {
-                        String dataPath;
-                        if (dataId.contains("example_")) { // is a example
-                            dataId = dataId.replace("example_", "");
-                            dataPath = aje.getExamplePath(dataId);
-                        } else { // is a dataId
-//                            dataPath = cloudSessionManager.getAccountPath(accountId).resolve(StringUtils.parseObjectId(dataId)).toString();
-                            QueryResult queryFile = catalogManager.getFile(Integer.parseInt(dataId), sessionId);
-                            File f = (File)(queryFile.getResult().get(0));
-                            dataPath = catalogManager.getFileUri(f).getPath();
+            for (InputParam inputParam : analysisJobExecuter.getExecution().getInputParams()) {
+                if (params.containsKey(inputParam.getName())) {
 
-                        }
-
-                        if (dataPath.contains("ERROR")) {
-                            return createErrorResponse(dataPath);
-                        } else {
-                            dataPaths.add(dataPath);
-                            dataList.add(dataPath);
+                    List<String> filePaths = new LinkedList<>();
+                    for (String files : params.get(inputParam.getName())) {
+                        for (String fileId : files.split(",")) {
+                            if (fileId.startsWith("example_")) { // is a example
+                                fileId = fileId.replace("example_", "");
+                                filePaths.add(analysisJobExecuter.getExamplePath(fileId));
+                            } else {
+                                File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
+                                filePaths.add(catalogManager.getFileUri(file).getPath());
+                                inputFiles.add(file.getId());
+                            }
                         }
                     }
-                    paramsLocal.put(inputParam.getName(), dataPaths);
+                    localParams.put(inputParam.getName(), filePaths);
                 }
             }
 
-            int outdirId = Integer.parseInt(paramsLocal.get(execution.getOutputParam()).get(0));
-            System.out.println("outdirId: "+outdirId);
-            QueryResult queryFile = catalogManager.getFile(outdirId, sessionId);
-            File f = (File)(queryFile.getResult().get(0));
-            String dataPath = catalogManager.getFileUri(f).getPath();
-            paramsLocal.put(execution.getOutputParam(), Arrays.asList(dataPath));
+            // Creating job name. Random string to avoid collisions.
+            String jobName = "J_" + String.format(StringUtils.randomString(15));
 
-            String inputFilesStr = "5";
-            String outDir = "";
-            List<String> inputFilesList = Splitter.on(",").splitToList(inputFilesStr);
-            List<Integer> inputFiles = new ArrayList<>();
+            // Get temporal outdir  TODO: Create job folder outside the user workspace.
+            java.nio.file.Path temporalOutdirPath = Paths.get("jobs", jobName);
+            int studyId = catalogManager.getStudyIdByAnalysisId(analysisId);
+            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
-            for(String s : inputFilesList) inputFiles.add(Integer.valueOf(s));
+            // Set outdir
+            String outputParam = analysisJobExecuter.getExecution().getOutputParam();
+            int outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
+            File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
 
-//            Joiner.MapJoiner mapJoiner = Joiner.on(',').withKeyValueSeparator("=");
-//            System.out.println(mapJoiner.join(paramsLocal));
+            localParams.put(outputParam, Arrays.asList(catalogManager.getFileUri(temporalOutDir).getPath()));
 
-            String commandLine = aje.createCommandLine(execution.getExecutable(), paramsLocal);
-
+            // Create commandLine
+            String commandLine = analysisJobExecuter.createCommandLine(localParams);
             System.out.println(commandLine);
-            queryResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir, inputFiles, sessionId);
-            int jobId = ((Job)queryResult.getResult().get(0)).getId();
-            aje.execute(jobId+"","/tmp",commandLine);
-//            params.put("jobid", Arrays.asList(jobId+""));
 
-            return createOkResponse(queryResult);
+            // Create job in CatalogManager
+            jobResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir.getId(), temporalOutDir.getId(), inputFiles, sessionId);
 
-        } catch (CatalogManagerException | CatalogIOManagerException  e) {
+            // Execute job
+            analysisJobExecuter.execute(jobName,temporalOutdirPath.toAbsolutePath().toString(),commandLine);
+
+            return createOkResponse(jobResult);
+
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException | AnalysisExecutionException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
-        } catch (AnalysisExecutionException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return null;
     }
 
     private Response executeTool(){

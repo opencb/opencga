@@ -474,7 +474,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getFileTest() throws CatalogManagerException {
-        System.out.println(catalog.getFile("jcoll", "1000G", "ph1", "/data/file.sam"));
+        System.out.println(catalog.getFile(catalog.getFileId("jcoll", "1000G", "ph1", "/data/file.sam")));
         try {
             System.out.println(catalog.getFile(-1));
             fail("Expected \"FileId not found\" exception");
