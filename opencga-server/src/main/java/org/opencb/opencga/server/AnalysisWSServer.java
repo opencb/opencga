@@ -38,7 +38,7 @@ public class AnalysisWSServer extends OpenCGAWSServer {
 
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createAnalysis(studyId, name, alias, creatorId, description, sessionId);
+            queryResult = catalogManager.createAnalysis(studyId, name, alias, description, sessionId);
 
 //            queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
 

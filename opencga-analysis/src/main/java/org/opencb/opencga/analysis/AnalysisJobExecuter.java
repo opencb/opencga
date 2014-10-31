@@ -20,9 +20,9 @@ import java.util.*;
 
 public class AnalysisJobExecuter {
 
-    protected Properties analysisProperties;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecuter.class);
-    protected String home;
+    protected final Properties analysisProperties;
+    protected final String home;
     protected String analysisName;
     protected String executionName;
     protected Path analysisRootPath;
@@ -35,32 +35,49 @@ public class AnalysisJobExecuter {
 
     protected static ObjectMapper jsonObjectMapper  = new ObjectMapper();
 
-    public AnalysisJobExecuter(String analysisStr) throws  IOException, AnalysisExecutionException {
-        this(analysisStr, "system");
-    }
-
-    public AnalysisJobExecuter(String analysisStr, String analysisOwner) throws IOException,  AnalysisExecutionException {
-
+    private AnalysisJobExecuter() throws  IOException, AnalysisExecutionException {
         home = Config.getGcsaHome();
         analysisProperties = Config.getAnalysisProperties();
-
-
-        if (analysisOwner.equals("system"))
-            analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
-        else
-            analysisRootPath = Paths.get(home, "accounts", analysisOwner);
-
-        analysisName = analysisStr;
         executionName = null;
+    }
+
+    public AnalysisJobExecuter(String analysisStr, String execution) throws  IOException, AnalysisExecutionException {
+        this(analysisStr, execution, "system");
+    }
+
+    @Deprecated
+    public AnalysisJobExecuter(String analysisStr, String execution, String analysisOwner) throws IOException,  AnalysisExecutionException {
+        this();
+        if (analysisOwner.equals("system")) {
+            this.analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
+        }
+        else {
+            this.analysisRootPath = Paths.get(home, "accounts", analysisOwner);
+        }
+        this.analysisName = analysisStr;
         if (analysisName.contains(".")) {
             executionName = analysisName.split("\\.")[1];
             analysisName = analysisName.split("\\.")[0];
+        } else {
+            executionName = execution;
         }
 
+        load();
+    }
+
+    public AnalysisJobExecuter(Path analysisRootPath, String analysisName, String executionName) throws IOException,  AnalysisExecutionException {
+        this();
+        this.analysisRootPath = analysisRootPath;
+        this.analysisName = analysisName;
+        this.executionName = executionName;
+
+        load();
+    }
+
+    private void load()  throws IOException,  AnalysisExecutionException {
+
         analysisPath = Paths.get(home).resolve(analysisRootPath).resolve(analysisName);
-//		manifestFile = analysisPath + "manifest.json";
         manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
-//		resultsFile = analysisPath + "results.json";
         resultsFile = analysisPath.resolve(Paths.get("results.js"));
 
         analysis = getAnalysis();
@@ -77,6 +94,7 @@ public class AnalysisJobExecuter {
     private boolean checkRequiredParams(Map<String, List<String>> params, List<Option> validParams) {
         for (Option param : validParams) {
             if (param.isRequired() && !params.containsKey(param.getName())) {
+                System.out.println("Missing param: " + param);
                 return false;
             }
         }
@@ -97,6 +115,11 @@ public class AnalysisJobExecuter {
         }
 
         return paramsCopy;
+    }
+
+    public String createCommandLine(Map<String, List<String>> params)
+            throws AnalysisExecutionException {
+        return createCommandLine(execution.getExecutable(), params);
     }
 
     public String createCommandLine(String executable, Map<String, List<String>> params)
@@ -158,9 +181,8 @@ public class AnalysisJobExecuter {
         else {
             logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
 
-            SgeManager sgeManager = new SgeManager();
             try {
-                sgeManager.queueJob(analysisName, jobId, 0, jobFolder, commandLine);
+                SgeManager.queueJob(analysisName, jobId, 0, jobFolder, commandLine);
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
@@ -178,15 +200,15 @@ public class AnalysisJobExecuter {
 
     public Execution getExecution() throws AnalysisExecutionException {
         if (execution == null) {
-            if (executionName != null) {
+            if (executionName == null || executionName.isEmpty()) {
+                execution = analysis.getExecutions().get(0);
+            } else {
                 for (Execution exe : analysis.getExecutions()) {
                     if (exe.getId().equalsIgnoreCase(executionName)) {
                         execution = exe;
                         break;
                     }
                 }
-            } else {
-                execution = analysis.getExecutions().get(0);
             }
         }
         return execution;

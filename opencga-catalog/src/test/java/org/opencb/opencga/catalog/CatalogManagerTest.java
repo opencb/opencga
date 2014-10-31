@@ -414,7 +414,7 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(catalogManager.createAnalysis(studyId, analysis, sessionIdUser));
 
         System.out.println(catalogManager.createAnalysis(
-                studyId, "MyAnalysis2", "analysis2", "user", "description", sessionIdUser));
+                studyId, "MyAnalysis2", "analysis2", "description", sessionIdUser));
     }
 
     /**
@@ -430,9 +430,11 @@ public class CatalogManagerTest extends GenericTest {
 
         Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", "jobs/myJob", Collections.<Integer>emptyList());
 
+        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, sessionIdUser).getResult().get(0);
+
 //        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
         System.out.println(catalogManager.createJob(
-                analysisId, "mySecondJob", "samtool", "description", "#rm -rf .*", "jobs/myJob", null, sessionIdUser));
+                analysisId, "mySecondJob", "samtool", "description", "#rm -rf .*", outDir.getId(), outDir.getId(), null, sessionIdUser));
     }
 
     private static void clearCatalog(Properties properties) throws IOException {

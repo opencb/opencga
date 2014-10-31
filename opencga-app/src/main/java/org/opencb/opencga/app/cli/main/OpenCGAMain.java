@@ -274,11 +274,39 @@ public class OpenCGAMain {
                         System.out.println(index);
 
                         logout();
+                        break;
                     }
                     default:
                         optionsParser.printUsage();
                         break;
                 }
+            case "tools" : {
+                switch (optionsParser.getSubCommand()) {
+                    case "create": {
+                        OptionsParser.ToolCommands.CreateCommand c = optionsParser.getToolCommands().createCommand;
+                        login(c.up);
+
+                        QueryResult<Tool> tool = catalogManager.createTool(c.alias, c.description, null, null,
+                                c.path, c.openTool, sessionId);
+                        System.out.println(tool);
+
+                        break;
+                    }
+                    case "info": {
+                        OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
+                        login(c.up);
+
+                        QueryResult<Tool> tool = catalogManager.getTool(c.id, sessionId);
+                        System.out.println(tool);
+
+                        break;
+                    }
+                    default:
+                        optionsParser.printUsage();
+                        break;
+                }
+            }
+
                 break;
             default:
                 optionsParser.printUsage();

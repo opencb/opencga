@@ -13,6 +13,14 @@ public class ExampleOption {
         this.value = value;
     }
 
+    @Override
+    public String toString() {
+        return "ExampleOption{" +
+                "paramName='" + paramName + '\'' +
+                ", value='" + value + '\'' +
+                '}';
+    }
+
     public String getParamName() {
         return paramName;
     }

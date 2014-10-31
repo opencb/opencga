@@ -237,6 +237,17 @@ public class CatalogManager {
         return catalogDBAdaptor.getFileId(split[0], projectStudyPath[0], projectStudyPath[1], projectStudyPath[2]);
     }
 
+    public int getToolId(String id) throws CatalogManagerException {
+        try{
+            return Integer.parseInt(id);
+        } catch(NumberFormatException ignore){}
+
+        String[] split = id.split("@");
+        if(split.length != 2){
+            return -1;
+        }
+        return catalogDBAdaptor.getToolId(split[0], split[1]);
+    }
 
     /**
      * User methods
@@ -777,6 +788,10 @@ public class CatalogManager {
         return catalogDBAdaptor.getStudyIdByFileId(fileId);
     }
 
+    public int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException {
+        return catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
+    }
+
     public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
                                         boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
@@ -1013,10 +1028,14 @@ public class CatalogManager {
     }
 
     public QueryResult<File> getFileByIndexJobId(String indexJobId) throws CatalogManagerException {
-        return catalogDBAdaptor.searchFile(new QueryOptions("indexJobId", indexJobId));
+        return catalogDBAdaptor.searchFile(new QueryOptions("indexJobId", indexJobId), null);
     }
 
     public QueryResult<File> getFile(int fileId, String sessionId)
+            throws IOException, CatalogIOManagerException, CatalogManagerException {
+        return getFile(fileId, null, sessionId);
+    }
+    public QueryResult<File> getFile(int fileId, QueryOptions options, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         checkParameter(sessionId, "sessionId");
 
@@ -1025,7 +1044,7 @@ public class CatalogManager {
             throw new CatalogManagerException("Permission denied. User can't read file");
         }
 
-        return catalogDBAdaptor.getFile(fileId);
+        return catalogDBAdaptor.getFile(fileId, options);
     }
 
     public QueryResult<File> getAllFiles(int studyId, String sessionId) throws CatalogManagerException {
@@ -1104,14 +1123,17 @@ public class CatalogManager {
         return catalogDBAdaptor.setFileAcl(fileId, acl);
     }
 
-    public QueryResult<File> searchFile(int studyId, QueryOptions options, String sessionId) throws CatalogManagerException {
+    public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId) throws CatalogManagerException {
+        return searchFile(studyId, query, null, sessionId);
+    }
+    public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogManagerException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
         getStudyAcl(userId, studyId);
 
         options.put("studyId", studyId);
-        return catalogDBAdaptor.searchFile(options);
+        return catalogDBAdaptor.searchFile(query, options);
     }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
@@ -1391,19 +1413,16 @@ public class CatalogManager {
         return catalogDBAdaptor.createAnalysis(studyId, analysis);
     }
 
-    public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String creatorId, String description, String sessionId) throws CatalogManagerException {
+    public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String description, String sessionId) throws CatalogManagerException {
         checkParameter(name, "name");
         checkAlias(alias, "alias");
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (creatorId == null || "".equals(creatorId)) {
-            creatorId = userId;
-        }
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogManagerException("Permission denied. Can't write in this study");
         }
-        Analysis analysis = new Analysis(name, alias, TimeUtils.getTime(), creatorId, description);
+        Analysis analysis = new Analysis(name, alias, TimeUtils.getTime(), userId, description);
 
         String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
         catalogDBAdaptor.updateUserLastActivity(ownerId);
@@ -1512,14 +1531,13 @@ public class CatalogManager {
 
 
     public QueryResult<Job> createJob(int analysisId, String name, String toolName, String description, String commandLine,
-                                      String outDir, List<Integer> inputFiles, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
+                                      int outDirId, int tmpOutDirId, List<Integer> inputFiles, String sessionId) throws CatalogManagerException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(toolName, "toolName");
         checkParameter(description, "description");
         checkParameter(commandLine, "commandLine");
-        checkPath(outDir, "outDir");
         // FIXME check inputFiles? is a null conceptually valid?
 
         int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
@@ -1527,17 +1545,27 @@ public class CatalogManager {
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogManagerException("Permission denied. Can't create job");
         }
+        QueryOptions options = new QueryOptions("include", Arrays.asList("id", "type", "path"));
+        File outDir = catalogDBAdaptor.getFile(outDirId, options).getResult().get(0);
+        File tmpOutDir = catalogDBAdaptor.getFile(tmpOutDirId, options).getResult().get(0);
 
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir, inputFiles);
+        if(!outDir.getType().equals(File.FOLDER) || !tmpOutDir.getType().equals(File.FOLDER)) {
+            throw new CatalogManagerException("Bad outDir type. Required type : " + File.FOLDER);
+        }
+
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getPath(), inputFiles);
+        job.setOutDirId(outDir.getId());
+        job.setTmpOutDirId(tmpOutDir.getId());
+        job.setStartTime(System.currentTimeMillis());
 
 //        if(!job.getOutDir().endsWith("/")){
 //            job.setOutDir(job.getOutDir()+"/");
 //        }
-        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
-
-        if (fileId < 0) {
-            createFolder(studyId, Paths.get(outDir), true, sessionId);
-        }
+//        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
+//
+//        if (fileId < 0) {
+//            createFolder(studyId, Paths.get(outDirId), true, sessionId);
+//        }
 
         return catalogDBAdaptor.createJob(analysisId, job);
     }
@@ -1659,6 +1687,41 @@ public class CatalogManager {
 //    }
 //
 
+    public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
+                                        String path, boolean openTool, String sessionId) throws CatalogManagerException {
+        checkParameter(alias, "alias");
+        checkObj(description, "description"); //description can be empty
+        checkParameter(path, "path");
+        checkParameter(sessionId, "sessionId");
+        //TODO: Check Path
+
+        String userId = getUserIdBySessionId(sessionId);
+
+        List<Acl> acl = Arrays.asList(new Acl(userId, true, true, true, true));
+        if(openTool) {
+            acl.add(new Acl(USER_OTHERS_ID, true, false, true, false));
+        }
+
+        String name = Paths.get(path).getFileName().toString();
+
+        Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
+
+        return catalogDBAdaptor.createTool(userId, tool);
+    }
+
+    public QueryResult<Tool> getTool(int id, String sessionId) throws CatalogManagerException {
+        String userId = getUserIdBySessionId(sessionId);
+        checkParameter(sessionId, "sessionId");
+
+        //TODO: Check ACLs
+        return catalogDBAdaptor.getTool(id);
+    }
+
+//    public QueryResult<Tool> searchTool(QueryOptions options, String sessionId) {
+//        String userId = getUserIdBySessionId(sessionId);
+//
+//        catalogDBAdaptor.searchTool(options);
+//    }
 
     /**
      * ****************

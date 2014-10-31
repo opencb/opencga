@@ -14,6 +14,15 @@ public class Option {
         this.required = required;
     }
 
+    @Override
+    public String toString() {
+        return "Option{" +
+                "name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", required=" + required +
+                '}';
+    }
+
     public String getName() {
         return name;
     }

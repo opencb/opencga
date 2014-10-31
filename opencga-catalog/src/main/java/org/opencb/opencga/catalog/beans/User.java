@@ -28,7 +28,7 @@ public class User {
     private List<Project> projects = new ArrayList<>();
 //    private List<Analysis> analyses = new ArrayList<>();
 
-    private List<Tool> plugins = new ArrayList<>();
+    private List<Tool> tools = new ArrayList<>();
     /**
      * Open and closed session of this user. More than one session can be open, i.e. logged from Chrome and Firefox
      */
@@ -60,7 +60,7 @@ public class User {
     public User(String id, String name, String email, String password, String organization, String role, String status,
                 String lastActivity, long diskUsage, long diskQuota, List<Project> projects,
                 //List<Analysis> analyses,
-                List<Tool> plugins, List<Session> sessions, Map<String, Object> configs,
+                List<Tool> tools, List<Session> sessions, Map<String, Object> configs,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -74,7 +74,7 @@ public class User {
         this.diskQuota = diskQuota;
         this.projects = projects;
       //  this.analyses = analyses;
-        this.plugins = plugins;
+        this.tools = tools;
         this.sessions = sessions;
         this.configs = configs;
         this.attributes = attributes;
@@ -94,7 +94,7 @@ public class User {
                 ", diskUsage=" + diskUsage +
                 ", diskQuota=" + diskQuota +
                 ", projects=" + projects +
-                ", plugins=" + plugins +
+                ", tools=" + tools +
                 ", sessions=" + sessions +
                 ", configs=" + configs +
                 ", attributes=" + attributes +
@@ -189,12 +189,12 @@ public class User {
         this.projects = projects;
     }
 
-    public List<Tool> getPlugins() {
-        return plugins;
+    public List<Tool> getTools() {
+        return tools;
     }
 
-    public void setPlugins(List<Tool> plugins) {
-        this.plugins = plugins;
+    public void setTools(List<Tool> tools) {
+        this.tools = tools;
     }
 
     public List<Session> getSessions() {

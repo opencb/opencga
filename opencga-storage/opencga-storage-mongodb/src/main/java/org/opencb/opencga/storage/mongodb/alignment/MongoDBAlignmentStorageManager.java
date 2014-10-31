@@ -122,8 +122,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     @Override
     public AlignmentQueryBuilder getDBAdaptor(String dbName) {
         SequenceDBAdaptor adaptor;
-        if (dbName == null) {
-            dbName = MONGO_DB_NAME;
+        if (dbName == null || dbName.isEmpty()) {
+            dbName = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME", MONGO_DB_NAME);
             logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
         }
         Path path = Paths.get(properties.getProperty(STORAGE_SEQUENCE_DBADAPTOR, ""));
@@ -141,14 +141,15 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
     private MongoCredentials getMongoCredentials(String mongoDbName){
-        try {
+        try {   //TODO: Use user and password
+            String mongoUser = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER", null);
+            String mongoPassword = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PASS", null);
             return new MongoCredentials(
-                    properties.getProperty("mongo_host", "localhost"),
-                    Integer.parseInt(properties.getProperty("mongo_port", "27017")),
-//                    properties.getProperty("mongo_db_name", mongoDbName),
+                    properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOST", "localhost"),
+                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PORT", "27017")),
                     mongoDbName,
-                    properties.getProperty("mongo_user", null),
-                    properties.getProperty("mongo_password", null)
+                    null,
+                    null
             );
             //this.mongoCredentials = new MongoCredentials(properties);
         } catch (IllegalOpenCGACredentialsException e) {

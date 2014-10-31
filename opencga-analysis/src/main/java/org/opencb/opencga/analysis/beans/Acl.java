@@ -14,6 +14,16 @@ public class Acl {
         this.execute = execute;
     }
 
+    @Override
+    public String toString() {
+        return "Acl{" +
+                "userId='" + userId + '\'' +
+                ", read=" + read +
+                ", write=" + write +
+                ", execute=" + execute +
+                '}';
+    }
+
     public String getUserId() {
         return userId;
     }
