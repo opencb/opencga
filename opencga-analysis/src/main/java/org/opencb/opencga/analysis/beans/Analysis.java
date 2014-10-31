@@ -32,6 +32,24 @@ public class Analysis {
         this.acl = acl;
     }
 
+    @Override
+    public String toString() {
+        return "Analysis{" +
+                "author=" + author +
+                ", version='" + version + '\'' +
+                ", id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", website='" + website + '\'' +
+                ", publication='" + publication + '\'' +
+                ", icon=" + icon +
+                ", globalParams=" + globalParams +
+                ", executions=" + executions +
+                ", examples=" + examples +
+                ", acl=" + acl +
+                '}';
+    }
+
     public Author getAuthor() {
         return author;
     }

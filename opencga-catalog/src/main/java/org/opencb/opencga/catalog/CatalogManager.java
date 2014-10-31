@@ -788,6 +788,10 @@ public class CatalogManager {
         return catalogDBAdaptor.getStudyIdByFileId(fileId);
     }
 
+    public int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException {
+        return catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
+    }
+
     public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
                                         boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {

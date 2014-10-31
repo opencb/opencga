@@ -12,6 +12,14 @@ public class InputParam {
         this.dataType = dataType;
     }
 
+    @Override
+    public String toString() {
+        return "InputParam{" +
+                "name='" + name + '\'' +
+                ", dataType='" + dataType + '\'' +
+                '}';
+    }
+
     public String getName() {
         return name;
     }

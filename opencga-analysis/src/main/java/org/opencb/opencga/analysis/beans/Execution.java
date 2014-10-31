@@ -29,6 +29,22 @@ public class Execution {
         this.result = result;
     }
 
+    @Override
+    public String toString() {
+        return "Execution{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", executable='" + executable + '\'' +
+                ", outputParam='" + outputParam + '\'' +
+                ", testCmd='" + testCmd + '\'' +
+                ", result='" + result + '\'' +
+                ", inputParams=" + inputParams +
+                ", inputParamsFromTxt=" + inputParamsFromTxt +
+                ", validParams=" + validParams +
+                ", configAttr=" + configAttr +
+                '}';
+    }
+
     public String getId() {
         return id;
     }

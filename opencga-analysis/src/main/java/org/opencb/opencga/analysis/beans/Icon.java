@@ -12,6 +12,13 @@ public class Icon {
         this.data = data;
     }
 
+    @Override
+    public String toString() {
+        return "Icon{" +
+                "size='" + size + '\'' +
+                '}';
+    }
+
     public String getSize() {
         return size;
     }

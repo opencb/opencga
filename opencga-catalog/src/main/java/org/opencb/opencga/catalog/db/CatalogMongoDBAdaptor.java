@@ -2086,7 +2086,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         long startTime = startQuery();
 
         DBObject query = new BasicDBObject("tools.id", id);
-        QueryResult queryResult = userCollection.find(query, new QueryOptions("include", Arrays.asList("tools")), null);
+        DBObject projection = new BasicDBObject("tools",
+                new BasicDBObject("$elemMatch",
+                        new BasicDBObject("id", id)
+                )
+        );
+        QueryResult queryResult = userCollection.find(query, new QueryOptions("include", Arrays.asList("tools")), null, projection);
 
         if(queryResult.getNumResults() != 1 ) {
             throw new CatalogManagerException("Tool {id:" + id + "} no exists");

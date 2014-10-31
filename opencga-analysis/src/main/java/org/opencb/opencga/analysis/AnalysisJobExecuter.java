@@ -65,9 +65,7 @@ public class AnalysisJobExecuter {
         this();
         this.analysisRootPath = analysisRootPath;
         this.analysisName = analysisName;
-        if (executionName != null && executionName.isEmpty()) {
-            this.executionName = executionName;
-        }
+        this.executionName = executionName;
 
         load();
     }
@@ -92,6 +90,7 @@ public class AnalysisJobExecuter {
     private boolean checkRequiredParams(Map<String, List<String>> params, List<Option> validParams) {
         for (Option param : validParams) {
             if (param.isRequired() && !params.containsKey(param.getName())) {
+                System.out.println("Missing param: " + param);
                 return false;
             }
         }
@@ -112,6 +111,11 @@ public class AnalysisJobExecuter {
         }
 
         return paramsCopy;
+    }
+
+    public String createCommandLine(Map<String, List<String>> params)
+            throws AnalysisExecutionException {
+        return createCommandLine(execution.getExecutable(), params);
     }
 
     public String createCommandLine(String executable, Map<String, List<String>> params)
@@ -173,9 +177,8 @@ public class AnalysisJobExecuter {
         else {
             logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
 
-            SgeManager sgeManager = new SgeManager();
             try {
-                sgeManager.queueJob(analysisName, jobId, 0, jobFolder, commandLine);
+                SgeManager.queueJob(analysisName, jobId, 0, jobFolder, commandLine);
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
@@ -193,15 +196,15 @@ public class AnalysisJobExecuter {
 
     public Execution getExecution() throws AnalysisExecutionException {
         if (execution == null) {
-            if (executionName != null) {
+            if (executionName == null || executionName.isEmpty()) {
+                execution = analysis.getExecutions().get(0);
+            } else {
                 for (Execution exe : analysis.getExecutions()) {
                     if (exe.getId().equalsIgnoreCase(executionName)) {
                         execution = exe;
                         break;
                     }
                 }
-            } else {
-                execution = analysis.getExecutions().get(0);
             }
         }
         return execution;
