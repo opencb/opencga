@@ -54,4 +54,5 @@ nb*.xml
 # PDT-specific
 .buildpath
 
-
+# Install
+opencga-server/install.sh
