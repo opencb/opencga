@@ -35,6 +35,45 @@ public class JobWSServer extends OpenCGAWSServer {
         params = uriInfo.getQueryParameters();
     }
 
+//    @GET
+//    @Path("/search")
+//    @Produces("application/json")
+//    @ApiOperation(value = "Search jobs")
+//
+//    public Response search(
+//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+//    ) {
+//
+//        catalogManager.search
+//    }
+
+
+    @GET
+    @Path("/{jobId}/info")
+    @Produces("application/json")
+    @ApiOperation(value = "Get job information")
+    public Response info(
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+        try {
+            return createOkResponse(catalogManager.getJob(jobId, sessionId));
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/visit")
+    @Produces("application/json")
+    @ApiOperation(value = "Increment job visites")
+    public Response visit(
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+        try {
+            return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
+        } catch (CatalogManagerException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
     @GET
     @Path("/create")
     @Produces("application/json")
@@ -94,6 +133,9 @@ public class JobWSServer extends OpenCGAWSServer {
 
             // Set outdir
             String outputParam = analysisJobExecuter.getExecution().getOutputParam();
+            if (params.get(outputParam).isEmpty()) {
+                return createErrorResponse("Missing output param '" + outputParam + "'");
+            }
             int outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
             File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
 

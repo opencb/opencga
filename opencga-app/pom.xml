@@ -33,6 +33,14 @@
                     <artifactId>commons-codec</artifactId>
                     <groupId>commons-codec</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jersey.core</groupId>
+                    <artifactId>jersey-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jersey.media</groupId>
+                    <artifactId>jersey-media-multipart</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -44,10 +52,10 @@
             <artifactId>opencga-catalog</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.opencb.variant</groupId>
-            <artifactId>variant-lib</artifactId>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.variant</groupId>-->
+            <!--<artifactId>variant-lib</artifactId>-->
+        <!--</dependency>-->
 
         <!--<dependency>-->
             <!--<groupId>org.opencb.opencga</groupId>-->
@@ -91,6 +99,23 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.0.0.M0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>9.0.0.M0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet-core</artifactId>
+            <version>2.13</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -159,6 +184,13 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>
+                            <name>${app.name}-daemon.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
@@ -201,6 +233,7 @@
                                     <arg value="+x"/>
                                     <arg value="${build.dir}/bin/${app.name}.sh"/>
                                     <arg value="${build.dir}/bin/${app.name}-storage.sh"/>
+                                    <arg value="${build.dir}/bin/${app.name}-daemon.sh"/>
                                 </exec>
 
                                 <echo>Copying to ${installation.dir}</echo>

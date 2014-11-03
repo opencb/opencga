@@ -22,8 +22,24 @@ import java.util.*;
 public class SgeManager {
 
 
+    private static final Map<String, String> stateDic;
+    public static final String UNKNOWN = "unknown";
+    public static final String RUNNING = "running";
+    public static final String TRANSFERRED = "transferred";
+    public static final String QUEUED = "queued";
+    public static final String ERROR = "error";
+
     protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
     private static Properties analysisProperties = Config.getAnalysisProperties();
+
+    static {
+        stateDic = new HashMap<String, String>();
+        stateDic.put("r", RUNNING);
+        stateDic.put("t", TRANSFERRED);
+        stateDic.put("qw", QUEUED);
+        stateDic.put("Eqw", ERROR);
+    }
+
 
     public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine,
                                 String queue) throws Exception {
@@ -105,12 +121,7 @@ public class SgeManager {
     }
 
     public static String status(String jobId) throws Exception {
-        String status = "unknown";
-        Map<String, String> stateDic = new HashMap<String, String>();
-        stateDic.put("r", "running");
-        stateDic.put("t", "transferred");
-        stateDic.put("qw", "queued");
-        stateDic.put("Eqw", "error");
+        String status = UNKNOWN;
 
         String xml = null;
         try {
@@ -160,7 +171,7 @@ public class SgeManager {
             }
         }
 
-        if (!status.equals("unknown")) {
+        if (!status.equals(UNKNOWN)) {
             status = stateDic.get(status);
         } else {
             String command = "qacct -j " + jobId;

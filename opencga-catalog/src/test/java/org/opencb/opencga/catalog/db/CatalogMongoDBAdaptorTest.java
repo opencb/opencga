@@ -101,9 +101,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getUserTest() throws CatalogManagerException {
-        System.out.println(catalog.getUser("jcoll", null));
+        System.out.println(catalog.getUser("jcoll", null, null));
         try {
-            System.out.println(catalog.getUser("nonExistingUser", null));
+            System.out.println(catalog.getUser("nonExistingUser", null, null));
             fail("Expected \"Non existing user\" exception");
         } catch (CatalogManagerException e) {
             System.out.println(e);
