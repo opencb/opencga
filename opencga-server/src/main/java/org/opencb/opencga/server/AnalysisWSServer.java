@@ -65,18 +65,17 @@ public class AnalysisWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{analysisId}/jobs")
-//    @Produces("application/json")
-//    @ApiOperation(value = "Get all jobs")
-//    public Response visit(
-//            @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
-//        try {
-//            QueryOptions options = new QueryOptions("analysisId", analysisId);
-//            return createOkResponse(catalogManager.searchJobs(options, sessionId));
-//        } catch (CatalogManagerException e) {
-//            return createErrorResponse(e.getMessage());
-//        }
-//    }
+    @GET
+    @Path("/{analysisId}/jobs")
+    @Produces("application/json")
+    @ApiOperation(value = "Get all jobs")
+    public Response visit(
+            @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
+        try {
+            return createOkResponse(catalogManager.getJobsByAnalysis(analysisId, sessionId));
+        } catch (CatalogManagerException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
 
 }

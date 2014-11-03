@@ -949,7 +949,7 @@ public class CatalogManager {
     }
 
     public QueryResult deleteFile(int fileId, String sessionId) throws CatalogManagerException {
-        return deleteDataFromStudy(fileId ,sessionId);
+        return deleteDataFromStudy(fileId, sessionId);
     }
 
     public QueryResult deleteFolder(int folderId, String sessionId) throws CatalogManagerException {
@@ -1631,6 +1631,17 @@ public class CatalogManager {
                 return catalogDBAdaptor.searchJob(new QueryOptions("unfinished", true));
             default:
                 throw new CatalogManagerException("Permission denied. Admin role required");
+        }
+    }
+
+    public QueryResult<Job> getJobsByAnalysis(int analysisId, String sessionId) throws CatalogManagerException {
+        String userId = getUserIdBySessionId(sessionId);
+//        getAnalysisAcl(); //TODO: Look for ACLs !!!
+        int studyId = getStudyIdByAnalysisId(analysisId);
+        if (getStudyAcl(userId, studyId).isRead()) {
+            return catalogDBAdaptor.searchJob(new QueryOptions("analysisId", analysisId));
+        } else {
+            throw new CatalogManagerException("Permission denied. User can't read this analysis");
         }
     }
 
