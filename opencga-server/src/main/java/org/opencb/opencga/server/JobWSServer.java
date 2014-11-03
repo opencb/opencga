@@ -41,10 +41,10 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create job")
 
     public Response createJob(
-            @ApiParam(value = "analysisId", required = true)    @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "toolId", required = true)        @QueryParam("toolId") String toolIdStr,
-            @ApiParam(value = "execution", required = false)    @DefaultValue("") @QueryParam("execution") String execution,
-            @ApiParam(value = "description", required = false)  @DefaultValue("") @QueryParam("description") String description
+            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+            @ApiParam(value = "toolId", required = true)        @DefaultValue("")   @QueryParam("toolId") String toolIdStr,
+            @ApiParam(value = "execution", required = false)    @DefaultValue("")   @QueryParam("execution") String execution,
+            @ApiParam(value = "description", required = false)  @DefaultValue("")   @QueryParam("description") String description
     ) {
         QueryResult<Job> jobResult;
         try {
@@ -107,7 +107,7 @@ public class JobWSServer extends OpenCGAWSServer {
             jobResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir.getId(), temporalOutDir.getId(), inputFiles, sessionId);
 
             // Execute job
-            analysisJobExecuter.execute(jobName,temporalOutdirPath.toAbsolutePath().toString(),commandLine);
+            analysisJobExecuter.execute(jobName, catalogManager.getFileUri(temporalOutDir).getPath(), commandLine);
 
             return createOkResponse(jobResult);
 
