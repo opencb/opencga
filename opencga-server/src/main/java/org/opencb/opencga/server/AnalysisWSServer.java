@@ -4,6 +4,7 @@ package org.opencb.opencga.server;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 
@@ -51,5 +52,31 @@ public class AnalysisWSServer extends OpenCGAWSServer {
 
     }
 
+    @GET
+    @Path("/{analysisId}/info")
+    @Produces("application/json")
+    @ApiOperation(value = "Get analysisInfo")
+    public Response info(
+            @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
+        try {
+            return createOkResponse(catalogManager.getAnalysis(analysisId, sessionId));
+        } catch (CatalogManagerException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+//    @GET
+//    @Path("/{analysisId}/jobs")
+//    @Produces("application/json")
+//    @ApiOperation(value = "Get all jobs")
+//    public Response visit(
+//            @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
+//        try {
+//            QueryOptions options = new QueryOptions("analysisId", analysisId);
+//            return createOkResponse(catalogManager.searchJobs(options, sessionId));
+//        } catch (CatalogManagerException e) {
+//            return createErrorResponse(e.getMessage());
+//        }
+//    }
 
 }
