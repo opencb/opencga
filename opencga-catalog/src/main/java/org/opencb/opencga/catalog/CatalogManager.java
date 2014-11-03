@@ -385,14 +385,17 @@ public class CatalogManager {
     }
 
 
-    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId)
+    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogManagerException {
+        return getUser(userId, lastActivity, sessionId, null);
+    }
+    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId, QueryOptions options)
             throws CatalogManagerException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
         //FIXME: Should other users get access to other user information? (If so, then filter projects)
         //FIXME: Should setPassword(null)??
-        return catalogDBAdaptor.getUser(userId, lastActivity);
+        return catalogDBAdaptor.getUser(userId, options, lastActivity);
     }
 
     public String getUserIdBySessionId(String sessionId){
@@ -1130,9 +1133,18 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        getStudyAcl(userId, studyId);
-
-        options.put("studyId", studyId);
+        if(studyId < 0) {
+            User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
+            switch(user.getRole()){
+                case User.ROLE_ADMIN:
+                    break;
+                default:
+                    throw new CatalogManagerException("Permission denied. StudyId or Admin role required");
+            }
+        } else {
+            getStudyAcl(userId, studyId);
+            query.put("studyId", studyId);
+        }
         return catalogDBAdaptor.searchFile(query, options);
     }
 
@@ -1611,6 +1623,16 @@ public class CatalogManager {
         return catalogDBAdaptor.getJob(jobId);
     }
 
+    public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogManagerException {
+        String userId = getUserIdBySessionId(sessionId);
+        User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
+        switch(user.getRole()){
+            case User.ROLE_ADMIN:
+                return catalogDBAdaptor.searchJob(new QueryOptions("unfinished", true));
+            default:
+                throw new CatalogManagerException("Permission denied. Admin role required");
+        }
+    }
 
 //    public DataInputStream getGrepFileFromJob(String userId, String jobId, String filename, String pattern, boolean ignoreCase, boolean multi, String sessionId)
 //            throws CatalogIOManagerException, IOException, CatalogManagerException {

@@ -67,7 +67,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     static {
         jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonFileReader = jsonObjectMapper.reader(File.class);
         jsonUserReader = jsonObjectMapper.reader(User.class);
@@ -252,7 +254,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         //Get the inserted user.
-        List<User> result = getUser(user.getId(), "").getResult();
+        List<User> result = getUser(user.getId(), null, "").getResult();
 
         return endQuery("createUser", startTime, result, errorMsg, null);
     }
@@ -375,16 +377,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<User> getUser(String userId, String lastActivityg) throws CatalogManagerException{
+    public QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogManagerException{
         long startTime = startQuery();
         DBObject query = new BasicDBObject("id", userId);
-        QueryResult result = userCollection.find(query, null, null);
-
+//        query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
+        QueryResult result = userCollection.find(query, options, null);
         User user = parseUser(result);
+
         if(user == null){
             throw new CatalogManagerException("User  {id:" + userId + "} not found");
         }
-        if(user.getLastActivity().equals(lastActivityg)) {
+        if(user.getLastActivity() != null && user.getLastActivity().equals(lastActivity)) {
             return endQuery("Get user", startTime);
         } else {
             return endQuery("Get user", startTime, Arrays.asList(user));
@@ -1639,6 +1642,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(query.containsKey("indexJobId")){
             filters.add(new BasicDBObject("indices.jobId", query.getString("indexJobId")));
         }
+        if(query.containsKey("indexState")){
+            filters.add(new BasicDBObject("indices.state", query.getString("indexState")));
+        }
 
         QueryResult<WriteResult> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
 
@@ -2029,6 +2035,27 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
     }
 
+    @Override
+    public QueryResult<Job> searchJob(QueryOptions options) throws CatalogManagerException {
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject();
+
+        if(options.containsKey("unfinished")) {
+            if(options.getBoolean("unfinished")) {
+                query.put("state", new BasicDBObject("$ne", Job.RUNNING));
+            } else {
+                query.put("state", Job.RUNNING);
+            }
+            options.remove("unfinished");
+        }
+        query.putAll(options);
+
+        QueryResult queryResult = jobCollection.find(query, null, null);
+        return endQuery("Search job", startTime);
+    }
+
+
     /**
      * Tool methods
      * ***************************
@@ -2126,6 +2153,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //
 //        return endQuery("Get tool", startTime, user.getTools());
 //    }
+
+
     /*
     * Helper methods
     ********************/
