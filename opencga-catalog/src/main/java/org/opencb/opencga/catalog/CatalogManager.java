@@ -809,10 +809,10 @@ public class CatalogManager {
             throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(format, "format");
-        checkParameter(bioformat, "bioformat");
         checkParameter(description, "description");
         checkParameter(sessionId, "sessionId");
         checkPath(path, "filePath");
+        checkObj(bioformat, "bioformat");   //Bioformat can be empty
 
         Study study = catalogDBAdaptor.getStudy(studyId).getResult().get(0); // if no studies are found, an exception is raised
 
@@ -1033,8 +1033,9 @@ public class CatalogManager {
             break;
         }
         String ownerId = catalogDBAdaptor.getFileOwner(fileId);
+        QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, parameters);
         catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return catalogDBAdaptor.modifyFile(fileId, parameters);
+        return queryResult;
     }
 
     public QueryResult setIndexFile(int fileId, String backend, Index index, String sessionId) throws CatalogManagerException {

@@ -286,7 +286,7 @@ public class DaemonLoop implements Runnable {
         final File catalogFile;
         try {
             String filePath = Paths.get(job.getOutDir(), generatedFile).toString();
-            QueryResult<File> result = catalogManager.createFile(studyId, File.FILE, "txt", filePath,
+            QueryResult<File> result = catalogManager.createFile(studyId, File.FILE, "", filePath,
                     "Generated from job " + job.getId(), true, job.getId(), sessionId);
             catalogFile = result.getResult().get(0);
         } catch (CatalogManagerException | CatalogIOManagerException | InterruptedException e) {
@@ -305,7 +305,7 @@ public class DaemonLoop implements Runnable {
 
         //4º Add checksum to catalog
         try {
-            QueryOptions parameters = new QueryOptions();
+            ObjectMap parameters = new ObjectMap();
             parameters.put("jobId", job.getId());
             parameters.put("diskUsage", attrs.size());
             parameters.put("attributes", new ObjectMap("checksum", checksum));
