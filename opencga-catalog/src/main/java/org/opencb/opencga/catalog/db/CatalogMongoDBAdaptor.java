@@ -1410,6 +1410,17 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 fileParameters.put(s, parameters.getString(s));
             }
         }
+
+        String[] acceptedLongParams = {"diskUsage"};
+        for (String s : acceptedLongParams) {
+            if(parameters.containsKey(s)) {
+                Object value = parameters.get(s);    //TODO: Add "getLong" to "ObjectMap"
+                if(value instanceof Long) {
+                    fileParameters.put(s, value);
+                }
+            }
+        }
+
         Map<String, Object> attributes = parameters.getMap("attributes");
         if(attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
@@ -1997,17 +2008,35 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 jobParameters.put(s, parameters.getString(s));
             }
         }
-        String[] acceptedIntParams = {"startTime", "endTime", "visits", "diskUsage"};
+        String[] acceptedIntParams = {"visits"};
         for (String s : acceptedIntParams) {
             if(parameters.containsKey(s)) {
                 jobParameters.put(s, parameters.getInt(s));
             }
         }
 
+        String[] acceptedLongParams = {"startTime", "endTime", "diskUsage"};
+        for (String s : acceptedLongParams) {
+            if(parameters.containsKey(s)) {
+                Object value = parameters.get(s);    //TODO: Add "getLong" to "ObjectMap"
+                if(value instanceof Long) {
+                    jobParameters.put(s, value);
+                }
+            }
+        }
+
+        String[] acceptedListParams = {"output"};
+        for (String s : acceptedListParams) {
+            if(parameters.containsKey(s)) {
+                jobParameters.put(s, parameters.getListAs(s, Integer.class));
+            }
+        }
 
         if(!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject("id", jobId);
             BasicDBObject updates = new BasicDBObject("$set", jobParameters);
+            System.out.println("query = " + query);
+            System.out.println("updates = " + updates);
             QueryResult<WriteResult> update = jobCollection.update(query, updates, false, false);
             if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
                 throw new CatalogManagerException("Job {id:'" + jobId + "'} not found");
@@ -2041,13 +2070,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         DBObject query = new BasicDBObject();
 
-        if(options.containsKey("unfinished")) {
-            if(options.getBoolean("unfinished")) {
-                query.put("state", new BasicDBObject("$ne", Job.RUNNING));
+        if(options.containsKey("ready")) {
+            if(options.getBoolean("ready")) {
+                query.put("status", Job.READY);
             } else {
-                query.put("state", Job.RUNNING);
+                query.put("status", new BasicDBObject("$ne", Job.READY));
             }
-            options.remove("unfinished");
+            options.remove("ready");
         }
         query.putAll(options);
         System.out.println("query = " + query);

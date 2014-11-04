@@ -147,9 +147,10 @@ public class JobWSServer extends OpenCGAWSServer {
 
             // Create job in CatalogManager
             jobResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir.getId(), temporalOutDir.getId(), inputFiles, sessionId);
+            Job job = jobResult.getResult().get(0);
 
             // Execute job
-            analysisJobExecuter.execute(jobName, catalogManager.getFileUri(temporalOutDir).getPath(), commandLine);
+            analysisJobExecuter.execute(jobName, job.getId(), catalogManager.getFileUri(temporalOutDir).getPath(), commandLine);
 
             return createOkResponse(jobResult);
 

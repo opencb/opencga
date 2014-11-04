@@ -73,7 +73,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void deleteFile(URI fileUri) throws IOException {
+    public void deleteFile(URI fileUri) throws IOException {
 
     }
 
@@ -104,6 +104,11 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
 
     @Override
     public DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
+        return null;
+    }
+
+    @Override
+    public String calculateChecksum(URI file) {
         return null;
     }
 
