@@ -1644,8 +1644,8 @@ public class CatalogManager {
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogManagerException {
         String userId = getUserIdBySessionId(sessionId);
-        User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
-        switch(user.getRole()){
+        String role = getUserRole(userId);
+        switch(role){
             case User.ROLE_ADMIN:
                 return catalogDBAdaptor.searchJob(new QueryOptions("ready", false));
             default:
@@ -1666,8 +1666,9 @@ public class CatalogManager {
 
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogManagerException {
         String userId = getUserIdBySessionId(sessionId);
-        User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
-        switch(user.getRole()){
+
+        String role = getUserRole(userId);
+        switch(role){
             case User.ROLE_ADMIN:
                 return catalogDBAdaptor.modifyJob(jobId, parameters);
             default:
@@ -1945,6 +1946,9 @@ public class CatalogManager {
 
     private Acl getProjectAcl(String userId, int projectId) throws CatalogManagerException {
         Acl projectAcl;
+        if(getUserRole(userId).equals(User.ROLE_ADMIN)) {
+            return new Acl(userId, true, true, true, true);
+        }
         boolean sameOwner = catalogDBAdaptor.getProjectOwner(projectId).equals(userId);
 
         if(sameOwner){
@@ -1972,6 +1976,9 @@ public class CatalogManager {
 
     private Acl getStudyAcl(String userId, int studyId, Acl projectAcl) throws CatalogManagerException {
         Acl studyAcl;
+        if(getUserRole(userId).equals(User.ROLE_ADMIN)) {
+            return new Acl(userId, true, true, true, true);
+        }
         boolean sameOwner = catalogDBAdaptor.getStudyOwner(studyId).equals(userId);
 
         if(sameOwner){
@@ -1994,6 +2001,9 @@ public class CatalogManager {
     }
 
     private Acl getFileAcl(String userId, int fileId) throws CatalogManagerException {
+        if(getUserRole(userId).equals(User.ROLE_ADMIN)) {
+            return new Acl(userId, true, true, true, true);
+        }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
         return getStudyAcl(userId, studyId);
     }
