@@ -100,7 +100,7 @@ public abstract class CatalogIOManager {
 
     public abstract void deleteDirectory(URI uri) throws IOException;
 
-    protected abstract void deleteFile(URI fileUri) throws IOException;
+    public abstract void deleteFile(URI fileUri) throws IOException;
 
     public abstract void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException;
 
@@ -384,6 +384,6 @@ public abstract class CatalogIOManager {
 //    public abstract InputStream getJobZipped(Path jobPath, String jobId) throws CatalogIOManagerException, IOException;
 
 
-//    public abstract String calculateChecksum(URI file);
+    public abstract String calculateChecksum(URI file) throws CatalogIOManagerException;
 
 }

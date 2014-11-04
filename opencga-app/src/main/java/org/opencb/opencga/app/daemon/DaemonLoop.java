@@ -9,29 +9,26 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -112,7 +109,6 @@ public class DaemonLoop implements Runnable {
                     System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     switch(status) {
                         case SgeManager.FINISHED:
-                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.READY), sessionId);
                             //TODO: Finish job
                             finishJob(job);
                             break;
@@ -197,99 +193,159 @@ public class DaemonLoop implements Runnable {
      *      Else, pray
      */
     private void finishJob(final Job job) {
-        final Path outDirPath;
-        final Path tmpOutdir;
+        final URI outDirUri;
+        final URI tmpOutdirUri;
+        final int studyId = 1;
+        List<Integer> fileIds = null;
         try {
             File tmpDir = catalogManager.getFile(job.getTmpOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
-            tmpOutdir = Paths.get(catalogManager.getFileUri(tmpDir).getPath());
+            tmpOutdirUri = catalogManager.getFileUri(tmpDir);
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
-            outDirPath = Paths.get(outDir.getPath());
+            outDirUri = catalogManager.getFileUri(outDir);
         } catch (CatalogIOManagerException | IOException | CatalogManagerException e) {
             e.printStackTrace();
             return;
         }
-        FileVisitor <Path> fileVisitor = new SimpleFileVisitor<Path>(){
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                addResultFile(file, job, tmpOutdir, outDirPath, attrs);
-                return super.visitFile(file, attrs);
-            }
-        };
 
         try {//1º Read generated files.
-            Files.walkFileTree(tmpOutdir,fileVisitor);
-            Files.delete(tmpOutdir);    //TODO: Check empty folder!
+            //CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirUri.getScheme());
+            switch (tmpOutdirUri.getScheme()) {
+                case "file": {
+                    fileIds = walkFileTree(job, outDirUri, tmpOutdirUri, studyId);
+                    break;
+                }
+                default:
+                    System.out.println("Unsupported scheme");
+                    return;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        try {
+            ObjectMap parameters = new ObjectMap("status", Job.READY);
+            parameters.put("output", fileIds);
+            parameters.put("endTime", System.currentTimeMillis());
+            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace(); //TODO: Handle exception
+        }
     }
-    private boolean addResultFile(Path file, Job job, Path originOutDir, Path tarjetOutDir, BasicFileAttributes attrs) throws IOException {
-        String generatedFile = file.toString().substring(originOutDir.toString().length() + 1);
-        String filePath = tarjetOutDir.resolve(generatedFile).toString();
-        CatalogIOManagerFactory catalogIOManagerFactory = catalogManager.getCatalogIOManagerFactory();
-        System.out.println("filePath = " + filePath);
+
+    private List<Integer> walkFileTree(final Job job, final URI outDirUri, final URI tmpOutdirUri, final int studyId) throws IOException {
+        final List<Integer> fileIds;
+        fileIds = new LinkedList<>();
+        FileVisitor<Path> fileVisitor = new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+
+                String generatedFile = file.toAbsolutePath().toString().substring(tmpOutdirUri.getPath().length());
+                int fileId = addResultFile(job, generatedFile, tmpOutdirUri, outDirUri, studyId, attrs);
+                fileIds.add(fileId);
+
+                return super.visitFile(file, attrs);
+            }
+        };
+        Files.walkFileTree(Paths.get(tmpOutdirUri.getPath()), fileVisitor);
+        Files.delete(Paths.get(tmpOutdirUri));    //TODO: Check empty folder!
+        return fileIds;
+    }
+
+    /**
+     *
+     *
+     * @param job            Job
+     * @param generatedFile  Generated file path
+     * @param originOutDir   Original ourDir where files were created.
+     * @param targetOutDir   Destination folder URI.
+     * @param studyId        StudyID
+     * @param attrs          File attributes
+     * @return               new FileID
+     *
+     * @throws IOException
+     */
+    private int addResultFile(Job job, String generatedFile , URI originOutDir, URI targetOutDir, int studyId, BasicFileAttributes attrs)
+            throws IOException {
+//        System.out.println("DaemonLoop.addResultFile");
+//        System.out.println("job = [" + job + "], generatedFile = [" + generatedFile + "], originOutDir = [" + originOutDir + "], targetOutDir = [" + targetOutDir + "], studyId = [" + studyId + "], attrs = [" + attrs + "]");
+
+        URI originFileUri = originOutDir.resolve(generatedFile);
+        URI targetFileUri = targetOutDir.resolve(generatedFile);
+
+        final CatalogIOManager originIOManager;
+        final CatalogIOManager destIOManager;
+        try {
+            originIOManager = catalogManager.getCatalogIOManagerFactory().get(originOutDir.getScheme());
+            destIOManager = catalogManager.getCatalogIOManagerFactory().get(targetOutDir.getScheme());
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            return -1;
+        }
 
         //2º Add generated files to catalog. Status: File.UPLOADING
-        QueryResult<File> result;
+        final File catalogFile;
         try {
-            result = catalogManager.createFile(1, File.FILE, "txt", filePath, "Generated from job " + job.getId(), true, job.getId(), sessionId);
+            String filePath = Paths.get(job.getOutDir(), generatedFile).toString();
+            QueryResult<File> result = catalogManager.createFile(studyId, File.FILE, "txt", filePath,
+                    "Generated from job " + job.getId(), true, job.getId(), sessionId);
+            catalogFile = result.getResult().get(0);
         } catch (CatalogManagerException | CatalogIOManagerException | InterruptedException e) {
-            System.out.println("e.getMessage() = " + e.getMessage());
-            return true;
-//                    e.printStackTrace();
+            e.printStackTrace();
+            return -1;
         }
 
         //3º Calculate checksum
-        String checksum = calculateChecksum(file);
+        final String checksum;
+        try {
+            checksum = originIOManager.calculateChecksum(originFileUri);
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            return -1;
+        }
 
         //4º Add checksum to catalog
-        QueryOptions parameters = new QueryOptions();
-        parameters.put("jobId", job.getId());
-        parameters.put("diskUsage", attrs.size());
-        parameters.put("attributes", new ObjectMap("checksum", checksum));
         try {
-            catalogManager.modifyFile(result.getResult().get(0).getId(), parameters, sessionId);
+            QueryOptions parameters = new QueryOptions();
+            parameters.put("jobId", job.getId());
+            parameters.put("diskUsage", attrs.size());
+            parameters.put("attributes", new ObjectMap("checksum", checksum));
+            catalogManager.modifyFile(catalogFile.getId(), parameters, sessionId);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
-            return true;
+            return -1;
         }
 
-        //5º Copy
-        Path target;
-        try {
-            target = Paths.get(catalogManager.getFileUri(result.getResult().get(0)).getPath());
-            Files.copy(file, target);
-        } catch (CatalogManagerException | CatalogIOManagerException e) {
-            e.printStackTrace();
-            return true;
-        }
+        //5º Copy   //TODO: Copy with the multi_FS_Manager!
+        Files.copy(Paths.get(originFileUri), Paths.get(targetFileUri));
+
 
         //6º Calculate checksum
-        String checksumDest = calculateChecksum(target);
+        final String checksumDest;
+        try {
+            checksumDest = destIOManager.calculateChecksum(targetFileUri);
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            return -1;
+        }
 
         //7º Compare
         if (checksum.equals(checksumDest)) {
             logger.info("Checksum matches. Deleting origin file.");
             logger.info(checksum + " == " + checksumDest);
-            Files.delete(file);
+            originIOManager.deleteFile(originFileUri);
+            try {
+                QueryOptions parameters = new QueryOptions("status", File.READY);
+                catalogManager.modifyFile(catalogFile.getId(), parameters, sessionId);
+            } catch (CatalogManagerException e) {
+                e.printStackTrace();
+                return -1;
+            }
         } else {
             System.out.println("Checksum mismatches!");
+            return -1;
         }
-        return false;
-    }
-    private String calculateChecksum(Path file) throws IOException {
-        Process p = Runtime.getRuntime().exec("md5sum " + file.toString());
-        BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        String checksum = br.readLine();
 
-        try {
-            if (p.waitFor() != 0) {
-                //TODO: Handle error in checksum
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return checksum.split(" ")[0];
+        return catalogFile.getId();
     }
 
     public void start() throws Exception {

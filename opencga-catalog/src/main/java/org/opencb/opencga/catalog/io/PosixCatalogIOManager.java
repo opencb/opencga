@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.io;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void deleteFile(URI fileUri) throws IOException {
+    public void deleteFile(URI fileUri) throws IOException {
         Files.delete(Paths.get(fileUri));
     }
 
@@ -462,6 +463,31 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         } else {
             throw new CatalogIOManagerException("Not a regular file: " + path.toAbsolutePath().toString());
         }
+    }
+
+    @Override
+    public String calculateChecksum(URI file) throws CatalogIOManagerException {
+        Process p = null;
+        String checksum = "";
+        try {
+            String command = "md5sum " + file.getPath();
+            System.out.println("command = " + command);
+            p = Runtime.getRuntime().exec(command);
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            checksum = br.readLine();
+
+            if (p.waitFor() != 0) {
+                //TODO: Handle error in checksum
+                System.out.println("checksum = " + checksum);
+                throw new CatalogIOManagerException("md5sum failed with exit value : " + p.exitValue());
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            //TODO: Handle error in checksum
+            throw new CatalogIOManagerException("Checksum error in file " + file, e);
+        }
+
+        return checksum.split(" ")[0];
     }
 
 

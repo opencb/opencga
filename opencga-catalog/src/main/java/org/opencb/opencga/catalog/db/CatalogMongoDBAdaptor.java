@@ -2004,6 +2004,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
 
+        String[] acceptedListParams = {"output"};
+        for (String s : acceptedListParams) {
+            if(parameters.containsKey(s)) {
+                jobParameters.put(s, parameters.getListAs(s, Integer.class));
+            }
+        }
 
         if(!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject("id", jobId);

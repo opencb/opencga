@@ -8,4 +8,8 @@ public class CatalogIOManagerException extends Exception {
     public CatalogIOManagerException(String msg) {
         super(msg);
     }
+
+    public CatalogIOManagerException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
