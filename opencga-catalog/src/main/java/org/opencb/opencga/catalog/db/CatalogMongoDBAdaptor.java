@@ -2041,13 +2041,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         DBObject query = new BasicDBObject();
 
-        if(options.containsKey("unfinished")) {
-            if(options.getBoolean("unfinished")) {
-                query.put("state", new BasicDBObject("$ne", Job.RUNNING));
+        if(options.containsKey("ready")) {
+            if(options.getBoolean("ready")) {
+                query.put("status", Job.READY);
             } else {
-                query.put("state", Job.RUNNING);
+                query.put("status", new BasicDBObject("$ne", Job.READY));
             }
-            options.remove("unfinished");
+            options.remove("ready");
         }
         query.putAll(options);
         System.out.println("query = " + query);

@@ -88,6 +88,10 @@ public class CatalogManager {
         configureIOManager(properties);
     }
 
+    public CatalogIOManagerFactory getCatalogIOManagerFactory() {
+        return catalogIOManagerFactory;
+    }
+
     private void configureIOManager(Properties properties)
             throws IOException, CatalogIOManagerException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
@@ -798,6 +802,11 @@ public class CatalogManager {
     public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
                                         boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
+        return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
+    }
+    public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
+                                        boolean parents, int jobId, String sessionId)
+            throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(format, "format");
         checkParameter(bioformat, "bioformat");
@@ -809,6 +818,7 @@ public class CatalogManager {
 
         File file = new File(Paths.get(path).getFileName().toString(), File.FILE, format, bioformat,
                 study.getUri().getScheme(), path, userId, description, File.UPLOADING, 0);
+        file.setJobId(jobId);
 
         Path parent = Paths.get(path).getParent();
 
@@ -1007,13 +1017,20 @@ public class CatalogManager {
         checkObj(parameters, "Parameters");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!getFileAcl(userId, fileId).isWrite()) {
-            throw new CatalogManagerException("User " + userId + " can't modify the file " + fileId);
-        }
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|type|format|bioformat|description|status|attributes|stats")) {
-                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
-            }
+        switch (getUserRole(userId)) {
+            case User.ROLE_ADMIN:
+                logger.info("UserAdmin " + userId + " modifies file " + fileId);
+                break;
+            default:
+                if (!getFileAcl(userId, fileId).isWrite()) {
+                    throw new CatalogManagerException("User " + userId + " can't modify the file " + fileId);
+                }
+                for (String s : parameters.keySet()) {
+                    if (!s.matches("name|type|format|bioformat|description|status|attributes|stats")) {
+                        throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
+                    }
+                }
+            break;
         }
         String ownerId = catalogDBAdaptor.getFileOwner(fileId);
         catalogDBAdaptor.updateUserLastActivity(ownerId);
@@ -1134,8 +1151,8 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
         if(studyId < 0) {
-            User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
-            switch(user.getRole()){
+            String role = getUserRole(userId);
+            switch(role){
                 case User.ROLE_ADMIN:
                     break;
                 default:
@@ -1147,6 +1164,7 @@ public class CatalogManager {
         }
         return catalogDBAdaptor.searchFile(query, options);
     }
+
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
 //            throws CatalogIOManagerException, IOException, CatalogManagerException {
@@ -1628,7 +1646,7 @@ public class CatalogManager {
         User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
         switch(user.getRole()){
             case User.ROLE_ADMIN:
-                return catalogDBAdaptor.searchJob(new QueryOptions("unfinished", true));
+                return catalogDBAdaptor.searchJob(new QueryOptions("ready", false));
             default:
                 throw new CatalogManagerException("Permission denied. Admin role required");
         }
@@ -1642,6 +1660,17 @@ public class CatalogManager {
             return catalogDBAdaptor.searchJob(new QueryOptions("analysisId", analysisId));
         } else {
             throw new CatalogManagerException("Permission denied. User can't read this analysis");
+        }
+    }
+
+    public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogManagerException {
+        String userId = getUserIdBySessionId(sessionId);
+        User user = catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0);
+        switch(user.getRole()){
+            case User.ROLE_ADMIN:
+                return catalogDBAdaptor.modifyJob(jobId, parameters);
+            default:
+                throw new CatalogManagerException("Permission denied. Admin role required");
         }
     }
 
@@ -1907,6 +1936,10 @@ public class CatalogManager {
                 acl1.isExecute() && acl2.isExecute(),
                 acl1.isDelete() && acl2.isDelete()
         );
+    }
+
+    private String getUserRole(String userId) throws CatalogManagerException {
+        return catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0).getRole();
     }
 
     private Acl getProjectAcl(String userId, int projectId) throws CatalogManagerException {

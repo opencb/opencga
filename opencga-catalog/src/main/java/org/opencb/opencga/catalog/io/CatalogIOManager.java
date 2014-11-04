@@ -383,4 +383,7 @@ public abstract class CatalogIOManager {
 //
 //    public abstract InputStream getJobZipped(Path jobPath, String jobId) throws CatalogIOManagerException, IOException;
 
+
+//    public abstract String calculateChecksum(URI file);
+
 }

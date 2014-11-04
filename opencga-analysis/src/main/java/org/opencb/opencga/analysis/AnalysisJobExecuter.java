@@ -84,11 +84,11 @@ public class AnalysisJobExecuter {
         execution = getExecution();
     }
 
-    public void execute(String jobId, String jobFolder, String commandLine) throws AnalysisExecutionException, IOException {
-        logger.debug("AnalysisJobExecuter: execute, 'jobId': " + jobId + ", 'jobFolder': " + jobFolder);
+    public void execute(String jobName, int jobId, String jobFolder, String commandLine) throws AnalysisExecutionException, IOException {
+        logger.debug("AnalysisJobExecuter: execute, 'jobName': " + jobName + ", 'jobFolder': " + jobFolder);
         logger.debug("AnalysisJobExecuter: execute, command line: " + commandLine);
 
-        executeCommandLine(commandLine, jobId, jobFolder);
+        executeCommandLine(commandLine, jobName, jobId, jobFolder);
     }
 
     private boolean checkRequiredParams(Map<String, List<String>> params, List<Option> validParams) {
@@ -164,7 +164,7 @@ public class AnalysisJobExecuter {
         return cmdLine.toString();
     }
 
-    private void executeCommandLine(String commandLine, String jobId, String jobFolder)
+    private void executeCommandLine(String commandLine, String jobName, int jobId, String jobFolder)
             throws AnalysisExecutionException, IOException {
         // read execution param
         String jobExecutor = analysisProperties.getProperty("OPENCGA.ANALYSIS.JOB.EXECUTOR");
@@ -182,7 +182,7 @@ public class AnalysisJobExecuter {
             logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
 
             try {
-                SgeManager.queueJob(analysisName, jobId, 0, jobFolder, commandLine);
+                SgeManager.queueJob(analysisName, jobName, jobId, jobFolder, commandLine);
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
@@ -265,7 +265,7 @@ public class AnalysisJobExecuter {
         return sb.toString();
     }
 
-    public String test(String jobId, String jobFolder) throws AnalysisExecutionException, IOException {
+    public String test(String jobName, int jobId, String jobFolder) throws AnalysisExecutionException, IOException {
         // TODO test
 
         if (!Files.exists(manifestFile)) {
@@ -276,9 +276,9 @@ public class AnalysisJobExecuter {
             return "ERROR: Executable not found.";
         }
 
-        executeCommandLine(execution.getTestCmd(), jobId, jobFolder);
+        executeCommandLine(execution.getTestCmd(), jobName, jobId, jobFolder);
 
-        return String.valueOf(jobId);
+        return String.valueOf(jobName);
     }
 
     public String getResult() throws AnalysisExecutionException {

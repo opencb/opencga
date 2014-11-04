@@ -17,6 +17,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class SgeManager {
@@ -28,6 +29,8 @@ public class SgeManager {
     public static final String TRANSFERRED = "transferred";
     public static final String QUEUED = "queued";
     public static final String ERROR = "error";
+    public static final String FINISHED = "finished";
+    public static final String EXECUTION_ERROR = "execution error";
 
     protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
     private static Properties analysisProperties = Config.getAnalysisProperties();
@@ -41,11 +44,18 @@ public class SgeManager {
     }
 
 
-    public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine,
+    public static void queueJob(String toolName, String wumJobName, int wumJobId, String outdir, String commandLine,
                                 String queue) throws Exception {
-        // init sge job
-        String sgeCommandLine = "qsub -V -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
-                + outdir + "/sge_err.log -q " + queue + " -b y " + commandLine;
+        String outFile = Paths.get(outdir, "sge_out." + wumJobId + ".log").toString();
+        String errFile = Paths.get(outdir, "sge_err." + wumJobId + ".log").toString();
+                // init sge job
+                String sgeCommandLine = "qsub -V " +
+                        " -N " + getSgeJobName(toolName, wumJobName) +
+                        " -o " + outFile +
+                        " -e " + errFile +
+                        " -q " + queue +
+                        " -b y " + commandLine;
+
         logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
 
         // thrown command to shell
@@ -54,18 +64,9 @@ public class SgeManager {
         sp.getRunnableProcess().run();
     }
 
-    public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine)
+    public static void queueJob(String toolName, String wumJobName, int wumJobId, String outdir, String commandLine)
             throws Exception {
-
-        // init sge job
-        String sgeCommandLine = "qsub -V -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
-                + outdir + "/sge_err.log -q " + getQueueName(toolName) + " -b y " + commandLine;
-        logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
-
-        // thrown command to shell
-        Command sgeCommand = new Command(sgeCommandLine);
-        SingleProcess sp = new SingleProcess(sgeCommand);
-        sp.getRunnableProcess().run();
+        queueJob(toolName, wumJobName, wumJobId, outdir, commandLine, getQueueName(toolName));
     }
 
     private static String getSgeJobName(String toolName, String wumJobId) {
@@ -175,14 +176,14 @@ public class SgeManager {
             status = stateDic.get(status);
         } else {
             String command = "qacct -j " + jobId;
-            logger.info(command);
+//            logger.info(command);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             String exitStatus = null;
             String failed = null;
             while ((line = in.readLine()) != null) {
-                logger.info(line);
+//                logger.info(line);
                 if (line.contains("exit_status")) {
                     exitStatus = line.replace("exit_status", "").trim();
                 }
@@ -198,9 +199,9 @@ public class SgeManager {
                     status = "queue error";
                 }
                 if ("0".equals(exitStatus)) {
-                    status = "finished";
+                    status = FINISHED;
                 } else {
-                    status = "execution error";
+                    status = EXECUTION_ERROR;
                 }
             }
         }
