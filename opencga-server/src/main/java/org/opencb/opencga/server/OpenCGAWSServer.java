@@ -1,10 +1,16 @@
 package org.opencb.opencga.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
@@ -13,6 +19,11 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos;
+import org.opencb.opencga.storage.core.variant.io.json.ArchivedVariantFileJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +125,12 @@ public class OpenCGAWSServer {
         }
 
         jsonObjectMapper = new ObjectMapper();
+
+        jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+        
         jsonObjectWriter = jsonObjectMapper.writer();
 
     }
@@ -172,6 +189,11 @@ public class OpenCGAWSServer {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(object), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
+            System.out.println("object = " + object);
+            System.out.println("((QueryResponse)object).getResponse() = " + ((QueryResponse) object).getResponse());
+
+            System.out.println("e = " + e);
+            System.out.println("e.getMessage() = " + e.getMessage());
             return createErrorResponse("Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
