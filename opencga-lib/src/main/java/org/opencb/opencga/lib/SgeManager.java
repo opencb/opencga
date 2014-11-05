@@ -43,11 +43,21 @@ public class SgeManager {
         stateDic.put("Eqw", ERROR);
     }
 
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine)
+            throws Exception {
+        queueJob(toolName, wumJobName, wumUserId, outdir, commandLine, getQueueName(toolName));
+    }
 
-    public static void queueJob(String toolName, String wumJobName, int wumJobId, String outdir, String commandLine,
-                                String queue) throws Exception {
-        String outFile = Paths.get(outdir, "sge_out." + wumJobId + ".log").toString();
-        String errFile = Paths.get(outdir, "sge_err." + wumJobId + ".log").toString();
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue)
+            throws Exception {
+        queueJob(toolName, wumJobName, wumUserId, outdir, commandLine, queue, "");
+    }
+
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue, String logFileId) throws Exception {
+        logFileId = logFileId == null || logFileId.isEmpty()? "" : "." + logFileId;
+        queue = queue == null || queue.isEmpty()? getQueueName(toolName) : queue;
+        String outFile = Paths.get(outdir, "sge_out" + logFileId + ".log").toString();
+        String errFile = Paths.get(outdir, "sge_err" + logFileId + ".log").toString();
                 // init sge job
                 String sgeCommandLine = "qsub -V " +
                         " -N " + getSgeJobName(toolName, wumJobName) +
@@ -64,10 +74,6 @@ public class SgeManager {
         sp.getRunnableProcess().run();
     }
 
-    public static void queueJob(String toolName, String wumJobName, int wumJobId, String outdir, String commandLine)
-            throws Exception {
-        queueJob(toolName, wumJobName, wumJobId, outdir, commandLine, getQueueName(toolName));
-    }
 
     private static String getSgeJobName(String toolName, String wumJobId) {
         return toolName.replace(" ", "_") + "_" + wumJobId;

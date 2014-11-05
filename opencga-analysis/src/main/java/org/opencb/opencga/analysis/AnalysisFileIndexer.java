@@ -12,8 +12,8 @@ import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -52,13 +52,12 @@ public class AnalysisFileIndexer {
         this.catalogManager = new CatalogManager(this.properties);
     }
 
-    public Index index(int fileId, Path outDir, String backend, String sessionId, QueryOptions options) throws IOException, CatalogIOManagerException, CatalogManagerException {
+    public Index index(int fileId, int outDirId, String backend, String sessionId, QueryOptions options) throws IOException, CatalogIOManagerException, CatalogManagerException {
         QueryResult<File> fileResult = catalogManager.getFile(fileId, sessionId);
         File file = fileResult.getResult().get(0);
-        String jobId = "J_"+StringUtils.randomString(5);
-        if(outDir == null || outDir.toString().isEmpty()) {
-            outDir = Paths.get(jobId);
-        }
+        String jobId = "I_"+StringUtils.randomString(15);
+
+
 
         //1º Check indexed
         List<Index> indices = file.getIndices();
@@ -67,45 +66,39 @@ public class AnalysisFileIndexer {
                 throw new IOException("File {name:'" + file.getName() + "', id:" + file.getId() + "} already indexed. " + index + "" );
             }
         }
-//        ObjectMap attributes = new ObjectMap(file.getAttributes());
-//        ObjectMap index = new ObjectMap(attributes.getMap("index_" + backend, Collections.<String, Object>emptyMap()));
-//        String indexed = index.getString("indexed", "");
-//        if(!indexed.isEmpty()) {
-//            throw new IOException("File {name:'" + file.getName() + "', id:" + file.getId() + "} already indexed. State: '" + indexed + "'" );
-//        }
 
-
-        //2º Create outdir
         int studyId = catalogManager.getStudyIdByFileId(fileId);
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         String ownerId = catalogManager.getFileOwner(fileId);
-        QueryResult<File> folderResult = catalogManager.createFolder(studyId, outDir, false, sessionId);
-        File folder = folderResult.getResult().get(0);
+        File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
+
+        //2º Create outdir
+        Path tmpOutDirPath = Paths.get("jobs", jobId); //TODO: Create job folder outside the user workspace.
+        File tmpOutDir = catalogManager.createFolder(studyId, tmpOutDirPath, false, sessionId).getResult().get(0);
+        URI tmpOutDirUri = catalogManager.getFileUri(tmpOutDir);
 
         //3º Create command line
         String name = file.getName();
         if(name.endsWith(".bam") || name.endsWith(".sam")) {
-//            indexAlignmentFile(file, options);
             int chunkSize = 200;    //TODO: Read from properties.
             String dbName = ownerId;
             StringBuilder commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-alignments ")
                     .append(" --alias ").append(file.getId())
-//                    .append(" --backend ").append()
-//                    .append(" --credentials ")
                     .append(" --dbName ").append(dbName)
-//                    .append(" --delete-temporal ")
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --mean-coverage ").append(chunkSize)
-   //                 .append(" --outdir ").append(catalogManager.getFileUri(folder))
+                    .append(" --outdir ").append(tmpOutDirUri)
+//                    .append(" --backend ").append()
+//                    .append(" --credentials ")
+//                    .append(" --delete-temporal ")
 //                    .append(" --temporal-dir ")
                     ;
-//            commandLine.append(" --sm-name ");
-
 
             //4º Run command
             try {
-                SgeManager.queueJob("alignment_indexer", jobId, 0, catalogManager.getFileUri(folder).getPath(), commandLine.toString());
+                SgeManager.queueJob("alignment_indexer", jobId, -1, tmpOutDirUri.getPath(),
+                        commandLine.toString(), null, "index." + file.getId());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -117,12 +110,11 @@ public class AnalysisFileIndexer {
             ObjectMap parameters = new ObjectMap();
             parameters.put("chunkSize", chunkSize);
             parameters.put("commandLine", commandLine.toString());
-            Index index = new Index(userId, Index.PENDING, dbName, backend, folder.getId(), folder.getPath(), jobId, parameters);
+            Index index = new Index(userId, Index.PENDING, dbName, backend, outDir.getId(), outDir.getPath(),
+                    tmpOutDirUri.toString(), jobId, parameters);
             catalogManager.setIndexFile(fileId, backend, index, sessionId);
 
             return index;
-
-
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
         } else if (name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
@@ -131,30 +123,5 @@ public class AnalysisFileIndexer {
         return null;
     }
 
-    public void finishIndex(String indexJobId, String sessionId) throws CatalogManagerException, IOException, CatalogIOManagerException {
-        QueryResult<File> fileResult = catalogManager.getFileByIndexJobId(indexJobId); //TODO: sessionId¿?¿?
-        if(fileResult.getResult().isEmpty()) {
-            return;
-        }
-        File file = fileResult.getResult().get(0);
-
-        try {
-            SgeManager.status(indexJobId);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //6º Find files
-//        catalogManager.refreshFolder();
-
-        //7º Update file.attributes
-        for (Index index : file.getIndices()) {
-            if (index.getJobId().equals(indexJobId)) {
-                index.setJobId("");
-                index.setState(Index.INDEXED);
-                index.getAttributes().put("", "");
-                catalogManager.setIndexFile(file.getId(), index.getBackend(), index, sessionId);
-            }
-        }
-    }
 
 }

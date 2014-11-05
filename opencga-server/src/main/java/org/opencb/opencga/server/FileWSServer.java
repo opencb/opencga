@@ -271,8 +271,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/index")
     @Produces("application/json")
     @ApiOperation(value = "File index")
-    public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
-                          @ApiParam(value = "outdir", required = false) @DefaultValue("") @QueryParam("outdir") String outdir,
+    public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIdStr,
+                          @ApiParam(value = "outdir", required = true) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
                           @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend
                           ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
@@ -281,8 +281,9 @@ public class FileWSServer extends OpenCGAWSServer {
             backend = "mongo"; //TODO: Get default backend from properties.
         }
         try {
-            outdir = outdir.replace(":", "/");
-            index = analysisFileIndexer.index(catalogManager.getFileId(fileId), Paths.get(outdir), backend, sessionId, queryOptions);
+            int outDirId = catalogManager.getFileId(outDirStr);
+            int fileId   = catalogManager.getFileId(fileIdStr);
+            index = analysisFileIndexer.index(fileId, outDirId, backend, sessionId, queryOptions);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
@@ -290,22 +291,22 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse(index);
     }
 
-    @GET
-    @Path("/index-finish")
-    @Produces("application/json")
-    @ApiOperation(value = "File finish index")
-    public Response indexFinish(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
-    ) {
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
-        String index = "";
-        try {
-            analysisFileIndexer.finishIndex(jobid, sessionId);
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-        return createOkResponse(index);
-    }
+//    @GET
+//    @Path("/index-finish")
+//    @Produces("application/json")
+//    @ApiOperation(value = "File finish index")
+//    public Response indexFinish(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+//    ) {
+//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
+//        String index = "";
+//        try {
+//            analysisFileIndexer.finishIndex(jobid, sessionId);
+//        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+//            e.printStackTrace();
+//            return createErrorResponse(e.getMessage());
+//        }
+//        return createOkResponse(index);
+//    }
 
     @GET
     @Path("/index-status")
@@ -441,8 +442,10 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
             result.setId(Integer.toString(fileIdNum));
+            System.out.println("result = " + result);
             results.add(result);
         }
+        System.out.println("results = " + results);
         return createOkResponse(results);
     }
 

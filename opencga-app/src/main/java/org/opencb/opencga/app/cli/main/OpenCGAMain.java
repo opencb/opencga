@@ -232,7 +232,7 @@ public class OpenCGAMain {
                         int studyId = catalogManager.getStudyId(c.studyId);
                         Path inputFile = Paths.get(c.file);
                         InputStream is = new FileInputStream(inputFile.toFile());
-                        //String outPath = Paths.get(c.path , inputFile.getFileName().toString()).toString();
+                        //String outPath = Paths.get(c.outdir , inputFile.getFileName().toString()).toString();
                         QueryResult<File> file = catalogManager.uploadFile(studyId, c.format, c.bioformat,
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
                                 c.parents, is, sessionId);
@@ -270,7 +270,8 @@ public class OpenCGAMain {
                         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, Config.getAnalysisProperties());
 
                         int fileId = catalogManager.getFileId(c.id);
-                        Index index = analysisFileIndexer.index(fileId, Paths.get(c.path), c.backend, sessionId, new QueryOptions());
+                        int outdirId = catalogManager.getFileId(c.outdir);
+                        Index index = analysisFileIndexer.index(fileId, outdirId, c.backend, sessionId, new QueryOptions());
                         System.out.println(index);
 
                         logout();

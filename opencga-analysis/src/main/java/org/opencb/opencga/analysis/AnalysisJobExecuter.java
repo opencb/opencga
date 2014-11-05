@@ -182,7 +182,7 @@ public class AnalysisJobExecuter {
             logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
 
             try {
-                SgeManager.queueJob(analysisName, jobName, jobId, jobFolder, commandLine);
+                SgeManager.queueJob(analysisName, jobName, -1, jobFolder, commandLine, null, "job." + jobId);
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
