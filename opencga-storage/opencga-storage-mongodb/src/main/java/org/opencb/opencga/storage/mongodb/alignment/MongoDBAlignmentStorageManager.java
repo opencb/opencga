@@ -207,78 +207,53 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             throw new FileFormatException("Expected BAM file");
         }
 
-
         //2 Sort
-        Path bamFile = outputPath.resolve(fileId+".bam").toAbsolutePath();
-        Path sortBam = null;
-        if (!bamFile.toFile().exists()) {
-            {
-                SAMFileReader reader = new SAMFileReader(input.toFile());
-                switch (reader.getFileHeader().getSortOrder()) {
-                    case coordinate:
-                        sortBam = input;
-                        logger.info("File sorted.");
-                        break;
-                    case queryname:
-                    case unsorted:
-                    default:
-                        sortBam = Paths.get(input.toAbsolutePath().toString()+".sort.bam");
-                        String sortCommand = "samtools sort -f " + input.toAbsolutePath().toString() + " " + sortBam.toString();
-                        logger.info("Sorting file : " + sortCommand);
-                        long start = System.currentTimeMillis();
-                        try {
-                            Runtime.getRuntime().exec( sortCommand ).waitFor();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        long end = System.currentTimeMillis();
-                        logger.info("end - start = " + (end - start)/1000.0+"s");
-                        break;
-                }
-                reader.close();
-            }
+        Path sortBam = sortAlignmentsFile(input);
+        Path finalBamFile = outputPath.resolve(sortBam.getFileName()).toAbsolutePath();
 
-            //3
-            logger.info("Coping file. Encryption : " + encrypt);
-            long start = System.currentTimeMillis();
-            switch(encrypt){
-                case "aes-256":
-                    InputStream inputStream = new BufferedInputStream(new FileInputStream(sortBam.toFile()), 50000000);
-                    OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(bamFile.toFile()), 50000000);       //TODO: ENCRYPT OUTPUT
-
-                    SAMFileReader reader = new SAMFileReader(inputStream);
-                    BAMFileWriter writer = new BAMFileWriter(outputStream, bamFile.toFile());
-
-                    writer.setSortOrder(reader.getFileHeader().getSortOrder(), true);   //Must be called before calling setHeader()
-                    writer.setHeader(reader.getFileHeader());
-                    SAMRecordIterator iterator = reader.iterator();
-                    while(iterator.hasNext()){
-                        writer.addAlignment(iterator.next());
-                    }
-
-                    writer.close();
-                    reader.close();
-                    break;
-                case "":
-                default:
-                    if(copy) {
-                        Files.copy(sortBam, bamFile);
-                    } else {
-                        bamFile = sortBam;
-                        logger.info("copy = false. Don't copy file.");
-                    }
-            }
-            long end = System.currentTimeMillis();
-            logger.info("end - start = " + (end - start)/1000.0+"s");
-        }
+//        Path bamFile = outputPath.resolve(fileId+".bam").toAbsolutePath();
+//        if (!bamFile.toFile().exists()) {
+//            //3
+//            logger.info("Coping file. Encryption : " + encrypt);
+//            long start = System.currentTimeMillis();
+//            switch(encrypt){
+//                case "aes-256":
+//                    InputStream inputStream = new BufferedInputStream(new FileInputStream(sortBam.toFile()), 50000000);
+//                    OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(bamFile.toFile()), 50000000);       //TODO: ENCRYPT OUTPUT
+//
+//                    SAMFileReader reader = new SAMFileReader(inputStream);
+//                    BAMFileWriter writer = new BAMFileWriter(outputStream, bamFile.toFile());
+//
+//                    writer.setSortOrder(reader.getFileHeader().getSortOrder(), true);   //Must be called before calling setHeader()
+//                    writer.setHeader(reader.getFileHeader());
+//                    SAMRecordIterator iterator = reader.iterator();
+//                    while(iterator.hasNext()){
+//                        writer.addAlignment(iterator.next());
+//                    }
+//
+//                    writer.close();
+//                    reader.close();
+//                    break;
+//                case "":
+//                default:
+//                    if(copy) {
+//                        Files.copy(sortBam, bamFile);
+//                    } else {
+//                        bamFile = sortBam;
+//                        logger.info("copy = false. Don't copy file.");
+//                    }
+//            }
+//            long end = System.currentTimeMillis();
+//            logger.info("end - start = " + (end - start)/1000.0+"s");
+//        }
 
         //4
         //Path bamIndexFile = Paths.get(inputPath.toString() + ".bai");
-        Path bamIndexFile = Paths.get(bamFile.toString() + ".bai");
+        Path bamIndexFile = Paths.get(finalBamFile.toString() + ".bai");
 //        Path bamIndexFile = Paths.get(outputPath.toString() , bamFile.toFile().getName().toString() + ".bai");
         if (!Files.exists(bamIndexFile)) {
             long start = System.currentTimeMillis();
-            String indexBai = "samtools index " + bamFile.toString();
+            String indexBai = "samtools index " + sortBam.toString() + " " + bamIndexFile.toString();
             logger.info("Creating index : " + indexBai);
             try {
                 Runtime.getRuntime().exec( indexBai ).waitFor();
@@ -287,8 +262,6 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             }
             long end = System.currentTimeMillis();
             logger.info("end - start = " + (end - start) / 1000.0 + "s");
-//            System.out.println("[ERROR] Expected BAI file");
-//            throw new FileFormatException("Expected BAI file");
         }
 
         //5 Calculate Coverage
@@ -300,7 +273,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 //        } else {
 //            throw new UnsupportedOperationException("[ERROR] Unsuported file input format : " + inputPath);
 //        }
-        reader = new AlignmentBamDataReader(bamFile, null);
+        reader = new AlignmentBamDataReader(sortBam, null); //Read from sorted BamFile
 
 
         //Tasks
@@ -315,7 +288,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         //Writer
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
         //writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, output.toString(), !plain)));
-        String jsonOutputFiles = Paths.get(outputPath.toString(), bamFile.toFile().getName()).toString();
+        String jsonOutputFiles = Paths.get(outputPath.toString(), finalBamFile.toFile().getName()).toString();
         writers.add(new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain));
 
 
@@ -333,6 +306,34 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
 
         logger.info("done!");
+    }
+
+    private Path sortAlignmentsFile(Path input) throws IOException {
+        Path sortBam;
+        SAMFileReader reader = new SAMFileReader(input.toFile());
+        switch (reader.getFileHeader().getSortOrder()) {
+            case coordinate:
+                sortBam = input;
+                logger.info("File sorted.");
+                break;
+            case queryname:
+            case unsorted:
+            default:
+                sortBam = Paths.get(input.toAbsolutePath().toString() + ".sort.bam");
+                String sortCommand = "samtools sort -f " + input.toAbsolutePath().toString() + " " + sortBam.toString();
+                logger.info("Sorting file : " + sortCommand);
+                long start = System.currentTimeMillis();
+                try {
+                    Runtime.getRuntime().exec( sortCommand ).waitFor();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                long end = System.currentTimeMillis();
+                logger.info("end - start = " + (end - start)/1000.0+"s");
+                break;
+        }
+        reader.close();
+        return sortBam;
     }
 
 

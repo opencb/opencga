@@ -383,13 +383,25 @@ public class FileWSServer extends OpenCGAWSServer {
                     int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
                     QueryOptions queryOptions = new QueryOptions();
                     queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
-                    queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());
+                    queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
                     queryOptions.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
                     queryOptions.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
                     queryOptions.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
                     queryOptions.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
                     queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
                     queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
+
+                    if(indexAttributes.containsKey("baiFileId")) {
+                        File baiFile = null;
+                        try {
+                            baiFile = catalogManager.getFile(indexAttributes.getInt("baiFileId"), sessionId).getResult().get(0);
+                            URI baiUri = catalogManager.getFileUri(baiFile);
+                            queryOptions.put(AlignmentQueryBuilder.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
+                        } catch (IOException | CatalogManagerException | CatalogIOManagerException e) {
+                            e.printStackTrace();
+                            logger.error("Can't obtain bai file for file " + fileIdNum, e);
+                        }
+                    }
 
                     AlignmentQueryBuilder dbAdaptor;
                     try {

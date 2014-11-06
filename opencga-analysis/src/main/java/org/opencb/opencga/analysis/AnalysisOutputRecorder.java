@@ -10,6 +10,7 @@ import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
