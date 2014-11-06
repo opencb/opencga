@@ -44,10 +44,10 @@ public class AnalysisOutputRecorder {
     /**
      *
      */
-    public void recordJobOutput(final Job job) {
-        final URI outDirUri;
-        final URI tmpOutdirUri;
-        final int studyId = 1;
+    public void recordJobOutput(Job job) {
+        URI outDirUri;
+        URI tmpOutdirUri;
+        int studyId = 1;
         List<Integer> fileIds = null;
         try {
             File tmpDir = catalogManager.getFile(job.getTmpOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
@@ -60,10 +60,8 @@ public class AnalysisOutputRecorder {
         }
 
         try {//1º Read generated files.
-            //CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirUri.getScheme());
             switch (tmpOutdirUri.getScheme()) {
                 case "file": {
-//                    fileIds = __walkFileTree(job, outDirUri, tmpOutdirUri, studyId);
                     fileIds = walkFileTree(new JobFileVisitor(job, outDirUri, tmpOutdirUri, studyId), tmpOutdirUri);
                     break;
                 }
@@ -99,7 +97,7 @@ public class AnalysisOutputRecorder {
         //6º Find files
         try {
             File outDir = catalogManager.getFile(index.getOutDir(), sessionId).getResult().get(0);
-            URI outDirUri = catalogManager.getFileUri(file);
+            URI outDirUri = catalogManager.getFileUri(outDir);
             URI tmpOutdirUri = URI.create(index.getTmpOutDirUri());
             String scheme = tmpOutdirUri.getScheme();
             if (scheme == null) {
@@ -108,8 +106,7 @@ public class AnalysisOutputRecorder {
             }
             switch (scheme) {
                 case "file": {
-//                    fileIds = __walkFileTree(index, outDirUri, tmpOutdirUri, studyId);
-                    fileIds = walkFileTree(new IndexFileVisitor(index, outDirUri, tmpOutdirUri, studyId), tmpOutdirUri);
+                    fileIds = walkFileTree(new IndexFileVisitor(index, outDirUri, tmpOutdirUri, studyId, file.getId()), tmpOutdirUri);
                     break;
                 }
                 default:
@@ -142,18 +139,21 @@ public class AnalysisOutputRecorder {
     abstract class FileVisitorRecorder extends SimpleFileVisitor<Path> {
         abstract List<Integer> getFileIds();
     }
+
     class IndexFileVisitor  extends FileVisitorRecorder {
         private List<Integer> fileIds = new LinkedList<>();
         private Index index;
         private URI outDirUri;
         private URI tmpOutdirUri;
         private int studyId;
+        private int indexedFileId;
 
-        IndexFileVisitor(Index index, URI outDirUri, URI tmpOutdirUri, int studyId) {
+        IndexFileVisitor(Index index, URI outDirUri, URI tmpOutdirUri, int studyId, int indexedFileId) {
             this.index = index;
             this.outDirUri = outDirUri;
             this.tmpOutdirUri = tmpOutdirUri;
             this.studyId = studyId;
+            this.indexedFileId = indexedFileId;
         }
 
         @Override
@@ -162,7 +162,7 @@ public class AnalysisOutputRecorder {
             String generatedFile = file.toAbsolutePath().toString().substring(tmpOutdirUri.getPath().length());
 
             int fileId = addResultFile(generatedFile, tmpOutdirUri, outDirUri, studyId, attrs, -1,
-                    "Generated from index " + index.getJobId(), index.getOutDirName(), index.getUserId());
+                    "Generated from indexing file " + indexedFileId, index.getOutDirName(), index.getUserId());
 
             fileIds.add(fileId);
 

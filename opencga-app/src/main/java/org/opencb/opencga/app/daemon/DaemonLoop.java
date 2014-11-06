@@ -112,8 +112,6 @@ public class DaemonLoop implements Runnable {
                     System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     switch(status) {
                         case SgeManager.FINISHED:
-                            //TODO: Finish job
-//                            finishJob(job);
                             analysisOutputRecorder.recordJobOutput(job);
                             break;
                         case SgeManager.ERROR:
@@ -140,13 +138,13 @@ public class DaemonLoop implements Runnable {
             try {
                 QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("indexState", Index.PENDING), sessionId);
                 for (File file : files.getResult()) {
-                    System.out.println("file = " + file);
                     for (Index index : file.getIndices()) {
                         if(index.getState().equals(Index.PENDING)) {
-                            switch(SgeManager.status("*"+index.getJobId())) {
+                            String status = SgeManager.status("*" + index.getJobId());
+                            System.out.println("file : {id: " + file.getId() + ", status: '" + index.getState() + "', jobId: '" + index.getJobId() + "'}, sgeStatus : " + status);
+                            switch(status) {
                                 case SgeManager.FINISHED:
                                     analysisOutputRecorder.recordIndexOutput(index);
-//                                    analysisFileIndexer.finishIndex(index.getJobId(), sessionId);
                                     break;
                                 case SgeManager.EXECUTION_ERROR:
                                     break;

@@ -209,7 +209,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
 
         //2 Sort
-        Path bamFile = Paths.get(outputPath.toString() , fileId+".bam").toAbsolutePath();
+        Path bamFile = outputPath.resolve(fileId+".bam").toAbsolutePath();
         Path sortBam = null;
         if (!bamFile.toFile().exists()) {
             {
@@ -270,7 +270,6 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             }
             long end = System.currentTimeMillis();
             logger.info("end - start = " + (end - start)/1000.0+"s");
-
         }
 
         //4

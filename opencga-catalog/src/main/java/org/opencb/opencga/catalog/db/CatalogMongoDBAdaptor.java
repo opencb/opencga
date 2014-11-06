@@ -347,7 +347,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         String userId = "anonymous_" + session.getId();
         User user = new User(userId, "Anonymous", "", "", "", User.ROLE_ANONYMOUS, "");
         user.getSessions().add(session);
-        DBObject anonymous = null;
+        DBObject anonymous;
         try {
             anonymous = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(user));
         } catch (JsonProcessingException e) {
@@ -864,7 +864,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
         }
 
-        QueryResult<WriteResult> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
+        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1657,7 +1657,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             filters.add(new BasicDBObject("indices.state", query.getString("indexState")));
         }
 
-        QueryResult<WriteResult> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
+        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1774,7 +1774,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
     @Override
     public QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException {
-        long startTime = startQuery();
         int studyId = getStudyId(userId, projectAlias, studyAlias);
         if (studyId < 0) {
             throw new CatalogManagerException("Study not found");

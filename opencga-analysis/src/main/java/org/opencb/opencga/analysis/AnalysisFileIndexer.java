@@ -68,6 +68,7 @@ public class AnalysisFileIndexer {
         }
 
         int studyId = catalogManager.getStudyIdByFileId(fileId);
+        String studyName = catalogManager.getStudy(studyId, sessionId).getResult().get(0).getName();
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         String ownerId = catalogManager.getFileOwner(fileId);
         File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
@@ -79,48 +80,66 @@ public class AnalysisFileIndexer {
 
         //3º Create command line
         String name = file.getName();
-        if(name.endsWith(".bam") || name.endsWith(".sam")) {
+        String commandLine;
+        String dbName;
+        ObjectMap parameters = new ObjectMap();
+
+        if(file.getBioformat().equals("bam") || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
-            String dbName = ownerId;
-            StringBuilder commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
+            dbName = ownerId;
+            commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-alignments ")
                     .append(" --alias ").append(file.getId())
                     .append(" --dbName ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --mean-coverage ").append(chunkSize)
                     .append(" --outdir ").append(tmpOutDirUri)
-//                    .append(" --backend ").append()
+                    .append(" --backend ").append(backend)
 //                    .append(" --credentials ")
-//                    .append(" --delete-temporal ")
-//                    .append(" --temporal-dir ")
-                    ;
+                    .toString();
 
-            //4º Run command
-            try {
-                SgeManager.queueJob("alignment_indexer", jobId, -1, tmpOutDirUri.getPath(),
-                        commandLine.toString(), null, "index." + file.getId());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-//            int jobId = new Random(System.nanoTime()).nextInt();
-
-
-
-            //5º Update file
-            ObjectMap parameters = new ObjectMap();
             parameters.put("chunkSize", chunkSize);
-            parameters.put("commandLine", commandLine.toString());
-            Index index = new Index(userId, Index.PENDING, dbName, backend, outDir.getId(), outDir.getPath(),
-                    tmpOutDirUri.toString(), jobId, parameters);
-            catalogManager.setIndexFile(fileId, backend, index, sessionId);
 
-            return index;
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
-        } else if (name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
-            throw new UnsupportedOperationException();
+        } else if (file.getBioformat().equals("vcf") || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
+
+            dbName = "variants";  //TODO: Read from properties
+            commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
+                    .append(" index-variants ")
+                    .append(" --alias ").append(file.getId())
+                    .append(" --study ").append(studyName)
+                    .append(" --study-alias ").append(studyId)
+//                    .append(" --dbName ").append(dbName)  //TODO: Add --dbName option
+                    .append(" --input ").append(catalogManager.getFileUri(file).getPath())  //TODO: Make URI-compatible
+                    .append(" --outdir ").append(tmpOutDirUri.getPath())                    //TODO: Make URI-compatible
+                    .append(" --backend ").append(backend)
+                    .append(" --include-samples ")
+                    .append(" --include-stats ")
+//                    .append(" --credentials ")
+                    .toString();
+
+        } else {
+            return null;
         }
-        return null;
+
+        //4º Run command
+        try {
+            SgeManager.queueJob(file.getBioformat() + "_indexer", jobId, -1, tmpOutDirUri.getPath(),
+                    commandLine, null, "index." + file.getId());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+//            int jobId = new Random(System.nanoTime()).nextInt();
+
+        //5º Update file
+        parameters.put("commandLine", commandLine);
+        Index index = new Index(userId, Index.PENDING, dbName, backend, outDir.getId(), outDir.getPath(),
+                tmpOutDirUri.toString(), jobId, parameters);
+        catalogManager.setIndexFile(fileId, backend, index, sessionId);
+
+        return index;
+
     }
 
 

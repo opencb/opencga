@@ -115,9 +115,9 @@ public class OpenCGAMain {
                     case "login": {
                         OptionsParser.UserCommands.LoginCommand c = optionsParser.getUserCommands().loginCommand;
 
-                        if(shellSessionId == null || shellUserId == null || !shellUserId.equals(c.up.user)){
+                        if (shellSessionId == null || shellUserId == null || !shellUserId.equals(c.up.user)) {
                             shellSessionId = login(c.up);
-                            if(shellSessionId != null) {
+                            if (shellSessionId != null) {
                                 shellUserId = c.up.user;
                             }
                             System.out.println(shellSessionId);
@@ -128,7 +128,7 @@ public class OpenCGAMain {
                         OptionsParser.UserCommands.LogoutCommand c = optionsParser.getUserCommands().logoutCommand;
 
                         QueryResult logout;
-                        if(c.user == null && c.sessionId == null) {
+                        if (c.user == null && c.sessionId == null) {
                             logout = catalogManager.logout(shellUserId, shellSessionId);
                             shellUserId = null;
                             shellSessionId = null;
@@ -223,7 +223,7 @@ public class OpenCGAMain {
                         break;
                 }
                 break;
-            case "files":
+            case "files": {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
@@ -281,6 +281,8 @@ public class OpenCGAMain {
                         optionsParser.printUsage();
                         break;
                 }
+                break;
+            }
             case "tools" : {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
@@ -302,13 +304,13 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    default:
+                    default: {
                         optionsParser.printUsage();
                         break;
+                    }
                 }
-            }
-
                 break;
+            }
             default:
                 optionsParser.printUsage();
 //                logger.info("Unknown command");
