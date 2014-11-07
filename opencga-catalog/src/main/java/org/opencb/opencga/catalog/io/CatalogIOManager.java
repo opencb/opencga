@@ -106,6 +106,7 @@ public abstract class CatalogIOManager {
 
     public abstract boolean isDirectory(URI uri);
 
+    public abstract void copyFile(URI source, URI target) throws IOException, CatalogIOManagerException;
 
 
     public URI getUsersUri() throws CatalogIOManagerException {
@@ -347,7 +348,13 @@ public abstract class CatalogIOManager {
         return folderUri;
     }
 
-    public abstract void createFile(String userId, String projectId, String studyId, String filePath, InputStream inputStream)
+    public void createFile(String userId, String projectId, String studyId, String filePath, InputStream inputStream)
+            throws CatalogIOManagerException {
+        URI fileUri = getFileUri(userId, projectId, studyId, filePath);
+        createFile(fileUri, inputStream);
+    }
+
+    public abstract void createFile(URI fileUri, InputStream inputStream)
             throws CatalogIOManagerException;
 
     public void deleteFile(String userId, String projectId, String studyId, String filePath)
@@ -368,7 +375,13 @@ public abstract class CatalogIOManager {
     }
 
 
-    public abstract DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,int start, int limit)
+    public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,int start, int limit)
+            throws CatalogIOManagerException, IOException {
+        URI fileUri = getFileUri(userid, projectId, studyId, objectId);
+        return getFileObject(fileUri, start, limit);
+    }
+
+    public abstract DataInputStream getFileObject(URI fileUri ,int start, int limit)
             throws CatalogIOManagerException, IOException;
 
     public abstract DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId,

@@ -88,17 +88,20 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
+    public void copyFile(URI source, URI destination) { }
+
+    @Override
     public URI getTmpUri() {
         return null;
     }
 
     @Override
-    public void createFile(String userId, String projectId, String studyId, String filePath, InputStream inputStream) throws CatalogIOManagerException {
+    public void createFile(URI fileUri, InputStream inputStream) throws CatalogIOManagerException {
 
     }
 
     @Override
-    public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId, int start, int limit) throws CatalogIOManagerException, IOException {
+    public DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOManagerException, IOException {
         return null;
     }
 

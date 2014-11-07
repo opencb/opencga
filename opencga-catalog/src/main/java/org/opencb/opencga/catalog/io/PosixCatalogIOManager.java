@@ -116,6 +116,15 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         return uri.resolve(".").equals(uri);
     }
 
+    @Override
+    public void copyFile(URI source, URI target) throws IOException, CatalogIOManagerException {
+        checkUri(source);
+        if("file".equals(source.getScheme()) && "file".equals(target.getScheme())) {
+            Files.copy(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            throw new CatalogIOManagerException("Expected posix file system URIs.");
+        }
+    }
     /*****************************
      * Get Path methods
      * ***************************
@@ -285,9 +294,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * ***************************
      */
     @Override
-    public void createFile(String userId, String projectId, String studyId, String objectId, InputStream inputStream) throws CatalogIOManagerException {
-        URI fileUri = getFileUri(userId, projectId, studyId, objectId);
-
+    public void createFile(URI fileUri, InputStream inputStream) throws CatalogIOManagerException {
         try {
             Files.copy(inputStream, Paths.get(fileUri), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
@@ -431,11 +438,10 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //    }
 
     @Override
-    public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,
+    public DataInputStream getFileObject(URI fileUri,
                                          int start, int limit)
             throws CatalogIOManagerException, IOException {
 
-        URI fileUri = getFileUri(userid, projectId, studyId, objectId);
         Path objectPath = Paths.get(fileUri);
 
         if (Files.isRegularFile(objectPath)) {
