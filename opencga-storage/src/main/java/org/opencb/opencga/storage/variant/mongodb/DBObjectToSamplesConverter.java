@@ -99,7 +99,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
             // genotypes[41], genotypes[311], etc, will be set to "0|1"
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
                 if (!dbo.getKey().equals("def")) {
-                    Genotype gt = new Genotype(dbo.getKey());
+                    Genotype gt = new Genotype(dbo.getKey().replace("-1", "."));
                     for (int position : (List<Integer>) dbo.getValue()) {
                         genotypes[position] = gt;
                     }
@@ -177,10 +177,11 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
+            String genotypeStr = entry.getKey().toString().replace(".", "-1");
             if (longestList != null && entry.getKey().equals(longestList.getKey())) {
-                mongoSamples.append("def", entry.getKey().toString());
+                mongoSamples.append("def", genotypeStr);
             } else {
-                mongoSamples.append(entry.getKey().toString(), entry.getValue());
+                mongoSamples.append(genotypeStr, entry.getValue());
             }
         }
         
