@@ -69,16 +69,16 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{ownerId}/all-projects")
+    @Path("/{projectId}/studies")
     @Produces("application/json")
-    @ApiOperation(value = "Project information")
+    @ApiOperation(value = "Study information")
 
-    public Response getAllProjects(
-            @ApiParam(value = "ownerId", required = true) @PathParam("ownerId") String ownerId
+    public Response getAllStudies(
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllProjects(ownerId, sessionId);
+            queryResult = catalogManager.getAllStudies(projectId, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogManagerException | JsonProcessingException e) {
             e.printStackTrace();

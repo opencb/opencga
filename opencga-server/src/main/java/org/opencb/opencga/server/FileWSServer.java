@@ -291,32 +291,16 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse(index);
     }
 
-//    @GET
-//    @Path("/index-finish")
-//    @Produces("application/json")
-//    @ApiOperation(value = "File finish index")
-//    public Response indexFinish(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
-//    ) {
-//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
-//        String index = "";
-//        try {
-//            analysisFileIndexer.finishIndex(jobid, sessionId);
-//        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
-//            e.printStackTrace();
-//            return createErrorResponse(e.getMessage());
-//        }
-//        return createOkResponse(index);
-//    }
 
     @GET
     @Path("/index-status")
     @Produces("application/json")
     @ApiOperation(value = "File index status")
-    public Response indexStatus(@ApiParam(value = "jobid", required = true) @DefaultValue("") @QueryParam("jobid") String jobid
+    public Response indexStatus(@ApiParam(value = "jobId", required = true) @DefaultValue("") @QueryParam("jobId") String jobId
     ) {
         String status;
         try {
-            status = SgeManager.status(jobid);
+            status = SgeManager.status(jobId);
         } catch (Exception e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());

@@ -69,7 +69,7 @@ public class AnalysisWSServer extends OpenCGAWSServer {
     @Path("/{analysisId}/jobs")
     @Produces("application/json")
     @ApiOperation(value = "Get all jobs")
-    public Response visit(
+    public Response getAllJobs(
             @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
         try {
             return createOkResponse(catalogManager.getJobsByAnalysis(analysisId, sessionId));
