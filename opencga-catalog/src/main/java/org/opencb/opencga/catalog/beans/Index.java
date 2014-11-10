@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.beans;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,8 +13,10 @@ public class Index {
     private String state;
     private String dbName;
     private String backend;
+    private List<Integer> output;
     private int outDir;
     private String outDirName;
+    private String tmpOutDirUri;
     private String jobId;
 
     private Map<String, Object> attributes;
@@ -26,28 +30,32 @@ public class Index {
     public Index() {
     }
 
-    public Index(String userId, String state, String dbName, String backend, int outDir, String outDirName, String jobId, Map<String, Object> attributes) {
+    public Index(String userId, String state, String dbName, String backend, int outDir, String outDirName, String tmpOutDirName, String jobId, Map<String, Object> attributes) {
         this.userId = userId;
         this.state = state;
         this.dbName = dbName;
         this.backend = backend;
+        this.output = new LinkedList<>();
         this.outDir = outDir;
         this.outDirName = outDirName;
+        this.tmpOutDirUri = tmpOutDirName;
         this.jobId = jobId;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Index {" +
-                "userId:'" + userId + '\'' + "\n\t" +
-                ", state:'" + state + '\'' + "\n\t" +
-                ", dbName:'" + dbName + '\'' + "\n\t" +
-                ", backend:'" + backend + '\'' + "\n\t" +
-                ", outDir:" + outDir + "\n\t" +
-                ", outDirName:'" + outDirName + '\'' + "\n\t" +
-                ", jobId:'" + jobId + '\'' + "\n\t" +
-                ", attributes:" + attributes + "\n" +
+        return "Index{" +
+                "userId='" + userId + '\'' +
+                ", state='" + state + '\'' +
+                ", dbName='" + dbName + '\'' +
+                ", backend='" + backend + '\'' +
+                ", output=" + output +
+                ", outDir=" + outDir +
+                ", outDirName='" + outDirName + '\'' +
+                ", tmpOutDirUri='" + tmpOutDirUri + '\'' +
+                ", jobId='" + jobId + '\'' +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -83,6 +91,14 @@ public class Index {
         this.backend = backend;
     }
 
+    public List<Integer> getOutput() {
+        return output;
+    }
+
+    public void setOutput(List<Integer> output) {
+        this.output = output;
+    }
+
     public int getOutDir() {
         return outDir;
     }
@@ -97,6 +113,14 @@ public class Index {
 
     public void setOutDirName(String outDirName) {
         this.outDirName = outDirName;
+    }
+
+    public String getTmpOutDirUri() {
+        return tmpOutDirUri;
+    }
+
+    public void setTmpOutDirUri(String tmpOutDirUri) {
+        this.tmpOutDirUri = tmpOutDirUri;
     }
 
     public String getJobId() {
@@ -114,4 +138,5 @@ public class Index {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
+
 }

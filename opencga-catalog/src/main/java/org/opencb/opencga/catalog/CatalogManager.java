@@ -458,34 +458,6 @@ public class CatalogManager {
      * Project methods
      * ***************************
      */
-    @Deprecated
-    public QueryResult<Project> createProject(String ownerId, Project project, String sessionId)
-            throws CatalogManagerException,
-            CatalogIOManagerException, JsonProcessingException {
-        checkObj(project, "project");
-        checkParameter(project.getName(), "projectName");
-        checkAlias(project.getAlias(), "projectAlias");
-        checkParameter(ownerId, "ownerId");
-        checkParameter(sessionId, "sessionId");
-        checkSessionId(ownerId, sessionId);    //Only the user can create a project
-
-        /* Add default ACL */
-        //Add generic permissions to the project.
-        project.getAcl().add(new Acl(USER_OTHERS_ID, false, false, false, false));
-
-
-        QueryResult<Project> result = catalogDBAdaptor.createProject(ownerId, project);
-        project = result.getResult().get(0);
-
-        try {
-            ioManager.createProject(ownerId, Integer.toString(project.getId()));
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            catalogDBAdaptor.deleteProject(project.getId());
-        }
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return result;
-    }
 
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, String sessionId)
@@ -1019,7 +991,7 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         switch (getUserRole(userId)) {
             case User.ROLE_ADMIN:
-                logger.info("UserAdmin " + userId + " modifies file " + fileId);
+                logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
                 break;
             default:
                 if (!getFileAcl(userId, fileId).isWrite()) {
@@ -1420,30 +1392,6 @@ public class CatalogManager {
      * ***************************
      */
 
-    @Deprecated
-    public QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis, String sessionId) throws CatalogManagerException {
-        checkObj(analysis, "analysis");
-        checkParameter(sessionId, "sessionId");
-        checkAlias(analysis.getAlias(), "analysis.getAlias()");
-        checkParameter(analysis.getName(), "analysis.getName()");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!getStudyAcl(userId, studyId).isWrite()) {
-            throw new CatalogManagerException("Permission denied. Can't write in this study");
-        }
-
-        if (analysis.getCreatorId() == null || analysis.getCreatorId().isEmpty()) {
-            analysis.setCreatorId(userId);
-        }
-        if (analysis.getCreationDate() == null || analysis.getCreationDate().isEmpty()) {
-            analysis.setCreationDate(TimeUtils.getTime());
-        }
-
-        String ownerId = catalogDBAdaptor.getStudyOwner(studyId);
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return catalogDBAdaptor.createAnalysis(studyId, analysis);
-    }
-
     public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String description, String sessionId) throws CatalogManagerException {
         checkParameter(name, "name");
         checkAlias(alias, "alias");
@@ -1521,45 +1469,14 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
     }
 
+    public int getAnalysisIdByJobId(int jobId) throws CatalogManagerException {
+        return catalogDBAdaptor.getAnalysisIdByJobId(jobId);
+    }
 
     /**
      * Job methods
      * ***************************
      */
-
-    @Deprecated
-    public QueryResult<Job> createJob(int analysisId, Job job, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException {
-        checkObj(job, "Job");
-        checkParameter(sessionId, "sessionId");
-        checkParameter(job.getName(), "job.getName()");
-        checkPath(job.getOutDir(), "job.getOutDir()");
-//        checkParameter(job.getToolName(), "job.getToolName()");
-        //TODO: Add check for required parameters
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-
-        if (!getStudyAcl(userId, studyId).isWrite()) {
-            throw new CatalogManagerException("Permission denied. Can't create job");
-        }
-
-        if (job.getUserId() == null || job.getUserId().isEmpty()) {
-            job.setUserId(userId);
-        }
-
-//        if(!job.getOutDir().endsWith("/")){
-//            job.setOutDir(job.getOutDir()+"/");
-//        }
-        int fileId = catalogDBAdaptor.getFileId(studyId, job.getOutDir());
-
-        if(fileId < 0){
-            createFolder(studyId, Paths.get(job.getOutDir()), true, sessionId);
-        }
-
-        return catalogDBAdaptor.createJob(analysisId, job);
-    }
-
 
     public QueryResult<Job> createJob(int analysisId, String name, String toolName, String description, String commandLine,
                                       int outDirId, int tmpOutDirId, List<Integer> inputFiles, String sessionId) throws CatalogManagerException, CatalogIOManagerException {

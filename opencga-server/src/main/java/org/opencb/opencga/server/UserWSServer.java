@@ -188,4 +188,23 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+
+    @GET
+    @Path("/{userId}/projects")
+    @Produces("application/json")
+    @ApiOperation(value = "Project information")
+
+    public Response getAllProjects(
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId
+    ) {
+        QueryResult queryResult;
+        try {
+            queryResult = catalogManager.getAllProjects(userId, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogManagerException | JsonProcessingException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
 }

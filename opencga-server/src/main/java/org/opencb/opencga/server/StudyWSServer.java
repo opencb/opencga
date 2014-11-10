@@ -73,18 +73,36 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/all-studies")
+    @Path("/{studyId}/files")
     @Produces("application/json")
     @ApiOperation(value = "Study information")
 
-    public Response getAllStudies(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
+    public Response getAllFiles(
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllStudies(projectId, sessionId);
+            queryResult = catalogManager.getAllFiles(studyId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | JsonProcessingException e) {
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/analysis")
+    @Produces("application/json")
+    @ApiOperation(value = "Study information")
+
+    public Response getAllAnalysis(
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
+    ) {
+        QueryResult queryResult;
+        try {
+            queryResult = catalogManager.getAllAnalysis(studyId, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

@@ -402,7 +402,7 @@ public class OptionsParser {
             String backend;
 
             @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
-            String path  = "";
+            String outdir = "";
 
         }
     }

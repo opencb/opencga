@@ -191,7 +191,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateProject() throws Exception {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
-        System.out.println(catalogManager.createProject("user", p, sessionIdUser));
+        System.out.println(catalogManager.createProject("user", p.getName(), p.getAlias(), p.getDescription(), p.getOrganization(), sessionIdUser));
         System.out.println(catalogManager.createProject("user3", "Project Management Project", "pmp", "life art intelligent system", "myorg", sessionIdUser3));
     }
 
@@ -411,7 +411,7 @@ public class CatalogManagerTest extends GenericTest {
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
         Analysis analysis = new Analysis("MyAnalysis", "analysis1", "date", "user", "description");
 
-        System.out.println(catalogManager.createAnalysis(studyId, analysis, sessionIdUser));
+        System.out.println(catalogManager.createAnalysis(studyId, analysis.getName(), analysis.getAlias(), analysis.getDescription(), sessionIdUser));
 
         System.out.println(catalogManager.createAnalysis(
                 studyId, "MyAnalysis2", "analysis2", "description", sessionIdUser));

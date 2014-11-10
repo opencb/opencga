@@ -141,7 +141,7 @@ public class OpenCGAStorageMain {
 
                 Path input = Paths.get(URI.create(c.input).getPath());
                 Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(URI.create(c.outdir).getPath());
-                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
+//                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
                 Path credentials = Paths.get(c.credentials);
 
 
@@ -152,7 +152,7 @@ public class OpenCGAStorageMain {
                 alignmentStorageManager.preLoad(input, outdir, params);
 
                 logger.info("3 -- Load alignments");
-                alignmentStorageManager.load(input, credentials, params);
+                alignmentStorageManager.load(outdir.resolve(input.getFileName().toString() + ".coverage.json.gz"), credentials, params);
 
             } else {
                 throw new IOException("Unknown file type");
@@ -187,9 +187,10 @@ public class OpenCGAStorageMain {
                 VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
                 Path variantsPath = Paths.get(c.input);
                 Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
-                Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
+                Path outdir = c.outdir != null ? Paths.get(c.outdir) : Paths.get("");
                 Path credentials = Paths.get(c.credentials);
-                VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
+                String fileName = variantsPath.getFileName().toString();
+                VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
 
                 Map<String, Object> params = new LinkedHashMap<>();
                 params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
@@ -200,15 +201,15 @@ public class OpenCGAStorageMain {
                 logger.info("1 -- Transform variants");
                 variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
 
-                String fileName;
-                fileName = outdir != null
-                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variant.json.gz").toString()
-                        : source.getFileName() + ".variant.json.gz";
-                source.setFileName(fileName);
+//                String fileName;
+//                fileName = outdir != null
+//                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variants.json.gz").toString()
+//                        : source.getFileName() + ".variants.json.gz";
+                source.setFileName(outdir.resolve(fileName + ".variants.json.gz").toString());
                 logger.info("2 -- Preload variants");
 
                 logger.info("3 -- Transform variants");
-                variantStorageManager.load(variantsPath, credentials, params);
+                variantStorageManager.load(outdir.resolve(fileName + ".variants.json.gz"), credentials, params);
             }
 
         } else if (command instanceof CommandCreateAccessions) {

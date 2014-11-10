@@ -7,10 +7,13 @@ import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
@@ -116,6 +119,15 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         return uri.resolve(".").equals(uri);
     }
 
+    @Override
+    public void copyFile(URI source, URI target) throws IOException, CatalogIOManagerException {
+        checkUri(source);
+        if("file".equals(source.getScheme()) && "file".equals(target.getScheme())) {
+            Files.copy(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            throw new CatalogIOManagerException("Expected posix file system URIs.");
+        }
+    }
     /*****************************
      * Get Path methods
      * ***************************
@@ -285,9 +297,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * ***************************
      */
     @Override
-    public void createFile(String userId, String projectId, String studyId, String objectId, InputStream inputStream) throws CatalogIOManagerException {
-        URI fileUri = getFileUri(userId, projectId, studyId, objectId);
-
+    public void createFile(URI fileUri, InputStream inputStream) throws CatalogIOManagerException {
         try {
             Files.copy(inputStream, Paths.get(fileUri), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
@@ -431,11 +441,10 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //    }
 
     @Override
-    public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,
+    public DataInputStream getFileObject(URI fileUri,
                                          int start, int limit)
             throws CatalogIOManagerException, IOException {
 
-        URI fileUri = getFileUri(userid, projectId, studyId, objectId);
         Path objectPath = Paths.get(fileUri);
 
         if (Files.isRegularFile(objectPath)) {
@@ -467,12 +476,11 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public String calculateChecksum(URI file) throws CatalogIOManagerException {
-        Process p = null;
-        String checksum = "";
+        String checksum;
         try {
             String command = "md5sum " + file.getPath();
-            System.out.println("command = " + command);
-            p = Runtime.getRuntime().exec(command);
+            logger.info("command = {}", command);
+            Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             checksum = br.readLine();
 
@@ -488,6 +496,26 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
 
         return checksum.split(" ")[0];
+    }
+
+    public List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException {
+        class ListFiles extends SimpleFileVisitor<Path> {
+            private List<URI> fileIds = new LinkedList<>();
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                URI uri = UriBuilder.fromPath(file.toAbsolutePath().toString()).scheme("file").build();
+                fileIds.add(uri);
+                return super.visitFile(file, attrs);
+            }
+
+            public List<URI> getFileIds() {
+                return fileIds;
+            }
+        }
+        ListFiles fileVisitor = new ListFiles();
+        Files.walkFileTree(Paths.get(directory.getPath()), fileVisitor);
+        return fileVisitor.getFileIds();
     }
 
 
