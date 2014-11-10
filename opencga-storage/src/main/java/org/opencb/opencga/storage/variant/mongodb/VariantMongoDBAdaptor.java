@@ -290,11 +290,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getVariantTypeFilter(options.getString("type"), builder);
             }
             
-            if (options.containsKey("reference") && !options.getString("reference").isEmpty()) {
+            if (options.containsKey("reference") && options.getString("reference") != null) {
                 getReferenceFilter(options.getString("reference"), builder);
             }
             
-            if (options.containsKey("alternate") && !options.getString("alternate").isEmpty()) {
+            if (options.containsKey("alternate") && options.getString("alternate") != null) {
                 getAlternateFilter(options.getString("alternate"), builder);
             }
             
