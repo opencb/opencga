@@ -2078,7 +2078,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             options.remove("ready");
         }
         query.putAll(options);
-        System.out.println("query = " + query);
+//        System.out.println("query = " + query);
         QueryResult queryResult = jobCollection.find(query, null, null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Search job", startTime, jobs);

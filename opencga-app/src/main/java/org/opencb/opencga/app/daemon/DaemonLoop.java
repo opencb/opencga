@@ -106,8 +106,7 @@ public class DaemonLoop implements Runnable {
             try {
                 QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
                 for (Job job : unfinishedJobs.getResult()) {
-//                    System.out.println("job = " + job);
-                    String status = SgeManager.status("*"+job.getName());
+                    String status = SgeManager.status(job.getName());
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     switch(status) {
@@ -119,10 +118,14 @@ public class DaemonLoop implements Runnable {
                             //TODO: Handle error
                             break;
                         case SgeManager.QUEUED:
-                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
+                            if(!SgeManager.QUEUED.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
+                            }
                             break;
                         case SgeManager.RUNNING:
-                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
+                            if(!SgeManager.RUNNING.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
+                            }
                             break;
                         case SgeManager.TRANSFERRED:
                             break;
@@ -140,7 +143,7 @@ public class DaemonLoop implements Runnable {
                 for (File file : files.getResult()) {
                     for (Index index : file.getIndices()) {
                         if(index.getState().equals(Index.PENDING)) {
-                            String status = SgeManager.status("*" + index.getJobId());
+                            String status = SgeManager.status(index.getJobId());
                             //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getBackend() + "', state: '" + index.getState() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
                             logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getBackend() + "', state: '" + index.getState() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
                             switch(status) {

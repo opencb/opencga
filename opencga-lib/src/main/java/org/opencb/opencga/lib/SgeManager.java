@@ -181,7 +181,7 @@ public class SgeManager {
         if (!status.equals(UNKNOWN)) {
             status = stateDic.get(status);
         } else {
-            String command = "qacct -j " + jobId;
+            String command = "qacct -j *" + jobId + "*";
 //            logger.info(command);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));

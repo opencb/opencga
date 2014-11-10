@@ -97,9 +97,9 @@ public class CatalogFileManager {
             throw new CatalogIOManagerException("Error while copying file. ", e);
         }
 
-        String tarjetChecksum;
+        String targetChecksum;
         try {
-            tarjetChecksum = targetIOManager.calculateChecksum(sourceUri);
+            targetChecksum = targetIOManager.calculateChecksum(targetUri);
         } catch (CatalogIOManagerException catalogIOManagerException) {
             try {
                 targetIOManager.deleteFile(targetUri);
@@ -113,14 +113,14 @@ public class CatalogFileManager {
             throw catalogIOManagerException;
         }
 
-        if(tarjetChecksum.equals(sourceChecksum)) {
+        if(targetChecksum.equals(sourceChecksum)) {
             logger.info("Checksum matches {}", sourceChecksum);
 
             //Update file
             ObjectMap parameters = new ObjectMap();
             parameters.put("diskUsage", size);
             parameters.put("creationDate", creationDate);
-            parameters.put("attributes", new ObjectMap("checksum", tarjetChecksum));
+            parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);
             } catch (CatalogManagerException e) {
@@ -136,7 +136,7 @@ public class CatalogFileManager {
                 }
             }
         } else {
-            throw new CatalogIOManagerException("Checksum missmarches at mooving files.");
+            throw new CatalogIOManagerException("Checksum mismatches at moving files.");
         }
 
     }
@@ -144,6 +144,7 @@ public class CatalogFileManager {
     private void copy(CatalogIOManager sourceIOManager, URI source, CatalogIOManager targetIOManager, URI target)
             throws IOException, CatalogIOManagerException {
 
+        logger.info("Coping file from {} to {}", source, target);
         //If it's the same IOManager, copy intra FS
         if(sourceIOManager == targetIOManager) {
             sourceIOManager.copyFile(source, target);
@@ -154,7 +155,7 @@ public class CatalogFileManager {
 //        HDFS -> POSIX
 //        POSIX -> HDFS
 
-        logger.info("Unable to copy directly from {} to {}. Doing manual copy.", source.getScheme(), target.getScheme());
+        logger.info("Unable to copy directly from {} to {} . Doing manual copy.", source.getScheme(), target.getScheme());
         DataInputStream fileObject = sourceIOManager.getFileObject(source, -1, -1);
         targetIOManager.createFile(target, fileObject);
 

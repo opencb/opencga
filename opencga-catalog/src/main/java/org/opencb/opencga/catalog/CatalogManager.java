@@ -1019,7 +1019,7 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         switch (getUserRole(userId)) {
             case User.ROLE_ADMIN:
-                logger.info("UserAdmin " + userId + " modifies file " + fileId);
+                logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
                 break;
             default:
                 if (!getFileAcl(userId, fileId).isWrite()) {
