@@ -2034,8 +2034,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject("id", jobId);
             BasicDBObject updates = new BasicDBObject("$set", jobParameters);
-            System.out.println("query = " + query);
-            System.out.println("updates = " + updates);
+//            System.out.println("query = " + query);
+//            System.out.println("updates = " + updates);
             QueryResult<WriteResult> update = jobCollection.update(query, updates, false, false);
             if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
                 throw new CatalogManagerException("Job {id:'" + jobId + "'} not found");

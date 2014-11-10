@@ -1521,6 +1521,9 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
     }
 
+    public int getAnalysisIdByJobId(int jobId) throws CatalogManagerException {
+        return catalogDBAdaptor.getAnalysisIdByJobId(jobId);
+    }
 
     /**
      * Job methods

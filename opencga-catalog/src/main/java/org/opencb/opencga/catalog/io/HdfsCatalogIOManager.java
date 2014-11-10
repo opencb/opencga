@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -112,6 +113,11 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
 
     @Override
     public String calculateChecksum(URI file) {
+        return null;
+    }
+
+    @Override
+    public List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException {
         return null;
     }
 

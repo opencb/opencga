@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Properties;
 
 public abstract class CatalogIOManager {
@@ -398,5 +399,7 @@ public abstract class CatalogIOManager {
 
 
     public abstract String calculateChecksum(URI file) throws CatalogIOManagerException;
+
+    public abstract List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException;
 
 }

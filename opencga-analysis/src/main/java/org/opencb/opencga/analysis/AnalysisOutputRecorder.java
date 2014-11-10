@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Index;
@@ -42,36 +43,31 @@ public class AnalysisOutputRecorder {
     }
 
 
-    /**
-     *
-     */
     public void recordJobOutput(Job job) {
-        URI outDirUri;
-        URI tmpOutdirUri;
-        int studyId = 1;
-        List<Integer> fileIds = null;
+
+        List<Integer> fileIds = new LinkedList<>();
+        CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
+
         try {
             File tmpDir = catalogManager.getFile(job.getTmpOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
-            tmpOutdirUri = catalogManager.getFileUri(tmpDir);
+            URI tmpOutDirUri = catalogManager.getFileUri(tmpDir);
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
-            outDirUri = catalogManager.getFileUri(outDir);
-        } catch (CatalogIOManagerException | IOException | CatalogManagerException e) {
-            e.printStackTrace();
-            return;
-        }
+            List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri.getScheme()).listFiles(tmpOutDirUri);
+            int studyId = catalogManager.getAnalysisIdByJobId(job.getId());
 
-        try {//1º Read generated files.
-            switch (tmpOutdirUri.getScheme()) {
-                case "file": {
-                    fileIds = walkFileTree(new JobFileVisitor(job, outDirUri, tmpOutdirUri, studyId), tmpOutdirUri);
-                    break;
-                }
-                default:
-                    System.out.println("Unsupported scheme");
-                    return;
+            for (URI uri : uris) {
+                String generatedFile = Paths.get(uri).toAbsolutePath().toString().substring(tmpOutDirUri.getPath().length());
+                QueryResult<File> fileQueryResult = catalogManager.createFile(
+                        studyId, File.FILE, "", Paths.get(outDir.getPath(), generatedFile).toString(), "Generated from job " + job.getId(),
+                        true, job.getId(), sessionId);
+                File file = fileQueryResult.getResult().get(0);
+                fileIds.add(file.getId());
+                catalogFileManager.upload(uri, file, null, sessionId, false, false, true, true);
             }
-        } catch (IOException e) {
+        } catch (CatalogManagerException | InterruptedException | IOException | CatalogIOManagerException e) {
             e.printStackTrace();
+            logger.error("Error while processing Job", e);
+            return;
         }
 
         try {
@@ -91,232 +87,232 @@ public class AnalysisOutputRecorder {
         if(fileResult.getResult().isEmpty()) {
             return;
         }
-        File file = fileResult.getResult().get(0);
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
-        List<Integer> fileIds = null;
+        File indexedFile = fileResult.getResult().get(0);
 
-        //6º Find files
+        List<Integer> fileIds = new LinkedList<>();
+        CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
+
         try {
             File outDir = catalogManager.getFile(index.getOutDir(), sessionId).getResult().get(0);
-            URI outDirUri = catalogManager.getFileUri(outDir);
-            URI tmpOutdirUri = URI.create(index.getTmpOutDirUri());
-            String scheme = tmpOutdirUri.getScheme();
-            if (scheme == null) {
-                logger.info("Using 'file://' as default scheme. " + index);
-                scheme = "file";
+            URI tmpOutDirUri = URI.create(index.getTmpOutDirUri());
+            List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri.getScheme()).listFiles(tmpOutDirUri);
+            int studyId = catalogManager.getStudyIdByFileId(indexedFile.getId());
+
+            for (URI uri : uris) {
+                String generatedFile = Paths.get(uri).toAbsolutePath().toString().substring(tmpOutDirUri.getPath().length());
+                QueryResult<File> fileQueryResult = catalogManager.createFile(
+                        studyId, File.FILE, "", Paths.get(outDir.getPath(), generatedFile).toString(), "Generated from indexing file " + indexedFile.getId(),
+                        true, sessionId);
+                File resultFile = fileQueryResult.getResult().get(0);
+                fileIds.add(resultFile.getId());
+                catalogFileManager.upload(uri, resultFile, null, sessionId, false, false, true, true);
             }
-            switch (scheme) {
-                case "file": {
-                    fileIds = walkFileTree(new IndexFileVisitor(index, outDirUri, tmpOutdirUri, studyId, file.getId()), tmpOutdirUri);
-                    break;
-                }
-                default:
-                    System.out.println("Unsupported scheme");
-                    return;
-            }
-        } catch (IOException e) {
+        } catch (CatalogManagerException | InterruptedException | IOException | CatalogIOManagerException e) {
             e.printStackTrace();
+            logger.error("Error while processing Job", e);
+            return;
         }
+
 
         //7º Update file.attributes
-        for (Index auxIndex: file.getIndices()) {
+        for (Index auxIndex: indexedFile.getIndices()) {
             if (auxIndex.getJobId().equals(index.getJobId())) {
-                auxIndex.setJobId("");
+//                auxIndex.setJobId(""); //Clear the jobId
                 auxIndex.setState(Index.INDEXED);
                 auxIndex.setOutput(fileIds);
-                catalogManager.setIndexFile(file.getId(), auxIndex.getBackend(), auxIndex, sessionId);
+                catalogManager.setIndexFile(indexedFile.getId(), auxIndex.getBackend(), auxIndex, sessionId);
             }
         }
     }
 
-    private List<Integer> walkFileTree(FileVisitorRecorder fileVisitor, URI tmpOutdirUri) throws IOException {
-        Files.walkFileTree(Paths.get(tmpOutdirUri.getPath()), fileVisitor);
-//        Files.delete(Paths.get(tmpOutdirUri));    //TODO: Check empty folder!
-
-        return fileVisitor.getFileIds();
-    }
-
-
-    abstract class FileVisitorRecorder extends SimpleFileVisitor<Path> {
-        abstract List<Integer> getFileIds();
-    }
-
-    class IndexFileVisitor  extends FileVisitorRecorder {
-        private List<Integer> fileIds = new LinkedList<>();
-        private Index index;
-        private URI outDirUri;
-        private URI tmpOutdirUri;
-        private int studyId;
-        private int indexedFileId;
-
-        IndexFileVisitor(Index index, URI outDirUri, URI tmpOutdirUri, int studyId, int indexedFileId) {
-            this.index = index;
-            this.outDirUri = outDirUri;
-            this.tmpOutdirUri = tmpOutdirUri;
-            this.studyId = studyId;
-            this.indexedFileId = indexedFileId;
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-
-            String generatedFile = file.toAbsolutePath().toString().substring(tmpOutdirUri.getPath().length());
-
-            int fileId = addResultFile(generatedFile, tmpOutdirUri, outDirUri, studyId, attrs, -1,
-                    "Generated from indexing file " + indexedFileId, index.getOutDirName(), index.getUserId());
-
-            fileIds.add(fileId);
-
-            return super.visitFile(file, attrs);
-        }
-
-        @Override
-        public List<Integer> getFileIds() {
-            return fileIds;
-        }
-    }
-
-    class JobFileVisitor extends FileVisitorRecorder {
-        private List<Integer> fileIds = new LinkedList<>();
-        private Job job;
-        private URI outDirUri;
-        private URI tmpOutdirUri;
-        private int studyId;
-
-        JobFileVisitor(Job job, URI outDirUri, URI tmpOutdirUri, int studyId) {
-            this.job = job;
-            this.outDirUri = outDirUri;
-            this.tmpOutdirUri = tmpOutdirUri;
-            this.studyId = studyId;
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-
-            String generatedFile = file.toAbsolutePath().toString().substring(tmpOutdirUri.getPath().length());
-            int fileId = addResultFile(generatedFile, tmpOutdirUri, outDirUri, studyId, attrs, job.getId(),
-                    "Generated from job " + job.getId() , job.getOutDir(), job.getUserId());
-            fileIds.add(fileId);
-
-            return super.visitFile(file, attrs);
-        }
-
-        @Override
-        public List<Integer> getFileIds() {
-            return fileIds;
-        }
-    }
-
-
-
-    /**
-     * 1º Get generated file
-     * 2º Add generated files to catalog. Status: File.UPLOADING
-     * 3º Calculate checksum
-     * 4º Add checksum to catalog
-     * 5º Copy
-     * 6º Calculate checksum
-     * 7º Compare.
-     *      If equals, delete and status: File.READY
-     *      Else, repeat
-     *
-     * @param generatedFile  Generated file path
-     * @param originOutDir   Original ourDir where files were created.
-     * @param targetOutDir   Destination folder URI.
-     * @param studyId        StudyID
-     * @param attrs          File attributes
-     * @return               new FileID
-     *
-     * @throws IOException
-     */
-    private int addResultFile(String generatedFile , URI originOutDir, URI targetOutDir, int studyId, BasicFileAttributes attrs,
-                              int jobId, String description, String relativeOutdir, String userId)
-            throws IOException {
-        System.out.println("generatedFile = [" + generatedFile + "], originOutDir = [" + originOutDir + "], targetOutDir = ["
-                + targetOutDir + "], studyId = [" + studyId + "], attrs = [" + attrs + "], jobId = [" + jobId + "], description = ["
-                + description + "], relativeOutdir = [" + relativeOutdir + "], userId = [" + userId + "]");
-
-        URI originFileUri = originOutDir.resolve(generatedFile);
-        URI targetFileUri = targetOutDir.resolve(generatedFile);
-
-        final CatalogIOManager originIOManager;
-        final CatalogIOManager destIOManager;
-        try {
-            originIOManager = catalogManager.getCatalogIOManagerFactory().get(originOutDir.getScheme());
-            destIOManager = catalogManager.getCatalogIOManagerFactory().get(targetOutDir.getScheme());
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
-        //2º Add generated files to catalog. Status: File.UPLOADING
-        final File catalogFile;
-        try {
-            String filePath = Paths.get(relativeOutdir, generatedFile).toString();
-            QueryResult<File> result = catalogManager.createFile(studyId, File.FILE, "", filePath,
-                            description, true, jobId, sessionId);
-            catalogFile = result.getResult().get(0);
-        } catch (CatalogManagerException | CatalogIOManagerException | InterruptedException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
-        //3º Calculate checksum
-        final String checksum;
-        try {
-            checksum = originIOManager.calculateChecksum(originFileUri);
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
-        //4º Add checksum to catalog
-        try {
-            ObjectMap parameters = new ObjectMap();
-            parameters.put("jobId", jobId);
-            parameters.put("creatorId", userId);
-            parameters.put("diskUsage", attrs.size());
-            parameters.put("attributes", new ObjectMap("checksum", checksum));
-            catalogManager.modifyFile(catalogFile.getId(), parameters, sessionId);
-        } catch (CatalogManagerException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
-        //5º Copy   //TODO: Copy with the multi_FS_Manager!
-        Files.copy(Paths.get(originFileUri), Paths.get(targetFileUri));
-
-
-        //6º Calculate checksum
-        final String checksumDest;
-        try {
-            checksumDest = destIOManager.calculateChecksum(targetFileUri);
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
-        //7º Compare
-        if (checksum.equals(checksumDest)) {
-            logger.info("Checksum matches. Deleting origin file.");
-            logger.info(checksum + " == " + checksumDest);
-            originIOManager.deleteFile(originFileUri);
-            try {
-                QueryOptions parameters = new QueryOptions("status", File.READY);
-                catalogManager.modifyFile(catalogFile.getId(), parameters, sessionId);
-            } catch (CatalogManagerException e) {
-                e.printStackTrace();
-                return -1;
-            }
-        } else {
-            System.out.println("Checksum mismatches!");
-            return -1;
-        }
-
-        return catalogFile.getId();
-    }
-
-
+//    private List<Integer> walkFileTree(FileVisitorRecorder fileVisitor, URI tmpOutdirUri) throws IOException {
+//        Files.walkFileTree(Paths.get(tmpOutdirUri.getPath()), fileVisitor);
+////        Files.delete(Paths.get(tmpOutdirUri));    //TODO: Check empty folder!
+//
+//        return fileVisitor.getFileIds();
+//    }
+//
+//
+//    abstract class FileVisitorRecorder extends SimpleFileVisitor<Path> {
+//        abstract List<Integer> getFileIds();
+//    }
+//
+//    class IndexFileVisitor  extends FileVisitorRecorder {
+//        private List<Integer> fileIds = new LinkedList<>();
+//        private Index index;
+//        private URI outDirUri;
+//        private URI tmpOutdirUri;
+//        private int studyId;
+//        private int indexedFileId;
+//
+//        IndexFileVisitor(Index index, URI outDirUri, URI tmpOutdirUri, int studyId, int indexedFileId) {
+//            this.index = index;
+//            this.outDirUri = outDirUri;
+//            this.tmpOutdirUri = tmpOutdirUri;
+//            this.studyId = studyId;
+//            this.indexedFileId = indexedFileId;
+//        }
+//
+//        @Override
+//        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+//
+//            String generatedFile = file.toAbsolutePath().toString().substring(tmpOutdirUri.getPath().length());
+//
+//            int fileId = addResultFile(generatedFile, tmpOutdirUri, outDirUri, studyId, attrs, -1,
+//                    "Generated from indexing file " + indexedFileId, index.getOutDirName(), index.getUserId());
+//
+//            fileIds.add(fileId);
+//
+//            return super.visitFile(file, attrs);
+//        }
+//
+//        @Override
+//        public List<Integer> getFileIds() {
+//            return fileIds;
+//        }
+//    }
+//
+//    class JobFileVisitor extends FileVisitorRecorder {
+//        private List<Integer> fileIds = new LinkedList<>();
+//        private Job job;
+//        private URI outDirUri;
+//        private URI tmpOutdirUri;
+//        private int studyId;
+//
+//        JobFileVisitor(Job job, URI outDirUri, URI tmpOutdirUri, int studyId) {
+//            this.job = job;
+//            this.outDirUri = outDirUri;
+//            this.tmpOutdirUri = tmpOutdirUri;
+//            this.studyId = studyId;
+//        }
+//
+//        @Override
+//        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+//
+//            String generatedFile = file.toAbsolutePath().toString().substring(tmpOutdirUri.getPath().length());
+//            int fileId = addResultFile(generatedFile, tmpOutdirUri, outDirUri, studyId, attrs, job.getId(),
+//                    "Generated from job " + job.getId() , job.getOutDir(), job.getUserId());
+//            fileIds.add(fileId);
+//
+//            return super.visitFile(file, attrs);
+//        }
+//
+//        @Override
+//        public List<Integer> getFileIds() {
+//            return fileIds;
+//        }
+//    }
+//
+//
+//
+//    /**
+//     * 1º Get generated file
+//     * 2º Add generated files to catalog. Status: File.UPLOADING
+//     * 3º Calculate checksum
+//     * 4º Add checksum to catalog
+//     * 5º Copy
+//     * 6º Calculate checksum
+//     * 7º Compare.
+//     *      If equals, delete and status: File.READY
+//     *      Else, repeat
+//     *
+//     * @param generatedFile  Generated file path
+//     * @param originOutDir   Original ourDir where files were created.
+//     * @param targetOutDir   Destination folder URI.
+//     * @param studyId        StudyID
+//     * @param attrs          File attributes
+//     * @return               new FileID
+//     *
+//     * @throws IOException
+//     */
+//    private int addResultFile(String generatedFile , URI originOutDir, URI targetOutDir, int studyId, BasicFileAttributes attrs,
+//                              int jobId, String description, String relativeOutdir, String userId)
+//            throws IOException {
+//        System.out.println("generatedFile = [" + generatedFile + "], originOutDir = [" + originOutDir + "], targetOutDir = ["
+//                + targetOutDir + "], studyId = [" + studyId + "], attrs = [" + attrs + "], jobId = [" + jobId + "], description = ["
+//                + description + "], relativeOutdir = [" + relativeOutdir + "], userId = [" + userId + "]");
+//
+//        URI originFileUri = originOutDir.resolve(generatedFile);
+//        URI targetFileUri = targetOutDir.resolve(generatedFile);
+//
+//        final CatalogIOManager originIOManager;
+//        final CatalogIOManager destIOManager;
+//        try {
+//            originIOManager = catalogManager.getCatalogIOManagerFactory().get(originOutDir.getScheme());
+//            destIOManager = catalogManager.getCatalogIOManagerFactory().get(targetOutDir.getScheme());
+//        } catch (CatalogIOManagerException e) {
+//            e.printStackTrace();
+//            return -1;
+//        }
+//
+//        //2º Add generated files to catalog. Status: File.UPLOADING
+//        final File catalogFile;
+//        try {
+//            String filePath = Paths.get(relativeOutdir, generatedFile).toString();
+//            QueryResult<File> result = catalogManager.createFile(studyId, File.FILE, "", filePath,
+//                            description, true, jobId, sessionId);
+//            catalogFile = result.getResult().get(0);
+//        } catch (CatalogManagerException | CatalogIOManagerException | InterruptedException e) {
+//            e.printStackTrace();
+//            return -1;
+//        }
+//
+//        //3º Calculate checksum
+//        final String checksum;
+//        try {
+//            checksum = originIOManager.calculateChecksum(originFileUri);
+//        } catch (CatalogIOManagerException e) {
+//            e.printStackTrace();
+//            return -1;
+//        }
+//
+//        //4º Add checksum to catalog
+//        try {
+//            ObjectMap parameters = new ObjectMap();
+//            parameters.put("jobId", jobId);
+//            parameters.put("creatorId", userId);
+//            parameters.put("diskUsage", attrs.size());
+//            parameters.put("attributes", new ObjectMap("checksum", checksum));
+//            catalogManager.modifyFile(catalogFile.getId(), parameters, sessionId);
+//        } catch (CatalogManagerException e) {
+//            e.printStackTrace();
+//            return -1;
+//        }
+//
+//        //5º Copy   //TODO: Copy with the multi_FS_Manager!
+//        Files.copy(Paths.get(originFileUri), Paths.get(targetFileUri));
+//
+//
+//        //6º Calculate checksum
+//        final String checksumDest;
+//        try {
+//            checksumDest = destIOManager.calculateChecksum(targetFileUri);
+//        } catch (CatalogIOManagerException e) {
+//            e.printStackTrace();
+//            return -1;
+//        }
+//
+//        //7º Compare
+//        if (checksum.equals(checksumDest)) {
+//            logger.info("Checksum matches. Deleting origin file.");
+//            logger.info(checksum + " == " + checksumDest);
+//            originIOManager.deleteFile(originFileUri);
+//            try {
+//                QueryOptions parameters = new QueryOptions("status", File.READY);
+//                catalogManager.modifyFile(catalogFile.getId(), parameters, sessionId);
+//            } catch (CatalogManagerException e) {
+//                e.printStackTrace();
+//                return -1;
+//            }
+//        } else {
+//            System.out.println("Checksum mismatches!");
+//            return -1;
+//        }
+//
+//        return catalogFile.getId();
+//    }
+//
+//
 
 
 }
