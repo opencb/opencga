@@ -51,6 +51,23 @@ public class AnalysisWSServer extends OpenCGAWSServer {
         }
 
     }
+    @GET
+    @Path("/all")
+    @Produces("application/json")
+    @ApiOperation(value = "Create analysis")
+
+    public Response getAllAnalysis(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId) {
+        QueryResult queryResult;
+        try {
+            queryResult = catalogManager.getAllAnalysis(studyId,sessionId);
+            return createOkResponse(queryResult);
+
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+
+    }
 
     @GET
     @Path("/{analysisId}/info")

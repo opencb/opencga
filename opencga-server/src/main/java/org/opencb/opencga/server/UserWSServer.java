@@ -36,16 +36,13 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "email", required = true) @QueryParam("email") String email,
             @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-            @ApiParam(value = "role", required = true) @QueryParam("role") String role,
-            @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
-        User user = new User(userId, name, email, password, organization, role, status);
+            @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(user);
+            queryResult = catalogManager.createUser(userId, name, email, password, organization);
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogManagerException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -59,13 +56,12 @@ public class UserWSServer extends OpenCGAWSServer {
 
     public Response login(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "password", required = false) @QueryParam("password") String password){
+            @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
             if (userId.toLowerCase().equals("anonymous")) {
                 queryResult = catalogManager.loginAsAnonymous(sessionIp);
-            }
-            else{
+            } else {
                 queryResult = catalogManager.login(userId, password, sessionIp);
             }
             return createOkResponse(queryResult);
@@ -81,7 +77,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "User login")
     public Response logout(
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId
-            ) throws IOException {
+    ) throws IOException {
         try {
             QueryResult result;
             if (userId.toLowerCase().equals("anonymous")) {
@@ -95,6 +91,7 @@ public class UserWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
     @GET
     @Path("/{userId}/change-password")
     @Produces("application/json")
@@ -129,6 +126,7 @@ public class UserWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
     @GET
     @Path("/{userId}/reset-password")
     @Produces("application/json")
@@ -157,7 +155,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
             @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
             @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs)
-    throws IOException {
+            throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             objectMap.put("name", name);

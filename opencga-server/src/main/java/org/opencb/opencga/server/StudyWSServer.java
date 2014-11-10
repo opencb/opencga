@@ -7,6 +7,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
@@ -118,5 +119,4 @@ public class StudyWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
-
 }

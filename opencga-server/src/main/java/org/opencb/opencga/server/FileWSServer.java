@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
+;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
@@ -32,6 +33,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
@@ -40,7 +42,6 @@ import java.util.*;
 @Path("/files")
 @Api(value = "files", description = "files")
 public class FileWSServer extends OpenCGAWSServer {
-
 
 
     public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
@@ -69,7 +70,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/upload")
     @Produces("application/json")
-    @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = QueryResponse.class, nickname="chunkUpload")
+    @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = QueryResponse.class, nickname = "chunkUpload")
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
@@ -184,7 +185,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.createFolder(studyId, folderPath, parents, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | CatalogIOManagerException  e) {
+        } catch (CatalogManagerException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -210,37 +211,99 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{fileId}/content")
+    @Produces("application/json")
+    @ApiOperation(value = "File content")
+    public Response download(@PathParam(value = "fileId") @FormDataParam("fileId") int fileId
+    ) {
+        String content = "";
+        try {
+            DataInputStream stream = catalogManager.downloadFile(fileId, sessionId);
+
+             content = org.apache.commons.io.IOUtils.toString(stream);
+                    //String theString2 = IOUtils.toString(new FileInputStream(new File("C:/temp/test.txt")), "UTF-8");
+//            System.out.println(stream.readLine());
+//            while (stream.available() > 0) {
+////                String k = stream.readUTF();
+//                char k = stream.readChar();
+//                System.out.print(k);
+//            }
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(content);
+    }
+
+    @GET
+    @Path("/{folderId}/files")
+    @Produces("application/json")
+    @ApiOperation(value = "File content")
+    public Response getAllFilesInFolder(@PathParam(value = "folderId") @FormDataParam("folderId") int folderId
+    ) {
+        QueryResult<File> results;
+        try {
+             results = catalogManager.getAllFilesInFolder(folderId, sessionId);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(results);
+    }
+    @GET
     @Path("/search")
     @Produces("application/json")
     @ApiOperation(value = "File info")
-    public Response search(@ApiParam(value = "name", required = false)       @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "studyId", required = true)     @DefaultValue("") @QueryParam("studyId") String studyId,
-                           @ApiParam(value = "type", required = false)       @DefaultValue("") @QueryParam("type") String type,
-                           @ApiParam(value = "bioformat", required = false)  @DefaultValue("") @QueryParam("bioformat") String bioformat,
-                           @ApiParam(value = "maxSize", required = false)    @DefaultValue("") @QueryParam("maxSize") String maxSize,
-                           @ApiParam(value = "minSize", required = false)    @DefaultValue("") @QueryParam("minSize") String minSize,
-                           @ApiParam(value = "startDate", required = false)  @DefaultValue("") @QueryParam("startDate") String startDate,
-                           @ApiParam(value = "endDate", required = false)    @DefaultValue("") @QueryParam("endDate") String endDate,
-                           @ApiParam(value = "like", required = false)       @DefaultValue("") @QueryParam("like") String like,
+    public Response search(@ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "bioformat", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "maxSize", required = false) @DefaultValue("") @QueryParam("maxSize") String maxSize,
+                           @ApiParam(value = "minSize", required = false) @DefaultValue("") @QueryParam("minSize") String minSize,
+                           @ApiParam(value = "startDate", required = false) @DefaultValue("") @QueryParam("startDate") String startDate,
+                           @ApiParam(value = "endDate", required = false) @DefaultValue("") @QueryParam("endDate") String endDate,
+                           @ApiParam(value = "like", required = false) @DefaultValue("") @QueryParam("like") String like,
                            @ApiParam(value = "startsWith", required = false) @DefaultValue("") @QueryParam("startsWith") String startsWith,
-                           @ApiParam(value = "directory", required = false)  @DefaultValue("") @QueryParam("directory") String directory,
+                           @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
                            @ApiParam(value = "indexJobId", required = false) @DefaultValue("") @QueryParam("indexJobId") String indexJobId
 
     ) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
             QueryOptions queryOptions = new QueryOptions();
-            if( !name.isEmpty() )       { queryOptions.put("name", name); }
-            if( !type.isEmpty() )       { queryOptions.put("type", type); }
-            if( !bioformat.isEmpty() )  { queryOptions.put("bioformat", bioformat); }
-            if( !maxSize.isEmpty() )    { queryOptions.put("maxSize", maxSize); }
-            if( !minSize.isEmpty() )    { queryOptions.put("minSize", minSize); }
-            if( !startDate.isEmpty() )  { queryOptions.put("startDate", startDate); }
-            if( !endDate.isEmpty() )    { queryOptions.put("endDate", endDate); }
-            if( !like.isEmpty() )       { queryOptions.put("like", like); }
-            if( !startsWith.isEmpty() ) { queryOptions.put("startsWith", startsWith); }
-            if( !directory.isEmpty() )  { queryOptions.put("directory", directory); }
-            if( !indexJobId.isEmpty() ) { queryOptions.put("indexJobId", indexJobId); }
+            if (!name.isEmpty()) {
+                queryOptions.put("name", name);
+            }
+            if (!type.isEmpty()) {
+                queryOptions.put("type", type);
+            }
+            if (!bioformat.isEmpty()) {
+                queryOptions.put("bioformat", bioformat);
+            }
+            if (!maxSize.isEmpty()) {
+                queryOptions.put("maxSize", maxSize);
+            }
+            if (!minSize.isEmpty()) {
+                queryOptions.put("minSize", minSize);
+            }
+            if (!startDate.isEmpty()) {
+                queryOptions.put("startDate", startDate);
+            }
+            if (!endDate.isEmpty()) {
+                queryOptions.put("endDate", endDate);
+            }
+            if (!like.isEmpty()) {
+                queryOptions.put("like", like);
+            }
+            if (!startsWith.isEmpty()) {
+                queryOptions.put("startsWith", startsWith);
+            }
+            if (!directory.isEmpty()) {
+                queryOptions.put("directory", directory);
+            }
+            if (!indexJobId.isEmpty()) {
+                queryOptions.put("indexJobId", indexJobId);
+            }
 
 
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, queryOptions, sessionId);
@@ -274,10 +337,10 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId,
                           @ApiParam(value = "outdir", required = false) @DefaultValue("") @QueryParam("outdir") String outdir,
                           @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend
-                          ) {
+    ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
         Index index = null;
-        if(backend.isEmpty()) {
+        if (backend.isEmpty()) {
             backend = "mongo"; //TODO: Get default backend from properties.
         }
         try {
@@ -359,7 +422,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse(e.getMessage());
             }
 
-            if(backend.isEmpty()) {
+            if (backend.isEmpty()) {
                 backend = "mongo";  //TODO: Get default backend from properties.
             }
 
@@ -399,7 +462,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     }
                     QueryResult alignmentsByRegion;
                     if (histogram) {
-                        if(regions.size() != 1) {
+                        if (regions.size() != 1) {
                             return createErrorResponse("Histogram fetch only accepts one region.");
                         }
                         alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), queryOptions);
