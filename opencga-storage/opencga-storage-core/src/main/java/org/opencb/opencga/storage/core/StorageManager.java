@@ -8,7 +8,9 @@ import java.net.URI;
 import java.nio.file.Path;
 
 /**
- * Created by jacobo on 14/08/14.
+ * @author imedina
+ * @param <DBWRITER>
+ * @param <DBADAPTOR>
  */
 public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
 
@@ -28,7 +30,13 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
         * post-load: data can be cleaned and some database validations can be performed
      */
 
-    public void extract(Path from, Path to);
+    /**
+     * This method extracts the data from the data source. This data source can be a database or a remote
+     * file system. URI objects are used to allow all possibilities.
+     * @param from Data source origin
+     * @param to Final location of data
+     */
+    public void extract(URI from, URI to);
 
 
     public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException;

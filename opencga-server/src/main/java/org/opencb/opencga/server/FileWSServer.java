@@ -16,14 +16,11 @@ import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
-import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -403,7 +400,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     }
                     QueryResult variantsByRegion;
                     if (histogram) {
-                        variantsByRegion = dbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions);
+                        variantsByRegion = dbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions);
                     } else {
                         //With merge = true, will return only one result.
                         variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);

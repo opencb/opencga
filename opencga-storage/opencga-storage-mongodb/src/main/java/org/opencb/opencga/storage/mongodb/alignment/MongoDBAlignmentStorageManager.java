@@ -71,9 +71,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
     @Override
-    public void extract(Path from, Path to) {
+    public void extract(URI from, URI to) {
 
     }
+
 
     @Override
     public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {

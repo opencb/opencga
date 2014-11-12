@@ -3,14 +3,36 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import java.nio.file.Path;
 import java.util.List;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
 /**
- * @author Alejandro Aleman Ramos <aaleman@cipf.es>
+ * @author Ignacio Medina <igmecas@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public interface VariantDBAdaptor {
+
+    /**
+     * This method set a data writer object for data serialization. When used no data will be return in
+     * QueryResult object.
+     */
+    public void setDataWriter(DataWriter dataWriter);
+
+    /**
+     * Given a genomic region, it retrieves a set of variants and, optionally, all the information
+     * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
+     * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
+     *
+     * @param options   Optional arguments
+     * @return A QueryResult containing a set of variants and other optional information
+     */
+    public QueryResult getAllVariants(QueryOptions options);
+
+
+    public QueryResult getVariantById(String id, QueryOptions options);
+
+    public List<QueryResult> getAllVariantsByIdList(List<String> idList, QueryOptions options);
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -21,9 +43,9 @@ public interface VariantDBAdaptor {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    QueryResult getAllVariantsByRegion(Region region, QueryOptions options);
+    public QueryResult getAllVariantsByRegion(Region region, QueryOptions options);
 
-    List<QueryResult> getAllVariantsByRegionList(List<Region> regions, QueryOptions options);
+    public List<QueryResult> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
     
     /**
@@ -36,26 +58,28 @@ public interface VariantDBAdaptor {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
+    @Deprecated
     QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
 
     
-    QueryResult getVariantsHistogramByRegion(Region region, QueryOptions options);
+    QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
 
-    
+    QueryResult groupBy(String field, QueryOptions options);
+
+
+    @Deprecated
     QueryResult getAllVariantsByGene(String geneName, QueryOptions options);
-    
+
+
+    @Deprecated
     QueryResult getMostAffectedGenes(int numGenes, QueryOptions options);
-    
+    @Deprecated
     QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
 
-    
-    QueryResult getVariantById(String id, QueryOptions options);
-            
-    List<QueryResult> getVariantsByIdList(List<String> ids, QueryOptions options);
-    
-    
+
+    @Deprecated
     QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-    
+    @Deprecated
     QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
     
 //    QueryResult getStatsByVariant(Variant variant, QueryOptions options);

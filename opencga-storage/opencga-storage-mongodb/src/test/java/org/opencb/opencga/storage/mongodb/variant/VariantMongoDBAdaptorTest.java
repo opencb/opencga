@@ -1,5 +1,8 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mongodb.DB;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
@@ -11,6 +14,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -50,10 +54,12 @@ public class VariantMongoDBAdaptorTest {
 //        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFileName());
         VariantVcfReader reader = new VariantVcfReader(study, inputFile);
         VariantMongoDBWriter vdw = new VariantMongoDBWriter(study, (MongoCredentials) credentials);
-        vdw.includeEffect(true); vdw.includeSamples(true); vdw.includeStats(true);
-        List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
-        VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
-        vr.run();
+        vdw.includeSamples(true);
+        vdw.includeEffect(true);
+        vdw.includeStats(true);
+//        List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
+//        VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
+//        vr.run();
         
         // Initialize query builder
         vqb = new VariantMongoDBAdaptor(credentials);
@@ -67,10 +73,45 @@ public class VariantMongoDBAdaptorTest {
         // Delete Mongo collection
         MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
         DB db = mongoClient.getDB(credentials.getMongoDbName());
-        db.dropDatabase();
+//        db.dropDatabase();
         mongoClient.close();
     }
-    
+
+    @Test
+    public void testGetAllVariants() {
+        QueryOptions options = new QueryOptions();
+        options.put("id", "rs1137005,rs150535390");
+        options.put("region", "1:13910417-13910417,1:165389129-165389129");
+        options.put("gene", "RCC2,HRNR");
+        options.put("mgf", "<=0.5");
+
+        QueryResult queryResult = vqb.getAllVariants(options);
+        assertEquals(5, queryResult.getNumResults());
+//        System.out.println(queryResult);
+    }
+
+    @Test
+    public void testGetVariantById() {
+        QueryResult queryResult;
+
+        // This test queries a single ID with no more options
+        queryResult = vqb.getVariantById("rs1137005", null);
+        Variant object = (Variant) queryResult.getResult().get(0);
+        assertEquals(object.getStart(), 1650807);
+
+        // This test adds a few other options. Options related with genomic coordinates must be
+        // added as a logical OR while others as and logical AND.
+        QueryOptions options = new QueryOptions("type", "SNV");
+        options.put("id", "rs150535390");
+        options.put("region", "1:13910417-13910417,1:165389129-165389129");
+        options.put("gene", "RCC2,HRNR");
+        options.put("mgf", "<=0.5");
+
+        queryResult = vqb.getVariantById("rs1137005", options);
+        assertEquals(5, queryResult.getNumResults());
+//        System.out.println("queryResult = " + queryResult);
+    }
+
     @Test
     public void testGetAllVariantsByRegion() {
         QueryResult queryResult;
@@ -103,11 +144,22 @@ public class VariantMongoDBAdaptorTest {
     }
 
     @Test
+    public void testGetAllVariantFrequencyByRegion() {
+        QueryResult queryResult;
+
+        // Basic queries
+        queryResult = vqb.getVariantFrequencyByRegion(new Region("1:10000000-20000000"), null);
+        System.out.println("queryResult = " + queryResult);
+//        assertEquals(3, queryResult.getNumResults());
+    }
+
+    @Test
     public void testGetAllVariantsByRegionAndStudy() {
         QueryResult queryResult;
         
         // Basic queries
         queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("1:1000000-2000000"), Arrays.asList(study.getStudyId()), null);
+        System.out.println("queryResult = " + queryResult);
         assertEquals(3, queryResult.getNumResults());
         queryResult = vqb.getAllVariantsByRegionAndStudies(new Region("1:10000000-20000000"), Arrays.asList(study.getStudyId()), null);
         assertEquals(11, queryResult.getNumResults());
@@ -157,10 +209,14 @@ public class VariantMongoDBAdaptorTest {
     
     @Test
     public void testGetMostAffectedGenes() {
-        QueryResult queryResult = vqb.getMostAffectedGenes(10, null);
+//        QueryResult queryResult = vqb.getMostAffectedGenes(10, null);
+
+        QueryResult queryResult = vqb.groupBy("gene", null);
         assertEquals(10, queryResult.getNumResults());
         System.out.println(Arrays.deepToString(queryResult.getResult().toArray()));
-        
+
+        System.out.println("queryResult = " + queryResult);
+
         List<DBObject> result = queryResult.getResult();
         for (int i = 1; i < queryResult.getNumResults(); i++) {
             DBObject prevObject = result.get(i-1);
@@ -211,19 +267,7 @@ public class VariantMongoDBAdaptorTest {
         }
     }
     
-    
-    @Test
-    public void testGetVariantById() {
-        QueryResult queryResult;
-        
-        queryResult = vqb.getVariantById("rs1137005", null);
-        assertEquals(1, queryResult.getNumResults());
-        Variant object = (Variant) queryResult.getResult().get(0);
-        assertEquals(object.getStart(), 1650807);
-        
-        queryResult = vqb.getVariantById("rs123456789", null);
-        assertEquals(0, queryResult.getNumResults());
-    }
+
     
 //    @Test
 //    public void testGetRecords() throws Exception {
