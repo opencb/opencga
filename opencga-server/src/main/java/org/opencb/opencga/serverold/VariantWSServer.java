@@ -155,7 +155,7 @@ public class VariantWSServer extends GenericWSServer {
                 if (interval > 0) {
                     queryOptions.put("interval", interval);
                 }
-                return createOkResponse(variantMongoDbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions));
+                return createOkResponse(variantMongoDbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions));
             }
         } else if (regionsSize <= MAX_REGION) {
             List<QueryResult> allVariantsByRegionList = variantMongoDbAdaptor.getAllVariantsByRegionList(regions, queryOptions);

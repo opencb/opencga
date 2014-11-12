@@ -1,5 +1,4 @@
-package org.opencb.opencga.app.cli.storage;
-
+package org.opencb.opencga.storage.app;
 
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
@@ -7,21 +6,12 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.storage.OptionsParser.Command;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandCreateAccessions;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandLoadVariants;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformVariants;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandLoadAlignments;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandTransformAlignments;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandDownloadAlignments;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexAlignments;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexVariants;
-import org.opencb.opencga.app.cli.storage.OptionsParser.CommandIndexSequence;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
@@ -35,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -56,6 +48,7 @@ public class OpenCGAStorageMain {
         // If not found, then in the environment variable "OPENCGA_HOME".
         // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
         String propertyAppHome = System.getProperty("app.home");
+        logger.debug("propertyAppHome = {}", propertyAppHome);
         if (propertyAppHome != null) {
             opencgaHome = propertyAppHome;
         } else {
@@ -74,7 +67,7 @@ public class OpenCGAStorageMain {
             IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         OptionsParser parser = new OptionsParser();
-        Command command = null;
+        OptionsParser.Command command = null;
         try {
             String parsedCommand = parser.parse(args);
 
@@ -122,8 +115,8 @@ public class OpenCGAStorageMain {
         }
 
 
-        if (command instanceof CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
-            CommandIndexAlignments c = (CommandIndexAlignments) command;
+        if (command instanceof OptionsParser.CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
+            OptionsParser.CommandIndexAlignments c = (OptionsParser.CommandIndexAlignments) command;
             if (c.input.endsWith(".bam") || c.input.endsWith(".sam")) {
                 AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
                 ObjectMap params = new ObjectMap();
@@ -157,8 +150,8 @@ public class OpenCGAStorageMain {
             } else {
                 throw new IOException("Unknown file type");
             }
-        } else if (command instanceof CommandIndexSequence) {    //TODO: Create method AlignmentStorageManager.index() ??
-            CommandIndexSequence c = (CommandIndexSequence) command;
+        } else if (command instanceof OptionsParser.CommandIndexSequence) {    //TODO: Create method AlignmentStorageManager.index() ??
+            OptionsParser.CommandIndexSequence c = (OptionsParser.CommandIndexSequence) command;
             if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
                 Path input = Paths.get(URI.create(c.input).getPath());
                 Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(URI.create(c.outdir).getPath());
@@ -181,8 +174,8 @@ public class OpenCGAStorageMain {
             } else {
                 throw new IOException("Unknown file type");
             }
-        } else if (command instanceof CommandIndexVariants) {
-            CommandIndexVariants c = (CommandIndexVariants) command;
+        } else if (command instanceof OptionsParser.CommandIndexVariants) {
+            OptionsParser.CommandIndexVariants c = (OptionsParser.CommandIndexVariants) command;
             if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
                 VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
                 Path variantsPath = Paths.get(c.input);
@@ -212,8 +205,8 @@ public class OpenCGAStorageMain {
                 variantStorageManager.load(outdir.resolve(fileName + ".variants.json.gz"), credentials, params);
             }
 
-        } else if (command instanceof CommandCreateAccessions) {
-            CommandCreateAccessions c = (CommandCreateAccessions) command;
+        } else if (command instanceof OptionsParser.CommandCreateAccessions) {
+            OptionsParser.CommandCreateAccessions c = (OptionsParser.CommandCreateAccessions) command;
 
             Path variantsPath = Paths.get(c.input);
             Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
@@ -221,8 +214,8 @@ public class OpenCGAStorageMain {
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
             createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
 
-        } else if (command instanceof CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
-            CommandTransformVariants c = (CommandTransformVariants) command;
+        } else if (command instanceof OptionsParser.CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
+            OptionsParser.CommandTransformVariants c = (OptionsParser.CommandTransformVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
             Path variantsPath = Paths.get(c.file);
             Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
@@ -240,8 +233,8 @@ public class OpenCGAStorageMain {
 //            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
 //            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
 
-        } else if (command instanceof CommandLoadVariants) {    //TODO: Add "preLoad" call
-            CommandLoadVariants c = (CommandLoadVariants) command;
+        } else if (command instanceof OptionsParser.CommandLoadVariants) {    //TODO: Add "preLoad" call
+            OptionsParser.CommandLoadVariants c = (OptionsParser.CommandLoadVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
 
             //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
@@ -268,8 +261,8 @@ public class OpenCGAStorageMain {
 
 //            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
 
-        } else if (command instanceof CommandTransformAlignments) { //TODO: Add "preTransform and postTransform" call
-            CommandTransformAlignments c = (CommandTransformAlignments) command;
+        } else if (command instanceof OptionsParser.CommandTransformAlignments) { //TODO: Add "preTransform and postTransform" call
+            OptionsParser.CommandTransformAlignments c = (OptionsParser.CommandTransformAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
 
             ObjectMap params = new ObjectMap();
@@ -306,8 +299,8 @@ public class OpenCGAStorageMain {
                     false,              //Can't be loaded
                     c.includeCoverage, c.meanCoverage);*/
 
-        } else if (command instanceof CommandLoadAlignments){ //TODO: Add "preLoad" call
-            CommandLoadAlignments c = (CommandLoadAlignments) command;
+        } else if (command instanceof OptionsParser.CommandLoadAlignments){ //TODO: Add "preLoad" call
+            OptionsParser.CommandLoadAlignments c = (OptionsParser.CommandLoadAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
 
             ObjectMap params = new ObjectMap();
@@ -322,8 +315,8 @@ public class OpenCGAStorageMain {
             alignmentStorageManager.load(input, credentials, params);
 
             
-        } else if(command instanceof CommandDownloadAlignments){
-            CommandDownloadAlignments c = (CommandDownloadAlignments) command;
+        } else if(command instanceof OptionsParser.CommandDownloadAlignments){
+            OptionsParser.CommandDownloadAlignments c = (OptionsParser.CommandDownloadAlignments) command;
            /* downloadAlignments(c);*/
 
         }

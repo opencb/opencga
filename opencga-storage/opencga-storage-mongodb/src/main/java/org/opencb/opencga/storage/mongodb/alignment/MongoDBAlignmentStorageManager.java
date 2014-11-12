@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,6 +70,17 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         }
     }
 
+    @Override
+    public void extract(URI from, URI to) {
+
+    }
+
+
+    @Override
+    public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+
+    }
+
 
     @Override
     public DataReader<AlignmentRegion> getDBSchemaReader(Path input) {
@@ -109,9 +121,9 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             if(credentials != null && credentials.toFile().exists()) {
                 Properties credentialsProperties = new Properties();
                 credentialsProperties.load(new InputStreamReader(new FileInputStream(credentials.toString())));
-                return new CoverageMongoWriter(new MongoCredentials(credentialsProperties), fileId);
+                return new CoverageMongoDBWriter(new MongoCredentials(credentialsProperties), fileId);
             } else {
-                return new CoverageMongoWriter(getMongoCredentials(dbName), fileId);
+                return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);
             }
         } catch (IOException e) {
             logger.error(e.toString(), e);
@@ -334,6 +346,15 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         }
         reader.close();
         return sortBam;
+    }
+    @Override
+    public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException {
+
+    }
+
+    @Override
+    public void postLoad(Path input, Path output, ObjectMap params) throws IOException {
+
     }
 
 

@@ -15,7 +15,7 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
     // <size>_<chromosome>_<chunk_number>
 
     public DBObject getIdObject(MeanCoverage meanCoverage){
-        return new BasicDBObject(CoverageMongoWriter.ID_FIELD, getIdField(meanCoverage));
+        return new BasicDBObject(CoverageMongoDBWriter.ID_FIELD, getIdField(meanCoverage));
     }
 
     public String getIdField(MeanCoverage meanCoverage){
@@ -24,15 +24,15 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
 
     @Override
     public MeanCoverage convertToDataModelType(DBObject dbObject) {
-        String[] split = dbObject.get(CoverageMongoWriter.ID_FIELD).toString().split("_");
+        String[] split = dbObject.get(CoverageMongoDBWriter.ID_FIELD).toString().split("_");
 
         float averageFloat;
         Object average;
-        if(dbObject.containsField(CoverageMongoWriter.FILES_FIELD)) {
-            average = ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get(CoverageMongoWriter.AVERAGE_FIELD);
+        if(dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
+            average = ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get(CoverageMongoDBWriter.AVERAGE_FIELD);
             //coverage = ((Double) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get(CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
-        } else if(dbObject.containsField(CoverageMongoWriter.AVERAGE_FIELD)){
-            average = dbObject.get(CoverageMongoWriter.AVERAGE_FIELD);
+        } else if(dbObject.containsField(CoverageMongoDBWriter.AVERAGE_FIELD)){
+            average = dbObject.get(CoverageMongoDBWriter.AVERAGE_FIELD);
             //coverage = ((Double) dbObject.get(CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
         } else {
             //TODO: Show a error message
@@ -54,7 +54,7 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
     @Override
     public DBObject convertToStorageType(MeanCoverage meanCoverage) {
 
-        BasicDBObject mCoverage = new BasicDBObject(CoverageMongoWriter.AVERAGE_FIELD, meanCoverage.getCoverage());
+        BasicDBObject mCoverage = new BasicDBObject(CoverageMongoDBWriter.AVERAGE_FIELD, meanCoverage.getCoverage());
 
         return mCoverage;
     }

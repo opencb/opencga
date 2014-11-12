@@ -1237,7 +1237,7 @@ public class CatalogManager {
 //
 //        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap>
 //            // TODO
-//            queryResult = queryBuilder.getVariantsHistogramByRegion(region, studyName,
+//            queryResult = queryBuilder.getVariantFrequencyByRegion(region, studyName,
 //                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
 //                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
 //

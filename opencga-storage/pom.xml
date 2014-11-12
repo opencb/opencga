@@ -15,6 +15,7 @@
     <version>0.4.0</version>
 
     <modules>
+        <module>opencga-storage-app</module>
         <module>opencga-storage-core</module>
         <module>opencga-storage-mongodb</module>
         <module>opencga-storage-hbase</module>
@@ -35,94 +36,18 @@
         </dependencies>
     </dependencyManagement>
 
-<!--
-    <dependencies>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-lib</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.datastore</groupId>
-            <artifactId>datastore-mongodb</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.utgenome.thirdparty</groupId>
-            <artifactId>picard</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>bioformats</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-lib</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-client</artifactId>
-            <version>2.11</version>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.variant</groupId>
-            <artifactId>variant-lib</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>formats</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>models</artifactId>
-        </dependency>
-    </dependencies>
--->
-
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-        </testResources>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <showDeprecation>true</showDeprecation>
+                    <showWarnings>true</showWarnings>
+                    <encoding>UTF-8</encoding>
                     <excludes>
                         <exclude>**/VariantSqliteWriter.java</exclude>
                         <exclude>**/VariantSqliteDBAdaptor.java</exclude>

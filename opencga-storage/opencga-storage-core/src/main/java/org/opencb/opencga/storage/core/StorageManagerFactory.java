@@ -27,48 +27,74 @@ public class StorageManagerFactory {
         return getAlignmentStorageManager(null);
     }
 
-    public static AlignmentStorageManager getAlignmentStorageManager(String name)
+    public static AlignmentStorageManager getAlignmentStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        if(name == null || name.isEmpty()) {
-            name = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.DEFAULT.ALIGNMENT");
-        }
-        name = name.toUpperCase();
-        if(!alignmentStorageManagerMap.containsKey(name)) {
-            String key = "OPENCGA.STORAGE." + name + ".ALIGNMENT";
-            Properties storageProperties = Config.getStorageProperties();
-            String storageManagerName = storageProperties.getProperty(key);
-            String propertiesPath = storageProperties.getProperty(key + ".PROPERTIES");
 
-            AlignmentStorageManager alignmentStorageManager = (AlignmentStorageManager) Class.forName(storageManagerName).newInstance();
-//            alignmentStorageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", "storage.properties"));
-            alignmentStorageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", propertiesPath));
-            alignmentStorageManagerMap.put(name, alignmentStorageManager);
+        // Get a valid StorageEngine name
+        if(storageEngineName == null || storageEngineName.isEmpty()) {
+            storageEngineName = getDefaultStorageEngine();
+            if(storageEngineName == null || storageEngineName.isEmpty()) {
+                return null;
+            }
         }
-        return alignmentStorageManagerMap.get(name);
+        storageEngineName = storageEngineName.toUpperCase();
+
+        if(!alignmentStorageManagerMap.containsKey(storageEngineName)) {
+            String key = "OPENCGA.STORAGE." + storageEngineName;
+            Properties storageProperties = Config.getStorageProperties();
+            String storageManagerClassName = storageProperties.getProperty(key + ".ALIGNMENT.MANAGER");
+            String propertiesPath = storageProperties.getProperty(key + ".CONF");
+
+            AlignmentStorageManager alignmentStorageManager = (AlignmentStorageManager) Class.forName(storageManagerClassName).newInstance();
+            alignmentStorageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", propertiesPath));
+
+            alignmentStorageManagerMap.put(storageEngineName, alignmentStorageManager);
+        }
+        return alignmentStorageManagerMap.get(storageEngineName);
     }
+
 
     public static VariantStorageManager getVariantStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getVariantStorageManager(null);
     }
 
-    public static VariantStorageManager getVariantStorageManager(String name)
+    public static VariantStorageManager getVariantStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        if(name == null || name.isEmpty()) {
-            name = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.DEFAULT.ALIGNMENT");
-        }
-        name = name.toUpperCase();
-        if(!variantStorageManagerMap.containsKey(name)) {
-            String key = "OPENCGA.STORAGE." + name + ".VARIANT";
-            Properties storageProperties = Config.getStorageProperties();
-            String storageManagerName = storageProperties.getProperty(key);
-            String propertiesPath = storageProperties.getProperty(key + ".PROPERTIES");
 
-            VariantStorageManager variantStorageManager = (VariantStorageManager) Class.forName(storageManagerName).newInstance();
-//            variantStorageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", "storage.properties"));
-            variantStorageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", propertiesPath));
-            variantStorageManagerMap.put(name, variantStorageManager);
+        // Get a valid StorageEngine name
+        if(storageEngineName == null || storageEngineName.isEmpty()) {
+            storageEngineName = getDefaultStorageEngine();
+            if(storageEngineName == null || storageEngineName.isEmpty()) {
+                return null;
+            }
         }
-        return variantStorageManagerMap.get(name);
+        storageEngineName = storageEngineName.toUpperCase();
+
+        // Check if this already has been created
+        if(!variantStorageManagerMap.containsKey(storageEngineName)) {
+            String key = "OPENCGA.STORAGE." + storageEngineName;
+            Properties storageProperties = Config.getStorageProperties();
+            String storageManagerClassName = storageProperties.getProperty(key + ".VARIANT.MANAGER");
+            String propertiesPath = storageProperties.getProperty(key + ".CONF");
+
+            // Specific VariantStorageManager is created by reflection using the Class name from the properties file.
+            // The conf file is passed to the storage engine
+            VariantStorageManager variantStorageManager = (VariantStorageManager) Class.forName(storageManagerClassName).newInstance();
+            variantStorageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", propertiesPath));
+
+            variantStorageManagerMap.put(storageEngineName, variantStorageManager);
+        }
+        return variantStorageManagerMap.get(storageEngineName);
     }
+
+
+    private static String getDefaultStorageEngine() {
+        String storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES");
+        if(storageEngineNames != null && !storageEngineNames.isEmpty()) {
+            return storageEngineNames.split(",")[0];
+        }
+        return null;
+    }
+
 }

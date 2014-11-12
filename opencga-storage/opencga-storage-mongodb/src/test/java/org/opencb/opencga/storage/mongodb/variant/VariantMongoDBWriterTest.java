@@ -25,10 +25,10 @@ import org.opencb.biodata.models.variant.VariantSource;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoWriterTest {
+public class VariantMongoDBWriterTest {
 
     private static Properties properties;
-    private static String inputFile = VariantMongoWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile = VariantMongoDBWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
     private static MongoCredentials credentials;
     private static VariantSource study1 = new VariantSource(inputFile, "testAlias", "testStudy1", "Test Study #1");
     private static VariantSource study2 = new VariantSource(inputFile, "testAlias2", "testStudy2", "Test Study #2");
@@ -59,7 +59,7 @@ public class VariantMongoWriterTest {
         List<Task<Variant>> taskList = new SortedList<>();
         List<VariantWriter> writers = new ArrayList<>();
 
-        writers.add(new VariantMongoWriter(study1, credentials));
+        writers.add(new VariantMongoDBWriter(study1, credentials));
 
         for (VariantWriter vw : writers) {
             vw.includeStats(true);

@@ -13,7 +13,6 @@ import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,7 +20,7 @@ import java.util.List;
  *
  * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  */
-public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
+public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
 
     public static final String COVERAGE_COLLECTION_NAME = "alignment";
 
@@ -43,9 +42,9 @@ public class CoverageMongoWriter implements DataWriter<AlignmentRegion> {
     private final String collectionName;
     private MongoDBCollection collection;
 
-    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(CoverageMongoWriter.class);
+    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(CoverageMongoDBWriter.class);
 
-    public CoverageMongoWriter(MongoCredentials credentials, String fileId) {
+    public CoverageMongoDBWriter(MongoCredentials credentials, String fileId) {
         this.collectionName = COVERAGE_COLLECTION_NAME;
         this.credentials = credentials;
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());

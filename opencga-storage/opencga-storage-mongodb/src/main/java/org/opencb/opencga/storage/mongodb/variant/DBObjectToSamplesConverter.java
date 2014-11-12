@@ -70,8 +70,8 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
     @Override
     public ArchivedVariantFile convertToDataModelType(DBObject object) {
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
-            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), 
-                    object.get(STUDYID_FIELD).toString(), null).getResult().get(0);
+            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(
+                    object.get(FILEID_FIELD).toString(), null).getResult().get(0);
         }
         
         if (samples == null) {
