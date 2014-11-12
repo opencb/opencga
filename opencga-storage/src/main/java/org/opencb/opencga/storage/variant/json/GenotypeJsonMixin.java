@@ -9,5 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public abstract class GenotypeJsonMixin {
     
     @JsonIgnore public abstract String getGenotype();
-            
+    
+    @JsonIgnore public abstract int[] getAllelesIdx();
+    
 }

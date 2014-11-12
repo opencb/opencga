@@ -37,7 +37,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         // Genotype counts
         BasicDBObject genotypes = (BasicDBObject) object.get(NUMGT_FIELD);
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
-            stats.addGenotype(new Genotype(o.getKey()), (int) o.getValue());
+            String genotypeStr = o.getKey().replace("-1", ".");
+            stats.addGenotype(new Genotype(genotypeStr), (int) o.getValue());
         }
         
         return stats;
@@ -56,7 +57,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         // Genotype counts
         BasicDBObject genotypes = new BasicDBObject();
         for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
-            genotypes.append(g.getKey().toString(), g.getValue());
+            String genotypeStr = g.getKey().toString().replace(".", "-1");
+            genotypes.append(genotypeStr, g.getValue());
         }
         mongoStats.append(NUMGT_FIELD, genotypes);
         return mongoStats;
