@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.ConsequenceTypeMappings;
@@ -47,7 +47,7 @@ public class VariantMongoWriter extends VariantDBWriter {
     private DBObjectToVariantConverter variantConverter;
     private DBObjectToVariantStatsConverter statsConverter;
     private DBObjectToVariantSourceConverter sourceConverter;
-    private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
+    private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
     
     private long numVariantsWritten;
     
@@ -141,7 +141,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             }*/
             
             BasicDBList mongoFiles = new BasicDBList();
-            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+            for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                 if (!archiveFile.getFileId().equals(source.getFileId())) {
                     continue;
                 }
@@ -235,8 +235,8 @@ public class VariantMongoWriter extends VariantDBWriter {
         variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.FILEID_FIELD, 1));
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1));
         return true;
     }
 
@@ -266,7 +266,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                 
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
-                for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+                for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                     DBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
                     BasicDBObject changes = new BasicDBObject().append("$addToSet", 
                             new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, mongoFile));
@@ -348,7 +348,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
         // TODO Allow to configure samples compression
-        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+        archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(
                 compressSamples,
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);
