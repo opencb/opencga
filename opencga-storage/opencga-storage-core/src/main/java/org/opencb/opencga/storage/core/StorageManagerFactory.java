@@ -12,10 +12,7 @@ import java.util.Properties;
 
 /**
  * Creates StorageManagers by reflexion.
- *
  * The StorageManager's className is read from <opencga-home>/conf/storage.properties
- *
- *
  */
 public class StorageManagerFactory {
 

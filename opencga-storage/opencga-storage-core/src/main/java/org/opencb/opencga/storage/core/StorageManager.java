@@ -36,21 +36,21 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
      * @param from Data source origin
      * @param to Final location of data
      */
-    public void extract(URI from, URI to);
+    public void extract(URI from, URI to, ObjectMap params);
 
 
     public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException;
 
-    public void transform(Path input, Path pedigree, Path output, ObjectMap params) throws IOException, FileFormatException;
+    public void transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException;
 
     public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException;
 
 
-    public void preLoad(Path input, Path output, ObjectMap params) throws IOException;
+    public void preLoad(URI input, URI output, ObjectMap params) throws IOException;
 
-    public void load(Path input, Path credentials, ObjectMap params) throws IOException;
+    public void load(URI input, URI credentials, ObjectMap params) throws IOException;
 
-    public void postLoad(Path input, Path output, ObjectMap params) throws IOException;
+    public void postLoad(URI input, URI output, ObjectMap params) throws IOException;
 
 
     /**
@@ -59,9 +59,9 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
         * getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
 
-    public DBWRITER getDBWriter(Path credentials, String dbName, String fileId);
+    public DBWRITER getDBWriter(String dbName, ObjectMap params);
 
-    public DBADAPTOR getDBAdaptor(String dbName);
+    public DBADAPTOR getDBAdaptor(String dbName, ObjectMap params);
 
 
 }

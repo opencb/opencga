@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public interface AlignmentQueryBuilder {
+public interface AlignmentDBAdaptor {
     //Query Options
     public static final String QO_BAM_PATH = "bam_path";
     public static final String QO_BAI_PATH = "bai_path";

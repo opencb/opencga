@@ -24,7 +24,7 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.lib.common.IOUtils;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import java.util.*;
  *
  * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  */
-public class IndexedAlignmentDBAdaptor implements AlignmentQueryBuilder {
+public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     public static final String FEATURES_COUNT = "features_count";
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(IndexedAlignmentDBAdaptor.class);

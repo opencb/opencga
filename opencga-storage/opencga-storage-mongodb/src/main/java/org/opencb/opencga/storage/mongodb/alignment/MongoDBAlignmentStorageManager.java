@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import net.sf.samtools.BAMFileWriter;
 import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecordIterator;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
@@ -17,7 +15,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
@@ -132,7 +130,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
     @Override
-    public AlignmentQueryBuilder getDBAdaptor(String dbName) {
+    public AlignmentDBAdaptor getDBAdaptor(String dbName) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
             dbName = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME", MONGO_DB_NAME);

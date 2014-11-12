@@ -13,6 +13,7 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
@@ -30,7 +31,7 @@ import java.util.*;
 /**
  * Created by imedina on 13/08/14.
  */
-public abstract class VariantStorageManager /*implements StorageManager<VariantReader, VariantWriter, VariantDBAdaptor>*/ {
+public abstract class VariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
 
 
     public static final String INCLUDE_EFFECT = "includeEffect";
