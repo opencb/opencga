@@ -25,8 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -132,10 +130,10 @@ public class OpenCGAStorageMain {
                 params.put(AlignmentStorageManager.COPY_FILE, false);
                 params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-                Path input = Paths.get(URI.create(c.input).getPath());
-                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(URI.create(c.outdir).getPath());
+                URI input = URI.create(c.input);
+                URI outdir = c.outdir.isEmpty() ? input.resolve(".") : URI.create(c.outdir + "/").resolve(".");
 //                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
-                Path credentials = Paths.get(c.credentials);
+//                Path credentials = Paths.get(c.credentials);
 
 
                 logger.info("1 -- Transform alignments");
@@ -145,12 +143,19 @@ public class OpenCGAStorageMain {
                 alignmentStorageManager.preLoad(input, outdir, params);
 
                 logger.info("3 -- Load alignments");
-                alignmentStorageManager.load(outdir.resolve(input.getFileName().toString() + ".coverage.json.gz"), credentials, params);
+                String fileName;
+                if(c.fileId != null) {
+                    fileName = c.fileId + ".bam";
+                } else {
+                    fileName = input.resolve(".").relativize(input).toString();
+                }
+                URI loadInput = outdir.resolve(fileName + ".coverage.json.gz");
+                alignmentStorageManager.load(loadInput, params);
 
             } else {
                 throw new IOException("Unknown file type");
             }
-        } else if (command instanceof OptionsParser.CommandIndexSequence) {    //TODO: Create method AlignmentStorageManager.index() ??
+        } else if (command instanceof OptionsParser.CommandIndexSequence) {
             OptionsParser.CommandIndexSequence c = (OptionsParser.CommandIndexSequence) command;
             if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
                 Path input = Paths.get(URI.create(c.input).getPath());
@@ -178,31 +183,35 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandIndexVariants c = (OptionsParser.CommandIndexVariants) command;
             if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
                 VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-                Path variantsPath = Paths.get(c.input);
-                Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
-                Path outdir = c.outdir != null ? Paths.get(c.outdir) : Paths.get("");
-                Path credentials = Paths.get(c.credentials);
-                String fileName = variantsPath.getFileName().toString();
+                if(c.credentials != null && !c.credentials.isEmpty()) {
+                    variantStorageManager.addPropertiesPath(Paths.get(c.credentials));
+                }
+
+                URI variantsUri = URI.create(c.input);
+                URI pedigreeUri = c.pedigree != null ? URI.create(c.pedigree) : null;
+                URI outdirUri = c.outdir != null ? URI.create(c.outdir + "/").resolve(".") : variantsUri.resolve(".");
+                String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
                 VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
 
-                Map<String, Object> params = new LinkedHashMap<>();
+                ObjectMap params = new ObjectMap();
                 params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
                 params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
                 params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
                 params.put(VariantStorageManager.SOURCE, source);
 
                 logger.info("1 -- Transform variants");
-                variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
+                variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
 
 //                String fileName;
 //                fileName = outdir != null
 //                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variants.json.gz").toString()
 //                        : source.getFileName() + ".variants.json.gz";
-                source.setFileName(outdir.resolve(fileName + ".variants.json.gz").toString());
                 logger.info("2 -- Preload variants");
 
                 logger.info("3 -- Transform variants");
-                variantStorageManager.load(outdir.resolve(fileName + ".variants.json.gz"), credentials, params);
+                URI newInput = outdirUri.resolve(fileName + ".variants.json.gz");
+                source.setFileName(fileName + ".variants.json.gz");
+                variantStorageManager.load(newInput, params);
             }
 
         } else if (command instanceof OptionsParser.CommandCreateAccessions) {
@@ -217,18 +226,21 @@ public class OpenCGAStorageMain {
         } else if (command instanceof OptionsParser.CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
             OptionsParser.CommandTransformVariants c = (OptionsParser.CommandTransformVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
+            URI variantsUri = URI.create(c.file);
+            URI pedigreeUri = c.pedigree != null ? URI.create(c.pedigree) : null;
+            URI outdirUri = c.outdir != null ? URI.create(c.outdir + "/").resolve(".") : variantsUri.resolve(".");
             Path variantsPath = Paths.get(c.file);
-            Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
-            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
+//            Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
+//            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
 
-            Map<String, Object> params = new LinkedHashMap<>();
+            ObjectMap params = new ObjectMap();
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS,   c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
             params.put(VariantStorageManager.SOURCE, source);
 
-            variantStorageManager.transform(variantsPath, pedigreePath, outdir, params);
+            variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
 
 //            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
 //            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
@@ -236,21 +248,24 @@ public class OpenCGAStorageMain {
         } else if (command instanceof OptionsParser.CommandLoadVariants) {    //TODO: Add "preLoad" call
             OptionsParser.CommandLoadVariants c = (OptionsParser.CommandLoadVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
+            if(c.credentials != null && !c.credentials.isEmpty()) {
+                variantStorageManager.addPropertiesPath(Paths.get(c.credentials));
+            }
 
             //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path variantsPath = Paths.get(c.input);
-            Path credentials = c.credentials == null? null : Paths.get(c.credentials);
+            URI variantsUri = URI.create(c.input);
             VariantStudy.StudyType st = c.studyType;
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null, st, VariantSource.Aggregation.NONE);
 
-            Map<String, Object> params = new LinkedHashMap<>();
+            ObjectMap params = new ObjectMap();
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
             params.put(VariantStorageManager.SOURCE, source);
 
             // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
-            variantStorageManager.load(variantsPath, credentials, params);
+            variantStorageManager.load(variantsUri, params);
 
      /*       Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path filePath = Paths.get(c.input + ".file.json.gz");
@@ -265,9 +280,13 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandTransformAlignments c = (OptionsParser.CommandTransformAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
 
+            URI inputUri = URI.create(c.file);
+            URI outdirUri = c.outdir != null ? URI.create(c.outdir + "/").resolve(".") : inputUri.resolve(".");
+
+
             ObjectMap params = new ObjectMap();
 
-            if(c.fileId != null) {
+            if(c.fileId != null && !c.fileId.isEmpty()) {
                 params.put(AlignmentStorageManager.FILE_ID, c.fileId);
             }
             //params.put(AlignmentStorageManager.STUDY,   c.study);
@@ -275,10 +294,8 @@ public class OpenCGAStorageMain {
             params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
             params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.includeCoverage);
 
-            Path input = Paths.get(c.file);
-            Path output = Paths.get(c.outdir);
 
-            alignmentStorageManager.transform(input, null, output, params);
+            alignmentStorageManager.transform(inputUri, null, outdirUri, params);
 
       /*
 
@@ -302,6 +319,9 @@ public class OpenCGAStorageMain {
         } else if (command instanceof OptionsParser.CommandLoadAlignments){ //TODO: Add "preLoad" call
             OptionsParser.CommandLoadAlignments c = (OptionsParser.CommandLoadAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
+            if(c.credentials != null && !c.credentials.isEmpty()) {
+                alignmentStorageManager.addPropertiesPath(Paths.get(c.credentials));
+            }
 
             ObjectMap params = new ObjectMap();
 
@@ -309,10 +329,9 @@ public class OpenCGAStorageMain {
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
             params.put(AlignmentStorageManager.DB_NAME, c.dbName);
 
-            Path input = Paths.get(c.input);
-            Path credentials = Paths.get(c.credentials);
+            URI inputUri = URI.create(c.input);
 
-            alignmentStorageManager.load(input, credentials, params);
+            alignmentStorageManager.load(inputUri, params);
 
             
         } else if(command instanceof OptionsParser.CommandDownloadAlignments){

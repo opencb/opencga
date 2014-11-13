@@ -43,7 +43,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     public static final String PLAIN = "plain";
     public static final String REGION_SIZE = "regionSize";
     public static final String STUDY = "study";
-    public static final String FILE_ALIAS = "fileAlias";
+    public static final String FILE_ID = "fileId";
     public static final String WRITE_ALIGNMENTS = "writeAlignments";
     public static final String INCLUDE_COVERAGE = "includeCoverage";
     public static final String CREATE_BAI = "createBai";
@@ -66,27 +66,27 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     }
 
     /**
-     * if FILE_ALIAS == null
-     *  FILE_ALIAS = fileName - ".bam"
+     * if FILE_ID == null
+     *  FILE_ID = fileName - ".bam"
      *
      * if ENCRYPT
-     *  Copy into the output path                   : <outputPath>/<FILE_ALIAS>.encrypt.bam                 (pending)
+     *  Copy into the output path                   : <outputPath>/<FILE_ID>.encrypt.bam                 (pending)
      * if !ENCRYPT && COPY_FILE
-     *  Encrypt into the output path                : <outputPath>/<FILE_ALIAS>.bam                         (pending)
+     *  Encrypt into the output path                : <outputPath>/<FILE_ID>.bam                         (pending)
      * if CREATE_BAI
-     *  Create the bai with the samtools            : <outputPath>/<FILE_ALIAS>.bam.bai
+     *  Create the bai with the samtools            : <outputPath>/<FILE_ID>.bam.bai
      * if WRITE_ALIGNMENTS
-     *  Write Json alignments                       : <outputPath>/<FILE_ALIAS>.bam.alignments.json[.gz]
+     *  Write Json alignments                       : <outputPath>/<FILE_ID>.bam.alignments.json[.gz]
      * if INCLUDE_COVERAGE
-     *  Calculate the coverage                      : <outputPath>/<FILE_ALIAS>.bam.coverage.json[.gz]
+     *  Calculate the coverage                      : <outputPath>/<FILE_ID>.bam.coverage.json[.gz]
      * if INCLUDE_COVERAGE && MEAN_COVERAGE_SIZE_LIST
-     *  Calculate the meanCoverage                  : <outputPath>/<FILE_ALIAS>.bam.mean-coverage.json[.gz]
+     *  Calculate the meanCoverage                  : <outputPath>/<FILE_ID>.bam.mean-coverage.json[.gz]
      *
      *
      * @param inputUri      Sorted bam file
      * @param pedigree      Not used
      * @param outputUri     Output path where files are created
-     * @param params        Hash for extra params. FILE_ALIAS, ENCRYPT, PLAIN, REGION_SIZE, MEAN_COVERAGE_SIZE_LIST
+     * @param params        Hash for extra params. FILE_ID, ENCRYPT, PLAIN, REGION_SIZE, MEAN_COVERAGE_SIZE_LIST
      * @throws IOException
      * @throws FileFormatException
      */
@@ -110,10 +110,10 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         int regionSize = params.getInt(REGION_SIZE, 200000);
         List<String> meanCoverageSizeList = params.getListAs(MEAN_COVERAGE_SIZE_LIST, String.class, new LinkedList<String>());
         String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
-        String fileAlias = params.getString(FILE_ALIAS, defaultFileAlias);
+        String fileId = params.getString(FILE_ID, defaultFileAlias);
 
 //        String encrypt = params.getString(ENCRYPT, "null");
-//        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ALIAS));
+//        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
 
         //String fileName = inputPath.getFileName().toString();
         //Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
@@ -124,7 +124,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
 
         //2 Index (bai)
         if(createBai) {
-            Path bamIndexFile = output.resolve(fileAlias + ".bai");
+            Path bamIndexFile = output.resolve(fileId + ".bai");
             if (!Files.exists(bamIndexFile)) {
                 long start = System.currentTimeMillis();
                 String indexBai = "samtools index " + input.toString() + " -f " + bamIndexFile.toString();
@@ -159,7 +159,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
 
         //Writers
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-        String jsonOutputFiles = output.resolve(fileAlias).toString();
+        String jsonOutputFiles = output.resolve(fileId + ".bam").toString();
 
         if(writeJsonAlignments) {
             writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, jsonOutputFiles, !plain)));

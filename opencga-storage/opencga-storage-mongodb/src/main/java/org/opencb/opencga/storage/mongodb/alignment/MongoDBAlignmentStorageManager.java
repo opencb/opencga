@@ -64,7 +64,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     @Override
     public DataWriter<AlignmentRegion> getDBWriter(String dbName, ObjectMap params) {
-        String fileId = params.getString(FILE_ALIAS);
+        String fileId = params.getString(FILE_ID);
         return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);
     }
 
@@ -131,13 +131,13 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         checkUri(inputUri, "input uri");
         Path input = Paths.get(inputUri);
 
-        String fileAlias = params.getString(FILE_ALIAS, input.getFileName().toString().split("\\.")[0]);
+        String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
         String dbName = params.getString(DB_NAME);
 
 
         AlignmentCoverageJsonDataReader alignmentDataReader = getAlignmentCoverageJsonDataReader(input);
 //        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(credentials, dbName, fileId);
-        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(dbName, new ObjectMap(FILE_ALIAS, fileAlias));
+        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(dbName, new ObjectMap(FILE_ID, fileId));
 
         Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>(), 1);
 

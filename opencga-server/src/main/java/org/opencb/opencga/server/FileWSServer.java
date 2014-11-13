@@ -387,7 +387,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     AlignmentDBAdaptor dbAdaptor;
                     try {
                         AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(backend);
-                        dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName());
+                        dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName(), new ObjectMap());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());
                     }
@@ -415,7 +415,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
                     VariantDBAdaptor dbAdaptor;
                     try {
-                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(null);
+                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(index.getDbName(), new ObjectMap());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());
                     }
