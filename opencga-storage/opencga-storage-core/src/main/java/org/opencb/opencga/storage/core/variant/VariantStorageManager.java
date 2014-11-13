@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant;
 
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -11,6 +12,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
@@ -25,7 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -38,6 +42,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_STATS = "includeStats";
     public static final String INCLUDE_SAMPLES = "includeSamples";
     public static final String SOURCE = "source";
+    public static final String DB_NAME = "dbName";
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
 
@@ -57,47 +62,39 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         }
     }
 
-    //@Override
-    public VariantWriter getDBWriter(Path credentials, String fileId) {
-        return null;
+    @Override
+    public void extract(URI from, URI to, ObjectMap params) {
+
     }
 
-    //TODO: Try to remove VariantSource
-    abstract public VariantWriter getDBWriter(Path credentials, VariantSource source);
+    @Override
+    public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
 
-    //@Override
-    abstract public VariantDBAdaptor getDBAdaptor(Path credentials);
-
-    //@Override
-    public VariantReader getDBSchemaReader(Path input) {
-        return null;
     }
-
-    //@Override
-    public VariantWriter getDBSchemaWriter(Path output) {
-        return null;
-    }
-
-
 
     /**
      * Transform raw variant files into biodata model.
      *
-     * @param input         Input file. Accepted formats: *.vcf, *.vcf.gz
-     * @param pedigree      Pedigree input file. Accepted formats: *.ped
-     * @param output
+     * @param inputUri         Input file. Accepted formats: *.vcf, *.vcf.gz
+     * @param pedigreeUri      Pedigree input file. Accepted formats: *.ped
+     * @param outputUri
      * @param params
      * @throws IOException
      */
-    final public void transform(Path input, Path pedigree, Path output, Map<String, Object> params) throws IOException {
+    @Override
+    final public void transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws IOException {
         // input: VcfReader
         // output: JsonWriter
 
-        boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
-        boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
-        boolean includeStats = Boolean.parseBoolean(params.get("includeStats").toString());
+        Path input = Paths.get(inputUri);
+        Path pedigree = Paths.get(pedigreeUri);
+        Path output = Paths.get(outputUri);
+
+        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
+        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
+        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+        VariantSource source = params.get(SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
-        VariantSource source = (VariantSource) params.get("source");
 
         //Reader
         VariantReader reader = null;
@@ -153,93 +150,62 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         logger.info("Variants transformed!");
     }
 
-
-    public void preLoad(Path input, Path output, Map<String, Object> params) throws IOException {
-        // input: JsonVariatnReader
-        // output: getDBSchemaWriter
-
-        //Writers
-        VariantWriter dbSchemaWriter = this.getDBSchemaWriter(output);
-        if(dbSchemaWriter == null){
-            System.out.println("[ALERT] preLoad method not supported in this plugin");
-            return;
-        }
-        List<VariantWriter> writers = Arrays.asList(dbSchemaWriter);
-
-        //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
-        VariantSource source = (VariantSource) params.get("source");
-
-        //Reader
-        String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
-        VariantReader jsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString() , sourceFile);
-
-
-        //Tasks
-        List<Task<Variant>> taskList = new SortedList<>();
-
-
-        //Runner
-        VariantRunner vr = new VariantRunner(source, jsonReader, null, writers, taskList);
-
-        logger.info("Preloading variants...");
-        long start = System.currentTimeMillis();
-        vr.run();
-        long end = System.currentTimeMillis();
-        logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        logger.info("Variants preloaded!");
+    @Override
+    public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException {
 
     }
 
-
-    public void load(Path input, Path credentials, Map<String, Object> params) throws IOException {
-        // input: getDBSchemaReader
-        // output: getDBWriter()
-
-        boolean includeSamples = Boolean.parseBoolean(params.get("includeSamples").toString());
-        boolean includeEffect = Boolean.parseBoolean(params.get("includeEffect").toString());
-        boolean includeStats = Boolean.parseBoolean(params.get("includeStats").toString());
-//        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
-        VariantSource source = (VariantSource) params.get("source");
-
-        //Reader
-        VariantReader variantDBSchemaReader = this.getDBSchemaReader(input);
-        if (variantDBSchemaReader == null) {
-            if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
-                String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
-                variantDBSchemaReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
-            } else {
-                throw new IOException("Variants input file format not supported");
-            }
+    protected VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
+        VariantJsonReader variantJsonReader;
+        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
+            String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
+            variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
+        } else {
+            throw new IOException("Variants input file format not supported");
         }
-
-        //Tasks
-        List<Task<Variant>> taskList = new SortedList<>();
-
-
-        //Writers
-        VariantWriter variantDBWriter = this.getDBWriter(credentials, source);
-        List<VariantWriter> writers = new ArrayList<>();
-        writers.add(variantDBWriter);
-
-        for (VariantWriter variantWriter : writers) {
-            variantWriter.includeSamples(includeSamples);
-            variantWriter.includeEffect(includeEffect);
-            variantWriter.includeStats(includeStats);
-        }
-
-        //Runner
-        VariantRunner vr = new VariantRunner(source, variantDBSchemaReader, null, writers, taskList);
-
-        logger.info("Loading variants...");
-        long start = System.currentTimeMillis();
-        vr.run();
-        long end = System.currentTimeMillis();
-        logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        logger.info("Variants loaded!");
+        return variantJsonReader;
     }
 
-    public void postLoad(Path input, Path credentials, Map<String, Object> params) throws IOException {
+//    @Override
+//    public void preLoad(URI inputUri, URI outputUri, ObjectMap params) throws IOException {
+//        // input: JsonVariatnReader
+//        // output: getDBSchemaWriter
+//
+//        Path input = Paths.get(inputUri);
+//        Path output = Paths.get(outputUri);
+//
+//        //Writers
+//        VariantWriter dbSchemaWriter = this.getDBSchemaWriter(outputUri);
+//        if(dbSchemaWriter == null){
+//            System.out.println("[ALERT] preLoad method not supported in this plugin");
+//            return;
+//        }
+//        List<VariantWriter> writers = Arrays.asList(dbSchemaWriter);
+//
+//        //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+//        VariantSource source = (VariantSource) params.get("source");
+//
+//        //Reader
+//        String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
+//        VariantReader jsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString() , sourceFile);
+//
+//
+//        //Tasks
+//        List<Task<Variant>> taskList = new SortedList<>();
+//
+//
+//        //Runner
+//        VariantRunner vr = new VariantRunner(source, jsonReader, null, writers, taskList);
+//
+//        logger.info("Preloading variants...");
+//        long start = System.currentTimeMillis();
+//        vr.run();
+//        long end = System.currentTimeMillis();
+//        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+//        logger.info("Variants preloaded!");
+//
+//    }
 
-    }
+
 
 }
