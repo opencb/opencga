@@ -33,7 +33,6 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public static final String MONGO_DB_NAME = "opencga";
     public static final String STORAGE_SEQUENCE_DBADAPTOR = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
 
-    private final Properties properties = new Properties();
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
     protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
 
@@ -47,23 +46,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
     @Override
-    public void addPropertiesPath(Path propertiesPath){
-        if(propertiesPath != null && propertiesPath.toFile().exists()) {
-            try {
-                properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toFile())));
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    public Properties getProperties() {
-        return properties;
-    }
-
-
-    @Override
-    public DataWriter<AlignmentRegion> getDBWriter(String dbName, ObjectMap params) {
+    public CoverageMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
         String fileId = params.getString(FILE_ID);
         return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);
     }
@@ -129,16 +112,20 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     @Override
     public void load(URI inputUri, ObjectMap params) throws IOException {
         checkUri(inputUri, "input uri");
-        Path input = Paths.get(inputUri);
+        Path input = Paths.get(inputUri.getPath());
 
         String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
         String dbName = params.getString(DB_NAME);
 
 
+        //Reader
         AlignmentCoverageJsonDataReader alignmentDataReader = getAlignmentCoverageJsonDataReader(input);
-//        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(credentials, dbName, fileId);
-        DataWriter<AlignmentRegion> dbWriter = this.getDBWriter(dbName, new ObjectMap(FILE_ID, fileId));
+        alignmentDataReader.setReadRegionCoverage(false);   //Only load mean coverage
 
+        //Writer
+        CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName, new ObjectMap(FILE_ID, fileId));
+
+        //Runner
         Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>(), 1);
 
         logger.info("Loading coverage...");

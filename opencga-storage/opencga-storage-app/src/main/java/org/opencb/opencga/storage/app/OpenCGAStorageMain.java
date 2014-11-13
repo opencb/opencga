@@ -188,8 +188,9 @@ public class OpenCGAStorageMain {
                 }
 
                 URI variantsUri = URI.create(c.input);
-                URI pedigreeUri = c.pedigree != null ? URI.create(c.pedigree) : null;
-                URI outdirUri = c.outdir != null ? URI.create(c.outdir + "/").resolve(".") : variantsUri.resolve(".");
+                URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? URI.create(c.pedigree) : null;
+                URI outdirUri = c.outdir != null && !c.outdir.isEmpty() ? URI.create(c.outdir + "/").resolve(".") : variantsUri.resolve(".");
+
                 String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
                 VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
 
@@ -198,20 +199,32 @@ public class OpenCGAStorageMain {
                 params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
                 params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
                 params.put(VariantStorageManager.SOURCE, source);
+                params.put(VariantStorageManager.DB_NAME, c.dbName);
 
-                logger.info("1 -- Transform variants");
+                logger.info("-- Extract variants");
+//                variantStorageManager.extract(variantsUri, outdirUri, params);
+
+//                logger.info("-- PreTransform variants");
+//                variantStorageManager.preTransform(variantsUri, params);
+                logger.info("-- Transform variants");
                 variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
+//                logger.info("-- PostTransform variants");
+//                variantStorageManager.preTransform(variantsUri, params);
 
 //                String fileName;
 //                fileName = outdir != null
 //                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variants.json.gz").toString()
 //                        : source.getFileName() + ".variants.json.gz";
-                logger.info("2 -- Preload variants");
 
-                logger.info("3 -- Transform variants");
                 URI newInput = outdirUri.resolve(fileName + ".variants.json.gz");
                 source.setFileName(fileName + ".variants.json.gz");
+
+//                logger.info("-- PreLoad variants");
+//                variantStorageManager.preLoad(newInput, outdirUri, params);
+                logger.info("-- Load variants");
                 variantStorageManager.load(newInput, params);
+//                logger.info("-- PostLoad variants");
+//                variantStorageManager.postLoad(newInput, outdirUri, params);
             }
 
         } else if (command instanceof OptionsParser.CommandCreateAccessions) {
@@ -263,6 +276,7 @@ public class OpenCGAStorageMain {
             params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
             params.put(VariantStorageManager.SOURCE, source);
+            params.put(VariantStorageManager.DB_NAME, c.dbName);
 
             // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
             variantStorageManager.load(variantsUri, params);

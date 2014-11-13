@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.alignment.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
@@ -10,9 +11,7 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.io.DataReader;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,7 +65,8 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
             }
 
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();
+            logger.error(e.toString(), e);
             return false;
         }
 
@@ -80,6 +80,7 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
             meanCoverageStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+            logger.error(e.toString(), e);
             return false;
         }
         return true;
@@ -92,6 +93,7 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
             meanCoverageParser = factory.createParser(meanCoverageStream);
         } catch (IOException e) {
             e.printStackTrace();
+            logger.error(e.toString(), e);
             return false;
         }
 
@@ -108,7 +110,7 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
         try {
             meanCoverage = meanCoverageParser.readValueAs(MeanCoverage.class);
         } catch (IOException e) {
-            //e.printStackTrace();
+//            logger.error(e.toString(), e);
         }
         return meanCoverage;
     }
@@ -127,6 +129,7 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
             try {
                 regionCoverage = coverageParser.readValueAs(RegionCoverage.class);
             } catch (IOException e) {
+//                logger.error(e.toString(), e);
                 //e.printStackTrace();
                 return null;
             }

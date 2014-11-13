@@ -35,7 +35,7 @@ import org.opencb.commons.io.DataWriter;
  */
 public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegion>{
 
-    private final static int DEFAULT_CHUNK_SIZE = 1000;
+    public final static int DEFAULT_CHUNK_SIZE = 1000;
 
     private final String coverageFilename;
     private final String meanCoverageFilename;
@@ -50,7 +50,7 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
     private JsonGenerator coverageGenerator;
     private JsonGenerator meanCoverageGenerator;
 
-    private final RegionCoverage bufferedCoverage;
+    private RegionCoverage bufferedCoverage;
     
     public AlignmentCoverageJsonDataWriter(String coverageFilename) {
         this.coverageFilename = coverageFilename;
@@ -58,8 +58,7 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         this.gzip = this.coverageFilename.endsWith(".gz");
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
-        bufferedCoverage = new RegionCoverage(chunkSize);
-        bufferedCoverage.setChromosome("");
+        chunkSize = DEFAULT_CHUNK_SIZE;
     }
     
     public AlignmentCoverageJsonDataWriter(String baseFilename, boolean gzip) {
@@ -68,12 +67,14 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         this.gzip = gzip;
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
-        bufferedCoverage = new RegionCoverage(chunkSize);
-        bufferedCoverage.setChromosome("");
+        chunkSize = DEFAULT_CHUNK_SIZE;
     }
 
     @Override
     public boolean open() {
+        bufferedCoverage = new RegionCoverage(chunkSize);
+        bufferedCoverage.setChromosome("");
+
         try {
             coverageOutputStream = new FileOutputStream(coverageFilename);
 

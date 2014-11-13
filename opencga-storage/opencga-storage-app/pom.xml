@@ -43,7 +43,7 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <targetPath>${build.dir}/conf</targetPath>
+                <targetPath>${basedir}/build/conf</targetPath>
             </resource>
         </resources>
 
@@ -109,6 +109,8 @@
                                 <exec executable="rm">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}/libs"/>
+                                    <arg value="${build.dir}/bin"/>
+                                    <arg value="${build.dir}/conf"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -141,8 +143,17 @@
         <profile>
             <id>STORAGE-MONGODB1</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <activeByDefault>true</activeByDefault>
             </activation>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>../opencga-storage-mongodb/src/main/resources</directory>
+                        <filtering>true</filtering>
+                        <targetPath>${basedir}/build/conf</targetPath>
+                    </resource>
+                </resources>
+            </build>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
@@ -159,6 +170,15 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>../opencga-storage-hbase/src/main/resources</directory>
+                        <filtering>true</filtering>
+                        <targetPath>${basedir}/build/conf</targetPath>
+                    </resource>
+                </resources>
+            </build>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>

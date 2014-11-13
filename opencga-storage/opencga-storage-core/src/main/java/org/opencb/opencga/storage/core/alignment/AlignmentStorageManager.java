@@ -22,16 +22,14 @@ import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCa
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by jacobo on 14/08/14.
@@ -44,6 +42,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     public static final String REGION_SIZE = "regionSize";
     public static final String STUDY = "study";
     public static final String FILE_ID = "fileId";
+    public static final String FILE_ALIAS = "fileAlias";
     public static final String WRITE_ALIGNMENTS = "writeAlignments";
     public static final String INCLUDE_COVERAGE = "includeCoverage";
     public static final String CREATE_BAI = "createBai";
@@ -51,7 +50,23 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     public static final String COPY_FILE = "copy";
     public static final String DB_NAME = "dbName";
 
+    protected final Properties properties = new Properties();
     protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+
+    @Override
+    public void addPropertiesPath(Path propertiesPath){
+        if(propertiesPath != null && propertiesPath.toFile().exists()) {
+            try {
+                properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toFile())));
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    public Properties getProperties() {
+        return properties;
+    }
 
     @Override
     public void extract(URI from, URI to, ObjectMap params) {
@@ -66,21 +81,21 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     }
 
     /**
-     * if FILE_ID == null
-     *  FILE_ID = fileName - ".bam"
+     * if FILE_ALIAS == null
+     *  FILE_ALIAS = fileName - ".bam"
      *
      * if ENCRYPT
-     *  Copy into the output path                   : <outputPath>/<FILE_ID>.encrypt.bam                 (pending)
+     *  Copy into the output path                   : <outputPath>/<FILE_ALIAS>.encrypt.bam                 (pending)
      * if !ENCRYPT && COPY_FILE
-     *  Encrypt into the output path                : <outputPath>/<FILE_ID>.bam                         (pending)
+     *  Encrypt into the output path                : <outputPath>/<FILE_ALIAS>.bam                         (pending)
      * if CREATE_BAI
-     *  Create the bai with the samtools            : <outputPath>/<FILE_ID>.bam.bai
+     *  Create the bai with the samtools            : <outputPath>/<FILE_ALIAS>.bam.bai
      * if WRITE_ALIGNMENTS
-     *  Write Json alignments                       : <outputPath>/<FILE_ID>.bam.alignments.json[.gz]
+     *  Write Json alignments                       : <outputPath>/<FILE_ALIAS>.bam.alignments.json[.gz]
      * if INCLUDE_COVERAGE
-     *  Calculate the coverage                      : <outputPath>/<FILE_ID>.bam.coverage.json[.gz]
+     *  Calculate the coverage                      : <outputPath>/<FILE_ALIAS>.bam.coverage.json[.gz]
      * if INCLUDE_COVERAGE && MEAN_COVERAGE_SIZE_LIST
-     *  Calculate the meanCoverage                  : <outputPath>/<FILE_ID>.bam.mean-coverage.json[.gz]
+     *  Calculate the meanCoverage                  : <outputPath>/<FILE_ALIAS>.bam.mean-coverage.json[.gz]
      *
      *
      * @param inputUri      Sorted bam file
@@ -97,8 +112,8 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         checkUri(inputUri, "input file");
         checkUri(outputUri, "output directory");
 
-        Path input = Paths.get(inputUri);
-        Path output = Paths.get(outputUri);
+        Path input = Paths.get(inputUri.getPath());
+        Path output = Paths.get(outputUri.getPath());
         Path bamFile = input;
 
         checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
@@ -107,27 +122,27 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         boolean writeJsonAlignments = params.getBoolean(WRITE_ALIGNMENTS, true);
         boolean includeCoverage = params.getBoolean(INCLUDE_COVERAGE, false);
         boolean createBai = params.getBoolean(CREATE_BAI, false);
-        int regionSize = params.getInt(REGION_SIZE, 200000);
+        int regionSize = params.getInt(REGION_SIZE,
+                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
         List<String> meanCoverageSizeList = params.getListAs(MEAN_COVERAGE_SIZE_LIST, String.class, new LinkedList<String>());
         String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
-        String fileId = params.getString(FILE_ID, defaultFileAlias);
+        String fileAlias = params.getString(FILE_ALIAS, defaultFileAlias);
 
 //        String encrypt = params.getString(ENCRYPT, "null");
 //        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
-
-        //String fileName = inputPath.getFileName().toString();
-        //Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
+//        String fileName = inputPath.getFileName().toString();
+//        Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
 
 
         //1 Encrypt
-//        encrypt(encrypt, bamFile, fileId, output, copy);
+        //encrypt(encrypt, bamFile, fileId, output, copy);
 
         //2 Index (bai)
         if(createBai) {
-            Path bamIndexFile = output.resolve(fileId + ".bai");
+            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
             if (!Files.exists(bamIndexFile)) {
                 long start = System.currentTimeMillis();
-                String indexBai = "samtools index " + input.toString() + " -f " + bamIndexFile.toString();
+                String indexBai = "samtools index " + input.toString() + " " + bamIndexFile.toString();
                 logger.info("Creating index : " + indexBai);
                 try {
                     Runtime.getRuntime().exec(indexBai).waitFor();
@@ -159,13 +174,17 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
 
         //Writers
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-        String jsonOutputFiles = output.resolve(fileId + ".bam").toString();
+        String jsonOutputFiles = output.resolve(fileAlias + ".bam").toString();
 
         if(writeJsonAlignments) {
             writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, jsonOutputFiles, !plain)));
         }
         if(includeCoverage) {
-            writers.add(new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain));
+            AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
+                    new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
+            alignmentCoverageJsonDataWriter.setChunkSize(
+                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
+            writers.add(alignmentCoverageJsonDataWriter);
         }
         if(writers.isEmpty()) {
             logger.warn("No writers for transform-alignments!");
@@ -317,13 +336,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
             return null;
         }
 
-//        String meanCoverage = input.toString()
-//                .replaceFirst("coverage\\.json$", "mean-coverage.json")
-//                .replaceFirst("coverage\\.json\\.gz$", "mean-coverage.json.gz");
-
-        AlignmentCoverageJsonDataReader alignmentCoverageJsonDataReader = new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
-        alignmentCoverageJsonDataReader.setReadRegionCoverage(false);
-        return alignmentCoverageJsonDataReader;
+        return new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
     }
 
     /**
@@ -355,7 +368,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     }
 
     protected void checkUri(URI uri, String uriName) throws IOException {
-        if(uri == null || !uri.getScheme().equals("file")) {
+        if(uri == null || uri.getScheme() != null && !uri.getScheme().equals("file")) {
             throw new IOException("Expected file:// uri scheme for " + uriName);
         }
     }

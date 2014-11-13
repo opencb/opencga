@@ -83,7 +83,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         // input: getDBSchemaReader
         // output: getDBWriter()
 
-        Path input = Paths.get(inputUri);
+        Path input = Paths.get(inputUri.getPath());
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);

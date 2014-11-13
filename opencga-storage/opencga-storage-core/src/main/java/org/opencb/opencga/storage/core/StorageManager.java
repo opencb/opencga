@@ -6,6 +6,7 @@ import org.opencb.datastore.core.ObjectMap;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Properties;
 
 /**
  * @author imedina
@@ -29,6 +30,7 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
         * load: in this step a DBWriter from getDBWriter (see below) is used to load data in the storage engine
         * post-load: data can be cleaned and some database validations can be performed
      */
+
 
     /**
      * This method extracts the data from the data source. This data source can be a database or a remote

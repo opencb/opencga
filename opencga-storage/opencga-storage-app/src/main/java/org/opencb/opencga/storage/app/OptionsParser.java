@@ -149,8 +149,8 @@ public class OptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Prefix of files to save in the selected backend", required = true, arity = 1)
         String input;
 
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongo (default) or hbase (pending)", required = false, arity = 1)
-        String backend;
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
+        String backend = "mongodb";
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials;
@@ -166,6 +166,9 @@ public class OptionsParser {
 
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
     }
     
     @Parameters(commandNames = {"transform-alignments"}, commandDescription = "Generates the Alignment data model from an input file")
@@ -225,8 +228,8 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongo (default), hbase (pending)", required = false, arity = 1)
-        String backend = "mongo";
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        String backend = "mongodb";
     }
 
     
@@ -286,9 +289,11 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongo (default), hbase (pending)", required = false, arity = 1)
-        String backend = "mongo";
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        String backend = "mongodb";
 
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
         Map<String, String> params = new HashMap<>();
@@ -328,8 +333,6 @@ public class OptionsParser {
 //        @ParametersDelegate
 //        CommandIndex ci = new CommandIndex();
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
-        String dbName;
 
 
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]

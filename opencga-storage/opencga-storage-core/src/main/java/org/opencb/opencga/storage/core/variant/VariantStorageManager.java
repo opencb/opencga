@@ -86,9 +86,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         // input: VcfReader
         // output: JsonWriter
 
-        Path input = Paths.get(inputUri);
-        Path pedigree = Paths.get(pedigreeUri);
-        Path output = Paths.get(outputUri);
+        Path input = Paths.get(inputUri.getPath());
+        Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
+        Path output = Paths.get(outputUri.getPath());
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
