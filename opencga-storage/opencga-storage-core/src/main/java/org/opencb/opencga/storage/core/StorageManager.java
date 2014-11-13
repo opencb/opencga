@@ -48,7 +48,7 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
 
     public void preLoad(URI input, URI output, ObjectMap params) throws IOException;
 
-    public void load(URI input, URI credentials, ObjectMap params) throws IOException;
+    public void load(URI input, ObjectMap params) throws IOException;
 
     public void postLoad(URI input, URI output, ObjectMap params) throws IOException;
 
