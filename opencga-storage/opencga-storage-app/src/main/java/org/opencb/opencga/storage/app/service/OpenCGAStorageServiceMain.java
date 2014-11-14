@@ -58,12 +58,6 @@ public class OpenCGAStorageServiceMain {
         if (opts.port != 0) {
             properties.setProperty(OpenCGAStorageService.PORT, Integer.toString(opts.port));
         }
-        if (opts.userId != null) {
-            properties.setProperty(OpenCGAStorageService.USER, opts.userId);
-        }
-        if (opts.password != null) {
-            properties.setProperty(OpenCGAStorageService.PASSWORD, opts.password);
-        }
 
         int status;
         try {

@@ -56,7 +56,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     //@Override
     public void addConfigUri(URI configUri){
         if(configUri != null
-                && Paths.get(configUri).toFile().exists()
+                && Paths.get(configUri.getPath()).toFile().exists()
                 && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
             try {
                 properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));

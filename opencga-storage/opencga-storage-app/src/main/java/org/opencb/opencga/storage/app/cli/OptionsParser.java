@@ -25,6 +25,7 @@ public class OptionsParser {
     private final CommandIndexVariants commandIndexVariants;
     private final CommandIndexAlignments commandIndexAlignments;
     private final CommandIndexSequence commandIndexSequence;
+    private final CommandFetchVariants commandFetchVariants;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -38,6 +39,7 @@ public class OptionsParser {
         jcommander.addCommand(commandIndexVariants = new CommandIndexVariants());
         jcommander.addCommand(commandIndexAlignments = new CommandIndexAlignments());
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
+        jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -330,11 +332,6 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     class CommandIndexAlignments extends CommandIndex implements Command {
 
-//        @ParametersDelegate
-//        CommandIndex ci = new CommandIndex();
-
-
-
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
         @Parameter(names = "--mean-coverage", description = "Add mean coverage values (optional)", required = false)
         List<String> meanCoverage = new LinkedList<String>();
@@ -344,6 +341,63 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
     class CommandIndexSequence extends CommandIndex implements Command {
 
+    }
+
+    @Parameters(commandNames = {"fetch-variants", "search-variants"}, commandDescription = "Search indexed variants")
+    class CommandFetchVariants implements Command {
+
+        //File location parameters
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        String backend = "mongodb";
+
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials = "";
+
+        //Region parameters
+        @Parameter(names = {"-r","--region"}, description = " [CSV]", required = false)
+        List<String> regions = new LinkedList<>();
+
+        @Parameter(names = {"--region-gff-file"}, description = "", required = false)
+        String gffFile;
+
+
+        //Filter parameters
+        @Parameter(names = {"--study-alias"}, description = " [CSV]", required = false)
+        String studyAlias;
+
+        @Parameter(names = {"-a", "--alias"}, description = "File unique ID. [CSV]", required = false, arity = 1)
+        String fileId;
+
+        @Parameter(names = {"-e", "--effect"}, description = " [CSV]", required = false, arity = 1)
+        String effect;
+
+        @Parameter(names = {"--id"}, description = " [CSV]", required = false)
+        String id;
+
+        @Parameter(names = {"-t", "--type"}, description = " [CSV]", required = false)
+        String type;
+
+        @Parameter(names = {"-g", "--gene"}, description = " [CSV]", required = false)
+        String gene;
+
+        @Parameter(names = {"--reference"}, description = " [CSV]", required = false)
+        String reference;
+
+        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
+        List<String> stats = new LinkedList<>();
+
+        @Parameter(names = {"--annot-filter"}, description = " [CSV]", required = false)
+        List<String> annot = new LinkedList<>();
+
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. Default: stdout", required = false, arity = 1)
+        String output;
+
+        @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false, arity = 1)
+        String outputFormat = "vcf";
     }
 
 
@@ -364,7 +418,7 @@ public class OptionsParser {
         return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
     }
 
-    public CommandIndexVariants getCommandIndexVariants() {
+    CommandIndexVariants getCommandIndexVariants() {
         return commandIndexVariants;
     }
 
@@ -372,7 +426,7 @@ public class OptionsParser {
         return commandIndexAlignments;
     }
 
-    public CommandIndexSequence getCommandIndexSequence() {
+    CommandIndexSequence getCommandIndexSequence() {
         return commandIndexSequence;
     }
 
@@ -399,6 +453,10 @@ public class OptionsParser {
 //    CommandDownloadAlignments getDownloadAlignments() {
 //        return downloadAlignments;
 //    }
+
+    CommandFetchVariants getCommandFetchVariants() {
+        return commandFetchVariants;
+    }
 
     GeneralParameters getGeneralParameters() {
         return generalParameters;

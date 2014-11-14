@@ -63,10 +63,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     private MongoCredentials getMongoCredentials(String dbName) {
-        String host = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST);
+        String host = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST, "localhost");
         int port = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT, "27017"));
         if(dbName == null || dbName.isEmpty()) {
-            dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME);
+            dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME, "variants");
         }
         String user = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER, null);
         String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);

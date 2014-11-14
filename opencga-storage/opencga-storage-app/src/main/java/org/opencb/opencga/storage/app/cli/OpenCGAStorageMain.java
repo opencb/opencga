@@ -6,12 +6,14 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
@@ -19,6 +21,7 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +101,10 @@ public class OpenCGAStorageMain {
                     break;
                 case "load-alignments":
                     command = parser.getLoadAlignments();
+                    break;
+                case "search-variants":
+                case "fetch-variants":
+                    command = parser.getCommandFetchVariants();
                     break;
 //                case "download-alignments":
 //                    command = parser.getDownloadAlignments();
@@ -360,6 +367,110 @@ public class OpenCGAStorageMain {
             URI inputUri = URI.create(c.input);
 
             alignmentStorageManager.load(inputUri, params);
+
+
+        } else if(command instanceof OptionsParser.CommandFetchVariants){
+            OptionsParser.CommandFetchVariants c = (OptionsParser.CommandFetchVariants) command;
+
+            /**
+             * Open connection
+             */
+            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
+            if(c.credentials != null && !c.credentials.isEmpty()) {
+                variantStorageManager.addConfigUri(URI.create(c.credentials));
+            }
+
+            ObjectMap params = new ObjectMap();
+            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+
+            /**
+             * Parse Regions
+             */
+            List<Region> regions = null;
+            if(c.regions != null && !c.regions.isEmpty()) {
+                regions = new LinkedList<>();
+                for (String csvRegion : c.regions) {
+                    for (String strRegion : csvRegion.split(",")) {
+                        Region region = new Region(strRegion);
+                        regions.add(region);
+                        logger.info("Parsed region: {}", region);
+                    }
+                }
+            } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
+                throw new UnsupportedOperationException("Unsuppoted GFF file");
+            }
+
+            /**
+             * Parse QueryOptions
+             */
+            QueryOptions options = new QueryOptions();
+
+            if(c.studyAlias != null && !c.studyAlias.isEmpty()) {
+                options.add("studies", Arrays.asList(c.studyAlias.split(",")));
+            }
+            if(c.fileId != null && !c.fileId.isEmpty()) {
+                options.add("files", Arrays.asList(c.fileId.split(",")));
+            }
+            if(c.effect != null && !c.effect.isEmpty()) {
+                options.add("effect", Arrays.asList(c.effect.split(",")));
+            }
+
+            if(c.stats != null && !c.stats.isEmpty()) {
+                for (String csvStat : c.stats) {
+                    for (String stat : csvStat.split(",")) {
+                        int index = stat.indexOf("<");
+                        index = index >= 0 ? index : stat.indexOf("!");
+                        index = index >= 0 ? index : stat.indexOf("~");
+                        index = index >= 0 ? index : stat.indexOf("<");
+                        index = index >= 0 ? index : stat.indexOf(">");
+                        index = index >= 0 ? index : stat.indexOf("=");
+                        if(index < 0) {
+                            throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                        }
+                        String name = stat.substring(0, index);
+                        String cond = stat.substring(index);
+
+//                        if("maf".equals(name) || "mgf".equals(name) || "missingAlleles".equals(name) || "missingGenotypes".equals(name)) {
+                        if(name.matches("maf|mgf|missingAlleles|missingGenotypes")) {
+                            options.put(name, cond);
+                        } else {
+                            throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                        }
+                        logger.info("Parsed stat filter: {} {}", name, cond);
+                    }
+                }
+            }
+            if(c.id != null && !c.id.isEmpty()) {   //csv
+                options.add("id", c.id);
+            }
+            if(c.gene != null && !c.gene.isEmpty()) {   //csv
+                options.add("gene", c.gene);
+            }
+            if(c.type != null && !c.type.isEmpty()) {   //csv
+                options.add("type", c.type);
+            }
+            if(c.reference != null && !c.reference.isEmpty()) {   //csv
+                options.add("reference", c.reference);
+            }
+
+
+            /**
+             * Run query
+             */
+            if(regions == null || regions.isEmpty()) {
+                System.out.println(dbAdaptor.getAllVariants(options));
+            } else {
+                int subListSize = 20;
+                for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
+                    List<Region> subRegions = regions.subList(
+                            i * subListSize,
+                            Math.min((i + 1) * subListSize, regions.size()));
+
+                    System.out.println("options = " + options.toJson());
+                    System.out.println("subRegions = " + subRegions);
+                    System.out.println(dbAdaptor.getAllVariantsByRegionList(subRegions, options));
+                }
+            }
 
 
         } else if(command instanceof OptionsParser.CommandDownloadAlignments){
