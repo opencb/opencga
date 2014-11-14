@@ -10,13 +10,10 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.variant.lib.runners.VariantRunner;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -30,14 +27,23 @@ import java.util.Properties;
  */
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOST";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PORT";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS   = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
+
     @Override
     public VariantWriter getDBWriter(String dbName, ObjectMap params) {
         VariantSource source = params.get(SOURCE, VariantSource.class);
         Properties credentialsProperties = new Properties(properties);
 
         MongoCredentials credentials = getMongoCredentials(dbName);
-        String variantsCollection = credentialsProperties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS", "variants");
-        String filesCollection = credentialsProperties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES", "files");
+        String variantsCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
+        String filesCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
 //        String variantsCollection = credentialsProperties.getProperty("collection_variants", "variants");
 //        String filesCollection = credentialsProperties.getProperty("collection_files", "files");
         return new VariantMongoDBWriter(source, credentials, variantsCollection, filesCollection);
@@ -57,13 +63,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     private MongoCredentials getMongoCredentials(String dbName) {
-        String host = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOST");
-        int port = Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.PORT", "27017"));
+        String host = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST);
+        int port = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT, "27017"));
         if(dbName == null || dbName.isEmpty()) {
-            dbName = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME");
+            dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME);
         }
-        String user = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER", null);
-        String pass = properties.getProperty("OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS", null);
+        String user = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER, null);
+        String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);
 
         try {
             return new MongoCredentials(host, port, dbName, user, pass);
@@ -74,12 +80,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public void preLoad(URI input, URI output, ObjectMap params) throws IOException {
-
+    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+        return input;
     }
 
     @Override
-    public void load(URI inputUri, ObjectMap params) throws IOException {
+    public URI load(URI inputUri, ObjectMap params) throws IOException {
         // input: getDBSchemaReader
         // output: getDBWriter()
 
@@ -91,6 +97,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         VariantSource source = params.get(SOURCE, VariantSource.class);
         String dbName = params.getString(DB_NAME, null);
 //        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+
+        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "1000"));
 
         //Reader
         VariantReader variantJsonReader;
@@ -113,6 +121,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         //Runner
         VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList);
+        vr.setBatchSize(batchSize);
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -120,11 +129,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants loaded!");
+
+        return inputUri; //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
     }
 
     @Override
-    public void postLoad(URI input, URI output, ObjectMap params) throws IOException {
-
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+        return input;
     }
 
 }

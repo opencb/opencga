@@ -23,10 +23,20 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-lib</artifactId>
+            <exclusions>
+                <!--<exclusion>-->
+                    <!--<groupId>org.glassfish.jersey.core</groupId>-->
+                    <!--<artifactId>jersey-client</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.glassfish.jersey.media</groupId>-->
+                    <!--<artifactId>jersey-media-multipart</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.opencb.commons</groupId>-->
+                    <!--<artifactId>bioformats</artifactId>-->
+                <!--</exclusion>-->
+            </exclusions>
         </dependency>
 
         <dependency>

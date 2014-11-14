@@ -4,7 +4,6 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
@@ -31,14 +30,19 @@ import java.util.*;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     public static final String MONGO_DB_NAME = "opencga";
-    public static final String STORAGE_SEQUENCE_DBADAPTOR = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
+    public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
+    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME";
+    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER";
+    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PASS";
+    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOST = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOST";
+    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PORT = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PORT";
 
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
     protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
 
     public MongoDBAlignmentStorageManager(Path propertiesPath) {
         this();
-        addPropertiesPath(propertiesPath);
+        addConfigUri(URI.create(propertiesPath.toString()));
     }
 
     public MongoDBAlignmentStorageManager() {
@@ -55,10 +59,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public AlignmentDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
-            dbName = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME", MONGO_DB_NAME);
+            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGO_DB_NAME);
             logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
         }
-        Path path = Paths.get(properties.getProperty(STORAGE_SEQUENCE_DBADAPTOR, ""));
+        Path path = Paths.get(properties.getProperty(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
         if (path == null || path.toString() == null || path.toString().isEmpty() || !path.toFile().exists()) {
             adaptor = new CellBaseSequenceDBAdaptor();
         } else {
@@ -74,11 +78,11 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     private MongoCredentials getMongoCredentials(String mongoDbName){
         try {   //TODO: Use user and password
-            String mongoUser = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER", null);
-            String mongoPassword = properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PASS", null);
+            String mongoUser = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER, null);
+            String mongoPassword = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS, null);
             return new MongoCredentials(
-                    properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOST", "localhost"),
-                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PORT", "27017")),
+                    properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOST, "localhost"),
+                    Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PORT, "27017")),
                     mongoDbName,
                     null,
                     null
@@ -96,21 +100,21 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
 
     @Override
-    public void transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params) throws IOException, FileFormatException {
+    public URI transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params) throws IOException, FileFormatException {
         params.put(WRITE_ALIGNMENTS, false);
         params.put(CREATE_BAI, true);
         params.put(INCLUDE_COVERAGE, true);
-        super.transform(inputUri, pedigree, outputUri, params);
+        return super.transform(inputUri, pedigree, outputUri, params);
     }
 
 
     @Override
-    public void preLoad(URI input, URI output, ObjectMap params) throws IOException {
-
+    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+        return input;
     }
 
     @Override
-    public void load(URI inputUri, ObjectMap params) throws IOException {
+    public URI load(URI inputUri, ObjectMap params) throws IOException {
         checkUri(inputUri, "input uri");
         Path input = Paths.get(inputUri.getPath());
 
@@ -135,11 +139,12 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Alignments loaded!");
 
+        return inputUri;    //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
     }
 
     @Override
-    public void postLoad(URI input, URI output, ObjectMap params) throws IOException {
-
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+        return input;
     }
 
 }

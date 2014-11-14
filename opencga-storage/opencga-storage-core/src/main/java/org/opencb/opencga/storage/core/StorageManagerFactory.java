@@ -5,6 +5,7 @@ import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class StorageManagerFactory {
             // Specific VariantStorageManager is created by reflection using the Class name from the properties file.
             // The conf file is passed to the storage engine
             T storageManager = (T) Class.forName(storageManagerClassName).newInstance();
-            storageManager.addPropertiesPath(Paths.get(Config.getGcsaHome(), "conf", propertiesPath));
+            storageManager.addConfigUri(URI.create(Config.getGcsaHome() + "/").resolve("conf/").resolve(propertiesPath));
 
             storageManagerMap.put(storageEngineName, storageManager);
         }

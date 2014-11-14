@@ -15,7 +15,7 @@ import java.util.Properties;
  */
 public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
 
-    public void addPropertiesPath(Path propertiesPath);
+    public void addConfigUri(URI configUri);
 
 //    public DBWRITER getDBSchemaWriter(Path output);
 //    public READER getDBSchemaReader(Path input) throws IOException;
@@ -38,21 +38,21 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
      * @param from Data source origin
      * @param to Final location of data
      */
-    public void extract(URI from, URI to, ObjectMap params);
+    public URI extract(URI from, URI to, ObjectMap params);
 
 
-    public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException;
+    public URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException;
 
-    public void transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException;
+    public URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException;
 
-    public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException;
+    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException;
 
 
-    public void preLoad(URI input, URI output, ObjectMap params) throws IOException;
+    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException;
 
-    public void load(URI input, ObjectMap params) throws IOException;
+    public URI load(URI input, ObjectMap params) throws IOException;
 
-    public void postLoad(URI input, URI output, ObjectMap params) throws IOException;
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException;
 
 
     /**

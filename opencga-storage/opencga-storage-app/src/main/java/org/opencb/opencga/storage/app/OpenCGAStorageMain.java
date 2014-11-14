@@ -135,22 +135,32 @@ public class OpenCGAStorageMain {
 //                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
 //                Path credentials = Paths.get(c.credentials);
 
+                URI nextFileUri;
+                logger.info("-- Extract alignments -- {}", input);
+                nextFileUri = alignmentStorageManager.extract(input, outdir, params);
 
-                logger.info("1 -- Transform alignments");
-                alignmentStorageManager.transform(input, null, outdir, params);
+                logger.info("-- PreTransform alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+                logger.info("-- Transform alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+                logger.info("-- PostTransform alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
 
-                logger.info("2 -- PreLoad alignments");
-                alignmentStorageManager.preLoad(input, outdir, params);
+                logger.info("-- PreLoad alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+                logger.info("-- Load alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+                logger.info("-- PostLoad alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
 
-                logger.info("3 -- Load alignments");
-                String fileName;
-                if(c.fileId != null) {
-                    fileName = c.fileId + ".bam";
-                } else {
-                    fileName = input.resolve(".").relativize(input).toString();
-                }
-                URI loadInput = outdir.resolve(fileName + ".coverage.json.gz");
-                alignmentStorageManager.load(loadInput, params);
+//                String fileName;
+//                if(c.fileId != null) {
+//                    fileName = c.fileId + ".bam";
+//                } else {
+//                    fileName = input.resolve(".").relativize(input).toString();
+//                }
+//                URI loadInput = outdir.resolve(fileName + ".coverage.json.gz");
+//                alignmentStorageManager.load(loadInput, params);
 
             } else {
                 throw new IOException("Unknown file type");
@@ -184,7 +194,7 @@ public class OpenCGAStorageMain {
             if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
                 VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
                 if(c.credentials != null && !c.credentials.isEmpty()) {
-                    variantStorageManager.addPropertiesPath(Paths.get(c.credentials));
+                    variantStorageManager.addConfigUri(URI.create(c.credentials));
                 }
 
                 URI variantsUri = URI.create(c.input);
@@ -201,30 +211,34 @@ public class OpenCGAStorageMain {
                 params.put(VariantStorageManager.SOURCE, source);
                 params.put(VariantStorageManager.DB_NAME, c.dbName);
 
-                logger.info("-- Extract variants");
-//                variantStorageManager.extract(variantsUri, outdirUri, params);
+                URI nextFileUri;
+                logger.info("-- Extract variants -- {}", variantsUri);
+                nextFileUri = variantStorageManager.extract(variantsUri, outdirUri, params);
 
-//                logger.info("-- PreTransform variants");
-//                variantStorageManager.preTransform(variantsUri, params);
-                logger.info("-- Transform variants");
-                variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
-//                logger.info("-- PostTransform variants");
-//                variantStorageManager.preTransform(variantsUri, params);
+
+                logger.info("-- PreTransform variants -- {}", nextFileUri);
+                nextFileUri = variantStorageManager.preTransform(nextFileUri, params);
+                logger.info("-- Transform variants -- {}", nextFileUri);
+                nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri, params);
+                logger.info("-- PostTransform variants -- {}", nextFileUri);
+                nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
+
+                source.setFileName(fileName + ".variants.json.gz");
+
+                logger.info("-- PreLoad variants -- {}", nextFileUri);
+                nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
+                logger.info("-- Load variants -- {}", nextFileUri);
+                nextFileUri = variantStorageManager.load(nextFileUri, params);
+                logger.info("-- PostLoad variants -- {}", nextFileUri);
+                nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
 
 //                String fileName;
 //                fileName = outdir != null
 //                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variants.json.gz").toString()
 //                        : source.getFileName() + ".variants.json.gz";
 
-                URI newInput = outdirUri.resolve(fileName + ".variants.json.gz");
-                source.setFileName(fileName + ".variants.json.gz");
-
-//                logger.info("-- PreLoad variants");
-//                variantStorageManager.preLoad(newInput, outdirUri, params);
-                logger.info("-- Load variants");
-                variantStorageManager.load(newInput, params);
-//                logger.info("-- PostLoad variants");
-//                variantStorageManager.postLoad(newInput, outdirUri, params);
+//                URI newInput = outdirUri.resolve(fileName + ".variants.json.gz");
+//                source.setFileName(fileName + ".variants.json.gz");
             }
 
         } else if (command instanceof OptionsParser.CommandCreateAccessions) {
@@ -262,7 +276,7 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandLoadVariants c = (OptionsParser.CommandLoadVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
             if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addPropertiesPath(Paths.get(c.credentials));
+                variantStorageManager.addConfigUri(URI.create(c.credentials));
             }
 
             //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
@@ -334,7 +348,7 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandLoadAlignments c = (OptionsParser.CommandLoadAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
             if(c.credentials != null && !c.credentials.isEmpty()) {
-                alignmentStorageManager.addPropertiesPath(Paths.get(c.credentials));
+                alignmentStorageManager.addConfigUri(URI.create(c.credentials));
             }
 
             ObjectMap params = new ObjectMap();
@@ -347,7 +361,7 @@ public class OpenCGAStorageMain {
 
             alignmentStorageManager.load(inputUri, params);
 
-            
+
         } else if(command instanceof OptionsParser.CommandDownloadAlignments){
             OptionsParser.CommandDownloadAlignments c = (OptionsParser.CommandDownloadAlignments) command;
            /* downloadAlignments(c);*/

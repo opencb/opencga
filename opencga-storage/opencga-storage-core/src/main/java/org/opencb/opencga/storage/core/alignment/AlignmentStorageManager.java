@@ -54,10 +54,12 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
 
     @Override
-    public void addPropertiesPath(Path propertiesPath){
-        if(propertiesPath != null && propertiesPath.toFile().exists()) {
+    public void addConfigUri(URI configUri){
+        if(configUri != null
+                && Paths.get(configUri).toFile().exists()
+                && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
             try {
-                properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toFile())));
+                properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
@@ -69,15 +71,16 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     }
 
     @Override
-    public void extract(URI from, URI to, ObjectMap params) {
-
+    public URI extract(URI from, URI to, ObjectMap params) {
+        return from;
     }
 
     @Override
-    public void preTransform(URI inputUri, ObjectMap params) throws IOException, FileFormatException {
+    public URI preTransform(URI inputUri, ObjectMap params) throws IOException, FileFormatException {
         checkUri(inputUri, "input file");
-        Path input = Paths.get(inputUri);
+        Path input = Paths.get(inputUri.getPath());
         checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
+        return inputUri;
     }
 
     /**
@@ -106,7 +109,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
      * @throws FileFormatException
      */
     @Override
-    public void transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params)
+    public URI transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params)
             throws IOException, FileFormatException {
 
         checkUri(inputUri, "input file");
@@ -175,9 +178,12 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         //Writers
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
         String jsonOutputFiles = output.resolve(fileAlias + ".bam").toString();
+        String outputFile = null;
 
         if(writeJsonAlignments) {
-            writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, jsonOutputFiles, !plain)));
+            AlignmentJsonDataWriter alignmentDataWriter = new AlignmentJsonDataWriter(reader, jsonOutputFiles, !plain);
+            writers.add(new AlignmentRegionDataWriter(alignmentDataWriter));
+            outputFile = alignmentDataWriter.getAlignmentFilename();
         }
         if(includeCoverage) {
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
@@ -185,9 +191,13 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
             alignmentCoverageJsonDataWriter.setChunkSize(
                     Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
             writers.add(alignmentCoverageJsonDataWriter);
+            if(outputFile == null) {
+                outputFile = alignmentCoverageJsonDataWriter.getCoverageFilename();
+            }
         }
         if(writers.isEmpty()) {
             logger.warn("No writers for transform-alignments!");
+            return inputUri;
         }
 
 
@@ -204,11 +214,13 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
 
 
         logger.info("done!");
+
+        return outputUri.resolve(outputFile);
     }
 
     @Override
-    public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException {
-
+    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+        return input;
     }
 
     protected Path encrypt(String encrypt, Path bamFile, String fileName, Path outdir, boolean copy) throws IOException {

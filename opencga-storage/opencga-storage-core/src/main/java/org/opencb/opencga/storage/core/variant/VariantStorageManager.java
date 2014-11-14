@@ -15,7 +15,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
@@ -43,6 +42,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_SAMPLES = "includeSamples";
     public static final String SOURCE = "source";
     public static final String DB_NAME = "dbName";
+
+    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
+
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
 
@@ -52,10 +54,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     //@Override
-    public void addPropertiesPath(Path propertiesPath){
-        if(propertiesPath != null && propertiesPath.toFile().exists()) {
+    public void addConfigUri(URI configUri){
+        if(configUri != null
+                && Paths.get(configUri).toFile().exists()
+                && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
             try {
-                properties.load(new InputStreamReader(new FileInputStream(propertiesPath.toString())));
+                properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -63,13 +67,13 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     @Override
-    public void extract(URI from, URI to, ObjectMap params) {
-
+    public URI extract(URI from, URI to, ObjectMap params) {
+        return from;
     }
 
     @Override
-    public void preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
-
+    public URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+        return input;
     }
 
     /**
@@ -82,7 +86,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
      * @throws IOException
      */
     @Override
-    final public void transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws IOException {
+    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws IOException {
         // input: VcfReader
         // output: JsonWriter
 
@@ -95,6 +99,8 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         boolean includeStats = params.getBoolean(INCLUDE_STATS);
         VariantSource source = params.get(SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+
+        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "1000"));
 
         //Reader
         VariantReader reader = null;
@@ -141,6 +147,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         //Runner
         VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
+        vr.setBatchSize(batchSize);
 
         logger.info("Transforming variants...");
         long start = System.currentTimeMillis();
@@ -148,11 +155,13 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
+
+        return outputUri.resolve(input.getFileName().toString()+".variants.json.gz");
     }
 
     @Override
-    public void postTransform(URI output, ObjectMap params) throws IOException, FileFormatException {
-
+    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+        return input;
     }
 
     protected VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {

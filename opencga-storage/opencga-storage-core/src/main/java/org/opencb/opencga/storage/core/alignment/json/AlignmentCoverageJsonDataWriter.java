@@ -280,4 +280,11 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
         this.chunkSize = chunkSize;
     }
 
+    public String getMeanCoverageFilename() {
+        return meanCoverageFilename;
+    }
+
+    public String getCoverageFilename() {
+        return coverageFilename;
+    }
 }

@@ -200,4 +200,11 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter {
         return gzip;
     }
 
+    public String getHeaderFilename() {
+        return headerFilename;
+    }
+
+    public String getAlignmentFilename() {
+        return alignmentFilename;
+    }
 }
