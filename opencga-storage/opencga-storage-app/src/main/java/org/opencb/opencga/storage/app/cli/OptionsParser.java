@@ -26,6 +26,7 @@ public class OptionsParser {
     private final CommandIndexAlignments commandIndexAlignments;
     private final CommandIndexSequence commandIndexSequence;
     private final CommandFetchVariants commandFetchVariants;
+    private final CommandFetchAlignments commandFetchAlignments;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -40,6 +41,7 @@ public class OptionsParser {
         jcommander.addCommand(commandIndexAlignments = new CommandIndexAlignments());
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
         jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
+        jcommander.addCommand(commandFetchAlignments = new CommandFetchAlignments());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -343,9 +345,7 @@ public class OptionsParser {
 
     }
 
-    @Parameters(commandNames = {"fetch-variants", "search-variants"}, commandDescription = "Search indexed variants")
-    class CommandFetchVariants implements Command {
-
+    class CommandFetch implements Command {
         //File location parameters
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
@@ -363,6 +363,17 @@ public class OptionsParser {
         @Parameter(names = {"--region-gff-file"}, description = "", required = false)
         String gffFile;
 
+        //Output format
+        @Parameter(names = {"-o", "--output"}, description = "Output file. Default: stdout", required = false, arity = 1)
+        String output;
+
+        @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false, arity = 1)
+        String outputFormat = "vcf";
+
+    }
+
+    @Parameters(commandNames = {"fetch-variants", "search-variants"}, commandDescription = "Search over indexed variants")
+    class CommandFetchVariants extends CommandFetch {
 
         //Filter parameters
         @Parameter(names = {"--study-alias"}, description = " [CSV]", required = false)
@@ -393,11 +404,35 @@ public class OptionsParser {
         List<String> annot = new LinkedList<>();
 
 
-        @Parameter(names = {"-o", "--output"}, description = "Output file. Default: stdout", required = false, arity = 1)
-        String output;
+    }
 
-        @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false, arity = 1)
-        String outputFormat = "vcf";
+
+    @Parameters(commandNames = {"fetch-alignments", "search-alignments"}, commandDescription = "Search over indexed alignments")
+    class CommandFetchAlignments extends CommandFetch {
+
+
+        //Filter parameters
+        @Parameter(names = {"-a", "--alias"}, description = "File unique ID.", required = false, arity = 1)
+        String fileId;
+
+        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
+        String filePath;
+
+        @Parameter(names = {"-C", "--include-coverage"}, description = " [CSV]", required = false)
+        boolean coverage;
+
+        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
+        int histogram = -1;
+
+        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
+        boolean asPairs;
+
+        @Parameter(names = {"--process-differences"}, description = " ", required = false)
+        boolean processDifferences;
+
+        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
+        List<String> stats = new LinkedList<>();
+
     }
 
 
@@ -456,6 +491,10 @@ public class OptionsParser {
 
     CommandFetchVariants getCommandFetchVariants() {
         return commandFetchVariants;
+    }
+
+    CommandFetchAlignments getCommandFetchAlignments() {
+        return commandFetchAlignments;
     }
 
     GeneralParameters getGeneralParameters() {

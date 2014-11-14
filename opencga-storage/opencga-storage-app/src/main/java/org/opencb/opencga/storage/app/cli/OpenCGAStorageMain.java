@@ -14,11 +14,13 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -105,6 +107,10 @@ public class OpenCGAStorageMain {
                 case "search-variants":
                 case "fetch-variants":
                     command = parser.getCommandFetchVariants();
+                    break;
+                case "search-alignments":
+                case "fetch-alignments":
+                    command = parser.getCommandFetchAlignments();
                     break;
 //                case "download-alignments":
 //                    command = parser.getDownloadAlignments();
@@ -473,10 +479,107 @@ public class OpenCGAStorageMain {
             }
 
 
-        } else if(command instanceof OptionsParser.CommandDownloadAlignments){
-            OptionsParser.CommandDownloadAlignments c = (OptionsParser.CommandDownloadAlignments) command;
-           /* downloadAlignments(c);*/
+        } else if(command instanceof OptionsParser.CommandFetchAlignments){
+            OptionsParser.CommandFetchAlignments c = (OptionsParser.CommandFetchAlignments) command;
 
+            /**
+             * Open connection
+             */
+            AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
+            if(c.credentials != null && !c.credentials.isEmpty()) {
+                alignmentStorageManager.addConfigUri(URI.create(c.credentials));
+            }
+
+            ObjectMap params = new ObjectMap();
+            AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName, params);
+
+            /**
+             * Parse Regions
+             */
+            List<Region> regions = null;
+            if(c.regions != null && !c.regions.isEmpty()) {
+                regions = new LinkedList<>();
+                for (String csvRegion : c.regions) {
+                    for (String strRegion : csvRegion.split(",")) {
+                        Region region = new Region(strRegion);
+                        regions.add(region);
+                        logger.info("Parsed region: {}", region);
+                    }
+                }
+            } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
+                throw new UnsupportedOperationException("Unsuppoted GFF file");
+            }
+
+            /**
+             * Parse QueryOptions
+             */
+            QueryOptions options = new QueryOptions();
+
+            if(c.fileId != null && !c.fileId.isEmpty()) {
+                options.add(AlignmentDBAdaptor.QO_FILE_ID, c.fileId);
+            }
+            options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, c.coverage);
+            options.add(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, c.asPairs);
+            options.add(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, c.processDifferences);
+            if(c.histogram > 0) {
+                options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
+                options.add(AlignmentDBAdaptor.QO_HISTOGRAM, true);
+                options.add(AlignmentDBAdaptor.QO_INTERVAL_SIZE, c.histogram);
+            }
+            if(c.filePath != null && !c.filePath.isEmpty()) {
+                options.add(AlignmentDBAdaptor.QO_BAM_PATH, c.filePath);
+            }
+
+
+            if(c.stats != null && !c.stats.isEmpty()) {
+                for (String csvStat : c.stats) {
+                    for (String stat : csvStat.split(",")) {
+                        int index = stat.indexOf("<");
+                        index = index >= 0 ? index : stat.indexOf("!");
+                        index = index >= 0 ? index : stat.indexOf("~");
+                        index = index >= 0 ? index : stat.indexOf("<");
+                        index = index >= 0 ? index : stat.indexOf(">");
+                        index = index >= 0 ? index : stat.indexOf("=");
+                        if(index < 0) {
+                            throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                        }
+                        String name = stat.substring(0, index);
+                        String cond = stat.substring(index);
+
+                        if(name.matches("")) {
+                            options.put(name, cond);
+                        } else {
+                            throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                        }
+                        logger.info("Parsed stat filter: {} {}", name, cond);
+                    }
+                }
+            }
+
+
+            /**
+             * Run query
+             */
+            if(c.histogram > 0) {
+                for (Region region : regions) {
+                    System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
+                }
+            } else if(regions == null || regions.isEmpty()) {
+                throw new UnsupportedOperationException("Unable to fetch over all the genome");
+//                System.out.println(dbAdaptor.getA(options));
+            } else {
+                int subListSize = 20;
+                for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
+                    List<Region> subRegions = regions.subList(
+                            i * subListSize,
+                            Math.min((i + 1) * subListSize, regions.size()));
+
+                    System.out.println("options = " + options.toJson());
+                    System.out.println("subRegions = " + subRegions);
+                    QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                    System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+                }
+            }
         }
     }
 
