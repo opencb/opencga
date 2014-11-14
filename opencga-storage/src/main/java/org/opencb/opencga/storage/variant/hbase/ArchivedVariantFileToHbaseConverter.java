@@ -5,7 +5,7 @@ import java.util.Map;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.protobuf.VariantProtos;
 import org.opencb.biodata.models.variant.protobuf.VariantStatsProtos;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -15,7 +15,7 @@ import org.opencb.opencga.storage.variant.StudyDBAdaptor;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter<ArchivedVariantFile, Put> {
+public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter<VariantSourceEntry, Put> {
 
     private boolean includeSamples;
 
@@ -31,15 +31,15 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
     
     
     /**
-     * Create a converter between ArchivedVariantFile and HBase entities when
-     * there is no need to provide a list of samples nor statistics.
+     * Create a converter between VariantSourceEntry and HBase entities when
+ there is no need to provide a list of samples nor statistics.
      */
     public ArchivedVariantFileToHbaseConverter() {
         this(null, null);
     }
 
     /**
-     * Create a converter from ArchivedVariantFile to HBase entities. A list of
+     * Create a converter from VariantSourceEntry to HBase entities. A list of
      * samples and a statistics converter may be provided in case those should
      * be processed during the conversion.
      *
@@ -53,12 +53,12 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
     }
 
     @Override
-    public ArchivedVariantFile convertToDataModelType(Put object) {
+    public VariantSourceEntry convertToDataModelType(Put object) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Put convertToStorageType(ArchivedVariantFile object) {
+    public Put convertToStorageType(VariantSourceEntry object) {
         Put put = new Put(rowkey);
         String prefix = object.getStudyId() + "_" + object.getFileId() + "_";
 
@@ -84,7 +84,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
         return put;
     }
 
-    private VariantProtos.VariantFileAttributes buildAttributesProto(ArchivedVariantFile file) {
+    private VariantProtos.VariantFileAttributes buildAttributesProto(VariantSourceEntry file) {
         VariantProtos.VariantFileAttributes.Builder builder = VariantProtos.VariantFileAttributes.newBuilder();
 
         for (Map.Entry<String, String> attr : file.getAttributes().entrySet()) {
@@ -97,7 +97,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
         return builder.build();
     }
 
-    private VariantProtos.VariantSample buildSampleProto(ArchivedVariantFile file, String sampleName) {
+    private VariantProtos.VariantSample buildSampleProto(VariantSourceEntry file, String sampleName) {
         String joinedSampleFields = VcfUtils.getJoinedSampleFields(file, sampleName);
         VariantProtos.VariantSample.Builder builder = VariantProtos.VariantSample.newBuilder();
         builder.setSample(joinedSampleFields);

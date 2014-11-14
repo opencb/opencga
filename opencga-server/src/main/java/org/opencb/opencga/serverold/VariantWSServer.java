@@ -3,13 +3,13 @@ package org.opencb.opencga.serverold;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.json.ArchivedVariantFileJsonMixin;
+import org.opencb.opencga.storage.variant.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.variant.json.GenotypeJsonMixin;
 import org.opencb.opencga.storage.variant.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.variant.json.VariantStatsJsonMixin;
@@ -52,7 +52,7 @@ public class VariantWSServer extends GenericWSServer {
 
 
             jsonObjectMapper = new ObjectMapper();
-            jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
+            jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
             jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
             jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
             jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
