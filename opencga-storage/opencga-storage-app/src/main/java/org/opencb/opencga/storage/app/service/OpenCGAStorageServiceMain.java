@@ -21,7 +21,6 @@ public class OpenCGAStorageServiceMain {
     private static String opencgaHome;
 
     private static Logger logger = LoggerFactory.getLogger(OpenCGAStorageServiceMain.class);
-    private static OpenCGAStorageService storageService;
 
     public static void main(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
@@ -61,7 +60,7 @@ public class OpenCGAStorageServiceMain {
 
         int status;
         try {
-            storageService = new OpenCGAStorageService(properties);
+            OpenCGAStorageService storageService = OpenCGAStorageService.newInstance(properties);
             storageService.start();
             status = storageService.join();
         } catch (Exception e) {
@@ -69,10 +68,6 @@ public class OpenCGAStorageServiceMain {
             status = 3;
         }
         System.exit(status);
-    }
-
-    public static OpenCGAStorageService getStorageService() {
-        return storageService;
     }
 }
 

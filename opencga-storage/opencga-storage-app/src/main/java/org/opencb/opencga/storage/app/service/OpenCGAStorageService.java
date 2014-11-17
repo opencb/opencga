@@ -22,6 +22,7 @@ public class OpenCGAStorageService implements Runnable {
     public static final String PASSWORD = "OPENCGA.STORAGE.APP.SERVICE.PASSWORD";
 
     private final Properties properties;
+    private static OpenCGAStorageService singleton;
 
     private Server server;
     private Thread thread;
@@ -29,13 +30,21 @@ public class OpenCGAStorageService implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(OpenCGAStorageService.class);
 
-    public OpenCGAStorageService(Properties properties) {
+    public static OpenCGAStorageService newInstance(Properties properties) {
+        return singleton = new OpenCGAStorageService(properties);
+    }
+
+    public static OpenCGAStorageService getInstance() {
+        return singleton;
+    }
+
+    private OpenCGAStorageService(Properties properties) {
         this.properties = properties;
 
         int port = Integer.parseInt(properties.getProperty(OpenCGAStorageService.PORT, "8083"));
 
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(true, "org.opencb.opencga.app.daemon.rest");
+        resourceConfig.packages(true, "org.opencb.opencga.storage.app.service.rest");
         ServletContainer sc = new ServletContainer(resourceConfig);
         ServletHolder sh = new ServletHolder(sc);
 
@@ -50,7 +59,7 @@ public class OpenCGAStorageService implements Runnable {
 
     @Override
     public void run() {
-        int sleep = Integer.parseInt(properties.getProperty(SLEEP, "4000"));
+        int sleep = Integer.parseInt(properties.getProperty(SLEEP, "60000"));
 
 
         while(!exit) {
@@ -104,5 +113,9 @@ public class OpenCGAStorageService implements Runnable {
     synchronized public void stop() {
         exit = true;
         thread.interrupt();
+    }
+
+    public Properties getProperties() {
+        return properties;
     }
 }
