@@ -98,7 +98,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String dbName = params.getString(DB_NAME, null);
 //        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
-        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "1000"));
+        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100"));
 
         //Reader
         VariantReader variantJsonReader;
@@ -120,8 +120,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         //Runner
-        VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList);
-        vr.setBatchSize(batchSize);
+        VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();

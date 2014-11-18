@@ -7,17 +7,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
-
 
 /**
  * TODO Allow compressed and decompressed modes
  * 
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConverter<ArchivedVariantFile, DBObject> {
+public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConverter<VariantSourceEntry, DBObject> {
 
     public final static String FILEID_FIELD = "fid";
     public final static String STUDYID_FIELD = "sid";
@@ -35,10 +34,10 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     private DBObjectToVariantStatsConverter statsConverter;
 
     /**
-     * Create a converter between ArchivedVariantFile and DBObject entities when 
-     * there is no need to provide a list of samples nor statistics.
+     * Create a converter between VariantSourceEntry and DBObject entities when 
+ there is no need to provide a list of samples nor statistics.
      */
-    public DBObjectToArchivedVariantFileConverter() {
+    public DBObjectToVariantSourceEntryConverter() {
         this.includeSamples = false;
         this.samples = null;
         this.samplesConverter = null;
@@ -46,7 +45,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     }
     
     /**
-     * Create a converter from ArchivedVariantFile to DBObject entities. A 
+     * Create a converter from VariantSourceEntry to DBObject entities. A 
      * list of samples and a statistics converter may be provided in case those 
      * should be processed during the conversion.
      * 
@@ -54,7 +53,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
      * @param samples The list of samples, if any
      * @param statsConverter The object used to convert the file statistics
      */
-    public DBObjectToArchivedVariantFileConverter(boolean compressSamples, List<String> samples, 
+    public DBObjectToVariantSourceEntryConverter(boolean compressSamples, List<String> samples, 
             DBObjectToVariantStatsConverter statsConverter) {
         this.samples = samples;
         this.samplesConverter = new DBObjectToSamplesConverter(compressSamples);
@@ -62,7 +61,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     }
     
     /**
-     * Create a converter from DBObject to ArchivedVariantFile entities. A 
+     * Create a converter from DBObject to VariantSourceEntry entities. A 
      * list of samples and a statistics converter may be provided in case those 
      * should be processed during the conversion.
      * 
@@ -70,7 +69,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
      * @param statsConverter The object used to convert the file statistics
      * @param samples The list of samples, if any
      */
-    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, 
+    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, 
             DBObjectToVariantStatsConverter statsConverter, List<String> samples) {
         this.includeSamples = includeSamples;
         this.samples = samples;
@@ -79,7 +78,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     }
     
     /**
-     * Create a converter from DBObject to ArchivedVariantFile entities. A 
+     * Create a converter from DBObject to VariantSourceEntry entities. A 
      * statistics converter may be provided in case those should be processed 
      * during the conversion.
      * 
@@ -90,7 +89,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
      * @param statsConverter The object used to convert the file statistics
      * @param credentials Parameters for connecting to the database
      */
-    public DBObjectToArchivedVariantFileConverter(boolean includeSamples, 
+    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, 
             DBObjectToVariantStatsConverter statsConverter, MongoCredentials credentials) {
         this.includeSamples = includeSamples;
         this.samplesConverter = new DBObjectToSamplesConverter(credentials);
@@ -99,10 +98,10 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     
     
     @Override
-    public ArchivedVariantFile convertToDataModelType(DBObject object) {
+    public VariantSourceEntry convertToDataModelType(DBObject object) {
         String fileId = (String) object.get(FILEID_FIELD);
         String studyId = (String) object.get(STUDYID_FIELD);
-        ArchivedVariantFile file = new ArchivedVariantFile(fileId, studyId);
+        VariantSourceEntry file = new VariantSourceEntry(fileId, studyId);
         
         // Attributes
         if (object.containsField(ATTRIBUTES_FIELD)) {
@@ -113,7 +112,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
                 try {
                     file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));
                 } catch (IOException ex) {
-                    Logger.getLogger(DBObjectToArchivedVariantFileConverter.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }
@@ -123,7 +122,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
         
         // Samples
         if (includeSamples && object.containsField(SAMPLES_FIELD)) {
-            ArchivedVariantFile fileWithSamplesData = samplesConverter.convertToDataModelType(object);
+            VariantSourceEntry fileWithSamplesData = samplesConverter.convertToDataModelType(object);
             
             // Add the samples to the Java object, combining the data structures
             // with the samples' names and the genotypes
@@ -140,7 +139,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
     }
 
     @Override
-    public DBObject convertToStorageType(ArchivedVariantFile object) {
+    public DBObject convertToStorageType(VariantSourceEntry object) {
         BasicDBObject mongoFile = new BasicDBObject(FILEID_FIELD, object.getFileId()).append(STUDYID_FIELD, object.getStudyId());
 
         // Attributes
@@ -152,7 +151,7 @@ public class DBObjectToArchivedVariantFileConverter implements ComplexTypeConver
                     try {
                         value = org.opencb.commons.utils.StringUtils.gzip(entry.getValue());
                     } catch (IOException ex) {
-                        Logger.getLogger(DBObjectToArchivedVariantFileConverter.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
                 

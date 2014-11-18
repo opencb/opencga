@@ -7,7 +7,7 @@ import java.util.Set;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public abstract class ArchivedVariantFileJsonMixin {
+public abstract class VariantSourceEntryJsonMixin {
     
     @JsonIgnore public abstract String getFileName();
     

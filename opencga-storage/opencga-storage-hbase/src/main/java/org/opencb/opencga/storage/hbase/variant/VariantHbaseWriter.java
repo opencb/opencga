@@ -16,7 +16,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
@@ -202,7 +202,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
                 String rowkey = buildRowkey(v);
 
                 // Create raw data for inserting in HBase
-                for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+                for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                     String prefix = source.getStudyId() + "_" + source.getFileId();
 
                     // Check that this variant IN THIS FILE was not stored yet
@@ -262,7 +262,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
 //    @Override
 //    protected boolean buildStatsRaw(List<Variant> data) {
 //        for (Variant v : data) {
-//            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+//            for (VariantSourceEntry archiveFile : v.getFiles().values()) {
 //                VariantStats s = archiveFile.getStats();
 //                VariantStatsProtos.VariantStats stats = buildStatsProto(s);
 //                
@@ -328,7 +328,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
      * ProtocolBuffers objects construction
      */
     
-    private VariantProtos.VariantFileAttributes buildAttributesProto(Variant v, ArchivedVariantFile file) {
+    private VariantProtos.VariantFileAttributes buildAttributesProto(Variant v, VariantSourceEntry file) {
         VariantProtos.VariantFileAttributes.Builder builder = VariantProtos.VariantFileAttributes.newBuilder();
         
         for (Map.Entry<String, String> attr : file.getAttributes().entrySet()) {

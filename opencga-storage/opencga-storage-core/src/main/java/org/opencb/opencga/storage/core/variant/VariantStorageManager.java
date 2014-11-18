@@ -100,7 +100,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         VariantSource source = params.get(SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
-        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "1000"));
+        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100"));
 
         //Reader
         VariantReader reader = null;
@@ -146,8 +146,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         }
 
         //Runner
-        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
-        vr.setBatchSize(batchSize);
+        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, batchSize);
 
         logger.info("Transforming variants...");
         long start = System.currentTimeMillis();
