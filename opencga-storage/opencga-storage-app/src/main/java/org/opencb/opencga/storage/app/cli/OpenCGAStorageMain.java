@@ -2,6 +2,10 @@ package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.ParameterException;
 import com.google.common.io.Files;
+import org.opencb.biodata.formats.feature.gff.Gff;
+import org.opencb.biodata.formats.feature.gff.Gff2;
+import org.opencb.biodata.formats.feature.gff.io.Gff2Reader;
+import org.opencb.biodata.formats.feature.gff.io.GffReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
@@ -393,6 +397,7 @@ public class OpenCGAStorageMain {
              * Parse Regions
              */
             List<Region> regions = null;
+            GffReader gffReader = null;
             if(c.regions != null && !c.regions.isEmpty()) {
                 regions = new LinkedList<>();
                 for (String csvRegion : c.regions) {
@@ -403,7 +408,12 @@ public class OpenCGAStorageMain {
                     }
                 }
             } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
-                throw new UnsupportedOperationException("Unsuppoted GFF file");
+                try {
+                    gffReader = new GffReader(c.gffFile);
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                }
+//                throw new UnsupportedOperationException("Unsuppoted GFF file");
             }
 
             /**
@@ -463,19 +473,33 @@ public class OpenCGAStorageMain {
             /**
              * Run query
              */
-            if(regions == null || regions.isEmpty()) {
-                System.out.println(dbAdaptor.getAllVariants(options));
-            } else {
-                int subListSize = 20;
+            int subListSize = 20;
+            logger.info("options = " + options.toJson());
+            if (regions != null && !regions.isEmpty()) {
                 for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
                     List<Region> subRegions = regions.subList(
                             i * subListSize,
                             Math.min((i + 1) * subListSize, regions.size()));
 
-                    System.out.println("options = " + options.toJson());
-                    System.out.println("subRegions = " + subRegions);
-                    System.out.println(dbAdaptor.getAllVariantsByRegionList(subRegions, options));
+                    logger.info("subRegions = " + subRegions);
+                    List<QueryResult> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                    logger.info("{}", queryResults);
                 }
+            } else if(gffReader != null) {
+                List<Gff> gffList;
+                List<Region> subRegions;
+                while((gffList = gffReader.read(subListSize)) != null) {
+                    subRegions = new ArrayList<>(subListSize);
+                    for (Gff gff : gffList) {
+                        subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                    }
+
+                    logger.info("subRegions = " + subRegions);
+                    List<QueryResult> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                    logger.info("{}", queryResults);
+                }
+            } else {
+                System.out.println(dbAdaptor.getAllVariants(options));
             }
 
 
@@ -496,6 +520,7 @@ public class OpenCGAStorageMain {
             /**
              * Parse Regions
              */
+            GffReader gffReader = null;
             List<Region> regions = null;
             if(c.regions != null && !c.regions.isEmpty()) {
                 regions = new LinkedList<>();
@@ -507,7 +532,12 @@ public class OpenCGAStorageMain {
                     }
                 }
             } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
-                throw new UnsupportedOperationException("Unsuppoted GFF file");
+                try {
+                    gffReader = new GffReader(c.gffFile);
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                }
+                //throw new UnsupportedOperationException("Unsuppoted GFF file");
             }
 
             /**
@@ -560,25 +590,40 @@ public class OpenCGAStorageMain {
             /**
              * Run query
              */
+            int subListSize = 20;
+            logger.info("options = {}", options.toJson());
             if(c.histogram > 0) {
                 for (Region region : regions) {
                     System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
                 }
-            } else if(regions == null || regions.isEmpty()) {
-                throw new UnsupportedOperationException("Unable to fetch over all the genome");
-//                System.out.println(dbAdaptor.getA(options));
-            } else {
-                int subListSize = 20;
+            } else if (regions != null && !regions.isEmpty()) {
                 for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
                     List<Region> subRegions = regions.subList(
                             i * subListSize,
                             Math.min((i + 1) * subListSize, regions.size()));
 
-                    System.out.println("options = " + options.toJson());
-                    System.out.println("subRegions = " + subRegions);
+                    logger.info("subRegions = " + subRegions);
                     QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                    logger.info("{}", queryResult);
                     System.out.println(new ObjectMap("queryResult", queryResult).toJson());
                 }
+            } else if (gffReader != null) {
+                List<Gff> gffList;
+                List<Region> subRegions;
+                while((gffList = gffReader.read(subListSize)) != null) {
+                    subRegions = new ArrayList<>(subListSize);
+                    for (Gff gff : gffList) {
+                        subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                    }
+
+                    logger.info("subRegions = " + subRegions);
+                    QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                    logger.info("{}", queryResult);
+                    System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+                }
+            } else {
+                throw new UnsupportedOperationException("Unable to fetch over all the genome");
+//                System.out.println(dbAdaptor.getAllAlignments(options));
             }
         }
     }
