@@ -111,19 +111,34 @@ public class DaemonLoop implements Runnable {
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     switch(status) {
                         case SgeManager.FINISHED:
+                            if(!Job.DONE.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.DONE), sessionId);
+                            }
                             analysisOutputRecorder.recordJobOutput(job);
                             break;
                         case SgeManager.ERROR:
                         case SgeManager.EXECUTION_ERROR:
-                            //TODO: Handle error
+                            if(!Job.ERROR.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.ERROR), sessionId);
+                            }
+                            String jobErrorPolicy = "recordOutput";
+                            switch(jobErrorPolicy) {
+                                case "deleteOutput":
+                                    throw new UnsupportedOperationException("Unimplemented policy");
+                                case "waitForInstructions":
+                                    throw new UnsupportedOperationException("Unimplemented policy");
+                                case "recordOutput":
+                                    analysisOutputRecorder.recordJobOutput(job);
+                                    break;
+                            }
                             break;
                         case SgeManager.QUEUED:
-                            if(!SgeManager.QUEUED.equals(job.getStatus())) {
+                            if(!Job.QUEUED.equals(job.getStatus())) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
                             }
                             break;
                         case SgeManager.RUNNING:
-                            if(!SgeManager.RUNNING.equals(job.getStatus())) {
+                            if(!Job.RUNNING.equals(job.getStatus())) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
                             }
                             break;

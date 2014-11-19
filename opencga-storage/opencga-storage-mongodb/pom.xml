@@ -26,7 +26,6 @@
         <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-mongodb</artifactId>
-            <version>0.2.0</version>
         </dependency>
     </dependencies>
 

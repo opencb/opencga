@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -21,7 +21,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos;
-import org.opencb.opencga.storage.core.variant.io.json.ArchivedVariantFileJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -126,7 +126,7 @@ public class OpenCGAWSServer {
 
         jsonObjectMapper = new ObjectMapper();
 
-        jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);

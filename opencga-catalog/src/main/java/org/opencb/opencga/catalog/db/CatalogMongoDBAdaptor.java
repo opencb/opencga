@@ -47,10 +47,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private MongoDBCollection fileCollection;
     private MongoDBCollection sampleCollection;
     private MongoDBCollection jobCollection;
-    private DBCollection nativeMetaCollection;
-    private DBCollection nativeUserCollection;
-    private DBCollection nativeFileCollection;
-    private DBCollection nativeJobCollection;
 
     private static final Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
     private static ObjectMapper jsonObjectMapper;
@@ -96,10 +92,6 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(db == null){
             throw new CatalogManagerException("Unable to connect to MongoDB");
         }
-        nativeMetaCollection = db.getDb().getCollection(METADATA_COLLECTION);
-        nativeFileCollection = db.getDb().getCollection(FILE_COLLECTION);
-        nativeJobCollection = db.getDb().getCollection(JOB_COLLECTION);
-        nativeUserCollection = db.getDb().getCollection(USER_COLLECTION);
 
         metaCollection = db.getCollection(METADATA_COLLECTION);
         userCollection = db.getCollection(USER_COLLECTION);
@@ -121,10 +113,10 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 logger.error("Metadata json parse error", e);
             }
             //Set indexes
-            BasicDBObject unique = new BasicDBObject("unique", true);
-            nativeUserCollection.createIndex(new BasicDBObject("id", 1), unique);
-            nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
-            nativeJobCollection.createIndex(new BasicDBObject("id", 1), unique);
+//            BasicDBObject unique = new BasicDBObject("unique", true);
+//            nativeUserCollection.createIndex(new BasicDBObject("id", 1), unique);
+//            nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
+//            nativeJobCollection.createIndex(new BasicDBObject("id", 1), unique);
         }
     }
 
@@ -189,16 +181,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     private int getNewSampleId()   {return getNewId("sampleCounter");}
 
     private int getNewId(String field){
-        DBObject object = nativeMetaCollection.findAndModify(
+        QueryResult<DBObject> result = metaCollection.findAndModify(
                 new BasicDBObject("_id", METADATA_OBJECT_ID),  //Query
                 new BasicDBObject(field, true),  //Fields
                 null,
-                false,
                 new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
-                true,
-                false
+                new QueryOptions("returnNew", true),
+                null
         );
-        return (int) Float.parseFloat(object.get(field).toString());
+        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
     }
 
 
@@ -277,11 +268,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Integer> deleteUser(String userId) throws CatalogManagerException {
         long startTime = startQuery();
 
-        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
-        if (id.getN() == 0) {
+//        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
+        WriteResult wr = userCollection.remove(new BasicDBObject("id", userId)).getResult().get(0);
+        if (wr.getN() == 0) {
             throw new CatalogManagerException("user {id:" + userId + "} not found");
         } else {
-            return endQuery("Delete user", startTime, Arrays.asList(id.getN()));
+            return endQuery("Delete user", startTime, Arrays.asList(wr.getN()));
         }
     }
 
@@ -381,7 +373,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         long startTime = startQuery();
         DBObject query = new BasicDBObject("id", userId);
 //        query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
-        QueryResult result = userCollection.find(query, options, null);
+        QueryResult result = userCollection.find(query, options);
         User user = parseUser(result);
 
         if(user == null){
@@ -864,7 +856,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
         }
 
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
+        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1280,7 +1272,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Integer> deleteFile(int fileId) throws CatalogManagerException {
         long startTime = startQuery();
 
-        WriteResult id = nativeFileCollection.remove(new BasicDBObject("id", fileId));
+        WriteResult id = fileCollection.remove(new BasicDBObject("id", fileId)).getResult().get(0);
         List<Integer> deletes = new LinkedList<>();
         if(id.getN() == 0) {
             throw new CatalogManagerException("file {id:" + fileId + "} not found");
@@ -1362,7 +1354,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogManagerException {
         long startTime = startQuery();
 
-        QueryResult queryResult = fileCollection.find( new BasicDBObject("id", fileId), options, null);
+        QueryResult queryResult = fileCollection.find( new BasicDBObject("id", fileId), options);
 
         File file = parseFile(queryResult);
         if(file != null) {
@@ -1623,6 +1615,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(query.containsKey("type")){
             filters.add(new BasicDBObject("type", query.getString("type")));
         }
+        if(query.containsKey("path")){
+            filters.add(new BasicDBObject("path", query.getString("path")));
+        }
         if(query.containsKey("bioformat")){
             filters.add(new BasicDBObject("bioformat", query.getString("bioformat")));
         }
@@ -1657,7 +1652,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             filters.add(new BasicDBObject("indices.state", query.getString("indexState")));
         }
 
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options, null);
+        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1944,7 +1939,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException {
         long startTime = startQuery();
 
-        WriteResult id = nativeJobCollection.remove(new BasicDBObject("id", jobId));
+        WriteResult id = jobCollection.remove(new BasicDBObject("id", jobId)).getResult().get(0);
         List<Integer> deletes = new LinkedList<>();
         if (id.getN() == 0) {
             throw new CatalogManagerException("job {id: " + jobId + "} not found");
@@ -1957,7 +1952,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<Job> getJob(int jobId) throws CatalogManagerException {
         long startTime = startQuery();
-        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null, null);
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null);
         Job job = parseJob(queryResult);
         if(job != null) {
             return endQuery("Get job", startTime, Arrays.asList(job));
@@ -1969,7 +1964,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException {
         long startTime = startQuery();
-        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null, null);
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Get all jobs", startTime, jobs);
     }
@@ -2079,7 +2074,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
         query.putAll(options);
 //        System.out.println("query = " + query);
-        QueryResult queryResult = jobCollection.find(query, null, null);
+        QueryResult queryResult = jobCollection.find(query, null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Search job", startTime, jobs);
     }

@@ -31,7 +31,7 @@ import org.opencb.opencga.lib.auth.SqliteCredentials;
 import org.opencb.opencga.lib.auth.TabixCredentials;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.lib.common.XObject;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.utils.SqliteManager;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
+public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private TabixCredentials tabixCredentials;
     private CellbaseCredentials cellbaseCredentials;
@@ -47,11 +47,11 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
     private SqliteCredentials sqliteCredentials;
     private SqliteManager sqliteManager;
     
-    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(TabixAlignmentQueryBuilder.class);
+    protected static org.slf4j.Logger logger = LoggerFactory.getLogger(TabixAlignmentDBAdaptor.class);
 
-    public TabixAlignmentQueryBuilder(SqliteCredentials sqliteCredentials, 
-                                         TabixCredentials tabixCredentials, 
-                                         CellbaseCredentials cellbaseCredentials) {
+    public TabixAlignmentDBAdaptor(SqliteCredentials sqliteCredentials,
+                                   TabixCredentials tabixCredentials,
+                                   CellbaseCredentials cellbaseCredentials) {
         this.sqliteCredentials = sqliteCredentials;
         this.tabixCredentials = tabixCredentials;
         this.cellbaseCredentials = cellbaseCredentials;
@@ -71,7 +71,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             queryResult.setResult(alignments);
             queryResult.setNumResults(alignments.size());
         } catch (AlignmentIndexNotExistsException | IOException | ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(TabixAlignmentQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
         
@@ -97,7 +97,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             queryResult.addResult(coverage);
             queryResult.setNumResults(1);
         } catch (AlignmentIndexNotExistsException | ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(TabixAlignmentQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
         
@@ -171,7 +171,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
                 }
             }
         } catch (ClassNotFoundException | SQLException ex ) {
-            Logger.getLogger(TabixAlignmentQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
         
@@ -202,7 +202,7 @@ public class TabixAlignmentQueryBuilder implements AlignmentQueryBuilder {
             alignmentRegion.setAlignments(alignments);
             alignmentRegion.setCoverage(coverage);
         } catch (AlignmentIndexNotExistsException | IOException | ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(TabixAlignmentQueryBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
         

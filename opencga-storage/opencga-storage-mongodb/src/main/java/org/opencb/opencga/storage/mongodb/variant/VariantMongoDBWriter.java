@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.ConsequenceTypeMappings;
@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoWriter extends VariantDBWriter {
+public class VariantMongoDBWriter extends VariantDBWriter {
 
     public static final int CHUNK_SIZE_SMALL = 1000;
     public static final int CHUNK_SIZE_BIG = 10000;
@@ -47,20 +47,20 @@ public class VariantMongoWriter extends VariantDBWriter {
     private DBObjectToVariantConverter variantConverter;
     private DBObjectToVariantStatsConverter statsConverter;
     private DBObjectToVariantSourceConverter sourceConverter;
-    private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
+    private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
     
     private long numVariantsWritten;
     
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials) {
+    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials) {
         this(source, credentials, "variants", "files");
     }
     
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
+    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
         this(source, credentials, variantsCollection, filesCollection, false, false, false);
     }
 
-    public VariantMongoWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
-            boolean includeSamples, boolean includeStats, boolean includeEffect) {
+    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
+                                boolean includeSamples, boolean includeStats, boolean includeEffect) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -94,9 +94,10 @@ public class VariantMongoWriter extends VariantDBWriter {
             } else {
                 mongoClient = new MongoClient(address);
             }
+            System.out.println("credentials.getMongoDbName() = " + credentials.getMongoDbName());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
 
@@ -141,7 +142,7 @@ public class VariantMongoWriter extends VariantDBWriter {
             }*/
             
             BasicDBList mongoFiles = new BasicDBList();
-            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+            for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                 if (!archiveFile.getFileId().equals(source.getFileId())) {
                     continue;
                 }
@@ -235,8 +236,8 @@ public class VariantMongoWriter extends VariantDBWriter {
         variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToArchivedVariantFileConverter.FILEID_FIELD, 1));
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1));
         return true;
     }
 
@@ -254,19 +255,19 @@ public class VariantMongoWriter extends VariantDBWriter {
                     wr = variantsCollection.insert(mongoVariant);
                     if (!wr.getLastError().ok()) {
                         // TODO If not correct, retry?
-                        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                        Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
                     }
                 } catch(MongoInternalException ex) {
                     System.out.println(v);
-                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
+                    Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, v.getChromosome() + ":" + v.getStart(), ex);
                 } catch(DuplicateKeyException ex) {
-                    Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.WARNING, 
+                    Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.WARNING,
                             "Variant already existed: {0}:{1}", new Object[]{v.getChromosome(), v.getStart()});
                 }
                 
             } else { // It existed previously, was not fully built in this run and only files need to be updated
                 // TODO How to do this efficiently, inserting all files at once?
-                for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+                for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                     DBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
                     BasicDBObject changes = new BasicDBObject().append("$addToSet", 
                             new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, mongoFile));
@@ -274,7 +275,7 @@ public class VariantMongoWriter extends VariantDBWriter {
                     wr = variantsCollection.update(query, changes, true, false);
                     if (!wr.getLastError().ok()) {
                         // TODO If not correct, retry?
-                        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
+                        Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, wr.getError(), wr.getLastError());
                     }
                 }
             }
@@ -286,7 +287,7 @@ public class VariantMongoWriter extends VariantDBWriter {
 
         numVariantsWritten += batch.size();
         Variant lastVariantInBatch = batch.get(batch.size()-1);
-        Logger.getLogger(VariantMongoWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
+        Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}",
                 new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
         
         return true;
@@ -348,7 +349,7 @@ public class VariantMongoWriter extends VariantDBWriter {
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
         // TODO Allow to configure samples compression
-        archivedVariantFileConverter = new DBObjectToArchivedVariantFileConverter(
+        archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(
                 compressSamples,
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);

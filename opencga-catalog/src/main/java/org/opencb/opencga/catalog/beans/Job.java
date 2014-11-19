@@ -2,8 +2,10 @@ package org.opencb.opencga.catalog.beans;
 
 import org.opencb.opencga.lib.common.TimeUtils;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -25,10 +27,14 @@ public class Job {
     private long diskUsage;
 
     private int outDirId;
+    @Deprecated
     private int tmpOutDirId;
+    private String tmpOutDirUri;
     private String outDir;
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
+
+    private Map<String, Object> attributes;
 
     /**
      * To think about:
@@ -37,19 +43,29 @@ public class Job {
 
     public static final String QUEUED = "queued";
     public static final String RUNNING = "running";
-    public static final String DONE = "done";
-    public static final String READY = "ready";
+    public static final String DONE = "done";       //Job finished, but output not ready
+    public static final String READY = "ready";     //Job finished and ready
+    public static final String ERROR = "error";     //Job finished with errors
 
     public Job() {
     }
+
+    @Deprecated
     public Job(String name, String userId, String toolName, String description, String commandLine,
                String outDir, List<Integer> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                -1, -1, outDir, input, new LinkedList<Integer>());
+                -1, -1, "", outDir, input, new LinkedList<Integer>(), new HashMap<String, Object>());
+    }
+
+    public Job(String name, String userId, String toolName, String description, String commandLine,
+               String tmpOutDirUri, String outDir, List<Integer> input) {
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
+                -1, -1, tmpOutDirUri, outDir, input, new LinkedList<Integer>(), new HashMap<String, Object>());
     }
     public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
-               long diskUsage, int outDirId, int tmpOutDirId, String outDir, List<Integer> input, List<Integer> output) {
+               long diskUsage, int outDirId, int tmpOutDirId, String tmpOutDirUri, String outDir, List<Integer> input, List<Integer> output,
+               Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -65,9 +81,11 @@ public class Job {
         this.diskUsage = diskUsage;
         this.outDirId = outDirId;
         this.tmpOutDirId = tmpOutDirId;
+        this.tmpOutDirUri = tmpOutDirUri;
         this.outDir = outDir;
         this.input = input;
         this.output = output;
+        this.attributes = attributes;
     }
 
     @Override
@@ -76,7 +94,6 @@ public class Job {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", userId='" + userId + '\'' +
-//                ", analysisId=" + analysisId +
                 ", toolName='" + toolName + '\'' +
                 ", date='" + date + '\'' +
                 ", description='" + description + '\'' +
@@ -89,9 +106,11 @@ public class Job {
                 ", diskUsage=" + diskUsage +
                 ", outDirId=" + outDirId +
                 ", tmpOutDirId=" + tmpOutDirId +
+                ", tmpOutDirUri='" + tmpOutDirUri + '\'' +
                 ", outDir='" + outDir + '\'' +
                 ", input=" + input +
                 ", output=" + output +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -118,14 +137,6 @@ public class Job {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-//
-//    public int getAnalysisId() {
-//        return analysisId;
-//    }
-//
-//    public void setAnalysisId(int analysisId) {
-//        this.analysisId = analysisId;
-//    }
 
     public String getToolName() {
         return toolName;
@@ -215,10 +226,12 @@ public class Job {
         this.outDirId = outDirId;
     }
 
+    @Deprecated
     public int getTmpOutDirId() {
         return tmpOutDirId;
     }
 
+    @Deprecated
     public void setTmpOutDirId(int tmpOutDirId) {
         this.tmpOutDirId = tmpOutDirId;
     }
@@ -246,4 +259,13 @@ public class Job {
     public void setOutput(List<Integer> output) {
         this.output = output;
     }
+
+    public String getTmpOutDirUri() {
+        return tmpOutDirUri;
+    }
+
+    public void setTmpOutDirUri(String tmpOutDirUri) {
+        this.tmpOutDirUri = tmpOutDirUri;
+    }
+
 }

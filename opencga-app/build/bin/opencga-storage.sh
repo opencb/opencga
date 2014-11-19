@@ -113,5 +113,5 @@ exec "$JAVACMD" $JAVA_OPTS  \
   -Dapp.repo="$REPO" \
   -Dapp.home="$BASEDIR" \
   -Dbasedir="$BASEDIR" \
-  org.opencb.opencga.app.cli.storage.OpenCGAStorageMain \
+  org.opencb.opencga.storage.app.cli.OpenCGAStorageMain \
   "$@"

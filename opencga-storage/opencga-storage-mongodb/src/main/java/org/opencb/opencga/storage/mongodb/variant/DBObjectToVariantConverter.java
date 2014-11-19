@@ -5,7 +5,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.Map;
 import java.util.Set;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -35,7 +35,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String GENE_FIELD = "gene";
     
     
-    private DBObjectToArchivedVariantFileConverter archivedVariantFileConverter;
+    private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
 
     /**
      * Create a converter between Variant and DBObject entities when there is 
@@ -52,7 +52,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
      * 
      * @param archivedVariantFileConverter The object used to convert the files
      */
-    public DBObjectToVariantConverter(DBObjectToArchivedVariantFileConverter archivedVariantFileConverter) {
+    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter archivedVariantFileConverter) {
         this.archivedVariantFileConverter = archivedVariantFileConverter;
     }
     
@@ -76,7 +76,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
-                    variant.addFile(archivedVariantFileConverter.convertToDataModelType(dbo));
+                    variant.addSourceEntry(archivedVariantFileConverter.convertToDataModelType(dbo));
                 }
             }
         }
@@ -101,8 +101,8 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         mongoVariant.append("_at", _at);
         
         // ChunkID (1k and 10k)
-        String chunkSmall = object.getChromosome() + "_" + object.getStart() / VariantMongoWriter.CHUNK_SIZE_SMALL + "_" + VariantMongoWriter.CHUNK_SIZE_SMALL / 1000 + "k";
-        String chunkBig = object.getChromosome() + "_" + object.getStart() / VariantMongoWriter.CHUNK_SIZE_BIG + "_" + VariantMongoWriter.CHUNK_SIZE_BIG / 1000 + "k";
+        String chunkSmall = object.getChromosome() + "_" + object.getStart() / VariantMongoDBWriter.CHUNK_SIZE_SMALL + "_" + VariantMongoDBWriter.CHUNK_SIZE_SMALL / 1000 + "k";
+        String chunkBig = object.getChromosome() + "_" + object.getStart() / VariantMongoDBWriter.CHUNK_SIZE_BIG + "_" + VariantMongoDBWriter.CHUNK_SIZE_BIG / 1000 + "k";
         BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
         _at.append("chunkIds", chunkIds);
         
@@ -118,7 +118,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         // Files
         if (archivedVariantFileConverter != null) {
             BasicDBList mongoFiles = new BasicDBList();
-            for (ArchivedVariantFile archiveFile : object.getFiles().values()) {
+            for (VariantSourceEntry archiveFile : object.getSourceEntries().values()) {
                 mongoFiles.add(archivedVariantFileConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(FILES_FIELD, mongoFiles);

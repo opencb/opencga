@@ -10,20 +10,21 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToArchivedVariantFileConverter.FILEID_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToArchivedVariantFileConverter.SAMPLES_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToArchivedVariantFileConverter.STUDYID_FIELD;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+
+import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.FILEID_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.STUDYID_FIELD;
 
 /**
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToSamplesConverter implements ComplexTypeConverter<ArchivedVariantFile, DBObject> {
+public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantSourceEntry, DBObject> {
 
     private boolean compressSamples;
     private List<String> samples;
@@ -62,27 +63,27 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
             this.samples = null;
             this.sourceDbAdaptor = new VariantSourceMongoDBAdaptor(credentials);
         } catch (UnknownHostException ex) {
-            Logger.getLogger(DBObjectToArchivedVariantFileConverter.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
     
     @Override
-    public ArchivedVariantFile convertToDataModelType(DBObject object) {
+    public VariantSourceEntry convertToDataModelType(DBObject object) {
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
-            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), 
-                    object.get(STUDYID_FIELD).toString(), null).getResult().get(0);
+            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(
+                    object.get(FILEID_FIELD).toString(), null).getResult().get(0);
         }
         
         if (samples == null) {
-            return new ArchivedVariantFile(object.get(FILEID_FIELD).toString(), object.get(STUDYID_FIELD).toString());
+            return new VariantSourceEntry(object.get(FILEID_FIELD).toString(), object.get(STUDYID_FIELD).toString());
         }
         
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(SAMPLES_FIELD);
         int numSamples = samples.size();
         
         // Temporary file, just to store the samples
-        ArchivedVariantFile fileWithSamples = new ArchivedVariantFile(object.get(FILEID_FIELD).toString(), 
+        VariantSourceEntry fileWithSamples = new VariantSourceEntry(object.get(FILEID_FIELD).toString(), 
                 object.get(STUDYID_FIELD).toString());
         
         if (mongoGenotypes.containsField("def")) { // Compressed genotypes mode
@@ -100,7 +101,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
             // genotypes[41], genotypes[311], etc, will be set to "0|1"
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
                 if (!dbo.getKey().equals("def")) {
-                    Genotype gt = new Genotype(dbo.getKey());
+                    Genotype gt = new Genotype(dbo.getKey().replace("-1", "."));
                     for (int position : (List<Integer>) dbo.getValue()) {
                         genotypes[position] = gt;
                     }
@@ -134,7 +135,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
     }
 
     @Override
-    public DBObject convertToStorageType(ArchivedVariantFile object) {
+    public DBObject convertToStorageType(VariantSourceEntry object) {
         if (compressSamples) {
             return getCompressedSamples(object);
         } else {
@@ -142,7 +143,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
         }
     }
     
-    private DBObject getCompressedSamples(ArchivedVariantFile object) {
+    private DBObject getCompressedSamples(VariantSourceEntry object) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
         int i = 0;
 
@@ -178,17 +179,18 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<Archived
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
+            String genotypeStr = entry.getKey().toString().replace(".", "-1");
             if (longestList != null && entry.getKey().equals(longestList.getKey())) {
-                mongoSamples.append("def", entry.getKey().toString());
+                mongoSamples.append("def", genotypeStr);
             } else {
-                mongoSamples.append(entry.getKey().toString(), entry.getValue());
+                mongoSamples.append(genotypeStr, entry.getValue());
             }
         }
         
         return mongoSamples;
     }
     
-    private DBObject getDecompressedSamples(ArchivedVariantFile object) {
+    private DBObject getDecompressedSamples(VariantSourceEntry object) {
         BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<String, Map<String, String>> entry : object.getSamplesData().entrySet()) {
             BasicDBObject sampleData = new BasicDBObject();

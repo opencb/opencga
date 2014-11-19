@@ -15,7 +15,7 @@
     <version>${opencga.version}</version>
 
     <properties>
-        <build.dir>build</build.dir>
+        <build.dir>${basedir}/build</build.dir>
         <installation.dir>${OPENCGA.INSTALLATION.DIR}</installation.dir>
         <app.name>opencga</app.name>
     </properties>
@@ -45,7 +45,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-core</artifactId>
+            <artifactId>opencga-storage-app</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -178,7 +178,7 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.app.cli.storage.OpenCGAStorageMain</mainClass>
+                            <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
                             <name>${app.name}-storage.sh</name>
                             <platforms>
                                 <platform>unix</platform>

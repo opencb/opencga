@@ -16,14 +16,11 @@ import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
-import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentQueryBuilder;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 ;
 import javax.servlet.http.HttpServletRequest;
@@ -429,31 +426,31 @@ public class FileWSServer extends OpenCGAWSServer {
                     //TODO: getChunkSize from file.index.attributes?  use to be 200
                     int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
                     QueryOptions queryOptions = new QueryOptions();
-                    queryOptions.put(AlignmentQueryBuilder.QO_FILE_ID, Integer.toString(fileIdNum));
-                    queryOptions.put(AlignmentQueryBuilder.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
-                    queryOptions.put(AlignmentQueryBuilder.QO_VIEW_AS_PAIRS, view_as_pairs);
-                    queryOptions.put(AlignmentQueryBuilder.QO_INCLUDE_COVERAGE, include_coverage);
-                    queryOptions.put(AlignmentQueryBuilder.QO_PROCESS_DIFFERENCES, process_differences);
-                    queryOptions.put(AlignmentQueryBuilder.QO_INTERVAL_SIZE, interval);
-                    queryOptions.put(AlignmentQueryBuilder.QO_HISTOGRAM, histogram);
-                    queryOptions.put(AlignmentQueryBuilder.QO_COVERAGE_CHUNK_SIZE, chunkSize);
+                    queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Integer.toString(fileIdNum));
+                    queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
+                    queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
+                    queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
+                    queryOptions.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, process_differences);
+                    queryOptions.put(AlignmentDBAdaptor.QO_INTERVAL_SIZE, interval);
+                    queryOptions.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
+                    queryOptions.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
                     if(indexAttributes.containsKey("baiFileId")) {
                         File baiFile = null;
                         try {
                             baiFile = catalogManager.getFile(indexAttributes.getInt("baiFileId"), sessionId).getResult().get(0);
                             URI baiUri = catalogManager.getFileUri(baiFile);
-                            queryOptions.put(AlignmentQueryBuilder.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
+                            queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
                         } catch (IOException | CatalogManagerException | CatalogIOManagerException e) {
                             e.printStackTrace();
                             logger.error("Can't obtain bai file for file " + fileIdNum, e);
                         }
                     }
 
-                    AlignmentQueryBuilder dbAdaptor;
+                    AlignmentDBAdaptor dbAdaptor;
                     try {
                         AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(backend);
-                        dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName());
+                        dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName(), new ObjectMap());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());
                     }
@@ -481,13 +478,13 @@ public class FileWSServer extends OpenCGAWSServer {
                     //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
                     VariantDBAdaptor dbAdaptor;
                     try {
-                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(null);
+                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(index.getDbName(), new ObjectMap());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());
                     }
                     QueryResult variantsByRegion;
                     if (histogram) {
-                        variantsByRegion = dbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions);
+                        variantsByRegion = dbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions);
                     } else {
                         //With merge = true, will return only one result.
                         variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
