@@ -28,21 +28,15 @@ public class AnalysisWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Create analysis")
 
-    public Response createStudy(
+    public Response create(
             @ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-            @ApiParam(value = "creatorId", required = true) @QueryParam("creatorId") String creatorId,
             @ApiParam(value = "description", required = true) @QueryParam("description") String description
     ) {
-
-
         QueryResult queryResult;
         try {
             queryResult = catalogManager.createAnalysis(studyId, name, alias, description, sessionId);
-
-//            queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
-
             return createOkResponse(queryResult);
 
         } catch (CatalogManagerException e) {
@@ -51,23 +45,7 @@ public class AnalysisWSServer extends OpenCGAWSServer {
         }
 
     }
-    @GET
-    @Path("/all")
-    @Produces("application/json")
-    @ApiOperation(value = "Create analysis")
 
-    public Response getAllAnalysis(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId) {
-        QueryResult queryResult;
-        try {
-            queryResult = catalogManager.getAllAnalysis(studyId,sessionId);
-            return createOkResponse(queryResult);
-
-        } catch (CatalogManagerException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-
-    }
 
     @GET
     @Path("/{analysisId}/info")
