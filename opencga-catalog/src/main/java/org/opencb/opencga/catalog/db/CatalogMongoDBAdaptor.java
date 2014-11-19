@@ -1615,6 +1615,9 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(query.containsKey("type")){
             filters.add(new BasicDBObject("type", query.getString("type")));
         }
+        if(query.containsKey("path")){
+            filters.add(new BasicDBObject("path", query.getString("path")));
+        }
         if(query.containsKey("bioformat")){
             filters.add(new BasicDBObject("bioformat", query.getString("bioformat")));
         }

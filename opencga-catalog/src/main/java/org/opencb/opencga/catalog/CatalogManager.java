@@ -941,6 +941,7 @@ public class CatalogManager {
     @Deprecated
     public QueryResult deleteDataFromStudy(int fileId, String sessionId)
             throws CatalogManagerException {
+        //TODO: Save delete: Don't delete. Just rename file and set {deleted:true}
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -955,6 +956,7 @@ public class CatalogManager {
             return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
         }
         File file = fileResult.getResult().get(0);
+        System.out.println("file = " + file);
         try {
             ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
         } catch (CatalogIOManagerException e) {
@@ -1116,6 +1118,10 @@ public class CatalogManager {
         return catalogDBAdaptor.setFileAcl(fileId, acl);
     }
 
+    /*Require role admin*/
+    public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId) throws CatalogManagerException {
+        return searchFile(-1, query, options, sessionId);
+    }
     public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId) throws CatalogManagerException {
         return searchFile(studyId, query, null, sessionId);
     }
@@ -1495,13 +1501,13 @@ public class CatalogManager {
         }
         QueryOptions options = new QueryOptions("include", Arrays.asList("id", "type", "path"));
         File outDir = catalogDBAdaptor.getFile(outDirId, options).getResult().get(0);
-        File tmpOutDir = catalogDBAdaptor.getFile(tmpOutDirId, options).getResult().get(0);
+        File tmpOutDir = catalogDBAdaptor.getFile(tmpOutDirId, options).getResult().get(0);     //TODO: Create tmpOutDir outside
 
         if(!outDir.getType().equals(File.FOLDER) || !tmpOutDir.getType().equals(File.FOLDER)) {
             throw new CatalogManagerException("Bad outDir type. Required type : " + File.FOLDER);
         }
 
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getPath(), inputFiles);
+        Job job = new Job(name, userId, toolName, description, commandLine, getFileUri(tmpOutDir).toString(), outDir.getPath(), inputFiles);
         job.setOutDirId(outDir.getId());
         job.setTmpOutDirId(tmpOutDir.getId());
         job.setStartTime(System.currentTimeMillis());
