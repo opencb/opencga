@@ -214,22 +214,17 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response download(@PathParam(value = "fileId") @FormDataParam("fileId") int fileId
     ) {
         String content = "";
+        DataInputStream stream;
         try {
-            DataInputStream stream = catalogManager.downloadFile(fileId, sessionId);
+             stream = catalogManager.downloadFile(fileId, sessionId);
 
-             content = org.apache.commons.io.IOUtils.toString(stream);
-                    //String theString2 = IOUtils.toString(new FileInputStream(new File("C:/temp/test.txt")), "UTF-8");
-//            System.out.println(stream.readLine());
-//            while (stream.available() > 0) {
-////                String k = stream.readUTF();
-//                char k = stream.readChar();
-//                System.out.print(k);
-//            }
+//             content = org.apache.commons.io.IOUtils.toString(stream);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-        return createOkResponse(content);
+//        createOkResponse(content, MediaType.TEXT_PLAIN)
+        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
     }
 
     @GET
