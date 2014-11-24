@@ -180,7 +180,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId);
+            QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId, queryOptions);
             return createOkResponse(result);
         } catch (CatalogManagerException e) {
             e.printStackTrace();

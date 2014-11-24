@@ -198,7 +198,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : splitedFileId) {
-                results.add(catalogManager.getFile(catalogManager.getFileId(id), sessionId));
+                results.add(catalogManager.getFile(catalogManager.getFileId(id), queryOptions, sessionId));
             }
             return createOkResponse(results);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
@@ -262,43 +262,21 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
-            QueryOptions queryOptions = new QueryOptions();
-            if (!name.isEmpty()) {
-                queryOptions.put("name", name);
-            }
-            if (!type.isEmpty()) {
-                queryOptions.put("type", type);
-            }
-            if (!bioformat.isEmpty()) {
-                queryOptions.put("bioformat", bioformat);
-            }
-            if (!maxSize.isEmpty()) {
-                queryOptions.put("maxSize", maxSize);
-            }
-            if (!minSize.isEmpty()) {
-                queryOptions.put("minSize", minSize);
-            }
-            if (!startDate.isEmpty()) {
-                queryOptions.put("startDate", startDate);
-            }
-            if (!endDate.isEmpty()) {
-                queryOptions.put("endDate", endDate);
-            }
-            if (!like.isEmpty()) {
-                queryOptions.put("like", like);
-            }
-            if (!startsWith.isEmpty()) {
-                queryOptions.put("startsWith", startsWith);
-            }
-            if (!directory.isEmpty()) {
-                queryOptions.put("directory", directory);
-            }
-            if (!indexJobId.isEmpty()) {
-                queryOptions.put("indexJobId", indexJobId);
-            }
 
+            QueryOptions query = new QueryOptions();
+            if( !name.isEmpty() )       { query.put("name", name); }
+            if( !type.isEmpty() )       { query.put("type", type); }
+            if( !bioformat.isEmpty() )  { query.put("bioformat", bioformat); }
+            if( !maxSize.isEmpty() )    { query.put("maxSize", maxSize); }
+            if( !minSize.isEmpty() )    { query.put("minSize", minSize); }
+            if( !startDate.isEmpty() )  { query.put("startDate", startDate); }
+            if( !endDate.isEmpty() )    { query.put("endDate", endDate); }
+            if( !like.isEmpty() )       { query.put("like", like); }
+            if( !startsWith.isEmpty() ) { query.put("startsWith", startsWith); }
+            if( !directory.isEmpty() )  { query.put("directory", directory); }
+            if( !indexJobId.isEmpty() ) { query.put("indexJobId", indexJobId); }
 
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, queryOptions, sessionId);
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
