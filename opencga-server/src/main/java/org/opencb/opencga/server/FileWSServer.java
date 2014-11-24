@@ -197,7 +197,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : splitedFileId) {
-                results.add(catalogManager.getFile(catalogManager.getFileId(id), queryOptions, sessionId));
+                results.add(catalogManager.getFile(catalogManager.getFileId(id), this.getQueryOptions(), sessionId));
             }
             return createOkResponse(results);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
@@ -240,7 +240,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if( !indexJobId.isEmpty() ) { query.put("indexJobId", indexJobId); }
 
 
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
@@ -280,7 +280,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId   = catalogManager.getFileId(fileIdStr);
-            index = analysisFileIndexer.index(fileId, outDirId, backend, sessionId, queryOptions);
+            index = analysisFileIndexer.index(fileId, outDirId, backend, sessionId, this.getQueryOptions());
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
