@@ -13,28 +13,33 @@ import java.util.Map;
 public class File {
 
     private int id;
+
     /**
      * File name.
      */
     private String name;
+
     /**
-     * Formats: file, folder
+     * Formats: file, folder, index
      */
     private String type;
+
     /**
      * Formats: txt, executable, image, ...
      */
     private String format;
+
     /**
      * BAM, VCF, ...
      */
     private String bioformat;
+
     /**
      * file://, hdfs://
      */
-    private String uriScheme;
+//    private String uriScheme;   // quitar
     private String path;
-    private String creatorId;
+    private String ownerId;
     private String creationDate;
     private String description;
 
@@ -44,6 +49,7 @@ public class File {
     //private int studyId;
     private int experimentId;
     private List<Integer> sampleIds;
+
     /**
      * This field values -1 when file has been uploaded.
      */
@@ -61,8 +67,9 @@ public class File {
     public static final String READY = "ready";
 
     /* Type */
-    public static final String FOLDER = "folder";
-    public static final String FILE = "file";
+    public static final String TYPE_FOLDER = "folder";
+    public static final String TYPE_FILE = "file";
+    public static final String TYPE_INDEX = "index";
 
     /* Formats */
     public static final String PLAIN = "plain";
@@ -78,22 +85,22 @@ public class File {
     public File() {
     }
 
-    public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
+    public File(String name, String type, String format, String bioformat, String path, String ownerId,
                 String description, String status, long diskUsage) {
-        this(-1, name, type, format, bioformat, uriScheme, path, creatorId, TimeUtils.getTime(), description, status, diskUsage,
+        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>(), new LinkedList<Index>());
     }
 
-    public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
+    public File(String name, String type, String format, String bioformat, String path, String ownerId,
                 String creationDate, String description, String status, long diskUsage) {
-        this(-1, name, type, format, bioformat, uriScheme, path, creatorId, creationDate, description, status, diskUsage,
+        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>(), new LinkedList<Index>());
     }
 
-    public File(int id, String name, String type, String format, String bioformat, String uriScheme, String path,
-                String creatorId, String creationDate, String description, String status, long diskUsage, int experimentId,
+    public File(int id, String name, String type, String format, String bioformat, String path, String ownerId,
+                String creationDate, String description, String status, long diskUsage, int experimentId,
                 List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats,
                 Map<String, Object> attributes, List<Index> indices) {
         this.id = id;
@@ -101,9 +108,9 @@ public class File {
         this.type = type;
         this.format = format;
         this.bioformat = bioformat;
-        this.uriScheme = uriScheme;
+//        this.uriScheme = uriScheme;
         this.path = path;
-        this.creatorId = creatorId;
+        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
@@ -125,9 +132,9 @@ public class File {
                 ", type:'" + type + '\'' + "\n\t" +
                 ", format:'" + format + '\'' + "\n\t" +
                 ", bioformat:'" + bioformat + '\'' + "\n\t" +
-                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
+//                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
                 ", path:'" + path + '\'' + "\n\t" +
-                ", creatorId:'" + creatorId + '\'' + "\n\t" +
+                ", ownerId:'" + ownerId + '\'' + "\n\t" +
                 ", creationDate:'" + creationDate + '\'' + "\n\t" +
                 ", description:'" + description + '\'' + "\n\t" +
                 ", status:'" + status + '\'' + "\n\t" +
@@ -182,14 +189,6 @@ public class File {
         this.bioformat = bioformat;
     }
 
-    public String getUriScheme() {
-        return uriScheme;
-    }
-
-    public void setUriScheme(String uriScheme) {
-        this.uriScheme = uriScheme;
-    }
-
     public String getPath() {
         return path;
     }
@@ -198,12 +197,12 @@ public class File {
         this.path = path;
     }
 
-    public String getCreatorId() {
-        return creatorId;
+    public String getOwnerId() {
+        return ownerId;
     }
 
-    public void setCreatorId(String creatorId) {
-        this.creatorId = creatorId;
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getCreationDate() {

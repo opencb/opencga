@@ -8,14 +8,12 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
@@ -25,11 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -157,13 +150,15 @@ public class DaemonLoop implements Runnable {
                 QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("indexState", Index.PENDING), sessionId);
                 for (File file : files.getResult()) {
                     for (Index index : file.getIndices()) {
-                        if(index.getState().equals(Index.PENDING)) {
+                        if(index.getStatus().equals(Index.PENDING)) {
                             String status = SgeManager.status(index.getJobId());
-                            //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getBackend() + "', state: '" + index.getState() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-                            logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getBackend() + "', state: '" + index.getState() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
+                            //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
+                            logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
                             switch(status) {
                                 case SgeManager.FINISHED:
-                                    analysisOutputRecorder.recordIndexOutput(index);
+//                                    analysisOutputRecorder.recordIndexOutput(index);
+                                    //TODO We need to call to recordJob instead
+                                    //TODO We need to change the name to recordJob
                                     break;
                                 case SgeManager.EXECUTION_ERROR:
                                     break;

@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.beans;
 
 import org.opencb.opencga.lib.common.TimeUtils;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,13 +28,16 @@ public class Job {
     private long diskUsage;
 
     private int outDirId;
-    @Deprecated
-    private int tmpOutDirId;
-    private String tmpOutDirUri;
-    private String outDir;
+    private URI tmpOutDirUri;
+//    @Deprecated
+//    private int tmpOutDirId;    // quitar
+//    @Deprecated
+//    private String outDir;      // quitar
+
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
 
+    private List<String> tags;
     private Map<String, Object> attributes;
 
     /**
@@ -52,20 +56,21 @@ public class Job {
 
     @Deprecated
     public Job(String name, String userId, String toolName, String description, String commandLine,
-               String outDir, List<Integer> input) {
+               List<Integer> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                -1, -1, "", outDir, input, new LinkedList<Integer>(), new HashMap<String, Object>());
+                -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>());
     }
 
-    public Job(String name, String userId, String toolName, String description, String commandLine,
-               String tmpOutDirUri, String outDir, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                -1, -1, tmpOutDirUri, outDir, input, new LinkedList<Integer>(), new HashMap<String, Object>());
+    public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
+               URI tmpOutDirUri, List<Integer> input) {
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, QUEUED, 0,
+                outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>());
     }
+
     public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
-               long diskUsage, int outDirId, int tmpOutDirId, String tmpOutDirUri, String outDir, List<Integer> input, List<Integer> output,
-               Map<String, Object> attributes) {
+               long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
+               List<Integer> output, List<String> tags, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -80,11 +85,12 @@ public class Job {
         this.status = status;
         this.diskUsage = diskUsage;
         this.outDirId = outDirId;
-        this.tmpOutDirId = tmpOutDirId;
+//        this.tmpOutDirId = tmpOutDirId;
         this.tmpOutDirUri = tmpOutDirUri;
-        this.outDir = outDir;
+//        this.outDir = outDir;
         this.input = input;
         this.output = output;
+        this.tags = tags;
         this.attributes = attributes;
     }
 
@@ -105,11 +111,12 @@ public class Job {
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", outDirId=" + outDirId +
-                ", tmpOutDirId=" + tmpOutDirId +
+//                ", tmpOutDirId=" + tmpOutDirId +
                 ", tmpOutDirUri='" + tmpOutDirUri + '\'' +
-                ", outDir='" + outDir + '\'' +
+//                ", outDir='" + outDir + '\'' +
                 ", input=" + input +
                 ", output=" + output +
+                ", tags=" + tags +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -226,22 +233,12 @@ public class Job {
         this.outDirId = outDirId;
     }
 
-    @Deprecated
-    public int getTmpOutDirId() {
-        return tmpOutDirId;
+    public URI getTmpOutDirUri() {
+        return tmpOutDirUri;
     }
 
-    @Deprecated
-    public void setTmpOutDirId(int tmpOutDirId) {
-        this.tmpOutDirId = tmpOutDirId;
-    }
-
-    public String getOutDir() {
-        return outDir;
-    }
-
-    public void setOutDir(String outDir) {
-        this.outDir = outDir;
+    public void setTmpOutDirUri(URI tmpOutDirUri) {
+        this.tmpOutDirUri = tmpOutDirUri;
     }
 
     public List<Integer> getInput() {
@@ -260,12 +257,20 @@ public class Job {
         this.output = output;
     }
 
-    public String getTmpOutDirUri() {
-        return tmpOutDirUri;
+    public List<String> getTags() {
+        return tags;
     }
 
-    public void setTmpOutDirUri(String tmpOutDirUri) {
-        this.tmpOutDirUri = tmpOutDirUri;
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 
 }

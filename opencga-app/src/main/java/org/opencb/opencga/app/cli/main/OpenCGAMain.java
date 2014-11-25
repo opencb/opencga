@@ -190,7 +190,7 @@ public class OpenCGAMain {
                         login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.projectId);
-                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, c.description, sessionId);
+                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, Study.StudyType.valueOf(c.type), c.description, sessionId);
                         System.out.println(study);
 
                         logout();

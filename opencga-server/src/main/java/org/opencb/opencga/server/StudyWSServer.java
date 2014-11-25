@@ -7,6 +7,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
@@ -42,7 +43,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
+            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), description, sessionId);
 
             return createOkResponse(queryResult);
 
@@ -75,10 +76,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/files")
     @Produces("application/json")
     @ApiOperation(value = "Study information")
-
-    public Response getAllFiles(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
-    ) {
+    public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
         QueryResult queryResult;
         try {
             queryResult = catalogManager.getAllFiles(studyId, sessionId);
@@ -89,23 +87,20 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studyId}/analysis")
-    @Produces("application/json")
-    @ApiOperation(value = "Study information")
-
-    public Response getAllAnalysis(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
-    ) {
-        QueryResult queryResult;
-        try {
-            queryResult = catalogManager.getAllAnalysis(studyId, sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogManagerException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
+//    @GET
+//    @Path("/{studyId}/analysis")
+//    @Produces("application/json")
+//    @ApiOperation(value = "Study information")
+//    public Response getAllAnalysis(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
+//        QueryResult queryResult;
+//        try {
+//            queryResult = catalogManager.getAllAnalysis(studyId, sessionId);
+//            return createOkResponse(queryResult);
+//        } catch (CatalogManagerException e) {
+//            e.printStackTrace();
+//            return createErrorResponse(e.getMessage());
+//        }
+//    }
 
     @GET
     @Path("/{studyId}/modify")

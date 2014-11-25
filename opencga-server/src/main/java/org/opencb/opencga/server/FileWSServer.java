@@ -121,7 +121,7 @@ public class FileWSServer extends OpenCGAWSServer {
             logger.info("---saving chunk: " + chunkId);
             logger.info("lastChunk: " + lastChunk);
 
-            // WRITE CHUNK FILE
+            // WRITE CHUNK TYPE_FILE
             if (!Files.exists(folderPath)) {
                 logger.info("createDirectory(): " + folderPath);
                 Files.createDirectory(folderPath);
@@ -348,11 +348,11 @@ public class FileWSServer extends OpenCGAWSServer {
             List<Index> indices = file.getIndices();
             Index index = null;
             for (Index i : indices) {
-                if (i.getBackend().equals(backend)) {
+                if (i.getStorageEngine().equals(backend)) {
                     index = i;
                 }
             }
-            if (index == null || !index.getState().equals(Index.INDEXED)) {
+            if (index == null || !index.getStatus().equals(Index.INDEXED)) {
                 return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not indexed in the selected backend.");
             }

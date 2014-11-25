@@ -43,7 +43,6 @@ public class JobWSServer extends OpenCGAWSServer {
 //    public Response search(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
 //    ) {
-//
 //        catalogManager.search
 //    }
 
@@ -78,9 +77,9 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Produces("application/json")
     @ApiOperation(value = "Create job")
-
     public Response createJob(
-            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+            @ApiParam(value = "studyId", required = true)    @DefaultValue("-1") @QueryParam("studyId") int studyId,
             @ApiParam(value = "toolId", required = true)        @DefaultValue("")   @QueryParam("toolId") String toolIdStr,
             @ApiParam(value = "execution", required = false)    @DefaultValue("")   @QueryParam("execution") String execution,
             @ApiParam(value = "description", required = false)  @DefaultValue("")   @QueryParam("description") String description
@@ -128,7 +127,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
             // Get temporal outdir  TODO: Create job folder outside the user workspace.
             java.nio.file.Path temporalOutdirPath = Paths.get("jobs", jobName);
-            int studyId = catalogManager.getStudyIdByAnalysisId(analysisId);
+//            int studyId = catalogManager.getStudyIdByAnalysisId(studyId);
             File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
             // Set outdir
@@ -146,7 +145,7 @@ public class JobWSServer extends OpenCGAWSServer {
             System.out.println(commandLine);
 
             // Create job in CatalogManager
-            jobResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir.getId(), temporalOutDir.getId(), inputFiles, sessionId);
+            jobResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, outDir.getId(), temporalOutDir.getId(), inputFiles, sessionId);
             Job job = jobResult.getResult().get(0);
 
             // Execute job

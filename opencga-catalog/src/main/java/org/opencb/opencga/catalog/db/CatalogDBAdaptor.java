@@ -74,11 +74,11 @@ public interface CatalogDBAdaptor {
     QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException;
 
     QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException;
+
     /**
      * Study methods
      * ***************************
      */
-
     QueryResult<Study> createStudy(int projectId, Study study) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException;
@@ -104,7 +104,7 @@ public interface CatalogDBAdaptor {
 
     int getProjectIdByStudyId(int studyId) throws CatalogManagerException;
 
-    String getStudyOwner(int studyId) throws CatalogManagerException;
+    String getStudyOwnerId(int studyId) throws CatalogManagerException;
 
     QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogManagerException;
     QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;
@@ -157,31 +157,31 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
-    QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
-    int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException;
-    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
-
-    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
-    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
-
-    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
-
-    int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
-    String getAnalysisOwner(int analysisId) throws CatalogManagerException;
+//    QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+//    QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
+//    int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException;
+//    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
+//
+//    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
+//    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+//
+//    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
+//
+//    int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
+//    String getAnalysisOwner(int analysisId) throws CatalogManagerException;
 
     /**
      * Job methods
      * ***************************
      */
 
-    QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException;
+    QueryResult<Job> createJob(int studyId, Job job) throws CatalogManagerException;
 
     QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException;
 
     QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
 
-    QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException;
+    QueryResult<Job> getAllJobs(int studyId) throws CatalogManagerException;
 
     String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
 
@@ -191,7 +191,7 @@ public interface CatalogDBAdaptor {
 
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 
-    int getAnalysisIdByJobId(int jobId);
+    int getStudyIdByJobId(int jobId);
 
     QueryResult<Job> searchJob(QueryOptions options) throws CatalogManagerException;
 

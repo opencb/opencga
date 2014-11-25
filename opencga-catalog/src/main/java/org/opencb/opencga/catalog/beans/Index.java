@@ -1,24 +1,29 @@
 package org.opencb.opencga.catalog.beans;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by jacobo on 17/10/14.
  */
+@Deprecated
 public class Index {
 
-    private String userId;
-    private String state;
+//    private String userId;
+    private String status;
     private String dbName;
-    private String backend;
-    private List<Integer> output;
-    private int outDir;
-    private String outDirName;
-    private String tmpOutDirUri;
+    private String storageEngine;
+
+//    private List<Integer> output;
+
+//    private Integer outDirId;     // outDirid
+//    @Deprecated
+//    private String outDirName;
+
+//    private String tmpOutDirUri;
+
     private String jobId;
 
+    private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
     /**
@@ -30,49 +35,45 @@ public class Index {
     public Index() {
     }
 
-    public Index(String userId, String state, String dbName, String backend, int outDir, String outDirName, String tmpOutDirName, String jobId, Map<String, Object> attributes) {
-        this.userId = userId;
-        this.state = state;
+    public Index(String status, String dbName, String storageEngine, String jobId,
+                 Map<String, Object> stats, Map<String, Object> attributes) {
+//        this.userId = userId;
+        this.status = status;
         this.dbName = dbName;
-        this.backend = backend;
-        this.output = new LinkedList<>();
-        this.outDir = outDir;
-        this.outDirName = outDirName;
-        this.tmpOutDirUri = tmpOutDirName;
+        this.storageEngine = storageEngine;
+//        this.output = new LinkedList<>();
+//        this.outDirId = outDirId;
+//        this.outDirName = outDirName;
+//        this.tmpOutDirUri = tmpOutDirName;
         this.jobId = jobId;
+        this.stats = stats;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         return "Index{" +
-                "userId='" + userId + '\'' +
-                ", state='" + state + '\'' +
+//                "userId='" + userId + '\'' +
+                ", status='" + status + '\'' +
                 ", dbName='" + dbName + '\'' +
-                ", backend='" + backend + '\'' +
-                ", output=" + output +
-                ", outDir=" + outDir +
-                ", outDirName='" + outDirName + '\'' +
-                ", tmpOutDirUri='" + tmpOutDirUri + '\'' +
+                ", storageEngine='" + storageEngine + '\'' +
+//                ", output=" + output +
+//                ", outDirId=" + outDirId +
+//                ", outDirName='" + outDirName + '\'' +
+//                ", tmpOutDirUri='" + tmpOutDirUri + '\'' +
                 ", jobId='" + jobId + '\'' +
+                ", stats=" + stats +
                 ", attributes=" + attributes +
                 '}';
     }
 
-    public String getUserId() {
-        return userId;
+
+    public String getStatus() {
+        return status;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public String getDbName() {
@@ -83,44 +84,12 @@ public class Index {
         this.dbName = dbName;
     }
 
-    public String getBackend() {
-        return backend;
+    public String getStorageEngine() {
+        return storageEngine;
     }
 
-    public void setBackend(String backend) {
-        this.backend = backend;
-    }
-
-    public List<Integer> getOutput() {
-        return output;
-    }
-
-    public void setOutput(List<Integer> output) {
-        this.output = output;
-    }
-
-    public int getOutDir() {
-        return outDir;
-    }
-
-    public void setOutDir(int outDir) {
-        this.outDir = outDir;
-    }
-
-    public String getOutDirName() {
-        return outDirName;
-    }
-
-    public void setOutDirName(String outDirName) {
-        this.outDirName = outDirName;
-    }
-
-    public String getTmpOutDirUri() {
-        return tmpOutDirUri;
-    }
-
-    public void setTmpOutDirUri(String tmpOutDirUri) {
-        this.tmpOutDirUri = tmpOutDirUri;
+    public void setStorageEngine(String storageEngine) {
+        this.storageEngine = storageEngine;
     }
 
     public String getJobId() {
@@ -129,6 +98,14 @@ public class Index {
 
     public void setJobId(String jobId) {
         this.jobId = jobId;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
     }
 
     public Map<String, Object> getAttributes() {

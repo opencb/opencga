@@ -52,17 +52,15 @@ public class AnalysisFileIndexer {
         this.catalogManager = new CatalogManager(this.properties);
     }
 
-    public Index index(int fileId, int outDirId, String backend, String sessionId, QueryOptions options) throws IOException, CatalogIOManagerException, CatalogManagerException {
+    public Index index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options) throws IOException, CatalogIOManagerException, CatalogManagerException {
         QueryResult<File> fileResult = catalogManager.getFile(fileId, sessionId);
         File file = fileResult.getResult().get(0);
         String jobId = "I_"+StringUtils.randomString(15);
 
-
-
         //1º Check indexed
         List<Index> indices = file.getIndices();
         for (Index index : indices) {
-            if(index.getBackend().equals(backend)){
+            if(index.getStorageEngine().equals(storageEngine)){
                 throw new IOException("File {name:'" + file.getName() + "', id:" + file.getId() + "} already indexed. " + index + "" );
             }
         }
@@ -82,7 +80,7 @@ public class AnalysisFileIndexer {
         String name = file.getName();
         String commandLine;
         String dbName;
-        ObjectMap parameters = new ObjectMap();
+        ObjectMap attributes = new ObjectMap();
 
         if(file.getBioformat().equals("bam") || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
@@ -94,11 +92,11 @@ public class AnalysisFileIndexer {
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --mean-coverage ").append(chunkSize)
                     .append(" --outdir ").append(tmpOutDirUri)
-                    .append(" --backend ").append(backend)
+                    .append(" --backend ").append(storageEngine)
 //                    .append(" --credentials ")
                     .toString();
 
-            parameters.put("chunkSize", chunkSize);
+            attributes.put("chunkSize", chunkSize);
 
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
@@ -113,7 +111,7 @@ public class AnalysisFileIndexer {
 //                    .append(" --dbName ").append(dbName)  //TODO: Add --dbName option
                     .append(" --input ").append(catalogManager.getFileUri(file).getPath())  //TODO: Make URI-compatible
                     .append(" --outdir ").append(tmpOutDirUri.getPath())                    //TODO: Make URI-compatible
-                    .append(" --backend ").append(backend)
+                    .append(" --backend ").append(storageEngine)
                     .append(" --include-samples ")
                     .append(" --include-stats ")
 //                    .append(" --credentials ")
@@ -133,10 +131,9 @@ public class AnalysisFileIndexer {
 //            int jobId = new Random(System.nanoTime()).nextInt();
 
         //5º Update file
-        parameters.put("commandLine", commandLine);
-        Index index = new Index(userId, Index.PENDING, dbName, backend, outDir.getId(), outDir.getPath(),
-                tmpOutDirUri.toString(), jobId, parameters);
-        catalogManager.setIndexFile(fileId, backend, index, sessionId);
+        attributes.put("commandLine", commandLine);
+        Index index = new Index(Index.PENDING, dbName, storageEngine, jobId, new HashMap<String, Object>(), attributes);
+        catalogManager.setIndexFile(fileId, storageEngine, index, sessionId);
 
         return index;
 

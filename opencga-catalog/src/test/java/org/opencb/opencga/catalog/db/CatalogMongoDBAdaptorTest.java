@@ -17,6 +17,7 @@ import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 
@@ -38,12 +39,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         properties.load(is);
         MongoCredential mongoCredentials = MongoCredential.createMongoCRCredential(
                 properties.getProperty("CATALOG.USER", ""),
-                properties.getProperty("CATALOG.DATABASE"),
+                properties.getProperty("CATALOG.DATABASE")+"_catalog_test",
                 properties.getProperty("CATALOG.PASSWORD", "").toCharArray());
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
                 properties.getProperty("CATALOG.HOST"),
                 Integer.parseInt(properties.getProperty("CATALOG.PORT")));
+
         clearDB(dataStoreServerAddress, mongoCredentials);
+
         catalog = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredentials);
     }
 
@@ -73,13 +76,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         User fullUser = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", "BOSS", "active", "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.EMPTY_LIST,
-                                Arrays.asList(new Study(-1, "Study name", "ph1", "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
+                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.StudyType.CONTROL_SET, "", "", "", "", "", 1234, "", Collections.EMPTY_LIST, Collections.EMPTY_LIST,
                                                 Arrays.asList(new File("file.vcf", "t", "f", "bf", "/data/file.vcf", null, null, "", "", 1000)
                                                 ), Collections.EMPTY_LIST, null, Collections.EMPTY_MAP, Collections.EMPTY_MAP
                                         )
                                 ), Collections.EMPTY_MAP)
                 ),
-                Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP);
+                Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_MAP, Collections.EMPTY_MAP);
 
         System.out.println(catalog.createUser(fullUser).toString());
 
@@ -196,6 +199,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getProjectTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "pmp");
+        System.out.println("projectId = " + projectId);
         System.out.println(catalog.getProject(projectId));
         try {
             System.out.println(catalog.getProject(-100));
@@ -305,16 +309,16 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId = catalog.getProjectId("jcoll", "1000G");
         int projectId2 = catalog.getProjectId("jcoll", "2000G");
 
-        Study s = new Study("Phase 1", "ph1", "TEST", "", "", null);
+        Study s = new Study("Phase 1", "ph1", Study.StudyType.CASE_CONTROL, "", "", null);
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", false, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, false));
         s.setAcl(acl);
         System.out.println(catalog.createStudy(projectId, s));
         System.out.println(catalog.createStudy(projectId2, s));
-        s = new Study("Phase 3", "ph3", "TEST", "", "", null);
+        s = new Study("Phase 3", "ph3", Study.StudyType.CASE_CONTROL, "", "", null);
         System.out.println(catalog.createStudy(projectId, s));
-        s = new Study("Phase 7", "ph7", "TEST", "", "", null);
+        s = new Study("Phase 7", "ph7", Study.StudyType.CASE_CONTROL, "", "", null);
         System.out.println(catalog.createStudy(projectId, s));
 
         try {
@@ -436,17 +440,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
         assertTrue(studyId >= 0);
         File f;
-        f = new File("data/", File.FOLDER, "f", "bam", "file://", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("data/", File.TYPE_FOLDER, "f", "bam", "/data/", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", true, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, true));
         f.setAcl(acl);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.sam", File.FILE, "sam", "bam", "file://", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("file.sam", File.TYPE_FILE, "sam", "bam", "/data/file.sam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.bam", File.FILE, "sam", "bam", "file://", "/data/file.bam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("file.bam", File.TYPE_FILE, "sam", "bam", "/data/file.bam", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
         System.out.println(catalog.createFileToStudy(studyId, f));
-        f = new File("file.vcf", File.FILE, "vcf", "bam", "file://", "/data/file.vcf", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
+        f = new File("file.vcf", File.TYPE_FILE, "vcf", "bam", "/data/file.vcf", null, TimeUtils.getTime(), "", File.UPLOADING, 1000);
 
         try {
             System.out.println(catalog.createFileToStudy(-20, f));
@@ -603,79 +607,78 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * Analyses methods
      * ***************************
      */
-    @Test
-    public void createAnalysisTest() throws CatalogManagerException {
-        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description");
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
-        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton");
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // same study, different alias
-        analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton");
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
-        analysis = new Analysis(0, "analisis3Name", "analysis2Alias", "lastmonth", "jmmmut", "today", "analaysis 2 decrypton");
-        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
-
-        try {
-            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));
-            fail("expected \"analysis already exists\" exception");
-        } catch (CatalogManagerException e) {
-        }
-    }
-
-    @Test
-    public void getAllAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1"));
-        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        QueryResult<Analysis> allAnalysis = catalog.getAllAnalysis(studyId);
-        System.out.println(allAnalysis);
-    }
-
-    @Test
-    public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
-        QueryResult<Analysis> analysis = catalog.getAnalysis(-1);
-        if (analysis.getNumResults() != 0) {
-            fail("error: expected no analysis. instead returned: " + analysis);
-        }
-        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");  // analysis3Alias does not belong to ph1
-        catalog.getAnalysis(analysisId);
-    }
-
-    @Test
-    public void getAnalysisIdTest() throws CatalogManagerException {
-        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
-        System.out.println("analysisId: " + analysisId);
-        assertTrue(analysisId < 0);
-
-        studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
-        analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
-        System.out.println("analysisId: " + analysisId);
-        assertTrue(analysisId >= 0);
-    }
-
-    @Test
-    public void modifyAnalysisTest() throws CatalogManagerException, IOException {
-        int studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
-        String newName = "newName-" + StringUtils.randomString(10);
-        String description = "description-" + StringUtils.randomString(50);
-        DBObject attributes = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20)).get();
-
-        ObjectMap parameters = new ObjectMap();
-        parameters.put("name", newName);
-        parameters.put("description", description);
-        parameters.put("attributes", attributes);
-        System.out.println(catalog.modifyAnalysis(analysisId, parameters));
-
-        Analysis analysis = catalog.getAnalysis(analysisId).getResult().get(0);
-        System.out.println(analysis);
-        assertEquals(analysis.getName(), newName);
-        assertEquals(analysis.getDescription(), description);
-        assertEquals(analysis.getAttributes(), attributes);
-
-    }
-//    getStudyIdByAnalysisId    // TODO
+//    @Test
+//    public void createAnalysisTest() throws CatalogManagerException {
+//        Analysis analysis = new Analysis(0, "analisis1Name", "analysis1Alias", "today", "creatorId", "creationDate", "analaysis 1 description");
+//        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));
+//        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, same alias
+//        analysis = new Analysis(0, "analisis2Name", "analysis2Alias", "lastmonth", "creatorId", "creationDate", "analaysis 2 decrypton");
+//        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph1", analysis));  // same study, different alias
+//        analysis = new Analysis(0, "analisis3Name", "analysis3Alias", "lastmonth", "jmmmut", "today", "analaysis 3 decrypton");
+//        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
+//        analysis = new Analysis(0, "analisis3Name", "analysis2Alias", "lastmonth", "jmmmut", "today", "analaysis 2 decrypton");
+//        System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));  // different study, different alias
+//
+//        try {
+//            System.out.println(catalog.createAnalysis("jcoll", "1000G", "ph3", analysis));
+//            fail("expected \"analysis already exists\" exception");
+//        } catch (CatalogManagerException e) {
+//        }
+//    }
+//
+//    @Test
+//    public void getAllAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+//        System.out.println(catalog.getAllAnalysis("jcoll", "1000G", "ph1"));
+//        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+//        QueryResult<Analysis> allAnalysis = catalog.getAllAnalysis(studyId);
+//        System.out.println(allAnalysis);
+//    }
+//
+//    @Test
+//    public void getAnalysisTest() throws CatalogManagerException, JsonProcessingException {
+//        QueryResult<Analysis> analysis = catalog.getAnalysis(-1);
+//        if (analysis.getNumResults() != 0) {
+//            fail("error: expected no analysis. instead returned: " + analysis);
+//        }
+//        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");  // analysis3Alias does not belong to ph1
+//        catalog.getAnalysis(analysisId);
+//    }
+//
+//    @Test
+//    public void getAnalysisIdTest() throws CatalogManagerException {
+//        int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis3Alias");  // analysis3Alias does not belong to ph1
+//        System.out.println("analysisId: " + analysisId);
+//        assertTrue(analysisId < 0);
+//
+//        studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
+//        analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
+//        System.out.println("analysisId: " + analysisId);
+//        assertTrue(analysisId >= 0);
+//    }
+//
+//    @Test
+//    public void modifyAnalysisTest() throws CatalogManagerException, IOException {
+//        int studyId = catalog.getStudyId("jcoll", "1000G", "ph3");
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis2Alias");
+//        String newName = "newName-" + StringUtils.randomString(10);
+//        String description = "description-" + StringUtils.randomString(50);
+//        DBObject attributes = BasicDBObjectBuilder.start().append("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20)).get();
+//
+//        ObjectMap parameters = new ObjectMap();
+//        parameters.put("name", newName);
+//        parameters.put("description", description);
+//        parameters.put("attributes", attributes);
+//        System.out.println(catalog.modifyAnalysis(analysisId, parameters));
+//
+//        Analysis analysis = catalog.getAnalysis(analysisId).getResult().get(0);
+//        System.out.println(analysis);
+//        assertEquals(analysis.getName(), newName);
+//        assertEquals(analysis.getDescription(), description);
+//        assertEquals(analysis.getAttributes(), attributes);
+//
+//    }
 
 
     /**
@@ -686,13 +689,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void createJobTest() throws CatalogManagerException {
         Job job = new Job();
         job.setVisits(0);
-        job.setName("jobName1");
 
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
-        System.out.println(catalog.createJob(analysisId, job));
+        job.setName("jobName1");
+        System.out.println(catalog.createJob(studyId, job));
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+
         job.setName("jobName2");
-        System.out.println(catalog.createJob(analysisId, job));
+        System.out.println(catalog.createJob(studyId, job));
         try {
             catalog.createJob(-1, job);
             fail("error: expected exception");
@@ -704,8 +708,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void deleteJobTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
-        int jobId = catalog.getAllJobs(analysisId).getResult().get(0).getId();
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        int jobId = catalog.getAllJobs(studyId).getResult().get(0).getId();
         QueryResult<Integer> queryResult = catalog.deleteJob(jobId);
         System.out.println(queryResult);
         assertTrue(queryResult.getResult().get(0) == 1);
@@ -720,8 +724,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getAllJobTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
-        QueryResult<Job> allJobs = catalog.getAllJobs(analysisId);
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        QueryResult<Job> allJobs = catalog.getAllJobs(studyId);
         System.out.println(allJobs);
     }
 
@@ -729,8 +733,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getJobTest() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
-        QueryResult<Job> allJobs = catalog.getAllJobs(analysisId);
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        QueryResult<Job> allJobs = catalog.getAllJobs(studyId);
         Job job = catalog.getJob(allJobs.getResult().get(0).getId()).getResult().get(0);
         System.out.println(job);
 
@@ -746,8 +750,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void incJobVisits() throws CatalogManagerException {
         int studyId = catalog.getStudyId("jcoll", "1000G", "ph1");
-        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
-        int id = catalog.getAllJobs(analysisId).getResult().get(0).getId();
+//        int analysisId = catalog.getAnalysisId(studyId, "analysis1Alias");
+        int id = catalog.getAllJobs(studyId).getResult().get(0).getId();
         Job jobBefore = catalog.getJob(id).getResult().get(0);
 
         Integer visits = (Integer) catalog.incJobVisits(jobBefore.getId()).getResult().get(0).get("visits");
