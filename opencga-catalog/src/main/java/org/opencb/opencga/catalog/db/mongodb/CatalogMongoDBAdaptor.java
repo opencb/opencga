@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -1066,6 +1067,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         study.setCreatorId(params.getString("creatorId", study.getCreatorId()));
         study.setCreationDate(params.getString("creationDate", study.getCreationDate()));
         study.setDescription(params.getString("description", study.getDescription()));
+        study.setUri(params.get("uri", URI.class, study.getUri()));
         study.setStatus(params.getString("status", study.getStatus()));
         study.setDiskUsage(params.getInt("diskUsage", (int) study.getDiskUsage())); //Fixme: may lost precision
         study.setCipher(params.getString("cipher", study.getCipher()));

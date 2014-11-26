@@ -15,6 +15,7 @@ import org.opencb.opencga.lib.common.StringUtils;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -58,7 +59,9 @@ public class AnalysisFileIndexer {
 
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
+        QueryResult<File> outdirQueryResult = catalogManager.getFile(outDirId, sessionId);
         File file = fileQueryResult.getResult().get(0);
+        File outdir = outdirQueryResult.getResult().get(0);
 
         //TODO: Check if file can be indexed
 
@@ -77,8 +80,8 @@ public class AnalysisFileIndexer {
 
         //Create index file
         QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.TYPE_INDEX, file.getFormat(),
-                file.getBioformat(), file.getPath() + "." + storageEngine, "Indexation of " + file.getName() + " (" + fileId + ")", false,
-                -1, sessionId, indexAttributes);
+                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, "Indexation of " + file.getName() + " (" + fileId + ")", false,
+                        -1, sessionId, indexAttributes);
         File index = indexQueryResult.getResult().get(0);
 
         //Create job
