@@ -36,16 +36,13 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "email", required = true) @QueryParam("email") String email,
             @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-            @ApiParam(value = "role", required = true) @QueryParam("role") String role,
-            @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
-        User user = new User(userId, name, email, password, organization, role, status);
+            @ApiParam(value = "password", required = true) @QueryParam("password") String password ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(user);
+            queryResult = catalogManager.createUser(userId, name, email, password, organization);
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogManagerException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

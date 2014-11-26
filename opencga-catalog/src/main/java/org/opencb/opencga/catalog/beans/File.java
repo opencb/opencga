@@ -59,7 +59,7 @@ public class File {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    private List<Index> indices;
+//    private List<Index> indices;
 
     /* Status */
     public static final String UPLOADING = "uploading";
@@ -89,20 +89,20 @@ public class File {
                 String description, String status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>(), new LinkedList<Index>());
+                new HashMap<String, Object>());
     }
 
     public File(String name, String type, String format, String bioformat, String path, String ownerId,
                 String creationDate, String description, String status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>(), new LinkedList<Index>());
+                new HashMap<String, Object>());
     }
 
     public File(int id, String name, String type, String format, String bioformat, String path, String ownerId,
                 String creationDate, String description, String status, long diskUsage, int experimentId,
                 List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats,
-                Map<String, Object> attributes, List<Index> indices) {
+                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -121,7 +121,7 @@ public class File {
         this.acl = acl;
         this.stats = stats;
         this.attributes = attributes;
-        this.indices = indices;
+//        this.indices = indices;
     }
 
     @Override
@@ -145,7 +145,7 @@ public class File {
                 ", acl:" + acl + "\n\t" +
                 ", stats:" + stats + "\n\t" +
                 ", attributes:" + attributes + "\n\t" +
-                ", indices:" + indices + "\n" +
+//                ", indices:" + indices + "\n" +
                 '}';
     }
 
@@ -285,11 +285,11 @@ public class File {
         this.stats = stats;
     }
 
-    public List<Index> getIndices() {
-        return indices;
-    }
-
-    public void setIndices(List<Index> indices) {
-        this.indices = indices;
-    }
+//    public List<Index> getIndices() {
+//        return indices;
+//    }
+//
+//    public void setIndices(List<Index> indices) {
+//        this.indices = indices;
+//    }
 }

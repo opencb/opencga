@@ -106,24 +106,32 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/modify")
     @Produces("application/json")
     @ApiOperation(value = "Study modify")
-    public Response modifyUser(
+    public Response modifyStudy(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
-            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-            @ApiParam(value = "type", required = false) @QueryParam("type") String type,
-            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-            @ApiParam(value = "status", required = false) @QueryParam("status") String status)
+            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
 //            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
 //            @ApiParam(value = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
-            objectMap.put("name", name);
-            objectMap.put("type", type);
-            objectMap.put("description", description);
-            objectMap.put("status", status);
+            if(!name.isEmpty()) {
+                objectMap.put("name", name);
+            }
+            if(!type.isEmpty()) {
+                objectMap.put("type", type);
+            }
+            if(!description.isEmpty()) {
+                objectMap.put("description", description);
+            }
+            if(!status.isEmpty()) {
+                objectMap.put("status", status);
+            }
 //            objectMap.put("attributes", attributes);
 //            objectMap.put("stats", stats);
-
+            System.out.println(objectMap.toJson());
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (CatalogManagerException e) {

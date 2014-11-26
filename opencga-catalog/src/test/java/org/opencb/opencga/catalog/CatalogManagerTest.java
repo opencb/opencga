@@ -84,10 +84,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateUser() throws Exception {
-        User user = new User("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", "", "");
-        System.out.println(catalogManager.createUser(user));
-        user = new User("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", "", "");
-        System.out.println(catalogManager.createUser(user));
+        System.out.println(catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, ""));
+        System.out.println(catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, ""));
         System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME"));
     }
 
@@ -434,8 +432,10 @@ public class CatalogManagerTest extends GenericTest {
         Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", outDir.getId(), URI.create("file:///tmp"), Collections.<Integer>emptyList());
 
 //        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         System.out.println(catalogManager.createJob(
-                studyId, "mySecondJob", "samtool", "description", "#rm -rf .*", outDir.getId(), outDir.getId(), null, sessionIdUser));
+                studyId, "mySecondJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.EMPTY_LIST, new HashMap<String, Object>(), sessionIdUser));
     }
 
     private static void clearCatalog(Properties properties) throws IOException {

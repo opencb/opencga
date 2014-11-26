@@ -4,6 +4,7 @@ import com.beust.jcommander.ParameterException;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
@@ -32,7 +33,7 @@ public class OpenCGAMain {
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args)
-            throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException {
+            throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
@@ -59,7 +60,7 @@ public class OpenCGAMain {
                 }
                 try {
                     opencgaMain.runCommand(args);
-                } catch(CatalogManagerException | CatalogIOManagerException e){
+                } catch(Exception e){
                     //e.printStackTrace();
                     System.out.println(e.getMessage());
                 }
@@ -69,7 +70,7 @@ public class OpenCGAMain {
         }
     }
 
-    private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException {
+    private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
         OptionsParser optionsParser = new OptionsParser();
         try {
             optionsParser.parse(args);
@@ -271,7 +272,7 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);
-                        Index index = analysisFileIndexer.index(fileId, outdirId, c.backend, sessionId, new QueryOptions());
+                        File index = analysisFileIndexer.index(fileId, outdirId, c.backend, sessionId, new QueryOptions());
                         System.out.println(index);
 
                         logout();

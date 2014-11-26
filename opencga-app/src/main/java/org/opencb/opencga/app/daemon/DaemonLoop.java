@@ -6,12 +6,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
@@ -99,7 +96,8 @@ public class DaemonLoop implements Runnable {
             try {
                 QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
                 for (Job job : unfinishedJobs.getResult()) {
-                    String status = SgeManager.status(job.getName());
+                    String status = SgeManager.status(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString());
+                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     switch(status) {
@@ -145,39 +143,39 @@ public class DaemonLoop implements Runnable {
                 e.printStackTrace();
             }
 
-            logger.info("----- Pending index -----");
-            try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("indexState", Index.PENDING), sessionId);
-                for (File file : files.getResult()) {
-                    for (Index index : file.getIndices()) {
-                        if(index.getStatus().equals(Index.PENDING)) {
-                            String status = SgeManager.status(index.getJobId());
-                            //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-                            logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-                            switch(status) {
-                                case SgeManager.FINISHED:
-//                                    analysisOutputRecorder.recordIndexOutput(index);
-                                    //TODO We need to call to recordJob instead
-                                    //TODO We need to change the name to recordJob
-                                    break;
-                                case SgeManager.EXECUTION_ERROR:
-                                    break;
-                                case SgeManager.ERROR:
-                                    //TODO: Handle error
-                                    break;
-                                case SgeManager.UNKNOWN:
-                                case SgeManager.QUEUED:
-                                case SgeManager.RUNNING:
-                                case SgeManager.TRANSFERRED:
-                                    break;
-                            }
-
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            logger.info("----- Pending index -----");
+//            try {
+//                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("indexState", Index.PENDING), sessionId);
+//                for (File file : files.getResult()) {
+//                    for (Index index : file.getIndices()) {
+//                        if(index.getStatus().equals(Index.PENDING)) {
+//                            String status = SgeManager.status(index.getJobId());
+//                            //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
+//                            logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
+//                            switch(status) {
+//                                case SgeManager.FINISHED:
+////                                    analysisOutputRecorder.recordIndexOutput(index);
+//                                    //TODO We need to call to recordJob instead
+//                                    //TODO We need to change the name to recordJob
+//                                    break;
+//                                case SgeManager.EXECUTION_ERROR:
+//                                    break;
+//                                case SgeManager.ERROR:
+//                                    //TODO: Handle error
+//                                    break;
+//                                case SgeManager.UNKNOWN:
+//                                case SgeManager.QUEUED:
+//                                case SgeManager.RUNNING:
+//                                case SgeManager.TRANSFERRED:
+//                                    break;
+//                            }
+//
+//                        }
+//                    }
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
 
         if(sessionId != null) {
