@@ -28,6 +28,8 @@ public class Study {
     private List<File> files;
     private List<Job> jobs;
 
+    private List<SampleAnnotationDescription> sampleAnnotationDescriptions;
+
     private URI uri;
 
     private Map<String, Object> stats;
