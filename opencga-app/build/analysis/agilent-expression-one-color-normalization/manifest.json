@@ -4,8 +4,8 @@
         "email": ""
     },
     "version": "1.0",
-    "id": "affy-expression-normalization",
-    "name": "affy-expression-normalization",
+    "id": "agilent-expression-one-color-normalization",
+    "name": "agilent-expression-one-color-normalization",
     "description": "",
     "icon": {
         "size": "",
@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool affy-expression-normalization ",
+            "executable": "babelomics/babelomics.sh --tool agilent-expression-one-color-normalization",
             "inputParams": [
                 {
                     "name": "compressed-file",

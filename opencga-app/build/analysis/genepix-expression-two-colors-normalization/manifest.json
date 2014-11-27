@@ -4,8 +4,8 @@
         "email": ""
     },
     "version": "1.0",
-    "id": "affy-expression-normalization",
-    "name": "affy-expression-normalization",
+    "id": "genepix-expression-two-colors-normalization",
+    "name": "genepix-expression-two-colors-normalization",
     "description": "",
     "icon": {
         "size": "",
@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool affy-expression-normalization ",
+            "executable": "babelomics/babelomics.sh --tool genepix-expression-two-colors-normalization",
             "inputParams": [
                 {
                     "name": "compressed-file",
@@ -29,12 +29,12 @@
             "validParams": [
                 {
                     "name": "ba-normalization",
-                    "description": "Between arrays normalization: none, quantiles, scale, vsn. Default between arrays normalization: scale. Only for Agilent or GenePix normalization",
+                    "description": "",
                     "required": "false"
                 },
                 {
                     "name": "bg-correction",
-                    "description": "Background correction: agilent, normexp, rma, half, subtract, minimum, movingmin, edwards, none. Default background correction: rma. Only for Agilent or GenePix normalization.",
+                    "description": "",
                     "required": "false"
                 },
                 {
