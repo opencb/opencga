@@ -8,12 +8,14 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
@@ -34,6 +36,7 @@ public class DaemonLoop implements Runnable {
     public static final String SLEEP    = "OPENCGA.APP.DAEMON.SLEEP";
     public static final String USER     = "OPENCGA.APP.DAEMON.USER";
     public static final String PASSWORD = "OPENCGA.APP.DAEMON.PASSWORD";
+    public static final String DELETE_DELAY = "OPENCGA.APP.DAEMON.DELETE_DELAY";
 
     private final Properties properties;
 
@@ -99,21 +102,51 @@ public class DaemonLoop implements Runnable {
             try {
                 QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
                 for (Job job : unfinishedJobs.getResult()) {
-                    String status = SgeManager.status(job.getName());
+                    String status = SgeManager.status(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString());
+                    String jobStatus = job.getStatus();
+//                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
+
+                    //Track SGEManager
                     switch(status) {
                         case SgeManager.FINISHED:
                             if(!Job.DONE.equals(job.getStatus())) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.DONE), sessionId);
+                                jobStatus = Job.DONE;
                             }
-                            analysisOutputRecorder.recordJobOutput(job);
                             break;
                         case SgeManager.ERROR:
                         case SgeManager.EXECUTION_ERROR:
                             if(!Job.ERROR.equals(job.getStatus())) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.ERROR), sessionId);
+                                jobStatus = Job.ERROR;
                             }
+                            break;
+                        case SgeManager.QUEUED:
+                            if(!Job.QUEUED.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
+                                jobStatus = Job.QUEUED;
+                            }
+                            break;
+                        case SgeManager.RUNNING:
+                            if(!Job.RUNNING.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
+                                jobStatus = Job.RUNNING;
+                            }
+                            break;
+                        case SgeManager.TRANSFERRED:
+                            break;
+                        case SgeManager.UNKNOWN:
+                            break;
+                    }
+
+                    //Track Catalog Job status
+                    switch (jobStatus) {
+                        case Job.DONE:
+                            analysisOutputRecorder.recordJobOutput(job);
+                            break;
+                        case Job.ERROR:
                             String jobErrorPolicy = "recordOutput";
                             switch(jobErrorPolicy) {
                                 case "deleteOutput":
@@ -125,19 +158,16 @@ public class DaemonLoop implements Runnable {
                                     break;
                             }
                             break;
-                        case SgeManager.QUEUED:
-                            if(!Job.QUEUED.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
-                            }
+                        case Job.PREPARED:
+                            AnalysisJobExecuter.execute(job);
+                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
                             break;
-                        case SgeManager.RUNNING:
-                            if(!Job.RUNNING.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
-                            }
+                        case Job.QUEUED:
                             break;
-                        case SgeManager.TRANSFERRED:
+                        case Job.RUNNING:
                             break;
-                        case SgeManager.UNKNOWN:
+                        case Job.READY:
+                            //Never expected!
                             break;
                     }
                 }
@@ -145,34 +175,22 @@ public class DaemonLoop implements Runnable {
                 e.printStackTrace();
             }
 
-            logger.info("----- Pending index -----");
+            logger.info("----- Pending deletions -----");
             try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("indexState", Index.PENDING), sessionId);
+                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.DELETING), sessionId);
+                long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
-                    for (Index index : file.getIndices()) {
-                        if(index.getStatus().equals(Index.PENDING)) {
-                            String status = SgeManager.status(index.getJobId());
-                            //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-                            logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-                            switch(status) {
-                                case SgeManager.FINISHED:
-//                                    analysisOutputRecorder.recordIndexOutput(index);
-                                    //TODO We need to call to recordJob instead
-                                    //TODO We need to change the name to recordJob
-                                    break;
-                                case SgeManager.EXECUTION_ERROR:
-                                    break;
-                                case SgeManager.ERROR:
-                                    //TODO: Handle error
-                                    break;
-                                case SgeManager.UNKNOWN:
-                                case SgeManager.QUEUED:
-                                case SgeManager.RUNNING:
-                                case SgeManager.TRANSFERRED:
-                                    break;
-                            }
-
-                        }
+                    long deleteDate = new ObjectMap(file.getAttributes()).getLong(File.DELETE_DATE, 0);
+                    if(currentTimeMillis - deleteDate > Long.valueOf(properties.getProperty(DELETE_DELAY, "30"))*1000) { //Seconds to millis
+                        QueryResult<Study> studyQueryResult = catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
+                        Study study = studyQueryResult.getResult().get(0);
+                        logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
+                        CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(study.getUri());
+                        catalogIOManager.deleteFile(catalogIOManager.getFileUri(study.getUri(), file.getPath()));
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.DELETED), sessionId);
+                    } else {
+                        logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(), file.getAttributes());
+                        logger.info("{}", (currentTimeMillis - deleteDate)/1000);
                     }
                 }
             } catch (Exception e) {

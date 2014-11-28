@@ -10,9 +10,9 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
@@ -264,46 +264,73 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+
+    @GET
+    @Path("/{fileId}/delete")
+    @Produces("application/json")
+    @ApiOperation(value = "Delete file")
+    public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId ) {
+        return delete(fileId);
+    }
+
+    @DELETE
+    @Path("/{fileId}/delete")
+    @Produces("application/json")
+    @ApiOperation(value = "Delete file")
+    public Response delete(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId
+    ) {
+        try {
+            int fileIdNum = catalogManager.getFileId(fileId);
+            QueryResult result = catalogManager.deleteFile(fileIdNum, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
     @GET
     @Path("/{fileId}/index")
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIdStr,
                           @ApiParam(value = "outdir", required = true) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend
+                          @ApiParam(value = "storageEngine", required = false) @DefaultValue("") @QueryParam("storageEngine") String storageEngine
                           ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
-        Index index = null;
-        if(backend.isEmpty()) {
-            backend = "mongo"; //TODO: Get default backend from properties.
-        }
+
+        File index;
         try {
+            if(storageEngine.isEmpty()) {
+                storageEngine = StorageManagerFactory.getDefaultStorageManagerName();
+            }
+            storageEngine = storageEngine.toLowerCase();
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId   = catalogManager.getFileId(fileIdStr);
-            index = analysisFileIndexer.index(fileId, outDirId, backend, sessionId, queryOptions);
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            index = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, queryOptions);
+
+        } catch (CatalogManagerException | CatalogIOManagerException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
         return createOkResponse(index);
     }
 
-
-    @GET
-    @Path("/index-status")
-    @Produces("application/json")
-    @ApiOperation(value = "File index status")
-    public Response indexStatus(@ApiParam(value = "jobId", required = true) @DefaultValue("") @QueryParam("jobId") String jobId
-    ) {
-        String status;
-        try {
-            status = SgeManager.status(jobId);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-        return createOkResponse(status);
-    }
+//    @GET
+//    @Path("/index-status")
+//    @Produces("application/json")
+//    @ApiOperation(value = "File index status")
+//    public Response indexStatus(@ApiParam(value = "jobId", required = true) @DefaultValue("") @QueryParam("jobId") String jobId
+//    ) {
+//        String status;
+//        try {
+//            status = SgeManager.status(jobId);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return createErrorResponse(e.getMessage());
+//        }
+//        return createOkResponse(status);
+//    }
 
 
     @GET
@@ -312,7 +339,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File fetch")
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds,
                           @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
-                          @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
+                     //     @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
@@ -341,22 +368,20 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse(e.getMessage());
             }
 
-            if(backend.isEmpty()) {
-                backend = "mongo";  //TODO: Get default backend from properties.
-            }
-
-            List<Index> indices = file.getIndices();
-            Index index = null;
-            for (Index i : indices) {
-                if (i.getStorageEngine().equals(backend)) {
-                    index = i;
-                }
-            }
-            if (index == null || !index.getStatus().equals(Index.INDEXED)) {
+            if(!file.getType().equals(File.TYPE_INDEX)) {
                 return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
-                        " is not indexed in the selected backend.");
+                        " is not an indexed file.");
             }
-            ObjectMap indexAttributes = new ObjectMap(index.getAttributes());
+//            List<Index> indices = file.getIndices();
+//            Index index = null;
+//            for (Index i : indices) {
+//                if (i.getStorageEngine().equals(backend)) {
+//                    index = i;
+//                }
+//            }
+            ObjectMap indexAttributes = new ObjectMap(file.getAttributes());
+            String storageEngine = indexAttributes.get("storageEngine").toString();
+            String dbName = indexAttributes.get("dbName").toString();
             QueryResult result;
             switch (file.getBioformat()) {
                 case "bam": {
@@ -386,8 +411,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(backend);
-                        dbAdaptor = alignmentStorageManager.getDBAdaptor(index.getDbName(), new ObjectMap());
+                        AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName, new ObjectMap());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());
                     }
@@ -415,7 +440,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
                     VariantDBAdaptor dbAdaptor;
                     try {
-                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(backend).getDBAdaptor(index.getDbName(), new ObjectMap());
+                        dbAdaptor = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         return createErrorResponse(e.getMessage());
                     }

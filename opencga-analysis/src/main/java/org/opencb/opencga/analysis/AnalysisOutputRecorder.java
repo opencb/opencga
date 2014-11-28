@@ -83,10 +83,24 @@ public class AnalysisOutputRecorder {
         }
 
         try {
+            switch(job.getResourceManagerAttributes().get(Job.TYPE).toString()) {
+                case Job.TYPE_INDEX:
+                    Integer indexedFileId = (Integer) job.getResourceManagerAttributes().get(Job.INDEXED_FILE_ID);
+                    fileIds.add(indexedFileId);
+                    ObjectMap parameters = new ObjectMap("status", File.READY);
+                    catalogManager.modifyFile(indexedFileId, parameters, sessionId);
+                    break;
+                case Job.TYPE_ANALYSIS:
+                default:
+                    break;
+            }
             ObjectMap parameters = new ObjectMap("status", Job.READY);
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+            //TODO: "input" files could be modified my the tool. Have to be scanned, calculate the new Checksum and
+
         } catch (CatalogManagerException e) {
             e.printStackTrace(); //TODO: Handle exception
         }

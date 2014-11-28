@@ -9,7 +9,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.beans.Acl;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 
 import java.io.IOException;

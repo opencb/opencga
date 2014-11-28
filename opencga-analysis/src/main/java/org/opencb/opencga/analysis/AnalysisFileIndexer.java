@@ -5,16 +5,16 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Index;
+import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.SgeManager;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -22,14 +22,16 @@ import java.util.*;
  * Created by jacobo on 16/10/14.
  *
  * IndexFile (fileId, backend, outDir)
- * 1º check if indexed in the selected backend
- * 2º create outDir (must be a new folder)
- * 3º create command line
- * 4º launch CLI (SGE, get jobId)
- * 5º update fileBean with index info
+ * - check if indexed in the selected backend
+ * - create temporal outDir (must be a new folder)
+ * - create command line
+ * - create index file
+ * - create job
+ * - update file with job info
+ * - execute
  * ...
- * 6º find files in outDir
- * 7º update fileBean index info
+ * - find files in outDir
+ * - update file and job index info
  *
  *
  * UnIndexFile (fileId, backend)
@@ -52,65 +54,109 @@ public class AnalysisFileIndexer {
         this.catalogManager = new CatalogManager(this.properties);
     }
 
-    public Index index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options) throws IOException, CatalogIOManagerException, CatalogManagerException {
-        QueryResult<File> fileResult = catalogManager.getFile(fileId, sessionId);
-        File file = fileResult.getResult().get(0);
-        String jobId = "I_"+StringUtils.randomString(15);
+    public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
+            throws IOException, CatalogIOManagerException, CatalogManagerException, AnalysisExecutionException {
 
-        //1º Check indexed
-        List<Index> indices = file.getIndices();
-        for (Index index : indices) {
-            if(index.getStorageEngine().equals(storageEngine)){
-                throw new IOException("File {name:'" + file.getName() + "', id:" + file.getId() + "} already indexed. " + index + "" );
-            }
-        }
-
-        int studyId = catalogManager.getStudyIdByFileId(fileId);
-        String studyName = catalogManager.getStudy(studyId, sessionId).getResult().get(0).getName();
         String userId = catalogManager.getUserIdBySessionId(sessionId);
-        String ownerId = catalogManager.getFileOwner(fileId);
-        File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
+        QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
+        QueryResult<File> outdirQueryResult = catalogManager.getFile(outDirId, sessionId);
+        File file = fileQueryResult.getResult().get(0);
+        File outdir = outdirQueryResult.getResult().get(0);
 
-        //2º Create outdir
-        Path tmpOutDirPath = Paths.get("jobs", jobId); //TODO: Create job folder outside the user workspace.
-        File tmpOutDir = catalogManager.createFolder(studyId, tmpOutDirPath, false, sessionId).getResult().get(0);
-        URI tmpOutDirUri = catalogManager.getFileUri(tmpOutDir);
+        //TODO: Check if file can be indexed
 
-        //3º Create command line
+        // Create temporal Outdir
+        //int studyId = catalogManager.getStudyIdByFileId(fileId);
+        int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
+        Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
+        String randomString = "I_" + StringUtils.randomString(10);
+        URI temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
+
+
+        //Create commandLine
+        ObjectMap indexAttributes = new ObjectMap();
+        String commandLine = createCommandLine(study, file, storageEngine, temporalOutDirUri,
+                indexAttributes);
+
+        //Create index file
+        QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.TYPE_INDEX, file.getFormat(),
+                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, "Indexation of " + file.getName() + " (" + fileId + ")", false,
+                        -1, sessionId, indexAttributes);
+        File index = indexQueryResult.getResult().get(0);
+
+        //Create job
+        ObjectMap jobResourceManagerAttributes = new ObjectMap();
+        jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
+        jobResourceManagerAttributes.put(Job.TYPE, Job.TYPE_INDEX);
+        jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
+
+        QueryResult<Job> jobQueryResult = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
+                "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
+                jobResourceManagerAttributes, sessionId);
+        Job job = jobQueryResult.getResult().get(0);
+
+        //Set JobId to IndexFile
+        ObjectMap objectMap = new ObjectMap("jobId", job.getId());
+        objectMap.put("status", File.INDEXING);
+        catalogManager.modifyFile(index.getId(), objectMap, sessionId).getResult();
+        index.setJobId(job.getId());
+
+        //Run job
+//        AnalysisJobExecuter.execute(job);
+
+        return index;
+    }
+
+    /**
+     *
+     * @param study             Study where file is located
+     * @param file              File to be indexed
+     * @param storageEngine     StorageEngine to be used
+     * @param outDirUri         Index outdir
+     * @param indexAttributes   This map will be filled with some index information
+     * @return                  CommandLine
+     * @throws CatalogManagerException
+     * @throws CatalogIOManagerException
+     */
+    private String createCommandLine(Study study, File file, String storageEngine,
+                                     URI outDirUri, ObjectMap indexAttributes)
+            throws CatalogManagerException, CatalogIOManagerException {
+
+        //Create command line
+        String userId = file.getOwnerId();
         String name = file.getName();
         String commandLine;
         String dbName;
-        ObjectMap attributes = new ObjectMap();
 
         if(file.getBioformat().equals("bam") || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
-            dbName = ownerId;
+            dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-alignments ")
                     .append(" --alias ").append(file.getId())
                     .append(" --dbName ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --mean-coverage ").append(chunkSize)
-                    .append(" --outdir ").append(tmpOutDirUri)
+                    .append(" --outdir ").append(outDirUri)
                     .append(" --backend ").append(storageEngine)
 //                    .append(" --credentials ")
                     .toString();
 
-            attributes.put("chunkSize", chunkSize);
+            indexAttributes.put("chunkSize", chunkSize);
 
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
         } else if (file.getBioformat().equals("vcf") || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
 
-            dbName = "variants";  //TODO: Read from properties
+            dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-variants ")
                     .append(" --alias ").append(file.getId())
-                    .append(" --study ").append(studyName)
-                    .append(" --study-alias ").append(studyId)
-//                    .append(" --dbName ").append(dbName)  //TODO: Add --dbName option
+                    .append(" --study ").append(study.getName())
+                    .append(" --study-alias ").append(study.getId())
+                    .append(" --dbName ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file).getPath())  //TODO: Make URI-compatible
-                    .append(" --outdir ").append(tmpOutDirUri.getPath())                    //TODO: Make URI-compatible
+                    .append(" --outdir ").append(outDirUri.getPath())                    //TODO: Make URI-compatible
                     .append(" --backend ").append(storageEngine)
                     .append(" --include-samples ")
                     .append(" --include-stats ")
@@ -120,24 +166,11 @@ public class AnalysisFileIndexer {
         } else {
             return null;
         }
+        indexAttributes.put("indexedFile", file.getId());
+        indexAttributes.put("dbName", dbName);
+        indexAttributes.put("storageEngine", storageEngine);
 
-        //4º Run command
-        try {
-            SgeManager.queueJob(file.getBioformat() + "_indexer", jobId, -1, tmpOutDirUri.getPath(),
-                    commandLine, null, "index." + file.getId());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-//            int jobId = new Random(System.nanoTime()).nextInt();
-
-        //5º Update file
-        attributes.put("commandLine", commandLine);
-        Index index = new Index(Index.PENDING, dbName, storageEngine, jobId, new HashMap<String, Object>(), attributes);
-        catalogManager.setIndexFile(fileId, storageEngine, index, sessionId);
-
-        return index;
-
+        return commandLine;
     }
-
 
 }

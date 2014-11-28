@@ -205,9 +205,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void getProjectTest() throws CatalogManagerException {
         int projectId = catalog.getProjectId("jcoll", "pmp");
         System.out.println("projectId = " + projectId);
-        System.out.println(catalog.getProject(projectId));
+        System.out.println(catalog.getProject(projectId, null));
         try {
-            System.out.println(catalog.getProject(-100));
+            System.out.println(catalog.getProject(-100, null));
             fail("Expected \"bad id\" exception");
         } catch (CatalogManagerException e) {
             System.out.println(e);
@@ -379,9 +379,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void getStudyTest() throws CatalogManagerException, JsonProcessingException {
         int projectId = catalog.getProjectId("jcoll", "1000G");
         int studyId = catalog.getStudyId(projectId, "ph1");
-        System.out.println(catalog.getStudy(studyId));
+        System.out.println(catalog.getStudy(studyId, null));
         try {
-            catalog.getStudy(-100);
+            catalog.getStudy(-100, null);
             fail("Expected \"StudyId not found\" exception");
         } catch (CatalogManagerException e) {
             System.out.println(e);

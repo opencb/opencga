@@ -15,8 +15,10 @@ import org.xml.sax.InputSource;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -53,7 +55,16 @@ public class SgeManager {
         queueJob(toolName, wumJobName, wumUserId, outdir, commandLine, queue, "");
     }
 
-    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue, String logFileId) throws Exception {
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, URI outdir, String commandLine, String queue, String logFileId)
+            throws Exception {
+        if (outdir.getScheme() != null && !outdir.getScheme().equals("file")) {
+            throw new IOException("Unsupported outdir for QueueJob");
+        }
+        queueJob(toolName, wumJobName, wumUserId, outdir.getPath(), commandLine, queue, logFileId);
+    }
+    @Deprecated
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue, String logFileId)
+            throws Exception {
         logFileId = logFileId == null || logFileId.isEmpty()? "" : "." + logFileId;
         queue = queue == null || queue.isEmpty()? getQueueName(toolName) : queue;
         String outFile = Paths.get(outdir, "sge_out" + logFileId + ".log").toString();
