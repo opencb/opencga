@@ -98,6 +98,9 @@ public class AnalysisOutputRecorder {
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+            //TODO: "input" files could be modified my the tool. Have to be scanned, calculate the new Checksum and
+
         } catch (CatalogManagerException e) {
             e.printStackTrace(); //TODO: Handle exception
         }

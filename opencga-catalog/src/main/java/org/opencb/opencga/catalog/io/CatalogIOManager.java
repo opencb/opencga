@@ -152,6 +152,13 @@ public abstract class CatalogIOManager {
         return getStudyUri(userId, projectId, studyId).resolve(relativeFilePath);
     }
 
+    public URI getFileUri(URI studyUri, String relativeFilePath)
+            throws CatalogIOManagerException {
+        checkUri(studyUri);
+        checkParam(relativeFilePath);
+        return studyUri.resolve(relativeFilePath);
+    }
+
     public URI getJobsUri(String userId) throws CatalogIOManagerException {
         checkParam(userId);
         return rootDir.resolve(OPENCGA_JOBS_FOLDER);

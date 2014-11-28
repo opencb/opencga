@@ -130,6 +130,7 @@ public class CatalogManager {
         return ioManager.getProjectUri(userId, projectId);
     }
 
+    @Deprecated
     public URI getStudyUri(String scheme, String userId, String projectId, String studyId)
             throws CatalogIOManagerException, IOException {
         return catalogIOManagerFactory.get(scheme).getStudyUri(userId, projectId, studyId);
@@ -140,10 +141,19 @@ public class CatalogManager {
             throws CatalogIOManagerException, IOException {
         return ioManager.getStudyUri(userId, projectId, studyId);
     }
+    public URI getStudyUri(int studyId, String sessionId)
+            throws CatalogIOManagerException, IOException, CatalogManagerException {
+        return getStudy(studyId, sessionId, new QueryOptions("include", Arrays.asList("id", "uri"))).getResult().get(0).getUri();
+    }
 
-    public URI getFileUri(String userId, String projectId, String studyId, String relativeFileUri)
+    public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
             throws CatalogIOManagerException {
-        return ioManager.getFileUri(userId, projectId, studyId, relativeFileUri);
+        return ioManager.getFileUri(userId, projectId, studyId, relativeFilePath);
+    }
+
+    public URI getFileUri(URI studyUri, String relativeFilePath)
+            throws CatalogIOManagerException, IOException {
+        return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
     public URI getFileUri(File file) throws CatalogManagerException, CatalogIOManagerException {
@@ -360,13 +370,16 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        checkObj(options, "options");
+        if(options == null || !options.containsKey("include") || !options.containsKey("exclude")) {
+            options.put("exclude", Arrays.asList("password", "sessions"));
+        }
 //        if(options.containsKey("exclude")) {
 //            options.getListAs("exclude", String.class).add("sessions");
 //        }
         //FIXME: Should other users get access to other user information? (If so, then filter projects)
         //FIXME: Should setPassword(null)??
-        return catalogDBAdaptor.getUser(userId, options, lastActivity);
+        QueryResult<User> user = catalogDBAdaptor.getUser(userId, options, lastActivity);
+        return user;
     }
 
     public String getUserIdBySessionId(String sessionId){
@@ -920,17 +933,19 @@ public class CatalogManager {
         return result;
     }
 
-    public QueryResult deleteFile(int fileId, String sessionId) throws CatalogManagerException {
+    public QueryResult deleteFile(int fileId, String sessionId)
+            throws CatalogManagerException, IOException, CatalogIOManagerException {
         return deleteDataFromStudy(fileId, sessionId);
     }
 
-    public QueryResult deleteFolder(int folderId, String sessionId) throws CatalogManagerException {
+    public QueryResult deleteFolder(int folderId, String sessionId)
+            throws CatalogManagerException, IOException, CatalogIOManagerException {
         return deleteFile(folderId, sessionId);
     }
 
     @Deprecated
-    public QueryResult deleteDataFromStudy(int fileId, String sessionId)
-            throws CatalogManagerException {
+    private QueryResult deleteDataFromStudy(int fileId, String sessionId)
+            throws CatalogManagerException, IOException, CatalogIOManagerException {
         //TODO: Save delete: Don't delete. Just rename file and set {deleted:true}
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -943,19 +958,97 @@ public class CatalogManager {
         }
         QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
         if (fileResult.getResult().isEmpty()) {
-            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
+            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, Collections.emptyList());
         }
         File file = fileResult.getResult().get(0);
         System.out.println("file = " + file);
+        if(!file.getStatus().equals(File.READY)) {
+            return new QueryResult("Delete file", 0, 0, 0, null,
+                    "File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
+                    Collections.emptyList());
+        }
+        /*
         try {
             ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
         } catch (CatalogIOManagerException e) {
             throw new CatalogManagerException(e);
         }
         catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return catalogDBAdaptor.deleteFile(fileId);
+        return catalogDBAdaptor.deleteFile(fileId);*/
+
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put("status", File.DELETING);
+        objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
+
+        switch (file.getType()) {
+            case File.TYPE_FOLDER:
+                throw new UnsupportedOperationException("Unsupported deleting folder");
+            case File.TYPE_FILE:
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                return catalogDBAdaptor.modifyFile(fileId, objectMap);
+            case File.TYPE_INDEX:
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                return catalogDBAdaptor.modifyFile(fileId, objectMap);
+        }
+        return null;
     }
 
+    public QueryResult moveFile(int fileId, int folderId, String sessionId) throws CatalogManagerException {
+//        checkParameter(sessionId, "sessionId");
+//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+//        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+//        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+//        String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
+//
+//        if (!getFileAcl(userId, fileId).isWrite()) {
+//            throw new CatalogManagerException("Permission denied. User can't rename this file");
+//        }
+//        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+//        if (fileResult.getResult().isEmpty()) {
+//            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
+//        }
+//        File file = fileResult.getResult().get(0);
+        throw new UnsupportedClassVersionError("move File unsupported");
+    }
+
+    public QueryResult renameFile(int fileId, String newName, String sessionId)
+            throws CatalogManagerException, IOException, CatalogIOManagerException {
+        checkParameter(sessionId, "sessionId");
+        checkPath(newName, "newName");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+        String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
+
+        if (!getFileAcl(userId, fileId).isWrite()) {
+            throw new CatalogManagerException("Permission denied. User can't rename this file");
+        }
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        if (fileResult.getResult().isEmpty()) {
+            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
+        }
+        File file = fileResult.getResult().get(0);
+        System.out.println("file = " + file);
+
+        String newPath = Paths.get(file.getPath()).getParent().resolve(newName).toString();
+
+        catalogDBAdaptor.updateUserLastActivity(ownerId);
+        switch (file.getType()) {
+            case File.TYPE_FOLDER:
+                throw new UnsupportedOperationException("Unsupported folder renaming");
+            case File.TYPE_FILE:
+                QueryResult<Study> studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
+                Study study = studyQueryResult.getResult().get(0);
+                CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(study.getUri());
+                catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
+                return catalogDBAdaptor.renameFile(fileId, newPath);
+            case File.TYPE_INDEX:
+                return catalogDBAdaptor.renameFile(fileId, newName);
+        }
+
+        return null;
+    }
 
     /**
      * Modify some params from the specified file:

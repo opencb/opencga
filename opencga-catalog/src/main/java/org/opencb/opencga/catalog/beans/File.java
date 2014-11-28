@@ -62,9 +62,34 @@ public class File {
 //    private List<Index> indices;
 
     /* Status */
+    enum Status{
+        INDEXING,
+        UPLOADING,
+        UPLOADED,
+        READY,
+        DELETING,
+        DELETED,
+    }
+
+    enum Type {
+        FOLDER,
+        FILE,
+        INDEX
+    }
+
+    enum Format{
+        PLAIN,
+        GZIP,
+        EXECUTABLE,
+        IMAGE
+    }
+
+    public static final String INDEXING = "indexing";
     public static final String UPLOADING = "uploading";
     public static final String UPLOADED = "uploaded";
     public static final String READY = "ready";
+    public static final String DELETING = "deleting";
+    public static final String DELETED = "deleted";
 
     /* Type */
     public static final String TYPE_FOLDER = "folder";
@@ -76,6 +101,9 @@ public class File {
     public static final String GZIP = "gzip";
     public static final String EXECUTABLE = "executable";
     public static final String IMAGE = "image";
+
+    /* Attributes known values */
+    public static final String DELETE_DATE = "deleteDate";      //Long
 
     /**
      * To think:

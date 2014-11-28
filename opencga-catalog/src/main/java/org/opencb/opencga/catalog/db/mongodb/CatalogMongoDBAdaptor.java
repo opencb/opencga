@@ -1454,7 +1454,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         if(!fileParameters.isEmpty()) {
-            QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId), new BasicDBObject("$set", fileParameters), false, false);
+            QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId),
+                    new BasicDBObject("$set", fileParameters), false, false);
             if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
                 throw new CatalogManagerException("File {id:"+fileId+"} not found");
             }
@@ -1495,13 +1496,13 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //    }
 
     /**
-     * @param name assuming 'pathRelativeToStudy + name'
+     * @param filePath assuming 'pathRelativeToStudy + name'
      */
     @Override
-    public QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException {
+    public QueryResult<WriteResult> renameFile(int fileId, String filePath) throws CatalogManagerException {
         long startTime = startQuery();
 
-        Path path = Paths.get(name);
+        Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
 
         File file = getFile(fileId, null).getResult().get(0);
@@ -1510,15 +1511,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         int studyId = getStudyIdByFileId(fileId);
-        int collisionFileId = getFileId(studyId, name);
+        int collisionFileId = getFileId(studyId, filePath);
         if (collisionFileId >= 0) {
-            throw new CatalogManagerException("Can not rename: " + name + " already exists");
+            throw new CatalogManagerException("Can not rename: " + filePath + " already exists");
         }
 
         BasicDBObject query = new BasicDBObject("id", fileId);
         BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
                 .start("name", fileName)
-                .append("path", name).get());
+                .append("path", filePath).get());
         QueryResult<WriteResult> update = fileCollection.update(query, set, false, false);
         if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
             throw new CatalogManagerException("File {id:" + fileId + "} not found");
@@ -1678,11 +1679,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(query.containsKey("studyId")){
             filters.add(new BasicDBObject("studyId", query.getInt("studyId")));
         }
-        if(query.containsKey("indexJobId")){
-            filters.add(new BasicDBObject("indices.jobId", query.getString("indexJobId")));
-        }
-        if(query.containsKey("indexState")){
-            filters.add(new BasicDBObject("indices.state", query.getString("indexState")));
+        if(query.containsKey("status")){
+            filters.add(new BasicDBObject("status", query.getString("status")));
         }
 
         QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options);

@@ -369,7 +369,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDeleteFile () throws CatalogManagerException, JsonProcessingException {
+    public void testDeleteFile () throws CatalogManagerException, IOException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
         List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
