@@ -6,11 +6,16 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
@@ -31,6 +36,7 @@ public class DaemonLoop implements Runnable {
     public static final String SLEEP    = "OPENCGA.APP.DAEMON.SLEEP";
     public static final String USER     = "OPENCGA.APP.DAEMON.USER";
     public static final String PASSWORD = "OPENCGA.APP.DAEMON.PASSWORD";
+    public static final String SECONDS_TO_DELETE = "OPENCGA.APP.DAEMON.SECONDS_TO_TO_DELETE";
 
     private final Properties properties;
 
@@ -97,21 +103,50 @@ public class DaemonLoop implements Runnable {
                 QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
                 for (Job job : unfinishedJobs.getResult()) {
                     String status = SgeManager.status(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString());
-                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
+                    String jobStatus = job.getStatus();
+//                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
+
+                    //Track SGEManager
                     switch(status) {
                         case SgeManager.FINISHED:
                             if(!Job.DONE.equals(job.getStatus())) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.DONE), sessionId);
+                                jobStatus = Job.DONE;
                             }
-                            analysisOutputRecorder.recordJobOutput(job);
                             break;
                         case SgeManager.ERROR:
                         case SgeManager.EXECUTION_ERROR:
                             if(!Job.ERROR.equals(job.getStatus())) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.ERROR), sessionId);
+                                jobStatus = Job.ERROR;
                             }
+                            break;
+                        case SgeManager.QUEUED:
+                            if(!Job.QUEUED.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
+                                jobStatus = Job.QUEUED;
+                            }
+                            break;
+                        case SgeManager.RUNNING:
+                            if(!Job.RUNNING.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
+                                jobStatus = Job.RUNNING;
+                            }
+                            break;
+                        case SgeManager.TRANSFERRED:
+                            break;
+                        case SgeManager.UNKNOWN:
+                            break;
+                    }
+
+                    //Track Catalog Job status
+                    switch (jobStatus) {
+                        case Job.DONE:
+                            analysisOutputRecorder.recordJobOutput(job);
+                            break;
+                        case Job.ERROR:
                             String jobErrorPolicy = "recordOutput";
                             switch(jobErrorPolicy) {
                                 case "deleteOutput":
@@ -123,19 +158,16 @@ public class DaemonLoop implements Runnable {
                                     break;
                             }
                             break;
-                        case SgeManager.QUEUED:
-                            if(!Job.QUEUED.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
-                            }
+                        case Job.PREPARED:
+                            AnalysisJobExecuter.execute(job);
+                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
                             break;
-                        case SgeManager.RUNNING:
-                            if(!Job.RUNNING.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
-                            }
+                        case Job.QUEUED:
                             break;
-                        case SgeManager.TRANSFERRED:
+                        case Job.RUNNING:
                             break;
-                        case SgeManager.UNKNOWN:
+                        case Job.READY:
+                            //Never expected!
                             break;
                     }
                 }
@@ -143,39 +175,6 @@ public class DaemonLoop implements Runnable {
                 e.printStackTrace();
             }
 
-//            logger.info("----- Pending index -----");
-//            try {
-//                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("indexState", Index.PENDING), sessionId);
-//                for (File file : files.getResult()) {
-//                    for (Index index : file.getIndices()) {
-//                        if(index.getStatus().equals(Index.PENDING)) {
-//                            String status = SgeManager.status(index.getJobId());
-//                            //System.out.println("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-//                            logger.info("file : {id: " + file.getId() + ", index: [ { backend: '" + index.getStorageEngine() + "', state: '" + index.getStatus() + "', jobId: '" + index.getJobId() + "'} ] }, sgeStatus : " + status);
-//                            switch(status) {
-//                                case SgeManager.FINISHED:
-////                                    analysisOutputRecorder.recordIndexOutput(index);
-//                                    //TODO We need to call to recordJob instead
-//                                    //TODO We need to change the name to recordJob
-//                                    break;
-//                                case SgeManager.EXECUTION_ERROR:
-//                                    break;
-//                                case SgeManager.ERROR:
-//                                    //TODO: Handle error
-//                                    break;
-//                                case SgeManager.UNKNOWN:
-//                                case SgeManager.QUEUED:
-//                                case SgeManager.RUNNING:
-//                                case SgeManager.TRANSFERRED:
-//                                    break;
-//                            }
-//
-//                        }
-//                    }
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
         }
 
         if(sessionId != null) {

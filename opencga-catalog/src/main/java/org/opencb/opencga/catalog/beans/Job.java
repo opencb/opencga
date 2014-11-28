@@ -13,11 +13,6 @@ import java.util.Map;
  */
 public class Job {
 
-    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
-    public static final String TYPE = "type";
-    public static final String TYPE_ANALYSIS = "analysis";
-    public static final String TYPE_INDEX    = "index";
-    public static final String INDEXED_FILE_ID = "indexedFileId";
     private int id;
     private String name;
     private String userId;
@@ -34,10 +29,6 @@ public class Job {
 
     private int outDirId;
     private URI tmpOutDirUri;
-//    @Deprecated
-//    private int tmpOutDirId;    // quitar
-//    @Deprecated
-//    private String outDir;      // quitar
 
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
@@ -47,16 +38,20 @@ public class Job {
 
     private Map<String, Object> resourceManagerAttributes;
 
-    /**
-     * To think about:
-     * private Index index;
-     */
 
+    public static final String PREPARED = "prepared";
     public static final String QUEUED = "queued";
     public static final String RUNNING = "running";
     public static final String DONE = "done";       //Job finished, but output not ready
     public static final String READY = "ready";     //Job finished and ready
     public static final String ERROR = "error";     //Job finished with errors
+
+    /* ResourceManagerAttributes known keys */
+    public static final String TYPE = "type";
+    public static final String TYPE_ANALYSIS = "analysis";
+    public static final String TYPE_INDEX    = "index";
+    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
+    public static final String INDEXED_FILE_ID = "indexedFileId";
 
     public Job() {
     }
@@ -64,14 +59,14 @@ public class Job {
     @Deprecated
     public Job(String name, String userId, String toolName, String description, String commandLine,
                List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, PREPARED, 0,
                 -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
                URI tmpOutDirUri, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, QUEUED, 0,
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, PREPARED, 0,
                 outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }

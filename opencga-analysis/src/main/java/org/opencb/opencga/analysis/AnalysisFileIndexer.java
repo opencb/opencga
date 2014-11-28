@@ -96,11 +96,13 @@ public class AnalysisFileIndexer {
         Job job = jobQueryResult.getResult().get(0);
 
         //Set JobId to IndexFile
-        catalogManager.modifyFile(index.getId(), new ObjectMap("jobId", job.getId()), sessionId).getResult();
+        ObjectMap objectMap = new ObjectMap("jobId", job.getId());
+        objectMap.put("status", File.INDEXING);
+        catalogManager.modifyFile(index.getId(), objectMap, sessionId).getResult();
         index.setJobId(job.getId());
 
         //Run job
-        AnalysisJobExecuter.execute(job);
+//        AnalysisJobExecuter.execute(job);
 
         return index;
     }
@@ -146,7 +148,7 @@ public class AnalysisFileIndexer {
             throw new UnsupportedOperationException();
         } else if (file.getBioformat().equals("vcf") || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
 
-            dbName = userId;  //TODO: Read from properties
+            dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-variants ")
                     .append(" --alias ").append(file.getId())
@@ -164,6 +166,7 @@ public class AnalysisFileIndexer {
         } else {
             return null;
         }
+        indexAttributes.put("indexedFile", file.getId());
         indexAttributes.put("dbName", dbName);
         indexAttributes.put("storageEngine", storageEngine);
 

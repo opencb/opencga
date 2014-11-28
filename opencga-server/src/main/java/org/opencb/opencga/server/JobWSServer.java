@@ -163,7 +163,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
             // Execute job
 //            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
-            AnalysisJobExecuter.execute(jobQueryResult.getResult().get(0));
+//            AnalysisJobExecuter.execute(jobQueryResult.getResult().get(0));
+            //Job will be executed by the Daemon. status: PREPARED
 
             return createOkResponse(jobQueryResult);
 
