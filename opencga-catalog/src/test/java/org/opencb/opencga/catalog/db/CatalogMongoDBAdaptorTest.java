@@ -5,10 +5,9 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.MongoCredential;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
@@ -31,6 +30,12 @@ import static org.junit.Assert.*;
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     private static CatalogDBAdaptor catalog;
+
+    @Rule
+    public Timeout globalTimeout = new Timeout(200); // 200 ms max per method tested
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @BeforeClass
     public static void before() throws IOException, CatalogManagerException {
