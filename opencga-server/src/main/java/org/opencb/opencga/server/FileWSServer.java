@@ -16,13 +16,18 @@ import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
-;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
@@ -30,8 +35,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
@@ -216,7 +219,7 @@ public class FileWSServer extends OpenCGAWSServer {
         String content = "";
         DataInputStream stream;
         try {
-             stream = catalogManager.downloadFile(fileId, sessionId);
+            stream = catalogManager.downloadFile(fileId, sessionId);
 
 //             content = org.apache.commons.io.IOUtils.toString(stream);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
@@ -228,6 +231,73 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/content-example")
+    @Produces("application/json")
+    @ApiOperation(value = "File content")
+    public Response downloadExample(
+            @ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
+            @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName
+    ) {
+        /** I think this next two lines should be parametrized either in analysis.properties or the manifest.json of each tool **/
+        String analysisPath = Config.getGcsaHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
+        String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
+
+        InputStream stream = null;
+        try {
+            stream = new FileInputStream(fileExamplesToolPath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+
+        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+    }
+
+    @GET
+    @Path("/{fileId}/set-header")
+    @Produces("application/json")
+    @ApiOperation(value = "Set file header")
+    public Response setHeader(@PathParam(value = "fileId") @FormDataParam("fileId") int fileId,
+                              @ApiParam(value = "header", required = true) @DefaultValue("") @QueryParam("header") String header) {
+        String content = "";
+        DataInputStream stream;
+        QueryResult<File> fileQueryResult;
+        InputStream streamBody = null;
+//        System.out.println("header: "+header);
+        try {
+            /** Obtain file uri **/
+            File file = catalogManager.getFile(catalogManager.getFileId(String.valueOf(fileId)), sessionId).getResult().get(0);
+            URI fileUri = catalogManager.getFileUri(file);
+            System.out.println("getUri: " + fileUri.getPath());
+
+            /** Set header **/
+            stream = catalogManager.downloadFile(fileId, sessionId);
+            content = org.apache.commons.io.IOUtils.toString(stream);
+            String lines[] = content.split(System.getProperty("line.separator"));
+            StringBuilder body = new StringBuilder();
+            body.append(header);
+            body.append(System.getProperty("line.separator"));
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i];
+                if (!line.startsWith("#")) {
+                    body.append(line);
+                    if (i != lines.length - 1)
+                        body.append(System.getProperty("line.separator"));
+                }
+            }
+            /** Write/Copy  file **/
+            streamBody = new ByteArrayInputStream(body.toString().getBytes(StandardCharsets.UTF_8));
+            Files.copy(streamBody, Paths.get(fileUri), StandardCopyOption.REPLACE_EXISTING);
+
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+//        createOkResponse(content, MediaType.TEXT_PLAIN)
+        return createOkResponse(streamBody, MediaType.TEXT_PLAIN_TYPE);
+    }
+
+    @GET
     @Path("/{folderId}/files")
     @Produces("application/json")
     @ApiOperation(value = "File content")
@@ -235,13 +305,14 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         QueryResult<File> results;
         try {
-             results = catalogManager.getAllFilesInFolder(folderId, sessionId);
+            results = catalogManager.getAllFilesInFolder(folderId, sessionId);
         } catch (CatalogManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
         return createOkResponse(results);
     }
+
     @GET
     @Path("/search")
     @Produces("application/json")
@@ -264,17 +335,39 @@ public class FileWSServer extends OpenCGAWSServer {
             int studyIdNum = catalogManager.getStudyId(studyId);
 
             QueryOptions query = new QueryOptions();
-            if( !name.isEmpty() )       { query.put("name", name); }
-            if( !type.isEmpty() )       { query.put("type", type); }
-            if( !bioformat.isEmpty() )  { query.put("bioformat", bioformat); }
-            if( !maxSize.isEmpty() )    { query.put("maxSize", maxSize); }
-            if( !minSize.isEmpty() )    { query.put("minSize", minSize); }
-            if( !startDate.isEmpty() )  { query.put("startDate", startDate); }
-            if( !endDate.isEmpty() )    { query.put("endDate", endDate); }
-            if( !like.isEmpty() )       { query.put("like", like); }
-            if( !startsWith.isEmpty() ) { query.put("startsWith", startsWith); }
-            if( !directory.isEmpty() )  { query.put("directory", directory); }
-            if( !indexJobId.isEmpty() ) { query.put("indexJobId", indexJobId); }
+            if (!name.isEmpty()) {
+                query.put("name", name);
+            }
+            if (!type.isEmpty()) {
+                query.put("type", type);
+            }
+            if (!bioformat.isEmpty()) {
+                query.put("bioformat", bioformat);
+            }
+            if (!maxSize.isEmpty()) {
+                query.put("maxSize", maxSize);
+            }
+            if (!minSize.isEmpty()) {
+                query.put("minSize", minSize);
+            }
+            if (!startDate.isEmpty()) {
+                query.put("startDate", startDate);
+            }
+            if (!endDate.isEmpty()) {
+                query.put("endDate", endDate);
+            }
+            if (!like.isEmpty()) {
+                query.put("like", like);
+            }
+            if (!startsWith.isEmpty()) {
+                query.put("startsWith", startsWith);
+            }
+            if (!directory.isEmpty()) {
+                query.put("directory", directory);
+            }
+            if (!indexJobId.isEmpty()) {
+                query.put("indexJobId", indexJobId);
+            }
 
 
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.getQueryOptions(), sessionId);
@@ -316,7 +409,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
         try {
             int outDirId = catalogManager.getFileId(outDirStr);
-            int fileId   = catalogManager.getFileId(fileIdStr);
+            int fileId = catalogManager.getFileId(fileIdStr);
             index = analysisFileIndexer.index(fileId, outDirId, backend, sessionId, this.getQueryOptions());
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
@@ -409,7 +502,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     queryOptions.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
                     queryOptions.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
 
-                    if(indexAttributes.containsKey("baiFileId")) {
+                    if (indexAttributes.containsKey("baiFileId")) {
                         File baiFile = null;
                         try {
                             baiFile = catalogManager.getFile(indexAttributes.getInt("baiFileId"), sessionId).getResult().get(0);
