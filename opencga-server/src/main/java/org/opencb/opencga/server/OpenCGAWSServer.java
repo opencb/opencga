@@ -1,12 +1,10 @@
 package org.opencb.opencga.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -20,7 +18,6 @@ import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -94,11 +91,11 @@ public class OpenCGAWSServer {
         try {
             properties.load(is);
             System.out.println("catalog.properties");
-            System.out.println(properties.getProperty("CATALOG.HOST"));
-            System.out.println(properties.getProperty("CATALOG.PORT"));
-            System.out.println(properties.getProperty("CATALOG.DATABASE"));
-            System.out.println(properties.getProperty("CATALOG.USER"));
-            System.out.println(properties.getProperty("CATALOG.PASSWORD"));
+            System.out.println(properties.getProperty("CATALOG.DB.HOST"));
+            System.out.println(properties.getProperty("CATALOG.DB.PORT"));
+            System.out.println(properties.getProperty("CATALOG.DB.DATABASE"));
+            System.out.println(properties.getProperty("CATALOG.DB.USER"));
+            System.out.println(properties.getProperty("CATALOG.DB.PASSWORD"));
             System.out.println(properties.getProperty("ROOTDIR"));
         } catch (IOException e) {
             System.out.println("Error loading properties");

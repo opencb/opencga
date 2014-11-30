@@ -439,8 +439,8 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     private static void clearCatalog(Properties properties) throws IOException {
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("CATALOG.HOST"), Integer.parseInt(properties.getProperty("CATALOG.PORT")));
-        MongoDataStore db = mongoManager.get(properties.getProperty("CATALOG.DATABASE"));
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("CATALOG.DB.HOST"), Integer.parseInt(properties.getProperty("CATALOG.DB.PORT")));
+        MongoDataStore db = mongoManager.get(properties.getProperty("CATALOG.DB.DATABASE"));
         db.getDb().dropDatabase();
 
         Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));

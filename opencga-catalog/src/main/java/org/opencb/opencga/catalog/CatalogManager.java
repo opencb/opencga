@@ -105,13 +105,13 @@ public class CatalogManager {
             throws CatalogManagerException {
 
         MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
-                properties.getProperty("CATALOG.USER", ""),
-                properties.getProperty("CATALOG.DATABASE", ""),
-                properties.getProperty("CATALOG.PASSWORD", "").toCharArray());
+                properties.getProperty("CATALOG.DB.USER", ""),
+                properties.getProperty("CATALOG.DB.DATABASE", ""),
+                properties.getProperty("CATALOG.DB.PASSWORD", "").toCharArray());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty("CATALOG.HOST", ""),
-                Integer.parseInt(properties.getProperty("CATALOG.PORT", "0")));
+                properties.getProperty("CATALOG.DB.HOST", ""),
+                Integer.parseInt(properties.getProperty("CATALOG.DB.PORT", "0")));
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
 
