@@ -4,8 +4,8 @@
         "email": ""
     },
     "version": "1.0",
-    "id": "class-comparison",
-    "name": "class-comparison",
+    "id": "correlation",
+    "name": "correlation",
     "description": "",
     "icon": {
         "size": "",
@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool class-comparison ",
+            "executable": "babelomics/babelomics.sh --tool correlation ",
             "inputParams": [
                 {
                     "name": "dataset",
@@ -33,11 +33,6 @@
                     "required": "false"
                 },
                 {
-                    "name": "class-values",
-                    "description": "",
-                    "required": "false"
-                },
-                {
                     "name": "correction",
                     "description": "",
                     "required": "false"
@@ -46,11 +41,6 @@
                     "name": "dataset",
                     "description": "",
                     "required": "true"
-                },
-                {
-                    "name": "fold-change-value",
-                    "description": "",
-                    "required": "false"
                 },
                 {
                     "name": "p-value",

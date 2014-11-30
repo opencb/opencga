@@ -4,8 +4,8 @@
         "email": ""
     },
     "version": "1.0",
-    "id": "class-comparison",
-    "name": "class-comparison",
+    "id": "clustering",
+    "name": "clustering",
     "description": "",
     "icon": {
         "size": "",
@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool class-comparison ",
+            "executable": "babelomics/babelomics.sh --tool clustering ",
             "inputParams": [
                 {
                     "name": "dataset",
@@ -28,43 +28,52 @@
             "outputParam": "outdir",
             "validParams": [
                 {
-                    "name": "class-name",
-                    "description": "",
-                    "required": "false"
-                },
-                {
-                    "name": "class-values",
-                    "description": "",
-                    "required": "false"
-                },
-                {
-                    "name": "correction",
-                    "description": "",
-                    "required": "false"
-                },
-                {
                     "name": "dataset",
                     "description": "",
-                    "required": "true"
+                    "required": "false"
                 },
                 {
-                    "name": "fold-change-value",
+                    "name": "distance",
                     "description": "",
                     "required": "false"
                 },
                 {
-                    "name": "p-value",
+                    "name": "feature-filter",
                     "description": "",
                     "required": "false"
                 },
-
+                {
+                    "name": "gene-clustering",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "gene-kvalue",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "method",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-clustering",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-filter",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-kvalue",
+                    "description": "",
+                    "required": "false"
+                },
                 {
                     "name": "species",
-                    "description": "",
-                    "required": "false"
-                },
-                {
-                    "name": "test",
                     "description": "",
                     "required": "false"
                 }

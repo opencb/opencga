@@ -4,8 +4,8 @@
         "email": ""
     },
     "version": "1.0",
-    "id": "class-comparison",
-    "name": "class-comparison",
+    "id": "stratification",
+    "name": "stratification",
     "description": "",
     "icon": {
         "size": "",
@@ -18,46 +18,55 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool class-comparison ",
+            "executable": "babelomics/babelomics.sh --tool stratification ",
             "inputParams": [
                 {
-                    "name": "dataset",
+                    "name": "zip-file",
                     "dataType": "txt"
                 }
             ],
             "outputParam": "outdir",
             "validParams": [
                 {
-                    "name": "class-name",
+                    "name": "ibs-test",
                     "description": "",
                     "required": "false"
                 },
                 {
-                    "name": "class-values",
+                    "name": "maf",
                     "description": "",
                     "required": "false"
                 },
                 {
-                    "name": "correction",
+                    "name": "map-file",
                     "description": "",
                     "required": "false"
                 },
                 {
-                    "name": "dataset",
-                    "description": "",
-                    "required": "true"
-                },
-                {
-                    "name": "fold-change-value",
+                    "name": "mc",
                     "description": "",
                     "required": "false"
                 },
                 {
-                    "name": "p-value",
+                    "name": "ped-file",
                     "description": "",
                     "required": "false"
                 },
-
+                {
+                    "name": "plink",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "ppc",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "by",
+                    "description": "",
+                    "required": "false"
+                },
                 {
                     "name": "species",
                     "description": "",
@@ -65,6 +74,11 @@
                 },
                 {
                     "name": "test",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "zip-file",
                     "description": "",
                     "required": "false"
                 }
