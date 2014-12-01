@@ -5,6 +5,7 @@ import com.mongodb.DBObject;
 import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**
@@ -31,7 +32,7 @@ public class DBObjectToVariantStatsConverterTest {
         genotypes.append("1/1", 10);
         mongoStats.append(DBObjectToVariantStatsConverter.NUMGT_FIELD, genotypes);
         
-        stats = new VariantStats(null, -1, null, null, 0.1, 0.01, "A", "A/A", 10, 5, -1, false, -1, -1, -1, -1);
+        stats = new VariantStats(null, -1, null, null, Variant.VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
         stats.addGenotype(new Genotype("0/0"), 100);
         stats.addGenotype(new Genotype("0/1"), 50);
         stats.addGenotype(new Genotype("1/1"), 10);
