@@ -18,7 +18,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 @Path("/projects")
-@Api(value = "projects", description = "projects")
+@Api(value = "projects", description = "projects", position = 2)
 public class ProjectWSServer extends OpenCGAWSServer {
 
     public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {

@@ -27,7 +27,7 @@ import java.util.*;
 
 @Path("/job")
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
-@Api(value = "job", description = "job")
+@Api(value = "job", description = "job", position = 5)
 public class JobWSServer extends OpenCGAWSServer {
 
     public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {

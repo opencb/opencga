@@ -1,8 +1,6 @@
 package org.opencb.opencga.server;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.feature.Region;
@@ -35,7 +33,7 @@ import java.nio.file.*;
 import java.util.*;
 
 @Path("/files")
-@Api(value = "files", description = "files")
+@Api(value = "files", description = "files", position = 4)
 public class FileWSServer extends OpenCGAWSServer {
 
 
@@ -169,7 +167,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create-folder")
     @Produces("application/json")
-    @ApiOperation(value = "Create folder")
+    @ApiOperation(value = "Create folder"/*, response = QueryResult_File.class*/ )
     public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
                                  @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder
     ) {
@@ -190,7 +188,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/info")
     @Produces("application/json")
-    @ApiOperation(value = "File info")
+    @ApiOperation(value = "File info"/*, response = QueryResult_File.class*/)
     public Response info(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId
     ) {
         String[] splitedFileId = fileId.split(",");
@@ -311,7 +309,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File fetch")
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds,
-                          @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                          @ApiParam(value = "region", allowMultiple=true, required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,

@@ -28,9 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@Path("/analysis")
+//@Path("/analysis")
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
+@Deprecated
 public class AnalysisWSServerJob extends OpenCGAWSServer {
     private AnalysisJobExecuter aje;
     private String baseUrl;
