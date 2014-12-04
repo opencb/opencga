@@ -29,10 +29,6 @@ public class Job {
 
     private int outDirId;
     private URI tmpOutDirUri;
-//    @Deprecated
-//    private int tmpOutDirId;    // quitar
-//    @Deprecated
-//    private String outDir;      // quitar
 
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
@@ -40,16 +36,22 @@ public class Job {
     private List<String> tags;
     private Map<String, Object> attributes;
 
-    /**
-     * To think about:
-     * private Index index;
-     */
+    private Map<String, Object> resourceManagerAttributes;
 
+
+    public static final String PREPARED = "prepared";
     public static final String QUEUED = "queued";
     public static final String RUNNING = "running";
     public static final String DONE = "done";       //Job finished, but output not ready
     public static final String READY = "ready";     //Job finished and ready
     public static final String ERROR = "error";     //Job finished with errors
+
+    /* ResourceManagerAttributes known keys */
+    public static final String TYPE = "type";
+    public static final String TYPE_ANALYSIS = "analysis";
+    public static final String TYPE_INDEX    = "index";
+    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
+    public static final String INDEXED_FILE_ID = "indexedFileId";
 
     public Job() {
     }
@@ -57,20 +59,22 @@ public class Job {
     @Deprecated
     public Job(String name, String userId, String toolName, String description, String commandLine,
                List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>());
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, PREPARED, 0,
+                -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>());
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
                URI tmpOutDirUri, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, QUEUED, 0,
-                outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>());
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, PREPARED, 0,
+                outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>());
     }
 
     public Job(int id, String name, String userId, String toolName, String date, String description,
                long startTime, long endTime, String outputError, String commandLine, int visits, String status,
                long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
-               List<Integer> output, List<String> tags, Map<String, Object> attributes) {
+               List<Integer> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -92,6 +96,11 @@ public class Job {
         this.output = output;
         this.tags = tags;
         this.attributes = attributes;
+        this.resourceManagerAttributes = resourceManagerAttributes;
+
+        //Initializing attributes maps.
+        this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
+        this.resourceManagerAttributes.put(Job.TYPE, Job.TYPE_ANALYSIS);
     }
 
     @Override
@@ -111,13 +120,12 @@ public class Job {
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", outDirId=" + outDirId +
-//                ", tmpOutDirId=" + tmpOutDirId +
-                ", tmpOutDirUri='" + tmpOutDirUri + '\'' +
-//                ", outDir='" + outDir + '\'' +
+                ", tmpOutDirUri=" + tmpOutDirUri +
                 ", input=" + input +
                 ", output=" + output +
                 ", tags=" + tags +
                 ", attributes=" + attributes +
+                ", resourceManagerAttributes=" + resourceManagerAttributes +
                 '}';
     }
 
@@ -273,4 +281,12 @@ public class Job {
         this.attributes = attributes;
     }
 
+
+    public Map<String, Object> getResourceManagerAttributes() {
+        return resourceManagerAttributes;
+    }
+
+    public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) {
+        this.resourceManagerAttributes = resourceManagerAttributes;
+    }
 }

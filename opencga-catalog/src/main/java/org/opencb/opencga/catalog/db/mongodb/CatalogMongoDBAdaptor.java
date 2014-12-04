@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -559,18 +560,18 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                 errorMsg += ", " + study.getAlias() + ":" + studyErrorMsg;
             }
         }
-        List<Project> result = getProject(project.getId()).getResult();
+        List<Project> result = getProject(project.getId(), null).getResult();
         return endQuery("Create Project", startTime, result, errorMsg, null);
     }
 
     @Override
     public QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogManagerException {
         int projectId = getProjectId(userId, projectAlias);
-        return getProject(projectId);
+        return getProject(projectId, null);
     }
 
     @Override
-    public QueryResult<Project> getProject(int projectId) throws CatalogManagerException {
+    public QueryResult<Project> getProject(int projectId, QueryOptions options) throws CatalogManagerException {
         long startTime = startQuery();
 
         DBObject query = new BasicDBObject("projects.id", projectId);
@@ -581,7 +582,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         new BasicDBObject("id", projectId)
                 )
         );
-        QueryResult result = userCollection.find(query, null, null, projection);
+        QueryResult result = userCollection.find(query, options, null, projection);
         User user = parseUser(result);
         if(user == null || user.getProjects().isEmpty()) {
             throw new CatalogManagerException("Project {id:" + projectId + "} not found");
@@ -650,7 +651,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 //            throw new CatalogManagerException("Couldn't rename project alias, alias already used in the same user");
 //        }
 
-        QueryResult<Project> projectResult = getProject(projectId); // if projectId doesn't exist, an exception is raised
+        QueryResult<Project> projectResult = getProject(projectId, null); // if projectId doesn't exist, an exception is raised
         Project project = projectResult.getResult().get(0);
 
         String oldAlias = project.getAlias();
@@ -733,7 +734,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public String getProjectOwner(int projectId) throws CatalogManagerException {
+    public String getProjectOwnerId(int projectId) throws CatalogManagerException {
         DBObject query = new BasicDBObject("projects.id", projectId);
         DBObject projection = new BasicDBObject("id", "true");
         QueryResult<DBObject> result = userCollection.find(query, null, null, projection);
@@ -746,7 +747,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     public Acl getFullProjectAcl(int projectId, String userId) throws CatalogManagerException {
-        QueryResult<Project> project = getProject(projectId);
+        QueryResult<Project> project = getProject(projectId, null);
         if (project.getNumResults() != 0) {
             List<Acl> acl = project.getResult().get(0).getAcl();
             for (Acl acl1 : acl) {
@@ -952,7 +953,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             }
         }
 
-        List<Study> studyList = getStudy(study.getId()).getResult();
+        List<Study> studyList = getStudy(study.getId(), null).getResult();
         return endQuery("Create Study", startTime, studyList, errorMsg, null);
 
     }
@@ -989,7 +990,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Study> getStudy(int studyId) throws CatalogManagerException{
+    public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogManagerException{
         long startTime = startQuery();
         //TODO append files in the studies
 
@@ -1004,7 +1005,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
                         )
                 ).append("projects.studies", true).get();
 
-        QueryResult result = userCollection.find(query, null, null, projection);
+        QueryResult result = userCollection.find(query, options, null, projection);
         QueryResult queryResult = endQuery("get study", startTime, result);
 
         List<Study> studies;
@@ -1046,11 +1047,16 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
+    public void updateStudyLastActivity(int studyId) throws CatalogManagerException {
+        modifyStudy(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
+    }
+
+    @Override
     public QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogManagerException{
 
         long startTime = startQuery();
         int projectIdByStudyId = getProjectIdByStudyId(studyId);
-        QueryResult<Study> studyResult = getStudy(studyId);
+        QueryResult<Study> studyResult = getStudy(studyId, null);
         if(studyResult.getResult().isEmpty()){
             throw new CatalogManagerException("Can't find study");
         }
@@ -1061,10 +1067,12 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         study.setCreatorId(params.getString("creatorId", study.getCreatorId()));
         study.setCreationDate(params.getString("creationDate", study.getCreationDate()));
         study.setDescription(params.getString("description", study.getDescription()));
+        study.setUri(params.get("uri", URI.class, study.getUri()));
         study.setStatus(params.getString("status", study.getStatus()));
         study.setDiskUsage(params.getInt("diskUsage", (int) study.getDiskUsage())); //Fixme: may lost precision
         study.setCipher(params.getString("cipher", study.getCipher()));
         study.setAcl(params.getListAs("acl", Acl.class, study.getAcl()));
+        study.setLastActivity(params.getString("lastActivity", study.getLastActivity()));
         study.getStats().putAll(params.getMap("stats", Collections.<String, Object>emptyMap()));
         study.getAttributes().putAll(params.getMap("attributes", Collections.<String, Object>emptyMap()));
 
@@ -1176,7 +1184,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<Acl> getStudyAcl(int studyId, String userId) throws CatalogManagerException {
         long startTime = startQuery();
         List<Acl> acls = new LinkedList<>();
-        QueryResult<Study> studyQuery = getStudy(studyId);
+        QueryResult<Study> studyQuery = getStudy(studyId, null);
         List<Acl> acl = studyQuery.getResult().get(0).getAcl();
         for (Acl acl1 : acl) {
             if (userId.equals(acl1.getUserId())) {
@@ -1193,7 +1201,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
             throw new CatalogManagerException("Can not set ACL to non-existent user: " + userId);
         }
 
-        List<Acl> studyAcl = getStudy(studyId).getResult().get(0).getAcl();
+        List<Acl> studyAcl = getStudy(studyId, null).getResult().get(0).getAcl();
 
         boolean exists = false;
         for (Acl acl : studyAcl) {
@@ -1421,10 +1429,14 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         String[] acceptedLongParams = {"diskUsage"};
         for (String s : acceptedLongParams) {
             if(parameters.containsKey(s)) {
-                Object value = parameters.get(s);    //TODO: Add "getLong" to "ObjectMap"
-                if(value instanceof Long) {
-                    fileParameters.put(s, value);
-                }
+                fileParameters.put(s, parameters.getLong(s));
+            }
+        }
+
+        String[] acceptedIntParams = {"jobId"};
+        for (String s : acceptedIntParams) {
+            if(parameters.containsKey(s)) {
+                fileParameters.put(s, parameters.getInt(s));
             }
         }
 
@@ -1442,7 +1454,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         if(!fileParameters.isEmpty()) {
-            QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId), new BasicDBObject("$set", fileParameters), false, false);
+            QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId),
+                    new BasicDBObject("$set", fileParameters), false, false);
             if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
                 throw new CatalogManagerException("File {id:"+fileId+"} not found");
             }
@@ -1451,44 +1464,45 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         return endQuery("Modify file", startTime);
     }
 
-    @Override
-    public QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException {
-        long startTime = startQuery();
+//    @Override
+//    public QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException {
+//        long startTime = startQuery();
+//
+//
+//        fileCollection.update(
+//                new BasicDBObject("id", fileId),
+//                new BasicDBObject("$pull",
+//                        new BasicDBObject("indices",
+//                                new BasicDBObject("backend",
+//                                        backend
+//                                )
+//                        )
+//                ), false, false);
+//        if(index != null){
+//            try {
+//                fileCollection.update(
+//                        new BasicDBObject("id", fileId),
+//                        new BasicDBObject("$push",
+//                                new BasicDBObject("indices",
+//                                        JSON.parse(jsonObjectWriter.writeValueAsString(index))
+//                                )
+//                        ), false, false);
+//            } catch (JsonProcessingException e) {
+//                throw new CatalogManagerException(e);
+//            }
+//        }
+//
+//        return endQuery("Set index file", startTime);
+//    }
 
-
-        fileCollection.update(
-                new BasicDBObject("id", fileId),
-                new BasicDBObject("$pull",
-                        new BasicDBObject("indices",
-                                new BasicDBObject("backend",
-                                        backend
-                                )
-                        )
-                ), false, false);
-        if(index != null){
-            try {
-                fileCollection.update(
-                        new BasicDBObject("id", fileId),
-                        new BasicDBObject("$push",
-                                new BasicDBObject("indices",
-                                        JSON.parse(jsonObjectWriter.writeValueAsString(index))
-                                )
-                        ), false, false);
-            } catch (JsonProcessingException e) {
-                throw new CatalogManagerException(e);
-            }
-        }
-
-        return endQuery("Set index file", startTime);
-    }
     /**
-     * @param name assuming 'pathRelativeToStudy + name'
+     * @param filePath assuming 'pathRelativeToStudy + name'
      */
     @Override
-    public QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException {
+    public QueryResult<WriteResult> renameFile(int fileId, String filePath) throws CatalogManagerException {
         long startTime = startQuery();
 
-        Path path = Paths.get(name);
+        Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
 
         File file = getFile(fileId, null).getResult().get(0);
@@ -1497,15 +1511,15 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         }
 
         int studyId = getStudyIdByFileId(fileId);
-        int collisionFileId = getFileId(studyId, name);
+        int collisionFileId = getFileId(studyId, filePath);
         if (collisionFileId >= 0) {
-            throw new CatalogManagerException("Can not rename: " + name + " already exists");
+            throw new CatalogManagerException("Can not rename: " + filePath + " already exists");
         }
 
         BasicDBObject query = new BasicDBObject("id", fileId);
         BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
                 .start("name", fileName)
-                .append("path", name).get());
+                .append("path", filePath).get());
         QueryResult<WriteResult> update = fileCollection.update(query, set, false, false);
         if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
             throw new CatalogManagerException("File {id:" + fileId + "} not found");
@@ -1528,7 +1542,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     }
 
     @Override
-    public String getFileOwner(int fileId) throws CatalogManagerException {
+    public String getFileOwnerId(int fileId) throws CatalogManagerException {
         QueryResult<File> fileQueryresult = getFile(fileId);
         if(fileQueryresult == null || fileQueryresult.getResult() == null || fileQueryresult.getResult().isEmpty()) {
             throw new CatalogManagerException("File {id: " + fileId + "} not found");
@@ -1665,11 +1679,8 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
         if(query.containsKey("studyId")){
             filters.add(new BasicDBObject("studyId", query.getInt("studyId")));
         }
-        if(query.containsKey("indexJobId")){
-            filters.add(new BasicDBObject("indices.jobId", query.getString("indexJobId")));
-        }
-        if(query.containsKey("indexState")){
-            filters.add(new BasicDBObject("indices.state", query.getString("indexState")));
+        if(query.containsKey("status")){
+            filters.add(new BasicDBObject("status", query.getString("status")));
         }
 
         QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options);
