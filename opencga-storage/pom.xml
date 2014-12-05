@@ -28,11 +28,6 @@
                 <artifactId>opencga-storage-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.opencb.datastore</groupId>
-                <artifactId>datastore-core</artifactId>
-                <version>0.2.0</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 

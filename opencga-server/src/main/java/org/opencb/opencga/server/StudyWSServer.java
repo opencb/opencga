@@ -80,7 +80,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
+            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), description, sessionId);
 
             return createOkResponse(queryResult);
 
@@ -124,23 +124,20 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studyId}/analysis")
-    @Produces("application/json")
-    @ApiOperation(value = "Study information")
-
-    public Response getAllAnalysis(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
-    ) {
-        QueryResult queryResult;
-        try {
-            queryResult = catalogManager.getAllAnalysis(studyId, sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogManagerException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
+//    @GET
+//    @Path("/{studyId}/analysis")
+//    @Produces("application/json")
+//    @ApiOperation(value = "Study information")
+//    public Response getAllAnalysis(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
+//        QueryResult queryResult;
+//        try {
+//            queryResult = catalogManager.getAllAnalysis(studyId, sessionId);
+//            return createOkResponse(queryResult);
+//        } catch (CatalogManagerException e) {
+//            e.printStackTrace();
+//            return createErrorResponse(e.getMessage());
+//        }
+//    }
 
     @GET
     @Path("/{studyId}/modify")
@@ -148,22 +145,30 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Study modify", position = 4)
     public Response modifyStudy(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
-            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-            @ApiParam(value = "type", required = false) @QueryParam("type") String type,
-            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-            @ApiParam(value = "status", required = false) @QueryParam("status") String status)
+            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
 //            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
 //            @ApiParam(value = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
-            objectMap.put("name", name);
-            objectMap.put("type", type);
-            objectMap.put("description", description);
-            objectMap.put("status", status);
+            if(!name.isEmpty()) {
+                objectMap.put("name", name);
+            }
+            if(!type.isEmpty()) {
+                objectMap.put("type", type);
+            }
+            if(!description.isEmpty()) {
+                objectMap.put("description", description);
+            }
+            if(!status.isEmpty()) {
+                objectMap.put("status", status);
+            }
 //            objectMap.put("attributes", attributes);
 //            objectMap.put("stats", stats);
-
+            System.out.println(objectMap.toJson());
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (CatalogManagerException e) {

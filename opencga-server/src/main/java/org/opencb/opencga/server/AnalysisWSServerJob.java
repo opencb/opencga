@@ -1,32 +1,14 @@
 package org.opencb.opencga.server;
 
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.opencga.account.beans.Acl;
-import org.opencb.opencga.account.beans.AnalysisPlugin;
-import org.opencb.opencga.account.beans.Job;
-import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.account.io.IOManagementException;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.InputParam;
 import org.opencb.opencga.lib.SgeManager;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.serverold.GenericWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 //@Path("/analysis")
 
