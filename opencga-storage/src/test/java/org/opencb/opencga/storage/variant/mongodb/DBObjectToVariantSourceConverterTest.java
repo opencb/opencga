@@ -62,7 +62,7 @@ public class DBObjectToVariantSourceConverterTest {
         // TODO Save pedigree information
         
         // Metadata
-        Map<String, String> meta = source.getMetadata();
+        Map<String, Object> meta = source.getMetadata();
         DBObject metadataMongo = new BasicDBObject(DBObjectToVariantSourceConverter.HEADER_FIELD, source.getMetadata().get("header"));
         mongoSource = mongoSource.append(DBObjectToVariantSourceConverter.METADATA_FIELD, metadataMongo);
     }

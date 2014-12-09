@@ -4,6 +4,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -61,7 +63,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // Metadata
         BasicDBObject metadata = (BasicDBObject) object.get(METADATA_FIELD);
         for (Map.Entry<String, Object> o : metadata.entrySet()) {
-            source.addMetadata(o.getKey(), o.getValue().toString());
+            source.addMetadata(o.getKey(), o.getValue());
         }
         
         return source;
@@ -100,8 +102,18 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // TODO Save pedigree information
         
         // Metadata
-        Map<String, String> meta = object.getMetadata();
-        DBObject metadataMongo = new BasicDBObject(HEADER_FIELD, meta.get("variantFileHeader"));
+        Map<String, Object> meta = object.getMetadata();
+        BasicDBObject metadataMongo = new BasicDBObject();
+        for (Map.Entry<String, Object> metaEntry : meta.entrySet()) {
+            if (metaEntry.getKey().equals("variantFileHeader")) {
+                metadataMongo.append(HEADER_FIELD, metaEntry.getValue());
+            } else if (!metaEntry.getKey().contains(".")) {
+                metadataMongo.append(metaEntry.getKey(), metaEntry.getValue());
+            } else {
+                 Logger.getLogger(DBObjectToVariantSourceConverter.class.getName())
+                         .log(Level.WARNING, "Metadata key {0} could not be inserted", metaEntry.getKey());
+            }
+        }
         studyMongo = studyMongo.append(METADATA_FIELD, metadataMongo);
         
         return studyMongo;
