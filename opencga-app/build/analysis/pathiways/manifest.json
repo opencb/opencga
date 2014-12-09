@@ -56,7 +56,8 @@
                    {"name":"platform", "description":"Platform value.", "required":"true"},
                    {"name":"exp-name", "description":"Experiment name.", "required":"true"},
                    {"name":"k", "description":"k-fold", "required":"true"},
-                   {"name":"expdesigntype", "description":"exp design type", "required":"true"}
+                   {"name":"expdesigntype", "description":"exp design type", "required":"true"},
+                   {"name":"predmethod","description":"Prediction method","required":"true"}
          ],
          "configAttr": [],
          "testCmd": "",
@@ -85,6 +86,29 @@
         "configAttr": [],
         "testCmd": "",
         "result": "pathiways"
+    },
+    {
+      "id": "pathivar",
+      "name": "Pathivar",
+      "executable": "bin/pathivarANALYSIS.py",
+      "inputParams": [],
+      "inputParamsFromTxt": [],
+      "outputParam": "outdir",
+      "validParams": [
+        {"name":"annotvcf", "description":"", "required":"false"},
+        {"name":"vcfFile", "description":"", "required":"false"},
+        {"name":"ctypes", "description":"", "required":"true"},
+        {"name":"samplecol", "description":"", "required":"true"},
+        {"name":"pathways", "description":"", "required":"true"},
+        {"name":"tissue", "description":"", "required":"true"},
+        {"name":"model", "description":"", "required":"true"},
+        {"name":"comhom", "description":"", "required":"true"},
+        {"name":"methodscore", "description":"", "required":"true"},
+        {"name":"treshold", "description":"", "required":"true"}
+      ],
+      "configAttr": [],
+      "testCmd": "",
+      "result": "pathiways"
     }
 ],
     "examples": [],
