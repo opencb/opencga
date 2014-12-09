@@ -46,6 +46,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryBuilder qb = QueryBuilder.start();
         getRegionFilter(region, qb);
         parseQueryOptions(options, qb);
+        options.add("sort", new BasicDBObject("chr", 1).append("start", 1));
         
         return coll.find(qb.get(), options, variantConverter);
     }
