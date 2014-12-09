@@ -893,16 +893,9 @@ public class CatalogManager {
             throw new CatalogManagerException("Path '" + parent + "' does not exist");
         }
 
-
-        while(parentId < 0 && parent != null){  //Add all the parents that should be created
-            folders.addFirst(new File(parent.getFileName().toString(), File.TYPE_FOLDER, "", "",
-                    parent.toString() + "/", userId, "", File.READY, 0));
-            parent = parent.getParent();
-            if(parent != null) {
-                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
-            }
-        }
-
+        /*
+            PERMISSION CHECK
+         */
         Acl fileAcl;
         if(parentId < 0) { //If it hasn't got parent, take the StudyAcl
             fileAcl = getStudyAcl(userId, studyId);
@@ -912,6 +905,25 @@ public class CatalogManager {
 
         if (!fileAcl.isWrite()) {
             throw new CatalogManagerException("Permission denied. Can't create files or folders in this study");
+        }
+
+        /*
+            CHECK ALREADY EXISTS
+         */
+        if(catalogDBAdaptor.getFileId(studyId, folderPath.toString() + "/") >= 0) {
+            throw new CatalogManagerException("Cannot create directory ‘" + folderPath + "’: File exists");
+        }
+
+        /*
+            PARENTS FOLDERS
+         */
+        while(parentId < 0 && parent != null){  //Add all the parents that should be created
+            folders.addFirst(new File(parent.getFileName().toString(), File.TYPE_FOLDER, "", "",
+                    parent.toString() + "/", userId, "", File.READY, 0));
+            parent = parent.getParent();
+            if(parent != null) {
+                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
+            }
         }
 
         ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
