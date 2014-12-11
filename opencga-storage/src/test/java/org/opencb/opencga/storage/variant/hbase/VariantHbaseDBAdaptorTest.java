@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.hbase;
 
 import org.opencb.opencga.storage.variant.hbase.VariantHbaseWriter;
 import org.opencb.opencga.storage.variant.hbase.VariantHbaseDBAdaptor;

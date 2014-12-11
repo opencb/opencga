@@ -94,15 +94,12 @@
                     <source>1.7</source>
                     <target>1.7</target>
                         <excludes>
-                            <exclude>**/VariantSqliteWriter.java</exclude>
-                            <exclude>**/VariantSqliteDBAdaptor.java</exclude>
-                            <exclude>**/VariantHbaseWriter.java</exclude>
-                            <exclude>**/VariantHbaseDBAdaptor.java</exclude>
+                            <exclude>org/opencb/opencga/storage/variant/hbase/*.java</exclude>
+                            <exclude>org/opencb/opencga/storage/variant/sqlite/*.java</exclude>
                         </excludes>
                         <testExcludes>
-                            <exclude>**/VariantSqliteQueryBuilderTest.java</exclude>
-                            <exclude>**/VariantHbaseWriterTest.java</exclude>
-                            <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
+                            <exclude>org/opencb/opencga/storage/variant/hbase/*.java</exclude>
+                            <exclude>org/opencb/opencga/storage/variant/VariantSqliteQueryBuilderTest.java</exclude>
                         </testExcludes>
                 </configuration>
             </plugin>

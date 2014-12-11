@@ -12,7 +12,6 @@ import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.lib.auth.MongoCredentials;
 
 /**
- * TODO Allow compressed and decompressed modes
  * 
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
@@ -20,6 +19,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     public final static String FILEID_FIELD = "fid";
     public final static String STUDYID_FIELD = "sid";
+    public final static String ALTERNATES_FIELD = "alts";
     public final static String ATTRIBUTES_FIELD = "attrs";
     public final static String FORMAT_FIELD = "fm";
     public final static String SAMPLES_FIELD = "samp";
@@ -103,6 +103,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         String studyId = (String) object.get(STUDYID_FIELD);
         VariantSourceEntry file = new VariantSourceEntry(fileId, studyId);
         
+        // Alternate alleles
+        if (object.containsField(ALTERNATES_FIELD)) {
+            file.setSecondaryAlternates((String[]) object.get(ALTERNATES_FIELD));
+        }
+        
         // Attributes
         if (object.containsField(ATTRIBUTES_FIELD)) {
             file.setAttributes(((DBObject) object.get(ATTRIBUTES_FIELD)).toMap());
@@ -142,6 +147,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public DBObject convertToStorageType(VariantSourceEntry object) {
         BasicDBObject mongoFile = new BasicDBObject(FILEID_FIELD, object.getFileId()).append(STUDYID_FIELD, object.getStudyId());
 
+        // Alternate alleles
+        if (object.getSecondaryAlternates().length > 1) {
+            mongoFile.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
+        }
+        
         // Attributes
         if (object.getAttributes().size() > 0) {
             BasicDBObject attrs = null;

@@ -28,6 +28,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     public final static String NUMVARIANTS_FIELD = "nVar";
     public final static String NUMSNPS_FIELD = "nSnp";
     public final static String NUMINDELS_FIELD = "nIndel";
+    public final static String NUMSTRUCTURAL_FIELD = "nSv";
     public final static String NUMPASSFILTERS_FIELD = "nPass";
     public final static String NUMTRANSITIONS_FIELD = "nTi";
     public final static String NUMTRANSVERSIONS_FIELD = "nTv";
@@ -47,18 +48,25 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         
         // Statistics
         DBObject statsObject = (DBObject) object.get(STATS_FIELD);
-        VariantGlobalStats stats = new VariantGlobalStats();
         if (statsObject != null) {
-            stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
-            stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
-            stats.setSnpsCount((int) statsObject.get(NUMSNPS_FIELD));
-            stats.setIndelsCount((int) statsObject.get(NUMINDELS_FIELD));
-            stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
-            stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
-            stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
-            stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+            VariantGlobalStats stats = new VariantGlobalStats(
+                    (int) statsObject.get(NUMVARIANTS_FIELD), (int) statsObject.get(NUMSAMPLES_FIELD), 
+                    (int) statsObject.get(NUMSNPS_FIELD), (int) statsObject.get(NUMINDELS_FIELD), 
+                    0, // TODO Add structural variants to schema!
+                    (int) statsObject.get(NUMPASSFILTERS_FIELD), 
+                    (int) statsObject.get(NUMTRANSITIONS_FIELD), (int) statsObject.get(NUMTRANSVERSIONS_FIELD), 
+                    -1, ((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue(), null
+            );
+//            stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
+//            stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
+//            stats.setSnpsCount((int) statsObject.get(NUMSNPS_FIELD));
+//            stats.setIndelsCount((int) statsObject.get(NUMINDELS_FIELD));
+//            stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
+//            stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
+//            stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
+//            stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+            source.setStats(stats);
         }
-        source.setStats(stats);
         
         // Metadata
         BasicDBObject metadata = (BasicDBObject) object.get(METADATA_FIELD);

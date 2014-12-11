@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.mongodb;
 
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
@@ -21,6 +21,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.MongoCredentials;
+import org.opencb.opencga.storage.variant.VariantDBAdaptor;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;

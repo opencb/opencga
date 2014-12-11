@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.variant;
+package org.opencb.opencga.storage.variant.mongodb;
 
 import org.opencb.opencga.storage.variant.mongodb.VariantMongoWriter;
 import com.mongodb.DB;
