@@ -164,6 +164,44 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse("ok");
     }
 
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create file with POST method", response = QueryResult.class, position = 1, notes =
+            "This method only creates the file entry in Catalog.<br>" +
+            "Will accept (but not yet): acl.<br>" +
+            "<ul>" +
+            "<il><b>id</b> parameter will be ignored.<br></il>" +
+            "<il><b>type</b> accepted values: [<b>'FOLDER', 'FILE', 'INDEX'</b>].<br></il>" +
+            "<il><b>format</b> accepted values: [<b>'PLAIN', 'GZIP', 'EXECUTABLE', 'IMAGE'</b>].<br></il>" +
+            "<il><b>bioformat</b> accepted values: [<b>'VARIANT', 'ALIGNMENT', 'SEQUENCE', 'NONE'</b>].<br></il>" +
+            "<il><b>status</b> accepted values (admin required): [<b>'INDEXING', 'UPLOADING', 'UPLOADED', 'READY', 'DELETING', 'DELETED'</b>].<br></il>" +
+            "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
+            "<ul>")
+    public Response createFilePOST(
+            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value="files", required = true) List<File> files
+    ) {
+        List<File> catalogFiles = new LinkedList<>();
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            for (File file : files) {
+                QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
+                        file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
+                        file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
+                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+                file = fileQueryResult.getResult().get(0);
+                System.out.println("fileQueryResult = " + fileQueryResult);
+                catalogFiles.add(file);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(catalogFiles);
+    }
+
     @GET
     @Path("/create-folder")
     @Produces("application/json")

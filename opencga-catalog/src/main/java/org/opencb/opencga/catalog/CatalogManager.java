@@ -593,27 +593,13 @@ public class CatalogManager {
         }
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (creatorId == null || creatorId.isEmpty()) {
-            creatorId = userId;
-        }
-        if (creationDate == null || creationDate.isEmpty()) {
-            creationDate = TimeUtils.getTime();
-        }
-        if (status == null || status.isEmpty()) {
-            status = "active";
-        }
-        if (cipher == null || cipher.isEmpty()) {
-            cipher = "none";
-        }
-        if (uriScheme == null || uriScheme.isEmpty()) {
-            uriScheme = CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME;
-        }
-        if (stats == null) {
-            stats = new HashMap<>();
-        }
-        if (attributes == null) {
-            attributes = new HashMap<>();
-        }
+        creatorId = defaultString(creatorId, userId);
+        creationDate = defaultString(creationDate, TimeUtils.getTime());
+        status = defaultString(status, "active");
+        cipher = defaultString(cipher, "none");
+        uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
+        stats = defaultObject(stats, new HashMap<String, Object>());
+        attributes = defaultObject(attributes, new HashMap<String, Object>());
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
@@ -809,37 +795,80 @@ public class CatalogManager {
 //        return catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
 //    }
 
+    @Deprecated
     public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
                                         boolean parents, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
+            throws CatalogManagerException, CatalogIOManagerException {
         return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
     }
 
     public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
-            throws CatalogManagerException, CatalogIOManagerException, IOException, InterruptedException {
-        return createFile(studyId, File.TYPE_FILE, format, bioformat, path, description, parents, jobId, sessionId, null);
+            throws CatalogManagerException, CatalogIOManagerException {
+        return createFile(studyId, File.TYPE_FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
+                jobId, null, null, parents, sessionId);
     }
 
-    public QueryResult<File> createFile(int studyId, String type, String format, String bioformat, String path, String description,
-                                        boolean parents, int jobId, String sessionId, Map<String, Object> attributes)
+
+    public QueryResult<File> createFile(int studyId, String type, String format, String bioformat, String path,
+                                        String ownerId, String creationDate, String description, String status,
+                                        long diskUsage, int experimentId, List<Integer> sampleIds,  int jobId,
+                                        Map<String, Object> stats, Map<String, Object> attributes,
+                                        boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(format, "format");
-        checkParameter(description, "description");
         checkParameter(sessionId, "sessionId");
         checkPath(path, "filePath");
-        checkObj(bioformat, "bioformat");   //Bioformat can be empty
 
-        Study study = catalogDBAdaptor.getStudy(studyId, null).getResult().get(0); // if no studies are found, an exception is raised
+        bioformat =     defaultString(bioformat, "");
+        ownerId =       defaultString(ownerId, userId);
+        creationDate =  defaultString(creationDate, TimeUtils.getTime());
+        description =   defaultString(description, "");
+        status =        defaultString(status, File.UPLOADING);
 
-        File file = new File(Paths.get(path).getFileName().toString(), type, format, bioformat,
-                path, userId, description, File.UPLOADING, 0);
-        file.setJobId(jobId);
+        if(diskUsage < 0) {
+            throw new CatalogManagerException("Error: DiskUsage can't be negative!");
+        }
+        if(experimentId > 0 && !catalogDBAdaptor.experimentExists(experimentId)) {
+            throw new CatalogManagerException("Experiment { id: " + experimentId + "} does not exist.");
+        }
+        sampleIds = defaultObject(sampleIds, new LinkedList<Integer>());
 
+        for (Integer sampleId : sampleIds) {
+            if (!catalogDBAdaptor.sampleExists(sampleId)) {
+                throw new CatalogManagerException("Sample { id: " + sampleId + "} does not exist.");
+            }
+        }
+
+        if(jobId > 0 && !catalogDBAdaptor.jobExists(jobId)) {
+            throw new CatalogManagerException("Job { id: " + jobId + "} does not exist.");
+        }
+        stats = defaultObject(stats, new HashMap<String, Object>());
+        attributes = defaultObject(attributes, new HashMap<String, Object>());
+
+        if (!catalogDBAdaptor.studyExists(studyId)) {
+            throw new CatalogManagerException("Study { id: " + studyId + "} does not exist.");
+        }
+
+        if (ownerId != userId) {
+            if (!getUserRole(userId).equals(User.ROLE_ADMIN)) {
+                throw new CatalogManagerException("Permission denied. Required ROLE_ADMIN to create a file with ownerId != userId");
+            } else {
+                if (!catalogDBAdaptor.userExists(ownerId)) {
+                    throw new CatalogManagerException("ERROR: ownerId does not exist.");
+                }
+            }
+        }
+
+        if (status != File.UPLOADING) {
+            if (!getUserRole(userId).equals(User.ROLE_ADMIN)) {
+                throw new CatalogManagerException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING");
+            }
+        }
+
+        //Find parent. If parents == true, create folders.
         Path parent = Paths.get(path).getParent();
-
-//        if null acl de study
         int fileId = -1;
         if(parent != null) {
             fileId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
@@ -853,27 +882,36 @@ public class CatalogManager {
             }
         }
 
+        //Check permissions
         Acl parentAcl;
         if(fileId < 0){
             parentAcl = getStudyAcl(userId, studyId);
         } else {
             parentAcl = getFileAcl(userId, fileId);
         }
-
-        if (parentAcl.isWrite()) {
-            file.setStatus(File.UPLOADING);
-            file.setOwnerId(userId);
-            file.setCreationDate(TimeUtils.getTime());
-            if(attributes != null) {
-                file.getAttributes().putAll(attributes);
-            }
-            return catalogDBAdaptor.createFileToStudy(studyId, file);
-        } else {
+        if (!parentAcl.isWrite()) {
             throw new CatalogManagerException("Permission denied, " + userId + " can not write in " +
                     (parent!=null? "directory " + parent.toString() : "study " + studyId));
         }
+
+
+        //Create file entry
+        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
+                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
+                new LinkedList<Acl>(), stats, attributes);
+
+        return catalogDBAdaptor.createFileToStudy(studyId, file);
+
     }
 
+    private <T> T defaultObject(T object, T defaultObject) {
+        if(object == null) {
+            object = defaultObject;
+        }
+        return object;
+    }
+
+    @Deprecated
     public QueryResult<File> uploadFile(int studyId, String format, String bioformat, String path, String description,
                                   boolean parents, InputStream fileIs, String sessionId)
             throws CatalogIOManagerException, InterruptedException, IOException, CatalogManagerException {
@@ -888,6 +926,7 @@ public class CatalogManager {
         return fileResult;
     }
 
+    @Deprecated
     public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogManagerException,
             CatalogIOManagerException, IOException, InterruptedException {
 
@@ -1933,6 +1972,15 @@ public class CatalogManager {
             throw new CatalogManagerException("Error in alias: Invalid alias for '" + name + "'.");
         }
     }
+
+    private String defaultString(String string, String defaultValue) {
+        if(string == null || string.isEmpty()) {
+            string = defaultValue;
+        }
+        return string;
+    }
+
+
     /*
      *  Permission methods. Internal use only.
      *  Builds the specific ACL for each pair sessionId,object

@@ -54,6 +54,8 @@ public interface CatalogDBAdaptor {
      * Project methods
      * ***************************
      */
+    boolean projectExists(int projectId);
+
     QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException;
 
     QueryResult<Project> getAllProjects(String userId) throws CatalogManagerException;
@@ -79,6 +81,8 @@ public interface CatalogDBAdaptor {
      * Study methods
      * ***************************
      */
+    boolean studyExists(int studyId);
+
     QueryResult<Study> createStudy(int projectId, Study study) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException;
@@ -110,6 +114,8 @@ public interface CatalogDBAdaptor {
 
     QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogManagerException;
     QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;
+
+
     /**
      * File methods
      * ***************************
@@ -177,6 +183,8 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
+    boolean jobExists(int jobId);
+
     QueryResult<Job> createJob(int studyId, Job job) throws CatalogManagerException;
 
     QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException;
@@ -207,6 +215,20 @@ public interface CatalogDBAdaptor {
     QueryResult<Tool> getTool(int id) throws CatalogManagerException;
 
     int getToolId(String userId, String toolAlias) throws CatalogManagerException;
+
+    /**
+     * Experiments methods
+     * ***************************
+     */
+
+    boolean experimentExists(int experimentId);
+
+    /**
+     * Samples methods
+     * ***************************
+     */
+
+    boolean sampleExists(int sampleId);
 
 //    QueryResult<Tool> searchTool(QueryOptions options);
 

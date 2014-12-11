@@ -59,10 +59,8 @@ public class File {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-//    private List<Index> indices;
-
     /* Status */
-    enum Status{
+    public enum Status{
         INDEXING,
         UPLOADING,
         UPLOADED,
@@ -71,17 +69,24 @@ public class File {
         DELETED,
     }
 
-    enum Type {
+    public enum Type {
         FOLDER,
         FILE,
         INDEX
     }
 
-    enum Format{
+    public enum Format{
         PLAIN,
         GZIP,
         EXECUTABLE,
         IMAGE
+    }
+
+    public enum Bioformat{
+        VARIANT,
+        ALIGNMENT,
+        SEQUENCE,
+        NONE
     }
 
     public static final String INDEXING = "indexing";

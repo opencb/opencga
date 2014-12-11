@@ -28,10 +28,12 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create study with POST method", response = QueryResult.class, position = 1, notes =
-            "Work in progress.<br>" +
-            "Only nested files parameter accepted, and only a few parameters.<br>" +
-            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
+    @ApiOperation(value = "Create a file with POST method", response = QueryResult.class, position = 1, notes =
+            "Wont't accept files, jobs, experiments, samples.<br>" +
+            "Will accept (but not yet): acl, uri, cohorts, datasets.<br>" +
+//            "Work in progress.<br>" +
+//            "Only nested files parameter accepted, and only a few parameters.<br>" +
+//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
             "<ul>" +
             "<il><b>id</b>, <b>lastActivity</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
             "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
@@ -42,6 +44,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value="studies", required = true) List<Study> studies
     ) {
         List<Study> catalogStudies = new LinkedList<>();
+        List<QueryResult<Study>> queryResults = new LinkedList<>();
         for (Study study : studies) {
             System.out.println("study = " + study);
             try {
@@ -51,27 +54,25 @@ public class StudyWSServer extends OpenCGAWSServer {
                         study.getAttributes(), sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
                 catalogStudies.add(studyAdded);
-//                System.out.println(study.getFiles());
-//                System.out.println(study.getFiles().size());
-//                System.out.println(study.getFiles().get(0));
-                List<File> files = study.getFiles();
-                if(files != null) {
-                    for (File file : files) {
-//                    QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(), file.getBioformat(),
-//                            file.getPath(), file.getDescription(), true, file.getJobId() > 0? file.getJobId() : -1, sessionId, file.getAttributes());
-                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getFormat(), file.getBioformat(),
-                                file.getPath(), file.getDescription(), true, file.getJobId() > 0 ? file.getJobId() : -1, sessionId);
-                        file = fileQueryResult.getResult().get(0);
-                        System.out.println("fileQueryResult = " + fileQueryResult);
-                        studyAdded.getFiles().add(file);
-                    }
-                }
-            } catch (CatalogManagerException | CatalogIOManagerException | IOException | InterruptedException e) {
+                queryResults.add(queryResult);
+//                List<File> files = study.getFiles();
+//                if(files != null) {
+//                    for (File file : files) {
+//                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
+//                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
+//                                file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
+//                                file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+//                        file = fileQueryResult.getResult().get(0);
+//                        System.out.println("fileQueryResult = " + fileQueryResult);
+//                        studyAdded.getFiles().add(file);
+//                    }
+//                }
+            } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
                 e.printStackTrace();
                 return createErrorResponse(e.getMessage());
             }
         }
-        return createOkResponse(catalogStudies);
+        return createOkResponse(queryResults);
     }
 
 
@@ -85,14 +86,19 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
             @ApiParam(value = "type", required = true) @QueryParam("type") String type,
-            @ApiParam(value = "description", required = true) @QueryParam("description") String description
-    ) {
+            @ApiParam(value = "creatorId", required = true) @QueryParam("creatorId") String creatorId,
+            @ApiParam(value = "creationDate", required = true) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
+            @ApiParam(value = "status", required = true) @QueryParam("status") String status,
+            @ApiParam(value = "cipher", required = true) @QueryParam("cipher") String cipher
+            ) {
 
 
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), description, sessionId);
+            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), creatorId,
+                    creationDate, description, status, cipher, null, null, null, sessionId);
 
             return createOkResponse(queryResult);
 
