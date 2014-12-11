@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,11 +41,18 @@ public class StudyWSServer extends OpenCGAWSServer {
             "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
             "<ul>")
     public Response createStudyPOST(
-            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") int projectId,
+            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
             @ApiParam(value="studies", required = true) List<Study> studies
     ) {
-        List<Study> catalogStudies = new LinkedList<>();
+//        List<Study> catalogStudies = new LinkedList<>();
         List<QueryResult<Study>> queryResults = new LinkedList<>();
+        int projectId;
+        try {
+            projectId = catalogManager.getProjectId(projectIdStr);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
         for (Study study : studies) {
             System.out.println("study = " + study);
             try {
@@ -53,7 +61,6 @@ public class StudyWSServer extends OpenCGAWSServer {
                         study.getDescription(), study.getStatus(), study.getCipher(), null, study.getStats(),
                         study.getAttributes(), sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
-                catalogStudies.add(studyAdded);
                 queryResults.add(queryResult);
 //                List<File> files = study.getFiles();
 //                if(files != null) {
@@ -69,7 +76,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 //                }
             } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
                 e.printStackTrace();
-                return createErrorResponse(e.getMessage());
+//                return createErrorResponse(e.getMessage());
+                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e.getMessage(), Collections.<Study>emptyList()));
             }
         }
         return createOkResponse(queryResults);

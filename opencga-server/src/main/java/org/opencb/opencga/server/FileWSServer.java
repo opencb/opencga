@@ -11,6 +11,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
@@ -183,23 +184,31 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value="files", required = true) List<File> files
     ) {
-        List<File> catalogFiles = new LinkedList<>();
+//        List<File> catalogFiles = new LinkedList<>();
+        List<QueryResult<File>> queryResults = new LinkedList<>();
+        int studyId;
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
-            for (File file : files) {
+            studyId = catalogManager.getStudyId(studyIdStr);
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        for (File file : files) {
+            try {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
                         file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
                         file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
-                file = fileQueryResult.getResult().get(0);
+//                file = fileQueryResult.getResult().get(0);
                 System.out.println("fileQueryResult = " + fileQueryResult);
-                catalogFiles.add(file);
+                queryResults.add(fileQueryResult);
+            } catch (Exception e) {
+                e.printStackTrace();
+                queryResults.add(new QueryResult<>("createFile", 0, 0, 0, "", e.getMessage(), Collections.<File>emptyList()));
+//            return createErrorResponse(e.getMessage());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
         }
-        return createOkResponse(catalogFiles);
+        return createOkResponse(queryResults);
     }
 
     @GET

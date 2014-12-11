@@ -817,10 +817,10 @@ public class CatalogManager {
                                         boolean parents, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        checkParameter(format, "format");
         checkParameter(sessionId, "sessionId");
         checkPath(path, "filePath");
 
+        format =        defaultString(format, File.PLAIN);  //TODO: Inference from the file name
         bioformat =     defaultString(bioformat, "");
         ownerId =       defaultString(ownerId, userId);
         creationDate =  defaultString(creationDate, TimeUtils.getTime());
