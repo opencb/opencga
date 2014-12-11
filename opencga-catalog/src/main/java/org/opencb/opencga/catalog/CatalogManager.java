@@ -574,50 +574,93 @@ public class CatalogManager {
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.StudyType type, String description,
                                           String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException {
-        return createStudy(projectId, name, alias, type, description, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME, sessionId);
+        return createStudy(projectId, name, alias, type, null, null, description, null, null, null , null, null, sessionId);
     }
 
-    private QueryResult<Study> createStudy(int projectId, String name, String alias, Study.StudyType type, String description,
-                                          String uriScheme, String sessionId)
+    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.StudyType type,
+                                           String creatorId, String creationDate, String description, String status,
+                                           String cipher, String uriScheme, Map<String, Object> stats,
+                                           Map<String, Object> attributes, String sessionId)
             throws CatalogManagerException, CatalogIOManagerException, IOException {
         checkParameter(name, "name");
         checkParameter(alias, "alias");
         checkObj(type, "type");
-        checkParameter(description, "description");
         checkAlias(alias, "alias");
-        checkParameter(uriScheme, "uriScheme");   // TODO
         checkParameter(sessionId, "sessionId");
+
+        if(description == null) {
+            description = "";
+        }
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (creatorId == null || creatorId.isEmpty()) {
+            creatorId = userId;
+        }
+        if (creationDate == null || creationDate.isEmpty()) {
+            creationDate = TimeUtils.getTime();
+        }
+        if (status == null || status.isEmpty()) {
+            status = "active";
+        }
+        if (cipher == null || cipher.isEmpty()) {
+            cipher = "none";
+        }
+        if (uriScheme == null || uriScheme.isEmpty()) {
+            uriScheme = CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME;
+        }
+        if (stats == null) {
+            stats = new HashMap<>();
+        }
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String projectOwnerId = catalogDBAdaptor.getProjectOwnerId(projectId);
-
-//        URI projectUri = catalogIOManager.getProjectUri(projectOwnerId, Integer.toString(projectId));
-        Study study = new Study(name, alias, type, description, "", null);
-
-        study.getFiles().add(new File(".", File.TYPE_FOLDER, "", "", "", userId, "", "", 0));//TODO: Take scheme from study
-        study.setCreatorId(userId);
 
 
         /* Check project permissions */
         if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
             throw new CatalogManagerException("Permission denied. Can't write in project");
         }
+        if (creatorId != userId) {
+            if (!getUserRole(userId).equals(User.ROLE_ADMIN)) {
+                throw new CatalogManagerException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
+            } else {
+                if (!catalogDBAdaptor.userExists(creatorId)) {
+                    throw new CatalogManagerException("ERROR: CreatorId does not exist.");
+                }
+            }
+        }
 
+//        URI projectUri = catalogIOManager.getProjectUri(projectOwnerId, Integer.toString(projectId));
+        LinkedList<File> files = new LinkedList<>();
+        LinkedList<Experiment> experiments = new LinkedList<>();
+        LinkedList<Job> jobs = new LinkedList<>();
+        LinkedList<Acl> acls = new LinkedList<>();
 
         /* Add default ACL */
-        if (!userId.equals(projectOwnerId)) {
+        if (!creatorId.equals(projectOwnerId)) {
             //Add full permissions for the creator if he is not the owner
-            study.getAcl().add(new Acl(userId, true, true, true, true));
+            acls.add(new Acl(creatorId, true, true, true, true));
         }
+
         //Copy generic permissions from the project.
+
         QueryResult<Acl> aclQueryResult = catalogDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
         if (!aclQueryResult.getResult().isEmpty()) {
             //study.getAcl().add(aclQueryResult.getResult().get(0));
         } else {
             throw new CatalogManagerException("Project " + projectId + " must have generic ACL");
         }
+
+
+        files.add(new File(".", File.TYPE_FOLDER, "", "", "", creatorId, "study root folder", File.READY, 0));
+
+        Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
+                0, cipher, acls, experiments, files, jobs, null, stats, attributes);
+
 
         /* CreateStudy */
         QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study);

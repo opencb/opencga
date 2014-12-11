@@ -28,9 +28,15 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create study with POST method", response = QueryResult.class, position = 1, notes = "Work in progress.<br>" +
-            "Only few parameters accepted.<br>" +
-            "<b>{ alias, name, type, description, files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b>")
+    @ApiOperation(value = "Create study with POST method", response = QueryResult.class, position = 1, notes =
+            "Work in progress.<br>" +
+            "Only nested files parameter accepted, and only a few parameters.<br>" +
+            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
+            "<ul>" +
+            "<il><b>id</b>, <b>lastActivity</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
+            "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
+            "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
+            "<ul>")
     public Response createStudyPOST(
             @ApiParam(value = "projectId", required = true) @QueryParam("projectId") int projectId,
             @ApiParam(value="studies", required = true) List<Study> studies
@@ -40,23 +46,29 @@ public class StudyWSServer extends OpenCGAWSServer {
             System.out.println("study = " + study);
             try {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getDescription(), sessionId);
+                        study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
+                        study.getDescription(), study.getStatus(), study.getCipher(), null, study.getStats(),
+                        study.getAttributes(), sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
                 catalogStudies.add(studyAdded);
-                System.out.println(study.getFiles());
-                System.out.println(study.getFiles().size());
-                System.out.println(study.getFiles().get(0));
-                for (File file : study.getFiles()) {
+//                System.out.println(study.getFiles());
+//                System.out.println(study.getFiles().size());
+//                System.out.println(study.getFiles().get(0));
+                List<File> files = study.getFiles();
+                if(files != null) {
+                    for (File file : files) {
 //                    QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(), file.getBioformat(),
 //                            file.getPath(), file.getDescription(), true, file.getJobId() > 0? file.getJobId() : -1, sessionId, file.getAttributes());
-                    QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getFormat(), file.getBioformat(),
-                            file.getPath(), file.getDescription(), true, file.getJobId() > 0? file.getJobId() : -1, sessionId);
-                    file = fileQueryResult.getResult().get(0);
-                    System.out.println("fileQueryResult = " + fileQueryResult);
-                    studyAdded.getFiles().add(file);
+                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getFormat(), file.getBioformat(),
+                                file.getPath(), file.getDescription(), true, file.getJobId() > 0 ? file.getJobId() : -1, sessionId);
+                        file = fileQueryResult.getResult().get(0);
+                        System.out.println("fileQueryResult = " + fileQueryResult);
+                        studyAdded.getFiles().add(file);
+                    }
                 }
             } catch (CatalogManagerException | CatalogIOManagerException | IOException | InterruptedException e) {
                 e.printStackTrace();
+                return createErrorResponse(e.getMessage());
             }
         }
         return createOkResponse(catalogStudies);
