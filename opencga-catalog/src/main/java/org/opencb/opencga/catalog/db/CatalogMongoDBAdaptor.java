@@ -130,13 +130,14 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     /**
      Auxiliary query methods
      */
-    private int getNewProjectId()  {return CatalogMongoDBUtils.getNewAutoIncrementId("projectCounter", metaCollection);}
-    private int getNewStudyId()    {return CatalogMongoDBUtils.getNewAutoIncrementId("studyCounter", metaCollection);}
-    private int getNewFileId()     {return CatalogMongoDBUtils.getNewAutoIncrementId("fileCounter", metaCollection);}
-    //    private int getNewAnalysisId() {return CatalogMongoDBUtils.getNewAutoIncrementId("analysisCounter");}
-    private int getNewJobId()      {return CatalogMongoDBUtils.getNewAutoIncrementId("jobCounter", metaCollection);}
-    private int getNewToolId()      {return CatalogMongoDBUtils.getNewAutoIncrementId("toolCounter", metaCollection);}
-    private int getNewSampleId()   {return CatalogMongoDBUtils.getNewAutoIncrementId("sampleCounter", metaCollection);}
+    private int getNewId()  {return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);}
+//    private int getNewProjectId()  {return CatalogMongoDBUtils.getNewAutoIncrementId("projectCounter", metaCollection);}
+//    private int getNewStudyId()    {return CatalogMongoDBUtils.getNewAutoIncrementId("studyCounter", metaCollection);}
+//    private int getNewFileId()     {return CatalogMongoDBUtils.getNewAutoIncrementId("fileCounter", metaCollection);}
+//    //    private int getNewAnalysisId() {return CatalogMongoDBUtils.getNewAutoIncrementId("analysisCounter");}
+//    private int getNewJobId()      {return CatalogMongoDBUtils.getNewAutoIncrementId("jobCounter", metaCollection);}
+//    private int getNewToolId()      {return CatalogMongoDBUtils.getNewAutoIncrementId("toolCounter", metaCollection);}
+//    private int getNewSampleId()   {return CatalogMongoDBUtils.getNewAutoIncrementId("sampleCounter", metaCollection);}
 
 
     private void checkParameter(Object param, String name) throws CatalogDBException {
@@ -504,7 +505,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 //        }
 
         //Generate json
-        int projectId = getNewProjectId();
+        int projectId = getNewId();
         project.setId(projectId);
         DBObject query = new BasicDBObject("id", userId);
         query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
@@ -869,7 +870,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 //        if (getStudyId(projectId, study.getAlias()) >= 0) {
 //            throw new CatalogManagerException("Study {alias:\"" + study.getAlias() + "\"} already exists");
 //        }
-        study.setId(getNewStudyId());
+        study.setId(getNewId());
 
         List<File> files = study.getFiles();
         study.setFiles(Collections.<File>emptyList());
@@ -1233,7 +1234,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
 
 
-        int newFileId = getNewFileId();
+        int newFileId = getNewId();
         file.setId(newFileId);
         if(file.getOwnerId() == null) {
             file.setOwnerId(ownerId);
@@ -1928,7 +1929,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Study {id:" + studyId + "} does not exist");
         }
 
-        int jobId = getNewJobId();
+        int jobId = getNewId();
         job.setId(jobId);
 
         DBObject jobObject;
@@ -2115,7 +2116,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException( "Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
         }
 
-        tool.setId(getNewToolId());
+        tool.setId(getNewId());
 
         DBObject toolObject;
         try {

@@ -10,10 +10,11 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 /**
  * Created by imedina on 21/11/14.
  */
-public class CatalogMongoDBUtils {
+class CatalogMongoDBUtils {
 
 
-    public CatalogMongoDBUtils() {
+    static int getNewAutoIncrementId(MongoDBCollection metaCollection) {
+        return getNewAutoIncrementId("idCounter", metaCollection);
     }
 
     static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection){
