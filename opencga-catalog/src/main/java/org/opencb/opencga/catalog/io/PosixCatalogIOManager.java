@@ -172,7 +172,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * User methods
      * ***************************
      */
-//    public Path createUser(String userId) throws CatalogIOManagerException {
+//    public Path insertUser(String userId) throws CatalogIOManagerException {
 //        checkParam(userId);
 //
 //        Path usersPath = Paths.get(opencgaRootDir, OPENCGA_USERS_FOLDER);

@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ public class AnalysisOutputRecorder {
                 fileIds.add(file.getId());
                 catalogFileManager.upload(uri, file, null, sessionId, false, false, true, true);
             }
-        } catch (CatalogManagerException | InterruptedException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogDBException | InterruptedException | IOException | CatalogIOManagerException e) {
             e.printStackTrace();
             logger.error("Error while processing Job", e);
             return;
@@ -101,7 +101,7 @@ public class AnalysisOutputRecorder {
 
             //TODO: "input" files could be modified my the tool. Have to be scanned, calculate the new Checksum and
 
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace(); //TODO: Handle exception
         }
     }

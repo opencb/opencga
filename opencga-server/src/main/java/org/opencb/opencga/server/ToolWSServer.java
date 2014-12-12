@@ -8,7 +8,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.catalog.beans.Tool;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -50,7 +50,7 @@ public class ToolWSServer extends OpenCGAWSServer{
                 results.add(toolResult);
             }
             return createOkResponse(results);
-        } catch (CatalogManagerException | AnalysisExecutionException | IOException e) {
+        } catch (CatalogDBException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -74,7 +74,7 @@ public class ToolWSServer extends OpenCGAWSServer{
                 results.add(help);
             }
             return createOkResponse(results);
-        } catch (CatalogManagerException | AnalysisExecutionException | IOException e) {
+        } catch (CatalogDBException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

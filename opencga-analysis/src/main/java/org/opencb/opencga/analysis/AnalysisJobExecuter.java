@@ -5,7 +5,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
@@ -181,12 +181,12 @@ public class AnalysisJobExecuter {
 
     public QueryResult<Job> createJob(Map<String, List<String>> params,
                             CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogManagerException, CatalogIOManagerException {
+            throws AnalysisExecutionException, CatalogDBException, CatalogIOManagerException {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
                             CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogManagerException, CatalogIOManagerException {
+            throws AnalysisExecutionException, CatalogDBException, CatalogIOManagerException {
 
         // Create temporal Outdir
         String randomString = "J_" + StringUtils.randomString(10);

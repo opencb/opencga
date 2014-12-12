@@ -15,7 +15,7 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
@@ -37,7 +37,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser3;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException, CatalogManagerException {
+    public static void init() throws IOException, CatalogIOManagerException, CatalogDBException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -53,18 +53,18 @@ public class CatalogManagerTest extends GenericTest {
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser = result.get(0).getString("sessionId");
-        } catch (CatalogManagerException | IOException ignore) {
+        } catch (CatalogDBException | IOException ignore) {
         }
         try {
             result = catalogManager.login("user2", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser2 = result.get(0).getString("sessionId");
-        } catch (CatalogManagerException | IOException ignore) {
+        } catch (CatalogDBException | IOException ignore) {
         }
 
         try {
             result = catalogManager.login("user3", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser3 = result.get(0).getString("sessionId");
-        } catch (CatalogManagerException | IOException ignore) {
+        } catch (CatalogDBException | IOException ignore) {
         }
     }
 
@@ -101,7 +101,7 @@ public class CatalogManagerTest extends GenericTest {
         try{
             catalogManager.login("user", "fakePassword", "127.0.0.1");
             fail("Expected 'wrong password' exception");
-        } catch (CatalogManagerException e ){
+        } catch (CatalogDBException e ){
             System.out.println(e.getMessage());
         }
     }
@@ -114,7 +114,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testGetUserInfo() throws CatalogManagerException {
+    public void testGetUserInfo() throws CatalogDBException {
         QueryResult<User> user = catalogManager.getUser("user", null, sessionIdUser);
         System.out.println("user = " + user);
         QueryResult<User> userVoid = catalogManager.getUser("user", user.getResult().get(0).getLastActivity(), sessionIdUser);
@@ -123,13 +123,13 @@ public class CatalogManagerTest extends GenericTest {
         try {
             catalogManager.getUser("user", null, sessionIdUser2);
             fail();
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             System.out.println(e);
         }
     }
 
     @Test
-    public void testModifyUser() throws CatalogManagerException, InterruptedException {
+    public void testModifyUser() throws CatalogDBException, InterruptedException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + StringUtils.randomString(10);
         String newPassword = StringUtils.randomString(10);
@@ -168,14 +168,14 @@ public class CatalogManagerTest extends GenericTest {
             params.put("password", "1234321");
             catalogManager.modifyUser("user", params, sessionIdUser);
             fail("Expected exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogDBException e){
             System.out.println(e);
         }
 
         try {
             catalogManager.modifyUser("user", params, sessionIdUser2);
             fail("Expected exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogDBException e){
             System.out.println(e);
         }
 
@@ -196,7 +196,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogManagerException {
+    public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogDBException {
         String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").getResult().get(0).getString("sessionId");
 //        catalogManager.createProject()
           //TODO: Finish test
@@ -209,7 +209,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifyProject() throws CatalogManagerException {
+    public void testModifyProject() throws CatalogDBException {
         String newProjectName = "ProjectName " + StringUtils.randomString(10);
         int projectId = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0).getProjects().get(0).getId();
 
@@ -235,14 +235,14 @@ public class CatalogManagerTest extends GenericTest {
             options.put("alias", "newProjectAlias");
             catalogManager.modifyProject(projectId, options, sessionIdUser);
             fail("Expected 'Parameter can't be changed' exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogDBException e){
             System.out.println(e);
         }
 
         try {
             catalogManager.modifyProject(projectId, options, sessionIdUser2);
             fail("Expected 'Permission denied' exception");
-        } catch (CatalogManagerException e){
+        } catch (CatalogDBException e){
             System.out.println(e);
         }
 
@@ -325,7 +325,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDownloadFile() throws CatalogManagerException, IOException, InterruptedException, CatalogIOManagerException {
+    public void testDownloadFile() throws CatalogDBException, IOException, InterruptedException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
 
@@ -346,7 +346,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void searchFileTest() throws CatalogManagerException, CatalogIOManagerException, IOException {
+    public void searchFileTest() throws CatalogDBException, CatalogIOManagerException, IOException {
 
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
@@ -369,7 +369,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDeleteFile () throws CatalogManagerException, IOException, CatalogIOManagerException {
+    public void testDeleteFile () throws CatalogDBException, IOException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
         List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
@@ -423,7 +423,7 @@ public class CatalogManagerTest extends GenericTest {
      */
 
     @Test
-    public void testCreateJob() throws CatalogManagerException, JsonProcessingException, CatalogIOManagerException {
+    public void testCreateJob() throws CatalogDBException, JsonProcessingException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
 //        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).getResult().get(0).getId();

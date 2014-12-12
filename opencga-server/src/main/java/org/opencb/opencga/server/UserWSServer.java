@@ -7,8 +7,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.beans.User;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +41,7 @@ public class UserWSServer extends OpenCGAWSServer {
             queryResult = catalogManager.createUser(userId, name, email, password, organization);
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException e) {
+        } catch (CatalogDBException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -66,7 +65,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.login(userId, password, sessionIp);
             }
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogDBException | IOException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -87,7 +86,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 result = catalogManager.logout(userId, sessionId);
             }
             return createOkResponse(result);
-        } catch (CatalogManagerException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogDBException | IOException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -104,7 +103,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -121,7 +120,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -137,7 +136,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.resetPassword(userId, email);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -165,7 +164,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -181,7 +180,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -200,7 +199,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllProjects(userId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | JsonProcessingException e) {
+        } catch (CatalogDBException | JsonProcessingException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

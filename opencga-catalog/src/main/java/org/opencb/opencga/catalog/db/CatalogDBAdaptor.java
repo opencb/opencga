@@ -6,168 +6,214 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.beans.*;
+import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.net.URI;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
-public interface CatalogDBAdaptor {
+public abstract class CatalogDBAdaptor {
+
+    protected Logger logger;
+
+    protected long startQuery(){
+        return System.currentTimeMillis();
+    }
+
+    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result) throws CatalogDBException {
+        return endQuery(queryId, startTime, result, null, null);
+    }
+
+    protected <T> QueryResult<T> endQuery(String queryId, long startTime) throws CatalogDBException {
+        return endQuery(queryId, startTime, Collections.<T>emptyList(), null, null);
+    }
+
+    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result)
+            throws CatalogDBException {
+        long end = System.currentTimeMillis();
+        result.setId(queryId);
+        result.setDbTime((int)(end-startTime));
+        if(result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()){
+            throw new CatalogDBException(result.getErrorMsg());
+        }
+        return result;
+    }
+
+    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result,
+                                          String errorMessage, String warnMessage) throws CatalogDBException {
+        long end = System.currentTimeMillis();
+        if(result == null){
+            result = new LinkedList<>();
+        }
+        int numResults = result.size();
+        QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
+                warnMessage, errorMessage, result);
+        if(errorMessage != null && !errorMessage.isEmpty()){
+            throw new CatalogDBException(queryResult.getErrorMsg());
+        }
+        return queryResult;
+    }
 
 
-    void disconnect();
+    public abstract void disconnect();
     /**
      * User methods
      * ***************************
      */
-    boolean checkUserCredentials(String userId, String sessionId);
+    public abstract boolean checkUserCredentials(String userId, String sessionId);
 
-    boolean userExists(String userId);
+    public abstract boolean userExists(String userId);
 
-    QueryResult<User> createUser(User user) throws CatalogManagerException;
+    public abstract QueryResult<User> createUser(String userId, String userName, String email, String password, String organization) throws CatalogDBException;
 
-    QueryResult<Integer> deleteUser(String userId) throws CatalogManagerException;
+    public abstract QueryResult<User> insertUser(User user) throws CatalogDBException;
 
-    QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogManagerException, IOException;
+    public abstract QueryResult<Integer> deleteUser(String userId) throws CatalogDBException;
 
-    QueryResult logout(String userId, String sessionId) throws CatalogManagerException;
+    public abstract QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException, IOException;
 
-    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogManagerException;
+    public abstract QueryResult logout(String userId, String sessionId) throws CatalogDBException;
 
-    QueryResult logoutAnonymous(String sessionId) throws CatalogManagerException;
+    public abstract QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogDBException;
 
-    QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogManagerException;
+    public abstract QueryResult logoutAnonymous(String sessionId) throws CatalogDBException;
 
-    QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogManagerException;
+    public abstract QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException;
 
-    QueryResult changeEmail(String userId, String newEmail) throws CatalogManagerException;
+    public abstract QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    void updateUserLastActivity(String userId) throws CatalogManagerException;
+    public abstract QueryResult changeEmail(String userId, String newEmail) throws CatalogDBException;
 
-    QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogManagerException;
+    public abstract void updateUserLastActivity(String userId) throws CatalogDBException;
 
-    QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogManagerException;
+    public abstract QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogDBException;
 
-    QueryResult getSession(String userId, String sessionId) throws CatalogManagerException;
+    public abstract QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
-    String getUserIdBySessionId(String sessionId);
+    public abstract QueryResult getSession(String userId, String sessionId) throws CatalogDBException;
+
+    public abstract String getUserIdBySessionId(String sessionId);
 
     /**
      * Project methods
      * ***************************
      */
-    QueryResult<Project> createProject(String userId, Project project) throws CatalogManagerException, JsonProcessingException;
+    public abstract QueryResult<Project> createProject(String userId, Project project) throws CatalogDBException, JsonProcessingException;
 
-    QueryResult<Project> getAllProjects(String userId) throws CatalogManagerException;
+    public abstract QueryResult<Project> getAllProjects(String userId) throws CatalogDBException;
 
-    QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogManagerException;
-    QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogManagerException;
+    public abstract QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogDBException;
+    public abstract QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Integer> deleteProject(int projecetId) throws CatalogManagerException;
+    public abstract QueryResult<Integer> deleteProject(int projecetId) throws CatalogDBException;
 
-    QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogManagerException;
+    public abstract QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogDBException;
 
-    QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogManagerException;
+    public abstract QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 
-    int getProjectId(String userId, String projectAlias) throws CatalogManagerException;
+    public abstract int getProjectId(String userId, String projectAlias) throws CatalogDBException;
 
-    String getProjectOwnerId(int projectId) throws CatalogManagerException;
+    public abstract String getProjectOwnerId(int projectId) throws CatalogDBException;
 
-    QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException;
+    public abstract QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogDBException;
 
-    QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException;
+    public abstract QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogDBException;
 
     /**
      * Study methods
      * ***************************
      */
-    QueryResult<Study> createStudy(int projectId, Study study) throws CatalogManagerException;
+    public abstract QueryResult<Study> createStudy(int projectId, Study study) throws CatalogDBException;
 
-    QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException;
-//    QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
+    public abstract QueryResult<Study> getAllStudies(int projectId) throws CatalogDBException;
+//    public abstract QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
 
-    QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogManagerException;
+    public abstract QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName) throws CatalogManagerException;
+    public abstract QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName) throws CatalogDBException;
 
-    QueryResult renameStudy(int studyId, String newStudyName) throws CatalogManagerException;
+    public abstract QueryResult renameStudy(int studyId, String newStudyName) throws CatalogDBException;
 
-//    QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats) throws CatalogManagerException;
+//    public abstract QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats) throws CatalogManagerException;
 
-    void updateStudyLastActivity(int studyId) throws CatalogManagerException;
+    public abstract void updateStudyLastActivity(int studyId) throws CatalogDBException;
 
-    QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogManagerException;
+    public abstract QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
-    QueryResult<Integer> deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+    public abstract QueryResult<Integer> deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogDBException;
 
-    QueryResult<Integer> deleteStudy(int studyId) throws CatalogManagerException;
+    public abstract QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
 
-    int getStudyId(int projectId, String studyAlias) throws CatalogManagerException;
+    public abstract int getStudyId(int projectId, String studyAlias) throws CatalogDBException;
 
-    int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+    public abstract int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogDBException;
 
-    int getProjectIdByStudyId(int studyId) throws CatalogManagerException;
+    public abstract int getProjectIdByStudyId(int studyId) throws CatalogDBException;
 
-    String getStudyOwnerId(int studyId) throws CatalogManagerException;
+    public abstract String getStudyOwnerId(int studyId) throws CatalogDBException;
 
-    QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogManagerException;
-    QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;
+    public abstract QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogDBException;
+    public abstract QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogDBException;
     /**
      * File methods
      * ***************************
      */
 
     // add file to study
-    QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogManagerException;
-    QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogManagerException;
+    public abstract QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogDBException;
+    public abstract QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogDBException;
 
-    QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException, IOException;
-    QueryResult<Integer> deleteFile(int studyId, String path) throws CatalogManagerException;
-    QueryResult<Integer> deleteFile(int fileId) throws CatalogManagerException;
+    public abstract QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogDBException, IOException;
+    public abstract QueryResult<Integer> deleteFile(int studyId, String path) throws CatalogDBException;
+    public abstract QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
 
-    QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogManagerException;
-    QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogManagerException;
+    public abstract QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogDBException;
+    public abstract QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogDBException;
 
-    int getFileId(String userId, String projectAlias, String studyAlias, String path) throws CatalogManagerException;
-    int getFileId(int studyId, String path) throws CatalogManagerException;
+    public abstract int getFileId(String userId, String projectAlias, String studyAlias, String path) throws CatalogDBException;
+    public abstract int getFileId(int studyId, String path) throws CatalogDBException;
 
-    QueryResult<File> getAllFiles(int studyId) throws CatalogManagerException;
+    public abstract QueryResult<File> getAllFiles(int studyId) throws CatalogDBException;
 
-    QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogManagerException;
+    public abstract QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogDBException;
 
-    QueryResult<File> getFile(int fileId) throws CatalogManagerException;
-    QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogManagerException;
+    public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
+    public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String path, String status) throws CatalogManagerException, IOException;
-    QueryResult setFileStatus(int studyId, String path, String status) throws CatalogManagerException, IOException;
-    QueryResult setFileStatus(int fileId, String status) throws CatalogManagerException, IOException;
+    public abstract QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String path, String status) throws CatalogDBException, IOException;
+    public abstract QueryResult setFileStatus(int studyId, String path, String status) throws CatalogDBException, IOException;
+    public abstract QueryResult setFileStatus(int fileId, String status) throws CatalogDBException, IOException;
 
-    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException;
+    public abstract QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
-//    QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException;
+//    public abstract QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException;
 
-    QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException;
+    public abstract QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogDBException;
 
-    int getStudyIdByFileId(int fileId) throws CatalogManagerException;
-    String getFileOwnerId(int fileId) throws CatalogManagerException;
+    public abstract int getStudyIdByFileId(int fileId) throws CatalogDBException;
 
-    QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException;
-    QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
+    public abstract String getFileOwnerId(int fileId) throws CatalogDBException;
 
-    QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogManagerException;
+    public abstract QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
+    public abstract QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
+
+    public abstract QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
 
     /**
      * Analysis methods
      * ***************************
      */
 
-//    QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
-//    QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
+//    public abstract QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+//    public abstract QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
 //    int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException;
-//    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
+//    public abstract QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
 //
-//    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
-//    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+//    public abstract QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
+//    public abstract QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
 //
-//    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
+//    public abstract QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
 //
 //    int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
 //    String getAnalysisOwner(int analysisId) throws CatalogManagerException;
@@ -177,38 +223,38 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult<Job> createJob(int studyId, Job job) throws CatalogManagerException;
+    public abstract QueryResult<Job> createJob(int studyId, Job job) throws CatalogDBException;
 
-    QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException;
+    public abstract QueryResult<Integer> deleteJob(int jobId) throws CatalogDBException;
 
-    QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
+    public abstract QueryResult<Job> getJob(int jobId) throws CatalogDBException;
 
-    QueryResult<Job> getAllJobs(int studyId) throws CatalogManagerException;
+    public abstract QueryResult<Job> getAllJobs(int studyId) throws CatalogDBException;
 
-    String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
+    public abstract String getJobStatus(int jobId, String sessionId) throws CatalogDBException, IOException;
 
-    QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogManagerException;
+    public abstract QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
 
-    QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogManagerException;
+    public abstract QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
-    void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
+    public abstract void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogDBException, IOException;
 
-    int getStudyIdByJobId(int jobId);
+    public abstract int getStudyIdByJobId(int jobId);
 
-    QueryResult<Job> searchJob(QueryOptions options) throws CatalogManagerException;
+    public abstract QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException;
 
     /**
      * Tool methods
      * ***************************
      */
 
-    QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogManagerException;
+    public abstract QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException;
 
-    QueryResult<Tool> getTool(int id) throws CatalogManagerException;
+    public abstract QueryResult<Tool> getTool(int id) throws CatalogDBException;
 
-    int getToolId(String userId, String toolAlias) throws CatalogManagerException;
+    public abstract int getToolId(String userId, String toolAlias) throws CatalogDBException;
 
-//    QueryResult<Tool> searchTool(QueryOptions options);
+//    public abstract QueryResult<Tool> searchTool(QueryOptions options);
 
 //    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
 

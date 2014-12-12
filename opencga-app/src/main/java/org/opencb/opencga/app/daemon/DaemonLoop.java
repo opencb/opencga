@@ -14,7 +14,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
@@ -53,7 +53,7 @@ public class DaemonLoop implements Runnable {
         this.properties = properties;
         try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (IOException | CatalogIOManagerException | CatalogManagerException e) {
+        } catch (IOException | CatalogIOManagerException | CatalogDBException e) {
             e.printStackTrace();
         }
 
@@ -82,7 +82,7 @@ public class DaemonLoop implements Runnable {
         try {
             QueryResult<ObjectMap> login = catalogManager.login(properties.getProperty(USER), properties.getProperty(PASSWORD), "daemon");
             sessionId = login.getResult().get(0).getString("sessionId");
-        } catch (CatalogManagerException | IOException e) {
+        } catch (CatalogDBException | IOException e) {
             e.printStackTrace();
             exit = true;
         }
@@ -201,7 +201,7 @@ public class DaemonLoop implements Runnable {
         if(sessionId != null) {
             try {
                 catalogManager.logout(properties.getProperty(USER), sessionId);
-            } catch (CatalogManagerException | IOException e) {
+            } catch (CatalogDBException | IOException e) {
                 e.printStackTrace();
             }
             sessionId = null;

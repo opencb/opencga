@@ -2,7 +2,7 @@ package org.opencb.opencga.catalog;
 
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.TimeUtils;
@@ -51,7 +51,7 @@ public class CatalogFileManager {
             targetUri = catalogManager.getFileUri(file);
             sourceIOManager = catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme());
             targetIOManager = catalogManager.getCatalogIOManagerFactory().get(targetUri.getScheme());
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+        } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
             throw new CatalogIOManagerException("Can't upload file.", e);
         }
 
@@ -124,7 +124,7 @@ public class CatalogFileManager {
             parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);
-            } catch (CatalogManagerException e) {
+            } catch (CatalogDBException e) {
                 throw new CatalogIOManagerException("Can't update file properties in Catalog.", e);
             }
 

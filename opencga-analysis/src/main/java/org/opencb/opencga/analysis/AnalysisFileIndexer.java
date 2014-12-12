@@ -7,9 +7,8 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.FileInputStream;
@@ -48,14 +47,14 @@ public class AnalysisFileIndexer {
         this.catalogManager = catalogManager;
     }
 
-    public AnalysisFileIndexer(java.io.File properties) throws IOException, CatalogManagerException, CatalogIOManagerException {
+    public AnalysisFileIndexer(java.io.File properties) throws IOException, CatalogDBException, CatalogIOManagerException {
         this.properties = new Properties();
         this.properties.load(new FileInputStream(properties));
         this.catalogManager = new CatalogManager(this.properties);
     }
 
     public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
-            throws IOException, CatalogIOManagerException, CatalogManagerException, AnalysisExecutionException {
+            throws IOException, CatalogIOManagerException, CatalogDBException, AnalysisExecutionException {
 
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
@@ -115,12 +114,12 @@ public class AnalysisFileIndexer {
      * @param outDirUri         Index outdir
      * @param indexAttributes   This map will be filled with some index information
      * @return                  CommandLine
-     * @throws CatalogManagerException
+     * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
     private String createCommandLine(Study study, File file, String storageEngine,
                                      URI outDirUri, ObjectMap indexAttributes)
-            throws CatalogManagerException, CatalogIOManagerException {
+            throws CatalogDBException, CatalogIOManagerException {
 
         //Create command line
         String userId = file.getOwnerId();

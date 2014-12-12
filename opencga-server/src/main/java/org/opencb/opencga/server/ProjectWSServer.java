@@ -7,7 +7,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +44,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogDBException | CatalogIOManagerException | JsonProcessingException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -62,7 +62,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getProject(projectId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -80,7 +80,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllStudies(projectId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | JsonProcessingException e) {
+        } catch (CatalogDBException | JsonProcessingException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -108,7 +108,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

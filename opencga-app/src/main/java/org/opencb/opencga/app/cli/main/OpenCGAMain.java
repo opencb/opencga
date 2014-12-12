@@ -9,7 +9,7 @@ import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
@@ -33,7 +33,7 @@ public class OpenCGAMain {
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args)
-            throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
+            throws CatalogDBException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
@@ -70,7 +70,7 @@ public class OpenCGAMain {
         }
     }
 
-    private int runCommand(String[] args) throws CatalogManagerException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
+    private int runCommand(String[] args) throws CatalogDBException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
         OptionsParser optionsParser = new OptionsParser();
         try {
             optionsParser.parse(args);
@@ -98,7 +98,7 @@ public class OpenCGAMain {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
-                        //QueryResult<User> user = catalogManager.createUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.ROLE_USER, ""));
+                        //QueryResult<User> user = catalogManager.insertUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.ROLE_USER, ""));
                         QueryResult<User> user = catalogManager.createUser(c.up.user, c.name, c.email, c.up.password, c.organization);
                         System.out.println(user);
                         break;
@@ -320,7 +320,7 @@ public class OpenCGAMain {
         return 0;
     }
 
-    private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogManagerException, IOException {
+    private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogDBException, IOException {
         //String sessionId;
         if(up.user != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
@@ -333,14 +333,14 @@ public class OpenCGAMain {
 
     }
 
-    private void logout() throws CatalogManagerException, IOException {
+    private void logout() throws CatalogDBException, IOException {
         if(sessionId != null && !sessionId.equals(shellSessionId)){
             catalogManager.logout(userId, sessionId);
         }
     }
 
     private static CatalogManager getCatalogManager()
-            throws IOException, CatalogIOManagerException, CatalogManagerException, IllegalOpenCGACredentialsException {
+            throws IOException, CatalogIOManagerException, CatalogDBException, IllegalOpenCGACredentialsException {
         CatalogManager catalogManager;
         String appHome = System.getProperty("app.home");
         Config.setGcsaHome(appHome);

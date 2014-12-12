@@ -29,9 +29,10 @@ public class SampleAnnotationDescription {
 //    private boolean allowed;
 
     enum AnnotationType {
-        TEXT,
+        BOOLEAN,
+        CATEGORICAL,
         NUMERIC,
-        CATEGORICAL
+        TEXT
     }
 
     public SampleAnnotationDescription(String id, String category, AnnotationType type, Object defaultValue, boolean required, String acceptedValues, String description) {

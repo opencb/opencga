@@ -1,14 +1,13 @@
 package org.opencb.opencga.server;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -47,7 +46,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+        } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -66,7 +65,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getStudy(studyId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -81,7 +80,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllFiles(studyId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -134,7 +133,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             System.out.println(objectMap.toJson());
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
