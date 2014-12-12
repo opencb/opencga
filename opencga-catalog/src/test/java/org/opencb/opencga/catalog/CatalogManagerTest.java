@@ -309,7 +309,7 @@ public class CatalogManagerTest extends GenericTest {
         java.io.File fileTest;
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        QueryResult<File> file = catalogManager.createFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, sessionIdUser);
+        QueryResult<File> file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, sessionIdUser);
 
         is = new FileInputStream(fileTest = createDebugFile());
         System.out.println(catalogManager.uploadFile(file.getResult().get(0).getId(), is, sessionIdUser));
@@ -318,7 +318,7 @@ public class CatalogManagerTest extends GenericTest {
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         is = new FileInputStream(fileTest = createDebugFile());
-        System.out.println(catalogManager.uploadFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, is, sessionIdUser));
+        System.out.println(catalogManager.uploadFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, is, sessionIdUser));
         is.close();
         fileTest.delete();
 
@@ -332,7 +332,7 @@ public class CatalogManagerTest extends GenericTest {
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         java.io.File fileTest;
         InputStream is = new FileInputStream(fileTest = createDebugFile());
-        int fileId = catalogManager.uploadFile(studyId, "txt", "vcf", "data/" + fileName, "description", true, is, sessionIdUser).getResult().get(0).getId();
+        int fileId = catalogManager.uploadFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, is, sessionIdUser).getResult().get(0).getId();
         is.close();
         fileTest.delete();
 
@@ -375,7 +375,7 @@ public class CatalogManagerTest extends GenericTest {
         List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
         File file = null;
         for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).getType().equals(File.TYPE_FILE)) {
+            if (result.get(i).getType().equals(File.Type.FILE)) {
                 file = result.get(i);
             }
         }

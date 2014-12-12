@@ -145,7 +145,9 @@ public class FileWSServer extends OpenCGAWSServer {
                 IOUtils.deleteDirectory(folderPath);
                 try {
 
-                    QueryResult queryResult = catalogManager.uploadFile(studyId, fileFormat, bioFormat, relativeFilePath, description, parents, Files.newInputStream(completedFilePath), sessionId);
+                    QueryResult queryResult = catalogManager.uploadFile(studyId, File.Format.valueOf(fileFormat),
+                            File.Bioformat.valueOf(bioFormat), relativeFilePath, description, parents,
+                            Files.newInputStream(completedFilePath), sessionId);
                     IOUtils.deleteDirectory(completedFilePath);
 
                     return createOkResponse(queryResult);
@@ -411,7 +413,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse(e.getMessage());
             }
 
-            if(!file.getType().equals(File.TYPE_INDEX)) {
+            if(!file.getType().equals(File.Type.INDEX)) {
                 return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }
@@ -427,7 +429,7 @@ public class FileWSServer extends OpenCGAWSServer {
             String dbName = indexAttributes.get("dbName").toString();
             QueryResult result;
             switch (file.getBioformat()) {
-                case "bam": {
+                case ALIGNMENT: {
                     //TODO: getChunkSize from file.index.attributes?  use to be 200
                     int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
                     QueryOptions queryOptions = new QueryOptions();
@@ -472,7 +474,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     break;
                 }
 
-                case "vcf": {
+                case VARIANT: {
                     QueryOptions queryOptions = new QueryOptions();
                     queryOptions.put("interval", interval);
                     queryOptions.put("merge", true);

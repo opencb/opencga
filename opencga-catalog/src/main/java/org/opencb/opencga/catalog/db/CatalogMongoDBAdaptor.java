@@ -311,7 +311,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.ROLE_ANONYMOUS, "");
+        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, "");
         user.getSessions().add(session);
         DBObject anonymous;
         try {
@@ -1330,7 +1330,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         QueryResult<DBObject> folderResult = fileCollection.find( new BasicDBObject("id", folderId), null, null, null);
 
         File folder = parseFile(folderResult);
-        if (!folder.getType().equals(File.TYPE_FOLDER)) {
+        if (!folder.getType().equals(File.Type.FOLDER)) {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
         Object studyId = folderResult.getResult().get(0).get("studyId");
@@ -1482,7 +1482,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String fileName = path.getFileName().toString();
 
         File file = getFile(fileId, null).getResult().get(0);
-        if (file.getType().equals(File.TYPE_FOLDER)) {
+        if (file.getType().equals(File.Type.FOLDER)) {
             throw new UnsupportedOperationException("Renaming folders still not supported");  // no renaming folders. it will be a future feature
         }
 
@@ -2078,9 +2078,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         if(options.containsKey("ready")) {
             if(options.getBoolean("ready")) {
-                query.put("status", Job.READY);
+                query.put("status", Job.Status.READY);
             } else {
-                query.put("status", new BasicDBObject("$ne", Job.READY));
+                query.put("status", new BasicDBObject("$ne", Job.Status.READY));
             }
             options.remove("ready");
         }

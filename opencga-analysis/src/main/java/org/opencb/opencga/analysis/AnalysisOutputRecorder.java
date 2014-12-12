@@ -9,7 +9,6 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +69,7 @@ public class AnalysisOutputRecorder {
                     }
                 }
                 QueryResult<File> fileQueryResult = catalogManager.createFile(
-                        studyId, File.PLAIN, "", filePath, "Generated from job " + job.getId(),
+                        studyId, File.Format.PLAIN, File.Bioformat.NONE, filePath, "Generated from job " + job.getId(),
                         true, job.getId(), sessionId);
 
                 File file = fileQueryResult.getResult().get(0);
@@ -84,18 +83,18 @@ public class AnalysisOutputRecorder {
         }
 
         try {
-            switch(job.getResourceManagerAttributes().get(Job.TYPE).toString()) {
-                case Job.TYPE_INDEX:
+            switch(Job.Type.valueOf(job.getResourceManagerAttributes().get(Job.TYPE).toString())) {
+                case INDEX:
                     Integer indexedFileId = (Integer) job.getResourceManagerAttributes().get(Job.INDEXED_FILE_ID);
                     fileIds.add(indexedFileId);
-                    ObjectMap parameters = new ObjectMap("status", File.READY);
+                    ObjectMap parameters = new ObjectMap("status", File.Status.READY);
                     catalogManager.modifyFile(indexedFileId, parameters, sessionId);
                     break;
-                case Job.TYPE_ANALYSIS:
+                case ANALYSIS:
                 default:
                     break;
             }
-            ObjectMap parameters = new ObjectMap("status", Job.READY);
+            ObjectMap parameters = new ObjectMap("status", Job.Status.READY);
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);

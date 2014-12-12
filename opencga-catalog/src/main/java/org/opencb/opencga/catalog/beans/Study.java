@@ -27,8 +27,9 @@ public class Study {
 
     private List<File> files;
     private List<Job> jobs;
+    private List<Sample> samples;
 
-    private List<SampleAnnotationDescription> sampleAnnotationDescriptions;
+    private List<Variable> variables;
 
     private URI uri;
 

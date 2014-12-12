@@ -67,11 +67,11 @@ public class CatalogFileManager {
 
         //Check status
         switch (file.getStatus()) {
-            case File.UPLOADING:
+            case UPLOADING:
                 break;
 
-            case File.UPLOADED:
-            case File.READY:
+            case UPLOADED:
+            case READY:
                 if(!ignoreStatus) {
                     throw new CatalogIOManagerException("File status is already uploaded and ready! " +
                             "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
@@ -118,7 +118,7 @@ public class CatalogFileManager {
 
             //Update file
             ObjectMap parameters = new ObjectMap();
-            parameters.put("status", File.READY);
+            parameters.put("status", File.Status.READY);
             parameters.put("diskUsage", size);
             parameters.put("creationDate", creationDate);
             parameters.put("attributes", new ObjectMap("checksum", targetChecksum));

@@ -99,7 +99,7 @@ public class OpenCGAMain {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
-                        //QueryResult<User> user = catalogManager.insertUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.ROLE_USER, ""));
+                        //QueryResult<User> user = catalogManager.insertUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.Role.USER, ""));
                         QueryResult<User> user = catalogManager.createUser(c.up.user, c.name, c.email, c.up.password, c.organization);
                         System.out.println(user);
                         break;
@@ -235,7 +235,7 @@ public class OpenCGAMain {
                         Path inputFile = Paths.get(c.file);
                         InputStream is = new FileInputStream(inputFile.toFile());
                         //String outPath = Paths.get(c.outdir , inputFile.getFileName().toString()).toString();
-                        QueryResult<File> file = catalogManager.uploadFile(studyId, c.format, c.bioformat,
+                        QueryResult<File> file = catalogManager.uploadFile(studyId, File.Format.valueOf(c.format), File.Bioformat.valueOf(c.bioformat),
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
                                 c.parents, is, sessionId);
                         System.out.println(file);

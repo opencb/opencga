@@ -24,7 +24,7 @@ public class Job {
     private String outputError;
     private String commandLine;
     private int visits;
-    private String status;
+    private Status status;
     private long diskUsage;
 
     private int outDirId;
@@ -38,18 +38,22 @@ public class Job {
 
     private Map<String, Object> resourceManagerAttributes;
 
+    public enum Status {
+       PREPARED, //= "prepared";
+       ERROR, //= "error";     //Job finished with errors
+       QUEUED, //= "queued";
+       RUNNING, //= "running";
+       DONE, //= "done";       //Job finished, but output not ready
+       READY, //= "ready";     //Job finished and ready
+    }
 
-    public static final String PREPARED = "prepared";
-    public static final String QUEUED = "queued";
-    public static final String RUNNING = "running";
-    public static final String DONE = "done";       //Job finished, but output not ready
-    public static final String READY = "ready";     //Job finished and ready
-    public static final String ERROR = "error";     //Job finished with errors
+    public enum Type {
+        ANALYSIS, //= "analysis";
+        INDEX    //= "index";
+    }
 
     /* ResourceManagerAttributes known keys */
     public static final String TYPE = "type";
-    public static final String TYPE_ANALYSIS = "analysis";
-    public static final String TYPE_INDEX    = "index";
     public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
     public static final String INDEXED_FILE_ID = "indexedFileId";
 
@@ -59,20 +63,20 @@ public class Job {
     @Deprecated
     public Job(String name, String userId, String toolName, String description, String commandLine,
                List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, PREPARED, 0,
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, Status.PREPARED, 0,
                 -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
                URI tmpOutDirUri, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, PREPARED, 0,
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status.PREPARED, 0,
                 outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public Job(int id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, int visits, String status,
+               long startTime, long endTime, String outputError, String commandLine, int visits, Status status,
                long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
                List<Integer> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
@@ -100,7 +104,7 @@ public class Job {
 
         //Initializing attributes maps.
         this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
-        this.resourceManagerAttributes.put(Job.TYPE, Job.TYPE_ANALYSIS);
+        this.resourceManagerAttributes.put(Job.TYPE, Type.ANALYSIS);
     }
 
     @Override
@@ -217,11 +221,11 @@ public class Job {
         this.visits = visits;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 

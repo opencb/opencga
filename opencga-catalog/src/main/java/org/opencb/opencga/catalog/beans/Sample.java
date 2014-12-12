@@ -16,17 +16,17 @@ public class Sample {
 
     private String description;
 
-    private List<SampleAnnotationSet> annotations;
+    private List<AnnotationSet> annotations;
 
     public Sample() {
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description) {
-        this(id, name, source, individual, studyId, description, new LinkedList<SampleAnnotationDescription>());
+        this(id, name, source, individual, studyId, description, new LinkedList<Variable>());
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description,
-                  List<SampleAnnotationDescription> sampleAnnotationDescriptions) {
+                  List<Variable> variables) {
         this.id = id;
         this.name = name;
         this.source = source;

@@ -79,16 +79,16 @@ public class AnalysisFileIndexer {
                 indexAttributes);
 
         //Create index file
-        QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.TYPE_INDEX, file.getFormat(),
+        QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
                 file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
-                "Indexation of " + file.getName() + " (" + fileId + ")", File.INDEXING, 0, -1, null, -1, null,
+                "Indexation of " + file.getName() + " (" + fileId + ")", File.Status.INDEXING, 0, -1, null, -1, null,
                 indexAttributes, false, sessionId);
         File index = indexQueryResult.getResult().get(0);
 
         //Create job
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
         jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-        jobResourceManagerAttributes.put(Job.TYPE, Job.TYPE_INDEX);
+        jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
 
         QueryResult<Job> jobQueryResult = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",

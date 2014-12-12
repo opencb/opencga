@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class SampleAnnotationDescription {
+public class Variable {
 
     private String id;
     private String category;
@@ -13,12 +13,12 @@ public class SampleAnnotationDescription {
     /**
      * Type accepted values: text, numeric
      */
-    private AnnotationType type;
+    private VariableType type;
     private Object defaultValue;
     private boolean required;
 
     /**
-     * Example for numeric range: -3,5
+     * Example for numeric range: -3:5
      * Example for categorical values: T,F
      */
     private String acceptedValues;
@@ -28,14 +28,14 @@ public class SampleAnnotationDescription {
 
 //    private boolean allowed;
 
-    enum AnnotationType {
+    enum VariableType {
         BOOLEAN,
         CATEGORICAL,
         NUMERIC,
         TEXT
     }
 
-    public SampleAnnotationDescription(String id, String category, AnnotationType type, Object defaultValue, boolean required, String acceptedValues, String description) {
+    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required, String acceptedValues, String description) {
         this.id = id;
         this.category = category;
         this.type = type;
@@ -74,11 +74,11 @@ public class SampleAnnotationDescription {
         this.category = category;
     }
 
-    public AnnotationType getType() {
+    public VariableType getType() {
         return type;
     }
 
-    public void setType(AnnotationType type) {
+    public void setType(VariableType type) {
         this.type = type;
     }
 

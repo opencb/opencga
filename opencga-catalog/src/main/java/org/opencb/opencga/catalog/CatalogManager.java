@@ -256,7 +256,7 @@ public class CatalogManager {
         checkParameter(email, "email");
         organization = organization != null ? organization : "";
 
-        User user = new User(id, name, email, password, organization, User.ROLE_USER, "");
+        User user = new User(id, name, email, password, organization, User.Role.USER, "");
 
         try {
             ioManager.createUser(user.getId());
@@ -424,7 +424,7 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         String userIdBySessionId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if(userIdBySessionId.equals(userId) || getUserRole(userIdBySessionId) == User.ROLE_ADMIN ) {
+        if(userIdBySessionId.equals(userId) || getUserRole(userIdBySessionId).equals(User.Role.ADMIN) ) {
             try {
                 ioManager.deleteUser(userId);
             } catch (CatalogIOManagerException e) {
@@ -611,7 +611,7 @@ public class CatalogManager {
             throw new CatalogDBException("Permission denied. Can't write in project");
         }
         if (creatorId != userId) {
-            if (!getUserRole(userId).equals(User.ROLE_ADMIN)) {
+            if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
             } else {
                 if (!catalogDBAdaptor.userExists(creatorId)) {
@@ -642,7 +642,7 @@ public class CatalogManager {
         }
 
 
-        files.add(new File(".", File.TYPE_FOLDER, "", "", "", creatorId, "study root folder", File.READY, 0));
+        files.add(new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0));
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, acls, experiments, files, jobs, null, stats, attributes);
@@ -796,36 +796,37 @@ public class CatalogManager {
 //    }
 
     @Deprecated
-    public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, CatalogIOManagerException {
         return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
     }
 
-    public QueryResult<File> createFile(int studyId, String format, String bioformat, String path, String description,
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
-        return createFile(studyId, File.TYPE_FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
+        return createFile(studyId, File.Type.FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
                 jobId, null, null, parents, sessionId);
     }
 
 
-    public QueryResult<File> createFile(int studyId, String type, String format, String bioformat, String path,
-                                        String ownerId, String creationDate, String description, String status,
+    public QueryResult<File> createFile(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
+                                        String ownerId, String creationDate, String description, File.Status status,
                                         long diskUsage, int experimentId, List<Integer> sampleIds,  int jobId,
                                         Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
+            throws CatalogException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(sessionId, "sessionId");
         checkPath(path, "filePath");
 
-        format =        defaultString(format, File.PLAIN);  //TODO: Inference from the file name
-        bioformat =     defaultString(bioformat, "");
+        type =          defaultObject(type, File.Type.FILE);
+        format =        defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
+        bioformat =     defaultObject(bioformat, File.Bioformat.NONE);
         ownerId =       defaultString(ownerId, userId);
         creationDate =  defaultString(creationDate, TimeUtils.getTime());
         description =   defaultString(description, "");
-        status =        defaultString(status, File.UPLOADING);
+        status =        defaultObject(status, File.Status.UPLOADING);
 
         if(diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
@@ -852,7 +853,7 @@ public class CatalogManager {
         }
 
         if (ownerId != userId) {
-            if (!getUserRole(userId).equals(User.ROLE_ADMIN)) {
+            if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with ownerId != userId");
             } else {
                 if (!catalogDBAdaptor.userExists(ownerId)) {
@@ -861,8 +862,8 @@ public class CatalogManager {
             }
         }
 
-        if (status != File.UPLOADING) {
-            if (!getUserRole(userId).equals(User.ROLE_ADMIN)) {
+        if (status != File.Status.UPLOADING) {
+            if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING");
             }
         }
@@ -913,7 +914,7 @@ public class CatalogManager {
     }
 
     @Deprecated
-    public QueryResult<File> uploadFile(int studyId, String format, String bioformat, String path, String description,
+    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                   boolean parents, InputStream fileIs, String sessionId)
             throws IOException, CatalogException {
         QueryResult<File> fileResult = createFile(studyId, format, bioformat, path, description, parents, sessionId);
@@ -944,7 +945,7 @@ public class CatalogManager {
             throw new CatalogDBException("FileId '" + fileId + "' for found");
         }
         File file = result.get(0);
-        if(!file.getStatus().equals(File.UPLOADING)) {
+        if(!file.getStatus().equals(File.Status.UPLOADING)) {
             throw new CatalogDBException("File '" + fileId + "' already uploaded.");
         }
         if(!file.getOwnerId().equals(userId)){
@@ -953,7 +954,7 @@ public class CatalogManager {
         ioManager.createFile(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath(), fileIs);
         Study study = catalogDBAdaptor.getStudy(studyId, null).getResult().get(0);
 
-        ObjectMap modifyParameters = new ObjectMap("status", File.UPLOADED);
+        ObjectMap modifyParameters = new ObjectMap("status", File.Status.UPLOADED);
         modifyParameters.put("uriScheme", study.getUri().getScheme());
         catalogDBAdaptor.modifyFile(fileId, modifyParameters);
         return catalogDBAdaptor.getFile(fileId);
@@ -1002,8 +1003,8 @@ public class CatalogManager {
             PARENTS FOLDERS
          */
         while(parentId < 0 && parent != null){  //Add all the parents that should be created
-            folders.addFirst(new File(parent.getFileName().toString(), File.TYPE_FOLDER, "", "",
-                    parent.toString() + "/", userId, "", File.READY, 0));
+            folders.addFirst(new File(parent.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
+                    parent.toString() + "/", userId, "", File.Status.READY, 0));
             parent = parent.getParent();
             if(parent != null) {
                 parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
@@ -1011,8 +1012,8 @@ public class CatalogManager {
         }
 
         ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
-        File mainFolder = new File(folderPath.getFileName().toString(), File.TYPE_FOLDER, "", "", folderPath.toString() + "/", userId
-                , "", File.READY, 0);
+        File mainFolder = new File(folderPath.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
+                folderPath.toString() + "/", userId , "", File.Status.READY, 0);
 
         QueryResult<File> result;
         try {
@@ -1058,7 +1059,7 @@ public class CatalogManager {
         }
         File file = fileResult.getResult().get(0);
         System.out.println("file = " + file);
-        if(!file.getStatus().equals(File.READY)) {
+        if(!file.getStatus().equals(File.Status.READY)) {
             return new QueryResult("Delete file", 0, 0, 0, null,
                     "File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
                     Collections.emptyList());
@@ -1074,16 +1075,16 @@ public class CatalogManager {
 
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("status", File.DELETING);
+        objectMap.put("status", File.Status.DELETING);
         objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
 
         switch (file.getType()) {
-            case File.TYPE_FOLDER:
+            case FOLDER:
                 throw new UnsupportedOperationException("Unsupported deleting folder");
-            case File.TYPE_FILE:
+            case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
-            case File.TYPE_INDEX:
+            case INDEX:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
@@ -1131,15 +1132,15 @@ public class CatalogManager {
 
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         switch (file.getType()) {
-            case File.TYPE_FOLDER:
+            case FOLDER:
                 throw new UnsupportedOperationException("Unsupported folder renaming");
-            case File.TYPE_FILE:
+            case FILE:
                 QueryResult<Study> studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
                 Study study = studyQueryResult.getResult().get(0);
                 CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(study.getUri());
                 catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
                 return catalogDBAdaptor.renameFile(fileId, newPath);
-            case File.TYPE_INDEX:
+            case INDEX:
                 return catalogDBAdaptor.renameFile(fileId, newName);
         }
 
@@ -1171,7 +1172,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         switch (getUserRole(userId)) {
-            case User.ROLE_ADMIN:
+            case ADMIN:
                 logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
                 break;
             default:
@@ -1309,9 +1310,8 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
         if(studyId < 0) {
-            String role = getUserRole(userId);
-            switch(role){
-                case User.ROLE_ADMIN:
+            switch(getUserRole(userId)){
+                case ADMIN:
                     break;
                 default:
                     throw new CatalogDBException("Permission denied. StudyId or Admin role required");
@@ -1679,8 +1679,8 @@ public class CatalogManager {
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList("id", "type", "path"));
         File outDir = catalogDBAdaptor.getFile(outDirId, fileQueryOptions).getResult().get(0);
 
-        if(!outDir.getType().equals(File.TYPE_FOLDER)) {
-            throw new CatalogDBException("Bad outDir type. Required type : " + File.TYPE_FOLDER);
+        if(!outDir.getType().equals(File.Type.FOLDER)) {
+            throw new CatalogDBException("Bad outDir type. Required type : " + File.Type.FOLDER);
         }
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
@@ -1758,9 +1758,9 @@ public class CatalogManager {
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogDBException {
         String userId = getUserIdBySessionId(sessionId);
-        String role = getUserRole(userId);
+        User.Role role = getUserRole(userId);
         switch(role){
-            case User.ROLE_ADMIN:
+            case ADMIN:
                 return catalogDBAdaptor.searchJob(new QueryOptions("ready", false));
             default:
                 throw new CatalogDBException("Permission denied. Admin role required");
@@ -1781,9 +1781,9 @@ public class CatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogDBException {
         String userId = getUserIdBySessionId(sessionId);
 
-        String role = getUserRole(userId);
+        User.Role role = getUserRole(userId);
         switch(role){
-            case User.ROLE_ADMIN:
+            case ADMIN:
                 return catalogDBAdaptor.modifyJob(jobId, parameters);
             default:
                 throw new CatalogDBException("Permission denied. Admin role required");
@@ -2063,13 +2063,13 @@ public class CatalogManager {
         );
     }
 
-    private String getUserRole(String userId) throws CatalogDBException {
+    private User.Role getUserRole(String userId) throws CatalogDBException {
         return catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0).getRole();
     }
 
     private Acl getProjectAcl(String userId, int projectId) throws CatalogDBException {
         Acl projectAcl;
-        if(getUserRole(userId).equals(User.ROLE_ADMIN)) {
+        if(getUserRole(userId).equals(User.Role.ADMIN)) {
             return new Acl(userId, true, true, true, true);
         }
         boolean sameOwner = catalogDBAdaptor.getProjectOwnerId(projectId).equals(userId);
@@ -2099,7 +2099,7 @@ public class CatalogManager {
 
     private Acl getStudyAcl(String userId, int studyId, Acl projectAcl) throws CatalogDBException {
         Acl studyAcl;
-        if(getUserRole(userId).equals(User.ROLE_ADMIN)) {
+        if(getUserRole(userId).equals(User.Role.ADMIN)) {
             return new Acl(userId, true, true, true, true);
         }
         boolean sameOwner = catalogDBAdaptor.getStudyOwnerId(studyId).equals(userId);
@@ -2124,7 +2124,7 @@ public class CatalogManager {
     }
 
     private Acl getFileAcl(String userId, int fileId) throws CatalogDBException {
-        if(getUserRole(userId).equals(User.ROLE_ADMIN)) {
+        if(getUserRole(userId).equals(User.Role.ADMIN)) {
             return new Acl(userId, true, true, true, true);
         }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);

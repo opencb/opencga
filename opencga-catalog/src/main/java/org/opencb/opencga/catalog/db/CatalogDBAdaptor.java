@@ -190,8 +190,11 @@ public abstract class CatalogDBAdaptor {
     public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
     public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     public abstract QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String path, String status) throws CatalogDBException, IOException;
+    @Deprecated
     public abstract QueryResult setFileStatus(int studyId, String path, String status) throws CatalogDBException, IOException;
+    @Deprecated
     public abstract QueryResult setFileStatus(int fileId, String status) throws CatalogDBException, IOException;
 
     public abstract QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
