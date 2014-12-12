@@ -1,9 +1,11 @@
 package org.opencb.opencga.catalog.db;
 
+import org.opencb.opencga.catalog.CatalogException;
+
 /**
  * Created by imedina on 11/09/14.
  */
-public class CatalogDBException extends Exception {
+public class CatalogDBException extends CatalogException {
 
     public CatalogDBException(String msg) {
         super(msg);
