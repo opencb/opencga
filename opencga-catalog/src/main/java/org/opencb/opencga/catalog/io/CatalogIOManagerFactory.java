@@ -11,6 +11,7 @@ import java.util.Properties;
  */
 public class CatalogIOManagerFactory {
 
+    public static final String DEFAULT_CATALOG_SCHEME = "file";
     private static Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
     private final Properties properties;
 
@@ -18,7 +19,14 @@ public class CatalogIOManagerFactory {
         this.properties = properties;
     }
 
+    public CatalogIOManager get(URI uri) throws IOException, CatalogIOManagerException {
+        return get(uri.getScheme());
+    }
     public CatalogIOManager get(String io) throws IOException, CatalogIOManagerException {
+        if(io == null) {
+            io = DEFAULT_CATALOG_SCHEME;
+        }
+
         if(!catalogIOManagers.containsKey(io)) {
             switch(io) {
                 case "file":

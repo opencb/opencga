@@ -26,7 +26,7 @@ print "****************************"
 print "*** OpenCGA Local server ***"
 print "****************************"
 print "****************************"
-print "A example of URL address to access the server is: http://localhost:{PORT}/opencga/rest/storage/fetch?filepath={ABSOLUTE FILE PATH}&region={REGION}"
+print "A example of URL address to access the server is: http://localhost:{PORT}/opencga/rest/storage/fetch?filepath={ABSOLUTE TYPE_FILE PATH}&region={REGION}"
 
 JAVA_OPTIONS=" -Xms128m -Xmx2048m -Djava.net.preferIPv4Stack=true "
 command = "java"+JAVA_OPTIONS+" -classpath "+CLASSPATH+" org.opencb.opencga.lib.cli.LocalServer "+OPENCGA_HOME

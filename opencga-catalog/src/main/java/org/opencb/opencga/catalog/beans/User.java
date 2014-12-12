@@ -25,18 +25,19 @@ public class User {
     private long diskUsage;
     private long diskQuota;
 
-    private List<Project> projects = new ArrayList<>();
-//    private List<Analysis> analyses = new ArrayList<>();
+    private List<Project> projects;
+    private List<Tool> tools;
+    private List<Dataset> datasets;
 
-    private List<Tool> tools = new ArrayList<>();
     /**
-     * Open and closed session of this user. More than one session can be open, i.e. logged from Chrome and Firefox
+     * Open and closed sessions for this user.
+     * More than one session can be open, i.e. logged from Chrome and Firefox
      */
     private List<Session> sessions;
 
-    private Map<String, Object> configs = new HashMap<>();
-
+    private Map<String, Object> configs;
     private Map<String, Object> attributes;
+
     /**
      * Things to think about:
      private List<Credential> credentials = new ArrayList<Credential>();
@@ -52,16 +53,13 @@ public class User {
 
     public User(String id, String name, String email, String password, String organization, String role, String status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
-               // new ArrayList<Analysis>(),
-                new ArrayList<Tool>(0), new ArrayList<Session>(0),
+                new ArrayList<Tool>(0), new ArrayList<Dataset>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public User(String id, String name, String email, String password, String organization, String role, String status,
-                String lastActivity, long diskUsage, long diskQuota, List<Project> projects,
-                //List<Analysis> analyses,
-                List<Tool> tools, List<Session> sessions, Map<String, Object> configs,
-                Map<String, Object> attributes) {
+                String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
+                List<Dataset> datasets, List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -73,8 +71,8 @@ public class User {
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;
         this.projects = projects;
-      //  this.analyses = analyses;
         this.tools = tools;
+        this.datasets = datasets;
         this.sessions = sessions;
         this.configs = configs;
         this.attributes = attributes;
@@ -95,6 +93,7 @@ public class User {
                 ", diskQuota=" + diskQuota +
                 ", projects=" + projects +
                 ", tools=" + tools +
+                ", datasets=" + datasets +
                 ", sessions=" + sessions +
                 ", configs=" + configs +
                 ", attributes=" + attributes +
@@ -197,6 +196,14 @@ public class User {
         this.tools = tools;
     }
 
+    public List<Dataset> getDatasets() {
+        return datasets;
+    }
+
+    public void setDatasets(List<Dataset> datasets) {
+        this.datasets = datasets;
+    }
+
     public List<Session> getSessions() {
         return sessions;
     }
@@ -220,4 +227,5 @@ public class User {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
+
 }

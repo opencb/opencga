@@ -37,6 +37,7 @@ public abstract class CatalogIOManager {
     protected static final String USER_PROJECTS_FOLDER = "projects/";
     protected static final String USER_BIN_FOLDER = "bin/";
     protected static final String SHARED_DATA_FOLDER = "shared_data/";
+    protected static final String OPENCGA_JOBS_FOLDER = "jobs/";
 
     protected Properties properties;
     protected static Logger logger;
@@ -78,6 +79,10 @@ public abstract class CatalogIOManager {
 
         if(!exists(rootDir.resolve(OPENCGA_BIN_FOLDER))) {
             createDirectory(rootDir.resolve(OPENCGA_BIN_FOLDER));
+        }
+
+        if(!exists(rootDir.resolve(OPENCGA_JOBS_FOLDER))) {
+            createDirectory(rootDir.resolve(OPENCGA_JOBS_FOLDER));
         }
     }
 
@@ -145,6 +150,18 @@ public abstract class CatalogIOManager {
             throws CatalogIOManagerException {
         checkParam(relativeFilePath);
         return getStudyUri(userId, projectId, studyId).resolve(relativeFilePath);
+    }
+
+    public URI getFileUri(URI studyUri, String relativeFilePath)
+            throws CatalogIOManagerException {
+        checkUri(studyUri);
+        checkParam(relativeFilePath);
+        return studyUri.resolve(relativeFilePath);
+    }
+
+    public URI getJobsUri(String userId) throws CatalogIOManagerException {
+        checkParam(userId);
+        return rootDir.resolve(OPENCGA_JOBS_FOLDER);
     }
 
     public abstract URI getTmpUri();    // FIXME Still used?
@@ -320,6 +337,27 @@ public abstract class CatalogIOManager {
         } catch (IOException e) {
             throw new CatalogIOManagerException("renameStudy(): could not rename the study folder: " + e.toString());
         }
+    }
+
+    public URI createJobOutDir(String userId, String folderName)
+            throws CatalogIOManagerException {
+        checkParam(folderName);
+
+        URI jobsFolderUri = getJobsUri(userId);
+        checkDirectoryUri(jobsFolderUri, true);
+
+        URI jobUri = jobsFolderUri.resolve(folderName);
+        if(!exists(jobUri)) {
+            try {
+                jobUri = createDirectory(jobUri, true);
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString());
+            }
+        } else {
+            throw new CatalogIOManagerException("createJobOutDir method: Job folder " + folderName + "already exists.");
+        }
+        return jobUri;
     }
 
     public URI createFolder(String userid, String projectId, String studyId, String folderName, boolean parent)

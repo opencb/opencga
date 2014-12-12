@@ -22,12 +22,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/job")
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
-@Api(value = "job", description = "job")
+@Api(value = "job", description = "job", position = 5)
 public class JobWSServer extends OpenCGAWSServer {
 
     public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -43,7 +44,6 @@ public class JobWSServer extends OpenCGAWSServer {
 //    public Response search(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
 //    ) {
-//
 //        catalogManager.search
 //    }
 
@@ -78,9 +78,10 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Produces("application/json")
     @ApiOperation(value = "Create job")
-
     public Response createJob(
-            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+            @ApiParam(value = "name", required = true)          @DefaultValue("")   @QueryParam("name") String name,
+            @ApiParam(value = "studyId", required = true)       @DefaultValue("-1") @QueryParam("studyId") int studyId,
             @ApiParam(value = "toolId", required = true)        @DefaultValue("")   @QueryParam("toolId") String toolIdStr,
             @ApiParam(value = "execution", required = false)    @DefaultValue("")   @QueryParam("execution") String execution,
             @ApiParam(value = "description", required = false)  @DefaultValue("")   @QueryParam("description") String description
@@ -124,12 +125,12 @@ public class JobWSServer extends OpenCGAWSServer {
             }
 
             // Creating job name. Random string to avoid collisions.
-            String jobName = "J_" + String.format(StringUtils.randomString(15));
+//            String jobName = name.isEmpty()? "J_" + String.format(StringUtils.randomString(15)) : name;
 
             // Get temporal outdir  TODO: Create job folder outside the user workspace.
-            java.nio.file.Path temporalOutdirPath = Paths.get("jobs", jobName);
-            int studyId = catalogManager.getStudyIdByAnalysisId(analysisId);
-            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
+//            java.nio.file.Path temporalOutdirPath = Paths.get("jobs", jobName);
+////            int studyId = catalogManager.getStudyIdByAnalysisId(studyId);
+//            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
             // Set outdir
             String outputParam = analysisJobExecuter.getExecution().getOutputParam();
@@ -139,20 +140,33 @@ public class JobWSServer extends OpenCGAWSServer {
             int outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
             File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
 
-            localParams.put(outputParam, Arrays.asList(catalogManager.getFileUri(temporalOutDir).getPath()));
+            // Create temporal Outdir
+//            String randomString = StringUtils.randomString(10);
+//            URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
+//            localParams.put(outputParam, Arrays.asList(temporalOutDirUri.getPath()));
+//
+//            // Create commandLine
+//            String commandLine = analysisJobExecuter.createCommandLine(localParams);
+//            System.out.println(commandLine);
+//
+//            // Create job in CatalogManager
+//            Map<String, Object> resourceManagerAttributes = new HashMap<>();
+//            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
+//
+//            jobResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
+//                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
+//            Job job = jobResult.getResult().get(0);
 
-            // Create commandLine
-            String commandLine = analysisJobExecuter.createCommandLine(localParams);
-            System.out.println(commandLine);
+            QueryResult<Job> jobQueryResult = analysisJobExecuter.createJob(
+                    localParams, catalogManager, studyId, name, description, outDir, inputFiles, sessionId);
 
-            // Create job in CatalogManager
-            jobResult = catalogManager.createJob(analysisId, jobName, toolName, description, commandLine, outDir.getId(), temporalOutDir.getId(), inputFiles, sessionId);
-            Job job = jobResult.getResult().get(0);
 
             // Execute job
-            analysisJobExecuter.execute(jobName, job.getId(), catalogManager.getFileUri(temporalOutDir).getPath(), commandLine);
+//            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
+//            AnalysisJobExecuter.execute(jobQueryResult.getResult().get(0));
+            //Job will be executed by the Daemon. status: PREPARED
 
-            return createOkResponse(jobResult);
+            return createOkResponse(jobQueryResult);
 
         } catch (CatalogManagerException | CatalogIOManagerException | IOException | AnalysisExecutionException e) {
             e.printStackTrace();

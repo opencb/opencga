@@ -59,7 +59,7 @@ public interface CatalogDBAdaptor {
     QueryResult<Project> getAllProjects(String userId) throws CatalogManagerException;
 
     QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogManagerException;
-    QueryResult<Project> getProject(int project) throws CatalogManagerException;
+    QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogManagerException;
 
     QueryResult<Integer> deleteProject(int projecetId) throws CatalogManagerException;
 
@@ -69,28 +69,30 @@ public interface CatalogDBAdaptor {
 
     int getProjectId(String userId, String projectAlias) throws CatalogManagerException;
 
-    String getProjectOwner(int projectId) throws CatalogManagerException;
+    String getProjectOwnerId(int projectId) throws CatalogManagerException;
 
     QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogManagerException;
 
     QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogManagerException;
+
     /**
      * Study methods
      * ***************************
      */
-
     QueryResult<Study> createStudy(int projectId, Study study) throws CatalogManagerException;
 
     QueryResult<Study> getAllStudies(int projectId) throws CatalogManagerException;
 //    QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
 
-    QueryResult<Study> getStudy(int studyId) throws CatalogManagerException;
+    QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogManagerException;
 
     QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName) throws CatalogManagerException;
 
     QueryResult renameStudy(int studyId, String newStudyName) throws CatalogManagerException;
 
 //    QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats) throws CatalogManagerException;
+
+    void updateStudyLastActivity(int studyId) throws CatalogManagerException;
 
     QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogManagerException;
 
@@ -104,7 +106,7 @@ public interface CatalogDBAdaptor {
 
     int getProjectIdByStudyId(int studyId) throws CatalogManagerException;
 
-    String getStudyOwner(int studyId) throws CatalogManagerException;
+    String getStudyOwnerId(int studyId) throws CatalogManagerException;
 
     QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogManagerException;
     QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogManagerException;
@@ -140,12 +142,12 @@ public interface CatalogDBAdaptor {
 
     QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogManagerException;
 
-    QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException;
+//    QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException;
 
     QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogManagerException;
 
     int getStudyIdByFileId(int fileId) throws CatalogManagerException;
-    String getFileOwner(int fileId) throws CatalogManagerException;
+    String getFileOwnerId(int fileId) throws CatalogManagerException;
 
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogManagerException;
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogManagerException;
@@ -157,31 +159,31 @@ public interface CatalogDBAdaptor {
      * ***************************
      */
 
-    QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
-    QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
-    int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException;
-    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
-
-    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
-    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
-
-    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
-
-    int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
-    String getAnalysisOwner(int analysisId) throws CatalogManagerException;
+//    QueryResult<Analysis> getAllAnalysis(String userId, String projectAlias, String studyAlias) throws CatalogManagerException;
+//    QueryResult<Analysis> getAllAnalysis(int studyId) throws CatalogManagerException;
+//    int getAnalysisId(int studyId, String analysisAlias) throws CatalogManagerException;
+//    QueryResult<Analysis> getAnalysis(int analysisId) throws CatalogManagerException;
+//
+//    QueryResult<Analysis> createAnalysis(String userId, String projectAlias, String studyAlias, Analysis analysis) throws CatalogManagerException;
+//    QueryResult<Analysis> createAnalysis(int studyId, Analysis analysis) throws CatalogManagerException;
+//
+//    QueryResult modifyAnalysis(int analysisId, ObjectMap parameters) throws CatalogManagerException;
+//
+//    int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException;
+//    String getAnalysisOwner(int analysisId) throws CatalogManagerException;
 
     /**
      * Job methods
      * ***************************
      */
 
-    QueryResult<Job> createJob(int analysisId, Job job) throws CatalogManagerException;
+    QueryResult<Job> createJob(int studyId, Job job) throws CatalogManagerException;
 
     QueryResult<Integer> deleteJob(int jobId) throws CatalogManagerException;
 
     QueryResult<Job> getJob(int jobId) throws CatalogManagerException;
 
-    QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException;
+    QueryResult<Job> getAllJobs(int studyId) throws CatalogManagerException;
 
     String getJobStatus(int jobId, String sessionId) throws CatalogManagerException, IOException;
 
@@ -191,7 +193,7 @@ public interface CatalogDBAdaptor {
 
     void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogManagerException, IOException;
 
-    int getAnalysisIdByJobId(int jobId);
+    int getStudyIdByJobId(int jobId);
 
     QueryResult<Job> searchJob(QueryOptions options) throws CatalogManagerException;
 
