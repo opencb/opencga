@@ -28,6 +28,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantSourceConverter variantSourceConverter;
+    private final String collectionName = "files_0_9";
 
     
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
@@ -42,13 +43,13 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult countSources() {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         return coll.count();
     }
 
     @Override
     public QueryResult getAllSources(QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
 //        parseQueryOptions(options, qb);
         
@@ -57,7 +58,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     
     @Override
     public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
         getStudyIdFilter(studyId, qb);
 //        parseQueryOptions(options, qb);
@@ -67,7 +68,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
         getStudyIdFilter(studyIds, qb);
 //        parseQueryOptions(options, qb);
@@ -143,7 +144,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
      * @return The QueryResult with information of how long the query took
      */
     private QueryResult populateSamplesInSources() {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         DBObject returnFields = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
         QueryResult queryResult = coll.find(null, null, null, returnFields);

@@ -22,7 +22,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
-    private final String collectionName = "variants";
+    private final String collectionName = "variants_0_9";
 
     public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
         // Mongo configuration

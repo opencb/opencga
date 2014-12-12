@@ -17,5 +17,9 @@ public abstract class VariantStatsJsonMixin {
     
     @JsonIgnore public abstract String getId();
     
+    @JsonIgnore public abstract boolean isTransition();
+    
+    @JsonIgnore public abstract boolean isTransversion();
+    
     @JsonIgnore public abstract VariantHardyWeinbergStats getHw();
 }
