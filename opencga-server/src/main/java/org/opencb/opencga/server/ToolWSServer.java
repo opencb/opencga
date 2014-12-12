@@ -24,7 +24,7 @@ import java.util.List;
  * Created by jacobo on 30/10/14.
  */
 @Path("/tools")
-@Api(value = "tools", description = "tools")
+@Api(value = "tools", description = "tools", position = 6)
 public class ToolWSServer extends OpenCGAWSServer{
 
     public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {

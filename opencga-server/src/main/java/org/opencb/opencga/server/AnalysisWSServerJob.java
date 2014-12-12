@@ -10,9 +10,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
-@Path("/analysis")
+//@Path("/analysis")
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
+@Deprecated
 public class AnalysisWSServerJob extends OpenCGAWSServer {
     private AnalysisJobExecuter aje;
     private String baseUrl;

@@ -1,52 +1,117 @@
 package org.opencb.opencga.server;
 
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.*;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 @Path("/studies")
-@Api(value = "studies", description = "studies")
+@Api(value = "studies", description = "studies", position = 3)
 public class StudyWSServer extends OpenCGAWSServer {
 
     public StudyWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a file with POST method", response = QueryResult.class, position = 1, notes =
+            "Wont't accept files, jobs, experiments, samples.<br>" +
+            "Will accept (but not yet): acl, uri, cohorts, datasets.<br>" +
+//            "Work in progress.<br>" +
+//            "Only nested files parameter accepted, and only a few parameters.<br>" +
+//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
+            "<ul>" +
+            "<il><b>id</b>, <b>lastActivity</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
+            "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
+            "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
+            "<ul>")
+    public Response createStudyPOST(
+            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
+            @ApiParam(value="studies", required = true) List<Study> studies
+    ) {
+//        List<Study> catalogStudies = new LinkedList<>();
+        List<QueryResult<Study>> queryResults = new LinkedList<>();
+        int projectId;
+        try {
+            projectId = catalogManager.getProjectId(projectIdStr);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        for (Study study : studies) {
+            System.out.println("study = " + study);
+            try {
+                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
+                        study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
+                        study.getDescription(), study.getStatus(), study.getCipher(), null, study.getStats(),
+                        study.getAttributes(), sessionId);
+                Study studyAdded = queryResult.getResult().get(0);
+                queryResults.add(queryResult);
+//                List<File> files = study.getFiles();
+//                if(files != null) {
+//                    for (File file : files) {
+//                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
+//                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
+//                                file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
+//                                file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+//                        file = fileQueryResult.getResult().get(0);
+//                        System.out.println("fileQueryResult = " + fileQueryResult);
+//                        studyAdded.getFiles().add(file);
+//                    }
+//                }
+            } catch (CatalogException | IOException e) {
+                e.printStackTrace();
+//                return createErrorResponse(e.getMessage());
+                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e.getMessage(), Collections.<Study>emptyList()));
+            }
+        }
+        return createOkResponse(queryResults);
+    }
+
+
+
     @GET
     @Path("/create")
     @Produces("application/json")
-    @ApiOperation(value = "Create study")
-
+    @ApiOperation(value = "Create study with GET method", position = 2)
     public Response createStudy(
             @ApiParam(value = "projectId", required = true) @QueryParam("projectId") int projectId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
             @ApiParam(value = "type", required = true) @QueryParam("type") String type,
-            @ApiParam(value = "description", required = true) @QueryParam("description") String description
-    ) {
+            @ApiParam(value = "creatorId", required = true) @QueryParam("creatorId") String creatorId,
+            @ApiParam(value = "creationDate", required = true) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
+            @ApiParam(value = "status", required = true) @QueryParam("status") String status,
+            @ApiParam(value = "cipher", required = true) @QueryParam("cipher") String cipher
+            ) {
 
 
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), description, sessionId);
+            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), creatorId,
+                    creationDate, description, status, cipher, null, null, null, sessionId);
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
+        } catch (CatalogException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -56,7 +121,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/info")
     @Produces("application/json")
-    @ApiOperation(value = "Study information")
+    @ApiOperation(value = "Study information", position = 3)
 
     public Response info(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
@@ -74,7 +139,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/files")
     @Produces("application/json")
-    @ApiOperation(value = "Study information")
+    @ApiOperation(value = "Study information", position = 5)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
         QueryResult queryResult;
         try {
@@ -104,7 +169,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/modify")
     @Produces("application/json")
-    @ApiOperation(value = "Study modify")
+    @ApiOperation(value = "Study modify", position = 4)
     public Response modifyStudy(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,

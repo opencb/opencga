@@ -325,7 +325,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDownloadFile() throws CatalogDBException, IOException, InterruptedException, CatalogIOManagerException {
+    public void testDownloadFile() throws CatalogException, IOException, InterruptedException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
 
@@ -423,7 +423,7 @@ public class CatalogManagerTest extends GenericTest {
      */
 
     @Test
-    public void testCreateJob() throws CatalogDBException, JsonProcessingException, CatalogIOManagerException {
+    public void testCreateJob() throws CatalogException, JsonProcessingException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
 //        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).getResult().get(0).getId();

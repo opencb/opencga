@@ -1,8 +1,6 @@
 package org.opencb.opencga.server;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import com.wordnik.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.feature.Region;
@@ -12,6 +10,7 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
@@ -34,7 +33,7 @@ import java.nio.file.*;
 import java.util.*;
 
 @Path("/files")
-@Api(value = "files", description = "files")
+@Api(value = "files", description = "files", position = 4)
 public class FileWSServer extends OpenCGAWSServer {
 
 
@@ -165,10 +164,56 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse("ok");
     }
 
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create file with POST method", response = QueryResult.class, position = 1, notes =
+            "This method only creates the file entry in Catalog.<br>" +
+            "Will accept (but not yet): acl.<br>" +
+            "<ul>" +
+            "<il><b>id</b> parameter will be ignored.<br></il>" +
+            "<il><b>type</b> accepted values: [<b>'FOLDER', 'FILE', 'INDEX'</b>].<br></il>" +
+            "<il><b>format</b> accepted values: [<b>'PLAIN', 'GZIP', 'EXECUTABLE', 'IMAGE'</b>].<br></il>" +
+            "<il><b>bioformat</b> accepted values: [<b>'VARIANT', 'ALIGNMENT', 'SEQUENCE', 'NONE'</b>].<br></il>" +
+            "<il><b>status</b> accepted values (admin required): [<b>'INDEXING', 'UPLOADING', 'UPLOADED', 'READY', 'DELETING', 'DELETED'</b>].<br></il>" +
+            "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
+            "<ul>")
+    public Response createFilePOST(
+            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value="files", required = true) List<File> files
+    ) {
+//        List<File> catalogFiles = new LinkedList<>();
+        List<QueryResult<File>> queryResults = new LinkedList<>();
+        int studyId;
+        try {
+            studyId = catalogManager.getStudyId(studyIdStr);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        for (File file : files) {
+            try {
+                QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
+                        file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
+                        file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
+                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+//                file = fileQueryResult.getResult().get(0);
+                System.out.println("fileQueryResult = " + fileQueryResult);
+                queryResults.add(fileQueryResult);
+            } catch (Exception e) {
+                e.printStackTrace();
+                queryResults.add(new QueryResult<>("createFile", 0, 0, 0, "", e.getMessage(), Collections.<File>emptyList()));
+//            return createErrorResponse(e.getMessage());
+            }
+        }
+        return createOkResponse(queryResults);
+    }
+
     @GET
     @Path("/create-folder")
     @Produces("application/json")
-    @ApiOperation(value = "Create folder")
+    @ApiOperation(value = "Create folder"/*, response = QueryResult_File.class*/ )
     public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
                                  @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder
     ) {
@@ -180,7 +225,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.createFolder(studyId, folderPath, parents, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException | CatalogIOManagerException  e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -189,14 +234,14 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/info")
     @Produces("application/json")
-    @ApiOperation(value = "File info")
+    @ApiOperation(value = "File info"/*, response = QueryResult_File.class*/)
     public Response info(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId
     ) {
         String[] splitedFileId = fileId.split(",");
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : splitedFileId) {
-                results.add(catalogManager.getFile(catalogManager.getFileId(id), sessionId));
+                results.add(catalogManager.getFile(catalogManager.getFileId(id), this.getQueryOptions(), sessionId));
             }
             return createOkResponse(results);
         } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
@@ -225,21 +270,21 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
-            QueryOptions queryOptions = new QueryOptions();
-            if( !name.isEmpty() )       { queryOptions.put("name", name); }
-            if( !type.isEmpty() )       { queryOptions.put("type", type); }
-            if( !bioformat.isEmpty() )  { queryOptions.put("bioformat", bioformat); }
-            if( !maxSize.isEmpty() )    { queryOptions.put("maxSize", maxSize); }
-            if( !minSize.isEmpty() )    { queryOptions.put("minSize", minSize); }
-            if( !startDate.isEmpty() )  { queryOptions.put("startDate", startDate); }
-            if( !endDate.isEmpty() )    { queryOptions.put("endDate", endDate); }
-            if( !like.isEmpty() )       { queryOptions.put("like", like); }
-            if( !startsWith.isEmpty() ) { queryOptions.put("startsWith", startsWith); }
-            if( !directory.isEmpty() )  { queryOptions.put("directory", directory); }
-            if( !indexJobId.isEmpty() ) { queryOptions.put("indexJobId", indexJobId); }
+            QueryOptions query = new QueryOptions();
+            if( !name.isEmpty() )       { query.put("name", name); }
+            if( !type.isEmpty() )       { query.put("type", type); }
+            if( !bioformat.isEmpty() )  { query.put("bioformat", bioformat); }
+            if( !maxSize.isEmpty() )    { query.put("maxSize", maxSize); }
+            if( !minSize.isEmpty() )    { query.put("minSize", minSize); }
+            if( !startDate.isEmpty() )  { query.put("startDate", startDate); }
+            if( !endDate.isEmpty() )    { query.put("endDate", endDate); }
+            if( !like.isEmpty() )       { query.put("like", like); }
+            if( !startsWith.isEmpty() ) { query.put("startsWith", startsWith); }
+            if( !directory.isEmpty() )  { query.put("directory", directory); }
+            if( !indexJobId.isEmpty() ) { query.put("indexJobId", indexJobId); }
 
 
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, queryOptions, sessionId);
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
         } catch (CatalogDBException e) {
             e.printStackTrace();
@@ -306,9 +351,9 @@ public class FileWSServer extends OpenCGAWSServer {
             storageEngine = storageEngine.toLowerCase();
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId   = catalogManager.getFileId(fileIdStr);
-            index = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, queryOptions);
+            index = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
 
-        } catch (CatalogDBException | CatalogIOManagerException | AnalysisExecutionException | IOException e) {
+        } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -337,8 +382,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File fetch")
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds,
-                          @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
-                     //     @ApiParam(value = "backend", required = false) @DefaultValue("") @QueryParam("backend") String backend,
+                          @ApiParam(value = "region", allowMultiple=true, required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,

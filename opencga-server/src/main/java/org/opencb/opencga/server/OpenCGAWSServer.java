@@ -1,5 +1,6 @@
 package org.opencb.opencga.server;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -51,7 +52,7 @@ public class OpenCGAWSServer {
 
     // Common input arguments
     protected MultivaluedMap<String, String> params;
-    protected QueryOptions queryOptions;
+    private QueryOptions queryOptions;
     protected QueryResponse queryResponse;
 
     // Common output members
@@ -127,7 +128,9 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        
+
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         jsonObjectWriter = jsonObjectMapper.writer();
 
     }
@@ -137,15 +140,23 @@ public class OpenCGAWSServer {
         this.version = version;
         this.uriInfo = uriInfo;
         logger.debug(uriInfo.getRequestUri().toString());
-
-        this.queryOptions = new QueryOptions();
-        queryOptions.put("exclude", exclude);
-        queryOptions.put("include", include);
-        queryOptions.put("metadata", metadata);
-
+        this.queryOptions = null;
         this.sessionIp = httpServletRequest.getRemoteAddr();
     }
 
+    protected QueryOptions getQueryOptions() {
+        if(queryOptions == null) {
+            this.queryOptions = new QueryOptions();
+            if(!exclude.isEmpty()) {
+                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
+            }
+            if(!include.isEmpty()) {
+                queryOptions.put("include", Arrays.asList(include.split(",")));
+            }
+            queryOptions.put("metadata", metadata);
+        }
+        return queryOptions;
+    }
 
     protected Response createErrorResponse(Object o) {
         QueryResult<ObjectMap> result = new QueryResult();
@@ -158,7 +169,7 @@ public class OpenCGAWSServer {
         endTime = System.currentTimeMillis() - startTime;
         queryResponse.setTime(new Long(endTime - startTime).intValue());
         queryResponse.setApiVersion(version);
-        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setQueryOptions(getQueryOptions());
 
         // Guarantee that the QueryResponse object contains a coll of results
         Collection coll;

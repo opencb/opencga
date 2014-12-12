@@ -473,10 +473,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * ***************************
      */
 
+    @Override
     public boolean projectExists(int projectId) {
-        QueryResult count = userCollection.count(new BasicDBObject("projects.id", projectId));
-        long l = (Long) count.getResult().get(0);
-        return l != 0;
+        QueryResult<Long> count = userCollection.count(new BasicDBObject("projects.id", projectId));
+        return count.getResult().get(0) != 0;
     }
 
     @Override
@@ -841,6 +841,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * Study methods
      * ***************************
      */
+
+    @Override
+    public boolean studyExists(int studyId) {
+        QueryResult<Long> count = userCollection.count(new BasicDBObject("projects.studies.id", studyId));
+        return count.getResult().get(0) != 0;
+    }
+
     @Override
     public QueryResult<Study> createStudy(int projectId, Study study) throws CatalogDBException {
         long startTime = startQuery();
@@ -1902,10 +1909,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * ***************************
      */
 
+    @Override
     public boolean jobExists(int jobId) {
-        QueryResult count = jobCollection.count(new BasicDBObject("id", jobId));
-        long l = (Long) count.getResult().get(0);
-        return l != 0;
+        QueryResult<Long> count = jobCollection.count(new BasicDBObject("id", jobId));
+        return count.getResult().get(0) != 0;
     }
 
     @Override
@@ -2170,6 +2177,26 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         User user = parseUser(queryResult);
         return user.getTools().get(0).getId();
     }
+
+
+    /**
+     * Experiments methods
+     * ***************************
+     */
+
+    public boolean experimentExists(int experimentId) {
+        return false;
+    }
+
+    /**
+     * Samples methods
+     * ***************************
+     */
+
+    public boolean sampleExists(int sampleId) {
+        return false;
+    }
+
 
 //    @Override
 //    public QueryResult<Tool> searchTool(QueryOptions query, QueryOptions options) {

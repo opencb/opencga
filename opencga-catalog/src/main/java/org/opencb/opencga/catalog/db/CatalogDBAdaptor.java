@@ -99,7 +99,10 @@ public abstract class CatalogDBAdaptor {
      * Project methods
      * ***************************
      */
+
     public abstract QueryResult<Project> createProject(String userId, Project project) throws CatalogDBException, JsonProcessingException;
+
+    public abstract boolean projectExists(int projectId);
 
     public abstract QueryResult<Project> getAllProjects(String userId) throws CatalogDBException;
 
@@ -124,7 +127,10 @@ public abstract class CatalogDBAdaptor {
      * Study methods
      * ***************************
      */
+
     public abstract QueryResult<Study> createStudy(int projectId, Study study) throws CatalogDBException;
+
+    public abstract boolean studyExists(int studyId);
 
     public abstract QueryResult<Study> getAllStudies(int projectId) throws CatalogDBException;
 //    public abstract QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
@@ -154,7 +160,10 @@ public abstract class CatalogDBAdaptor {
     public abstract String getStudyOwnerId(int studyId) throws CatalogDBException;
 
     public abstract QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogDBException;
+
     public abstract QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogDBException;
+
+
     /**
      * File methods
      * ***************************
@@ -223,6 +232,8 @@ public abstract class CatalogDBAdaptor {
      * ***************************
      */
 
+    public abstract boolean jobExists(int jobId);
+
     public abstract QueryResult<Job> createJob(int studyId, Job job) throws CatalogDBException;
 
     public abstract QueryResult<Integer> deleteJob(int jobId) throws CatalogDBException;
@@ -254,7 +265,24 @@ public abstract class CatalogDBAdaptor {
 
     public abstract int getToolId(String userId, String toolAlias) throws CatalogDBException;
 
+
 //    public abstract QueryResult<Tool> searchTool(QueryOptions options);
+
+    /**
+     * Experiments methods
+     * ***************************
+     */
+
+    public abstract boolean experimentExists(int experimentId);
+
+    /**
+     * Samples methods
+     * ***************************
+     */
+
+    public abstract boolean sampleExists(int sampleId);
+
+//    QueryResult<Tool> searchTool(QueryOptions options);
 
 //    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
 

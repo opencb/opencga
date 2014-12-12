@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
@@ -54,7 +55,7 @@ public class AnalysisFileIndexer {
     }
 
     public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
-            throws IOException, CatalogIOManagerException, CatalogDBException, AnalysisExecutionException {
+            throws IOException, CatalogException, AnalysisExecutionException {
 
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
@@ -79,8 +80,9 @@ public class AnalysisFileIndexer {
 
         //Create index file
         QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.TYPE_INDEX, file.getFormat(),
-                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, "Indexation of " + file.getName() + " (" + fileId + ")", false,
-                        -1, sessionId, indexAttributes);
+                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
+                "Indexation of " + file.getName() + " (" + fileId + ")", File.INDEXING, 0, -1, null, -1, null,
+                indexAttributes, false, sessionId);
         File index = indexQueryResult.getResult().get(0);
 
         //Create job
@@ -96,7 +98,6 @@ public class AnalysisFileIndexer {
 
         //Set JobId to IndexFile
         ObjectMap objectMap = new ObjectMap("jobId", job.getId());
-        objectMap.put("status", File.INDEXING);
         catalogManager.modifyFile(index.getId(), objectMap, sessionId).getResult();
         index.setJobId(job.getId());
 

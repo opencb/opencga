@@ -6,6 +6,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
@@ -33,7 +34,7 @@ public class OpenCGAMain {
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args)
-            throws CatalogDBException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
+            throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
@@ -70,7 +71,7 @@ public class OpenCGAMain {
         }
     }
 
-    private int runCommand(String[] args) throws CatalogDBException, IOException, CatalogIOManagerException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
+    private int runCommand(String[] args) throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
         OptionsParser optionsParser = new OptionsParser();
         try {
             optionsParser.parse(args);

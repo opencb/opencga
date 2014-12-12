@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
@@ -69,14 +70,14 @@ public class AnalysisOutputRecorder {
                     }
                 }
                 QueryResult<File> fileQueryResult = catalogManager.createFile(
-                        studyId, File.TYPE_FILE, "", filePath, "Generated from job " + job.getId(),
+                        studyId, File.PLAIN, "", filePath, "Generated from job " + job.getId(),
                         true, job.getId(), sessionId);
 
                 File file = fileQueryResult.getResult().get(0);
                 fileIds.add(file.getId());
                 catalogFileManager.upload(uri, file, null, sessionId, false, false, true, true);
             }
-        } catch (CatalogDBException | InterruptedException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogException | IOException e) {
             e.printStackTrace();
             logger.error("Error while processing Job", e);
             return;
