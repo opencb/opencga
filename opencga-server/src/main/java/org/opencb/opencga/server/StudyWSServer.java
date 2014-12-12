@@ -5,10 +5,8 @@ import com.wordnik.swagger.annotations.*;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -91,22 +89,22 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Create study with GET method", position = 2)
     public Response createStudy(
-            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") int projectId,
-            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-            @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-            @ApiParam(value = "type", required = true) @QueryParam("type") String type,
-            @ApiParam(value = "creatorId", required = true) @QueryParam("creatorId") String creatorId,
-            @ApiParam(value = "creationDate", required = true) @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status,
-            @ApiParam(value = "cipher", required = true) @QueryParam("cipher") String cipher
+            @ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") int projectId,
+            @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
+            @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
+            @ApiParam(value = "type",         required = false) @QueryParam("type") Study.Type type,
+            @ApiParam(value = "creatorId",    required = false) @QueryParam("creatorId") String creatorId,
+            @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "description",  required = false) @QueryParam("description") String description,
+            @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
+            @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher
             ) {
 
 
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createStudy(projectId, name, alias, Study.StudyType.valueOf(type), creatorId,
+            queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
                     creationDate, description, status, cipher, null, null, null, sessionId);
 
             return createOkResponse(queryResult);

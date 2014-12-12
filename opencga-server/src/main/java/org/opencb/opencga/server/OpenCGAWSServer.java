@@ -92,12 +92,13 @@ public class OpenCGAWSServer {
         try {
             properties.load(is);
             System.out.println("catalog.properties");
-            System.out.println(properties.getProperty("CATALOG.DB.HOST"));
-            System.out.println(properties.getProperty("CATALOG.DB.PORT"));
-            System.out.println(properties.getProperty("CATALOG.DB.DATABASE"));
-            System.out.println(properties.getProperty("CATALOG.DB.USER"));
-            System.out.println(properties.getProperty("CATALOG.DB.PASSWORD"));
-            System.out.println(properties.getProperty("ROOTDIR"));
+            System.out.println(CatalogManager.CATALOG_DB_HOST + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOST));
+            System.out.println(CatalogManager.CATALOG_DB_PORT + " " + properties.getProperty(CatalogManager.CATALOG_DB_PORT));
+            System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+            System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
+            System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));
+            System.out.println(CatalogManager.CATALOG_MAIN_ROOTDIR + " " + properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+
         } catch (IOException e) {
             System.out.println("Error loading properties");
             System.out.println(e.getMessage());

@@ -133,11 +133,8 @@ public abstract class CatalogDBAdaptor {
     public abstract boolean studyExists(int studyId);
 
     public abstract QueryResult<Study> getAllStudies(int projectId) throws CatalogDBException;
-//    public abstract QueryResult<Study> getAllStudies(String userId, String projectAlias) throws CatalogManagerException;
 
     public abstract QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
-
-    public abstract QueryResult renameStudy(String userId, String projectAlias, String studyAlias, String newStudyName) throws CatalogDBException;
 
     public abstract QueryResult renameStudy(int studyId, String newStudyName) throws CatalogDBException;
 
@@ -147,13 +144,9 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
-    public abstract QueryResult<Integer> deleteStudy(String userId, String projectAlias, String studyAlias) throws CatalogDBException;
-
     public abstract QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
 
     public abstract int getStudyId(int projectId, String studyAlias) throws CatalogDBException;
-
-    public abstract int getStudyId(String userId, String projectAlias, String studyAlias) throws CatalogDBException;
 
     public abstract int getProjectIdByStudyId(int studyId) throws CatalogDBException;
 
@@ -170,17 +163,10 @@ public abstract class CatalogDBAdaptor {
      */
 
     // add file to study
-    public abstract QueryResult<File> createFileToStudy(String userId, String projectAlias, String studyAlias, File file) throws CatalogDBException;
     public abstract QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogDBException;
 
-    public abstract QueryResult<Integer> deleteFile(String userId, String projectAlias, String studyAlias, String path) throws CatalogDBException, IOException;
-    public abstract QueryResult<Integer> deleteFile(int studyId, String path) throws CatalogDBException;
     public abstract QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
 
-    public abstract QueryResult deleteFilesFromStudy(String userId, String projectAlias, String studyAlias, String sessionId) throws CatalogDBException;
-    public abstract QueryResult deleteFilesFromStudy(int studyId, String studyAlias, String sessionId) throws CatalogDBException;
-
-    public abstract int getFileId(String userId, String projectAlias, String studyAlias, String path) throws CatalogDBException;
     public abstract int getFileId(int studyId, String path) throws CatalogDBException;
 
     public abstract QueryResult<File> getAllFiles(int studyId) throws CatalogDBException;
@@ -190,16 +176,9 @@ public abstract class CatalogDBAdaptor {
     public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
     public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    public abstract QueryResult setFileStatus(String userId, String projectAlias, String studyAlias, String path, String status) throws CatalogDBException, IOException;
-    @Deprecated
-    public abstract QueryResult setFileStatus(int studyId, String path, String status) throws CatalogDBException, IOException;
-    @Deprecated
-    public abstract QueryResult setFileStatus(int fileId, String status) throws CatalogDBException, IOException;
+    public abstract QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException, IOException;
 
     public abstract QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
-
-//    public abstract QueryResult setIndexFile(int fileId, String backend, Index index) throws CatalogManagerException;
 
     public abstract QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogDBException;
 
@@ -208,6 +187,7 @@ public abstract class CatalogDBAdaptor {
     public abstract String getFileOwnerId(int fileId) throws CatalogDBException;
 
     public abstract QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
+
     public abstract QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
     public abstract QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;

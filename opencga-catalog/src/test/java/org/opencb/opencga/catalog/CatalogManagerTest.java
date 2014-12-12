@@ -256,8 +256,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateStudy() throws Exception {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.StudyType.CASE_CONTROL, "d", sessionIdUser));
-        System.out.println(catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.StudyType.TRIO, "Done", sessionIdUser));
+        System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser));
+        System.out.println(catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser));
     }
 
     @Test

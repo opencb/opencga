@@ -13,7 +13,7 @@ public class Study {
     private int id;
     private String name;
     private String alias;
-    private StudyType type;
+    private Type type;
     private String creatorId;
     private String creationDate;
     private String description;
@@ -43,7 +43,7 @@ public class Study {
         private List<SampleAnnotationDescription> files;
      */
 
-    public enum StudyType {
+    public enum Type {
         CASE_CONTROL,
         CASE_SET,
         CONTROL_SET,
@@ -55,13 +55,13 @@ public class Study {
     public Study() {
     }
 
-    public Study(String name, String alias, StudyType type, String description, String status, URI uri) {
+    public Study(String name, String alias, Type type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
                 uri, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public Study(int id, String name, String alias, StudyType type, String creatorId, String creationDate,
+    public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
                  String description, String status, String lastActivity, long diskUsage, String cipher, List<Acl> acl,
                  List<Experiment> experiments, List<File> files, List<Job> jobs, URI uri,
                  Map<String, Object> stats, Map<String, Object> attributes) {
@@ -133,11 +133,11 @@ public class Study {
         this.alias = alias;
     }
 
-    public StudyType getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(StudyType type) {
+    public void setType(Type type) {
         this.type = type;
     }
 

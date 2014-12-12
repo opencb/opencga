@@ -33,6 +33,13 @@ import java.util.regex.Pattern;
 
 public class CatalogManager {
 
+    public static final String CATALOG_DB_USER =       "OPENCGA.CATALOG.DB.USER";
+    public static final String CATALOG_DB_DATABASE =   "OPENCGA.CATALOG.DB.DATABASE";
+    public static final String CATALOG_DB_PASSWORD =   "OPENCGA.CATALOG.DB.PASSWORD";
+    public static final String CATALOG_DB_HOST =       "OPENCGA.CATALOG.DB.HOST";
+    public static final String CATALOG_DB_PORT =       "OPENCGA.CATALOG.DB.PORT";
+    public static final String CATALOG_MAIN_ROOTDIR =  "OPENCGA.CATALOG.MAIN.ROOTDIR";
+
     private CatalogDBAdaptor catalogDBAdaptor;
     private CatalogIOManager ioManager;
     private CatalogIOManagerFactory catalogIOManagerFactory;
@@ -94,7 +101,7 @@ public class CatalogManager {
             throws IOException, CatalogIOManagerException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
 //        ioManager = this.catalogIOManagerFactory.get(properties.getProperty("CATALOG.MODE", DEFAULT_CATALOG_SCHEME));
-        String scheme = URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")).getScheme();
+        String scheme = URI.create(properties.getProperty(CATALOG_MAIN_ROOTDIR)).getScheme();
         if(scheme == null) {
             scheme = "file";
         }
@@ -105,13 +112,13 @@ public class CatalogManager {
             throws CatalogDBException {
 
         MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
-                properties.getProperty("CATALOG.DB.USER", ""),
-                properties.getProperty("CATALOG.DB.DATABASE", ""),
-                properties.getProperty("CATALOG.DB.PASSWORD", "").toCharArray());
+                properties.getProperty(CATALOG_DB_USER, ""),
+                properties.getProperty(CATALOG_DB_DATABASE, ""),
+                properties.getProperty(CATALOG_DB_PASSWORD, "").toCharArray());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty("CATALOG.DB.HOST", ""),
-                Integer.parseInt(properties.getProperty("CATALOG.DB.PORT", "0")));
+                properties.getProperty(CATALOG_DB_HOST, ""),
+                Integer.parseInt(properties.getProperty(CATALOG_DB_PORT, "0")));
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
 
@@ -212,7 +219,8 @@ public class CatalogManager {
         if(projectStudy.length != 2){
             return -2;
         }
-        return catalogDBAdaptor.getStudyId(split[0], projectStudy[0], projectStudy[1]);
+        int projectId = catalogDBAdaptor.getProjectId(split[0], projectStudy[0]);
+        return catalogDBAdaptor.getStudyId(projectId, projectStudy[1]);
     }
 
     public int getFileId(String id) throws CatalogDBException {
@@ -228,7 +236,9 @@ public class CatalogManager {
         if(projectStudyPath.length <= 2){
             return -2;
         }
-        return catalogDBAdaptor.getFileId(split[0], projectStudyPath[0], projectStudyPath[1], projectStudyPath[2]);
+        int projectId = catalogDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
+        int studyId = catalogDBAdaptor.getStudyId(projectId, projectStudyPath[1]);
+        return catalogDBAdaptor.getFileId(studyId, projectStudyPath[2]);
     }
 
     public int getToolId(String id) throws CatalogDBException {
@@ -571,13 +581,13 @@ public class CatalogManager {
      * Study methods
      * ***************************
      */
-    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.StudyType type, String description,
+    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException, CatalogIOManagerException, IOException {
         return createStudy(projectId, name, alias, type, null, null, description, null, null, null , null, null, sessionId);
     }
 
-    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.StudyType type,
+    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                            String creatorId, String creationDate, String description, String status,
                                            String cipher, String uriScheme, Map<String, Object> stats,
                                            Map<String, Object> attributes, String sessionId)
@@ -610,7 +620,7 @@ public class CatalogManager {
         if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
             throw new CatalogDBException("Permission denied. Can't write in project");
         }
-        if (creatorId != userId) {
+        if (!creatorId.equals(userId)) {
             if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
             } else {
@@ -852,7 +862,7 @@ public class CatalogManager {
             throw new CatalogException("Study { id: " + studyId + "} does not exist.");
         }
 
-        if (ownerId != userId) {
+        if (!ownerId.equals(userId)) {
             if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with ownerId != userId");
             } else {

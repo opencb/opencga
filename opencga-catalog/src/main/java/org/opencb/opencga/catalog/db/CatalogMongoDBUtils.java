@@ -19,7 +19,7 @@ class CatalogMongoDBUtils {
 
     static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection){
         QueryResult<DBObject> result = metaCollection.findAndModify(
-                new BasicDBObject("_id", "METADATA"),  //Query
+                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
                 new BasicDBObject(field, true),  //Fields
                 null,
                 new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
