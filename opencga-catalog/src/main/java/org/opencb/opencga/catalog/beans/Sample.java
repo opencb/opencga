@@ -16,24 +16,24 @@ public class Sample {
 
     private String description;
 
-    private List<AnnotationSet> annotations;
+    private List<AnnotationSet> annotationSets;
 
     public Sample() {
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description) {
-        this(id, name, source, individual, studyId, description, new LinkedList<Variable>());
+        this(id, name, source, individual, studyId, description, new LinkedList<AnnotationSet>());
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description,
-                  List<Variable> variables) {
+                  List<AnnotationSet> annotationSets) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individual = individual;
         this.studyId = studyId;
         this.description = description;
-//        this.sampleAnnotations = sampleAnnotationDescriptions;
+        this.annotationSets = annotationSets;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class Sample {
                 ", individual=" + individual +
                 ", studyId=" + studyId +
                 ", description='" + description + '\'' +
-//                ", sampleAnnotations=" + sampleAnnotations +
+                ", annotationSets=" + annotationSets +
                 '}';
     }
 
@@ -97,4 +97,11 @@ public class Sample {
         this.description = description;
     }
 
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public void setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+    }
 }

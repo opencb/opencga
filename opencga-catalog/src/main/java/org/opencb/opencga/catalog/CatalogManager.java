@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.MongoCredential;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -452,7 +451,7 @@ public class CatalogManager {
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, String sessionId)
             throws CatalogDBException,
-            CatalogIOManagerException, JsonProcessingException {
+            CatalogIOManagerException {
         checkParameter(ownerId, "ownerId");
         checkParameter(name, "name");
         checkAlias(alias, "alias");
@@ -500,7 +499,7 @@ public class CatalogManager {
     }
 
     public QueryResult<Project> getAllProjects(String ownerId, String sessionId)
-            throws CatalogDBException, JsonProcessingException {
+            throws CatalogDBException {
         checkParameter(ownerId, "ownerId");
         checkParameter(sessionId, "sessionId");
 
@@ -701,7 +700,7 @@ public class CatalogManager {
     }
 
     public QueryResult<Study> getAllStudies(int projectId, String sessionId)
-            throws CatalogDBException, JsonProcessingException {
+            throws CatalogDBException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 

@@ -248,7 +248,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException, JsonProcessingException {
+    public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException {
         checkParameter(userId, "userId");
         checkParameter(password, "password");
 
@@ -1222,7 +1222,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException, IOException {
+    public QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException {
         long startTime = startQuery();
         return endQuery("Set file status", startTime, modifyFile(fileId, new ObjectMap("status", status.toString())));
     }
@@ -1346,7 +1346,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 new BasicDBObject(
                         "$group",
                         BasicDBObjectBuilder
-                                .start("_id", "$"+ _STUDY_ID)
+                                .start("_id", "$" + _STUDY_ID)
                                 .append("diskUsage",
                                         new BasicDBObject(
                                                 "$sum",
@@ -1539,8 +1539,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public String getJobStatus(int jobId, String sessionId) throws CatalogDBException, IOException {   // TODO remove?
-        return null;
+    public String getJobStatus(int jobId, String sessionId) throws CatalogDBException {   // TODO remove?
+        throw new UnsupportedOperationException("Not implemented method");
     }
 
     @Override
@@ -1606,11 +1606,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             }
         }
         return endQuery("Modify job", startTime);
-    }
-
-    @Override
-    public void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogDBException, IOException {   // TODO remove?
-
     }
 
     @Override
@@ -1728,6 +1723,17 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return user.getTools().get(0).getId();
     }
 
+//    @Override
+//    public QueryResult<Tool> searchTool(QueryOptions query, QueryOptions options) {
+//        long startTime = startQuery();
+//
+//        QueryResult queryResult = userCollection.find(new BasicDBObject(options),
+//                new QueryOptions("include", Arrays.asList("tools")), null);
+//
+//        User user = parseUser(queryResult);
+//
+//        return endQuery("Get tool", startTime, user.getTools());
+//    }
 
     /**
      * Experiments methods
@@ -1744,21 +1750,64 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      */
 
     public boolean sampleExists(int sampleId) {
-        return false;
+        DBObject query = new BasicDBObject("id", sampleId);
+        QueryResult<Long> count = sampleCollection.count(query);
+        return count.getResult().get(0) != 0;
+    }
+
+    public QueryResult<Sample> createSample(int studyId, Sample sample) throws CatalogDBException {
+        long startTime = startQuery();
+
+        int sampleId = getNewId();
+        sample.setId(sampleId);
+        sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
+        //TODO: Add annotationSets
+        DBObject sampleObject = getDbObject(sample, "sample " + sample + " could not be parsed into json");
+        sampleObject.put(_STUDY_ID, studyId);
+        sampleCollection.insert(sampleObject);
+
+        return endQuery("createSample", startTime, getSample(sampleId, null));
+    }
+
+    public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryOptions filteredOptions = filterOptions(options, "projects.studies.samples");
+        DBObject query = new BasicDBObject("id", sampleId);
+
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
+        List<Sample> samples = parseSamples(queryResult);
+
+        if(samples.isEmpty()) {
+            throw new CatalogDBException("Sample {id: " + sampleId + "} does not exist");
+        }
+
+        return endQuery("getSample", startTime, samples);
+    }
+
+    public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryOptions filteredOptions = filterOptions(options, "projects.studies.samples");
+        DBObject query = new BasicDBObject(_STUDY_ID, studyId);
+
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
+        List<Sample> samples = parseSamples(queryResult);
+
+        return endQuery("getAllSamples", startTime, samples);
+    }
+
+    public int getStudyIdBySampleId(int sampleId) {
+        DBObject query = new BasicDBObject("id", sampleId);
+        BasicDBObject returnFields = new BasicDBObject(_STUDY_ID, true);
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, null, returnFields);
+        if (queryResult.getResult().isEmpty()) {
+            return -1;
+        } else {
+            Object studyId = queryResult.getResult().get(0).get(_STUDY_ID);
+            return studyId instanceof Integer ? (Integer) studyId : Integer.parseInt(studyId.toString());
+        }
     }
 
 
-//    @Override
-//    public QueryResult<Tool> searchTool(QueryOptions query, QueryOptions options) {
-//        long startTime = startQuery();
-//
-//        QueryResult queryResult = userCollection.find(new BasicDBObject(options),
-//                new QueryOptions("include", Arrays.asList("tools")), null);
-//
-//        User user = parseUser(queryResult);
-//
-//        return endQuery("Get tool", startTime, user.getTools());
-//    }
 
 
     /*
@@ -1834,6 +1883,18 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return jobs;
     }
 
+    private List<Sample> parseSamples(QueryResult<DBObject> result) throws CatalogDBException {
+        LinkedList<Sample> samples = new LinkedList<>();
+        try {
+            for (DBObject object : result.getResult()) {
+                samples.add(jsonSampleReader.<Sample>readValue(object.toString()));
+            }
+        } catch (IOException e) {
+            throw new CatalogDBException("Error parsing samples", e);
+        }
+        return samples;
+    }
+
 
     private DBObject getDbObject(Object object, String errorMsg) throws CatalogDBException {
         DBObject dbObject;
@@ -1843,6 +1904,53 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException(errorMsg);
         }
         return dbObject;
+    }
+
+    /**
+     * Filter "include" and "exclude" options.
+     *
+     * Include and Exclude options are as absolute routes. This method removes all the values that are not in the
+     * specified route. For the values in the route, the route is removed.
+     *
+     * [
+     *  name,
+     *  projects.id,
+     *  projects.studies.id,
+     *  projects.studies.alias,
+     *  projects.studies.name
+     * ]
+     *
+     * with route = "projects.studies", then
+     *
+     * [
+     *  id,
+     *  alias,
+     *  name
+     * ]
+     *
+     * @param options
+     * @param route
+     * @return
+     */
+    private QueryOptions filterOptions(QueryOptions options, String route) {
+        QueryOptions filteredOptions = new QueryOptions(options); //copy queryOptions
+
+        String[] filteringLists = {"include", "exclude"};
+        for (String listName : filteringLists) {
+            List<String> list = filteredOptions.getListAs(listName, String.class, null);
+            List<String> filteredList = new LinkedList<>();
+            int length = route.length();
+            if(list != null) {
+                for (String s : list) {
+                    if(s.startsWith(route)) {
+                        filteredList.add(s.substring(length));
+                    }
+                }
+                filteredOptions.put(listName, filteredList);
+            }
+        }
+
+        return filteredOptions;
     }
 
 }

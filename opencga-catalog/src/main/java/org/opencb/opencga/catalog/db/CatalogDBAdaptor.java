@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.db;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -8,7 +7,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.beans.*;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -71,7 +69,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Integer> deleteUser(String userId) throws CatalogDBException;
 
-    public abstract QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException, IOException;
+    public abstract QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 
     public abstract QueryResult logout(String userId, String sessionId) throws CatalogDBException;
 
@@ -100,7 +98,7 @@ public abstract class CatalogDBAdaptor {
      * ***************************
      */
 
-    public abstract QueryResult<Project> createProject(String userId, Project project) throws CatalogDBException, JsonProcessingException;
+    public abstract QueryResult<Project> createProject(String userId, Project project) throws CatalogDBException;
 
     public abstract boolean projectExists(int projectId);
 
@@ -176,7 +174,7 @@ public abstract class CatalogDBAdaptor {
     public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
     public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException, IOException;
+    public abstract QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
 
     public abstract QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
@@ -225,13 +223,11 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Job> getAllJobs(int studyId) throws CatalogDBException;
 
-    public abstract String getJobStatus(int jobId, String sessionId) throws CatalogDBException, IOException;
+    public abstract String getJobStatus(int jobId, String sessionId) throws CatalogDBException;
 
     public abstract QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
 
     public abstract QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
-
-    public abstract void setJobCommandLine(int jobId, String commandLine, String sessionId) throws CatalogDBException, IOException;
 
     public abstract int getStudyIdByJobId(int jobId);
 
@@ -258,6 +254,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract boolean experimentExists(int experimentId);
 
+//    QueryResult<Tool> searchTool(QueryOptions options);
     /**
      * Samples methods
      * ***************************
@@ -265,11 +262,13 @@ public abstract class CatalogDBAdaptor {
 
     public abstract boolean sampleExists(int sampleId);
 
-//    QueryResult<Tool> searchTool(QueryOptions options);
+    public abstract QueryResult<Sample> createSample(int studyId, Sample sample) throws CatalogDBException;
 
-//    int getJobIndex(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
+    public abstract QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
 
-//    Project getJobProject(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException;
+    public abstract QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException;
+
+    public abstract int getStudyIdBySampleId(int sampleId);
 
 
 
