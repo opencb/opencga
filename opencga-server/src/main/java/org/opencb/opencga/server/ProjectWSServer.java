@@ -1,15 +1,12 @@
 package org.opencb.opencga.server;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -41,7 +38,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createProject(userId, name, alias, description, organization, sessionId);
+            queryResult = catalogManager.createProject(userId, name, alias, description, organization, this.getQueryOptions(), sessionId);
 
             return createOkResponse(queryResult);
 
@@ -61,7 +58,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getProject(projectId, sessionId);
+            queryResult = catalogManager.getProject(projectId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -79,7 +76,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllStudies(projectId, sessionId);
+            queryResult = catalogManager.getAllStudies(projectId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

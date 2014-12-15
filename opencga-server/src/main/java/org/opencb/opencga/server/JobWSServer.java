@@ -13,8 +13,6 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Tool;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -54,7 +52,7 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response info(
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
-            return createOkResponse(catalogManager.getJob(jobId, sessionId));
+            return createOkResponse(catalogManager.getJob(jobId, this.getQueryOptions(), sessionId));
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e.getMessage());
         }

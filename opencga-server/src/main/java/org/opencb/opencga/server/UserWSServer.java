@@ -1,15 +1,12 @@
 package org.opencb.opencga.server;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -39,7 +36,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "password", required = true) @QueryParam("password") String password ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(userId, name, email, password, organization);
+            queryResult = catalogManager.createUser(userId, name, email, password, organization, this.getQueryOptions());
             return createOkResponse(queryResult);
 
         } catch (CatalogException  e) {
@@ -179,7 +176,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId, this.getQueryOptions());
+            QueryResult result = catalogManager.getUser(userId, lastActivity, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -198,7 +195,7 @@ public class UserWSServer extends OpenCGAWSServer {
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllProjects(userId, sessionId);
+            queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

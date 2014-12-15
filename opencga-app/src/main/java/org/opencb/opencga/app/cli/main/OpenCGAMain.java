@@ -100,7 +100,7 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
                         //QueryResult<User> user = catalogManager.insertUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.Role.USER, ""));
-                        QueryResult<User> user = catalogManager.createUser(c.up.user, c.name, c.email, c.up.password, c.organization);
+                        QueryResult<User> user = catalogManager.createUser(c.up.user, c.name, c.email, c.up.password, c.organization, null);
                         System.out.println(user);
                         break;
                     }
@@ -152,7 +152,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
                         login(c.up);
 
-                        QueryResult<Project> project = catalogManager.createProject(userId, c.name, c.alias, c.description, c.organization, sessionId);
+                        QueryResult<Project> project = catalogManager.createProject(userId, c.name, c.alias, c.description, c.organization, null, sessionId);
                         System.out.println(project);
 
                         logout();
@@ -163,7 +163,7 @@ public class OpenCGAMain {
                         login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.id);
-                        QueryResult<Project> project = catalogManager.getProject(projectId, sessionId);
+                        QueryResult<Project> project = catalogManager.getProject(projectId, null, sessionId);
                         System.out.println(project);
 
                         logout();
@@ -259,7 +259,7 @@ public class OpenCGAMain {
                         login(c.up);
 
                         int fileId = catalogManager.getFileId(c.id);
-                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, sessionId);
+                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, null, sessionId);
                         System.out.println(file);
 
                         logout();

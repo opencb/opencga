@@ -41,6 +41,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     //Keys to foreign objects.
     private static final String _PROJECT_ID = "_projectId";
     private static final String _STUDY_ID = "_studyId";
+    private static final String FILTER_ROUTE_STUDIES = "projects.studies.";
+    private static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
+    private static final String FILTER_ROUTE_FILES =   "projects.studies.files.";
+    private static final String FILTER_ROUTE_JOBS =    "projects.studies.jobs.";
 
     private final MongoDataStoreManager mongoManager;
     private final MongoCredential credentials;
@@ -173,7 +177,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     @Override
     public QueryResult<User> createUser(String userId, String userName, String email, String password,
-                                        String organization) throws CatalogDBException {
+                                        String organization, QueryOptions options) throws CatalogDBException {
         checkParameter(userId, "userId");
         long startTime = startQuery();
 
@@ -185,7 +189,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<User> insertUser(User user) throws CatalogDBException {
+    public QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException {
         checkParameter(user, "user");
         long startTime = startQuery();
 
@@ -208,14 +212,14 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         String errorMsg = insert.getErrorMsg() != null ? insert.getErrorMsg() : "";
         for (Project p : projects) {
-            String projectErrorMsg = createProject(user.getId(), p).getErrorMsg();
+            String projectErrorMsg = createProject(user.getId(), p, options).getErrorMsg();
             if(projectErrorMsg != null && !projectErrorMsg.isEmpty()){
                 errorMsg += ", " + p.getAlias() + ":" + projectErrorMsg;
             }
         }
 
         //Get the inserted user.
-        List<User> result = getUser(user.getId(), null, "").getResult();
+        List<User> result = getUser(user.getId(), options, "").getResult();
 
         return endQuery("insertUser", startTime, result, errorMsg, null);
     }
@@ -474,7 +478,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Project> createProject(String userId, Project project) throws CatalogDBException {
+    public QueryResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         List<Study> studies = project.getStudies();
@@ -514,19 +518,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         String errorMsg = "";
         for (Study study : studies) {
-            String studyErrorMsg = createStudy(project.getId(), study).getErrorMsg();
+            String studyErrorMsg = createStudy(project.getId(), study, options).getErrorMsg();
             if(studyErrorMsg != null && !studyErrorMsg.isEmpty()){
                 errorMsg += ", " + study.getAlias() + ":" + studyErrorMsg;
             }
         }
         List<Project> result = getProject(project.getId(), null).getResult();
         return endQuery("Create Project", startTime, result, errorMsg, null);
-    }
-
-    @Override
-    public QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogDBException {
-        int projectId = getProjectId(userId, projectAlias);
-        return getProject(projectId, null);
     }
 
     @Override
@@ -571,13 +569,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Project> getAllProjects(String userId) throws CatalogDBException {
+    public QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         DBObject query = new BasicDBObject("id", userId);
         DBObject projection = new BasicDBObject("projects", true);
         projection.put("_id", false);
-        QueryResult<DBObject> result = userCollection.find(query, null, null, projection);
+        QueryResult<DBObject> result = userCollection.find(query, options, null, projection);
 
         User user = parseUser(result);
         return endQuery(
@@ -785,42 +783,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
 
-    public QueryResult<File> searchProject(QueryOptions query, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        BasicDBList filters = new BasicDBList();
-
-        if(query.containsKey("name")){
-            filters.add(new BasicDBObject("name", query.getString("name")));
-        }
-        if(query.containsKey("like")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", query.getString("like"))));
-        }
-        if(query.containsKey("startsWith")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+query.getString("startsWith"))));
-        }
-        if(query.containsKey("alias")){
-            filters.add(new BasicDBObject("alias", query.getString("alias")));
-        }
-//        if(query.containsKey("maxSize")){
-//            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", query.getInt("maxSize"))));
-//        }
-//        if(query.containsKey("minSize")){
-//            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
-//        }
-        if(query.containsKey("startDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", query.getString("startDate"))));
-        }
-        if(query.containsKey("endDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
-        }
-
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options);
-
-        List<File> files = parseFiles(queryResult);
-
-        return endQuery("Search Proyect", startTime, files);
-    }
+//    public QueryResult<Project> searchProject(QueryOptions query, QueryOptions options) throws CatalogDBException {
+//        long startTime = startQuery();
+//
+//
+//        return endQuery("Search Proyect", startTime, projects);
+//    }
 
     /**
      * Study methods
@@ -844,7 +812,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Study> createStudy(int projectId, Study study) throws CatalogDBException {
+    public QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if(projectId < 0){
             throw new CatalogDBException("Project {id:"+projectId+"} not found");
@@ -885,7 +853,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String errorMsg = updateResult.getErrorMsg() != null? updateResult.getErrorMsg() : "";
 
         for (File file : files) {
-            String fileErrorMsg = createFileToStudy(study.getId(), file).getErrorMsg();
+            String fileErrorMsg = createFileToStudy(study.getId(), file, options).getErrorMsg();
             if(fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg +=  file.getName() + ":" + fileErrorMsg + ", ";
             }
@@ -893,19 +861,19 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         for (Job job : jobs) {
 //            String jobErrorMsg = createAnalysis(study.getId(), analysis).getErrorMsg();
-            String jobErrorMsg = createJob(study.getId(), job).getErrorMsg();
+            String jobErrorMsg = createJob(study.getId(), job, options).getErrorMsg();
             if(jobErrorMsg != null && !jobErrorMsg.isEmpty()){
                 errorMsg += job.getName() + ":" + jobErrorMsg + ", ";
             }
         }
 
-        List<Study> studyList = getStudy(study.getId(), null).getResult();
+        List<Study> studyList = getStudy(study.getId(), options).getResult();
         return endQuery("Create Study", startTime, studyList, errorMsg, null);
 
     }
 
     @Override
-    public QueryResult<Study> getAllStudies(int projectId) throws CatalogDBException {
+    public QueryResult<Study> getAllStudies(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if(!projectExists(projectId)) {
             throw new CatalogDBException("Project {id:"+projectId+"} not found");
@@ -913,7 +881,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         DBObject query = new BasicDBObject(_PROJECT_ID, projectId);
 
-        QueryResult queryResult = endQuery("get project", startTime, studyCollection.find(query, null));
+        QueryResult<DBObject> queryResult = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
@@ -930,10 +898,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         //TODO append files in the studies
         //TODO: Parse QueryOptions include/exclude
         DBObject query = new BasicDBObject("id", studyId);
-        QueryResult result = studyCollection.find(query, options);
-        QueryResult queryResult = endQuery("get study", startTime, result);
+        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
+//        QueryResult queryResult = endQuery("get study", startTime, result);
 
-        List<Study> studies = parseStudies(queryResult);
+        List<Study> studies = parseStudies(result);
         if (studies.isEmpty()) {
             throw new CatalogDBException("Study {id:" + studyId + "} not found");
         }
@@ -1109,7 +1077,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogDBException {
+    public QueryResult<File> createFileToStudy(int studyId, File file, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         String ownerId = getStudyOwnerId(studyId);
@@ -1136,7 +1104,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 
-        return endQuery("Create file", startTime, Arrays.asList(file));
+        return endQuery("Create file", startTime, getFile(newFileId, options));
     }
 
     /**
@@ -1169,20 +1137,20 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<File> getAllFiles(int studyId) throws CatalogDBException {
+    public QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject(_STUDY_ID, studyId), null, null, null);
+        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES), null, null);
         List<File> files = parseFiles(queryResult);
 
         return endQuery("Get all files", startTime, files);
     }
 
     @Override
-    public QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogDBException {
+    public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<DBObject> folderResult = fileCollection.find( new BasicDBObject("id", folderId), null, null, null);
+        QueryResult<DBObject> folderResult = fileCollection.find( new BasicDBObject("id", folderId), filterOptions(options, FILTER_ROUTE_FILES), null, null);
 
         File folder = parseFile(folderResult);
         if (!folder.getType().equals(File.Type.FOLDER)) {
@@ -1475,7 +1443,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> createJob(int studyId, Job job) throws CatalogDBException {
+    public QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
 //        if (!analysisExists(analysisId)) {
@@ -1495,7 +1463,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         jobObject.put(_STUDY_ID, studyId);
         QueryResult insertResult = jobCollection.insert(jobObject); //TODO: Check results.get(0).getN() != 0
 
-        return endQuery("Create Job", startTime, getJob(jobId));
+        return endQuery("Create Job", startTime, getJob(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));
     }
 
     /**
@@ -1516,9 +1484,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> getJob(int jobId) throws CatalogDBException {
+    public QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject("id", jobId), null);
+        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject("id", jobId), filterOptions(options, FILTER_ROUTE_JOBS));
         Job job = parseJob(queryResult);
         if(job != null) {
             return endQuery("Get job", startTime, Arrays.asList(job));
@@ -1528,9 +1496,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> getAllJobs(int studyId) throws CatalogDBException {
+    public QueryResult<Job> getAllJobs(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), null);
+        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Get all jobs", startTime, jobs);
     }
@@ -1775,7 +1743,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryOptions filteredOptions = filterOptions(options, "projects.studies.samples");
+        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
         DBObject query = new BasicDBObject("id", sampleId);
 
         QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
@@ -1790,7 +1758,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryOptions filteredOptions = filterOptions(options, "projects.studies.samples");
+        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
         DBObject query = new BasicDBObject(_STUDY_ID, studyId);
 
         QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
@@ -1855,7 +1823,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryOptions filteredOptions = filterOptions(options, "projects.studies");
+        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_STUDIES);
         DBObject query = new BasicDBObject("variableSets.id", variableSetId);
         DBObject projection = new BasicDBObject(
                 "variableSets",
@@ -2012,6 +1980,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if(options == null) {
             return null;
         }
+
         QueryOptions filteredOptions = new QueryOptions(options); //copy queryOptions
 
         String[] filteringLists = {"include", "exclude"};
@@ -2028,7 +1997,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 filteredOptions.put(listName, filteredList);
             }
         }
-
         return filteredOptions;
     }
 

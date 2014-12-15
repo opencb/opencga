@@ -51,9 +51,9 @@ public class CatalogManagerTest extends GenericTest {
     public void setUp() throws IOException, CatalogException {
         List<ObjectMap> result;
 
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "");
-        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "");
-        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME");
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME", null);
 
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
@@ -72,7 +72,7 @@ public class CatalogManagerTest extends GenericTest {
         } catch (CatalogException | IOException ignore) {
         }
 
-        QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", sessionIdUser);
+        QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", null, sessionIdUser);
         catalogManager.createStudy(project.getResult().get(0).getId(), "session 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser);
     }
 
@@ -199,8 +199,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateProject() throws Exception {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
-        System.out.println(catalogManager.createProject("user", p.getName(), p.getAlias(), p.getDescription(), p.getOrganization(), sessionIdUser));
-        System.out.println(catalogManager.createProject("user3", "Project Management Project", "pmp", "life art intelligent system", "myorg", sessionIdUser3));
+        System.out.println(catalogManager.createProject("user", p.getName(), p.getAlias(), p.getDescription(), p.getOrganization(), null, sessionIdUser));
+        System.out.println(catalogManager.createProject("user3", "Project Management Project", "pmp", "life art intelligent system", "myorg", null, sessionIdUser3));
     }
 
     @Test
@@ -212,8 +212,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetAllProjects() throws Exception {
-        System.out.println(catalogManager.getAllProjects("user", sessionIdUser));
-        System.out.println(catalogManager.getAllProjects("user", sessionIdUser2));
+        System.out.println(catalogManager.getAllProjects("user", null, sessionIdUser));
+        System.out.println(catalogManager.getAllProjects("user", null, sessionIdUser2));
     }
 
     @Test
@@ -229,7 +229,7 @@ public class CatalogManagerTest extends GenericTest {
         options.put("attributes", attributes);
 
         catalogManager.modifyProject(projectId, options, sessionIdUser);
-        QueryResult<Project> result = catalogManager.getProject(projectId, sessionIdUser);
+        QueryResult<Project> result = catalogManager.getProject(projectId, null, sessionIdUser);
         Project project = result.getResult().get(0);
         System.out.println(result);
 
@@ -263,14 +263,19 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateStudy() throws Exception {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
         System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser));
-        System.out.println(catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser));
+        QueryResult<Study> study = catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser);
+        System.out.println(study);
+
+        QueryResult<Study> queryResult = catalogManager.getStudy(study.getResult().get(0).getId(), sessionIdUser,
+                new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.alias")));
+        System.out.println("queryResult = " + queryResult);
     }
 
     @Test
     public void testModifyStudy() throws Exception {
-        int studyId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getStudies().get(0).getId();
+        int studyId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getStudies().get(0).getId();
         String newName = "Phase 1 "+ StringUtils.randomString(20);
         String newDescription = StringUtils.randomString(500);
 
@@ -303,15 +308,15 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFolder() throws Exception {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
-        System.out.println(catalogManager.createFolder(studyId, Paths.get("data", "new", "folder"), true, sessionIdUser));
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
+        System.out.println(catalogManager.createFolder(studyId, Paths.get("data", "new", "folder"), true, null, sessionIdUser));
     }
 
     @Test
     public void testCreateAndUpload() throws Exception {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
 
         FileInputStream is;
         java.io.File fileTest;
@@ -334,8 +339,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDownloadFile() throws CatalogException, IOException, InterruptedException, CatalogIOManagerException {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         java.io.File fileTest;
@@ -378,9 +383,9 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteFile () throws CatalogException, IOException, CatalogIOManagerException {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
-        List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
+        List<File> result = catalogManager.getAllFiles(studyId, null, sessionIdUser).getResult();
         File file = null;
         for (int i = 0; i < result.size(); i++) {
             if (result.get(i).getType().equals(File.Type.FILE)) {
@@ -432,18 +437,18 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateJob() throws CatalogException, JsonProcessingException {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
 //        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).getResult().get(0).getId();
 
-        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, sessionIdUser).getResult().get(0);
+        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, null, sessionIdUser).getResult().get(0);
         Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", outDir.getId(), URI.create("file:///tmp"), Collections.<Integer>emptyList());
 
 //        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         System.out.println(catalogManager.createJob(
                 studyId, "mySecondJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.EMPTY_LIST, new HashMap<String, Object>(), sessionIdUser));
+                Collections.EMPTY_LIST, new HashMap<String, Object>(), null, sessionIdUser));
     }
 
     /**
@@ -453,8 +458,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateSample () throws CatalogException {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
 
         QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, "HG007", "IMDb", "", sessionIdUser);
         System.out.println("sampleQueryResult = " + sampleQueryResult);
@@ -463,8 +468,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateVariableSet () throws CatalogException {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
 
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
@@ -483,8 +488,8 @@ public class CatalogManagerTest extends GenericTest {
     public void testAnnotation () throws CatalogException {
         testCreateSample();
         testCreateVariableSet();
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        Study study = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0);
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        Study study = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0);
         int sampleId = catalogManager.getAllSamples(study.getId(), null, sessionIdUser).getResult().get(0).getId();
 
         {

@@ -6,7 +6,6 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogDBException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -58,7 +57,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
                         study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
                         study.getDescription(), study.getStatus(), study.getCipher(), null, study.getStats(),
-                        study.getAttributes(), sessionId);
+                        study.getAttributes(), this.getQueryOptions(), sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
                 queryResults.add(queryResult);
 //                List<File> files = study.getFiles();
@@ -105,7 +104,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
 
             queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, status, cipher, null, null, null, sessionId);
+                    creationDate, description, status, cipher, null, null, null, this.getQueryOptions(), sessionId);
 
             return createOkResponse(queryResult);
 
@@ -126,7 +125,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getStudy(studyId, sessionId);
+            queryResult = catalogManager.getStudy(studyId, sessionId, this.getQueryOptions());
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -141,7 +140,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllFiles(studyId, sessionId);
+            queryResult = catalogManager.getAllFiles(studyId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

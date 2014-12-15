@@ -6,7 +6,6 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
@@ -203,7 +202,7 @@ public class AnalysisJobExecuter {
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
 
         QueryResult<Job> jobQueryResult = catalogManager.createJob(studyId, jobName, analysisName, description, commandLine, temporalOutDirUri,
-                outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
+                outDir.getId(), inputFiles, resourceManagerAttributes, null, sessionId);
         return jobQueryResult;
     }
 

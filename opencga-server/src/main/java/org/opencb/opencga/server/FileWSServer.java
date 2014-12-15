@@ -12,7 +12,6 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -199,7 +198,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
                         file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
-                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId, getQueryOptions());
 //                file = fileQueryResult.getResult().get(0);
                 System.out.println("fileQueryResult = " + fileQueryResult);
                 queryResults.add(fileQueryResult);
@@ -225,7 +224,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createFolder(studyId, folderPath, parents, sessionId);
+            queryResult = catalogManager.createFolder(studyId, folderPath, parents, getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -302,7 +301,7 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         try {
             int fileIdNum = catalogManager.getFileId(fileId);
-            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, sessionId);
+            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();

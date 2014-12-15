@@ -82,7 +82,7 @@ public class AnalysisFileIndexer {
         QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
                 file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
                 "Indexation of " + file.getName() + " (" + fileId + ")", File.Status.INDEXING, 0, -1, null, -1, null,
-                indexAttributes, false, sessionId);
+                indexAttributes, false, sessionId, null);
         File index = indexQueryResult.getResult().get(0);
 
         //Create job
@@ -93,7 +93,7 @@ public class AnalysisFileIndexer {
 
         QueryResult<Job> jobQueryResult = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
                 "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                jobResourceManagerAttributes, sessionId);
+                jobResourceManagerAttributes, null, sessionId);
         Job job = jobQueryResult.getResult().get(0);
 
         //Set JobId to IndexFile

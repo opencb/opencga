@@ -63,9 +63,10 @@ public abstract class CatalogDBAdaptor {
 
     public abstract boolean userExists(String userId);
 
-    public abstract QueryResult<User> createUser(String userId, String userName, String email, String password, String organization) throws CatalogDBException;
+    public abstract QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
+            throws CatalogDBException;
 
-    public abstract QueryResult<User> insertUser(User user) throws CatalogDBException;
+    public abstract QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Integer> deleteUser(String userId) throws CatalogDBException;
 
@@ -98,13 +99,12 @@ public abstract class CatalogDBAdaptor {
      * ***************************
      */
 
-    public abstract QueryResult<Project> createProject(String userId, Project project) throws CatalogDBException;
+    public abstract QueryResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException;
 
     public abstract boolean projectExists(int projectId);
 
-    public abstract QueryResult<Project> getAllProjects(String userId) throws CatalogDBException;
+    public abstract QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Project> getProject(String userId, String projectAlias) throws CatalogDBException;
     public abstract QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Integer> deleteProject(int projecetId) throws CatalogDBException;
@@ -126,11 +126,11 @@ public abstract class CatalogDBAdaptor {
      * ***************************
      */
 
-    public abstract QueryResult<Study> createStudy(int projectId, Study study) throws CatalogDBException;
+    public abstract QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
 
     public abstract boolean studyExists(int studyId);
 
-    public abstract QueryResult<Study> getAllStudies(int projectId) throws CatalogDBException;
+    public abstract QueryResult<Study> getAllStudies(int projectId, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
@@ -161,15 +161,15 @@ public abstract class CatalogDBAdaptor {
      */
 
     // add file to study
-    public abstract QueryResult<File> createFileToStudy(int studyId, File file) throws CatalogDBException;
+    public abstract QueryResult<File> createFileToStudy(int studyId, File file, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
 
     public abstract int getFileId(int studyId, String path) throws CatalogDBException;
 
-    public abstract QueryResult<File> getAllFiles(int studyId) throws CatalogDBException;
+    public abstract QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<File> getAllFilesInFolder(int folderId) throws CatalogDBException;
+    public abstract QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
     public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
@@ -215,13 +215,13 @@ public abstract class CatalogDBAdaptor {
 
     public abstract boolean jobExists(int jobId);
 
-    public abstract QueryResult<Job> createJob(int studyId, Job job) throws CatalogDBException;
+    public abstract QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Integer> deleteJob(int jobId) throws CatalogDBException;
 
-    public abstract QueryResult<Job> getJob(int jobId) throws CatalogDBException;
+    public abstract QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Job> getAllJobs(int studyId) throws CatalogDBException;
+    public abstract QueryResult<Job> getAllJobs(int studyId, QueryOptions options) throws CatalogDBException;
 
     public abstract String getJobStatus(int jobId, String sessionId) throws CatalogDBException;
 
