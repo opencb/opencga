@@ -172,6 +172,11 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getProjectOwner(projectId);
         return getFileUri(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
     }
+
+    public int getProjectIdByStudyId(int studyId) throws CatalogManagerException{
+        return catalogDBAdaptor.getProjectIdByStudyId(studyId);
+    }
+
     /* jmmut uncomment
 //    public Uri getJobFolderUri(String userId, String projectId, Uri JobId) {
 //        return ioManager.getJobFolderUri(userId, projectId, JobId);

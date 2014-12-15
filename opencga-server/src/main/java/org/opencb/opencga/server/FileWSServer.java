@@ -85,7 +85,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
                                 @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
-                                @ApiParam(value = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
+//                                @ApiParam(value = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") int studyId,
                                 @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = true) @DefaultValue("") @FormDataParam("description") String description,
@@ -94,16 +94,20 @@ public class FileWSServer extends OpenCGAWSServer {
         long t = System.currentTimeMillis();
 
         java.nio.file.Path filePath = null;
+        int projectId;
         try {
-            filePath = Paths.get(catalogManager.getFileUri(userId, projectId, String.valueOf(studyId), relativeFilePath));
+            projectId = catalogManager.getProjectIdByStudyId(studyId);
+            filePath = Paths.get(catalogManager.getFileUri(userId, String.valueOf(projectId), String.valueOf(studyId), relativeFilePath));
             System.out.println(filePath);
         } catch (CatalogIOManagerException e) {
             System.out.println("catalogManager.getFilePath");
             e.printStackTrace();
+        } catch (CatalogManagerException e) {
+            e.printStackTrace();
         }
 
-        java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + relativeFilePath);
-        java.nio.file.Path folderPath = filePath.getParent().resolve("__" + relativeFilePath);
+        java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
+        java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
 
 
         logger.info(relativeFilePath + "");
