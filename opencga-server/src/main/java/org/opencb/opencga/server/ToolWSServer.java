@@ -7,6 +7,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.Tool;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 
@@ -50,7 +51,7 @@ public class ToolWSServer extends OpenCGAWSServer{
                 results.add(toolResult);
             }
             return createOkResponse(results);
-        } catch (CatalogDBException | AnalysisExecutionException | IOException e) {
+        } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -74,7 +75,7 @@ public class ToolWSServer extends OpenCGAWSServer{
                 results.add(help);
             }
             return createOkResponse(results);
-        } catch (CatalogDBException | AnalysisExecutionException | IOException e) {
+        } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

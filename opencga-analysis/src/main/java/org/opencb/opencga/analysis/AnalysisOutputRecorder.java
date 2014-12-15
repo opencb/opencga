@@ -101,7 +101,7 @@ public class AnalysisOutputRecorder {
 
             //TODO: "input" files could be modified my the tool. Have to be scanned, calculate the new Checksum and
 
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace(); //TODO: Handle exception
         }
     }

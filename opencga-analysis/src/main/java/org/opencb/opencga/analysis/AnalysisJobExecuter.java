@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
@@ -181,12 +182,12 @@ public class AnalysisJobExecuter {
 
     public QueryResult<Job> createJob(Map<String, List<String>> params,
                             CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogDBException, CatalogIOManagerException {
+            throws AnalysisExecutionException, CatalogException, CatalogIOManagerException {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
                             CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogDBException, CatalogIOManagerException {
+            throws AnalysisExecutionException, CatalogException, CatalogIOManagerException {
 
         // Create temporal Outdir
         String randomString = "J_" + StringUtils.randomString(10);

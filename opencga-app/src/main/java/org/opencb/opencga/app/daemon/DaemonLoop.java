@@ -10,6 +10,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
@@ -82,7 +83,7 @@ public class DaemonLoop implements Runnable {
         try {
             QueryResult<ObjectMap> login = catalogManager.login(properties.getProperty(USER), properties.getProperty(PASSWORD), "daemon");
             sessionId = login.getResult().get(0).getString("sessionId");
-        } catch (CatalogDBException | IOException e) {
+        } catch (CatalogException | IOException e) {
             e.printStackTrace();
             exit = true;
         }
@@ -201,7 +202,7 @@ public class DaemonLoop implements Runnable {
         if(sessionId != null) {
             try {
                 catalogManager.logout(properties.getProperty(USER), sessionId);
-            } catch (CatalogDBException | IOException e) {
+            } catch (CatalogException  e) {
                 e.printStackTrace();
             }
             sessionId = null;

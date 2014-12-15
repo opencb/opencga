@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.beans;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by jacobo on 12/12/14.
@@ -11,9 +12,12 @@ public class VariableSet {
     public String alias;
     public String name;
 
-    public List<Variable> variables;
+    public Set<Variable> variables;
 
-    public VariableSet(int id, String alias, String name, List<Variable> variables) {
+    public VariableSet() {
+    }
+
+    public VariableSet(int id, String alias, String name, Set<Variable> variables) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -54,11 +58,11 @@ public class VariableSet {
         this.name = name;
     }
 
-    public List<Variable> getVariables() {
+    public Set<Variable> getVariables() {
         return variables;
     }
 
-    public void setVariables(List<Variable> variables) {
+    public void setVariables(Set<Variable> variables) {
         this.variables = variables;
     }
 }

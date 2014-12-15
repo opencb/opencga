@@ -40,6 +40,9 @@ public class Variable {
         TEXT
     }
 
+    public Variable() {
+    }
+
     public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
                     List<String> acceptedValues, String rank, String dependsOn, String description, Map<String, Object> attributes) {
         this.id = id;
@@ -68,6 +71,23 @@ public class Variable {
                 ", description='" + description + '\'' +
                 ", attributes=" + attributes +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Variable)) return false;
+
+        Variable variable = (Variable) o;
+
+        if (!id.equals(variable.id)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 
     public String getId() {

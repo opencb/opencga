@@ -7,6 +7,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
@@ -44,7 +45,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogDBException | CatalogIOManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -62,7 +63,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getProject(projectId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -80,7 +81,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllStudies(projectId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -108,7 +109,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

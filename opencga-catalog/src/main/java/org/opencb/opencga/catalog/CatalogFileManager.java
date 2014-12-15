@@ -124,7 +124,7 @@ public class CatalogFileManager {
             parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);
-            } catch (CatalogDBException e) {
+            } catch (CatalogException e) {
                 throw new CatalogIOManagerException("Can't update file properties in Catalog.", e);
             }
 

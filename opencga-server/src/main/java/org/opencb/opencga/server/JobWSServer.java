@@ -9,6 +9,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Tool;
@@ -54,7 +55,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, sessionId));
-        } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e.getMessage());
         }
     }
@@ -67,7 +68,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             return createErrorResponse(e.getMessage());
         }
     }
@@ -166,7 +167,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
             return createOkResponse(jobQueryResult);
 
-        } catch (CatalogDBException | CatalogIOManagerException | IOException | AnalysisExecutionException e) {
+        } catch (CatalogException | IOException | AnalysisExecutionException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

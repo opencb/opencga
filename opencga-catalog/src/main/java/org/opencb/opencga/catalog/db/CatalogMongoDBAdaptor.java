@@ -110,7 +110,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_OBJECT_ID));
         if(queryResult.getResult().get(0) == 0){
             try {
-                DBObject metadataObject = getDbObject(new Metadata(), "Metadata json parse error");
+                DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
                 metadataObject.put("_id", METADATA_OBJECT_ID);
                 metaCollection.insert(metadataObject);
             } catch (MongoException.DuplicateKey e){
@@ -196,7 +196,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
         user.setLastActivity(TimeUtils.getTimeMillis());
-        DBObject userDBObject = getDbObject(user, "create user failed at parsing user " + user.getId());
+        DBObject userDBObject = getDbObject(user, "User " + user.getId());
         userDBObject.put("_id", user.getId());
 
         QueryResult insert;
@@ -266,7 +266,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 BasicDBObject id = new BasicDBObject("id", userId);
                 BasicDBObject updates = new BasicDBObject(
                         "$push", new BasicDBObject(
-                        "sessions", getDbObject(session, "Error parsing session to Json")
+                        "sessions", getDbObject(session, "Sesion")
                 )
                 );
                 userCollection.update(id, updates, false, false);
@@ -312,7 +312,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String userId = "anonymous_" + session.getId();
         User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, "");
         user.getSessions().add(session);
-        DBObject anonymous = getDbObject(user, "Error parsing user to json");
+        DBObject anonymous = getDbObject(user, "User");
         anonymous.put("_id", user.getId());
 
         try {
@@ -502,7 +502,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         project.setId(projectId);
         DBObject query = new BasicDBObject("id", userId);
         query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
-        DBObject projectDBObject = getDbObject(project, "Create project failed at parsing project " + project.getAlias());
+        DBObject projectDBObject = getDbObject(project, "Project");
         DBObject update = new BasicDBObject("$push", new BasicDBObject ("projects", projectDBObject));
 
         //Update object
@@ -770,7 +770,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
         }
 
-        DBObject newAclObject = getDbObject(newAcl, "could not put ACL: parsing error");
+        DBObject newAclObject = getDbObject(newAcl, "ACL");
 
         List<Acl> projectAcls = getProjectAcl(projectId, userId).getResult();
         DBObject query = new BasicDBObject("projects.id", projectId);
@@ -867,7 +867,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         study.setJobs(Collections.<Job>emptyList());
 
         //Create DBObject
-        DBObject studyObject = getDbObject(study, "Error parsing study.");
+        DBObject studyObject = getDbObject(study, "Study");
         studyObject.put("_id", newId);
 
         //Set ProjectId
@@ -1084,8 +1084,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
         }
 
-        String msg = "could not put ACL: parsing error";
-        DBObject newAclObject = getDbObject(newAcl, msg);
+        DBObject newAclObject = getDbObject(newAcl, "ACL");
 
         BasicDBObject query = new BasicDBObject("id", studyId);
         BasicDBObject pull = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", newAcl.getUserId())));
@@ -1128,7 +1127,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if(file.getOwnerId() == null) {
             file.setOwnerId(ownerId);
         }
-        DBObject fileDBObject = getDbObject(file, "Error parsing file");
+        DBObject fileDBObject = getDbObject(file, "File");
         fileDBObject.put(_STUDY_ID, studyId);
 
         try {
@@ -1394,7 +1393,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
         }
 
-        DBObject newAclObject = getDbObject(newAcl, "could not put ACL: parsing error");
+        DBObject newAclObject = getDbObject(newAcl, "ACL");
 
         List<Acl> aclList = getFileAcl(fileId, userId).getResult();
         DBObject match;
@@ -1491,7 +1490,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         int jobId = getNewId();
         job.setId(jobId);
 
-        DBObject jobObject = getDbObject(job, "job " + job + " could not be parsed into json");
+        DBObject jobObject = getDbObject(job, "job");
         jobObject.put("_id", jobId);
         jobObject.put(_STUDY_ID, studyId);
         QueryResult insertResult = jobCollection.insert(jobObject); //TODO: Check results.get(0).getN() != 0
@@ -1666,7 +1665,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         tool.setId(getNewId());
 
-        DBObject toolObject = getDbObject(tool, "tool " + tool + " could not be parsed into json");
+        DBObject toolObject = getDbObject(tool, "tool");
         DBObject query = new BasicDBObject("id", userId);
         query.put("tools.alias", new BasicDBObject("$ne", tool.getAlias()));
         DBObject update = new BasicDBObject("$push", new BasicDBObject ("tools", toolObject));
@@ -1761,7 +1760,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
         //TODO: Add annotationSets
-        DBObject sampleObject = getDbObject(sample, "sample " + sample + " could not be parsed into json");
+        DBObject sampleObject = getDbObject(sample, "sample");
         sampleObject.put(_STUDY_ID, studyId);
         sampleCollection.insert(sampleObject);
 
@@ -1843,7 +1842,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         int variableSetId = getNewId();
         variableSet.setId(variableSetId);
 
-        DBObject object = getDbObject(variableSet, "Error parsing variableSet");
+        DBObject object = getDbObject(variableSet, "VariableSet");
         DBObject query = new BasicDBObject("id", studyId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
 
@@ -1875,13 +1874,17 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException {
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException {
         long startTime = startQuery();
 
-        return endQuery("", startTime, Arrays.asList());
+        DBObject object = getDbObject(annotationSet, "AnnotationSet");
+        DBObject query = new BasicDBObject("id", sampleId);
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+
+        QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, false, false);
+
+        return endQuery("", startTime, Arrays.asList(annotationSet));
     }
-
-
 
 
     /*
@@ -1969,13 +1972,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return samples;
     }
 
-
-    private DBObject getDbObject(Object object, String errorMsg) throws CatalogDBException {
+    private DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
         DBObject dbObject;
         try {
             dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(object));
         } catch (JsonProcessingException e) {
-            throw new CatalogDBException(errorMsg);
+            throw new CatalogDBException("Error while writing to Json : " + objectName);
         }
         return dbObject;
     }
@@ -2007,6 +2009,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * @return
      */
     private QueryOptions filterOptions(QueryOptions options, String route) {
+        if(options == null) {
+            return null;
+        }
         QueryOptions filteredOptions = new QueryOptions(options); //copy queryOptions
 
         String[] filteringLists = {"include", "exclude"};

@@ -321,7 +321,7 @@ public class OpenCGAMain {
         return 0;
     }
 
-    private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogDBException, IOException {
+    private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogException, IOException {
         //String sessionId;
         if(up.user != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
@@ -334,7 +334,7 @@ public class OpenCGAMain {
 
     }
 
-    private void logout() throws CatalogDBException, IOException {
+    private void logout() throws CatalogException, IOException {
         if(sessionId != null && !sessionId.equals(shellSessionId)){
             catalogManager.logout(userId, sessionId);
         }

@@ -48,24 +48,32 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Before
-    public void setUp() throws IOException, CatalogIOManagerException {
+    public void setUp() throws IOException, CatalogException {
         List<ObjectMap> result;
+
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "");
+        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "");
+        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME");
+
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser = result.get(0).getString("sessionId");
-        } catch (CatalogDBException | IOException ignore) {
+        } catch (CatalogException | IOException ignore) {
         }
         try {
             result = catalogManager.login("user2", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser2 = result.get(0).getString("sessionId");
-        } catch (CatalogDBException | IOException ignore) {
+        } catch (CatalogException | IOException ignore) {
         }
 
         try {
             result = catalogManager.login("user3", PASSWORD, "127.0.0.1").getResult();
             sessionIdUser3 = result.get(0).getString("sessionId");
-        } catch (CatalogDBException | IOException ignore) {
+        } catch (CatalogException | IOException ignore) {
         }
+
+        QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", sessionIdUser);
+        catalogManager.createStudy(project.getResult().get(0).getId(), "session 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser);
     }
 
     @After
@@ -84,9 +92,9 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateUser() throws Exception {
-        System.out.println(catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, ""));
-        System.out.println(catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, ""));
-        System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME"));
+//        System.out.println(catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, ""));
+//        System.out.println(catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, ""));
+//        System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME"));
     }
 
     @Test
@@ -114,7 +122,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testGetUserInfo() throws CatalogDBException {
+    public void testGetUserInfo() throws CatalogException {
         QueryResult<User> user = catalogManager.getUser("user", null, sessionIdUser);
         System.out.println("user = " + user);
         QueryResult<User> userVoid = catalogManager.getUser("user", user.getResult().get(0).getLastActivity(), sessionIdUser);
@@ -129,7 +137,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifyUser() throws CatalogDBException, InterruptedException {
+    public void testModifyUser() throws CatalogException, InterruptedException {
         ObjectMap params = new ObjectMap();
         String newName = "Changed Name " + StringUtils.randomString(10);
         String newPassword = StringUtils.randomString(10);
@@ -196,7 +204,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogDBException {
+    public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogException {
         String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").getResult().get(0).getString("sessionId");
 //        catalogManager.createProject()
           //TODO: Finish test
@@ -209,7 +217,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifyProject() throws CatalogDBException {
+    public void testModifyProject() throws CatalogException {
         String newProjectName = "ProjectName " + StringUtils.randomString(10);
         int projectId = catalogManager.getUser("user", null, sessionIdUser).getResult().get(0).getProjects().get(0).getId();
 
@@ -346,7 +354,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void searchFileTest() throws CatalogDBException, CatalogIOManagerException, IOException {
+    public void searchFileTest() throws CatalogException, CatalogIOManagerException, IOException {
 
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
@@ -369,7 +377,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDeleteFile () throws CatalogDBException, IOException, CatalogIOManagerException {
+    public void testDeleteFile () throws CatalogException, IOException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
         List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
@@ -438,12 +446,78 @@ public class CatalogManagerTest extends GenericTest {
                 Collections.EMPTY_LIST, new HashMap<String, Object>(), sessionIdUser));
     }
 
+    /**
+     * Sample methods
+     * ***************************
+     */
+
+    @Test
+    public void testCreateSample () throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+
+        QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, "HG007", "IMDb", "", sessionIdUser);
+        System.out.println("sampleQueryResult = " + sampleQueryResult);
+
+    }
+
+    @Test
+    public void testCreateVariableSet () throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.addAll(Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, Collections.<String>emptyList(), "", "", "", Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, Collections.singletonList("0:99"), "", "", "", Collections.<String, Object>emptyMap()),
+                new Variable("HEIGHT", "", Variable.VariableType.NUMERIC, "1.5", false, Collections.singletonList("0:"), "", "", "", Collections.<String, Object>emptyMap()),
+                new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, Collections.<String>emptyList(), "", "", "", Collections.<String, Object>emptyMap()),
+                new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, Arrays.asList("CASE", "CONTROL"), "", "", "", Collections.<String, Object>emptyMap())
+        ));
+        QueryResult<VariableSet> sampleQueryResult = catalogManager.createVariableSet(studyId, "vs1", "Variable Set 1", variables, sessionIdUser);
+        System.out.println("sampleQueryResult = " + sampleQueryResult);
+
+    }
+
+    @Test
+    public void testAnnotation () throws CatalogException {
+        testCreateSample();
+        testCreateVariableSet();
+        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+        Study study = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0);
+        int sampleId = catalogManager.getAllSamples(study.getId(), null, sessionIdUser).getResult().get(0).getId();
+
+        {
+            HashMap<String, Object> annotations = new HashMap<String, Object>();
+            annotations.put("NAME", "Luke");
+            annotations.put("AGE", "28");
+            annotations.put("HEIGHT", "1.78");
+            annotations.put("ALIVE", "1");
+            annotations.put("PHEN", "CASE");
+            QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.annotateSample(sampleId, "annotation1", study.getVariableSets().get(0).getId(), annotations, null, sessionIdUser);
+            System.out.println("annotationSetQueryResult = " + annotationSetQueryResult);
+        }
+
+        {
+            HashMap<String, Object> annotations = new HashMap<String, Object>();
+            annotations.put("NAME", "Luke");
+            annotations.put("AGE", "95");
+//            annotations.put("HEIGHT", "1.78");
+            annotations.put("ALIVE", "1");
+            annotations.put("PHEN", "CASE");
+            QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.annotateSample(sampleId, "annotation2", study.getVariableSets().get(0).getId(), annotations, null, sessionIdUser);
+            System.out.println("annotationSetQueryResult = " + annotationSetQueryResult);
+        }
+
+    }
+
+
     private static void clearCatalog(Properties properties) throws IOException {
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("CATALOG.DB.HOST"), Integer.parseInt(properties.getProperty("CATALOG.DB.PORT")));
-        MongoDataStore db = mongoManager.get(properties.getProperty("CATALOG.DB.DATABASE"));
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("OPENCGA.CATALOG.DB.HOST"), Integer.parseInt(properties.getProperty("OPENCGA.CATALOG.DB.PORT")));
+        MongoDataStore db = mongoManager.get(properties.getProperty("OPENCGA.CATALOG.DB.DATABASE"));
         db.getDb().dropDatabase();
 
-        Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
+        Path rootdir = Paths.get(URI.create(properties.getProperty("OPENCGA.CATALOG.MAIN.ROOTDIR")));
 //        Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
         deleteFolderTree(rootdir.toFile());
         Files.createDirectory(rootdir);

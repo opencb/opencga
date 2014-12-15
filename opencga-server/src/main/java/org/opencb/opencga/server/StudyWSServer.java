@@ -128,7 +128,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getStudy(studyId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -143,7 +143,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllFiles(studyId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -196,7 +196,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             System.out.println(objectMap.toJson());
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
