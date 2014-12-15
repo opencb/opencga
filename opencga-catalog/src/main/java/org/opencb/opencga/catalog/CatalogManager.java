@@ -1083,7 +1083,7 @@ public class CatalogManager {
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         return downloadFile(fileId, -1, -1, sessionId);
     }
-    private DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
+    public DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
             throws CatalogIOManagerException, IOException, CatalogManagerException {
         checkParameter(sessionId, "sessionId");
 
@@ -1104,6 +1104,28 @@ public class CatalogManager {
                 Integer.toString(projectId),
                 Integer.toString(studyId),
                 file.getPath(), start, limit);
+    }
+    public DataInputStream grepFile(int fileId, String pattern, boolean ignoreCase, boolean multi, String sessionId)
+            throws CatalogIOManagerException, IOException, CatalogManagerException {
+        checkParameter(sessionId, "sessionId");
+
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!getFileAcl(userId, fileId).isRead()) {
+            throw new CatalogManagerException("Permission denied. User can't download file");
+        }
+        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        if(fileResult.getResult().isEmpty()){
+            throw new CatalogManagerException("File not found");
+        }
+        File file = fileResult.getResult().get(0);
+
+        return ioManager.getGrepFileObject(userId,
+                Integer.toString(projectId),
+                Integer.toString(studyId),
+                file.getPath(), pattern, ignoreCase, multi);
     }
 
 

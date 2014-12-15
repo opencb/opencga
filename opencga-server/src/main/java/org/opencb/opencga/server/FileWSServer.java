@@ -218,12 +218,15 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/content")
     @Produces("application/json")
     @ApiOperation(value = "File content")
-    public Response download(@PathParam(value = "fileId") @FormDataParam("fileId") int fileId
+    public Response download(
+            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId,
+            @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
+            @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit
     ) {
         String content = "";
         DataInputStream stream;
         try {
-            stream = catalogManager.downloadFile(fileId, sessionId);
+            stream = catalogManager.downloadFile(fileId, start, limit, sessionId);
 
 //             content = org.apache.commons.io.IOUtils.toString(stream);
         } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
@@ -233,6 +236,32 @@ public class FileWSServer extends OpenCGAWSServer {
 //        createOkResponse(content, MediaType.TEXT_PLAIN)
         return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
     }
+
+    @GET
+    @Path("/{fileId}/content-grep")
+    @Produces("application/json")
+    @ApiOperation(value = "File content")
+    public Response downloadGrep(
+            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId,
+            @ApiParam(value = "pattern", required = false) @QueryParam("pattern") @DefaultValue(".*") String pattern,
+            @ApiParam(value = "ignoreCase", required = false) @QueryParam("ignoreCase") @DefaultValue("false") Boolean ignoreCase,
+            @ApiParam(value = "multi", required = false) @QueryParam("multi") @DefaultValue("true") Boolean multi
+    ) {
+        String content = "";
+        DataInputStream stream;
+        try {
+            stream = catalogManager.grepFile(fileId, pattern, ignoreCase, multi, sessionId);
+
+//             content = org.apache.commons.io.IOUtils.toString(stream);
+        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+//        createOkResponse(content, MediaType.TEXT_PLAIN)
+        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+    }
+
+
 
     @GET
     @Path("/content-example")
