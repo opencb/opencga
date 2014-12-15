@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -71,7 +71,7 @@ public class VariantToHBaseConverter implements ComplexTypeConverter<Variant, Pu
 
         // Files
         if (archivedVariantFileConverter != null) {
-            for (ArchivedVariantFile archiveFile : v.getFiles().values()) {
+            for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                 Put filePut = archivedVariantFileConverter.convertToStorageType(archiveFile);
                 // Save the generated KeyValues into the Put object associated to the whole variant rowkey
                 for (Map.Entry<byte[],List<KeyValue>> keyValues : filePut.getFamilyMap().entrySet()) {

@@ -112,7 +112,7 @@ def main():
                 group = pathwayDict[pathwayKey]
             if "ALL.txt" in fileItem:
                 #~ addOutputItem(self, name, title, type, tags, style, group, context, content)
-                xml.addOutputItem("output", "Summary", "FILE", "TABLE,PATHIWAY_SUMMARY_TABLE", "", "Summary", "", fileItem)
+                xml.addOutputItem("output", "Summary", "TYPE_FILE", "TABLE,PATHIWAY_SUMMARY_TABLE", "", "Summary", "", fileItem)
                 with open(opts.outdir+fileItem, "r+") as f:
                     old = f.read()
                     f.seek(0)
@@ -120,7 +120,7 @@ def main():
                     f.close()
                 continue
             if ".txt" in fileItem:
-                xml.addOutputItem("output", "Individual", "FILE", "TABLE,PATHIWAY_INDIVIDUAL_TABLE", "", group, "", fileItem)
+                xml.addOutputItem("output", "Individual", "TYPE_FILE", "TABLE,PATHIWAY_INDIVIDUAL_TABLE", "", group, "", fileItem)
                 with open(opts.outdir+fileItem, "r+") as f:
                     old = f.read()
                     f.seek(0)
@@ -138,13 +138,13 @@ def get_options():
         usage="%prog [options]")
     parser.add_option('--pathways', dest='pathways', metavar="STRING",
                       help='list of pathways')
-    parser.add_option('--norm-matrix', dest='celornormalizedmatrix', metavar="FILE",
+    parser.add_option('--norm-matrix', dest='celornormalizedmatrix', metavar="TYPE_FILE",
                       help='path to normalized matrix')
-    parser.add_option('--cel-compressed-file', dest='celfileFlag', metavar="FILE",
+    parser.add_option('--cel-compressed-file', dest='celfileFlag', metavar="TYPE_FILE",
                       help='cell files must be converted in to normalized file')
     parser.add_option('--summ', dest='summ', metavar="STRING",
                       help='summ value')
-    parser.add_option('--exp-design', dest='experimentaldesign', metavar="FILE",
+    parser.add_option('--exp-design', dest='experimentaldesign', metavar="TYPE_FILE",
                       help='path to experimental design')
     parser.add_option('--control', dest='control', metavar="STRING",
                       help='control value')

@@ -178,7 +178,7 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.OpenCGAStorageMain</mainClass>
+                            <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
                             <name>${app.name}-storage.sh</name>
                             <platforms>
                                 <platform>unix</platform>

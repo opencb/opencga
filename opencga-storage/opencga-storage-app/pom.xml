@@ -17,17 +17,48 @@
     <properties>
         <build.dir>build</build.dir>
         <app.name>opencga-storage</app.name>
+        <service.name>opencga-storage-server</service.name>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
+            <exclusions>
+                <!--<exclusion>-->
+                    <!--<groupId>org.glassfish.jersey.core</groupId>-->
+                    <!--<artifactId>jersey-client</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.glassfish.jersey.media</groupId>-->
+                    <!--<artifactId>jersey-media-multipart</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.opencb.commons</groupId>-->
+                    <!--<artifactId>bioformats</artifactId>-->
+                <!--</exclusion>-->
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.0.0.M0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>9.0.0.M0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet-core</artifactId>
+            <version>2.13</version>
         </dependency>
     </dependencies>
 
@@ -39,7 +70,7 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <targetPath>${build.dir}/conf</targetPath>
+                <targetPath>${basedir}/build/conf</targetPath>
             </resource>
         </resources>
 
@@ -83,8 +114,15 @@
                     <assembleDirectory>${build.dir}</assembleDirectory>
                     <programs>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.OpenCGAStorageMain</mainClass>
+                            <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
                             <name>${app.name}.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.storage.app.service.OpenCGAStorageServiceMain</mainClass>
+                            <name>${service.name}.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -105,6 +143,8 @@
                                 <exec executable="rm">
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}/libs"/>
+                                    <arg value="${build.dir}/bin"/>
+                                    <arg value="${build.dir}/conf"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -121,6 +161,7 @@
                                 <exec executable="chmod">
                                     <arg value="+x"/>
                                     <arg value="${build.dir}/bin/${app.name}.sh"/>
+                                    <arg value="${build.dir}/bin/${service.name}.sh"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -137,8 +178,17 @@
         <profile>
             <id>STORAGE-MONGODB1</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <activeByDefault>true</activeByDefault>
             </activation>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>../opencga-storage-mongodb/src/main/resources</directory>
+                        <filtering>true</filtering>
+                        <targetPath>${basedir}/build/conf</targetPath>
+                    </resource>
+                </resources>
+            </build>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
@@ -155,6 +205,15 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>../opencga-storage-hbase/src/main/resources</directory>
+                        <filtering>true</filtering>
+                        <targetPath>${basedir}/build/conf</targetPath>
+                    </resource>
+                </resources>
+            </build>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>

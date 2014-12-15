@@ -5,6 +5,7 @@ package org.opencb.opencga.catalog.beans;
  */
 public class Acl {
 
+    public static final String USER_OTHERS_ID = "*";
     private String userId;
 
     private boolean read;

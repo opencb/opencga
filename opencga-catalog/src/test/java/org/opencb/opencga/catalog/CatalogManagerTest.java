@@ -41,7 +41,9 @@ public class CatalogManagerTest extends GenericTest {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
+
         clearCatalog(properties);
+
         catalogManager = new CatalogManager(properties);
     }
 
@@ -82,10 +84,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateUser() throws Exception {
-        User user = new User("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", "", "");
-        System.out.println(catalogManager.createUser(user));
-        user = new User("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", "", "");
-        System.out.println(catalogManager.createUser(user));
+        System.out.println(catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, ""));
+        System.out.println(catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, ""));
         System.out.println(catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME"));
     }
 
@@ -256,8 +256,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateStudy() throws Exception {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", "type", "d", sessionIdUser));
-        System.out.println(catalogManager.createStudy(projectId, "Phase 1", "phase1", "type", "Done", sessionIdUser));
+        System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.StudyType.CASE_CONTROL, "d", sessionIdUser));
+        System.out.println(catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.StudyType.TRIO, "Done", sessionIdUser));
     }
 
     @Test
@@ -369,13 +369,13 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDeleteFile () throws CatalogManagerException, JsonProcessingException {
+    public void testDeleteFile () throws CatalogManagerException, IOException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
         List<File> result = catalogManager.getAllFiles(studyId, sessionIdUser).getResult();
         File file = null;
         for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).getType().equals(File.FILE)) {
+            if (result.get(i).getType().equals(File.TYPE_FILE)) {
                 file = result.get(i);
             }
         }
@@ -383,7 +383,7 @@ public class CatalogManagerTest extends GenericTest {
             catalogManager.deleteFile(file.getId(), sessionIdUser);
         }
     }
-    /* FILE UTILS */
+    /* TYPE_FILE UTILS */
     private java.io.File createDebugFile() throws IOException {
         String fileTestName = "/tmp/fileTest" + StringUtils.randomString(5);
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
@@ -405,17 +405,17 @@ public class CatalogManagerTest extends GenericTest {
      * ***************************
      */
 
-    @Test
-    public void testCreateAnalysis() throws CatalogManagerException, JsonProcessingException {
-        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
-        Analysis analysis = new Analysis("MyAnalysis", "analysis1", "date", "user", "description");
-
-        System.out.println(catalogManager.createAnalysis(studyId, analysis.getName(), analysis.getAlias(), analysis.getDescription(), sessionIdUser));
-
-        System.out.println(catalogManager.createAnalysis(
-                studyId, "MyAnalysis2", "analysis2", "description", sessionIdUser));
-    }
+//    @Test
+//    public void testCreateAnalysis() throws CatalogManagerException, JsonProcessingException {
+//        int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
+//        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
+//        Analysis analysis = new Analysis("MyAnalysis", "analysis1", "date", "user", "description");
+//
+//        System.out.println(catalogManager.createAnalysis(studyId, analysis.getName(), analysis.getAlias(), analysis.getDescription(), sessionIdUser));
+//
+//        System.out.println(catalogManager.createAnalysis(
+//                studyId, "MyAnalysis2", "analysis2", "description", sessionIdUser));
+//    }
 
     /**
      * Job methods
@@ -426,22 +426,25 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateJob() throws CatalogManagerException, JsonProcessingException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", sessionIdUser).getResult().get(0).getId();
         int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).getResult().get(0).getId();
-        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).getResult().get(0).getId();
-
-        Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", "jobs/myJob", Collections.<Integer>emptyList());
+//        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).getResult().get(0).getId();
 
         File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, sessionIdUser).getResult().get(0);
+        Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", outDir.getId(), URI.create("file:///tmp"), Collections.<Integer>emptyList());
 
 //        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         System.out.println(catalogManager.createJob(
-                analysisId, "mySecondJob", "samtool", "description", "#rm -rf .*", outDir.getId(), outDir.getId(), null, sessionIdUser));
+                studyId, "mySecondJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.EMPTY_LIST, new HashMap<String, Object>(), sessionIdUser));
     }
 
     private static void clearCatalog(Properties properties) throws IOException {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("CATALOG.HOST"), Integer.parseInt(properties.getProperty("CATALOG.PORT")));
         MongoDataStore db = mongoManager.get(properties.getProperty("CATALOG.DATABASE"));
         db.getDb().dropDatabase();
+
         Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
+//        Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
         deleteFolderTree(rootdir.toFile());
         Files.createDirectory(rootdir);
     }

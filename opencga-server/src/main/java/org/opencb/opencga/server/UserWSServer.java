@@ -19,7 +19,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 @Path("/users")
-@Api(value = "users", description = "users")
+@Api(value = "users", description = "Users web service", position = 1)
 public class UserWSServer extends OpenCGAWSServer {
 
     public UserWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -29,23 +29,20 @@ public class UserWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @Produces("application/json")
-    @ApiOperation(value = "Just to create the api")
+    @ApiOperation(value = "Creates a new User")
 
     public Response createUser(
             @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
             @ApiParam(value = "email", required = true) @QueryParam("email") String email,
             @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-            @ApiParam(value = "role", required = true) @QueryParam("role") String role,
-            @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "status", required = true) @QueryParam("status") String status) {
-        User user = new User(userId, name, email, password, organization, role, status);
+            @ApiParam(value = "password", required = true) @QueryParam("password") String password ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(user);
+            queryResult = catalogManager.createUser(userId, name, email, password, organization);
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogManagerException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -182,7 +179,7 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId);
+            QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId, this.getQueryOptions());
             return createOkResponse(result);
         } catch (CatalogManagerException e) {
             e.printStackTrace();

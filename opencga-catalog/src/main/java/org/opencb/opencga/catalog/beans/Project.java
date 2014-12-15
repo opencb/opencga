@@ -12,11 +12,6 @@ public class Project {
     private int id;
     private String name;
     private String alias;
-
-    /**
-     * This must be a valid userId
-     */
-    //private String ownerId;   Not needed
     private String creationDate;
     private String description;
     private String organization;
@@ -32,8 +27,7 @@ public class Project {
     public Project() {
     }
 
-    public Project(String name, String alias, String description, String status,
-                   String organization) {
+    public Project(String name, String alias, String description, String status, String organization) {
         this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0,
                 new LinkedList<Acl>(), new LinkedList<Study>(), new HashMap<String, Object>());
     }

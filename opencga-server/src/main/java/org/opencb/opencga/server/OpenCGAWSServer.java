@@ -1,5 +1,6 @@
 package org.opencb.opencga.server;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,8 +9,8 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.variant.ArchivedVariantFile;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -21,7 +22,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos;
-import org.opencb.opencga.storage.core.variant.io.json.ArchivedVariantFileJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public class OpenCGAWSServer {
 
     // Common input arguments
     protected MultivaluedMap<String, String> params;
-    protected QueryOptions queryOptions;
+    private QueryOptions queryOptions;
     protected QueryResponse queryResponse;
 
     // Common output members
@@ -126,11 +127,13 @@ public class OpenCGAWSServer {
 
         jsonObjectMapper = new ObjectMapper();
 
-        jsonObjectMapper.addMixInAnnotations(ArchivedVariantFile.class, ArchivedVariantFileJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        
+
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         jsonObjectWriter = jsonObjectMapper.writer();
 
     }
@@ -140,15 +143,23 @@ public class OpenCGAWSServer {
         this.version = version;
         this.uriInfo = uriInfo;
         logger.debug(uriInfo.getRequestUri().toString());
-
-        this.queryOptions = new QueryOptions();
-        queryOptions.put("exclude", exclude);
-        queryOptions.put("include", include);
-        queryOptions.put("metadata", metadata);
-
+        this.queryOptions = null;
         this.sessionIp = httpServletRequest.getRemoteAddr();
     }
 
+    protected QueryOptions getQueryOptions() {
+        if(queryOptions == null) {
+            this.queryOptions = new QueryOptions();
+            if(!exclude.isEmpty()) {
+                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
+            }
+            if(!include.isEmpty()) {
+                queryOptions.put("include", Arrays.asList(include.split(",")));
+            }
+            queryOptions.put("metadata", metadata);
+        }
+        return queryOptions;
+    }
 
     protected Response createErrorResponse(Object o) {
         QueryResult<ObjectMap> result = new QueryResult();
@@ -161,7 +172,7 @@ public class OpenCGAWSServer {
         endTime = System.currentTimeMillis() - startTime;
         queryResponse.setTime(new Long(endTime - startTime).intValue());
         queryResponse.setApiVersion(version);
-        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setQueryOptions(getQueryOptions());
 
         // Guarantee that the QueryResponse object contains a coll of results
         Collection coll;

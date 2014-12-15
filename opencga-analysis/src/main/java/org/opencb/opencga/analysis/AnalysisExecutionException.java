@@ -8,4 +8,8 @@ public class AnalysisExecutionException extends Exception {
     public AnalysisExecutionException(String msg) {
         super(msg);
     }
+
+    public AnalysisExecutionException(Throwable cause) {
+        super(cause);
+    }
 }

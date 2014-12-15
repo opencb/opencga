@@ -1,11 +1,18 @@
 package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.exec.Command;
 import org.opencb.opencga.lib.exec.SingleProcess;
 import org.slf4j.Logger;
@@ -13,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,7 +96,14 @@ public class AnalysisJobExecuter {
         logger.debug("AnalysisJobExecuter: execute, 'jobName': " + jobName + ", 'jobFolder': " + jobFolder);
         logger.debug("AnalysisJobExecuter: execute, command line: " + commandLine);
 
-        executeCommandLine(commandLine, jobName, jobId, jobFolder);
+        executeCommandLine(commandLine, jobName, jobId, jobFolder, analysisName);
+    }
+
+    public static void execute(Job job) throws AnalysisExecutionException, IOException {
+        logger.debug("AnalysisJobExecuter: execute, job: {}", job);
+
+        executeCommandLine(job.getCommandLine(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
+                job.getId(), job.getTmpOutDirUri().getPath(), job.getToolName());
     }
 
     private boolean checkRequiredParams(Map<String, List<String>> params, List<Option> validParams) {
@@ -164,10 +179,38 @@ public class AnalysisJobExecuter {
         return cmdLine.toString();
     }
 
-    private void executeCommandLine(String commandLine, String jobName, int jobId, String jobFolder)
+    public QueryResult<Job> createJob(Map<String, List<String>> params,
+                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+            throws AnalysisExecutionException, CatalogManagerException, CatalogIOManagerException {
+        return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
+    }
+    public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
+                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+            throws AnalysisExecutionException, CatalogManagerException, CatalogIOManagerException {
+
+        // Create temporal Outdir
+        String randomString = "J_" + StringUtils.randomString(10);
+        URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
+        params.put(getExecution().getOutputParam(), Arrays.asList(temporalOutDirUri.getPath()));
+
+        // Create commandLine
+        String commandLine = createCommandLine(executable, params);
+        System.out.println(commandLine);
+
+        // Create job in CatalogManager
+        Map<String, Object> resourceManagerAttributes = new HashMap<>();
+        resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
+
+        QueryResult<Job> jobQueryResult = catalogManager.createJob(studyId, jobName, analysisName, description, commandLine, temporalOutDirUri,
+                outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
+        return jobQueryResult;
+    }
+
+
+    private static void executeCommandLine(String commandLine, String jobName, int jobId, String jobFolder, String analysisName)
             throws AnalysisExecutionException, IOException {
         // read execution param
-        String jobExecutor = analysisProperties.getProperty("OPENCGA.ANALYSIS.JOB.EXECUTOR");
+        String jobExecutor = Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.JOB.EXECUTOR");
 
         // local execution
         if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {
@@ -276,7 +319,7 @@ public class AnalysisJobExecuter {
             return "ERROR: Executable not found.";
         }
 
-        executeCommandLine(execution.getTestCmd(), jobName, jobId, jobFolder);
+        executeCommandLine(execution.getTestCmd(), jobName, jobId, jobFolder, analysisName);
 
         return String.valueOf(jobName);
     }

@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * Date: 27/03/14
- * @author Jacobo Coll Moragón <jcoll@ebi.ac.uk>
+ * @author Jacobo Coll Moragï¿½n <jcoll@ebi.ac.uk>
  */
 
 public class AlignmentRegionCompactorTask extends Task<AlignmentRegion> {

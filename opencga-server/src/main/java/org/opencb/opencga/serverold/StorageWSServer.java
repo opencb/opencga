@@ -225,7 +225,7 @@ public class StorageWSServer extends GenericWSServer {
             logger.info("---saving chunk: " + chunkId);
             logger.info("lastChunk: " + lastChunk);
 
-            // WRITE CHUNK FILE
+            // WRITE CHUNK TYPE_FILE
             if (!Files.exists(folderPath)) {
                 logger.info("createDirectory(): " + folderPath);
                 Files.createDirectory(folderPath);

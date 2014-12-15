@@ -172,6 +172,6 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
                 }
             }
         }
-        return false;
+        return true;
     }
 }
