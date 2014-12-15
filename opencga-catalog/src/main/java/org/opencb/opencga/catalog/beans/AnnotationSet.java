@@ -9,7 +9,8 @@ import java.util.Set;
 public class AnnotationSet {
 
     private String name;
-    private Set<Annotation> values;
+    private int variableSetId;
+    private Set<Annotation> annotations;
     private String date;
 
     private Map<String, Object> attributes;
@@ -18,29 +19,31 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String name, Set<Annotation> values) {
+    public AnnotationSet(String name, Set<Annotation> annotations) {
         this.name = name;
-        this.values = values;
+        this.annotations = annotations;
     }
 
-    public AnnotationSet(String name, Set<Annotation> values, String date) {
+    public AnnotationSet(String name, Set<Annotation> annotations, String date) {
         this.name = name;
-        this.values = values;
+        this.annotations = annotations;
         this.date = date;
     }
 
-    public AnnotationSet(String name, Set<Annotation> values, String date, Map<String, Object> attributes) {
+    public AnnotationSet(String name, int variableSetId, Set<Annotation> annotations, String date, Map<String, Object> attributes) {
         this.name = name;
-        this.values = values;
+        this.variableSetId = variableSetId;
+        this.annotations = annotations;
         this.date = date;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "SampleAnnotationSet{" +
+        return "AnnotationSet{" +
                 "name='" + name + '\'' +
-                ", values=" + values +
+                ", variableSetId=" + variableSetId +
+                ", annotations=" + annotations +
                 ", date='" + date + '\'' +
                 ", attributes=" + attributes +
                 '}';
@@ -54,12 +57,20 @@ public class AnnotationSet {
         this.name = name;
     }
 
-    public Set<Annotation> getValues() {
-        return values;
+    public int getVariableSetId() {
+        return variableSetId;
     }
 
-    public void setValues(Set<Annotation> values) {
-        this.values = values;
+    public void setVariableSetId(int variableSetId) {
+        this.variableSetId = variableSetId;
+    }
+
+    public Set<Annotation> getAnnotations() {
+        return annotations;
+    }
+
+    public void setAnnotations(Set<Annotation> annotations) {
+        this.annotations = annotations;
     }
 
     public String getDate() {

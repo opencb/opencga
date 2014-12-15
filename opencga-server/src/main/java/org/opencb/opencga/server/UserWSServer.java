@@ -199,7 +199,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllProjects(userId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException | JsonProcessingException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,40 +22,51 @@ public class Variable {
      * Example for numeric range: -3:5
      * Example for categorical values: T,F
      */
-    private String acceptedValues;
+    private List<String> acceptedValues;
+
+    private String rank;
+    private String dependsOn;
+
     private String description;
 
     private Map<String, Object> attributes;
 
 //    private boolean allowed;
 
-    enum VariableType {
+    public enum VariableType {
         BOOLEAN,
         CATEGORICAL,
         NUMERIC,
         TEXT
     }
 
-    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required, String acceptedValues, String description) {
+    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
+                    List<String> acceptedValues, String rank, String dependsOn, String description, Map<String, Object> attributes) {
         this.id = id;
         this.category = category;
         this.type = type;
         this.defaultValue = defaultValue;
         this.required = required;
         this.acceptedValues = acceptedValues;
+        this.rank = rank;
+        this.dependsOn = dependsOn;
         this.description = description;
+        this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "SampleAnnotation{" +
+        return "Variable{" +
                 "id='" + id + '\'' +
                 ", category='" + category + '\'' +
-                ", type='" + type + '\'' +
+                ", type=" + type +
                 ", defaultValue=" + defaultValue +
                 ", required=" + required +
-                ", acceptedValues='" + acceptedValues + '\'' +
+                ", acceptedValues=" + acceptedValues +
+                ", rank='" + rank + '\'' +
+                ", dependsOn='" + dependsOn + '\'' +
                 ", description='" + description + '\'' +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -98,12 +110,28 @@ public class Variable {
         this.required = required;
     }
 
-    public String getAcceptedValues() {
+    public List<String> getAcceptedValues() {
         return acceptedValues;
     }
 
-    public void setAcceptedValues(String acceptedValues) {
+    public void setAcceptedValues(List<String> acceptedValues) {
         this.acceptedValues = acceptedValues;
+    }
+
+    public String getRank() {
+        return rank;
+    }
+
+    public void setRank(String rank) {
+        this.rank = rank;
+    }
+
+    public String getDependsOn() {
+        return dependsOn;
+    }
+
+    public void setDependsOn(String dependsOn) {
+        this.dependsOn = dependsOn;
     }
 
     public String getDescription() {
@@ -112,5 +140,13 @@ public class Variable {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

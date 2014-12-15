@@ -44,7 +44,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogDBException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogDBException | CatalogIOManagerException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -80,7 +80,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             queryResult = catalogManager.getAllStudies(projectId, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogDBException | JsonProcessingException e) {
+        } catch (CatalogDBException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

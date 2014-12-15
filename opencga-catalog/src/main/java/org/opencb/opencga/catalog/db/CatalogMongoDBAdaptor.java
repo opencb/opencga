@@ -963,9 +963,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
-        if (!studyExists(studyId)) {
-            throw new CatalogDBException("Study {id:"+studyId+"} does not exist");
-        }
+        checkStudyId(studyId);
         BasicDBObject studyParameters = new BasicDBObject();
 
         String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
@@ -1758,6 +1756,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<Sample> createSample(int studyId, Sample sample) throws CatalogDBException {
         long startTime = startQuery();
 
+        checkStudyId(studyId);
         int sampleId = getNewId();
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
@@ -1767,6 +1766,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         sampleCollection.insert(sampleObject);
 
         return endQuery("createSample", startTime, getSample(sampleId, null));
+    }
+
+    private void checkStudyId(int studyId) throws CatalogDBException {
+        if(!studyExists(studyId)) {
+            throw new CatalogDBException("Study {id: " + studyId + "} does not exist");
+        }
     }
 
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
@@ -1795,6 +1800,23 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return endQuery("getAllSamples", startTime, samples);
     }
 
+    public QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException {
+        throw new UnsupportedOperationException("No implemented");
+    }
+
+    public QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        WriteResult id = sampleCollection.remove(new BasicDBObject("id", sampleId)).getResult().get(0);
+        List<Integer> deletes = new LinkedList<>();
+        if (id.getN() == 0) {
+            throw new CatalogDBException("sample {id: " + sampleId + "} not found");
+        } else {
+            deletes.add(id.getN());
+            return endQuery("delete sample", startTime, deletes);
+        }
+    }
+
     public int getStudyIdBySampleId(int sampleId) {
         DBObject query = new BasicDBObject("id", sampleId);
         BasicDBObject returnFields = new BasicDBObject(_STUDY_ID, true);
@@ -1805,6 +1827,58 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             Object studyId = queryResult.getResult().get(0).get(_STUDY_ID);
             return studyId instanceof Integer ? (Integer) studyId : Integer.parseInt(studyId.toString());
         }
+    }
+
+
+
+    /**
+     * Annotation Methods
+     * ***************************
+     */
+
+    @Override
+    public QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException {
+        long startTime = startQuery();
+
+        int variableSetId = getNewId();
+        variableSet.setId(variableSetId);
+
+        DBObject object = getDbObject(variableSet, "Error parsing variableSet");
+        DBObject query = new BasicDBObject("id", studyId);
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
+
+        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, false, false);
+
+        return endQuery("createVariableSet", startTime, getVariableSet(variableSetId, null));
+    }
+
+    @Override
+    public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryOptions filteredOptions = filterOptions(options, "projects.studies");
+        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+        DBObject projection = new BasicDBObject(
+                "variableSets",
+                new BasicDBObject(
+                        "$elemMatch",
+                        new BasicDBObject("id", variableSetId)
+                )
+        );
+        QueryResult<DBObject> queryResult = studyCollection.find(query, filteredOptions, projection);
+        List<Study> studies = parseStudies(queryResult);
+        if(studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
+        }
+
+        return endQuery("", startTime, studies.get(0).getVariableSets());
+    }
+
+    @Override
+    public QueryResult annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException {
+        long startTime = startQuery();
+
+        return endQuery("", startTime, Arrays.asList());
     }
 
 

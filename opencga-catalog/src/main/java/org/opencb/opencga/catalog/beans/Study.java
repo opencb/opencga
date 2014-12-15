@@ -29,7 +29,7 @@ public class Study {
     private List<Job> jobs;
     private List<Sample> samples;
 
-    private List<Variable> variables;
+    private List<VariableSet> variableSets;
 
     private URI uri;
 
@@ -58,12 +58,12 @@ public class Study {
     public Study(String name, String alias, Type type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
-                uri, new HashMap<String, Object>(), new HashMap<String, Object>());
+                new LinkedList<Sample>(), new LinkedList<VariableSet>(), uri, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
                  String description, String status, String lastActivity, long diskUsage, String cipher, List<Acl> acl,
-                 List<Experiment> experiments, List<File> files, List<Job> jobs, URI uri,
+                 List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<VariableSet> variableSets, URI uri,
                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -80,6 +80,8 @@ public class Study {
         this.experiments = experiments;
         this.files = files;
         this.jobs = jobs;
+        this.samples = samples;
+        this.variableSets = variableSets;
         this.uri = uri;
         this.stats = stats;
         this.attributes = attributes;
@@ -91,7 +93,7 @@ public class Study {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", alias='" + alias + '\'' +
-                ", type='" + type + '\'' +
+                ", type=" + type +
                 ", creatorId='" + creatorId + '\'' +
                 ", creationDate='" + creationDate + '\'' +
                 ", description='" + description + '\'' +
@@ -103,6 +105,8 @@ public class Study {
                 ", experiments=" + experiments +
                 ", files=" + files +
                 ", jobs=" + jobs +
+                ", samples=" + samples +
+                ", variableSets=" + variableSets +
                 ", uri=" + uri +
                 ", stats=" + stats +
                 ", attributes=" + attributes +
@@ -205,14 +209,6 @@ public class Study {
         this.acl = acl;
     }
 
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
-
     public List<Experiment> getExperiments() {
         return experiments;
     }
@@ -237,6 +233,22 @@ public class Study {
         this.jobs = jobs;
     }
 
+    public List<Sample> getSamples() {
+        return samples;
+    }
+
+    public void setSamples(List<Sample> samples) {
+        this.samples = samples;
+    }
+
+    public List<VariableSet> getVariableSets() {
+        return variableSets;
+    }
+
+    public void setVariableSets(List<VariableSet> variableSets) {
+        this.variableSets = variableSets;
+    }
+
     public URI getUri() {
         return uri;
     }
@@ -253,4 +265,11 @@ public class Study {
         this.stats = stats;
     }
 
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
 }

@@ -268,9 +268,23 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException;
 
+    public abstract QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
+
+    public abstract QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException;
+
     public abstract int getStudyIdBySampleId(int sampleId);
 
 
+    /**
+     * Annotation Methods
+     * ***************************
+     */
+
+    public abstract QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
+
+    public abstract QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
+
+    public abstract QueryResult annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
 
 
     /**
