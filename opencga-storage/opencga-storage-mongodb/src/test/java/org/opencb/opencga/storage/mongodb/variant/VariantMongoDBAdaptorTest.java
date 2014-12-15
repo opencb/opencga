@@ -147,8 +147,10 @@ public class VariantMongoDBAdaptorTest {
     public void testGetAllVariantFrequencyByRegion() {
         QueryResult queryResult;
 
+        QueryOptions options = new QueryOptions("interval", 100000);
+        options.put("mgf", "<=0.5");
         // Basic queries
-        queryResult = vqb.getVariantFrequencyByRegion(new Region("1:10000000-20000000"), null);
+        queryResult = vqb.getVariantFrequencyByRegion(new Region("1:10000000-20000000"), options);
         System.out.println("queryResult = " + queryResult);
 //        assertEquals(3, queryResult.getNumResults());
     }
