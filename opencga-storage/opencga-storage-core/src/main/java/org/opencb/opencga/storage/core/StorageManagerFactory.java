@@ -68,6 +68,15 @@ public class StorageManagerFactory {
         return storageManagerMap.get(storageEngineName);
     }
 
+    public static String getDefaultStorageManagerName() {
+        String[] storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
+        return storageEngineNames[0].toUpperCase();
+    }
+
+    public static String[] getDefaultStorageManagerNames() {
+        return Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
+    }
+
     private static String parseStorageEngineName(String storageEngineName) {
         String[] storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
         if(storageEngineName == null || storageEngineName.isEmpty()) {
