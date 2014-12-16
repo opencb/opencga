@@ -1810,6 +1810,15 @@ public class CatalogManager {
         }
     }
 
+
+    public QueryResult<Job> getAllJobs(int studyId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        if (!getStudyAcl(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. Can't get jobs");
+        }
+        return catalogDBAdaptor.getAllJobs(studyId, new QueryOptions());
+    }
+
 //    public QueryResult<Job> getJobsByAnalysis(int analysisId, String sessionId) throws CatalogManagerException {
 //        String userId = getUserIdBySessionId(sessionId);
 ////        getAnalysisAcl(); //TODO: Look for ACLs !!!

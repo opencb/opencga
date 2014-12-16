@@ -91,7 +91,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") int projectId,
             @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
             @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
-            @ApiParam(value = "type",         required = false) @QueryParam("type") Study.Type type,
+            @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
             @ApiParam(value = "creatorId",    required = false) @QueryParam("creatorId") String creatorId,
             @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "description",  required = false) @QueryParam("description") String description,
@@ -200,4 +200,18 @@ public class StudyWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
+
+    @GET
+    @Path("/{studyId}/job")
+    @Produces("application/json")
+    @ApiOperation(value = "Get all jobs")
+    public Response getAllJobs(
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
+        try {
+            return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
+        } catch (CatalogException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
 }

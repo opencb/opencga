@@ -1,7 +1,6 @@
 package org.opencb.opencga.server;
 
 
-
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -77,18 +76,18 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create job")
     public Response createJob(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "name", required = true)          @DefaultValue("")   @QueryParam("name") String name,
-            @ApiParam(value = "studyId", required = true)       @DefaultValue("-1") @QueryParam("studyId") int studyId,
-            @ApiParam(value = "toolId", required = true)        @DefaultValue("")   @QueryParam("toolId") String toolIdStr,
-            @ApiParam(value = "execution", required = false)    @DefaultValue("")   @QueryParam("execution") String execution,
-            @ApiParam(value = "description", required = false)  @DefaultValue("")   @QueryParam("description") String description
+            @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") int studyId,
+            @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
+            @ApiParam(value = "execution", required = false) @DefaultValue("") @QueryParam("execution") String execution,
+            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description
     ) {
         QueryResult<Job> jobResult;
         try {
             AnalysisJobExecuter analysisJobExecuter;
             String toolName;
             int toolId = catalogManager.getToolId(toolIdStr);
-            if(toolId < 0) {
+            if (toolId < 0) {
                 analysisJobExecuter = new AnalysisJobExecuter(toolIdStr, execution);    //LEGACY MODE, AVOID USING
                 toolName = toolIdStr;
             } else {
@@ -171,7 +170,8 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    private Response executeTool(){
+
+    private Response executeTool() {
 
 
         return null;
