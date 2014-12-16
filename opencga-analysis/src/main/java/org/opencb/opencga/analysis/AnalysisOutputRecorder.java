@@ -3,12 +3,12 @@ package org.opencb.opencga.analysis;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,39 +69,39 @@ public class AnalysisOutputRecorder {
                     }
                 }
                 QueryResult<File> fileQueryResult = catalogManager.createFile(
-                        studyId, File.TYPE_FILE, "", filePath, "Generated from job " + job.getId(),
+                        studyId, File.Format.PLAIN, File.Bioformat.NONE, filePath, "Generated from job " + job.getId(),
                         true, job.getId(), sessionId);
 
                 File file = fileQueryResult.getResult().get(0);
                 fileIds.add(file.getId());
                 catalogFileManager.upload(uri, file, null, sessionId, false, false, true, true);
             }
-        } catch (CatalogManagerException | InterruptedException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogException | IOException e) {
             e.printStackTrace();
             logger.error("Error while processing Job", e);
             return;
         }
 
         try {
-            switch(job.getResourceManagerAttributes().get(Job.TYPE).toString()) {
-                case Job.TYPE_INDEX:
+            switch(Job.Type.valueOf(job.getResourceManagerAttributes().get(Job.TYPE).toString())) {
+                case INDEX:
                     Integer indexedFileId = (Integer) job.getResourceManagerAttributes().get(Job.INDEXED_FILE_ID);
                     fileIds.add(indexedFileId);
-                    ObjectMap parameters = new ObjectMap("status", File.READY);
+                    ObjectMap parameters = new ObjectMap("status", File.Status.READY);
                     catalogManager.modifyFile(indexedFileId, parameters, sessionId);
                     break;
-                case Job.TYPE_ANALYSIS:
+                case ANALYSIS:
                 default:
                     break;
             }
-            ObjectMap parameters = new ObjectMap("status", Job.READY);
+            ObjectMap parameters = new ObjectMap("status", Job.Status.READY);
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
             //TODO: "input" files could be modified my the tool. Have to be scanned, calculate the new Checksum and
 
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace(); //TODO: Handle exception
         }
     }

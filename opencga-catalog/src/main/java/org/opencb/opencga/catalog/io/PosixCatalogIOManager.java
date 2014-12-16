@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     protected void setProperties(Properties properties) throws CatalogIOManagerException {
-        this.rootDir = URI.create(properties.getProperty("CATALOG.FILE.ROOTDIR"));
+        this.rootDir = URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
         if (!rootDir.getScheme().equals("file")) {
             throw new CatalogIOManagerException("wrong posix file system in catalog.properties: " + rootDir);
         }
@@ -172,7 +173,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      * User methods
      * ***************************
      */
-//    public Path createUser(String userId) throws CatalogIOManagerException {
+//    public Path insertUser(String userId) throws CatalogIOManagerException {
 //        checkParam(userId);
 //
 //        Path usersPath = Paths.get(opencgaRootDir, OPENCGA_USERS_FOLDER);

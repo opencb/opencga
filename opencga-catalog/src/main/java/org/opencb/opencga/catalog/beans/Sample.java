@@ -13,26 +13,27 @@ public class Sample {
     private String source;
     private Individual individual;
     private int studyId;
+
     private String description;
 
-    private List<SampleAnnotation> sampleAnnotations;
+    private List<AnnotationSet> annotationSets;
 
     public Sample() {
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description) {
-        this(id, name, source, individual, studyId, description, new LinkedList<SampleAnnotation>());
+        this(id, name, source, individual, studyId, description, new LinkedList<AnnotationSet>());
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description,
-                  List<SampleAnnotation> sampleAnnotations) {
+                  List<AnnotationSet> annotationSets) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individual = individual;
         this.studyId = studyId;
         this.description = description;
-        this.sampleAnnotations = sampleAnnotations;
+        this.annotationSets = annotationSets;
     }
 
     @Override
@@ -44,7 +45,7 @@ public class Sample {
                 ", individual=" + individual +
                 ", studyId=" + studyId +
                 ", description='" + description + '\'' +
-                ", sampleAnnotations=" + sampleAnnotations +
+                ", annotationSets=" + annotationSets +
                 '}';
     }
 
@@ -96,11 +97,11 @@ public class Sample {
         this.description = description;
     }
 
-    public List<SampleAnnotation> getSampleAnnotations() {
-        return sampleAnnotations;
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
     }
 
-    public void setSampleAnnotations(List<SampleAnnotation> sampleAnnotations) {
-        this.sampleAnnotations = sampleAnnotations;
+    public void setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
     }
 }

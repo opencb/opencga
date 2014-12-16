@@ -3,13 +3,13 @@ package org.opencb.opencga.analysis;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.FileInputStream;
@@ -48,14 +48,14 @@ public class AnalysisFileIndexer {
         this.catalogManager = catalogManager;
     }
 
-    public AnalysisFileIndexer(java.io.File properties) throws IOException, CatalogManagerException, CatalogIOManagerException {
+    public AnalysisFileIndexer(java.io.File properties) throws IOException, CatalogDBException, CatalogIOManagerException {
         this.properties = new Properties();
         this.properties.load(new FileInputStream(properties));
         this.catalogManager = new CatalogManager(this.properties);
     }
 
     public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
-            throws IOException, CatalogIOManagerException, CatalogManagerException, AnalysisExecutionException {
+            throws IOException, CatalogException, AnalysisExecutionException {
 
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
@@ -79,25 +79,25 @@ public class AnalysisFileIndexer {
                 indexAttributes);
 
         //Create index file
-        QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.TYPE_INDEX, file.getFormat(),
-                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, "Indexation of " + file.getName() + " (" + fileId + ")", false,
-                        -1, sessionId, indexAttributes);
+        QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
+                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
+                "Indexation of " + file.getName() + " (" + fileId + ")", File.Status.INDEXING, 0, -1, null, -1, null,
+                indexAttributes, false, sessionId, null);
         File index = indexQueryResult.getResult().get(0);
 
         //Create job
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
         jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-        jobResourceManagerAttributes.put(Job.TYPE, Job.TYPE_INDEX);
+        jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
 
         QueryResult<Job> jobQueryResult = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
                 "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                jobResourceManagerAttributes, sessionId);
+                jobResourceManagerAttributes, null, sessionId);
         Job job = jobQueryResult.getResult().get(0);
 
         //Set JobId to IndexFile
         ObjectMap objectMap = new ObjectMap("jobId", job.getId());
-        objectMap.put("status", File.INDEXING);
         catalogManager.modifyFile(index.getId(), objectMap, sessionId).getResult();
         index.setJobId(job.getId());
 
@@ -115,12 +115,12 @@ public class AnalysisFileIndexer {
      * @param outDirUri         Index outdir
      * @param indexAttributes   This map will be filled with some index information
      * @return                  CommandLine
-     * @throws CatalogManagerException
+     * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
     private String createCommandLine(Study study, File file, String storageEngine,
                                      URI outDirUri, ObjectMap indexAttributes)
-            throws CatalogManagerException, CatalogIOManagerException {
+            throws CatalogDBException, CatalogIOManagerException {
 
         //Create command line
         String userId = file.getOwnerId();

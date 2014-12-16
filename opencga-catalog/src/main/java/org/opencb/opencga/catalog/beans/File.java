@@ -22,17 +22,17 @@ public class File {
     /**
      * Formats: file, folder, index
      */
-    private String type;
+    private Type type;
 
     /**
      * Formats: txt, executable, image, ...
      */
-    private String format;
+    private Format format;
 
     /**
      * BAM, VCF, ...
      */
-    private String bioformat;
+    private Bioformat bioformat;
 
     /**
      * file://, hdfs://
@@ -43,7 +43,7 @@ public class File {
     private String creationDate;
     private String description;
 
-    private String status;
+    private Status status;
     private long diskUsage;
 
     //private int studyId;
@@ -59,48 +59,54 @@ public class File {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-//    private List<Index> indices;
-
     /* Status */
-    enum Status{
+    public enum Status{
         INDEXING,
         UPLOADING,
         UPLOADED,
         READY,
         DELETING,
-        DELETED,
+        DELETED
     }
 
-    enum Type {
+    public enum Type {
         FOLDER,
         FILE,
         INDEX
     }
 
-    enum Format{
+    public enum Format{
         PLAIN,
         GZIP,
+        BINARY,
         EXECUTABLE,
         IMAGE
     }
 
-    public static final String INDEXING = "indexing";
-    public static final String UPLOADING = "uploading";
-    public static final String UPLOADED = "uploaded";
-    public static final String READY = "ready";
-    public static final String DELETING = "deleting";
-    public static final String DELETED = "deleted";
+    public enum Bioformat{
+        VARIANT,
+        ALIGNMENT,
+        SEQUENCE,
+        NONE
+    }
 
-    /* Type */
-    public static final String TYPE_FOLDER = "folder";
-    public static final String TYPE_FILE = "file";
-    public static final String TYPE_INDEX = "index";
-
-    /* Formats */
-    public static final String PLAIN = "plain";
-    public static final String GZIP = "gzip";
-    public static final String EXECUTABLE = "executable";
-    public static final String IMAGE = "image";
+//    public static final String INDEXING = "indexing";
+//    public static final String UPLOADING = "uploading";
+//    public static final String UPLOADED = "uploaded";
+//    public static final String READY = "ready";
+//    public static final String DELETING = "deleting";
+//    public static final String DELETED = "deleted";
+//
+//    /* Type */
+//    public static final String TYPE_FOLDER = "folder";
+//    public static final String TYPE_FILE = "file";
+//    public static final String TYPE_INDEX = "index";
+//
+//    /* Formats */
+//    public static final String PLAIN = "plain";
+//    public static final String GZIP = "gzip";
+//    public static final String EXECUTABLE = "executable";
+//    public static final String IMAGE = "image";
 
     /* Attributes known values */
     public static final String DELETE_DATE = "deleteDate";      //Long
@@ -113,22 +119,22 @@ public class File {
     public File() {
     }
 
-    public File(String name, String type, String format, String bioformat, String path, String ownerId,
-                String description, String status, long diskUsage) {
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String description, Status status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
-    public File(String name, String type, String format, String bioformat, String path, String ownerId,
-                String creationDate, String description, String status, long diskUsage) {
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String creationDate, String description, Status status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
-    public File(int id, String name, String type, String format, String bioformat, String path, String ownerId,
-                String creationDate, String description, String status, long diskUsage, int experimentId,
+    public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String creationDate, String description, Status status, long diskUsage, int experimentId,
                 List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
@@ -193,27 +199,27 @@ public class File {
         this.name = name;
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(Type type) {
         this.type = type;
     }
 
-    public String getFormat() {
+    public Format getFormat() {
         return format;
     }
 
-    public void setFormat(String format) {
+    public void setFormat(Format format) {
         this.format = format;
     }
 
-    public String getBioformat() {
+    public Bioformat getBioformat() {
         return bioformat;
     }
 
-    public void setBioformat(String bioformat) {
+    public void setBioformat(Bioformat bioformat) {
         this.bioformat = bioformat;
     }
 
@@ -249,11 +255,11 @@ public class File {
         this.description = description;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
@@ -277,6 +283,10 @@ public class File {
         return sampleIds;
     }
 
+    public void setSampleIds(List<Integer> sampleIds) {
+        this.sampleIds = sampleIds;
+    }
+
     public int getJobId() {
         return jobId;
     }
@@ -293,8 +303,12 @@ public class File {
         this.acl = acl;
     }
 
-    public void setSampleIds(List<Integer> sampleIds) {
-        this.sampleIds = sampleIds;
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
     }
 
     public Map<String, Object> getAttributes() {
@@ -304,20 +318,4 @@ public class File {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public void setStats(Map<String, Object> stats) {
-        this.stats = stats;
-    }
-
-//    public List<Index> getIndices() {
-//        return indices;
-//    }
-//
-//    public void setIndices(List<Index> indices) {
-//        this.indices = indices;
-//    }
 }

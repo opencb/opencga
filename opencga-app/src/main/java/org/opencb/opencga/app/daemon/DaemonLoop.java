@@ -10,11 +10,12 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.SgeManager;
@@ -53,7 +54,7 @@ public class DaemonLoop implements Runnable {
         this.properties = properties;
         try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (IOException | CatalogIOManagerException | CatalogManagerException e) {
+        } catch (IOException | CatalogIOManagerException | CatalogDBException e) {
             e.printStackTrace();
         }
 
@@ -82,7 +83,7 @@ public class DaemonLoop implements Runnable {
         try {
             QueryResult<ObjectMap> login = catalogManager.login(properties.getProperty(USER), properties.getProperty(PASSWORD), "daemon");
             sessionId = login.getResult().get(0).getString("sessionId");
-        } catch (CatalogManagerException | IOException e) {
+        } catch (CatalogException | IOException e) {
             e.printStackTrace();
             exit = true;
         }
@@ -103,7 +104,7 @@ public class DaemonLoop implements Runnable {
                 QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
                 for (Job job : unfinishedJobs.getResult()) {
                     String status = SgeManager.status(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString());
-                    String jobStatus = job.getStatus();
+                    Job.Status jobStatus = job.getStatus();
 //                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
@@ -111,28 +112,28 @@ public class DaemonLoop implements Runnable {
                     //Track SGEManager
                     switch(status) {
                         case SgeManager.FINISHED:
-                            if(!Job.DONE.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.DONE), sessionId);
-                                jobStatus = Job.DONE;
+                            if(!Job.Status.DONE.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
+                                jobStatus = Job.Status.DONE;
                             }
                             break;
                         case SgeManager.ERROR:
                         case SgeManager.EXECUTION_ERROR:
-                            if(!Job.ERROR.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.ERROR), sessionId);
-                                jobStatus = Job.ERROR;
+                            if(!Job.Status.ERROR.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
+                                jobStatus = Job.Status.ERROR;
                             }
                             break;
                         case SgeManager.QUEUED:
-                            if(!Job.QUEUED.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
-                                jobStatus = Job.QUEUED;
+                            if(!Job.Status.QUEUED.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
+                                jobStatus = Job.Status.QUEUED;
                             }
                             break;
                         case SgeManager.RUNNING:
-                            if(!Job.RUNNING.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.RUNNING), sessionId);
-                                jobStatus = Job.RUNNING;
+                            if(!Job.Status.RUNNING.equals(job.getStatus())) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.RUNNING), sessionId);
+                                jobStatus = Job.Status.RUNNING;
                             }
                             break;
                         case SgeManager.TRANSFERRED:
@@ -143,10 +144,10 @@ public class DaemonLoop implements Runnable {
 
                     //Track Catalog Job status
                     switch (jobStatus) {
-                        case Job.DONE:
+                        case DONE:
                             analysisOutputRecorder.recordJobOutput(job);
                             break;
-                        case Job.ERROR:
+                        case ERROR:
                             String jobErrorPolicy = "recordOutput";
                             switch(jobErrorPolicy) {
                                 case "deleteOutput":
@@ -158,15 +159,15 @@ public class DaemonLoop implements Runnable {
                                     break;
                             }
                             break;
-                        case Job.PREPARED:
+                        case PREPARED:
                             AnalysisJobExecuter.execute(job);
-                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.QUEUED), sessionId);
+                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
                             break;
-                        case Job.QUEUED:
+                        case QUEUED:
                             break;
-                        case Job.RUNNING:
+                        case RUNNING:
                             break;
-                        case Job.READY:
+                        case READY:
                             //Never expected!
                             break;
                     }
@@ -177,7 +178,7 @@ public class DaemonLoop implements Runnable {
 
             logger.info("----- Pending deletions -----");
             try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.DELETING), sessionId);
+                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.Status.DELETING), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
                     long deleteDate = new ObjectMap(file.getAttributes()).getLong(File.DELETE_DATE, 0);
@@ -187,7 +188,7 @@ public class DaemonLoop implements Runnable {
                         logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
                         CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(study.getUri());
                         catalogIOManager.deleteFile(catalogIOManager.getFileUri(study.getUri(), file.getPath()));
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.DELETED), sessionId);
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
                     } else {
                         logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(), file.getAttributes());
                         logger.info("{}", (currentTimeMillis - deleteDate)/1000);
@@ -201,7 +202,7 @@ public class DaemonLoop implements Runnable {
         if(sessionId != null) {
             try {
                 catalogManager.logout(properties.getProperty(USER), sessionId);
-            } catch (CatalogManagerException | IOException e) {
+            } catch (CatalogException  e) {
                 e.printStackTrace();
             }
             sessionId = null;

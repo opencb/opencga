@@ -2,7 +2,7 @@ package org.opencb.opencga.catalog;
 
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.TimeUtils;
@@ -51,7 +51,7 @@ public class CatalogFileManager {
             targetUri = catalogManager.getFileUri(file);
             sourceIOManager = catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme());
             targetIOManager = catalogManager.getCatalogIOManagerFactory().get(targetUri.getScheme());
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+        } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
             throw new CatalogIOManagerException("Can't upload file.", e);
         }
 
@@ -67,11 +67,11 @@ public class CatalogFileManager {
 
         //Check status
         switch (file.getStatus()) {
-            case File.UPLOADING:
+            case UPLOADING:
                 break;
 
-            case File.UPLOADED:
-            case File.READY:
+            case UPLOADED:
+            case READY:
                 if(!ignoreStatus) {
                     throw new CatalogIOManagerException("File status is already uploaded and ready! " +
                             "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
@@ -118,13 +118,13 @@ public class CatalogFileManager {
 
             //Update file
             ObjectMap parameters = new ObjectMap();
-            parameters.put("status", File.READY);
+            parameters.put("status", File.Status.READY);
             parameters.put("diskUsage", size);
             parameters.put("creationDate", creationDate);
             parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);
-            } catch (CatalogManagerException e) {
+            } catch (CatalogException e) {
                 throw new CatalogIOManagerException("Can't update file properties in Catalog.", e);
             }
 

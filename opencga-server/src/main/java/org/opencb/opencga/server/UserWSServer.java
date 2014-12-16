@@ -1,15 +1,12 @@
 package org.opencb.opencga.server;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.beans.User;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.CatalogException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -39,10 +36,10 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(userId, name, email, password, organization);
+            queryResult = catalogManager.createUser(userId, name, email, password, organization, this.getQueryOptions());
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException e) {
+        } catch (CatalogException  e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -65,7 +62,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.login(userId, password, sessionIp);
             }
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogException | IOException  e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -86,7 +83,7 @@ public class UserWSServer extends OpenCGAWSServer {
                 result = catalogManager.logout(userId, sessionId);
             }
             return createOkResponse(result);
-        } catch (CatalogManagerException | IOException | CatalogIOManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -104,7 +101,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -121,7 +118,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -138,7 +135,7 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult result = catalogManager.resetPassword(userId, email);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -166,7 +163,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -180,9 +177,9 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, sessionId, this.getQueryOptions());
+            QueryResult result = catalogManager.getUser(userId, lastActivity, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -199,9 +196,9 @@ public class UserWSServer extends OpenCGAWSServer {
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllProjects(userId, sessionId);
+            queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | JsonProcessingException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

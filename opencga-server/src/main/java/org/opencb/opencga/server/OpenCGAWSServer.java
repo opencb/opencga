@@ -2,12 +2,10 @@ package org.opencb.opencga.server;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -17,11 +15,10 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -95,12 +92,13 @@ public class OpenCGAWSServer {
         try {
             properties.load(is);
             System.out.println("catalog.properties");
-            System.out.println(properties.getProperty("CATALOG.HOST"));
-            System.out.println(properties.getProperty("CATALOG.PORT"));
-            System.out.println(properties.getProperty("CATALOG.DATABASE"));
-            System.out.println(properties.getProperty("CATALOG.USER"));
-            System.out.println(properties.getProperty("CATALOG.PASSWORD"));
-            System.out.println(properties.getProperty("ROOTDIR"));
+            System.out.println(CatalogManager.CATALOG_DB_HOST + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOST));
+            System.out.println(CatalogManager.CATALOG_DB_PORT + " " + properties.getProperty(CatalogManager.CATALOG_DB_PORT));
+            System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+            System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
+            System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));
+            System.out.println(CatalogManager.CATALOG_MAIN_ROOTDIR + " " + properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+
         } catch (IOException e) {
             System.out.println("Error loading properties");
             System.out.println(e.getMessage());
@@ -120,7 +118,7 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(properties);
-        } catch (IOException | CatalogIOManagerException | CatalogManagerException e) {
+        } catch (IOException | CatalogIOManagerException | CatalogDBException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }

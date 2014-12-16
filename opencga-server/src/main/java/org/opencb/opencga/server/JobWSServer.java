@@ -9,12 +9,10 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Tool;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.common.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -22,7 +20,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -55,8 +52,8 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response info(
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
-            return createOkResponse(catalogManager.getJob(jobId, sessionId));
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException e) {
+            return createOkResponse(catalogManager.getJob(jobId, this.getQueryOptions(), sessionId));
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e.getMessage());
         }
     }
@@ -69,7 +66,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             return createErrorResponse(e.getMessage());
         }
     }
@@ -168,7 +165,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
             return createOkResponse(jobQueryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | IOException | AnalysisExecutionException e) {
+        } catch (CatalogException | IOException | AnalysisExecutionException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
