@@ -56,6 +56,8 @@ public class ToolWSServer extends OpenCGAWSServer{
         }
     }
 
+
+
     @GET
     @Path("/{toolId}/help")
     @Produces("application/json")

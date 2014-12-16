@@ -176,5 +176,4 @@ public class StudyWSServer extends OpenCGAWSServer {
             return createErrorResponse(e.getMessage());
         }
     }
-
 }

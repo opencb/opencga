@@ -4,8 +4,8 @@
         "email": ""
     },
     "version": "1.0",
-    "id": "fatigo",
-    "name": "Fatigo",
+    "id": "fatiscan",
+    "name": "fatiscan",
     "description": "",
     "icon": {
         "size": "",
@@ -18,14 +18,10 @@
         {
             "id": "fatigo",
             "name": "Fatigo",
-            "executable": "babelomics/babelomics.sh --tool fatigo",
+            "executable": "babelomics/babelomics.sh --tool fatiscan",
             "inputParams": [
                 {
-                    "name": "list1",
-                    "dataType": "txt"
-                },
-                {
-                    "name": "list2",
+                    "name": "ranked-list",
                     "dataType": "txt"
                 }
             ],
@@ -58,27 +54,12 @@
                     "required": "false"
                 },
                 {
-                    "name": "chromosomes",
-                    "description": "",
-                    "required": "false"
-                },
-                {
-                    "name": "region",
-                    "description": "",
-                    "required": "false"
-                },
-                {
                     "name": "duplicates",
                     "description": "",
                     "required": "false"
                 },
                 {
                     "name": "fisher",
-                    "description": "",
-                    "required": "false"
-                },
-                {
-                    "name": "genome",
                     "description": "",
                     "required": "false"
                 },
@@ -258,6 +239,11 @@
                     "required": "false"
                 },
                 {
+                    "name": "higher-label",
+                    "description": "",
+                    "required": "false"
+                },
+                {
                     "name": "-home,home",
                     "description": "",
                     "required": "false"
@@ -323,22 +309,22 @@
                     "required": "false"
                 },
                 {
-                    "name": "list1",
-                    "description": "",
-                    "required": "false"
-                },
-                {
-                    "name": "list2",
-                    "description": "",
-                    "required": "false"
-                },
-                {
                     "name": "log-file",
                     "description": "",
                     "required": "false"
                 },
                 {
                     "name": "log-level",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "lower-label",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "method",
                     "description": "",
                     "required": "false"
                 },
@@ -368,6 +354,11 @@
                     "required": "false"
                 },
                 {
+                    "name": "order",
+                    "description": "",
+                    "required": "false"
+                },
+                {
                     "name": "oreganno",
                     "description": "",
                     "required": "false"
@@ -384,6 +375,21 @@
                 },
                 {
                     "name": "oreganno-nannot-domain",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "output-format",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "partitions",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "ranked-list",
                     "description": "",
                     "required": "false"
                 },
