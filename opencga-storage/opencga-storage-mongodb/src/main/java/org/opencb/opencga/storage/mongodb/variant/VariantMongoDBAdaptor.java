@@ -172,9 +172,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         andArr.add(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome()));
         andArr.add(new BasicDBObject(DBObjectToVariantConverter.START_FIELD, start));
 
+        // Parsing the rest of options
+        QueryBuilder qb = new QueryBuilder();
+        DBObject optionsMatch = parseQueryOptions(options, qb).get();
+        if(!optionsMatch.keySet().isEmpty()) {
+            andArr.add(optionsMatch);
+        }
         DBObject match = new BasicDBObject("$match", new BasicDBObject("$and", andArr));
 
-//        QueryBuilder qb = new QueryBuilder();
+
 //        qb.and("_at.chunkIds").in(chunkIds);
 //        qb.and(DBObjectToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
 //        qb.and(DBObjectToVariantConverter.START_FIELD).lessThanEquals(region.getEnd());
@@ -218,8 +224,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long dbTimeStart = System.currentTimeMillis();
         QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
         long dbTimeEnd = System.currentTimeMillis();
-
-//        System.out.println(output.getCommand());
 
         Map<Long, DBObject> ids = new HashMap<>();
         // Create DBObject for intervals with features inside them
