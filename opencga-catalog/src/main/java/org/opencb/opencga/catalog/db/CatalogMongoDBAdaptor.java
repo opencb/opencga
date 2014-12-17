@@ -1594,7 +1594,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         if(options.containsKey("ready")) {
             if(options.getBoolean("ready")) {
-                query.put("status", Job.Status.READY);
+                query.put("status", Job.Status.READY.name());
             } else {
                 query.put("status", new BasicDBObject("$ne", Job.Status.READY));
             }
@@ -1705,6 +1705,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * ***************************
      */
 
+    @Override
     public boolean experimentExists(int experimentId) {
         return false;
     }
@@ -1714,13 +1715,15 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * ***************************
      */
 
+    @Override
     public boolean sampleExists(int sampleId) {
         DBObject query = new BasicDBObject("id", sampleId);
         QueryResult<Long> count = sampleCollection.count(query);
         return count.getResult().get(0) != 0;
     }
 
-    public QueryResult<Sample> createSample(int studyId, Sample sample) throws CatalogDBException {
+    @Override
+    public QueryResult<Sample> createSample(int studyId, Sample sample, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -1732,7 +1735,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         sampleObject.put(_STUDY_ID, studyId);
         sampleCollection.insert(sampleObject);
 
-        return endQuery("createSample", startTime, getSample(sampleId, null));
+        return endQuery("createSample", startTime, getSample(sampleId, options));
     }
 
     private void checkStudyId(int studyId) throws CatalogDBException {
@@ -1741,6 +1744,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
     }
 
+    @Override
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
@@ -1756,6 +1760,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return endQuery("getSample", startTime, samples);
     }
 
+    @Override
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
@@ -1767,10 +1772,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return endQuery("getAllSamples", startTime, samples);
     }
 
+    @Override
     public QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException {
         throw new UnsupportedOperationException("No implemented");
     }
 
+    @Override
     public QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -1784,6 +1791,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
     }
 
+    @Override
     public int getStudyIdBySampleId(int sampleId) {
         DBObject query = new BasicDBObject("id", sampleId);
         BasicDBObject returnFields = new BasicDBObject(_STUDY_ID, true);
@@ -1809,7 +1817,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         int variableSetId = getNewId();
         variableSet.setId(variableSetId);
-
         DBObject object = getDbObject(variableSet, "VariableSet");
         DBObject query = new BasicDBObject("id", studyId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
@@ -1852,6 +1859,21 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, false, false);
 
         return endQuery("", startTime, Arrays.asList(annotationSet));
+    }
+
+
+    @Override
+    public int getStudyIdByVariableSetId(int variableSetId) {
+        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+
+        QueryResult<DBObject> queryResult = studyCollection.find(query, null, new BasicDBObject("id", true));
+
+        if (queryResult.getResult().isEmpty()) {
+            return -1;
+        } else {
+            Object studyId = queryResult.getResult().get(0).get("id");
+            return studyId instanceof Integer ? (Integer) studyId : Integer.parseInt(studyId.toString());
+        }
     }
 
 

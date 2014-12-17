@@ -24,7 +24,7 @@ public class Variable {
      */
     private List<String> acceptedValues;
 
-    private String rank;
+    private int rank;
     private String dependsOn;
 
     private String description;
@@ -44,7 +44,7 @@ public class Variable {
     }
 
     public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
-                    List<String> acceptedValues, String rank, String dependsOn, String description, Map<String, Object> attributes) {
+                    List<String> acceptedValues, int rank, String dependsOn, String description, Map<String, Object> attributes) {
         this.id = id;
         this.category = category;
         this.type = type;
@@ -66,7 +66,7 @@ public class Variable {
                 ", defaultValue=" + defaultValue +
                 ", required=" + required +
                 ", acceptedValues=" + acceptedValues +
-                ", rank='" + rank + '\'' +
+                ", rank=" + rank +
                 ", dependsOn='" + dependsOn + '\'' +
                 ", description='" + description + '\'' +
                 ", attributes=" + attributes +
@@ -138,11 +138,11 @@ public class Variable {
         this.acceptedValues = acceptedValues;
     }
 
-    public String getRank() {
+    public int getRank() {
         return rank;
     }
 
-    public void setRank(String rank) {
+    public void setRank(int rank) {
         this.rank = rank;
     }
 

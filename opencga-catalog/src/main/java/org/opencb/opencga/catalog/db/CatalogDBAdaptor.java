@@ -262,7 +262,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract boolean sampleExists(int sampleId);
 
-    public abstract QueryResult<Sample> createSample(int studyId, Sample sample) throws CatalogDBException;
+    public abstract QueryResult<Sample> createSample(int studyId, Sample sample, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
 
@@ -284,8 +284,9 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+    public abstract QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
 
+    public abstract int getStudyIdByVariableSetId(int sampleId);
 
     /**
      * Util methods

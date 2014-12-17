@@ -1,7 +1,9 @@
 package org.opencb.opencga.catalog.beans;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -18,15 +20,17 @@ public class Sample {
 
     private List<AnnotationSet> annotationSets;
 
+    private Map<String, Object> attributes;
+
     public Sample() {
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description) {
-        this(id, name, source, individual, studyId, description, new LinkedList<AnnotationSet>());
+        this(id, name, source, individual, studyId, description, new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
     }
 
     public Sample(int id, String name, String source, Individual individual, int studyId, String description,
-                  List<AnnotationSet> annotationSets) {
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -34,6 +38,7 @@ public class Sample {
         this.studyId = studyId;
         this.description = description;
         this.annotationSets = annotationSets;
+        this.attributes = attributes;
     }
 
     @Override
@@ -46,6 +51,7 @@ public class Sample {
                 ", studyId=" + studyId +
                 ", description='" + description + '\'' +
                 ", annotationSets=" + annotationSets +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -103,5 +109,13 @@ public class Sample {
 
     public void setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

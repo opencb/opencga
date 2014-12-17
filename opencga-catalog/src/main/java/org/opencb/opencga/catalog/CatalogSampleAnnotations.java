@@ -35,17 +35,19 @@ public class CatalogSampleAnnotations {
         }
         variable.setAcceptedValues(acceptedValues);
 
+        if(variable.getType() == null) {
+            throw new CatalogException("VariableType is null");
+        }
+
+        //Check default values
         switch (variable.getType()) {
-            case BOOLEAN: {
+            case BOOLEAN:
                 if (!variable.getAcceptedValues().isEmpty()) {
                     throw new CatalogException("Variable type boolean can not contain accepted values");
                 }
                 break;
-            }
-            case CATEGORICAL: {
-                //Check accepted values
+            case CATEGORICAL:
                 break;
-            }
             case NUMERIC: {
                 //Check accepted values
                 if (!variable.getAcceptedValues().isEmpty()) {
@@ -69,9 +71,10 @@ public class CatalogSampleAnnotations {
                 }
                 break;
             }
-            case TEXT: {
+            case TEXT:
                 break;
-            }
+            default:
+                throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
 
         //Check default value
@@ -82,18 +85,34 @@ public class CatalogSampleAnnotations {
         }
     }
 
-
-    public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet) throws CatalogException {
+    /**
+     * Check if an annotationSet is valid.
+     * @param variableSet           VariableSet that describes the annotationSet.
+     * @param annotationSet         AnnotationSet to check
+     * @param annotationSets        All the AnnotationSets of the sample
+     * @throws CatalogException
+     */
+    public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet, List<AnnotationSet> annotationSets) throws CatalogException {
         if(variableSet.getId() != annotationSet.getVariableSetId()) {
             throw new CatalogException("VariableSet does not match with the AnnotationSet");
         }
 
+        //Check repeatable variableSet.
+        if (variableSet.isRepeatable() && annotationSets != null) {
+            for (AnnotationSet set : annotationSets) {
+                if (set.getVariableSetId() == annotationSet.getVariableSetId()) {
+                    throw new CatalogException("Repeated annotation for a non repeatable VariableSet");
+                }
+            }
+        }
+
+        //Get annotationSetId set and variableId map
         Set<String> annotatedVariables = new HashSet<>();
         Map<String, Variable> variableMap = new HashMap<>();
-
         for (Variable variable : variableSet.getVariables()) {
             variableMap.put(variable.getId(), variable);
         }
+
         //Check Duplicated
         for (Annotation annotation : annotationSet.getAnnotations()) {
             if (annotatedVariables.contains(annotation.getId())) {
@@ -107,8 +126,10 @@ public class CatalogSampleAnnotations {
         for (Variable variable : variableSet.getVariables()) {
             if(!annotatedVariables.contains(variable.getId())) {
                 Annotation defaultAnnotation = getDefaultAnnotation(variable);
-                if(variable.isRequired() && defaultAnnotation == null) {
-                    throw new CatalogException("Variable " + variable + " is required.");
+                if (defaultAnnotation == null) {
+                    if (variable.isRequired()) {
+                        throw new CatalogException("Variable " + variable + " is required.");
+                    }
                 } else {
                     defaultAnnotations.add(defaultAnnotation);
                     annotatedVariables.add(defaultAnnotation.getId());
@@ -153,8 +174,9 @@ public class CatalogSampleAnnotations {
                 String stringValue = getStringValue(defaultValue);
                 return stringValue == null ? null : new Annotation(variable.getId(), stringValue);
             }
+            default:
+                throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
-        return null;
     }
 
     private static void checkAcceptedValue(Variable variable, Object value, String message) throws CatalogException {
@@ -201,7 +223,7 @@ public class CatalogSampleAnnotations {
                 return;
             }
             default:
-//                throw new CatalogException("Unknown VariableType " + variable); //
+                throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
     }
 
@@ -214,8 +236,9 @@ public class CatalogSampleAnnotations {
                 return getStringValue(value);
             case NUMERIC:
                 return getNumericValue(value);
+            default:
+                throw new CatalogException("Unknown VariableType " + variableType.name());
         }
-        return null;
     }
 
     /**
@@ -253,30 +276,18 @@ public class CatalogSampleAnnotations {
                 return false;
             } else if (((String) value).isEmpty()) {
                 return null;
-            } else {
-                try {
-                    Double numericValue = getNumericValue(value);
-                    if (numericValue == null) {
-                        return null;    //Empty string
-                    } else {
-                        return numericValue != 0;
-                    }
-                } catch (CatalogException e) {
-                    throw new CatalogException("Value " + value + " is not a valid Boolean", e);
-                }
             }
-        } else {
+        }
+
+        try {
             Double numericValue = getNumericValue(value);
             if (numericValue == null) {
-                String string = getStringValue(value);
-                if (string != null) {
-                    return Boolean.valueOf(string);
-                } else {
-                    return null;    //Empty string
-                }
+                return null;    //Empty string
             } else {
                 return numericValue != 0;
             }
+        } catch (CatalogException e) {
+            throw new CatalogException("Value " + value + " is not a valid Boolean", e);
         }
     }
 
