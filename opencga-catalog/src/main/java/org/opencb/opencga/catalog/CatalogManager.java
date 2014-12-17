@@ -1947,7 +1947,7 @@ public class CatalogManager {
         for (Variable variable : variables) {
             checkParameter(variable.getId(), "variable ID");
             checkObj(variable.getType(), "variable Type");
-            variable.setAcceptedValues(defaultObject(variable.getAcceptedValues(), Collections.<String>emptyList()));
+            variable.setAllowedValues(defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
             variable.setAttributes(defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
             variable.setCategory(defaultString(variable.getCategory(), ""));
             variable.setDependsOn(defaultString(variable.getDependsOn(), ""));

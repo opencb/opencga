@@ -1,9 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -15,7 +12,6 @@ public class Sample {
     private String source;
     private Individual individual;
     private int studyId;
-
     private String description;
 
     private List<AnnotationSet> annotationSets;

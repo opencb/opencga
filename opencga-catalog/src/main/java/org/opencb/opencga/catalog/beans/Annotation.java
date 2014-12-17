@@ -4,7 +4,12 @@ package org.opencb.opencga.catalog.beans;
 * Created by jacobo on 12/12/14.
 */
 public class Annotation {
+
+    /**
+     * This id must be a valid variable ID
+     */
     private String id;
+
     private Object value;
 
     public Annotation() {
@@ -42,6 +47,7 @@ public class Annotation {
         result = 31 * result + value.hashCode();
         return result;
     }
+
 
     public String getId() {
         return id;

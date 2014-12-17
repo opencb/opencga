@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog;
 
-import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.Annotation;
 import org.opencb.opencga.catalog.beans.AnnotationSet;
 import org.opencb.opencga.catalog.beans.Variable;
@@ -28,12 +27,12 @@ public class CatalogSampleAnnotations {
 
     public static void checkVariable(Variable variable) throws CatalogException {
         List<String> acceptedValues = new LinkedList<>();
-        if (variable.getAcceptedValues() != null) {
-            for (String acceptedValue : variable.getAcceptedValues()) {
+        if (variable.getAllowedValues() != null) {
+            for (String acceptedValue : variable.getAllowedValues()) {
                 Collections.addAll(acceptedValues, acceptedValue.split(","));
             }
         }
-        variable.setAcceptedValues(acceptedValues);
+        variable.setAllowedValues(acceptedValues);
 
         if(variable.getType() == null) {
             throw new CatalogException("VariableType is null");
@@ -42,7 +41,7 @@ public class CatalogSampleAnnotations {
         //Check default values
         switch (variable.getType()) {
             case BOOLEAN:
-                if (!variable.getAcceptedValues().isEmpty()) {
+                if (!variable.getAllowedValues().isEmpty()) {
                     throw new CatalogException("Variable type boolean can not contain accepted values");
                 }
                 break;
@@ -50,8 +49,8 @@ public class CatalogSampleAnnotations {
                 break;
             case NUMERIC: {
                 //Check accepted values
-                if (!variable.getAcceptedValues().isEmpty()) {
-                    for (String range : variable.getAcceptedValues()) {
+                if (!variable.getAllowedValues().isEmpty()) {
+                    for (String range : variable.getAllowedValues()) {
                         String[] split = range.split(":", -1);
                         if (split.length != 2) {
                             throw new CatalogException("Invalid numerical range. Expected <min>:<max>");
@@ -98,7 +97,7 @@ public class CatalogSampleAnnotations {
         }
 
         //Check repeatable variableSet.
-        if (variableSet.isRepeatable() && annotationSets != null) {
+        if (variableSet.isUnique() && annotationSets != null) {
             for (AnnotationSet set : annotationSets) {
                 if (set.getVariableSetId() == annotationSet.getVariableSetId()) {
                     throw new CatalogException("Repeated annotation for a non repeatable VariableSet");
@@ -195,7 +194,7 @@ public class CatalogSampleAnnotations {
                     return;
             case CATEGORICAL: {
                 String stringValue = (String)realValue;
-                if(variable.getAcceptedValues().contains(stringValue)) {
+                if(variable.getAllowedValues().contains(stringValue)) {
                     return;
                 } else {
                     throw new CatalogException(message + " value '" + value + "' is not an accepted value for " + variable);
@@ -204,8 +203,8 @@ public class CatalogSampleAnnotations {
             case NUMERIC:
                 Double numericValue = (Double)realValue;
 
-                if (!variable.getAcceptedValues().isEmpty()) {
-                    for (String range : variable.getAcceptedValues()) {
+                if (!variable.getAllowedValues().isEmpty()) {
+                    for (String range : variable.getAllowedValues()) {
                         String[] split = range.split(":", -1);
                         Double min = split[0].isEmpty() ? Double.MIN_VALUE : Double.valueOf(split[0]);
                         Double max = split[1].isEmpty() ? Double.MAX_VALUE : Double.valueOf(split[1]);

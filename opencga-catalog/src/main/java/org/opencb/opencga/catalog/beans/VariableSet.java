@@ -8,10 +8,10 @@ import java.util.Set;
  */
 public class VariableSet {
 
+    //TODO Is this field really needed?
     private int id;
     private String name;
-    private boolean repeatable;
-
+    private boolean unique;
     private String description;
     private Set<Variable> variables;
 
@@ -20,10 +20,11 @@ public class VariableSet {
     public VariableSet() {
     }
 
-    public VariableSet(int id, String name, boolean repeatable, String description, Set<Variable> variables, Map<String, Object> attributes) {
+    public VariableSet(int id, String name, boolean unique, String description, Set<Variable> variables,
+                       Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.repeatable = repeatable;
+        this.unique = unique;
         this.description = description;
         this.attributes = attributes;
         this.variables = variables;
@@ -34,7 +35,7 @@ public class VariableSet {
         return "VariableSet{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", repeatable=" + repeatable +
+                ", unique=" + unique +
                 ", description='" + description + '\'' +
                 ", variables=" + variables +
                 ", attributes=" + attributes +
@@ -57,12 +58,12 @@ public class VariableSet {
         this.name = name;
     }
 
-    public boolean isRepeatable() {
-        return repeatable;
+    public boolean isUnique() {
+        return unique;
     }
 
-    public void setRepeatable(boolean repeatable) {
-        this.repeatable = repeatable;
+    public void setUnique(boolean unique) {
+        this.unique = unique;
     }
 
     public String getDescription() {
