@@ -229,7 +229,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
-    public abstract int getStudyIdByJobId(int jobId);
+    public abstract int getStudyIdByJobId(int jobId) throws CatalogDBException;
 
     public abstract QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException;
 
@@ -272,7 +272,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException;
 
-    public abstract int getStudyIdBySampleId(int sampleId);
+    public abstract int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
 
     /**
@@ -286,7 +286,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
 
-    public abstract int getStudyIdByVariableSetId(int sampleId);
+    public abstract int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
 
     /**
      * Util methods

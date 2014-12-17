@@ -53,4 +53,21 @@ public class VariableWSServer extends OpenCGAWSServer{
     }
 
 
+    @GET
+    @Path("/{variableSetId}/info")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get VariableSet info")
+    public Response variableSetInfo(
+            @ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") int variableSetId
+    ) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, this.getQueryOptions(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
 }

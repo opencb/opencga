@@ -103,7 +103,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
             }
 
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, name, variableSetId, annotations, null, sessionId);
+            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, name, variableSetId, annotations, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
