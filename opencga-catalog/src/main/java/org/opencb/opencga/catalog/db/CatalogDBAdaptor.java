@@ -171,7 +171,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
+    public QueryResult<File> getFile(int fileId) throws CatalogDBException { return getFile(fileId, null); }
     public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
@@ -189,6 +189,10 @@ public abstract class CatalogDBAdaptor {
     public abstract QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
     public abstract QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
+
+    public abstract QueryResult<Dataset> createDataset(int studyId, Dataset dataset) throws CatalogDBException;
+
+    public abstract QueryResult<Dataset> getDataset(int datasetId) throws CatalogDBException;
 
     /**
      * Analysis methods
@@ -274,6 +278,9 @@ public abstract class CatalogDBAdaptor {
 
     public abstract int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
+    public abstract QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
+
+    public abstract QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
 
     /**
      * Annotation Methods

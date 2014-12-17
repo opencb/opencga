@@ -654,8 +654,8 @@ public class CatalogManager {
         files.add(new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0));
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<VariableSet>(),
-                null, stats, attributes);
+                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
+                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, stats, attributes);
 
 
         /* CreateStudy */

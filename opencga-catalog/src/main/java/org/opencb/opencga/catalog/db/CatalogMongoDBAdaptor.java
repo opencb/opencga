@@ -67,6 +67,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private static ObjectReader jsonJobReader;
     private static ObjectReader jsonStudyReader;
     private static ObjectReader jsonSampleReader;
+    private static Map<Class, ObjectReader> jsonReaderMap;
 
     private Properties catalogProperties;
 
@@ -76,13 +77,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         jsonObjectWriter = jsonObjectMapper.writer();
-        jsonFileReader = jsonObjectMapper.reader(File.class);
-        jsonUserReader = jsonObjectMapper.reader(User.class);
-        jsonJobReader = jsonObjectMapper.reader(Job.class);
+        jsonReaderMap.put(File.class, jsonFileReader = jsonObjectMapper.reader(File.class));
+        jsonReaderMap.put(User.class, jsonUserReader = jsonObjectMapper.reader(User.class));
+        jsonReaderMap.put(Job.class, jsonJobReader = jsonObjectMapper.reader(Job.class));
 //        jsonProjectReader = jsonObjectMapper.reader(Project.class);
-        jsonStudyReader = jsonObjectMapper.reader(Study.class);
+        jsonReaderMap.put(Study.class, jsonStudyReader = jsonObjectMapper.reader(Study.class));
 //        jsonAnalysisReader = jsonObjectMapper.reader(Job.class);
-        jsonSampleReader = jsonObjectMapper.reader(Sample.class);
+        jsonReaderMap.put(Sample.class, jsonSampleReader = jsonObjectMapper.reader(Sample.class));
     }
 
     public CatalogMongoDBAdaptor(DataStoreServerAddress dataStoreServerAddress, MongoCredential credentials)
@@ -843,7 +844,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         //Create DBObject
         DBObject studyObject = getDbObject(study, "Study");
-        studyObject.put("_id", newId);
+        studyObject.put(_ID, newId);
 
         //Set ProjectId
         studyObject.put(_PROJECT_ID, projectId);
@@ -1173,12 +1174,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return endQuery("Get all files", startTime, files);
     }
 
-
-    @Override
-    public QueryResult<File> getFile(int fileId) throws CatalogDBException {
-        return getFile(fileId, null);
-    }
-
     @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
@@ -1438,6 +1433,52 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return endQuery("Search File", startTime, files);
     }
 
+    @Override
+    public QueryResult<Dataset> createDataset(int studyId, Dataset dataset) throws CatalogDBException {
+        long startTime = startQuery();
+        checkStudyId(studyId);
+
+        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
+                .start(_ID, studyId)
+                .append("datasets.name", dataset.getName())
+                .get());
+
+        if(count.getResult().get(0) > 0) {
+            throw new CatalogDBException("Dataset { name: \"" + dataset.getName() + "\" } already exists in this study.");
+        }
+
+        int newId = getNewId();
+        dataset.setId(newId);
+
+        DBObject datasetObject = getDbObject(dataset, "Dataset");
+        QueryResult<WriteResult> update = studyCollection.update(
+                new BasicDBObject(_ID, studyId),
+                new BasicDBObject("$push", new BasicDBObject("datasets", datasetObject)),
+                false, false);
+
+        if (update.getResult().get(0).getN() == 0) {
+            throw CatalogDBException.idNotFound("Study", studyId);
+        }
+
+        return endQuery("createDataset", startTime, getDataset(newId));
+    }
+
+    @Override
+    public QueryResult<Dataset> getDataset(int datasetId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
+        BasicDBObject returnFields = new BasicDBObject("datasets", new BasicDBObject("$elemMatch", new BasicDBObject("id", datasetId)));
+        QueryResult<DBObject> queryResult = studyCollection.find(query, null, returnFields);
+
+        List<Study> studies = parseStudies(queryResult);
+        if(studies == null || studies.get(0).getDatasets().isEmpty()) {
+            throw CatalogDBException.idNotFound("Dataset", datasetId);
+        } else {
+            return endQuery("getDataset", startTime, studies.get(0).getDatasets());
+        }
+    }
+
     /**
      * Job methods
      * ***************************
@@ -1453,20 +1494,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-//        if (!analysisExists(analysisId)) {
-//            throw new CatalogManagerException("Analysis {id:" + analysisId + "} does not exist");
-//        }
-
-        //TODO Check StudyId exists
-        if(studyId < 0) {
-            throw new CatalogDBException("Study {id:" + studyId + "} does not exist");
-        }
+        checkStudyId(studyId);
 
         int jobId = getNewId();
         job.setId(jobId);
 
         DBObject jobObject = getDbObject(job, "job");
-        jobObject.put("_id", jobId);
+        jobObject.put(_ID, jobId);
         jobObject.put(_STUDY_ID, studyId);
         QueryResult insertResult = jobCollection.insert(jobObject); //TODO: Check results.get(0).getN() != 0
 
@@ -1812,7 +1846,51 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
     }
 
+    @Override
+    public QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException {
+        long startTime = startQuery();
+        checkStudyId(studyId);
 
+        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
+                .start(_ID, studyId)
+                .append("cohorts.name", cohort.getName())
+                .get());
+
+        if(count.getResult().get(0) > 0) {
+            throw new CatalogDBException("Cohort { name: \"" + cohort.getName() + "\" } already exists in this study.");
+        }
+
+        int newId = getNewId();
+        cohort.setId(newId);
+
+        DBObject cohortObject = getDbObject(cohort, "Cohort");
+        QueryResult<WriteResult> update = studyCollection.update(
+                new BasicDBObject(_ID, studyId),
+                new BasicDBObject("$push", new BasicDBObject("cohorts", cohortObject)),
+                false, false);
+
+        if (update.getResult().get(0).getN() == 0) {
+            throw CatalogDBException.idNotFound("Study", studyId);
+        }
+
+        return endQuery("createDataset", startTime, getCohort(newId));
+    }
+
+    @Override
+    public QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
+        BasicDBObject returnFields = new BasicDBObject("cohorts", new BasicDBObject("$elemMatch", new BasicDBObject("id", cohortId)));
+        QueryResult<DBObject> queryResult = studyCollection.find(query, null, returnFields);
+
+        List<Study> studies = parseStudies(queryResult);
+        if(studies == null || studies.get(0).getDatasets().isEmpty()) {
+            throw CatalogDBException.idNotFound("Cohort", cohortId);
+        } else {
+            return endQuery("getCohort", startTime, studies.get(0).getCohorts());
+        }
+    }
 
     /**
      * Annotation Methods
@@ -1978,6 +2056,29 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Error parsing samples", e);
         }
         return samples;
+    }
+
+    private <T> List<T> parseObjects(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
+        LinkedList<T> objects = new LinkedList<>();
+        try {
+            for (DBObject object : result.getResult()) {
+                objects.add(jsonReaderMap.get(tClass).<T>readValue(object.toString()));
+            }
+        } catch (IOException e) {
+            throw new CatalogDBException("Error parsing " + tClass.getName(), e);
+        }
+        return objects;
+    }
+
+    private <T> T parseObject(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
+        if(result.getResult().isEmpty()) {
+            return null;
+        }
+        try {
+            return jsonReaderMap.get(tClass).readValue(result.getResult().get(0).toString());
+        } catch (IOException e) {
+            throw new CatalogDBException("Error parsing " + tClass.getName(), e);
+        }
     }
 
     private DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
