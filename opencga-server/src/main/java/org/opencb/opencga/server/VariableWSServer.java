@@ -37,14 +37,14 @@ public class VariableWSServer extends OpenCGAWSServer{
     @ApiOperation(value = "Create variable set")
     public Response createSet(@ApiParam(value = "studyId", required = true)       @QueryParam("studyId") String studyIdStr,
                               @ApiParam(value = "name", required = true)          @QueryParam("name") String name,
-                              @ApiParam(value = "repeatable", required = false)   @QueryParam("repeatable") Boolean repeatable,
+                              @ApiParam(value = "unique", required = false)   @QueryParam("unique") Boolean unique,
                               @ApiParam(value = "description", required = false)  @QueryParam("description") String description,
                               @ApiParam(value = "variables", required = true) List<Variable> variables) {
 
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId,
-                    name, repeatable, description, null, variables, sessionId);
+                    name, unique, description, null, variables, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

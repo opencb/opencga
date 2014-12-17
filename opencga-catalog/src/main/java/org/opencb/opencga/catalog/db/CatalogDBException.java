@@ -19,7 +19,11 @@ public class CatalogDBException extends CatalogException {
         super(cause);
     }
 
-    public static CatalogDBException idNotfound(String name, int id) {
-        return new CatalogDBException(name + " { id: " + id + "} not found");
+    public static CatalogDBException idNotFound(String name, String id) {
+        return new CatalogDBException(name + " { id: \"" + id + "\" } not found.");
+    }
+
+    public static CatalogDBException idNotFound(String name, int id) {
+        return new CatalogDBException(name + " { id: " + id + " } not found.");
     }
 }

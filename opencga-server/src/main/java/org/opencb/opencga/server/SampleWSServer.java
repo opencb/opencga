@@ -66,12 +66,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "annotate sample")
     public Response annotateSamplePOST(
             @ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+            @ApiParam(value = "id", required = true) @QueryParam("id") String id,
             @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
             Map<String, Object> annotations
     ) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, name, variableSetId,
+            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId,
                     annotations, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -87,7 +87,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "annotate sample")
     public Response annotateSampleGET(
             @ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+            @ApiParam(value = "id", required = true) @QueryParam("id") String id,
             @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId
     ) {
         try {
@@ -103,7 +103,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 }
             }
 
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, name, variableSetId, annotations, this.getQueryOptions(), sessionId);
+            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId, annotations, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

@@ -1888,7 +1888,7 @@ public class CatalogManager {
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
-        Sample sample = new Sample(-1, name, source, null, studyId, description, Collections.<AnnotationSet>emptyList(),
+        Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
                 attributes);
 
         return catalogDBAdaptor.createSample(studyId, sample, options);
@@ -1919,7 +1919,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getAllSamples(studyId, options);
     }
 
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean repeatable,
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
             throws CatalogException {
@@ -1929,10 +1929,10 @@ public class CatalogManager {
         if(variables.size() != variablesSet.size()) {
             throw new CatalogException("Error. Repeated variables");
         }
-        return createVariableSet(studyId, name, repeatable, description, attributes, variablesSet, sessionId);
+        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
     }
 
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean repeatable,
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
             throws CatalogException {
@@ -1940,7 +1940,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
         checkObj(variables, "Variables Set");
-        repeatable = defaultObject(repeatable, false);
+        unique = defaultObject(unique, true);
         description = defaultString(description, "");
         attributes = defaultObject(attributes, new HashMap<String, Object>());
 
@@ -1959,7 +1959,7 @@ public class CatalogManager {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
 
-        VariableSet variableSet = new VariableSet(-1, name, repeatable, description, variables, attributes);
+        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
         CatalogSampleAnnotations.checkVariableSet(variableSet);
 
         return catalogDBAdaptor.createVariableSet(studyId, variableSet);
@@ -1978,13 +1978,13 @@ public class CatalogManager {
     }
 
 
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, String name, int variableSetId,
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
                                                      String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
+        checkParameter(id, "id");
         checkObj(annotations, "annotations");
         attributes = defaultObject(attributes, new HashMap<String, Object>());
 
@@ -2000,7 +2000,7 @@ public class CatalogManager {
         }
         VariableSet variableSet = variableSetResult.getResult().get(0);
 
-        AnnotationSet annotationSet = new AnnotationSet(name, variableSetId, new HashSet<Annotation>(), TimeUtils.getTime(), attributes);
+        AnnotationSet annotationSet = new AnnotationSet(id, variableSetId, new HashSet<Annotation>(), TimeUtils.getTime(), attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));

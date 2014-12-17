@@ -79,8 +79,7 @@ public class CatalogSampleAnnotations {
         //Check default value
         variable.setDefaultValue(getValue(variable.getType(), variable.getDefaultValue()));
         if (variable.getDefaultValue() != null) {
-            checkAcceptedValue(variable, variable.getDefaultValue(), "Default");
-
+            checkAllowedValue(variable, variable.getDefaultValue(), "Default");
         }
     }
 
@@ -96,11 +95,11 @@ public class CatalogSampleAnnotations {
             throw new CatalogException("VariableSet does not match with the AnnotationSet");
         }
 
-        //Check repeatable variableSet.
+        //Check unique variableSet.
         if (variableSet.isUnique() && annotationSets != null) {
             for (AnnotationSet set : annotationSets) {
                 if (set.getVariableSetId() == annotationSet.getVariableSetId()) {
-                    throw new CatalogException("Repeated annotation for a non repeatable VariableSet");
+                    throw new CatalogException("Repeated annotation for a unique VariableSet");
                 }
             }
         }
@@ -152,7 +151,7 @@ public class CatalogSampleAnnotations {
         } else {
             Variable variable = variableMap.get(id);
             annotation.setValue(getValue(variable.getType(), annotation.getValue()));
-            checkAcceptedValue(variable, annotation.getValue(), "Annotation");
+            checkAllowedValue(variable, annotation.getValue(), "Annotation");
         }
 
     }
@@ -178,7 +177,7 @@ public class CatalogSampleAnnotations {
         }
     }
 
-    private static void checkAcceptedValue(Variable variable, Object value, String message) throws CatalogException {
+    private static void checkAllowedValue(Variable variable, Object value, String message) throws CatalogException {
 
         Object realValue = getValue(variable.getType(), value);
         if (realValue == null) {
@@ -197,7 +196,7 @@ public class CatalogSampleAnnotations {
                 if(variable.getAllowedValues().contains(stringValue)) {
                     return;
                 } else {
-                    throw new CatalogException(message + " value '" + value + "' is not an accepted value for " + variable);
+                    throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
                 }
             }
             case NUMERIC:
@@ -212,9 +211,9 @@ public class CatalogSampleAnnotations {
                             return;
                         }
                     }
-                    throw new CatalogException(message + " value '" + value + "' is not an accepted value for " + variable + ". It is in any range.");
+                    throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It is in any range.");
                 } else {
-                    return;    //If there is no "acceptedValues", any number
+                    return;    //If there is no "allowedValues", any number
                 }
 
             case TEXT: {
@@ -267,7 +266,7 @@ public class CatalogSampleAnnotations {
         if (value == null) {
             return null;
         } else if (value instanceof Boolean) {
-            return ((Boolean) value);
+            return (Boolean) value;
         } else if (value instanceof String) {
             if(((String) value).equalsIgnoreCase("true")) {
                 return true;
@@ -316,8 +315,7 @@ public class CatalogSampleAnnotations {
                 try {
                     numericValue = Double.parseDouble((String) value);
                 } catch (NumberFormatException e) {
-                    throw new CatalogException("Value " + value + " is not an accepted number", e);
-//                    return null;    //Not a number. //TODO: Throw Error?
+                    throw new CatalogException("Value " + value + " is not a number", e);
                 }
             }
         } else if (value instanceof Boolean) {
