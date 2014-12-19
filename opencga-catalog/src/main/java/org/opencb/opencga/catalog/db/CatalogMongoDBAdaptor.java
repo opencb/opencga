@@ -375,7 +375,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     public QueryResult<User> getUser(String userId, String lastActivityg) throws CatalogManagerException{
         long startTime = startQuery();
         DBObject query = new BasicDBObject("id", userId);
-        QueryResult result = userCollection.find(query, null, null);
+        QueryResult result = userCollection.find(query, null);
 
         User user = parseUser(result);
         if(user == null){
@@ -860,7 +860,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         DBObject query = new BasicDBObject("$and", filters);
 
-        QueryResult<WriteResult> queryResult = fileCollection.find(query, null, null);
+        QueryResult<DBObject> queryResult = fileCollection.find(query, null);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1614,7 +1614,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
 
         DBObject query = new BasicDBObject("$and", filters);
 
-        QueryResult<WriteResult> queryResult = fileCollection.find(query, null, null);
+        QueryResult<DBObject> queryResult = fileCollection.find(query, null);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1915,7 +1915,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<Job> getJob(int jobId) throws CatalogManagerException {
         long startTime = startQuery();
-        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null, null);
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null);
         Job job = parseJob(queryResult);
         if(job != null) {
             return endQuery("Get job", startTime, Arrays.asList(job));
@@ -1927,7 +1927,7 @@ public class CatalogMongoDBAdaptor implements CatalogDBAdaptor {
     @Override
     public QueryResult<Job> getAllJobs(int analysisId) throws CatalogManagerException {
         long startTime = startQuery();
-        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null, null);
+        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Get all jobs", startTime, jobs);
     }
