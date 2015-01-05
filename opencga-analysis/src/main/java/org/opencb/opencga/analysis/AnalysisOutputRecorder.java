@@ -47,7 +47,7 @@ public class AnalysisOutputRecorder {
         try {
             URI tmpOutDirUri = job.getTmpOutDirUri();
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
-            List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri.getScheme()).listFiles(tmpOutDirUri);
+            List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri).listFiles(tmpOutDirUri);
 
 //            int studyId = catalogManager.getAnalysisIdByJobId(job.getId());
             int studyId = catalogManager.getStudyIdByJobId(job.getId());

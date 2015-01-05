@@ -1080,11 +1080,19 @@ public class CatalogManager {
             return new QueryResult("Delete file", 0, 0, 0, "File not found", null, Collections.emptyList());
         }
         File file = fileResult.getResult().get(0);
-        System.out.println("file = " + file);
-        if (!file.getStatus().equals(File.Status.READY)) {
-            return new QueryResult("Delete file", 0, 0, 0, null,
-                    "File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
-                    Collections.emptyList());
+        switch(file.getStatus()) {
+            case INDEXING:
+            case UPLOADING:
+            case UPLOADED:
+                throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
+            case DELETING:
+            case DELETED:
+                //Send warning message
+                return new QueryResult("Delete file", 0, 0, 0,
+                    "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
+                    null, Collections.emptyList());
+            case READY:
+                break;
         }
         /*
         try {

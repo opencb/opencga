@@ -5,9 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
 
@@ -125,12 +123,20 @@ public abstract class CatalogIOManager {
 
     public URI getUserUri(String userId) throws CatalogIOManagerException {
         checkParam(userId);
-        return getUsersUri().resolve(userId + "/");
+        try {
+            return getUsersUri().resolve(new URI(null, userId.endsWith("/")? userId: (userId + "/"), null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(userId, e);
+        }
     }
 
     public URI getAnonymousUserUri(String userId) throws CatalogIOManagerException{ // FIXME: Should replicate to getAnonymousPojectUri, ...Study..., etc ?
         checkParam(userId);
-        return getAnonymousUsersUri().resolve(userId + "/");
+        try {
+            return getAnonymousUsersUri().resolve(new URI(null, userId.endsWith("/")? userId: (userId + "/"), null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(userId, e);
+        }
     }
 
     public URI getProjectsUri(String userId) throws CatalogIOManagerException {
@@ -138,25 +144,36 @@ public abstract class CatalogIOManager {
     }
 
     public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
-        return getProjectsUri(userId).resolve(projectId + "/");
+        try {
+            return getProjectsUri(userId).resolve(new URI(null, projectId.endsWith("/")? projectId: (projectId + "/"), null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(userId, e);
+        }
     }
 
     public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         checkParam(studyId);
-        return getProjectUri(userId, projectId).resolve(studyId + "/");
+        try {
+            return getProjectUri(userId, projectId).resolve(new URI(null, studyId.endsWith("/")? studyId: (studyId + "/"), null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(studyId, e);
+        }
     }
 
     public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
             throws CatalogIOManagerException {
-        checkParam(relativeFilePath);
-        return getStudyUri(userId, projectId, studyId).resolve(relativeFilePath);
+        return getFileUri(getStudyUri(userId, projectId, studyId), relativeFilePath);
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogIOManagerException {
         checkUri(studyUri);
         checkParam(relativeFilePath);
-        return studyUri.resolve(relativeFilePath);
+        try {
+            return studyUri.resolve(new URI(null, relativeFilePath, null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(relativeFilePath, e);
+        }
     }
 
     public URI getJobsUri(String userId) throws CatalogIOManagerException {
@@ -255,17 +272,17 @@ public abstract class CatalogIOManager {
     public URI createProject(String userId, String projectId) throws CatalogIOManagerException{
         checkParam(projectId);
 
-        URI projectRootUri = getProjectsUri(userId);
+//        URI projectRootUri = getProjectsUri(userId);
 //        checkDirectoryUri(projectRootUri, true);  //assuming catalogManager has checked it
-
-        URI projectUri = projectRootUri.resolve(projectId);
+//        URI projectUri = projectRootUri.resolve(projectId);
+        URI projectUri = getProjectUri(userId, projectId);
         try {
             if(!exists(projectUri)) {
                 projectUri = createDirectory(projectUri, true);
                 //createDirectory(projectUri.resolve(SHARED_DATA_FOLDER));
             }
         } catch (IOException e) {
-            throw new CatalogIOManagerException("createProject(): could not create the bucket folder: " + e.toString());
+            throw new CatalogIOManagerException("createProject(): could not create the project folder: " + e.toString());
         }
 
         return projectUri;
@@ -304,7 +321,8 @@ public abstract class CatalogIOManager {
         URI projectUri = getProjectUri(userId, projectId);
         checkDirectoryUri(projectUri, true);
 
-        URI studyUri = projectUri.resolve(studyId);
+//        URI studyUri = projectUri.resolve(studyId);
+        URI studyUri = getStudyUri(userId, projectId, studyId);
         try {
             if(!exists(studyUri)) {
                 studyUri = createDirectory(studyUri);
@@ -346,7 +364,12 @@ public abstract class CatalogIOManager {
         URI jobsFolderUri = getJobsUri(userId);
         checkDirectoryUri(jobsFolderUri, true);
 
-        URI jobUri = jobsFolderUri.resolve(folderName);
+        URI jobUri;
+        try {
+            jobUri = jobsFolderUri.resolve(new URI(null, folderName, null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(folderName, e);
+        }
         if(!exists(jobUri)) {
             try {
                 jobUri = createDirectory(jobUri, true);
@@ -370,7 +393,12 @@ public abstract class CatalogIOManager {
         checkDirectoryUri(studyUri, true);
 
 //        Path fullFolderPath = getFileUri(userid, projectId, studyId, objectId);
-        URI folderUri = studyUri.resolve(folderName);
+        URI folderUri = null;
+        try {
+            folderUri = studyUri.resolve(new URI(null, folderName, null));
+        } catch (URISyntaxException e) {
+            throw CatalogIOManagerException.uriSyntaxException(folderName, e);
+        }
         try {
             if(!exists(folderUri)) {
                 if(parent) {
