@@ -167,7 +167,7 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public String getHeader() {
-        return source.getMetadata().get("variantFileHeader");
+        return source.getMetadata().get("variantFileHeader").toString();
     }
 
 }

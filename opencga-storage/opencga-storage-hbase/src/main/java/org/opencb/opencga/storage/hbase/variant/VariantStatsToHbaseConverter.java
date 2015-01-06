@@ -59,11 +59,12 @@ public class VariantStatsToHbaseConverter implements ComplexTypeConverter<Varian
         
         builder.setNumSamples(object.getNumSamples());
         
-        builder.setTransitionsCount(object.getTransitionsCount());
-        builder.setTransversionsCount(object.getTransversionsCount());
+//        builder.setTransitionsCount(object.getTransitionsCount());
+//        builder.setTransversionsCount(object.getTransversionsCount());
 
         // Optional fields, they require pedigree information
-        if (object.isPedigreeStatsAvailable()) {
+//        if (object.isPedigreeStatsAvailable()) {
+        if (false) {
             builder.setMendelianErrors(object.getMendelianErrors());
             
             builder.setCasesPercentDominant(object.getCasesPercentDominant());
