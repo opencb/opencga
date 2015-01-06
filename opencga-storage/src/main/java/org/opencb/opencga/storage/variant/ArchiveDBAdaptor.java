@@ -19,4 +19,6 @@ public interface ArchiveDBAdaptor {
     
     QueryResult countSpecies();
     
+    QueryResult getSpecies(String version, boolean loaded);
+    
 }
