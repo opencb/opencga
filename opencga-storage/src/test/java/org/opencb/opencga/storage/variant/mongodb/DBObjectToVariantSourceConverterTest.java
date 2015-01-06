@@ -29,15 +29,7 @@ public class DBObjectToVariantSourceConverterTest {
         source.getSamplesPosition().put("NA002", 2);
         source.getSamplesPosition().put("NA003", 3);
         source.addMetadata("header", "##fileformat=v4.1");
-        VariantGlobalStats global = new VariantGlobalStats();
-        global.setSamplesCount(4);
-        global.setVariantsCount(10);
-        global.setSnpsCount(7);
-        global.setIndelsCount(3);
-        global.setPassCount(9);
-        global.setTransitionsCount(4);
-        global.setTransversionsCount(4);
-        global.setMeanQuality(20.5f);
+        VariantGlobalStats global = new VariantGlobalStats(10, 4, 7, 3, 0, 9, 4, 4, -1, 20.5f, null);
         source.setStats(global);
         
         mongoSource = new BasicDBObject(DBObjectToVariantSourceConverter.FILENAME_FIELD, source.getFileName())

@@ -28,16 +28,17 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantSourceConverter variantSourceConverter;
-    private final String collectionName = "files_0_9";
+    private final String collectionName;
 
     
-    public VariantSourceMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", credentials.getUsername())
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        this.collectionName = collectionName;
         variantSourceConverter = new DBObjectToVariantSourceConverter();
     }
 

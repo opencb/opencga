@@ -88,11 +88,12 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * @param includeSamples Whether to include samples or not
      * @param statsConverter The object used to convert the file statistics
      * @param credentials Parameters for connecting to the database
+     * @param collectionName Collection that stores the variant sources
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, 
-            DBObjectToVariantStatsConverter statsConverter, MongoCredentials credentials) {
+    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, DBObjectToVariantStatsConverter statsConverter, 
+            MongoCredentials credentials, String collectionName) {
         this.includeSamples = includeSamples;
-        this.samplesConverter = new DBObjectToSamplesConverter(credentials);
+        this.samplesConverter = new DBObjectToSamplesConverter(credentials, collectionName);
         this.statsConverter = statsConverter;
     }
     

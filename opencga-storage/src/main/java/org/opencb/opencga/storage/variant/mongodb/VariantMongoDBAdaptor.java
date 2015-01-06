@@ -22,20 +22,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
-    private final String collectionName = "variants_0_9";
+    private final String collectionName;
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName) 
+            throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", credentials.getUsername())
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        collectionName = variantsCollectionName;
         
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
         archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(true, 
-                new DBObjectToVariantStatsConverter(), credentials);
+                new DBObjectToVariantStatsConverter(), credentials, filesCollectionName);
         variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }
 

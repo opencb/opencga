@@ -22,15 +22,16 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private final String collectionName = "files_0_9";
+    private final String collectionName;
 
-    public StudyMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public StudyMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", credentials.getUsername())
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        this.collectionName = collectionName;
     }
 
     @Override
