@@ -23,6 +23,8 @@ import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.*;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -230,6 +232,14 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
                                  @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder
     ) {
+//        try {
+//            System.out.println("folder = " + folder);
+//            String xx = URLEncoder.encode(folder, "UTF-8");
+//            System.out.println("xx = " + xx);
+//            folder = URLDecoder.decode(folder, "UTF-8");
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
 
         java.nio.file.Path folderPath = Paths.get(folder);
         boolean parents = true;

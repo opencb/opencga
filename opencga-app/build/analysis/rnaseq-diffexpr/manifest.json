@@ -1,0 +1,56 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "rnaseq-diffexpr",
+    "name": "rnaseq-diffexpr",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "Rscript rna_diffexpr.r ",
+            "inputParams": [
+                {
+                    "name": "datafile",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "edfile",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "norm",
+                    "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or QUAN",
+                    "required": "true"
+                },
+                {
+                    "name": "datafile",
+                    "description": "",
+                    "required": "true"
+                },
+                {
+                    "name": "edfile",
+                    "description": "",
+                    "required": "true"
+                }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}
