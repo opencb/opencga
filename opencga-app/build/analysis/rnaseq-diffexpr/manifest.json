@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "Rscript rna_diffexpr.r ",
+            "executable": "rna_diffexpr.sh ",
             "inputParams": [
                 {
                     "name": "datafile",
@@ -34,7 +34,7 @@
                 {
                     "name": "norm",
                     "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or QUAN",
-                    "required": "true"
+                    "required": "false"
                 },
                 {
                     "name": "datafile",

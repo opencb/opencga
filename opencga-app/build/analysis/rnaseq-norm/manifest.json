@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "Rscript rna_normalize.r ",
+            "executable": "rna_normalize.sh ",
             "inputParams": [
                 {
                     "name": "datafile",
@@ -32,8 +32,8 @@
             "outputParam": "outdir",
             "validParams": [
                 {
-                    "name": "norm",
-                    "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or QUAN",
+                    "name": "method",
+                    "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or RPKM",
                     "required": "true"
                 },
                 {
@@ -42,9 +42,9 @@
                     "required": "true"
                 },
                 {
-                    "name": "edfile",
-                    "description": "",
-                    "required": "true"
+                    "name": "glfile",
+                    "description": " file where the vector of gene lengths (ordered) is stored, in order to perform normalization",
+                    "required": "false"
                 }
             ],
             "configAttr": [],
