@@ -71,6 +71,29 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{jobId}/delete")
+    @Produces("application/json")
+    @ApiOperation(value = "Delete job")
+    public Response delete(
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
+            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+        List<QueryResult> results = new LinkedList<>();
+        try {
+            if(deleteFiles) {
+                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
+                for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {
+                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
+                    results.add(queryResult);
+                }
+            }
+            results.add(catalogManager.deleteJob(jobId, sessionId));
+            return createOkResponse(results);
+        } catch (CatalogException | IOException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/create")
     @Produces("application/json")
     @ApiOperation(value = "Create job")

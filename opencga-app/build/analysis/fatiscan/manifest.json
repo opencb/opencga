@@ -23,6 +23,10 @@
                 {
                     "name": "ranked-list",
                     "dataType": "txt"
+                },
+                {
+                    "name": "annotations",
+                    "dataType":"txt"
                 }
             ],
             "inputParamsFromTxt": [],

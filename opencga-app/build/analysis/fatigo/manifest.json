@@ -27,6 +27,10 @@
                 {
                     "name": "list2",
                     "dataType": "txt"
+                },
+                {
+                    "name": "annotations",
+                    "dataType": "txt"
                 }
             ],
             "inputParamsFromTxt": [],
