@@ -1329,6 +1329,44 @@ public class CatalogManager {
         return catalogDBAdaptor.searchFile(query, options);
     }
 
+    public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
+                                              Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        checkParameter(name, "name");
+        checkObj(files, "files");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        }
+        for (Integer fileId : files) {
+            if(catalogDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
+                throw new CatalogException("Can't create a dataset with files from different files.");
+            }
+            if (!getFileAcl(userId, fileId).isRead()) {
+                throw new CatalogException("Permission denied. User " + userId + " can't read the file " + fileId);
+            }
+        }
+
+        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
+
+        return catalogDBAdaptor.createDataset(studyId, dataset, options);
+    }
+
+    public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByDatasetId(dataSetId);
+
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        }
+
+        return catalogDBAdaptor.getDataset(dataSetId, options);
+    }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
 //            throws CatalogIOManagerException, IOException, CatalogManagerException {

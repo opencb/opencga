@@ -77,6 +77,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         jsonObjectWriter = jsonObjectMapper.writer();
+        jsonReaderMap = new HashMap<>();
         jsonReaderMap.put(File.class, jsonFileReader = jsonObjectMapper.reader(File.class));
         jsonReaderMap.put(User.class, jsonUserReader = jsonObjectMapper.reader(User.class));
         jsonReaderMap.put(Job.class, jsonJobReader = jsonObjectMapper.reader(Job.class));
@@ -1434,7 +1435,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult<Dataset> createDataset(int studyId, Dataset dataset) throws CatalogDBException {
+    public QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         checkStudyId(studyId);
 
@@ -1460,22 +1461,34 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
 
-        return endQuery("createDataset", startTime, getDataset(newId));
+        return endQuery("createDataset", startTime, getDataset(newId, options));
     }
 
     @Override
-    public QueryResult<Dataset> getDataset(int datasetId) throws CatalogDBException {
+    public QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
         BasicDBObject returnFields = new BasicDBObject("datasets", new BasicDBObject("$elemMatch", new BasicDBObject("id", datasetId)));
-        QueryResult<DBObject> queryResult = studyCollection.find(query, null, returnFields);
+        QueryResult<DBObject> queryResult = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES), returnFields);
 
         List<Study> studies = parseStudies(queryResult);
         if(studies == null || studies.get(0).getDatasets().isEmpty()) {
             throw CatalogDBException.idNotFound("Dataset", datasetId);
         } else {
             return endQuery("getDataset", startTime, studies.get(0).getDatasets());
+        }
+    }
+
+    @Override
+    public int getStudyIdByDatasetId(int datasetId) throws CatalogDBException {
+        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
+        QueryResult<DBObject> queryResult = studyCollection.find(query, null, new BasicDBObject("id", 1));
+        if(queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsField("id")) {
+            throw CatalogDBException.idNotFound("Dataset", datasetId);
+        } else {
+            Object id = queryResult.getResult().get(0).get("id");
+            return id instanceof Integer ? (Integer) id : Integer.parseInt(id.toString());
         }
     }
 
@@ -1889,6 +1902,18 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw CatalogDBException.idNotFound("Cohort", cohortId);
         } else {
             return endQuery("getCohort", startTime, studies.get(0).getCohorts());
+        }
+    }
+
+    @Override
+    public int getStudyIdByCohortId(int cohortId) throws CatalogDBException {
+        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
+        QueryResult<DBObject> queryResult = studyCollection.find(query, null, new BasicDBObject("id", 1));
+        if(queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsField("id")) {
+            throw CatalogDBException.idNotFound("Cohort", cohortId);
+        } else {
+            Object id = queryResult.getResult().get(0).get("id");
+            return id instanceof Integer ? (Integer) id : Integer.parseInt(id.toString());
         }
     }
 

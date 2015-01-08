@@ -107,9 +107,9 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Integer> deleteProject(int projecetId) throws CatalogDBException;
+    public abstract QueryResult<Integer> deleteProject(int projectId) throws CatalogDBException;
 
-    public abstract QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogDBException;
+    public abstract QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
 
     public abstract QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 
@@ -190,9 +190,11 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Dataset> createDataset(int studyId, Dataset dataset) throws CatalogDBException;
+    public abstract QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Dataset> getDataset(int datasetId) throws CatalogDBException;
+    public abstract QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
+
+    public abstract int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 
     /**
      * Analysis methods
@@ -281,6 +283,8 @@ public abstract class CatalogDBAdaptor {
     public abstract QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
 
     public abstract QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
+
+    public abstract int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
     /**
      * Annotation Methods
