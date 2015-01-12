@@ -170,9 +170,6 @@ public class OptionsParser {
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
 
-        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
-        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
-
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
     }

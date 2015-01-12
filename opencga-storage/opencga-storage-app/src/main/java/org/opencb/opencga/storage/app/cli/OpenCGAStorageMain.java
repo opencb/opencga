@@ -304,8 +304,7 @@ public class OpenCGAStorageMain {
             //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path variantsPath = Paths.get(c.input);
             URI variantsUri = new URI(null, c.input, null);
-            VariantStudy.StudyType st = c.studyType;
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null, st, VariantSource.Aggregation.NONE);
+            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
 
             ObjectMap params = new ObjectMap();
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
