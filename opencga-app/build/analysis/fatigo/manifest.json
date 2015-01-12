@@ -18,7 +18,7 @@
         {
             "id": "fatigo",
             "name": "Fatigo",
-            "executable": "babelomics/babelomics.sh --tool fatigo",
+            "executable": "fatigo.sh",
             "inputParams": [
                 {
                     "name": "list1",
