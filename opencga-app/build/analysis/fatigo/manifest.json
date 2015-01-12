@@ -87,6 +87,21 @@
                     "required": "false"
                 },
                 {
+                    "name": "recon",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "recon-min-num-genes",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "recon-max-num-genes",
+                    "description": "",
+                    "required": "false"
+                },
+                {
                     "name": "go-bp",
                     "description": "",
                     "required": "false"
