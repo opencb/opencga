@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import java.nio.file.Path;
 import java.util.List;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -11,7 +12,7 @@ import org.opencb.datastore.core.QueryResult;
  * @author Ignacio Medina <igmecas@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
-public interface VariantDBAdaptor {
+public interface VariantDBAdaptor extends Iterable<Variant> {
 
     /**
      * This method set a data writer object for data serialization. When used no data will be return in
@@ -109,6 +110,10 @@ public interface VariantDBAdaptor {
 //    @Deprecated
 //    VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
 
+    @Override
+    public VariantDBIterator iterator();
+
+    public VariantDBIterator iterator(QueryOptions options);
 
     public boolean close();
 

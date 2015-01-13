@@ -104,6 +104,7 @@ public class VariantJsonReader implements VariantReader {
             source.setPedigree(readSource.getPedigree());
             source.setSamplesPosition(readSource.getSamplesPosition());
             source.setStats(readSource.getStats());
+            source.setType(readSource.getType());
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -167,7 +168,7 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public String getHeader() {
-        return source.getMetadata().get("variantFileHeader");
+        return source.getMetadata().get("variantFileHeader").toString();
     }
 
 }

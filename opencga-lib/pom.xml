@@ -15,12 +15,20 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.biodata</groupId>
+            <artifactId>biodata-formats</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.variant</groupId>
             <artifactId>variant-lib</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.opencb.commons</groupId>
                     <artifactId>bioformats</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.opencb.biodata</groupId>
+                    <artifactId>biodata-formats</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>com.sun.jersey</groupId>

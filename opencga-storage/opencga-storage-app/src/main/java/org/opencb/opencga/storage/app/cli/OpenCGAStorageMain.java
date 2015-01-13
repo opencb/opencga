@@ -28,12 +28,14 @@ import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -71,7 +73,7 @@ public class OpenCGAStorageMain {
 
     public static void main(String[] args)
             throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
-            IllegalAccessException, InstantiationException, ClassNotFoundException {
+            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException {
 
         OptionsParser parser = new OptionsParser();
         OptionsParser.Command command = null;
@@ -116,6 +118,9 @@ public class OpenCGAStorageMain {
                 case "fetch-alignments":
                     command = parser.getCommandFetchAlignments();
                     break;
+                case "annotate-variants":
+                    command = parser.getCommandAnnotateVariants();
+                    break;
 //                case "download-alignments":
 //                    command = parser.getDownloadAlignments();
 //                    break;
@@ -147,8 +152,8 @@ public class OpenCGAStorageMain {
                 params.put(AlignmentStorageManager.COPY_FILE, false);
                 params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-                URI input = URI.create(c.input);
-                URI outdir = c.outdir.isEmpty() ? input.resolve(".") : URI.create(c.outdir + "/").resolve(".");
+                URI input = new URI(null, c.input, null);
+                URI outdir = c.outdir.isEmpty() ? input.resolve(".") : new URI(null, c.outdir + "/", null).resolve(".");
 //                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
 //                Path credentials = Paths.get(c.credentials);
 
@@ -185,8 +190,8 @@ public class OpenCGAStorageMain {
         } else if (command instanceof OptionsParser.CommandIndexSequence) {
             OptionsParser.CommandIndexSequence c = (OptionsParser.CommandIndexSequence) command;
             if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
-                Path input = Paths.get(URI.create(c.input).getPath());
-                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(URI.create(c.outdir).getPath());
+                Path input = Paths.get(new URI(c.input).getPath());
+                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(new URI(c.outdir).getPath());
 
                 logger.info("Indexing Fasta : " + input.toString());
                 long start = System.currentTimeMillis();
@@ -211,12 +216,12 @@ public class OpenCGAStorageMain {
             if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
                 VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
                 if(c.credentials != null && !c.credentials.isEmpty()) {
-                    variantStorageManager.addConfigUri(URI.create(c.credentials));
+                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
                 }
 
-                URI variantsUri = URI.create(c.input);
-                URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? URI.create(c.pedigree) : null;
-                URI outdirUri = c.outdir != null && !c.outdir.isEmpty() ? URI.create(c.outdir + "/").resolve(".") : variantsUri.resolve(".");
+                URI variantsUri = new URI(null, c.input, null);
+                URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? new URI(null, c.pedigree, null) : null;
+                URI outdirUri = c.outdir != null && !c.outdir.isEmpty() ? new URI(null, c.outdir, null).resolve(".") : variantsUri.resolve(".");
 
                 String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
                 VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
@@ -270,9 +275,9 @@ public class OpenCGAStorageMain {
         } else if (command instanceof OptionsParser.CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
             OptionsParser.CommandTransformVariants c = (OptionsParser.CommandTransformVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
-            URI variantsUri = URI.create(c.file);
-            URI pedigreeUri = c.pedigree != null ? URI.create(c.pedigree) : null;
-            URI outdirUri = c.outdir != null ? URI.create(c.outdir + "/").resolve(".") : variantsUri.resolve(".");
+            URI variantsUri = new URI(null, c.file, null);
+            URI pedigreeUri = c.pedigree != null ? new URI(null, c.pedigree, null) : null;
+            URI outdirUri = c.outdir != null ? new URI(null, c.outdir + "/", null).resolve(".") : variantsUri.resolve(".");
             Path variantsPath = Paths.get(c.file);
 //            Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
 //            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
@@ -293,14 +298,13 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandLoadVariants c = (OptionsParser.CommandLoadVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
             if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(URI.create(c.credentials));
+                variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
             }
 
             //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
             Path variantsPath = Paths.get(c.input);
-            URI variantsUri = URI.create(c.input);
-            VariantStudy.StudyType st = c.studyType;
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null, st, VariantSource.Aggregation.NONE);
+            URI variantsUri = new URI(null, c.input, null);
+            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
 
             ObjectMap params = new ObjectMap();
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
@@ -325,8 +329,8 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandTransformAlignments c = (OptionsParser.CommandTransformAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
 
-            URI inputUri = URI.create(c.file);
-            URI outdirUri = c.outdir != null ? URI.create(c.outdir + "/").resolve(".") : inputUri.resolve(".");
+            URI inputUri = new URI(null, c.file, null);
+            URI outdirUri = c.outdir != null ? new URI(null, c.outdir + "/", null).resolve(".") : inputUri.resolve(".");
 
 
             ObjectMap params = new ObjectMap();
@@ -365,7 +369,7 @@ public class OpenCGAStorageMain {
             OptionsParser.CommandLoadAlignments c = (OptionsParser.CommandLoadAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
             if(c.credentials != null && !c.credentials.isEmpty()) {
-                alignmentStorageManager.addConfigUri(URI.create(c.credentials));
+                alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
             }
 
             ObjectMap params = new ObjectMap();
@@ -374,7 +378,7 @@ public class OpenCGAStorageMain {
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
             params.put(AlignmentStorageManager.DB_NAME, c.dbName);
 
-            URI inputUri = URI.create(c.input);
+            URI inputUri = new URI(null, c.input, null);
 
             alignmentStorageManager.load(inputUri, params);
 
@@ -387,7 +391,7 @@ public class OpenCGAStorageMain {
              */
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
             if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(URI.create(c.credentials));
+                variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
             }
 
             ObjectMap params = new ObjectMap();
@@ -511,7 +515,7 @@ public class OpenCGAStorageMain {
              */
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
             if(c.credentials != null && !c.credentials.isEmpty()) {
-                alignmentStorageManager.addConfigUri(URI.create(c.credentials));
+                alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
             }
 
             ObjectMap params = new ObjectMap();
@@ -625,6 +629,17 @@ public class OpenCGAStorageMain {
                 throw new UnsupportedOperationException("Unable to fetch over all the genome");
 //                System.out.println(dbAdaptor.getAllAlignments(options));
             }
+        } else if(command instanceof OptionsParser.CommandAnnotateVariants) {
+            OptionsParser.CommandAnnotateVariants c = (OptionsParser.CommandAnnotateVariants) command;
+            System.out.println("c.opencgaPassword = " + c.opencgaPassword);
+            MongoCredentials cellbaseCredentials = new MongoCredentials(c.cellbaseHost, Integer.parseInt(c.cellbasePort),
+                    c.cellbaseDatabase, c.cellbaseUser, c.cellbasePassword);
+            MongoCredentials opencgaCredentials = new MongoCredentials(c.opencgaHost, Integer.parseInt(c.opencgaPort),
+                    c.opencgaDatabase, c.opencgaUser, c.opencgaPassword);
+
+            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(cellbaseCredentials, opencgaCredentials);
+            variantAnnotationManager.annotate(c.cellbaseSpecies, c.cellbaseAssemly, null);
+
         }
     }
 

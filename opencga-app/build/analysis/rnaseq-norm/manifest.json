@@ -1,0 +1,56 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "rnaseq-norm",
+    "name": "rnaseq-norm",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "Rscript rna_normalize.r ",
+            "inputParams": [
+                {
+                    "name": "datafile",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "glfile",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "norm",
+                    "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or QUAN",
+                    "required": "true"
+                },
+                {
+                    "name": "datafile",
+                    "description": "",
+                    "required": "true"
+                },
+                {
+                    "name": "edfile",
+                    "description": "",
+                    "required": "true"
+                }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}

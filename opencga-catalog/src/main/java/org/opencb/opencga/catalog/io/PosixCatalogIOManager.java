@@ -4,13 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.lib.common.IOUtils;
-import org.opencb.opencga.lib.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -117,7 +116,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public boolean isDirectory(URI uri) {
-        return uri.resolve(".").equals(uri);
+        return uri.getRawPath().endsWith("/");
     }
 
     @Override
@@ -166,7 +165,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }*/
 
     public URI getTmpUri() {
-        return Paths.get(tmp).toUri();
+        return tmp;
     }
 
     /**
@@ -479,7 +478,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     public String calculateChecksum(URI file) throws CatalogIOManagerException {
         String checksum;
         try {
-            String command = "md5sum " + file.getPath();
+            String command = "md5sum \"" + file.getPath() + "\"";
             logger.info("command = {}", command);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -501,22 +500,30 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     public List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException {
         class ListFiles extends SimpleFileVisitor<Path> {
-            private List<URI> fileIds = new LinkedList<>();
+            private List<String> filePaths = new LinkedList<>();
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                URI uri = UriBuilder.fromPath(file.toAbsolutePath().toString()).scheme("file").build();
-                fileIds.add(uri);
+                filePaths.add(file.toAbsolutePath().toString());
                 return super.visitFile(file, attrs);
             }
 
-            public List<URI> getFileIds() {
-                return fileIds;
+            public List<String> getFilePaths() {
+                return filePaths;
             }
         }
         ListFiles fileVisitor = new ListFiles();
         Files.walkFileTree(Paths.get(directory.getPath()), fileVisitor);
-        return fileVisitor.getFileIds();
+        List<URI> fileUris = new LinkedList<>();
+
+        for (String filePath : fileVisitor.getFilePaths()) {
+            try {
+                fileUris.add(new URI("file", filePath, null));
+            } catch (URISyntaxException e) {
+                throw CatalogIOManagerException.uriSyntaxException(filePath, e);
+            }
+        }
+        return fileUris;
     }
 
 

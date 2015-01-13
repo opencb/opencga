@@ -68,6 +68,7 @@
                     <testExcludes>
                         <exclude>**/VariantHbaseWriterTest.java</exclude>
                         <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
+                        <exclude>**/VariantStatsToHbaseConverterTest.java</exclude>
                     </testExcludes>
                 </configuration>
             </plugin>

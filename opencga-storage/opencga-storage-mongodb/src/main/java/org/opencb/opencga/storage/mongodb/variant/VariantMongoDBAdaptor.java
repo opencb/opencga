@@ -14,6 +14,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
@@ -172,9 +173,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         andArr.add(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome()));
         andArr.add(new BasicDBObject(DBObjectToVariantConverter.START_FIELD, start));
 
+        // Parsing the rest of options
+        QueryBuilder qb = new QueryBuilder();
+        DBObject optionsMatch = parseQueryOptions(options, qb).get();
+        if(!optionsMatch.keySet().isEmpty()) {
+            andArr.add(optionsMatch);
+        }
         DBObject match = new BasicDBObject("$match", new BasicDBObject("$and", andArr));
 
-//        QueryBuilder qb = new QueryBuilder();
+
 //        qb.and("_at.chunkIds").in(chunkIds);
 //        qb.and(DBObjectToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
 //        qb.and(DBObjectToVariantConverter.START_FIELD).lessThanEquals(region.getEnd());
@@ -218,8 +225,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long dbTimeStart = System.currentTimeMillis();
         QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
         long dbTimeEnd = System.currentTimeMillis();
-
-//        System.out.println(output.getCommand());
 
         Map<Long, DBObject> ids = new HashMap<>();
         // Create DBObject for intervals with features inside them
@@ -366,6 +371,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return coll.aggregate("$effects.so", Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
+
+    @Override
+    public VariantDBIterator iterator() {
+        MongoDBCollection coll = db.getCollection(collectionName);
+
+        DBCursor dbCursor = coll.nativeQuery().find(new BasicDBObject(), new QueryOptions());
+        return new VariantMongoDBIterator(dbCursor, variantConverter);
+    }
+
+    public VariantDBIterator iterator(QueryOptions options) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+
+        QueryBuilder qb = QueryBuilder.start();
+        parseQueryOptions(options, qb);
+        DBCursor dbCursor = coll.nativeQuery().find(qb.get(), options);
+        return new VariantMongoDBIterator(dbCursor, variantConverter);
+    }
 
 
     @Override

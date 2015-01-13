@@ -72,6 +72,8 @@
         <opencga.version>0.4.0</opencga.version>
         <java.version>1.7</java.version>
         <datastore.version>0.3.0</datastore.version>
+        <cellbase.version>3.1.0-beta</cellbase.version>
+        <biodata.version>0.3.0-beta</biodata.version>
     </properties>
 
     <dependencyManagement>
@@ -107,6 +109,13 @@
                 <artifactId>opencga-catalog</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+
+            <!-- OpenCB dependencies -->
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>biodata-formats</artifactId>
+                <version>${biodata.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.opencb.variant</groupId>
                 <artifactId>variant-lib</artifactId>
@@ -121,6 +130,28 @@
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>
                 <version>2.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.cellbase</groupId>
+                <artifactId>cellbase-mongodb</artifactId>
+                <version>${cellbase.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <!--<dependency>-->
+            <!--<groupId>org.opencb.cellbase</groupId>-->
+            <!--<artifactId>cellbase-lib-beta</artifactId>-->
+            <!--<version>3.0.0</version>-->
+            <!--<scope>compile</scope>-->
+            <!--</dependency>-->
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-core</artifactId>
+                <version>${datastore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.datastore</groupId>
+                <artifactId>datastore-mongodb</artifactId>
+                <version>${datastore.version}</version>
             </dependency>
 
 
@@ -147,29 +178,6 @@
                 <version>1.7.6</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-core</artifactId>
-                <version>3.0.0</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-lib</artifactId>
-                <version>3.0.0</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.datastore</groupId>
-                <artifactId>datastore-core</artifactId>
-                <version>${datastore.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.datastore</groupId>
-                <artifactId>datastore-mongodb</artifactId>
-                <version>${datastore.version}</version>
-            </dependency>
-            
             <dependency>
                 <groupId>com.beust</groupId>
                 <artifactId>jcommander</artifactId>
@@ -231,11 +239,6 @@
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
                 <version>2.3</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.variant</groupId>
-                <artifactId>variant-lib</artifactId>
-                <version>1.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hbase</groupId>

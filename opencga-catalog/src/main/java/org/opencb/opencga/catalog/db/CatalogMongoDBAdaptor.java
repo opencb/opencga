@@ -1650,7 +1650,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             if(options.getBoolean("ready")) {
                 query.put("status", Job.Status.READY.name());
             } else {
-                query.put("status", new BasicDBObject("$ne", Job.Status.READY));
+                query.put("status", new BasicDBObject("$ne", Job.Status.READY.name()));
             }
             options.remove("ready");
         }

@@ -1,7 +1,6 @@
 package org.opencb.opencga.server;
 
 
-
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -72,23 +71,46 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{jobId}/delete")
+    @Produces("application/json")
+    @ApiOperation(value = "Delete job")
+    public Response delete(
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
+            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+        List<QueryResult> results = new LinkedList<>();
+        try {
+            if(deleteFiles) {
+                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
+                for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {
+                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
+                    results.add(queryResult);
+                }
+            }
+            results.add(catalogManager.deleteJob(jobId, sessionId));
+            return createOkResponse(results);
+        } catch (CatalogException | IOException e) {
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/create")
     @Produces("application/json")
     @ApiOperation(value = "Create job")
     public Response createJob(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "name", required = true)          @DefaultValue("")   @QueryParam("name") String name,
-            @ApiParam(value = "studyId", required = true)       @DefaultValue("-1") @QueryParam("studyId") int studyId,
-            @ApiParam(value = "toolId", required = true)        @DefaultValue("")   @QueryParam("toolId") String toolIdStr,
-            @ApiParam(value = "execution", required = false)    @DefaultValue("")   @QueryParam("execution") String execution,
-            @ApiParam(value = "description", required = false)  @DefaultValue("")   @QueryParam("description") String description
+            @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") int studyId,
+            @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
+            @ApiParam(value = "execution", required = false) @DefaultValue("") @QueryParam("execution") String execution,
+            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description
     ) {
         QueryResult<Job> jobResult;
         try {
             AnalysisJobExecuter analysisJobExecuter;
             String toolName;
             int toolId = catalogManager.getToolId(toolIdStr);
-            if(toolId < 0) {
+            if (toolId < 0) {
                 analysisJobExecuter = new AnalysisJobExecuter(toolIdStr, execution);    //LEGACY MODE, AVOID USING
                 toolName = toolIdStr;
             } else {
@@ -171,7 +193,8 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    private Response executeTool(){
+
+    private Response executeTool() {
 
 
         return null;
