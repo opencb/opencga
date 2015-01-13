@@ -14,6 +14,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
@@ -370,6 +371,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return coll.aggregate("$effects.so", Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
+
+    @Override
+    public VariantDBIterator iterator() {
+        MongoDBCollection coll = db.getCollection(collectionName);
+
+        DBCursor dbCursor = coll.nativeQuery().find(new BasicDBObject(), new QueryOptions());
+        return new VariantMongoDBIterator(dbCursor, variantConverter);
+    }
+
+    public VariantDBIterator iterator(QueryOptions options) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+
+        QueryBuilder qb = QueryBuilder.start();
+        parseQueryOptions(options, qb);
+        DBCursor dbCursor = coll.nativeQuery().find(qb.get(), options);
+        return new VariantMongoDBIterator(dbCursor, variantConverter);
+    }
 
 
     @Override
