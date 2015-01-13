@@ -120,7 +120,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
                 metadataObject.put("_id", METADATA_OBJECT_ID);
                 metaCollection.insert(metadataObject);
-            } catch (MongoException.DuplicateKey e){
+            } catch (DuplicateKeyException e){
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
             }
             //Set indexes

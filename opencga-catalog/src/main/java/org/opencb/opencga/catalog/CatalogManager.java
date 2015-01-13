@@ -1133,7 +1133,7 @@ public class CatalogManager {
         }
         QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
         if (fileResult.getResult().isEmpty()) {
-            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
+            return new QueryResult("Rename file", 0, 0, 0, "File not found", null, null);
         }
         File file = fileResult.getResult().get(0);
         System.out.println("file = " + file);

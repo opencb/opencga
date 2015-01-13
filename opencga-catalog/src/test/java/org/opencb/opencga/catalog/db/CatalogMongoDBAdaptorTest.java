@@ -111,7 +111,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void createUserTest() throws CatalogDBException {
         User user = new User("NewUser", "", "", "", "", User.Role.USER, "");
         QueryResult createUser = catalogDBAdaptor.insertUser(user, null);
-        assertNotEquals(0, createUser.getResult().size());
+        assertNotSame(0, createUser.getResult().size());
 
         thrown.expect(CatalogDBException.class);
         catalogDBAdaptor.insertUser(user, null);
@@ -130,7 +130,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getUserTest() throws CatalogDBException {
         QueryResult<User> user = catalogDBAdaptor.getUser("jcoll", null, null);
-        assertNotEquals(0, user.getResult().size());
+        assertNotSame(0, user.getResult().size());
 
         thrown.expect(CatalogDBException.class);
         catalogDBAdaptor.getUser("NonExistingUser", null, null);
@@ -172,7 +172,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 //            System.out.println(e);
 //        }
         QueryResult queryResult = catalogDBAdaptor.changePassword("jmmut", "1111", "1234");
-        assertNotEquals(0, queryResult.getResult().size());
+        assertNotSame(0, queryResult.getResult().size());
 
         thrown.expect(CatalogDBException.class);
         catalogDBAdaptor.changePassword("jmmut", "BAD_PASSWORD", "asdf");
