@@ -36,7 +36,6 @@ public class CatalogIOManagerFactory {
                     catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(properties));
                     break;
                 default:
-                    System.out.println("mmm... that shouldn't be happening.");
                     throw new UnsupportedOperationException("Unsupported file system : " + io);
             }
         }

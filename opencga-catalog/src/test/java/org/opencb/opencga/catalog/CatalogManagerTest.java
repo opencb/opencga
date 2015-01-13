@@ -37,7 +37,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser3;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException, CatalogDBException {
+    public static void init() throws IOException, CatalogException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -45,15 +45,25 @@ public class CatalogManagerTest extends GenericTest {
         clearCatalog(properties);
 
         catalogManager = new CatalogManager(properties);
+
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME", null);
+        List<ObjectMap> result;
+        String session;
+        try {
+            result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
+            session = result.get(0).getString("sessionId");
+            QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", null, session);
+            catalogManager.createStudy(project.getResult().get(0).getId(), "session 1", "s1", Study.Type.CONTROL_SET, "", session);
+        } catch (CatalogException | IOException ignore) {
+        }
+
     }
 
     @Before
     public void setUp() throws IOException, CatalogException {
         List<ObjectMap> result;
-
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME", null);
 
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
@@ -72,8 +82,6 @@ public class CatalogManagerTest extends GenericTest {
         } catch (CatalogException | IOException ignore) {
         }
 
-        QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", null, sessionIdUser);
-        catalogManager.createStudy(project.getResult().get(0).getId(), "session 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser);
     }
 
     @After
@@ -157,7 +165,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.changeEmail("user", newEmail, sessionIdUser);
         catalogManager.changePassword("user", PASSWORD, newPassword, sessionIdUser);
 
-        List<User> userList = catalogManager.getUser("user", userPre.getLastActivity(), sessionIdUser).getResult();
+        List<User> userList = catalogManager.getUser("user", userPre.getLastActivity(), new QueryOptions("exclude", Arrays.asList("sessions")), sessionIdUser).getResult();
         if(userList.isEmpty()){
             fail("Error. LastActivity should have changed");
         }
@@ -170,6 +178,8 @@ public class CatalogManagerTest extends GenericTest {
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
+
+        catalogManager.changePassword("user", newPassword, PASSWORD, sessionIdUser);
 
         try {
             params = new ObjectMap();

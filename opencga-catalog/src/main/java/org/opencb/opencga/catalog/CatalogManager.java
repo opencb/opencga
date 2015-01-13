@@ -389,7 +389,7 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        if (options == null || !options.containsKey("include") || !options.containsKey("exclude")) {
+        if (options == null || !options.containsKey("include") && !options.containsKey("exclude")) {
             options.put("exclude", Arrays.asList("password", "sessions"));
         }
 //        if(options.containsKey("exclude")) {

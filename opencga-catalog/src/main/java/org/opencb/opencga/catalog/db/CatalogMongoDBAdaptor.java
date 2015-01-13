@@ -354,7 +354,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if(user == null){
             throw CatalogDBException.idNotFound("User", userId);
         }
-        if(user.getLastActivity() != null && user.getLastActivity().equals(lastActivity)) {
+        if(user.getLastActivity() != null && user.getLastActivity().equals(lastActivity)) { // TODO explain
             return endQuery("Get user", startTime);
         } else {
             return endQuery("Get user", startTime, Arrays.asList(user));
