@@ -22,10 +22,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-mongodb</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
             <exclusions>
