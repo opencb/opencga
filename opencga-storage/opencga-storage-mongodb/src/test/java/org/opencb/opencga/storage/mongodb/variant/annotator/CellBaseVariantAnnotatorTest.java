@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant.annotator;
 
 import org.junit.Test;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
@@ -19,6 +20,9 @@ import java.nio.file.Paths;
 
 public class CellBaseVariantAnnotatorTest extends GenericTest {
 
+    private String cellbaseSpecies = "hsapiens";
+    private String cellbaseAssembly = "GRCh37";
+
     @Test
     public void testCreateAnnotationREST() throws Exception {
         VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
@@ -29,7 +33,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
 
         CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);
 
-        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "test", null);
+        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testREST", null);
 
         System.out.println(test.toString());
     }
@@ -41,43 +45,57 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         /**
          * Connecting to CellBase database
          */
+        CellbaseConfiguration cellbaseConfiguration = getCellbaseConfiguration();
+
+        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, cellbaseSpecies, cellbaseAssembly);
+
+        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testDBAdaptor", null);
+
+        System.out.println(test.toString());
+
+    }
+
+    @Test
+    public void testLoadAnnotation() throws Exception {
+        VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
+
+        CellbaseConfiguration cellbaseConfiguration = getCellbaseConfiguration();
+
+        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, cellbaseSpecies, cellbaseAssembly);
+
+        annotator.loadAnnotation(variantDBAdaptor, URI.create("file:///tmp/testDBAdaptor.annot.json.gz"), false);
+
+    }
+
+    private CellbaseConfiguration getCellbaseConfiguration() {
         CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
-        String cellbaseSpecies = "hsapiens";
-        String cellbaseAssembly = "GRCh37";
-        MongoCredentials cellbaseCredentials = new MongoCredentials("mongodb-hxvm-var-001", 27017, "cellbase_agambiae_agamp4_v3", "biouser", "B10p@ss");
+        String mongoHost = "mongodb-hxvm-var-001.ebi.ac.uk";
+        int mongoPort = 27017;
+        String mongoDbName = "cellbase_agambiae_agamp4_v3";
+        String mongoUser = "biouser";
+        String mongoPassword = "B10p@ss";
 
         //      ./opencga-storage.sh annotate-variants --opencga-database eva_agambiae_agamp4  --opencga-password B10p@ss
 //      --cellbase-species agambiae  --cellbase-assembly "GRCh37" --cellbase-host mongodb-hxvm-var-001
 //      --opencga-user biouser --opencga-port 27017    --opencga-host mongodb-hxvm-var-001    --cellbase-user biouser
 //      --cellbase-port 27017    --cellbase-password B10p@ss    --cellbase-database cellbase_agambiae_agamp4_v3
 
-        cellbaseConfiguration.addSpeciesConnection(cellbaseSpecies, cellbaseAssembly, cellbaseCredentials.getMongoHost(),
-                cellbaseCredentials.getMongoDbName(), cellbaseCredentials.getMongoPort(), "mongo",
-                cellbaseCredentials.getUsername(), String.copyValueOf(cellbaseCredentials.getPassword()), 10, 10);
+        cellbaseConfiguration.addSpeciesConnection(cellbaseSpecies, cellbaseAssembly, mongoHost,
+                mongoDbName, mongoPort, "mongo",
+                mongoUser, mongoPassword, 10, 500);
         cellbaseConfiguration.addSpeciesAlias(cellbaseSpecies, cellbaseSpecies);
 
         System.out.println(cellbaseSpecies + "-" + cellbaseAssembly);
-        DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(cellbaseConfiguration);
-        VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = dbAdaptorFactory.getGenomicVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
-
-
-        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(variantAnnotationDBAdaptor);
-
-        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "test", null);
-
-        System.out.println(test.toString());
-
-    }
-
-    public void testLoadAnnotation() throws Exception {
-
+        return cellbaseConfiguration;
     }
 
     private VariantDBAdaptor getDbAdaptor() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         Config.setGcsaHome("/opt/opencga/");
         VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
 
-        String dbName = "bierapp";
+        String dbName;
+//        dbName = "testCompression";
+        dbName = "bierapp";
         return variantStorageManager.getDBAdaptor(dbName, null);
     }
 }

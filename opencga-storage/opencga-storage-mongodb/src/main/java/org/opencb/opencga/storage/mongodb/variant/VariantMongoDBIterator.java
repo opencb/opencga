@@ -14,8 +14,14 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     private DBObjectToVariantConverter dbObjectToVariantConverter;
 
     VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter) { //Package protected
+        this(dbCursor, dbObjectToVariantConverter, 100);
+    }
+    VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter, int batchSize) { //Package protected
         this.dbCursor = dbCursor;
         this.dbObjectToVariantConverter = dbObjectToVariantConverter;
+        if(batchSize > 0) {
+            dbCursor.batchSize(batchSize);
+        }
     }
 
     @Override

@@ -14,6 +14,6 @@ public interface VariantAnnotator {
 
     URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options) throws IOException;
 
-    void loadAnnotation(VariantDBAdaptor variantDBAdaptor, URI uri, boolean clean);
+    void loadAnnotation(VariantDBAdaptor variantDBAdaptor, URI uri, boolean clean) throws IOException;
 
 }
