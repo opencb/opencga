@@ -21,6 +21,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -43,6 +45,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     private VariationDBAdaptor variationDBAdaptor;
     private DBAdaptorFactory dbAdaptorFactory;
 
+    protected static Logger logger = LoggerFactory.getLogger(CellBaseVariantAnnotator.class);
 
     public CellBaseVariantAnnotator() {
         this.factory = new JsonFactory();
@@ -108,8 +111,13 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         while(iterator.hasNext()) {
             Variant variant = iterator.next();
-            GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
-            genomicVariantList.add(genomicVariant);
+            if(variant.getAlternate().length() + variant.getReference().length() > 100) {
+                logger.info("Skip variant! ");
+                logger.debug("Skip variant! {}", variant);
+            } else {
+                GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
+                genomicVariantList.add(genomicVariant);
+            }
 
             if(genomicVariantList.size() == batchSize || !iterator.hasNext()) {
                 List<VariantAnnotation> variantAnnotationList;
@@ -145,6 +153,11 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                 genomicVariantStringList,
                 CellBaseClient.Resource.fullAnnotation,
                 null);
+        if(queryResponse == null) {
+            logger.error("Cellbase REST error. Returned null. Skipping variants.");
+            return Collections.emptyList();
+        }
+
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
         if(response.size() != genomicVariantList.size()) {
             throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
@@ -249,11 +262,16 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         /** Innitialice Json parse**/
         JsonParser parser = factory.createParser(inputStream);
 
+        int batchSize = 100;
+        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(batchSize);
         while (parser.nextToken() != null) {
             VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
-
-            System.out.println("variantAnnotation = " + variantAnnotation);
-
+//            System.out.println("variantAnnotation = " + variantAnnotation);
+            variantAnnotationList.add(variantAnnotation);
+            if(variantAnnotationList.size() == batchSize || parser.nextToken() == null) {
+                variantDBAdaptor.updateAnnotations(variantAnnotationList, new QueryOptions());
+                variantAnnotationList.clear();
+            }
         }
 
         inputStream.close();

@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -14,6 +15,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -389,6 +391,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new VariantMongoDBIterator(dbCursor, variantConverter);
     }
 
+    @Override
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+
+        DBCollection coll = db.getDb().getCollection(collectionName);
+        BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
+
+        long start = System.nanoTime();
+        for (VariantAnnotation variantAnnotation : variantAnnotations) {
+            String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
+            DBObject find = new BasicDBObject("_id", id);
+            DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
+            DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantAnnotationConverter.ANNOTATION_FIELD,
+                    converter.convertToStorageType(variantAnnotation)));
+            builder.find(find).updateOne(update);
+            db.getCollection(collectionName).update(find, update, false, false);
+        }
+
+        BulkWriteResult writeResult = builder.execute();
+
+        return new QueryResult("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+    }
 
     @Override
     public boolean close() {

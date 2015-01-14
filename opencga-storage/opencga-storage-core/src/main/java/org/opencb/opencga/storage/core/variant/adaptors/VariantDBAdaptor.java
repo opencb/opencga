@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -114,6 +115,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public VariantDBIterator iterator();
 
     public VariantDBIterator iterator(QueryOptions options);
+
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     public boolean close();
 

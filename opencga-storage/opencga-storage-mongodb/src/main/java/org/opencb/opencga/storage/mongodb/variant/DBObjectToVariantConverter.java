@@ -130,22 +130,26 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     }
 
     public String buildStorageId(Variant v) {
-        StringBuilder builder = new StringBuilder(v.getChromosome());
+        return buildStorageId(v.getChromosome(), v.getStart(), v.getReference(), v.getAlternate());
+    }
+
+    public String buildStorageId(String chromosome, int start, String reference, String alternate) {
+        StringBuilder builder = new StringBuilder(chromosome);
         builder.append("_");
-        builder.append(v.getStart());
+        builder.append(start);
         builder.append("_");
-        if (v.getReference().length() < Variant.SV_THRESHOLD) {
-            builder.append(v.getReference());
+        if (reference.length() < Variant.SV_THRESHOLD) {
+            builder.append(reference);
         } else {
-            builder.append(new String(CryptoUtils.encryptSha1(v.getReference())));
+            builder.append(new String(CryptoUtils.encryptSha1(reference)));
         }
         
         builder.append("_");
         
-        if (v.getAlternate().length() < Variant.SV_THRESHOLD) {
-            builder.append(v.getAlternate());
+        if (alternate.length() < Variant.SV_THRESHOLD) {
+            builder.append(alternate);
         } else {
-            builder.append(new String(CryptoUtils.encryptSha1(v.getAlternate())));
+            builder.append(new String(CryptoUtils.encryptSha1(alternate)));
         }
             
         return builder.toString();
