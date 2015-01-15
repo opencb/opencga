@@ -8,6 +8,7 @@ import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.lib.mongodb.db.MongoDBAdaptorFactory;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -61,7 +62,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
 
         CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator();
 
-        annotator.loadAnnotation(variantDBAdaptor, URI.create("file:///tmp/testREST.annot.json.gz"), false);
+        annotator.loadAnnotation(variantDBAdaptor, URI.create("file:///tmp/testREST.annot.json.gz"), new QueryOptions());
 
     }
 
@@ -73,11 +74,6 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         String mongoDbName = "cellbase_agambiae_agamp4_v3";
         String mongoUser = "biouser";
         String mongoPassword = "B10p@ss";
-
-        //      ./opencga-storage.sh annotate-variants --opencga-database eva_agambiae_agamp4  --opencga-password B10p@ss
-//      --cellbase-species agambiae  --cellbase-assembly "GRCh37" --cellbase-host mongodb-hxvm-var-001
-//      --opencga-user biouser --opencga-port 27017    --opencga-host mongodb-hxvm-var-001    --cellbase-user biouser
-//      --cellbase-port 27017    --cellbase-password B10p@ss    --cellbase-database cellbase_agambiae_agamp4_v3
 
         cellbaseConfiguration.addSpeciesConnection(cellbaseSpecies, cellbaseAssembly, mongoHost,
                 mongoDbName, mongoPort, "mongo",

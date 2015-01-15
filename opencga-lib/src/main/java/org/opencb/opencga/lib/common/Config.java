@@ -77,10 +77,10 @@ public class Config {
             Path path = Paths.get(opencgaHome, "conf", fileName);
             Properties properties = new Properties(defaultProperties);
             try {
-                defaultProperties.load(Files.newInputStream(path));
+                properties.load(Files.newInputStream(path));
             } catch (IOException e) {
                 logger.error("Failed to load " + fileName + ": " + e.getMessage());
-                return null;
+                return defaultProperties;
             }
             propertiesMap.put(fileName, properties);
         }

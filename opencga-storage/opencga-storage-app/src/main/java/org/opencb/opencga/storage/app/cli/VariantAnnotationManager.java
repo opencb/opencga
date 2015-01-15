@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 /**
  * Created by imedina on 19/12/14.
  */
+@Deprecated
 public class VariantAnnotationManager {
 
     private MongoCredentials cellbaseCredentials;
@@ -37,12 +38,6 @@ public class VariantAnnotationManager {
         mapper = new ObjectMapper();
         writer = mapper.writer();
     }
-
-//      ./opencga-storage.sh annotate-variants --opencga-database eva_agambiae_agamp4  --opencga-password B10p@ss
-//      --cellbase-species agambiae  --cellbase-assembly "GRCh37" --cellbase-host mongodb-hxvm-var-001
-//      --opencga-user biouser --opencga-port 27017    --opencga-host mongodb-hxvm-var-001    --cellbase-user biouser
-//      --cellbase-port 27017    --cellbase-password B10p@ss    --cellbase-database cellbase_agambiae_agamp4_v3
-
 
     public void annotate(String cellbaseSpecies, String cellbaseAssembly, QueryOptions options) {
 

@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.core.variant.annotation;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceType;
@@ -12,11 +11,9 @@ import org.opencb.biodata.models.variation.GenomicVariant;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
-import org.opencb.cellbase.core.lib.api.variation.ClinicalVarDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
 import org.opencb.cellbase.lib.mongodb.db.MongoDBAdaptorFactory;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
@@ -39,6 +36,8 @@ import java.util.zip.GZIPOutputStream;
  * Created by jacobo on 9/01/15.
  */
 public class CellBaseVariantAnnotator implements VariantAnnotator {
+
+
 
     private final JsonFactory factory;
     private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor;
@@ -74,11 +73,13 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
     }
 
+    /////// CREATE ANNOTATION
 
     @Override
-    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options) throws IOException {
+    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options)
+            throws IOException {
         if(cellBaseClient == null && dbAdaptorFactory == null) {
-            throw new IllegalArgumentException("Cant createAnnotation without a CellBase source (DBAdaptorFactory or a CellBaseClient)");
+            throw new IllegalStateException("Cant createAnnotation without a CellBase source (DBAdaptorFactory or a CellBaseClient)");
         }
 
         URI fileUri;
@@ -108,13 +109,18 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             }
         }
 
-        int batchSize = 100;
+        int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
         List<GenomicVariant> genomicVariantList = new ArrayList<>(batchSize);
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         while(iterator.hasNext()) {
             Variant variant = iterator.next();
-            if(variant.getAlternate().length() + variant.getReference().length() > 100) {
-                logger.info("Skip variant! ");
+            if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
+//                logger.info("Skip variant! {}", genomicVariant);
+                logger.info("Skip variant! {}", variant.getChromosome() + ":" +
+                                variant.getStart() + ":" +
+                        (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
+                        (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
+                );
                 logger.debug("Skip variant! {}", variant);
             } else {
                 GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
@@ -141,14 +147,15 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         return fileUri;
     }
 
+    /////// CREATE ANNOTATION - AUX METHODS
+
     private List<VariantAnnotation> getVariantAnnotationsREST(List<GenomicVariant> genomicVariantList) throws IOException {
         QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
         List<String> genomicVariantStringList = new ArrayList<>(genomicVariantList.size());
         for (GenomicVariant genomicVariant : genomicVariantList) {
             genomicVariantStringList.add(genomicVariant.toString());
         }
-        //              queryResponse = cellBaseClient.nativeGet("genomic", "variant", genomicVariant.toString(), "full_annotation", new QueryOptions("of", "json"), VariantAnnotation.class);
-        //              queryResponse = cellBaseClient.nativeGet("genomic", "variant", genomicVariant.toString(), "full_annotation", new QueryOptions("of", "json"));
+
         queryResponse = cellBaseClient.get(
                 CellBaseClient.Category.genomic,
                 CellBaseClient.SubCategory.variant,
@@ -156,7 +163,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                 CellBaseClient.Resource.fullAnnotation,
                 null);
         if(queryResponse == null) {
-            logger.error("Cellbase REST error. Returned null. Skipping variants.");
+            logger.error("CellBase REST error. Returned null. Skipping variants. {}", cellBaseClient.getLastQuery());
             return Collections.emptyList();
         }
 
@@ -201,7 +208,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         List<org.opencb.cellbase.core.lib.dbquery.QueryResult> queryResultList =
                 variantAnnotationDBAdaptor.getAllConsequenceTypesByVariantList(genomicVariants, queryOptions);
         for (org.opencb.cellbase.core.lib.dbquery.QueryResult queryResult : queryResultList) {
-            List list = getList(queryResult.getResult());
+            Object result = queryResult.getResult();
+            List list = result instanceof Collection ? new ArrayList((Collection) result) : Collections.singletonList(result);
 
             if(list.get(0) instanceof ConsequenceType) {
                 map.put(queryResult.getId(), list);
@@ -210,20 +218,6 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             }
         }
         return map;
-    }
-
-    private List<ConsequenceType> getConsequenceTypes(GenomicVariant genomicVariant, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
-        org.opencb.cellbase.core.lib.dbquery.QueryResult queryResult =
-                variantAnnotationDBAdaptor.getAllConsequenceTypesByVariant(genomicVariant, queryOptions);
-        List list = getList(queryResult.getResult());
-
-        List<ConsequenceType> consequenceTypes;
-        if(list.get(0) instanceof ConsequenceType) {
-            consequenceTypes = list;
-        } else {
-            throw new IOException("queryResult result : " + queryResult + " is not a ConsequenceType");
-        }
-        return consequenceTypes;
     }
 
     private Map<String, String> getVariantId(List<GenomicVariant> genomicVariant, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
@@ -236,29 +230,14 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         return map;
     }
 
-    private String getVariantId(GenomicVariant genomicVariant, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
-        List<org.opencb.cellbase.core.lib.dbquery.QueryResult> variationQueryResultList =
-                variationDBAdaptor.getIdByVariantList(Collections.singletonList(genomicVariant), queryOptions);
-        if(variationQueryResultList.get(0).getResult() != null) {
-            return variationQueryResultList.get(0).getResult().toString();
-        }
-        return null;
-    }
 
-    private List getList(Object result) throws IOException {
-        if(result instanceof Collection) {
-            return new ArrayList((Collection) result);
-        } else {
-            return Collections.singletonList(result);
-        }
-    }
+    /////// LOAD ANNOTATION
 
     @Override
-    public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor,final URI uri, boolean clean) throws IOException {
+    public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor, final URI uri, QueryOptions options) throws IOException {
 
-        final int batchSize = 100;
-        final int numConsumers = 8;
-//        final BlockingQueue<List<VariantAnnotation>> batchQueue = new ArrayBlockingQueue<>(5);
+        final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
+        final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize*numConsumers*2);
         final VariantAnnotation lastElement = new VariantAnnotation();
 
@@ -266,6 +245,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             @Override
             public void run() {
                 try {
+                    int readsCounter = 0;
+
                     /** Open input stream **/
                     InputStream inputStream;
                     inputStream = new FileInputStream(Paths.get(uri).toFile());
@@ -273,32 +254,19 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
                     /** Innitialice Json parse**/
                     JsonParser parser = factory.createParser(inputStream);
-                    int num = 0;
-//                    List<VariantAnnotation> batch = new ArrayList<>(batchSize);
+
                     while (parser.nextToken() != null) {
                         VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
                         queue.put(variantAnnotation);
-                        num++;
-                        if(num%1000 == 0) {
-                            System.out.println("Element " + num);
+                        readsCounter++;
+                        if(readsCounter%1000 == 0) {
+                            logger.info("Element {}", readsCounter);
                         }
-//                            System.out.println("Put element. queue size = " + queue.size());
-//                        batch.add(variantAnnotation);
-//                        if (batch.size() == batchSize) {
-//                            batchQueue.put(batch);
-//                            System.out.println("Put element. batchQueue size = " + queue.size());
-//                            batch = new ArrayList<>(batchSize);
-//                        }
                     }
-//                    if (!batch.isEmpty()) {
-//                        batchQueue.put(batch);
-//                        System.out.println("Put LAST element. batchQueue size = " + batchQueue.size());
-//                    }
-                    for (int i = 0; i < numConsumers; i++) {
+                    for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
                         queue.put(lastElement);
                     }
-//                    System.out.println("Put NULL element. batchQueue size = " + batchQueue.size());
-                    System.out.println("Put Last element. queue size = " + queue.size());
+                    logger.debug("Put Last element. queue size = " + queue.size());
                     inputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -313,7 +281,6 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             public void run() {
                 try {
                     List<VariantAnnotation> batch = new ArrayList<>(batchSize);
-//                    List<VariantAnnotation> batch = batchQueue.take();
                     VariantAnnotation elem = queue.take();
                     while (elem != lastElement) {
                         batch.add(elem);
@@ -322,8 +289,6 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                             batch.clear();
                         }
                         elem = queue.take();
-//                        batch = batchQueue.take();
-//                        System.out.println("Take element. batchQueue size = " + queue.size());
                     }
                     if(!batch.isEmpty()) { //Upload remaining elements
                         variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
@@ -334,30 +299,25 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             }
         };
 
-        Thread producerThread = new Thread(producer);
+        /** Create threads **/
         List<Thread> consumers = new ArrayList<>(numConsumers);
-        producerThread.start();
+        Thread producerThread = new Thread(producer);
         for (int i = 0; i < numConsumers; i++) {
-            Thread thread = new Thread(consumer);
-            consumers.add(thread);
-            thread.start();
+            consumers.add(new Thread(consumer));
         }
-//        Thread consumerThread = new Thread(consumer);
-//        Thread consumerThread2 = new Thread(consumer);
-//        Thread consumerThread3 = new Thread(consumer);
 
-//        consumerThread.start();
-//        consumerThread2.start();
-//        consumerThread3.start();
+        /** Start **/
+        producerThread.start();
+        for (Thread consumerThread : consumers) {
+            consumerThread.start();
+        }
 
+        /** Join **/
         try {
             producerThread.join();
-            for (Thread thread : consumers) {
-                thread.join();
+            for (Thread consumerThread : consumers) {
+                consumerThread.join();
             }
-//            consumerThread.join();
-//            consumerThread2.join();
-//            consumerThread3.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

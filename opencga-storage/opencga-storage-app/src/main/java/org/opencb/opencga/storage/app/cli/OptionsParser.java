@@ -27,7 +27,8 @@ public class OptionsParser {
     private final CommandIndexSequence commandIndexSequence;
     private final CommandFetchVariants commandFetchVariants;
     private final CommandFetchAlignments commandFetchAlignments;
-    private final CommandAnnotateVariants commandAnnotatevariants;
+    private final CommandCreateAnnotations commandCreateAnnotations;
+    private final CommandLoadAnnotations commandLoadAnnotations;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -43,7 +44,8 @@ public class OptionsParser {
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
         jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
         jcommander.addCommand(commandFetchAlignments = new CommandFetchAlignments());
-        jcommander.addCommand(commandAnnotatevariants = new CommandAnnotateVariants());
+        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
+        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -371,7 +373,7 @@ public class OptionsParser {
 
     }
 
-    @Parameters(commandNames = {"fetch-variants", "search-variants"}, commandDescription = "Search over indexed variants")
+    @Parameters(commandNames = {"fetch-variants"}, commandDescription = "Search over indexed variants")
     class CommandFetchVariants extends CommandFetch {
 
         //Filter parameters
@@ -406,7 +408,7 @@ public class OptionsParser {
     }
 
 
-    @Parameters(commandNames = {"fetch-alignments", "search-alignments"}, commandDescription = "Search over indexed alignments")
+    @Parameters(commandNames = {"fetch-alignments"}, commandDescription = "Search over indexed alignments")
     class CommandFetchAlignments extends CommandFetch {
 
 
@@ -434,49 +436,79 @@ public class OptionsParser {
 
     }
 
-    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Search over indexed alignments")
-    class CommandAnnotateVariants implements Command {
-
-        //Filter parameters
-        @Parameter(names = {"--cellbase-host"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbaseHost;
-
-        @Parameter(names = {"--cellbase-port"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbasePort;
-
-        @Parameter(names = {"--cellbase-database"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbaseDatabase;
-
-        @Parameter(names = {"--cellbase-user"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbaseUser;
-
-        @Parameter(names = {"--cellbase-password"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbasePassword;
-
-        @Parameter(names = {"--cellbase-species"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbaseSpecies;
-
-        @Parameter(names = {"--cellbase-assembly"}, description = "File unique ID.", required = true, arity = 1)
-        String cellbaseAssemly;
-
-
-        @Parameter(names = {"--opencga-host"}, description = "File unique ID.", required = true, arity = 1)
-        String opencgaHost;
-
-        @Parameter(names = {"--opencga-port"}, description = "File unique ID.", required = true, arity = 1)
-        String opencgaPort;
-
-        @Parameter(names = {"--opencga-database"}, description = "File unique ID.", required = true, arity = 1)
-        String opencgaDatabase;
-
-        @Parameter(names = {"--opencga-user"}, description = "File unique ID.", required = true, arity = 1)
-        String opencgaUser;
-
-        @Parameter(names = {"--opencga-password"}, description = "File unique ID.", required = true, arity = 1)
-        String opencgaPassword;
-
+    enum AnnotationSource {
+        CELLBASE_DB_ADAPTOR,
+        CELLBASE_REST
     }
 
+    @Parameters(commandNames = {"create-annotations"}, commandDescription = "Create an annotation file.")
+    class CommandCreateAnnotations implements Command {
+
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
+        String backend = "mongodb";
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials;
+
+        @Parameter(names = {"-d", "--dbName"}, description = "OpenCGA DB name to read variants.", required = true, arity = 1)
+        String dbName;
+
+        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
+        String outDir = ".";
+
+        @Parameter(names = {"-f", "--fileName"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        String fileName = "";
+
+        @Parameter(names = {"-s", "--annotation-source"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        AnnotationSource annotationSource = AnnotationSource.CELLBASE_REST;
+
+        @Parameter(names = {"--species"}, description = " ", required = true, arity = 1)
+        String species;
+
+        //Cellbase specific params
+
+        @Parameter(names = {"--cellbase-assembly"}, description = " ", required = false, arity = 1)
+        String cellbaseAssemly = "default";
+
+        @Parameter(names = {"--cellbase-rest"}, description = "Cellbase REST URL.", required = false, arity = 1)
+        String cellbaseRest = "";
+
+        @Parameter(names = {"--cellbase-version"}, description = "Cellbase REST version. Default: v3", required = false, arity = 1)
+        String cellbaseVersion = "v3";
+
+        @Parameter(names = {"--cellbase-host"}, description = "Cellbase host.", required = false, arity = 1)
+        String cellbaseHost;
+
+        @Parameter(names = {"--cellbase-port"}, description = " ", required = false, arity = 1)
+        int cellbasePort = 0;
+
+        @Parameter(names = {"--cellbase-database"}, description = " ", required = false, arity = 1)
+        String cellbaseDatabase;
+
+        @Parameter(names = {"--cellbase-user"}, description = " ", required = false, arity = 1)
+        String cellbaseUser;
+
+        @Parameter(names = {"--cellbase-password"}, description = " ", required = false, arity = 1)
+        String cellbasePassword;
+    }
+
+
+    @Parameters(commandNames = {"load-annotations"}, commandDescription = "Load an annotation file.")
+    class CommandLoadAnnotations implements Command {
+
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
+        String backend = "mongodb";
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials;
+
+        @Parameter(names = {"-d", "--dbName"}, description = "OpenCGA DB name to annotate variants.", required = true, arity = 1)
+        String dbName;
+
+        @Parameter(names = {"-i", "--input"}, description = "Input file name. ", required = true, arity = 1)
+        String fileName = "";
+
+    }
 
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
@@ -539,8 +571,12 @@ public class OptionsParser {
         return commandFetchAlignments;
     }
 
-    CommandAnnotateVariants getCommandAnnotateVariants() {
-        return commandAnnotatevariants;
+    CommandCreateAnnotations getCommandCreateAnnotations() {
+        return commandCreateAnnotations;
+    }
+
+    CommandLoadAnnotations getCommandLoadAnnotations() {
+        return commandLoadAnnotations;
     }
 
     GeneralParameters getGeneralParameters() {

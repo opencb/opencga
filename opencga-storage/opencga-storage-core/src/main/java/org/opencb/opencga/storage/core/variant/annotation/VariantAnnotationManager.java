@@ -15,15 +15,20 @@ import java.nio.file.Paths;
 public class VariantAnnotationManager {
 
     public static final String CLEAN = "clean";
-    public static final String ANNOTATE_ALL = "annotateAll";
-    public static final String OVERRIDE = "override";
     public static final String FILE_NAME = "fileName";
     public static final String OUT_DIR = "outDir";
+    public static final String ANNOTATE_ALL = "annotateAll";
+    public static final String OVERRIDE_ANNOTATIONS = "override";
+    public static final String BATCH_SIZE = "batchSize";
+    public static final String NUM_WRITERS = "numWriters";
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;
 
     public VariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
+        if(dbAdaptor == null || variantAnnotator == null) {
+            throw new NullPointerException();
+        }
         this.dbAdaptor = dbAdaptor;
         this.variantAnnotator = variantAnnotator;
     }
@@ -34,15 +39,15 @@ public class VariantAnnotationManager {
                 options.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
                 options);
 
-        loadAnnotation(annotationFile, options.getBoolean(CLEAN, false));
+        loadAnnotation(annotationFile, options);
     }
 
     public URI createAnnotation(Path outDir, String fileName, QueryOptions options) throws IOException {
         return this.variantAnnotator.createAnnotation(dbAdaptor, outDir, fileName, options);
     }
 
-    public void loadAnnotation(URI uri, boolean clean) throws IOException {
-        variantAnnotator.loadAnnotation(dbAdaptor, uri, clean);
+    public void loadAnnotation(URI uri, QueryOptions options) throws IOException {
+        variantAnnotator.loadAnnotation(dbAdaptor, uri, options);
     }
 
 }
