@@ -274,8 +274,9 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateStudy() throws Exception {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int projectId2 = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(1).getId();
         System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser));
-        QueryResult<Study> study = catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser);
+        QueryResult<Study> study = catalogManager.createStudy(projectId2, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser);
         System.out.println(study);
 
         QueryResult<Study> queryResult = catalogManager.getStudy(study.getResult().get(0).getId(), sessionIdUser,
@@ -325,8 +326,13 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateAndUpload() throws Exception {
-        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        List<Project> result = catalogManager.getAllProjects("user", null, sessionIdUser).getResult();
+        int projectId = result.get(0).getId();
+        int projectId2 = result.get(1).getId();
         int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
+        int studyId2 = catalogManager.getAllStudies(projectId2, null, sessionIdUser).getResult().get(0).getId();
+
+        CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
 
         FileInputStream is;
         java.io.File fileTest;
@@ -345,6 +351,19 @@ public class CatalogManagerTest extends GenericTest {
         is.close();
         fileTest.delete();
 
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        fileTest = createDebugFile();
+        QueryResult<File> fileQueryResult = catalogManager.createFile(
+                studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/folder/" + fileName, "description", true, -1, sessionIdUser);
+        catalogFileManager.upload(fileTest.toURI(), fileQueryResult.getResult().get(0), null, sessionIdUser, false, false, true, true);
+        fileTest.delete();
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        fileTest = createDebugFile();
+        fileQueryResult = catalogManager.createFile(
+                studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/" + fileName, "description", true, -1, sessionIdUser);
+        catalogFileManager.upload(fileTest.toURI(), fileQueryResult.getResult().get(0), null, sessionIdUser, false, false, true, true);
+        fileTest.delete();
     }
 
     @Test
@@ -406,9 +425,29 @@ public class CatalogManagerTest extends GenericTest {
             catalogManager.deleteFile(file.getId(), sessionIdUser);
         }
     }
+
+    @Test
+    public void testDeleteFolder () throws CatalogException, IOException {
+        int deletable = catalogManager.getFileId("user@1000G/phase1/data/deletable/");
+        QueryResult<File> allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser);
+        System.out.println("subfiles inside folder to delete:");
+        for (File file : allFilesInFolder.getResult()) {
+            System.out.println(file.getId() + ", " + file.getName() + ", " + file.getPath());
+        }
+        catalogManager.deleteFolder(deletable, sessionIdUser);
+
+        File file = catalogManager.getFile(deletable, sessionIdUser).getResult().get(0);
+        allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser);
+
+        assertTrue(file.getStatus() == File.Status.DELETING);
+        for (File subFile : allFilesInFolder.getResult()) {
+            assertTrue(subFile.getStatus() == File.Status.DELETING);
+        }
+    }
+
     /* TYPE_FILE UTILS */
     private java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest" + StringUtils.randomString(5);
+        String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
 
         os.writeBytes("Debug file name: " + fileTestName + "\n");
@@ -417,6 +456,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         for (int i = 0; i < 200; i++) {
             os.writeBytes(StringUtils.randomString(500));
+            os.write('\n');
         }
         os.close();
 

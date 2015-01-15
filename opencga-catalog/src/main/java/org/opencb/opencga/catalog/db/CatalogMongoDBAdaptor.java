@@ -1255,9 +1255,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String fileName = path.getFileName().toString();
 
         File file = getFile(fileId, null).getResult().get(0);
-        if (file.getType().equals(File.Type.FOLDER)) {
-            throw new UnsupportedOperationException("Renaming folders still not supported");  // no renaming folders. it will be a future feature
-        }
 
         int studyId = getStudyIdByFileId(fileId);
         int collisionFileId = getFileId(studyId, filePath);
@@ -1265,6 +1262,15 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw new CatalogDBException("Can not rename: " + filePath + " already exists");
         }
 
+        if (file.getType().equals(File.Type.FOLDER)) {  // recursive over the files inside folder
+            QueryResult<File> allFilesInFolder = getAllFilesInFolder(fileId, null);
+            String oldPath = file.getPath();
+            filePath += filePath.endsWith("/")? "" : "/";
+            for (File subFile : allFilesInFolder.getResult()) {
+                String replacedPath = subFile.getPath().replace(oldPath, filePath);
+                renameFile(subFile.getId(), replacedPath); // first part of the path in the subfiles 3
+            }
+        }
         BasicDBObject query = new BasicDBObject("id", fileId);
         BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
                 .start("name", fileName)

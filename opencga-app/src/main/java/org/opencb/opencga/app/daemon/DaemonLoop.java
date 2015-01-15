@@ -181,17 +181,21 @@ public class DaemonLoop implements Runnable {
                 QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.Status.DELETING), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
-                    long deleteDate = new ObjectMap(file.getAttributes()).getLong(File.DELETE_DATE, 0);
-                    if(currentTimeMillis - deleteDate > Long.valueOf(properties.getProperty(DELETE_DELAY, "30"))*1000) { //Seconds to millis
-                        QueryResult<Study> studyQueryResult = catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
-                        Study study = studyQueryResult.getResult().get(0);
-                        logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
-                        CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(study.getUri());
-                        catalogIOManager.deleteFile(catalogIOManager.getFileUri(study.getUri(), file.getPath()));
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
-                    } else {
-                        logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(), file.getAttributes());
-                        logger.info("{}", (currentTimeMillis - deleteDate)/1000);
+                    try {       //TODO: skip if the file is a non-empty folder
+                        long deleteDate = new ObjectMap(file.getAttributes()).getLong(File.DELETE_DATE, 0);
+                        if(currentTimeMillis - deleteDate > Long.valueOf(properties.getProperty(DELETE_DELAY, "30"))*1000) { //Seconds to millis
+                            QueryResult<Study> studyQueryResult = catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
+                            Study study = studyQueryResult.getResult().get(0);
+                            logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
+                            CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(study.getUri());
+                            catalogIOManager.deleteFile(catalogIOManager.getFileUri(study.getUri(), file.getPath()));
+                            catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
+                        } else {
+                            logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(), file.getAttributes());
+                            logger.info("{}", (currentTimeMillis - deleteDate)/1000);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             } catch (Exception e) {

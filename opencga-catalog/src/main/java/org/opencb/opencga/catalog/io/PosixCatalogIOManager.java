@@ -478,8 +478,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     public String calculateChecksum(URI file) throws CatalogIOManagerException {
         String checksum;
         try {
-            String command = "md5sum \"" + file.getPath() + "\"";
-            logger.info("command = {}", command);
+            String[] command = {"md5sum", file.getPath()};
+            logger.info("command = {} {}", command[0], command[1]);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             checksum = br.readLine();
@@ -487,7 +487,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             if (p.waitFor() != 0) {
                 //TODO: Handle error in checksum
                 System.out.println("checksum = " + checksum);
-                throw new CatalogIOManagerException("md5sum failed with exit value : " + p.exitValue());
+                br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                throw new CatalogIOManagerException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine() );
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
