@@ -32,10 +32,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
@@ -294,6 +291,28 @@ public class FileWSServer extends OpenCGAWSServer {
         }
 //        createOkResponse(content, MediaType.TEXT_PLAIN)
         return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+    }
+
+    @GET
+    @Path("/{fileId}/modify")
+    @Produces("application/json")
+    @ApiOperation(value = "Modify file")
+    public Response modify(
+            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId
+    ) {
+        QueryResult queryResult = null;
+         ObjectMap parameters = new ObjectMap();
+        for (String param : params.keySet()) {
+            String value = params.get(param).get(0);
+            parameters.put(param,value);
+
+        }
+        try {
+            queryResult = catalogManager.modifyFile(fileId, parameters, sessionId);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
+        return createOkResponse(queryResult, MediaType.TEXT_PLAIN_TYPE);
     }
 
     @GET
