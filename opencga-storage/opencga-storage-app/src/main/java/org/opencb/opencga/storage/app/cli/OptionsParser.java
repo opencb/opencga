@@ -27,6 +27,7 @@ public class OptionsParser {
     private final CommandIndexSequence commandIndexSequence;
     private final CommandFetchVariants commandFetchVariants;
     private final CommandFetchAlignments commandFetchAlignments;
+    private final CommandAnnotateVariants commandAnnotatevariants;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -42,6 +43,7 @@ public class OptionsParser {
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
         jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
         jcommander.addCommand(commandFetchAlignments = new CommandFetchAlignments());
+        jcommander.addCommand(commandAnnotatevariants = new CommandAnnotateVariants());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -435,6 +437,49 @@ public class OptionsParser {
 
     }
 
+    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Search over indexed alignments")
+    class CommandAnnotateVariants implements Command {
+
+        //Filter parameters
+        @Parameter(names = {"--cellbase-host"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbaseHost;
+
+        @Parameter(names = {"--cellbase-port"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbasePort;
+
+        @Parameter(names = {"--cellbase-database"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbaseDatabase;
+
+        @Parameter(names = {"--cellbase-user"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbaseUser;
+
+        @Parameter(names = {"--cellbase-password"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbasePassword;
+
+        @Parameter(names = {"--cellbase-species"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbaseSpecies;
+
+        @Parameter(names = {"--cellbase-assembly"}, description = "File unique ID.", required = true, arity = 1)
+        String cellbaseAssemly;
+
+
+        @Parameter(names = {"--opencga-host"}, description = "File unique ID.", required = true, arity = 1)
+        String opencgaHost;
+
+        @Parameter(names = {"--opencga-port"}, description = "File unique ID.", required = true, arity = 1)
+        String opencgaPort;
+
+        @Parameter(names = {"--opencga-database"}, description = "File unique ID.", required = true, arity = 1)
+        String opencgaDatabase;
+
+        @Parameter(names = {"--opencga-user"}, description = "File unique ID.", required = true, arity = 1)
+        String opencgaUser;
+
+        @Parameter(names = {"--opencga-password"}, description = "File unique ID.", required = true, arity = 1)
+        String opencgaPassword;
+
+    }
+
 
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
@@ -495,6 +540,10 @@ public class OptionsParser {
 
     CommandFetchAlignments getCommandFetchAlignments() {
         return commandFetchAlignments;
+    }
+
+    CommandAnnotateVariants getCommandAnnotateVariants() {
+        return commandAnnotatevariants;
     }
 
     GeneralParameters getGeneralParameters() {

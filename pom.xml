@@ -149,16 +149,16 @@
 
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-core</artifactId>
-                <version>3.0.0</version>
+                <artifactId>cellbase-mongodb</artifactId>
+                <version>3.1.0-beta</version>
                 <scope>compile</scope>
             </dependency>
-            <dependency>
-                <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-lib</artifactId>
-                <version>3.0.0</version>
-                <scope>compile</scope>
-            </dependency>
+            <!--<dependency>-->
+                <!--<groupId>org.opencb.cellbase</groupId>-->
+                <!--<artifactId>cellbase-lib-beta</artifactId>-->
+                <!--<version>3.0.0</version>-->
+                <!--<scope>compile</scope>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.datastore</groupId>
                 <artifactId>datastore-core</artifactId>

@@ -100,7 +100,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // TODO Save pedigree information
         
         // Metadata
-        Map<String, String> meta = object.getMetadata();
+        Map<String, Object> meta = object.getMetadata();
         DBObject metadataMongo = new BasicDBObject(HEADER_FIELD, meta.get("variantFileHeader"));
         studyMongo = studyMongo.append(METADATA_FIELD, metadataMongo);
         

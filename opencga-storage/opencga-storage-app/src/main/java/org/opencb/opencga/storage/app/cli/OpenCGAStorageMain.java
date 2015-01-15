@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +117,9 @@ public class OpenCGAStorageMain {
                 case "search-alignments":
                 case "fetch-alignments":
                     command = parser.getCommandFetchAlignments();
+                    break;
+                case "annotate-variants":
+                    command = parser.getCommandAnnotateVariants();
                     break;
 //                case "download-alignments":
 //                    command = parser.getDownloadAlignments();
@@ -626,6 +630,17 @@ public class OpenCGAStorageMain {
                 throw new UnsupportedOperationException("Unable to fetch over all the genome");
 //                System.out.println(dbAdaptor.getAllAlignments(options));
             }
+        } else if(command instanceof OptionsParser.CommandAnnotateVariants) {
+            OptionsParser.CommandAnnotateVariants c = (OptionsParser.CommandAnnotateVariants) command;
+            System.out.println("c.opencgaPassword = " + c.opencgaPassword);
+            MongoCredentials cellbaseCredentials = new MongoCredentials(c.cellbaseHost, Integer.parseInt(c.cellbasePort),
+                    c.cellbaseDatabase, c.cellbaseUser, c.cellbasePassword);
+            MongoCredentials opencgaCredentials = new MongoCredentials(c.opencgaHost, Integer.parseInt(c.opencgaPort),
+                    c.opencgaDatabase, c.opencgaUser, c.opencgaPassword);
+
+            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(cellbaseCredentials, opencgaCredentials);
+            variantAnnotationManager.annotate(c.cellbaseSpecies, c.cellbaseAssemly, null);
+
         }
     }
 

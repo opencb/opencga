@@ -824,6 +824,19 @@ public class CatalogManager {
         return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
     }
 
+    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
+                                        boolean parents,  String sessionId)
+            throws CatalogException {
+
+        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
+        File file = result.getResult().get(0);
+
+        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
+        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
+
+        return result;
+    }
+
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
