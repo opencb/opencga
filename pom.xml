@@ -150,7 +150,8 @@
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
                 <artifactId>cellbase-mongodb</artifactId>
-                <version>3.1.0-beta</version>
+                <!--<version>3.1.0-beta</version>-->
+                <version>3.1.0</version>
                 <scope>compile</scope>
             </dependency>
             <!--<dependency>-->

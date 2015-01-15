@@ -301,20 +301,20 @@ public class FileWSServer extends OpenCGAWSServer {
             @PathParam(value = "fileId") @FormDataParam("fileId") int fileId
     ) {
         QueryResult queryResult = null;
-         ObjectMap parameters = new ObjectMap();
+        ObjectMap parameters = new ObjectMap();
         for (String param : params.keySet()) {
-            if(param.equalsIgnoreCase("sid"))
+            if (param.equalsIgnoreCase("sid"))
                 continue;
             String value = params.get(param).get(0);
-            parameters.put(param,value);
-
+            parameters.put(param, value);
         }
         try {
             queryResult = catalogManager.modifyFile(fileId, parameters, sessionId);
+            return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
+            return createErrorResponse(e.getMessage());
         }
-        return createOkResponse(queryResult, MediaType.TEXT_PLAIN_TYPE);
     }
 
     @GET
