@@ -30,6 +30,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -38,7 +40,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class CellBaseVariantAnnotator implements VariantAnnotator {
 
-    private JsonFactory factory;
+    private final JsonFactory factory;
     private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor;
     private CellBaseClient cellBaseClient;
     private ObjectMapper jsonObjectMapper;
@@ -93,7 +95,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         outputStream = new FileOutputStream(path.toFile());
         outputStream = new GZIPOutputStream(outputStream);
 
-        /** Innitialice Json parse**/
+        /** Innitialice Json serializer**/
         ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
 
         /** Getting iterator from OpenCGA Variant database. **/
@@ -252,29 +254,123 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     }
 
     @Override
-    public void loadAnnotation(VariantDBAdaptor variantDBAdaptor, URI uri, boolean clean) throws IOException {
+    public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor,final URI uri, boolean clean) throws IOException {
 
-        /** Open input stream **/
-        InputStream inputStream;
-        inputStream = new FileInputStream(Paths.get(uri).toFile());
-        inputStream = new GZIPInputStream(inputStream);
+        final int batchSize = 100;
+        final int numConsumers = 8;
+//        final BlockingQueue<List<VariantAnnotation>> batchQueue = new ArrayBlockingQueue<>(5);
+        final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize*numConsumers*2);
+        final VariantAnnotation lastElement = new VariantAnnotation();
 
-        /** Innitialice Json parse**/
-        JsonParser parser = factory.createParser(inputStream);
+        Runnable producer = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    /** Open input stream **/
+                    InputStream inputStream;
+                    inputStream = new FileInputStream(Paths.get(uri).toFile());
+                    inputStream = new GZIPInputStream(inputStream);
 
-        int batchSize = 100;
-        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(batchSize);
-        while (parser.nextToken() != null) {
-            VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
-//            System.out.println("variantAnnotation = " + variantAnnotation);
-            variantAnnotationList.add(variantAnnotation);
-            if(variantAnnotationList.size() == batchSize || parser.nextToken() == null) {
-                variantDBAdaptor.updateAnnotations(variantAnnotationList, new QueryOptions());
-                variantAnnotationList.clear();
+                    /** Innitialice Json parse**/
+                    JsonParser parser = factory.createParser(inputStream);
+                    int num = 0;
+//                    List<VariantAnnotation> batch = new ArrayList<>(batchSize);
+                    while (parser.nextToken() != null) {
+                        VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
+                        queue.put(variantAnnotation);
+                        num++;
+                        if(num%1000 == 0) {
+                            System.out.println("Element " + num);
+                        }
+//                            System.out.println("Put element. queue size = " + queue.size());
+//                        batch.add(variantAnnotation);
+//                        if (batch.size() == batchSize) {
+//                            batchQueue.put(batch);
+//                            System.out.println("Put element. batchQueue size = " + queue.size());
+//                            batch = new ArrayList<>(batchSize);
+//                        }
+                    }
+//                    if (!batch.isEmpty()) {
+//                        batchQueue.put(batch);
+//                        System.out.println("Put LAST element. batchQueue size = " + batchQueue.size());
+//                    }
+                    for (int i = 0; i < numConsumers; i++) {
+                        queue.put(lastElement);
+                    }
+//                    System.out.println("Put NULL element. batchQueue size = " + batchQueue.size());
+                    System.out.println("Put Last element. queue size = " + queue.size());
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+        };
+
+        Runnable consumer = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    List<VariantAnnotation> batch = new ArrayList<>(batchSize);
+//                    List<VariantAnnotation> batch = batchQueue.take();
+                    VariantAnnotation elem = queue.take();
+                    while (elem != lastElement) {
+                        batch.add(elem);
+                        if(batch.size() == batchSize) {
+                            variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+                            batch.clear();
+                        }
+                        elem = queue.take();
+//                        batch = batchQueue.take();
+//                        System.out.println("Take element. batchQueue size = " + queue.size());
+                    }
+                    if(!batch.isEmpty()) { //Upload remaining elements
+                        variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        Thread producerThread = new Thread(producer);
+        List<Thread> consumers = new ArrayList<>(numConsumers);
+        producerThread.start();
+        for (int i = 0; i < numConsumers; i++) {
+            Thread thread = new Thread(consumer);
+            consumers.add(thread);
+            thread.start();
+        }
+//        Thread consumerThread = new Thread(consumer);
+//        Thread consumerThread2 = new Thread(consumer);
+//        Thread consumerThread3 = new Thread(consumer);
+
+//        consumerThread.start();
+//        consumerThread2.start();
+//        consumerThread3.start();
+
+        try {
+            producerThread.join();
+            for (Thread thread : consumers) {
+                thread.join();
+            }
+//            consumerThread.join();
+//            consumerThread2.join();
+//            consumerThread3.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        inputStream.close();
+//        while (parser.nextToken() != null) {
+//            VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
+////            System.out.println("variantAnnotation = " + variantAnnotation);
+//            batch.add(variantAnnotation);
+//            if(batch.size() == batchSize || parser.nextToken() == null) {
+//                variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+//                batch.clear();
+//            }
+//        }
 
     }
 }

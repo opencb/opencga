@@ -406,7 +406,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantAnnotationConverter.ANNOTATION_FIELD,
                     converter.convertToStorageType(variantAnnotation)));
             builder.find(find).updateOne(update);
-            db.getCollection(collectionName).update(find, update, false, false);
         }
 
         BulkWriteResult writeResult = builder.execute();

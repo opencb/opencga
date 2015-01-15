@@ -29,7 +29,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
 
         CellBaseClient cellBaseClient;
 //        cellBaseClient = new CellBaseClient("wwwdev.ebi.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
-        cellBaseClient = new CellBaseClient("cafetal", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
+        cellBaseClient = new CellBaseClient("localhost", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
 
         CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);
 
@@ -59,13 +59,12 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
     public void testLoadAnnotation() throws Exception {
         VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
 
-        CellbaseConfiguration cellbaseConfiguration = getCellbaseConfiguration();
+        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator();
 
-        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, cellbaseSpecies, cellbaseAssembly);
-
-        annotator.loadAnnotation(variantDBAdaptor, URI.create("file:///tmp/testDBAdaptor.annot.json.gz"), false);
+        annotator.loadAnnotation(variantDBAdaptor, URI.create("file:///tmp/testREST.annot.json.gz"), false);
 
     }
+
 
     private CellbaseConfiguration getCellbaseConfiguration() {
         CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
