@@ -158,8 +158,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     Files.copy(Files.newInputStream(completedFilePath), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-                    QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, description, parents, -1, sessionId);
+                    QueryResult queryResult = catalogManager.uploadFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, description, parents, sessionId);
 
                     IOUtils.deleteDirectory(completedFilePath);
 
