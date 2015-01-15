@@ -303,6 +303,8 @@ public class FileWSServer extends OpenCGAWSServer {
         QueryResult queryResult = null;
          ObjectMap parameters = new ObjectMap();
         for (String param : params.keySet()) {
+            if(param.equalsIgnoreCase("sid"))
+                continue;
             String value = params.get(param).get(0);
             parameters.put(param,value);
 
