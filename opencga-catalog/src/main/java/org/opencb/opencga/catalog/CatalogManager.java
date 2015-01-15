@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.MongoCredential;
+import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -389,7 +390,7 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        if (options == null || !options.containsKey("include") || !options.containsKey("exclude")) {
+        if (options == null || !options.containsKey("include") && !options.containsKey("exclude")) {
             options.put("exclude", Arrays.asList("password", "sessions"));
         }
 //        if(options.containsKey("exclude")) {
@@ -1052,20 +1053,15 @@ public class CatalogManager {
         return result;
     }
 
-    public QueryResult deleteFile(int fileId, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
-        return deleteDataFromStudy(fileId, sessionId);
-    }
 
     public QueryResult deleteFolder(int folderId, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
+            throws CatalogException, IOException {
         return deleteFile(folderId, sessionId);
     }
 
-    @Deprecated
-    private QueryResult deleteDataFromStudy(int fileId, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
-        //TODO: Save delete: Don't delete. Just rename file and set {deleted:true}
+    public QueryResult deleteFile(int fileId, String sessionId)
+            throws CatalogException, IOException {
+        //Safe delete: Don't delete. Just rename file and set {deleting:true}
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -1110,7 +1106,14 @@ public class CatalogManager {
 
         switch (file.getType()) {
             case FOLDER:
-                throw new UnsupportedOperationException("Unsupported deleting folder");
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
+
+                QueryResult<File> allFilesInFolder = catalogDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
+                for (File subfile : allFilesInFolder.getResult()) {
+                    deleteFile(subfile.getId(), sessionId);
+                }
+                return queryResult;
             case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
@@ -1156,22 +1159,31 @@ public class CatalogManager {
             return new QueryResult("Rename file", 0, 0, 0, "File not found", null, null);
         }
         File file = fileResult.getResult().get(0);
-        System.out.println("file = " + file);
+//        System.out.println("file = " + file);
 
-        String newPath = Paths.get(file.getPath()).getParent().resolve(newName).toString();
+        String oldPath = file.getPath();
+        String newPath = Paths.get(oldPath).getParent().resolve(newName).toString();
 
         catalogDBAdaptor.updateUserLastActivity(ownerId);
+        QueryResult<Study> studyQueryResult;
+        Study study;
+        CatalogIOManager catalogIOManager;
         switch (file.getType()) {
             case FOLDER:
-                throw new UnsupportedOperationException("Unsupported folder renaming");
+                studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);   // TODO? check if something in the subtree is not READY?
+                study = studyQueryResult.getResult().get(0);
+                catalogIOManager = catalogIOManagerFactory.get(study.getUri());
+                catalogIOManager.rename(getFileUri(study.getUri(), oldPath), getFileUri(study.getUri(), newPath));   // io.move() 1
+                QueryResult queryResult = catalogDBAdaptor.renameFile(fileId, newPath);
+                return queryResult;
             case FILE:
-                QueryResult<Study> studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
-                Study study = studyQueryResult.getResult().get(0);
-                CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(study.getUri());
+                studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
+                study = studyQueryResult.getResult().get(0);
+                catalogIOManager = catalogIOManagerFactory.get(study.getUri());
                 catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
                 return catalogDBAdaptor.renameFile(fileId, newPath);
             case INDEX:
-                return catalogDBAdaptor.renameFile(fileId, newName);
+                return catalogDBAdaptor.renameFile(fileId, newPath);
         }
 
         return null;

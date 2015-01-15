@@ -37,7 +37,7 @@ public class CatalogManagerTest extends GenericTest {
     private String sessionIdUser3;
 
     @BeforeClass
-    public static void init() throws IOException, CatalogIOManagerException, CatalogDBException {
+    public static void init() throws IOException, CatalogException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -45,15 +45,25 @@ public class CatalogManagerTest extends GenericTest {
         clearCatalog(properties);
 
         catalogManager = new CatalogManager(properties);
+
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME", null);
+        List<ObjectMap> result;
+        String session;
+        try {
+            result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
+            session = result.get(0).getString("sessionId");
+            QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", null, session);
+            catalogManager.createStudy(project.getResult().get(0).getId(), "session 1", "s1", Study.Type.CONTROL_SET, "", session);
+        } catch (CatalogException | IOException ignore) {
+        }
+
     }
 
     @Before
     public void setUp() throws IOException, CatalogException {
         List<ObjectMap> result;
-
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME", null);
 
         try {
             result = catalogManager.login("user", PASSWORD, "127.0.0.1").getResult();
@@ -72,8 +82,6 @@ public class CatalogManagerTest extends GenericTest {
         } catch (CatalogException | IOException ignore) {
         }
 
-        QueryResult<Project> project = catalogManager.createProject("user", "project 1", "p1", "", "", null, sessionIdUser);
-        catalogManager.createStudy(project.getResult().get(0).getId(), "session 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser);
     }
 
     @After
@@ -157,7 +165,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.changeEmail("user", newEmail, sessionIdUser);
         catalogManager.changePassword("user", PASSWORD, newPassword, sessionIdUser);
 
-        List<User> userList = catalogManager.getUser("user", userPre.getLastActivity(), sessionIdUser).getResult();
+        List<User> userList = catalogManager.getUser("user", userPre.getLastActivity(), new QueryOptions("exclude", Arrays.asList("sessions")), sessionIdUser).getResult();
         if(userList.isEmpty()){
             fail("Error. LastActivity should have changed");
         }
@@ -170,6 +178,8 @@ public class CatalogManagerTest extends GenericTest {
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
+
+        catalogManager.changePassword("user", newPassword, PASSWORD, sessionIdUser);
 
         try {
             params = new ObjectMap();
@@ -264,8 +274,9 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateStudy() throws Exception {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        int projectId2 = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(1).getId();
         System.out.println(catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser));
-        QueryResult<Study> study = catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser);
+        QueryResult<Study> study = catalogManager.createStudy(projectId2, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser);
         System.out.println(study);
 
         QueryResult<Study> queryResult = catalogManager.getStudy(study.getResult().get(0).getId(), sessionIdUser,
@@ -315,8 +326,13 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateAndUpload() throws Exception {
-        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
+        List<Project> result = catalogManager.getAllProjects("user", null, sessionIdUser).getResult();
+        int projectId = result.get(0).getId();
+        int projectId2 = result.get(1).getId();
         int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
+        int studyId2 = catalogManager.getAllStudies(projectId2, null, sessionIdUser).getResult().get(0).getId();
+
+        CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
 
         FileInputStream is;
         java.io.File fileTest;
@@ -335,6 +351,19 @@ public class CatalogManagerTest extends GenericTest {
         is.close();
         fileTest.delete();
 
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        fileTest = createDebugFile();
+        QueryResult<File> fileQueryResult = catalogManager.createFile(
+                studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/folder/" + fileName, "description", true, -1, sessionIdUser);
+        catalogFileManager.upload(fileTest.toURI(), fileQueryResult.getResult().get(0), null, sessionIdUser, false, false, true, true);
+        fileTest.delete();
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        fileTest = createDebugFile();
+        fileQueryResult = catalogManager.createFile(
+                studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/" + fileName, "description", true, -1, sessionIdUser);
+        catalogFileManager.upload(fileTest.toURI(), fileQueryResult.getResult().get(0), null, sessionIdUser, false, false, true, true);
+        fileTest.delete();
     }
 
     @Test
@@ -396,9 +425,29 @@ public class CatalogManagerTest extends GenericTest {
             catalogManager.deleteFile(file.getId(), sessionIdUser);
         }
     }
+
+    @Test
+    public void testDeleteFolder () throws CatalogException, IOException {
+        int deletable = catalogManager.getFileId("user@1000G/phase1/data/deletable/");
+        QueryResult<File> allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser);
+        System.out.println("subfiles inside folder to delete:");
+        for (File file : allFilesInFolder.getResult()) {
+            System.out.println(file.getId() + ", " + file.getName() + ", " + file.getPath());
+        }
+        catalogManager.deleteFolder(deletable, sessionIdUser);
+
+        File file = catalogManager.getFile(deletable, sessionIdUser).getResult().get(0);
+        allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser);
+
+        assertTrue(file.getStatus() == File.Status.DELETING);
+        for (File subFile : allFilesInFolder.getResult()) {
+            assertTrue(subFile.getStatus() == File.Status.DELETING);
+        }
+    }
+
     /* TYPE_FILE UTILS */
     private java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest" + StringUtils.randomString(5);
+        String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
 
         os.writeBytes("Debug file name: " + fileTestName + "\n");
@@ -407,6 +456,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         for (int i = 0; i < 200; i++) {
             os.writeBytes(StringUtils.randomString(500));
+            os.write('\n');
         }
         os.close();
 
