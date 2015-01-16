@@ -418,6 +418,31 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testGetFileParent() throws CatalogException, IOException {
+        int fileId = catalogManager.getFileId("user@1000G:phase1:data/deletable/folder/");
+        System.out.println(catalogManager.getFile(fileId, null, sessionIdUser));
+        QueryResult<File> fileParent = catalogManager.getFileParent(fileId, null, sessionIdUser);
+        System.out.println(fileParent);
+
+        fileId = catalogManager.getFileId("user@1000G:phase1:data/deletable/folder/");
+        System.out.println(catalogManager.getFile(fileId, null, sessionIdUser));
+        fileParent = catalogManager.getFileParent(fileId, null, sessionIdUser);
+        System.out.println(fileParent);
+
+        fileId = catalogManager.getFileId("user@1000G:phase1:data/");
+        System.out.println(catalogManager.getFile(fileId, null, sessionIdUser));
+        fileParent = catalogManager.getFileParent(fileId, null, sessionIdUser);
+        System.out.println(fileParent);
+
+        fileId = catalogManager.getFileId("user@1000G:phase1:");
+        System.out.println(catalogManager.getFile(fileId, null, sessionIdUser));
+        fileParent = catalogManager.getFileParent(fileId, null, sessionIdUser);
+        System.out.println(fileParent);
+
+
+    }
+
+    @Test
     public void testDeleteFile () throws CatalogException, IOException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
         List<Study> studies = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult();

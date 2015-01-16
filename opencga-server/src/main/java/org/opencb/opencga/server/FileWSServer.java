@@ -264,7 +264,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 results.add(catalogManager.getFile(catalogManager.getFileId(id), this.getQueryOptions(), sessionId));
             }
             return createOkResponse(results);
-        } catch (CatalogException | IOException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -536,7 +536,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIdStr,
-                          @ApiParam(value = "outdir", required = true) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
+                          @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
                           @ApiParam(value = "storageEngine", required = false) @DefaultValue("") @QueryParam("storageEngine") String storageEngine
     ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
@@ -549,6 +549,10 @@ public class FileWSServer extends OpenCGAWSServer {
             storageEngine = storageEngine.toLowerCase();
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId = catalogManager.getFileId(fileIdStr);
+            if(outDirId < 0) {
+                QueryResult<File> queryResult = catalogManager.getFileParent(fileId, null, sessionId);
+                outDirId = queryResult.getResult().get(0).getId();
+            }
             index = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
 
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
@@ -604,7 +608,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
                 file = queryResult.getResult().get(0);
                 fileUri = catalogManager.getFileUri(file);
-            } catch (CatalogException | IOException e) {
+            } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e.getMessage());
             }
@@ -644,7 +648,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             baiFile = catalogManager.getFile(indexAttributes.getInt("baiFileId"), sessionId).getResult().get(0);
                             URI baiUri = catalogManager.getFileUri(baiFile);
                             queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
-                        } catch (IOException | CatalogException e) {
+                        } catch (CatalogException e) {
                             e.printStackTrace();
                             logger.error("Can't obtain bai file for file " + fileIdNum, e);
                         }

@@ -1263,13 +1263,29 @@ public class CatalogManager {
 //        return catalogDBAdaptor.setIndexFile(fileId, backend, index);
 //    }
 
+    public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        QueryResult<File> queryResult = getFile(fileId, null, sessionId);
+
+        int studyId = getStudyIdByFileId(fileId);
+        File file = queryResult.getResult().get(0);
+        Path parent = Paths.get(file.getPath()).getParent();
+        String parentPath;
+        if(parent == null) {
+            parentPath = "";
+        } else {
+            parentPath = parent.toString().endsWith("/")? parent.toString() : parent.toString() + "/";
+        }
+        return searchFile(studyId, new QueryOptions("path" , parentPath), sessionId);
+    }
+
     public QueryResult<File> getFile(int fileId, String sessionId)
-            throws IOException, CatalogIOManagerException, CatalogException {
+            throws CatalogException {
         return getFile(fileId, null, sessionId);
     }
 
     public QueryResult<File> getFile(int fileId, QueryOptions options, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException {
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
