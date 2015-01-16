@@ -17,8 +17,6 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  */
 public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, DBObject> {
 
-    public final static String ANNOTATION_FIELD = "annot";
-
     public final static String ID_FIELD = "id";
     public final static String CONSEQUENCE_TYPE_FIELD = "ct";
 

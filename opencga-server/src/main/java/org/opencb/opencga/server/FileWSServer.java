@@ -651,6 +651,14 @@ public class FileWSServer extends OpenCGAWSServer {
 
                 case VARIANT: {
                     QueryOptions queryOptions = new QueryOptions();
+                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+                        List<String> values = entry.getValue();
+                        String csv = values.get(0);
+                        for (int i = 1; i < values.size(); i++) {
+                            csv += "," + values.get(i);
+                        }
+                        queryOptions.add(entry.getKey(), csv);
+                    }
                     queryOptions.put("interval", interval);
                     queryOptions.put("merge", true);
                     queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));

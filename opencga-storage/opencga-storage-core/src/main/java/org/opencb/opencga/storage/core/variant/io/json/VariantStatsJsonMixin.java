@@ -16,6 +16,10 @@ public abstract class VariantStatsJsonMixin {
     @JsonIgnore public abstract boolean isSNP();
     
     @JsonIgnore public abstract String getId();
-    
+
     @JsonIgnore public abstract VariantHardyWeinbergStats getHw();
+
+    @JsonIgnore public abstract boolean isTransition();
+
+    @JsonIgnore public abstract boolean isTransversion();
 }

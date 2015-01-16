@@ -143,6 +143,7 @@ public class OpenCGAWSServer {
         logger.debug(uriInfo.getRequestUri().toString());
         this.queryOptions = null;
         this.sessionIp = httpServletRequest.getRemoteAddr();
+        this.params = uriInfo.getQueryParameters();
     }
 
     protected QueryOptions getQueryOptions() {
