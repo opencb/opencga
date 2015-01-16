@@ -60,7 +60,7 @@ public class File {
     private Map<String, Object> attributes;
 
     /* Status */
-    public enum Status{
+    public enum Status {
         INDEXING,
         UPLOADING,
         UPLOADED,
@@ -75,7 +75,7 @@ public class File {
         INDEX
     }
 
-    public enum Format{
+    public enum Format {
         PLAIN,
         GZIP,
         BINARY,
@@ -83,28 +83,36 @@ public class File {
         IMAGE
     }
 
-    public enum Bioformat{
-       MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-       MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
-       MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
-       MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
-       MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
-       DATAMATRIX_EXPRESSION,
-       DATAMATRIX_SNP,
-       IDLIST_GENE,
-       IDLIST_TRANSCRIPT,
-       IDLIST_PROTEIN,
-       IDLIST_SNP,
-       IDLIST_FUNCTIONALTERMS,
-       IDLIST_RANKED,
-       ANNOTATION_GENEVSANNOTATION,
+    public enum Bioformat {
+        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
+        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
+        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
+        DATAMATRIX_EXPRESSION,
+        DATAMATRIX_SNP,
+        IDLIST_GENE,
+        IDLIST_TRANSCRIPT,
+        IDLIST_PROTEIN,
+        IDLIST_SNP,
+        IDLIST_FUNCTIONALTERMS,
+        IDLIST_RANKED,
+        ANNOTATION_GENEVSANNOTATION,
+
+        OTHER_NEWICK,
+        OTHER_BLAST,
+        OTHER_INTERACTION,
+        OTHER_GENOTYPE,
+        OTHER_PLINK,
+        OTHER_VCF,
+
 
         VARIANT,
         ALIGNMENT,
         SEQUENCE,
         VCF4,
         NONE
-    }
+        }
 
 //    public static final String INDEXING = "indexing";
 //    public static final String UPLOADING = "uploading";

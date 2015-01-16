@@ -23,10 +23,6 @@
                 {
                     "name": "datafile",
                     "dataType": "txt"
-                },
-                {
-                    "name": "edfile",
-                    "dataType": "txt"
                 }
             ],
             "outputParam": "outdir",
@@ -42,7 +38,12 @@
                     "required": "true"
                 },
                 {
-                    "name": "edfile",
+                    "name": "pvmet",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "pval",
                     "description": "",
                     "required": "true"
                 }
