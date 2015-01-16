@@ -898,9 +898,9 @@ public class CatalogManager {
             }
         }
 
-        if (status != File.Status.UPLOADING) {
+        if (status != File.Status.UPLOADING && status != File.Status.INDEXING) {
             if (!getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING");
+                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING and INDEXING");
             }
         }
 
