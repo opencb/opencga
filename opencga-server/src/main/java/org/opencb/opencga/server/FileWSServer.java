@@ -209,7 +209,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
                         file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
-                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId, getQueryOptions());
+                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, getQueryOptions(), sessionId);
 //                file = fileQueryResult.getResult().get(0);
                 System.out.println("fileQueryResult = " + fileQueryResult);
                 queryResults.add(fileQueryResult);
@@ -672,6 +672,14 @@ public class FileWSServer extends OpenCGAWSServer {
 
                 case VARIANT: {
                     QueryOptions queryOptions = new QueryOptions();
+                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+                        List<String> values = entry.getValue();
+                        String csv = values.get(0);
+                        for (int i = 1; i < values.size(); i++) {
+                            csv += "," + values.get(i);
+                        }
+                        queryOptions.add(entry.getKey(), csv);
+                    }
                     queryOptions.put("interval", interval);
                     queryOptions.put("merge", true);
                     queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));

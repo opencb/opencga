@@ -4,40 +4,40 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by imedina on 24/11/14.
+ * Created by jacobo on 17/12/14.
  */
-public class Dataset {
+public class Cohort {
 
     private int id;
     private String name;
     private String creationDate;
     private String description;
 
-    private List<Integer> files;
+    private List<Integer> samples;
 
     private Map<String, Object> attributes;
 
-    public Dataset() {
+    public Cohort() {
     }
 
-    public Dataset(int id, String name, String creationDate, String description, List<Integer> files,
-                   Map<String, Object> attributes) {
+    public Cohort(int id, String name, String creationDate, String description, List<Integer> samples,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
         this.description = description;
-        this.files = files;
+        this.samples = samples;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Dataset{" +
+        return "Cohort{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", creationDate='" + creationDate + '\'' +
                 ", description='" + description + '\'' +
-                ", files=" + files +
+                ", samples=" + samples +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -74,12 +74,12 @@ public class Dataset {
         this.description = description;
     }
 
-    public List<Integer> getFiles() {
-        return files;
+    public List<Integer> getSamples() {
+        return samples;
     }
 
-    public void setFiles(List<Integer> files) {
-        this.files = files;
+    public void setSamples(List<Integer> samples) {
+        this.samples = samples;
     }
 
     public Map<String, Object> getAttributes() {

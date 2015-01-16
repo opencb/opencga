@@ -44,7 +44,7 @@ public class AnalysisJobExecuter {
     protected static ObjectMapper jsonObjectMapper  = new ObjectMapper();
 
     private AnalysisJobExecuter() throws  IOException, AnalysisExecutionException {
-        home = Config.getGcsaHome();
+        home = Config.getOpenCGAHome();
         analysisProperties = Config.getAnalysisProperties();
         executionName = null;
     }

@@ -29,6 +29,9 @@ public class Study {
     private List<Job> jobs;
     private List<Sample> samples;
 
+    private List<Dataset> datasets;
+    private List<Cohort> cohorts;
+
     private List<VariableSet> variableSets;
 
     private URI uri;
@@ -58,12 +61,13 @@ public class Study {
     public Study(String name, String alias, Type type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
-                new LinkedList<Sample>(), new LinkedList<VariableSet>(), uri, new HashMap<String, Object>(), new HashMap<String, Object>());
+                new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(), uri, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
                  String description, String status, String lastActivity, long diskUsage, String cipher, List<Acl> acl,
-                 List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<VariableSet> variableSets, URI uri,
+                 List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
+                 List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -81,6 +85,8 @@ public class Study {
         this.files = files;
         this.jobs = jobs;
         this.samples = samples;
+        this.datasets = datasets;
+        this.cohorts = cohorts;
         this.variableSets = variableSets;
         this.uri = uri;
         this.stats = stats;
@@ -106,6 +112,8 @@ public class Study {
                 ", files=" + files +
                 ", jobs=" + jobs +
                 ", samples=" + samples +
+                ", datasets=" + datasets +
+                ", cohorts=" + cohorts +
                 ", variableSets=" + variableSets +
                 ", uri=" + uri +
                 ", stats=" + stats +
@@ -239,6 +247,22 @@ public class Study {
 
     public void setSamples(List<Sample> samples) {
         this.samples = samples;
+    }
+
+    public List<Dataset> getDatasets() {
+        return datasets;
+    }
+
+    public void setDatasets(List<Dataset> datasets) {
+        this.datasets = datasets;
+    }
+
+    public List<Cohort> getCohorts() {
+        return cohorts;
+    }
+
+    public void setCohorts(List<Cohort> cohorts) {
+        this.cohorts = cohorts;
     }
 
     public List<VariableSet> getVariableSets() {

@@ -8,7 +8,7 @@ import java.util.Set;
  */
 public class AnnotationSet {
 
-    private String name;
+    private String id;
     private int variableSetId;
     private Set<Annotation> annotations;
     private String date;
@@ -19,19 +19,9 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String name, Set<Annotation> annotations) {
-        this.name = name;
-        this.annotations = annotations;
-    }
-
-    public AnnotationSet(String name, Set<Annotation> annotations, String date) {
-        this.name = name;
-        this.annotations = annotations;
-        this.date = date;
-    }
-
-    public AnnotationSet(String name, int variableSetId, Set<Annotation> annotations, String date, Map<String, Object> attributes) {
-        this.name = name;
+    public AnnotationSet(String id, int variableSetId, Set<Annotation> annotations, String date,
+                         Map<String, Object> attributes) {
+        this.id = id;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
         this.date = date;
@@ -41,7 +31,7 @@ public class AnnotationSet {
     @Override
     public String toString() {
         return "AnnotationSet{" +
-                "name='" + name + '\'' +
+                "id='" + id + '\'' +
                 ", variableSetId=" + variableSetId +
                 ", annotations=" + annotations +
                 ", date='" + date + '\'' +
@@ -49,12 +39,12 @@ public class AnnotationSet {
                 '}';
     }
 
-    public String getName() {
-        return name;
+    public String getId() {
+        return id;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public int getVariableSetId() {

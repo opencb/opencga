@@ -119,8 +119,8 @@ public class CatalogFileManager {
             //Update file
             ObjectMap parameters = new ObjectMap();
             parameters.put("status", File.Status.READY);
-            parameters.put("diskUsage", size);
-            parameters.put("creationDate", creationDate);
+//            parameters.put("diskUsage", size);  // TODO
+//            parameters.put("creationDate", creationDate);
             parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);

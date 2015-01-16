@@ -29,7 +29,6 @@ public class JobWSServer extends OpenCGAWSServer {
 
     public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
-        params = uriInfo.getQueryParameters();
     }
 
 //    @GET

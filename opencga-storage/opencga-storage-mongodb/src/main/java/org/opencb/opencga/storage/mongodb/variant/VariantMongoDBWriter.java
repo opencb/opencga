@@ -8,8 +8,8 @@ import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.effect.ConsequenceTypeMappings;
-import org.opencb.biodata.models.variant.effect.VariantEffect;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.annotation.VariantEffect;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 
@@ -78,8 +78,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         
         conseqTypes = new LinkedHashMap<>();
         samples = new ArrayList<>();
-        
-        setConverters(this.includeStats, this.includeSamples, this.includeEffect);
+
         
         numVariantsWritten = 0;
     }
@@ -110,6 +109,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         filesCollection = db.getCollection(filesCollectionName);
         variantsCollection = db.getCollection(variantsCollectionName);
 
+        setConverters(this.includeStats, this.includeSamples, this.includeEffect);
         return variantsCollection != null && filesCollection != null;
     }
 
@@ -269,7 +269,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                 // TODO How to do this efficiently, inserting all files at once?
                 for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
                     DBObject mongoFile = mongoFileMap.get(rowkey + "_" + archiveFile.getFileId());
-                    BasicDBObject changes = new BasicDBObject().append("$addToSet", 
+                    BasicDBObject changes = new BasicDBObject().append("$addToSet",
                             new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, mongoFile));
                     
                     wr = variantsCollection.update(query, changes, true, false);
@@ -316,19 +316,16 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     @Override
     public final void includeStats(boolean b) {
         includeStats = b;
-        setConverters(includeStats, includeSamples, includeEffect);
     }
 
     @Override
     public final void includeSamples(boolean b) {
         includeSamples = b;
-        setConverters(includeStats, includeSamples, includeEffect);
     }
 
     @Override
     public final void includeEffect(boolean b) {
         includeEffect = b;
-        setConverters(includeStats, includeSamples, includeEffect);
     }
 
     private void setConverters(boolean includeStats, boolean includeSamples, boolean includeEffect) {
@@ -345,7 +342,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             default:
                 compressSamples = true;
         }
-        
+
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
         // TODO Allow to configure samples compression

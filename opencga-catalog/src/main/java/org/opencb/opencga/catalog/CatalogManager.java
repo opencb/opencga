@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.MongoCredential;
+import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -389,7 +390,7 @@ public class CatalogManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        if (options == null || !options.containsKey("include") || !options.containsKey("exclude")) {
+        if (options == null || !options.containsKey("include") && !options.containsKey("exclude")) {
             options.put("exclude", Arrays.asList("password", "sessions"));
         }
 //        if(options.containsKey("exclude")) {
@@ -664,8 +665,8 @@ public class CatalogManager {
         files.add(new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0));
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<VariableSet>(),
-                null, stats, attributes);
+                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
+                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, stats, attributes);
 
 
         /* CreateStudy */
@@ -841,7 +842,7 @@ public class CatalogManager {
                                         boolean parents, int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
         return createFile(studyId, File.Type.FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
-                jobId, null, null, parents, sessionId, null);
+                jobId, null, null, parents, null, sessionId);
     }
 
 
@@ -849,7 +850,7 @@ public class CatalogManager {
                                         String ownerId, String creationDate, String description, File.Status status,
                                         long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
                                         Map<String, Object> stats, Map<String, Object> attributes,
-                                        boolean parents, String sessionId, QueryOptions options)
+                                        boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(sessionId, "sessionId");
@@ -1065,20 +1066,15 @@ public class CatalogManager {
         return result;
     }
 
-    public QueryResult deleteFile(int fileId, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
-        return deleteDataFromStudy(fileId, sessionId);
-    }
 
     public QueryResult deleteFolder(int folderId, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
+            throws CatalogException, IOException {
         return deleteFile(folderId, sessionId);
     }
 
-    @Deprecated
-    private QueryResult deleteDataFromStudy(int fileId, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
-        //TODO: Save delete: Don't delete. Just rename file and set {deleted:true}
+    public QueryResult deleteFile(int fileId, String sessionId)
+            throws CatalogException, IOException {
+        //Safe delete: Don't delete. Just rename file and set {deleting:true}
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -1123,7 +1119,14 @@ public class CatalogManager {
 
         switch (file.getType()) {
             case FOLDER:
-                throw new UnsupportedOperationException("Unsupported deleting folder");
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
+
+                QueryResult<File> allFilesInFolder = catalogDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
+                for (File subfile : allFilesInFolder.getResult()) {
+                    deleteFile(subfile.getId(), sessionId);
+                }
+                return queryResult;
             case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
@@ -1166,25 +1169,40 @@ public class CatalogManager {
         }
         QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
         if (fileResult.getResult().isEmpty()) {
-            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
+            return new QueryResult("Rename file", 0, 0, 0, "File not found", null, null);
         }
         File file = fileResult.getResult().get(0);
-        System.out.println("file = " + file);
+//        System.out.println("file = " + file);
 
-        String newPath = Paths.get(file.getPath()).getParent().resolve(newName).toString();
+        String oldPath = file.getPath();
+        Path parent = Paths.get(oldPath).getParent();
+        String newPath;
+        if (parent == null) {
+            newPath = newName;
+        } else {
+            newPath = parent.resolve(newName).toString();
+        }
 
         catalogDBAdaptor.updateUserLastActivity(ownerId);
+        QueryResult<Study> studyQueryResult;
+        Study study;
+        CatalogIOManager catalogIOManager;
         switch (file.getType()) {
             case FOLDER:
-                throw new UnsupportedOperationException("Unsupported folder renaming");
+                studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);   // TODO? check if something in the subtree is not READY?
+                study = studyQueryResult.getResult().get(0);
+                catalogIOManager = catalogIOManagerFactory.get(study.getUri());
+                catalogIOManager.rename(getFileUri(study.getUri(), oldPath), getFileUri(study.getUri(), newPath));   // io.move() 1
+                QueryResult queryResult = catalogDBAdaptor.renameFile(fileId, newPath);
+                return queryResult;
             case FILE:
-                QueryResult<Study> studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
-                Study study = studyQueryResult.getResult().get(0);
-                CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(study.getUri());
+                studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
+                study = studyQueryResult.getResult().get(0);
+                catalogIOManager = catalogIOManagerFactory.get(study.getUri());
                 catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
                 return catalogDBAdaptor.renameFile(fileId, newPath);
             case INDEX:
-                return catalogDBAdaptor.renameFile(fileId, newName);
+                return catalogDBAdaptor.renameFile(fileId, newPath);
         }
 
         return null;
@@ -1389,6 +1407,44 @@ public class CatalogManager {
         return catalogDBAdaptor.searchFile(query, options);
     }
 
+    public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
+                                              Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        checkParameter(name, "name");
+        checkObj(files, "files");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        }
+        for (Integer fileId : files) {
+            if(catalogDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
+                throw new CatalogException("Can't create a dataset with files from different files.");
+            }
+            if (!getFileAcl(userId, fileId).isRead()) {
+                throw new CatalogException("Permission denied. User " + userId + " can't read the file " + fileId);
+            }
+        }
+
+        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
+
+        return catalogDBAdaptor.createDataset(studyId, dataset, options);
+    }
+
+    public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByDatasetId(dataSetId);
+
+        if (!getStudyAcl(userId, studyId).isWrite()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        }
+
+        return catalogDBAdaptor.getDataset(dataSetId, options);
+    }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
 //            throws CatalogIOManagerException, IOException, CatalogManagerException {
@@ -1942,7 +1998,8 @@ public class CatalogManager {
      * ***************************
      */
 
-    public QueryResult<Sample> createSample(int studyId, String name, String source, String description, String sessionId)
+    public QueryResult<Sample> createSample(int studyId, String name, String source, String description,
+                                            Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
@@ -1954,9 +2011,10 @@ public class CatalogManager {
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
-        Sample sample = new Sample(-1, name, source, null, studyId, description);
+        Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
+                attributes);
 
-        return catalogDBAdaptor.createSample(studyId, sample);
+        return catalogDBAdaptor.createSample(studyId, sample, options);
     }
 
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
@@ -1984,31 +2042,72 @@ public class CatalogManager {
         return catalogDBAdaptor.getAllSamples(studyId, options);
     }
 
-    public QueryResult<VariableSet> createVariableSet(int studyId, String alias, String name, Set<Variable> variables,
-                                                      String sessionId)
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      List<Variable> variables, String sessionId)
+            throws CatalogException {
+
+        checkObj(variables, "Variables List");
+        Set<Variable> variablesSet = new HashSet<>(variables);
+        if(variables.size() != variablesSet.size()) {
+            throw new CatalogException("Error. Repeated variables");
+        }
+        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
+    }
+
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      Set<Variable> variables, String sessionId)
             throws CatalogException {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
-        checkAlias(alias, "alias");
-        checkObj(variables, "Variables List");
+        checkObj(variables, "Variables Set");
+        unique = defaultObject(unique, true);
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, new HashMap<String, Object>());
+
+        for (Variable variable : variables) {
+            checkParameter(variable.getId(), "variable ID");
+            checkObj(variable.getType(), "variable Type");
+            variable.setAllowedValues(defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
+            variable.setAttributes(defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
+            variable.setCategory(defaultString(variable.getCategory(), ""));
+            variable.setDependsOn(defaultString(variable.getDependsOn(), ""));
+            variable.setDescription(defaultString(variable.getDescription(), ""));
+//            variable.setRank(defaultString(variable.getDescription(), ""));
+        }
 
         if (!getStudyAcl(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
-        VariableSet variableSet = new VariableSet(-1, alias, name, variables);
+
+        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
         CatalogSampleAnnotations.checkVariableSet(variableSet);
 
         return catalogDBAdaptor.createVariableSet(studyId, variableSet);
     }
 
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, String name, int variableSetId,
+    public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
+            throws CatalogException {
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = catalogDBAdaptor.getStudyIdByVariableSetId(variableSet);
+        if (!getStudyAcl(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+
+        return catalogDBAdaptor.getVariableSet(variableSet, options);
+    }
+
+
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
                                                      String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
+        checkParameter(id, "id");
         checkObj(annotations, "annotations");
         attributes = defaultObject(attributes, new HashMap<String, Object>());
 
@@ -2024,13 +2123,16 @@ public class CatalogManager {
         }
         VariableSet variableSet = variableSetResult.getResult().get(0);
 
-        AnnotationSet annotationSet = new AnnotationSet(name, variableSetId, new HashSet<Annotation>(), TimeUtils.getTime(), attributes);
+        AnnotationSet annotationSet = new AnnotationSet(id, variableSetId, new HashSet<Annotation>(), TimeUtils.getTime(), attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
         }
+        QueryResult<Sample> sampleQueryResult = catalogDBAdaptor.getSample(sampleId,
+                new QueryOptions("include", Collections.singletonList("annotationSets")));
 
-        CatalogSampleAnnotations.checkAnnotationSet(variableSet, annotationSet);
+        List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
+        CatalogSampleAnnotations.checkAnnotationSet(variableSet, annotationSet, annotationSets);
 
         return catalogDBAdaptor.annotateSample(sampleId, annotationSet);
     }

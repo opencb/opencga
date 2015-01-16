@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
@@ -33,9 +34,11 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String EFFECTS_FIELD = "effs";
     public final static String SOTERM_FIELD = "so";
     public final static String GENE_FIELD = "gene";
-    
-    
+    public final static String ANNOTATION_FIELD = "annot";
+
+
     private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
+    private DBObjectToVariantAnnotationConverter variantAnnotationConverter;
 
     /**
      * Create a converter between Variant and DBObject entities when there is 
@@ -54,6 +57,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
      */
     public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter archivedVariantFileConverter) {
         this.archivedVariantFileConverter = archivedVariantFileConverter;
+        this.variantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
     }
     
     
@@ -79,6 +83,13 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
                     variant.addSourceEntry(archivedVariantFileConverter.convertToDataModelType(dbo));
                 }
             }
+        }
+
+        // Annotations
+        DBObject mongoAnnotation = (DBObject) object.get(ANNOTATION_FIELD);
+        if (mongoAnnotation != null) {
+            VariantAnnotation annotation = variantAnnotationConverter.convertToDataModelType(mongoAnnotation);
+            variant.setAnnotation(annotation);
         }
         return variant;
     }
@@ -124,28 +135,35 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             mongoVariant.append(FILES_FIELD, mongoFiles);
         }
         
-        // TODO Effects
-        
+        // Annotations
+        if (object.getAnnotation() != null) {
+            DBObject annotation = variantAnnotationConverter.convertToStorageType(object.getAnnotation());
+            mongoVariant.append(ANNOTATION_FIELD, annotation);
+        }
         return mongoVariant;
     }
 
     public String buildStorageId(Variant v) {
-        StringBuilder builder = new StringBuilder(v.getChromosome());
+        return buildStorageId(v.getChromosome(), v.getStart(), v.getReference(), v.getAlternate());
+    }
+
+    public String buildStorageId(String chromosome, int start, String reference, String alternate) {
+        StringBuilder builder = new StringBuilder(chromosome);
         builder.append("_");
-        builder.append(v.getStart());
+        builder.append(start);
         builder.append("_");
-        if (v.getReference().length() < Variant.SV_THRESHOLD) {
-            builder.append(v.getReference());
+        if (reference.length() < Variant.SV_THRESHOLD) {
+            builder.append(reference);
         } else {
-            builder.append(new String(CryptoUtils.encryptSha1(v.getReference())));
+            builder.append(new String(CryptoUtils.encryptSha1(reference)));
         }
         
         builder.append("_");
         
-        if (v.getAlternate().length() < Variant.SV_THRESHOLD) {
-            builder.append(v.getAlternate());
+        if (alternate.length() < Variant.SV_THRESHOLD) {
+            builder.append(alternate);
         } else {
-            builder.append(new String(CryptoUtils.encryptSha1(v.getAlternate())));
+            builder.append(new String(CryptoUtils.encryptSha1(alternate)));
         }
             
         return builder.toString();

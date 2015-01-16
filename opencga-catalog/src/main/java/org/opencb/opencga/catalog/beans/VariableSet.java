@@ -1,6 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -8,19 +8,25 @@ import java.util.Set;
  */
 public class VariableSet {
 
-    public int id;
-    public String alias;
-    public String name;
+    //TODO Is this field really needed?
+    private int id;
+    private String name;
+    private boolean unique;
+    private String description;
+    private Set<Variable> variables;
 
-    public Set<Variable> variables;
+    private Map<String, Object> attributes;
 
     public VariableSet() {
     }
 
-    public VariableSet(int id, String alias, String name, Set<Variable> variables) {
+    public VariableSet(int id, String name, boolean unique, String description, Set<Variable> variables,
+                       Map<String, Object> attributes) {
         this.id = id;
-        this.alias = alias;
         this.name = name;
+        this.unique = unique;
+        this.description = description;
+        this.attributes = attributes;
         this.variables = variables;
     }
 
@@ -28,9 +34,11 @@ public class VariableSet {
     public String toString() {
         return "VariableSet{" +
                 "id=" + id +
-                ", alias='" + alias + '\'' +
                 ", name='" + name + '\'' +
+                ", unique=" + unique +
+                ", description='" + description + '\'' +
                 ", variables=" + variables +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -42,14 +50,6 @@ public class VariableSet {
         this.id = id;
     }
 
-    public String getAlias() {
-        return alias;
-    }
-
-    public void setAlias(String alias) {
-        this.alias = alias;
-    }
-
     public String getName() {
         return name;
     }
@@ -58,11 +58,35 @@ public class VariableSet {
         this.name = name;
     }
 
+    public boolean isUnique() {
+        return unique;
+    }
+
+    public void setUnique(boolean unique) {
+        this.unique = unique;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public Set<Variable> getVariables() {
         return variables;
     }
 
     public void setVariables(Set<Variable> variables) {
         this.variables = variables;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

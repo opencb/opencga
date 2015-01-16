@@ -22,16 +22,12 @@ public class Variable {
      * Example for numeric range: -3:5
      * Example for categorical values: T,F
      */
-    private List<String> acceptedValues;
-
-    private String rank;
+    private List<String> allowedValues;
+    private int rank;
     private String dependsOn;
-
     private String description;
 
     private Map<String, Object> attributes;
-
-//    private boolean allowed;
 
     public enum VariableType {
         BOOLEAN,
@@ -44,13 +40,14 @@ public class Variable {
     }
 
     public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
-                    List<String> acceptedValues, String rank, String dependsOn, String description, Map<String, Object> attributes) {
+                    List<String> allowedValues, int rank, String dependsOn, String description,
+                    Map<String, Object> attributes) {
         this.id = id;
         this.category = category;
         this.type = type;
         this.defaultValue = defaultValue;
         this.required = required;
-        this.acceptedValues = acceptedValues;
+        this.allowedValues = allowedValues;
         this.rank = rank;
         this.dependsOn = dependsOn;
         this.description = description;
@@ -65,8 +62,8 @@ public class Variable {
                 ", type=" + type +
                 ", defaultValue=" + defaultValue +
                 ", required=" + required +
-                ", acceptedValues=" + acceptedValues +
-                ", rank='" + rank + '\'' +
+                ", allowedValues=" + allowedValues +
+                ", rank=" + rank +
                 ", dependsOn='" + dependsOn + '\'' +
                 ", description='" + description + '\'' +
                 ", attributes=" + attributes +
@@ -89,6 +86,7 @@ public class Variable {
     public int hashCode() {
         return id.hashCode();
     }
+
 
     public String getId() {
         return id;
@@ -130,19 +128,19 @@ public class Variable {
         this.required = required;
     }
 
-    public List<String> getAcceptedValues() {
-        return acceptedValues;
+    public List<String> getAllowedValues() {
+        return allowedValues;
     }
 
-    public void setAcceptedValues(List<String> acceptedValues) {
-        this.acceptedValues = acceptedValues;
+    public void setAllowedValues(List<String> allowedValues) {
+        this.allowedValues = allowedValues;
     }
 
-    public String getRank() {
+    public int getRank() {
         return rank;
     }
 
-    public void setRank(String rank) {
+    public void setRank(int rank) {
         this.rank = rank;
     }
 

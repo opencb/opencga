@@ -82,7 +82,7 @@ public class AnalysisFileIndexer {
         QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
                 file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
                 "Indexation of " + file.getName() + " (" + fileId + ")", File.Status.INDEXING, 0, -1, null, -1, null,
-                indexAttributes, false, sessionId, null);
+                indexAttributes, false, null, sessionId);
         File index = indexQueryResult.getResult().get(0);
 
         //Create job

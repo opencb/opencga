@@ -61,7 +61,7 @@ public class StorageManagerFactory {
             // Specific VariantStorageManager is created by reflection using the Class name from the properties file.
             // The conf file is passed to the storage engine
             T storageManager = (T) Class.forName(storageManagerClassName).newInstance();
-            storageManager.addConfigUri(URI.create(Config.getGcsaHome() + "/").resolve("conf/").resolve(propertiesPath));
+            storageManager.addConfigUri(URI.create(Config.getOpenCGAHome() + "/").resolve("conf/").resolve(propertiesPath));
 
             storageManagerMap.put(storageEngineName, storageManager);
         }

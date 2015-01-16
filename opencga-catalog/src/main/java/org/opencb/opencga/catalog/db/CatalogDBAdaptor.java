@@ -107,9 +107,9 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Integer> deleteProject(int projecetId) throws CatalogDBException;
+    public abstract QueryResult<Integer> deleteProject(int projectId) throws CatalogDBException;
 
-    public abstract QueryResult renameProjectAlias(int projectId, String newprojectName) throws CatalogDBException;
+    public abstract QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
 
     public abstract QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 
@@ -171,7 +171,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<File> getFile(int fileId) throws CatalogDBException;
+    public QueryResult<File> getFile(int fileId) throws CatalogDBException { return getFile(fileId, null); }
     public abstract QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
@@ -189,6 +189,12 @@ public abstract class CatalogDBAdaptor {
     public abstract QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
     public abstract QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
+
+    public abstract QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
+
+    public abstract QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
+
+    public abstract int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 
     /**
      * Analysis methods
@@ -229,7 +235,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
-    public abstract int getStudyIdByJobId(int jobId);
+    public abstract int getStudyIdByJobId(int jobId) throws CatalogDBException;
 
     public abstract QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException;
 
@@ -262,7 +268,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract boolean sampleExists(int sampleId);
 
-    public abstract QueryResult<Sample> createSample(int studyId, Sample sample) throws CatalogDBException;
+    public abstract QueryResult<Sample> createSample(int studyId, Sample sample, QueryOptions options) throws CatalogDBException;
 
     public abstract QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
 
@@ -272,8 +278,13 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException;
 
-    public abstract int getStudyIdBySampleId(int sampleId);
+    public abstract int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
+    public abstract QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
+
+    public abstract QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
+
+    public abstract int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
     /**
      * Annotation Methods
@@ -284,8 +295,9 @@ public abstract class CatalogDBAdaptor {
 
     public abstract QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+    public abstract QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
 
+    public abstract int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
 
     /**
      * Util methods

@@ -27,7 +27,6 @@ public class User {
 
     private List<Project> projects;
     private List<Tool> tools;
-    private List<Dataset> datasets;
 
     /**
      * Open and closed sessions for this user.
@@ -55,13 +54,13 @@ public class User {
 
     public User(String id, String name, String email, String password, String organization, Role role, String status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
-                new ArrayList<Tool>(0), new ArrayList<Dataset>(0), new ArrayList<Session>(0),
+                new ArrayList<Tool>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public User(String id, String name, String email, String password, String organization, Role role, String status,
                 String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
-                List<Dataset> datasets, List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
+                List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -74,7 +73,6 @@ public class User {
         this.diskQuota = diskQuota;
         this.projects = projects;
         this.tools = tools;
-        this.datasets = datasets;
         this.sessions = sessions;
         this.configs = configs;
         this.attributes = attributes;
@@ -95,7 +93,6 @@ public class User {
                 ", diskQuota=" + diskQuota +
                 ", projects=" + projects +
                 ", tools=" + tools +
-                ", datasets=" + datasets +
                 ", sessions=" + sessions +
                 ", configs=" + configs +
                 ", attributes=" + attributes +
@@ -196,14 +193,6 @@ public class User {
 
     public void setTools(List<Tool> tools) {
         this.tools = tools;
-    }
-
-    public List<Dataset> getDatasets() {
-        return datasets;
-    }
-
-    public void setDatasets(List<Dataset> datasets) {
-        this.datasets = datasets;
     }
 
     public List<Session> getSessions() {
