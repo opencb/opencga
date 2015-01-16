@@ -364,6 +364,13 @@ public class CatalogManagerTest extends GenericTest {
                 studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/" + fileName, "description", true, -1, sessionIdUser);
         catalogFileManager.upload(fileTest.toURI(), fileQueryResult.getResult().get(0), null, sessionIdUser, false, false, true, true);
         fileTest.delete();
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        fileTest = createDebugFile();
+        fileQueryResult = catalogManager.createFile(
+                studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "" + fileName, "file at root", true, -1, sessionIdUser);
+        catalogFileManager.upload(fileTest.toURI(), fileQueryResult.getResult().get(0), null, sessionIdUser, false, false, true, true);
+        fileTest.delete();
     }
 
     @Test
@@ -413,16 +420,44 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testDeleteFile () throws CatalogException, IOException, CatalogIOManagerException {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
-        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0).getId();
+        List<Study> studies = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult();
+        int studyId = studies.get(0).getId();
+
         List<File> result = catalogManager.getAllFiles(studyId, null, sessionIdUser).getResult();
         File file = null;
-        for (int i = 0; i < result.size(); i++) {
-            if (result.get(i).getType().equals(File.Type.FILE)) {
-                file = result.get(i);
+        try {
+            for (int i = 0; i < result.size(); i++) {
+                if (result.get(i).getType().equals(File.Type.FILE)) {
+                    file = result.get(i);
+                }
             }
+            if (file != null) {
+                System.out.println("deleteing " + file.getPath());
+                catalogManager.deleteFile(file.getId(), sessionIdUser);
+            }
+        } catch (CatalogException e) {
+            System.out.println(e.getMessage());
         }
-        if (file != null) {
-            catalogManager.deleteFile(file.getId(), sessionIdUser);
+
+        int projectId2 = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(1).getId();
+        List<Study> studies2 = catalogManager.getAllStudies(projectId2, null, sessionIdUser).getResult();
+        int studyId2 = studies2.get(0).getId();
+        result = catalogManager.getAllFiles(studyId2, null, sessionIdUser).getResult();
+
+        file = null;
+
+        try {
+            for (int i = 0; i < result.size(); i++) {
+                if (result.get(i).getType().equals(File.Type.FILE)) {
+                    file = result.get(i);
+                }
+            }
+            if (file != null) {
+                System.out.println("deleteing " + file.getPath());
+                catalogManager.deleteFile(file.getId(), sessionIdUser);
+            }
+        } catch (CatalogException e) {
+            System.out.println(e.getMessage());
         }
     }
 

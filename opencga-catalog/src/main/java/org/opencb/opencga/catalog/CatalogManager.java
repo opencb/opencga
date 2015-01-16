@@ -1175,7 +1175,13 @@ public class CatalogManager {
 //        System.out.println("file = " + file);
 
         String oldPath = file.getPath();
-        String newPath = Paths.get(oldPath).getParent().resolve(newName).toString();
+        Path parent = Paths.get(oldPath).getParent();
+        String newPath;
+        if (parent == null) {
+            newPath = newName;
+        } else {
+            newPath = parent.resolve(newName).toString();
+        }
 
         catalogDBAdaptor.updateUserLastActivity(ownerId);
         QueryResult<Study> studyQueryResult;
