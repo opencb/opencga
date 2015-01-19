@@ -94,7 +94,9 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         /** Open output stream **/
         OutputStream outputStream;
         outputStream = new FileOutputStream(path.toFile());
-        outputStream = new GZIPOutputStream(outputStream);
+        if(options != null && options.getBoolean("gzip", true)) {
+            outputStream = new GZIPOutputStream(outputStream);
+        }
 
         /** Innitialice Json serializer**/
         ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
@@ -109,17 +111,20 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             }
         }
 
+        Variant variant = null;
         int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
         List<GenomicVariant> genomicVariantList = new ArrayList<>(batchSize);
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         while(iterator.hasNext()) {
-            Variant variant = iterator.next();
+            variant = iterator.next();
+
+            // If Variant is SV some work is needed
             if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
 //                logger.info("Skip variant! {}", genomicVariant);
                 logger.info("Skip variant! {}", variant.getChromosome() + ":" +
                                 variant.getStart() + ":" +
-                        (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
-                        (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
+                                (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
+                                (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
                 );
                 logger.debug("Skip variant! {}", variant);
             } else {
@@ -143,7 +148,6 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
 
         outputStream.close();
-
         return fileUri;
     }
 
@@ -202,6 +206,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         return variantAnnotationList;
     }
 
+    // FIXME To delete when available in cellbase
     private Map<String, List<ConsequenceType>> getConsequenceTypes(List<GenomicVariant> genomicVariants, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
         Map<String, List<ConsequenceType>> map = new HashMap<>(genomicVariants.size());
 
@@ -220,6 +225,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         return map;
     }
 
+    // FIXME To delete when available in cellbase
     private Map<String, String> getVariantId(List<GenomicVariant> genomicVariant, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
         List<org.opencb.cellbase.core.lib.dbquery.QueryResult> variationQueryResultList =
                 variationDBAdaptor.getIdByVariantList(genomicVariant, queryOptions);
