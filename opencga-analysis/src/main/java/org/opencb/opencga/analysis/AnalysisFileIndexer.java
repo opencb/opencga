@@ -40,6 +40,11 @@ import java.util.*;
  */
 public class AnalysisFileIndexer {
 
+    //Indexed file attributes
+    public static final String INDEXED_FILE = "indexedFile";
+    public static final String DB_NAME = "dbName";
+    public static final String STORAGE_ENGINE = "storageEngine";
+
     private final Properties properties;
     private final CatalogManager catalogManager;
 
@@ -166,9 +171,9 @@ public class AnalysisFileIndexer {
         } else {
             return null;
         }
-        indexAttributes.put("indexedFile", file.getId());
-        indexAttributes.put("dbName", dbName);
-        indexAttributes.put("storageEngine", storageEngine);
+        indexAttributes.put(INDEXED_FILE, file.getId());
+        indexAttributes.put(DB_NAME, dbName);
+        indexAttributes.put(STORAGE_ENGINE, storageEngine);
 
         return commandLine;
     }
