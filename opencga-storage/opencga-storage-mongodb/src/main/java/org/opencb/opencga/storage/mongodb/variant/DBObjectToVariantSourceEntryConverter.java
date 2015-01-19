@@ -53,10 +53,10 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * @param samples The list of samples, if any
      * @param statsConverter The object used to convert the file statistics
      */
-    public DBObjectToVariantSourceEntryConverter(boolean compressSamples, List<String> samples, 
+    public DBObjectToVariantSourceEntryConverter(boolean compressSamples, boolean defaultValue, List<String> samples,
             DBObjectToVariantStatsConverter statsConverter) {
         this.samples = samples;
-        this.samplesConverter = new DBObjectToSamplesConverter(compressSamples);
+        this.samplesConverter = new DBObjectToSamplesConverter(compressSamples, defaultValue);
         this.statsConverter = statsConverter;
     }
     

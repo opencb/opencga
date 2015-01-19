@@ -330,10 +330,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     private void setConverters(boolean includeStats, boolean includeSamples, boolean includeEffect) {
         boolean compressSamples;
+        boolean defaultValue;
         switch (source.getType()) {
             case FAMILY:
             case TRIO:
-                compressSamples = false;
+                compressSamples = true;
+                defaultValue = false;
                 break;
             case CONTROL:
             case CASE:
@@ -341,13 +343,14 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             case COLLECTION:
             default:
                 compressSamples = true;
+                defaultValue = true;
         }
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
         // TODO Allow to configure samples compression
         archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(
-                compressSamples,
+                compressSamples, defaultValue,
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);
         // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
