@@ -689,6 +689,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     queryOptions.put("interval", interval);
                     queryOptions.put("merge", true);
                     queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+                    queryOptions.put("fileId", Integer.toString(fileIdNum));
 //                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
 //                    queryOptions.put("include", Arrays.asList(include.split(",")));
 
