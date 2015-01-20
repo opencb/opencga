@@ -135,11 +135,13 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             mongoVariant.append(FILES_FIELD, mongoFiles);
         }
         
-        // Annotations
-        if (object.getAnnotation() != null) {
-            DBObject annotation = variantAnnotationConverter.convertToStorageType(object.getAnnotation());
-            mongoVariant.append(ANNOTATION_FIELD, annotation);
-        }
+//        // Annotations
+//        if (variantAnnotationConverter != null) {
+//            if (object.getAnnotation() != null) {
+//                DBObject annotation = variantAnnotationConverter.convertToStorageType(object.getAnnotation());
+//                mongoVariant.append(ANNOTATION_FIELD, annotation);
+//            }
+//        }
         return mongoVariant;
     }
 

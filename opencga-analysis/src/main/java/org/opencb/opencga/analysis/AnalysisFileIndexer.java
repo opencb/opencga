@@ -40,6 +40,11 @@ import java.util.*;
  */
 public class AnalysisFileIndexer {
 
+    //Indexed file attributes
+    public static final String INDEXED_FILE = "indexedFile";
+    public static final String DB_NAME = "dbName";
+    public static final String STORAGE_ENGINE = "storageEngine";
+
     private final Properties properties;
     private final CatalogManager catalogManager;
 
@@ -73,17 +78,17 @@ public class AnalysisFileIndexer {
         URI temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
 
 
-        //Create commandLine
-        ObjectMap indexAttributes = new ObjectMap();
-        String commandLine = createCommandLine(study, file, storageEngine, temporalOutDirUri,
-                indexAttributes);
-
         //Create index file
         QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
                 file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
                 "Indexation of " + file.getName() + " (" + fileId + ")", File.Status.INDEXING, 0, -1, null, -1, null,
-                indexAttributes, false, null, sessionId);
+                null, false, null, sessionId);
         File index = indexQueryResult.getResult().get(0);
+
+        //Create commandLine
+        ObjectMap indexAttributes = new ObjectMap();
+        String commandLine = createCommandLine(study, file, index, storageEngine,
+                temporalOutDirUri, indexAttributes);
 
         //Create job
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
@@ -98,11 +103,10 @@ public class AnalysisFileIndexer {
 
         //Set JobId to IndexFile
         ObjectMap objectMap = new ObjectMap("jobId", job.getId());
+        objectMap.put("attributes", indexAttributes);
         catalogManager.modifyFile(index.getId(), objectMap, sessionId).getResult();
         index.setJobId(job.getId());
-
-        //Run job
-//        AnalysisJobExecuter.execute(job);
+        index.setAttributes(indexAttributes);
 
         return index;
     }
@@ -111,14 +115,16 @@ public class AnalysisFileIndexer {
      *
      * @param study             Study where file is located
      * @param file              File to be indexed
+     * @param indexFile         Generated index file
      * @param storageEngine     StorageEngine to be used
      * @param outDirUri         Index outdir
      * @param indexAttributes   This map will be filled with some index information
      * @return                  CommandLine
+     *
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
-    private String createCommandLine(Study study, File file, String storageEngine,
+    private String createCommandLine(Study study, File file, File indexFile, String storageEngine,
                                      URI outDirUri, ObjectMap indexAttributes)
             throws CatalogDBException, CatalogIOManagerException {
 
@@ -128,12 +134,12 @@ public class AnalysisFileIndexer {
         String commandLine;
         String dbName;
 
-        if(file.getBioformat().equals("bam") || name.endsWith(".bam") || name.endsWith(".sam")) {
+        if(file.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
             dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-alignments ")
-                    .append(" --alias ").append(file.getId())
+                    .append(" --alias ").append(indexFile.getId())
                     .append(" --dbName ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --mean-coverage ").append(chunkSize)
@@ -146,12 +152,12 @@ public class AnalysisFileIndexer {
 
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
-        } else if (file.getBioformat().equals("vcf") || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
+        } else if (file.getBioformat() == File.Bioformat.VARIANT || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
 
             dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-variants ")
-                    .append(" --alias ").append(file.getId())
+                    .append(" --alias ").append(indexFile.getId())
                     .append(" --study ").append(study.getName())
                     .append(" --study-alias ").append(study.getId())
                     .append(" --dbName ").append(dbName)
@@ -166,9 +172,9 @@ public class AnalysisFileIndexer {
         } else {
             return null;
         }
-        indexAttributes.put("indexedFile", file.getId());
-        indexAttributes.put("dbName", dbName);
-        indexAttributes.put("storageEngine", storageEngine);
+        indexAttributes.put(INDEXED_FILE, file.getId());
+        indexAttributes.put(DB_NAME, dbName);
+        indexAttributes.put(STORAGE_ENGINE, storageEngine);
 
         return commandLine;
     }
