@@ -3,6 +3,9 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -36,6 +39,23 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String GENE_FIELD = "gene";
     public final static String ANNOTATION_FIELD = "annot";
 
+    public final static Map<String, String> fieldsMap;
+
+    static {
+        fieldsMap = new HashMap<>();
+        fieldsMap.put(CHROMOSOME_FIELD, "chromosome");
+        fieldsMap.put(START_FIELD, "start");
+        fieldsMap.put(END_FIELD, "end");
+        fieldsMap.put(LENGTH_FIELD, "length");
+        fieldsMap.put(REFERENCE_FIELD, "reference");
+        fieldsMap.put(ALTERNATE_FIELD, "alternative");
+        fieldsMap.put(ID_FIELD, "id");
+        fieldsMap.put(HGVS_FIELD, "hgvs");
+        fieldsMap.put(TYPE_FIELD, "type");
+//        fields.put(NAME_FIELD, "name");
+        fieldsMap.put(FILES_FIELD, "sourceEntries");
+        fieldsMap.put(ANNOTATION_FIELD, "annotation");
+    }
 
     private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
     private DBObjectToVariantAnnotationConverter variantAnnotationConverter;

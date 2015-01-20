@@ -692,10 +692,16 @@ public class FileWSServer extends OpenCGAWSServer {
                         }
                         queryOptions.add(entry.getKey(), csv);
                     }
-                    queryOptions.put("interval", interval);
-                    queryOptions.put("merge", true);
                     queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
-                    queryOptions.put("fileId", Integer.toString(fileIdNum));
+
+                    if(params.containsKey("fileId")) {
+                        if(params.get("fileId").get(0).isEmpty()) {
+                            queryOptions.put("fileId", fileId);
+                        } else {
+                            List<String> files = params.get("fileId");
+                            queryOptions.put("fileId", files.get(0));
+                        }
+                    }
 //                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
 //                    queryOptions.put("include", Arrays.asList(include.split(",")));
 
@@ -708,11 +714,14 @@ public class FileWSServer extends OpenCGAWSServer {
                     }
                     QueryResult variantsByRegion;
                     if (histogram) {
+                        queryOptions.put("interval", interval);
                         variantsByRegion = dbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions);
                     } else if (variantSource) {
+                        queryOptions.put("fileId", Integer.toString(fileIdNum));
                         variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else {
                         //With merge = true, will return only one result.
+                        queryOptions.put("merge", true);
                         variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
                     }
                     result = variantsByRegion;
