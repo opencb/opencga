@@ -13,6 +13,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 
@@ -71,8 +72,14 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
-            samples = (List<String>) sourceDbAdaptor.getSamplesBySource(
-                    object.get(FILEID_FIELD).toString(), null).getResult().get(0);
+            QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
+                    object.get(FILEID_FIELD).toString(), null);
+            if(samplesBySource.getResult().isEmpty()) {
+                System.out.println("DBObjectToSamplesConverter.convertToDataModelType " + samplesBySource);
+                samples = null;
+            } else {
+                samples = (List<String>) samplesBySource.getResult().get(0);
+            }
         }
         
         if (samples == null) {
