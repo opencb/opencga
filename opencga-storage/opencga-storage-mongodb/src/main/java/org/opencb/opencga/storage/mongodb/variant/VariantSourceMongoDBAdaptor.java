@@ -4,10 +4,9 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -47,20 +46,20 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllSources(QueryOptions options) {
+    public QueryResult<VariantSource> getAllSources(QueryOptions options) {
         MongoDBCollection coll = db.getCollection("files");
         QueryBuilder qb = QueryBuilder.start();
-//        parseQueryOptions(options, qb);
+        parseQueryOptions(options, qb);
         
         return coll.find(qb.get(), options, variantSourceConverter);
     }
-    
+
     @Override
     public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("files");
         QueryBuilder qb = QueryBuilder.start();
-        getStudyIdFilter(studyId, qb);
-//        parseQueryOptions(options, qb);
+        options.put("studyId", studyId);
+        parseQueryOptions(options, qb);
         
         return coll.find(qb.get(), options, variantSourceConverter);
     }
@@ -69,8 +68,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     public QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options) {
         MongoDBCollection coll = db.getCollection("files");
         QueryBuilder qb = QueryBuilder.start();
-        getStudyIdFilter(studyIds, qb);
-//        parseQueryOptions(options, qb);
+//        getStudyIdFilter(studyIds, qb);
+        options.put("studyId", studyIds);
+        parseQueryOptions(options, qb);
         
         return coll.find(qb.get(), options, variantSourceConverter);
     }
@@ -128,14 +128,42 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     public boolean close() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    private QueryBuilder getStudyIdFilter(String id, QueryBuilder builder) {
-        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).is(id);
+
+    private void parseQueryOptions(QueryOptions options, QueryBuilder builder) {
+
+        if(options.containsKey("studyId")) {
+            andIs(DBObjectToVariantSourceConverter.STUDYID_FIELD, options.get("studyId"), builder);
+        }
+        if(options.containsKey("studyName")) {
+            andIs(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, options.get("studyId"), builder);
+        }
+        if(options.containsKey("fileId")) {
+            andIs(DBObjectToVariantSourceConverter.FILEID_FIELD, options.get("fileId"), builder);
+        }
+        if(options.containsKey("fileName")) {
+            andIs(DBObjectToVariantSourceConverter.FILENAME_FIELD, options.get("fileName"), builder);
+        }
+
+
     }
-    
-    private QueryBuilder getStudyIdFilter(List<String> ids, QueryBuilder builder) {
-        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).in(ids);
+
+    private QueryBuilder andIs(String fieldName, Object object, QueryBuilder builder) {
+        if(object == null) {
+            return builder;
+        } else if (object instanceof Collection) {
+            return builder.and(fieldName).in(object);
+        } else {
+            return builder.and(fieldName).is(object);
+        }
     }
+//
+//    private QueryBuilder getStudyIdFilter(String id, QueryBuilder builder) {
+//        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).is(id);
+//    }
+//
+//    private QueryBuilder getStudyIdFilter(List<String> ids, QueryBuilder builder) {
+//        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).in(ids);
+//    }
     
     /**
      * Populates the dictionary relating sources and samples. 

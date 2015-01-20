@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.List;
 import org.opencb.biodata.models.feature.Region;
@@ -110,6 +111,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 //
 //    @Deprecated
 //    VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
+
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
     @Override
     public VariantDBIterator iterator();
