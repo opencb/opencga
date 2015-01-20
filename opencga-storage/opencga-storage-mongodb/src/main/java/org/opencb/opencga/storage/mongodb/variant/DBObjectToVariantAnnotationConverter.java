@@ -49,7 +49,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 //        dbObject.put(CONSEQUENCE_TYPE_FIELD, ct);
 
         try {
-            dbObject.put(CONSEQUENCE_TYPE_FIELD, JSON.parse(jsonObjectMapper.writeValueAsString(object)));
+            dbObject = (DBObject) JSON.parse(jsonObjectMapper.writeValueAsString(object));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

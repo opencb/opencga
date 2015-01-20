@@ -15,6 +15,7 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
     private final String collectionName = "variants";
+    private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
 
     private DataWriter dataWriter;
 
@@ -42,6 +44,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .add("username", credentials.getUsername())
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+
+        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials);
 
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
@@ -372,6 +376,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return coll.aggregate("$effects.so", Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
+    @Override
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceMongoDBAdaptor;
+    }
 
     @Override
     public VariantDBIterator iterator() {
@@ -381,6 +389,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new VariantMongoDBIterator(dbCursor, variantConverter);
     }
 
+    @Override
     public VariantDBIterator iterator(QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
@@ -529,6 +538,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                getMissingGenotypesFilter(options.getInt("missingGenotypes"), ComparisonOperator.fromString(options.getString("opMissingGenotypes")), builder);
                 addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
                         + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, options.getString("missingGenotypes"), builder);
+            }
+
+            if (options.containsKey("annotationExists")) {
+                builder.and(new BasicDBObject());
+                builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(options.getBoolean("annotationExists"));
+//                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD , options.getString("missingGenotypes"), builder);
             }
         }
 

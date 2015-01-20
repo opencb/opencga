@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -595,6 +596,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
                           @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                          @ApiParam(value = "variantSource", required = false) @DefaultValue("false") @QueryParam("variantSource") boolean variantSource,
                           @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval
     ) {
         List<Region> regions = new LinkedList<>();
@@ -631,8 +633,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //                }
 //            }
             ObjectMap indexAttributes = new ObjectMap(file.getAttributes());
-            String storageEngine = indexAttributes.get("storageEngine").toString();
-            String dbName = indexAttributes.get("dbName").toString();
+            String storageEngine = indexAttributes.get(AnalysisFileIndexer.STORAGE_ENGINE).toString();
+            String dbName = indexAttributes.get(AnalysisFileIndexer.DB_NAME).toString();
             QueryResult result;
             switch (file.getBioformat()) {
                 case ALIGNMENT: {
@@ -693,6 +695,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     queryOptions.put("interval", interval);
                     queryOptions.put("merge", true);
                     queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+                    queryOptions.put("fileId", Integer.toString(fileIdNum));
 //                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
 //                    queryOptions.put("include", Arrays.asList(include.split(",")));
 
@@ -706,6 +709,8 @@ public class FileWSServer extends OpenCGAWSServer {
                     QueryResult variantsByRegion;
                     if (histogram) {
                         variantsByRegion = dbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions);
+                    } else if (variantSource) {
+                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else {
                         //With merge = true, will return only one result.
                         variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);

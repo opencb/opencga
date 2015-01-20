@@ -2136,7 +2136,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      *  projects.studies.name
      * ]
      *
-     * with route = "projects.studies", then
+     * with route = "projects.studies.", then
      *
      * [
      *  id,
