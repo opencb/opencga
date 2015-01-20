@@ -7,11 +7,13 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Tool;
+import org.opencb.opencga.lib.common.TimeUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -19,6 +21,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -78,7 +81,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         List<QueryResult> results = new LinkedList<>();
         try {
-            if(deleteFiles) {
+            if (deleteFiles) {
                 QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
                 for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {
                     QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
@@ -121,8 +124,9 @@ public class JobWSServer extends OpenCGAWSServer {
             List<Integer> inputFiles = new LinkedList<>();
             Map<String, List<String>> localParams = new HashMap<>(params);
 
+            Execution ex = analysisJobExecuter.getExecution();
             // Set input param
-            for (InputParam inputParam : analysisJobExecuter.getExecution().getInputParams()) {
+            for (InputParam inputParam : ex.getInputParams()) {
                 if (params.containsKey(inputParam.getName())) {
 
                     List<String> filePaths = new LinkedList<>();
@@ -155,8 +159,36 @@ public class JobWSServer extends OpenCGAWSServer {
             if (params.get(outputParam).isEmpty()) {
                 return createErrorResponse("Missing output param '" + outputParam + "'");
             }
-            int outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
+           int outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
             File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
+
+
+            //create job folder with timestamp to store job result files
+            boolean parents = true;
+            java.nio.file.Path jobOutDirPath = Paths.get(outDir.getPath(), TimeUtils.getTime());
+            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, getQueryOptions(), sessionId);
+            File jobOutDir = queryResult.getResult().get(0);
+
+
+            //create input files from text - inputParamsFromTxt
+            if (ex.getInputParamsFromTxt() != null) {
+                for (InputParam inputParam : ex.getInputParamsFromTxt()) {
+                    java.nio.file.Path relativeFilePath = Paths.get(jobOutDir.getPath(), inputParam.getName());
+//                    List<String> paramInputName = params.get(inputParam.getName());
+                    List<String> queryParam = params.get(inputParam.getName());
+                    if (queryParam != null && queryParam.size() > 0) {
+
+                        QueryResult<File> createdFileResult = catalogManager.createFile(studyId, File.Format.PLAIN , File.Bioformat.NONE,
+                                relativeFilePath.toString(), queryParam.get(0).getBytes(),  "", true, sessionId);
+                        File createdFile = createdFileResult.getResult().get(0);
+
+                        queryParam.set(0, catalogManager.getFileUri(createdFile).getPath());
+                        //the "-text" suffix param will be removed to replace the input parameter, so -text param content will be mandatory over the non -text parameter.
+                        localParams.put(inputParam.getName().replace("-text", ""), queryParam);
+                    }
+                }
+            }
+
 
             // Create temporal Outdir
 //            String randomString = StringUtils.randomString(10);
@@ -176,7 +208,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //            Job job = jobResult.getResult().get(0);
 
             QueryResult<Job> jobQueryResult = analysisJobExecuter.createJob(
-                    localParams, catalogManager, studyId, name, description, outDir, inputFiles, sessionId);
+                    localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
 
 
             // Execute job

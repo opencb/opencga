@@ -825,12 +825,33 @@ public class CatalogManager {
         return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
     }
 
-    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
-                                        boolean parents,  String sessionId)
-            throws CatalogException {
+
+//    @Deprecated
+//    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
+//                                        boolean parents, String sessionId)
+//            throws CatalogException {
+//
+//        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
+//        File file = result.getResult().get(0);
+//
+//        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
+//        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
+//
+//        return result;
+//    }
+
+    //create file with byte[]
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String description,
+                                        boolean parents, String sessionId)
+            throws CatalogException, IOException {
 
         QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
         File file = result.getResult().get(0);
+
+        //path is relative to user, get full path...
+        URI studyURI = getStudyUri(studyId, sessionId);
+        URI fileURI = getFileUri(studyURI, path);
+        Files.write(Paths.get(fileURI), bytes);
 
         ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
         catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
