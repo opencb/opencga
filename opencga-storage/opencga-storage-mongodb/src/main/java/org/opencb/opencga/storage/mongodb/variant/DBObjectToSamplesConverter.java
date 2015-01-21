@@ -30,16 +30,18 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     private boolean compressSamples;
     private List<String> samples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
+    private boolean defValue;
 
     /**
      * Create a converter from a Map of samples to DBObject entities.
      * 
      * @param compressSamples Whether to compress samples or not
      */
-    public DBObjectToSamplesConverter(boolean compressSamples) {
+    public DBObjectToSamplesConverter(boolean compressSamples, boolean defValue) {
         this.compressSamples = compressSamples;
         this.samples = null;
         this.sourceDbAdaptor = null;
+        this.defValue = defValue;
     }
 
     /**
@@ -171,10 +173,12 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
 
         // Get the most common genotype
         Map.Entry<Genotype, List<Integer>> longestList = null;
-        for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
-            List<Integer> genotypeList = entry.getValue();
-            if (longestList == null || genotypeList.size() > longestList.getValue().size()) {
-                longestList = entry;
+        if (defValue) {
+            for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
+                List<Integer> genotypeList = entry.getValue();
+                if (longestList == null || genotypeList.size() > longestList.getValue().size()) {
+                    longestList = entry;
+                }
             }
         }
 
