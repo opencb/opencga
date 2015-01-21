@@ -31,7 +31,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public static final String MISSING_ALLELES = "missingAlleles";
     public static final String MISSING_GENOTYPES = "missingGenotypes";
     public static final String ANNOTATION_EXISTS = "annotationExists";
-
+    public static final String GENOTYPE = "genotype";
 
 
     /**

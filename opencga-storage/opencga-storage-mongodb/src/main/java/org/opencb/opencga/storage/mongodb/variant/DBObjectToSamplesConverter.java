@@ -3,10 +3,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.opencb.biodata.models.feature.Genotype;
@@ -94,14 +91,16 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         // Temporary file, just to store the samples
         VariantSourceEntry fileWithSamples = new VariantSourceEntry(object.get(FILEID_FIELD).toString(), 
                 object.get(STUDYID_FIELD).toString());
-        
+
         if (mongoGenotypes.containsField("def")) { // Compressed genotypes mode
             // An array of genotypes is initialized with the most common one
             Genotype[] genotypes = new Genotype[numSamples];
             String mostCommonGtString = mongoGenotypes.getString("def");
-            Genotype mostCommongGt = new Genotype(mostCommonGtString);
-            for (int i = 0; i < numSamples; i++) {
-                genotypes[i] = mostCommongGt;
+            if(mostCommonGtString != null) {
+                Genotype mostCommongGt = new Genotype(mostCommonGtString);
+                for (int i = 0; i < numSamples; i++) {
+                    genotypes[i] = mostCommongGt;
+                }
             }
 
             // Loop through the non-most commmon genotypes, and set their value
@@ -188,7 +187,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         // "def" : 0|0,       
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
-        BasicDBObject mongoSamples = new BasicDBObject();
+        BasicDBObject mongoSamples = new BasicDBObject("def", null);
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
             String genotypeStr = entry.getKey().toString().replace(".", "-1");
             if (longestList != null && entry.getKey().equals(longestList.getKey())) {

@@ -528,50 +528,123 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addQueryListFilter(DBObjectToVariantConverter.EFFECTS_FIELD + "." +
                         DBObjectToVariantConverter.SOTERM_FIELD, options.getListAs(EFFECT, String.class), builder);
             }
-
-            if (options.containsKey(STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
-                System.out.println("# studies = " + options.getList(STUDIES).size());
-//                getStudyFilter(options.getListAs("studies", String.class), builder);
-                addQueryListFilter(DBObjectToVariantConverter.FILES_FIELD + "." +
-                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getListAs(STUDIES, String.class), builder);
-            }
-
-            if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
-                System.out.println("# files = " + options.getList(FILES).size());
-//                getFileFilter(options.getListAs("files", String.class), builder);
-                addQueryListFilter(DBObjectToVariantConverter.FILES_FIELD + "." +
-                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getListAs(FILES, String.class), builder);
-            }
-
-            if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
-//                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
-                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
-                        + "." + DBObjectToVariantStatsConverter.MAF_FIELD, options.getString(MAF), builder);
-            }
-
-            if (options.get(MGF) != null && !options.getString(MGF).isEmpty()) {
-//                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
-                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
-                        + "." + DBObjectToVariantStatsConverter.MGF_FIELD, options.getString(MGF), builder);
-            }
-
-            if (options.get(MISSING_ALLELES) != null && !options.getString(MISSING_ALLELES).isEmpty()) {
-//                getMissingAllelesFilter(options.getInt("missingAlleles"), ComparisonOperator.fromString(options.getString("opMissingAlleles")), builder);
-                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
-                        + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD, options.getString(MISSING_ALLELES), builder);
-            }
-
-            if (options.get(MISSING_GENOTYPES) != null && !options.getString(MISSING_GENOTYPES).isEmpty()) {
-//                getMissingGenotypesFilter(options.getInt("missingGenotypes"), ComparisonOperator.fromString(options.getString("opMissingGenotypes")), builder);
-                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
-                        + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, options.getString(MISSING_GENOTYPES), builder);
-            }
+//
+//            if (options.containsKey(STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+//                System.out.println("# studies = " + options.getList(STUDIES).size());
+////                getStudyFilter(options.getListAs("studies", String.class), builder);
+//                addQueryListFilter(DBObjectToVariantConverter.FILES_FIELD + "." +
+//                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getListAs(STUDIES, String.class), builder);
+//            }
+//
+//            if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
+//                System.out.println("# files = " + options.getList(FILES).size());
+////                getFileFilter(options.getListAs("files", String.class), builder);
+//                addQueryListFilter(DBObjectToVariantConverter.FILES_FIELD + "." +
+//                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getListAs(FILES, String.class), builder);
+//            }
+//
+//            if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
+////                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
+//                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
+//                        + "." + DBObjectToVariantStatsConverter.MAF_FIELD, options.getString(MAF), builder);
+//            }
+//
+//            if (options.get(MGF) != null && !options.getString(MGF).isEmpty()) {
+////                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
+//                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
+//                        + "." + DBObjectToVariantStatsConverter.MGF_FIELD, options.getString(MGF), builder);
+//            }
+//
+//            if (options.get(MISSING_ALLELES) != null && !options.getString(MISSING_ALLELES).isEmpty()) {
+////                getMissingAllelesFilter(options.getInt("missingAlleles"), ComparisonOperator.fromString(options.getString("opMissingAlleles")), builder);
+//                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
+//                        + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD, options.getString(MISSING_ALLELES), builder);
+//            }
+//
+//            if (options.get(MISSING_GENOTYPES) != null && !options.getString(MISSING_GENOTYPES).isEmpty()) {
+////                getMissingGenotypesFilter(options.getInt("missingGenotypes"), ComparisonOperator.fromString(options.getString("opMissingGenotypes")), builder);
+//                addCompQueryFilter(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STATS_FIELD
+//                        + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, options.getString(MISSING_GENOTYPES), builder);
+//            }
 
             if (options.containsKey(ANNOTATION_EXISTS)) {
                 builder.and(new BasicDBObject());
                 builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(options.getBoolean(ANNOTATION_EXISTS));
 //                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD , options.getString("missingGenotypes"), builder);
             }
+
+            QueryBuilder fileBuilder = QueryBuilder.start();
+
+            if (options.containsKey(STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+                System.out.println("# studies = " + options.getList(STUDIES).size());
+//                getStudyFilter(options.getListAs("studies", String.class), builder);
+                addQueryListFilter(
+                        //DBObjectToVariantConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getListAs(STUDIES, String.class), fileBuilder);
+            }
+
+            if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
+                System.out.println("# files = " + options.getList(FILES).size());
+//                getFileFilter(options.getListAs("files", String.class), builder);
+                addQueryListFilter(
+                        //DBObjectToVariantConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getListAs(FILES, String.class), fileBuilder);
+            }
+
+            if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
+//                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
+                addCompQueryFilter(
+                        //DBObjectToVariantConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD,
+                        options.getString(MAF), fileBuilder);
+            }
+
+            if (options.get(MGF) != null && !options.getString(MGF).isEmpty()) {
+//                getMafFilter(options.getFloat("maf"), ComparisonOperator.fromString(options.getString("opMaf")), builder);
+                addCompQueryFilter(
+                        //DBObjectToVariantConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD,
+                        options.getString(MGF), fileBuilder);
+            }
+
+            if (options.get(MISSING_ALLELES) != null && !options.getString(MISSING_ALLELES).isEmpty()) {
+//                getMissingAllelesFilter(options.getInt("missingAlleles"), ComparisonOperator.fromString(options.getString("opMissingAlleles")), builder);
+                addCompQueryFilter(
+                        //DBObjectToVariantConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD,
+                        options.getString(MISSING_ALLELES), fileBuilder);
+            }
+
+            if (options.get(MISSING_GENOTYPES) != null && !options.getString(MISSING_GENOTYPES).isEmpty()) {
+//                getMissingGenotypesFilter(options.getInt("missingGenotypes"), ComparisonOperator.fromString(options.getString("opMissingGenotypes")), builder);
+                addCompQueryFilter(
+                        //DBObjectToVariantConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD,
+                        options.getString(MISSING_GENOTYPES), fileBuilder);
+            }
+
+
+            if (options.containsKey(GENOTYPE)) {
+                String sampleGenotypesCSV = options.getString(GENOTYPE);
+                String[] sampleGenotypesArray = sampleGenotypesCSV.split(",");
+                for (String sampleGenotypes : sampleGenotypesArray) {
+                    String[] sampleGenotype = sampleGenotypes.split(":");
+                    if(sampleGenotype.length != 2) {
+                        continue;
+                    }
+                    int sample = Integer.parseInt(sampleGenotype[0]);
+                    String[] genotypes = sampleGenotype[1].split(";");
+                    QueryBuilder genotypesBuilder = QueryBuilder.start();
+                    for (String genotype : genotypes) {
+                        String s = DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD + "." + genotype;
+                        //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
+                        genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
+                    }
+                    fileBuilder.and(genotypesBuilder.get());
+                }
+            }
+
+            builder.and(DBObjectToVariantConverter.FILES_FIELD).elemMatch(fileBuilder.get());
         }
 
         return builder;
