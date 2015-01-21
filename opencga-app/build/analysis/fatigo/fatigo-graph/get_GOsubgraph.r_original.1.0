@@ -13,16 +13,12 @@
 #######################################################################################
 #######################################################################################
 
-args <- commandArgs(trailingOnly = F)
-scriptPath <- dirname(sub("--file=","",args[grep("--file",args)]))
 
 
 cat("# Loading libs & functions\n")
 library(GO.db)
 library(reshape2)
 library(RColorBrewer)
-library(igraph)
-
 
 pvals  <- c(1, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005)
 colorize <- function(go){
@@ -40,11 +36,6 @@ colorize <- function(go){
   return(col)
 }
 
-simplify_GOgraph <- function(sif, significant_go){
-  g <- simplify(graph.data.frame(sif))
-  sg <- unique(unlist(lapply( intersect(V(g)$name, significant_go) , function(x) get.all.shortest.paths(graph=g, from="all", to=x, mode="out")$res )))
-  sif <- sif[ intersect( which(sif$V1 %in% V(g)$name[sg]), which(sif$V2 %in% V(g)$name[sg])) , ]
-}
 
 
 cat("# Reading imput params\n")
@@ -59,7 +50,7 @@ fatiGO_results$X.term <-  unlist(lapply(strsplit(fatiGO_results$X.term, "\\("), 
 
 
 cat("# Loading whole GO graph\n")
-GO_sif <- read.delim(paste(scriptPath, "/GO.sif", sep=""), stringsAsFactors=F, header=F)
+GO_sif <- read.delim("GO.sif", stringsAsFactors=F, header=F)
 
 
 cat("# Getting GOs which adj pvalue is below the threshold\n")
@@ -84,7 +75,7 @@ GOsubgraph_attr <- as.data.frame(setNames(replicate(5,numeric(0), simplify = F),
 
 if( length(allgos) != 0 ){ 
     cat("# Extracting GOsubgraph\n")
-    GOsubgraph_sif <- simplify_GOgraph(GO_sif[ intersect(which(GO_sif$V1 %in% allgos), which(GO_sif$V2 %in% allgos) ) , ], significant_go)
+    GOsubgraph_sif <- GO_sif[ intersect(which(GO_sif$V1 %in% allgos), which(GO_sif$V2 %in% allgos) ) , ]
     if ( nrow(GOsubgraph_sif) != 0 ) {
       cat("# Building attributes\n")
       GOsubgraph_attr <- data.frame(GO=unique(unlist(GOsubgraph_sif)), stringsAsFactors=F)

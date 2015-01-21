@@ -39,16 +39,16 @@ echo Rscript $SCRIPT_DIR/fatigo-graph/get_GOsubgraph.r $OUTDIR/$i 0.005
     name="${i%.*}"
     title="${name//_/ }"
 
-    item='<item name="'${name}'_0.1" title="'${title}' 0.1 graph" type="FILE" tags="GO_NETWORKVIEWER" style="" group="All results" context="">'${name}'_0.1_GOsubgraph.sif,'${name}'_0.1_GOsubgraph.attr,'${name}'_0.1_nodes.attr</item>'
+    item='<item name="'${name}'_0.1" title="'${title}' 0.1 graph" type="" tags="GO_NETWORKVIEWER" style="" group="Significant Results.GO Network" context="">'${name}'_0.1_GOsubgraph.sif,'${name}'_0.1_GOsubgraph.attr,'${name}'_0.1_nodes.attr</item>'
     sed -i "/${i}/a ${item}" $OUTDIR/result.xml
 
-    item='<item name="'${name}'_0.05" title="'${title}' 0.05 graph" type="FILE" tags="GO_NETWORKVIEWER" style="" group="All results" context="">'${name}'_0.05_GOsubgraph.sif,'${name}'_0.05_GOsubgraph.attr,'${name}'_0.05_nodes.attr</item>'
+    item='<item name="'${name}'_0.05" title="'${title}' 0.05 graph" type="" tags="GO_NETWORKVIEWER" style="" group="Significant Results.GO Network" context="">'${name}'_0.05_GOsubgraph.sif,'${name}'_0.05_GOsubgraph.attr,'${name}'_0.05_nodes.attr</item>'
     sed -i "/${i}/a ${item}" $OUTDIR/result.xml
 
-    item='<item name="'${name}'_0.01" title="'${title}' 0.01 graph" type="FILE" tags="GO_NETWORKVIEWER" style="" group="All results" context="">'${name}'_0.01_GOsubgraph.sif,'${name}'_0.01_GOsubgraph.attr,'${name}'_0.01_nodes.attr</item>'
+    item='<item name="'${name}'_0.01" title="'${title}' 0.01 graph" type="" tags="GO_NETWORKVIEWER" style="" group="Significant Results.GO Network" context="">'${name}'_0.01_GOsubgraph.sif,'${name}'_0.01_GOsubgraph.attr,'${name}'_0.01_nodes.attr</item>'
     sed -i "/${i}/a ${item}" $OUTDIR/result.xml
 
-    item='<item name="'${name}'_0.005" title="'${title}' 0.005 graph" type="FILE" tags="GO_NETWORKVIEWER" style="" group="All results" context="">'${name}'_0.005_GOsubgraph.sif,'${name}'_0.005_GOsubgraph.attr,'${name}'_0.005_nodes.attr</item>'
+    item='<item name="'${name}'_0.005" title="'${title}' 0.005 graph" type="" tags="GO_NETWORKVIEWER" style="" group="Significant Results.GO Network" context="">'${name}'_0.005_GOsubgraph.sif,'${name}'_0.005_GOsubgraph.attr,'${name}'_0.005_nodes.attr</item>'
     sed -i "/${i}/a ${item}" $OUTDIR/result.xml
 
 done

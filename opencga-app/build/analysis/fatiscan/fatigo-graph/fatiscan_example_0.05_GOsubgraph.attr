@@ -1,0 +1,108 @@
+#GO	name	color	adj_pval	lor
+GO:0022402	cell cycle process	white	1	0
+GO:0006366	transcription from RNA polymerase II promoter	white	1	0
+GO:0045892	negative regulation of transcription, DNA-templated	white	1	0
+GO:0007049	cell cycle	#CB181D	0.000179388268556347	0.168217266608134
+GO:0006397	mRNA processing	#FCBBA1	0.0327344011825293	0.124664819225116
+GO:0008150	biological_process	white	1	0
+GO:0002253	activation of immune response	white	1	0
+GO:0002758	innate immune response-activating signal transduction	white	1	0
+GO:0002221	pattern recognition receptor signaling pathway	white	1	0
+GO:0002376	immune system process	white	1	0
+GO:0019884	antigen processing and presentation of exogenous antigen	white	1	0
+GO:0048002	antigen processing and presentation of peptide antigen	white	1	0
+GO:0002504	antigen processing and presentation of peptide or polysaccharide antigen via MHC class II	white	1	0
+GO:0019882	antigen processing and presentation	white	1	0
+GO:0002224	toll-like receptor signaling pathway	white	1	0
+GO:0002218	activation of innate immune response	white	1	0
+GO:0002757	immune response-activating signal transduction	white	1	0
+GO:0032501	multicellular organismal process	white	1	0
+GO:0006351	transcription, DNA-templated	white	1	0
+GO:0044267	cellular protein metabolic process	white	1	0
+GO:0030029	actin filament-based process	white	1	0
+GO:0007166	cell surface receptor signaling pathway	white	1	0
+GO:0023052	signaling	white	1	0
+GO:0050794	regulation of cellular process	white	1	0
+GO:0007167	enzyme linked receptor protein signaling pathway	white	1	0
+GO:0007165	signal transduction	white	1	0
+GO:0010467	gene expression	white	1	0
+GO:0034645	cellular macromolecule biosynthetic process	white	1	0
+GO:0006396	RNA processing	white	1	0
+GO:0006412	translation	white	1	0
+GO:0009987	cellular process	white	1	0
+GO:0008152	metabolic process	white	1	0
+GO:0044248	cellular catabolic process	white	1	0
+GO:0009605	response to external stimulus	white	1	0
+GO:0009628	response to abiotic stimulus	white	1	0
+GO:0000278	mitotic cell cycle	#CB181D	0.000326608540409873	0.180792997328756
+GO:0038127	ERBB signaling pathway	white	1	0
+GO:0003008	system process	white	1	0
+GO:0050877	neurological system process	#C6DBEF	0.0216562441351495	-0.207604661873055
+GO:0050953	sensory perception of light stimulus	white	1	0
+GO:0016265	death	white	1	0
+GO:0065008	regulation of biological quality	white	1	0
+GO:0009058	biosynthetic process	#FCBBA1	0.0350971398733275	0.0538823335495942
+GO:0043170	macromolecule metabolic process	white	1	0
+GO:0050896	response to stimulus	white	1	0
+GO:0048519	negative regulation of biological process	white	1	0
+GO:0042221	response to chemical	white	1	0
+GO:0009892	negative regulation of metabolic process	white	1	0
+GO:0010605	negative regulation of macromolecule metabolic process	white	1	0
+GO:0010629	negative regulation of gene expression	white	1	0
+GO:0051253	negative regulation of RNA metabolic process	white	1	0
+GO:0044238	primary metabolic process	white	1	0
+GO:0002478	antigen processing and presentation of exogenous peptide antigen	white	1	0
+GO:0002495	antigen processing and presentation of peptide antigen via MHC class II	white	1	0
+GO:0048856	anatomical structure development	white	1	0
+GO:0043433	negative regulation of sequence-specific DNA binding transcription factor activity	white	1	0
+GO:0055085	transmembrane transport	white	1	0
+GO:0006807	nitrogen compound metabolic process	white	1	0
+GO:0044237	cellular metabolic process	white	1	0
+GO:0009059	macromolecule biosynthetic process	white	1	0
+GO:0044249	cellular biosynthetic process	white	1	0
+GO:0044260	cellular macromolecule metabolic process	white	1	0
+GO:0034220	ion transmembrane transport	#C6DBEF	0.0484114712664193	-0.239768320067573
+GO:0034762	regulation of transmembrane transport	white	1	0
+GO:0007169	transmembrane receptor protein tyrosine kinase signaling pathway	white	1	0
+GO:0044092	negative regulation of molecular function	white	1	0
+GO:0051090	regulation of sequence-specific DNA binding transcription factor activity	white	1	0
+GO:0065009	regulation of molecular function	white	1	0
+GO:0009056	catabolic process	white	1	0
+GO:0019538	protein metabolic process	white	1	0
+GO:0050789	regulation of biological process	white	1	0
+GO:0032502	developmental process	white	1	0
+GO:0065007	biological regulation	white	1	0
+GO:0007600	sensory perception	white	1	0
+GO:0010033	response to organic substance	white	1	0
+GO:0019221	cytokine-mediated signaling pathway	white	1	0
+GO:0071804	cellular potassium ion transport	white	1	0
+GO:0000086	G2/M transition of mitotic cell cycle	#FCBBA1	0.035299956306173	0.160877242653682
+GO:0000122	negative regulation of transcription from RNA polymerase II promoter	#FCBBA1	0.0198326371173831	0.107396628538951
+GO:0000398	mRNA splicing, via spliceosome	#FCBBA1	0.041030177648361	0.157084636099108
+GO:0002755	MyD88-dependent toll-like receptor signaling pathway	#FCBBA1	0.0358349695741565	0.173168273615865
+GO:0006457	protein folding	#FCBBA1	0.0127401972187376	0.178172497889985
+GO:0030036	actin cytoskeleton organization	#C6DBEF	0.021946839930956	-0.361423882602027
+GO:0016055	Wnt signaling pathway	#FCBBA1	0.0199934663627189	0.187907004907935
+GO:0035556	intracellular signal transduction	#FB6A4A	0.00322077541106521	0.1628951492229
+GO:0006413	translational initiation	#C6DBEF	0.048424566012723	-0.331438807883593
+GO:0006414	translational elongation	#6BAED6	0.00108699696274036	-0.536918940324427
+GO:0006415	translational termination	#C6DBEF	0.0390463523480414	-0.372477641102824
+GO:0006914	autophagy	#FCBBA1	0.0269778649497372	0.198367056632823
+GO:0009612	response to mechanical stimulus	#CB181D	0.000269600312739099	0.321239042557516
+GO:0007077	mitotic nuclear envelope disassembly	#FCBBA1	0.0400433512297681	0.212292925689622
+GO:0007173	epidermal growth factor receptor signaling pathway	#FCBBA1	0.0122644730053217	0.231904291308296
+GO:0007601	visual perception	#C6DBEF	0.0152014738103414	-0.31492879581004
+GO:0008219	cell death	#FCBBA1	0.0356417075595491	0.0953070655829748
+GO:0008380	RNA splicing	#FC9272	0.00589678305728681	0.17772770540509
+GO:0008360	regulation of cell shape	#FCBBA1	0.0388820252505541	0.187967384827939
+GO:0019886	antigen processing and presentation of exogenous peptide antigen via MHC class II	#FCBBA1	0.0211684314179415	0.179302014315775
+GO:0021766	hippocampus development	#C6DBEF	0.0164259129260088	-0.462479167993134
+GO:0032088	negative regulation of NF-kappaB transcription factor activity	#FCBBA1	0.0113413469349493	0.250796982747232
+GO:0034134	toll-like receptor 2 signaling pathway	#FCBBA1	0.0358349695741565	0.173168273615865
+GO:0034641	cellular nitrogen compound metabolic process	#FC9272	0.00649958123602086	0.0650346639741529
+GO:0034765	regulation of ion transmembrane transport	#C6DBEF	0.0192693838735952	-0.369115332259202
+GO:0038123	toll-like receptor TLR1:TLR2 signaling pathway	#FCBBA1	0.0358349695741565	0.173168273615865
+GO:0038124	toll-like receptor TLR6:TLR2 signaling pathway	#FCBBA1	0.0358349695741565	0.173168273615865
+GO:0051591	response to cAMP	#FCBBA1	0.0417885193855666	0.196909801703194
+GO:0060337	type I interferon signaling pathway	#C6DBEF	0.0202358292165726	-0.449227923517108
+GO:0071805	potassium ion transmembrane transport	#C6DBEF	0.0370087795409554	-0.376286774891446
