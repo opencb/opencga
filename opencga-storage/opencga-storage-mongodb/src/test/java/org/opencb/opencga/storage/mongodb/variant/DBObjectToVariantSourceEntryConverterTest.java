@@ -106,7 +106,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(
-                true, sampleNames, new DBObjectToVariantStatsConverter());
+                true, true, sampleNames, new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(file);
         
         assertEquals(mongoFile.get(DBObjectToVariantStatsConverter.MAF_FIELD), converted.get(DBObjectToVariantStatsConverter.MAF_FIELD));
@@ -138,12 +138,12 @@ public class DBObjectToVariantSourceEntryConverterTest {
     public void testConvertToStorageTypeWithoutStats() {
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         // Test with no stats converter provided
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, sampleNames, null);
+        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, true, sampleNames, null);
         DBObject converted = converter.convertToStorageType(file);
         assertEquals(mongoFile, converted);
         
         // Test with a stats converter provided but no stats object
-        converter = new DBObjectToVariantSourceEntryConverter(true, sampleNames, new DBObjectToVariantStatsConverter());
+        converter = new DBObjectToVariantSourceEntryConverter(true, true, sampleNames, new DBObjectToVariantStatsConverter());
         converted = converter.convertToStorageType(file);
         assertEquals(mongoFile, converted);
     }

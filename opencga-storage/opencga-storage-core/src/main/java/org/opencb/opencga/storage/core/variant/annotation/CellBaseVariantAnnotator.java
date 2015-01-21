@@ -27,8 +27,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -244,10 +243,11 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
         final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
+        ExecutorService executor = Executors.newFixedThreadPool(numConsumers);
         final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize*numConsumers*2);
         final VariantAnnotation lastElement = new VariantAnnotation();
 
-        Runnable producer = new Runnable() {
+        executor.execute(new Runnable() {   // producer
             @Override
             public void run() {
                 try {
@@ -265,14 +265,14 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                         VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
                         queue.put(variantAnnotation);
                         readsCounter++;
-                        if(readsCounter%1000 == 0) {
+                        if (readsCounter % 1000 == 0) {
                             logger.info("Element {}", readsCounter);
                         }
                     }
                     for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
                         queue.put(lastElement);
                     }
-                    logger.debug("Put Last element. queue size = " + queue.size());
+                    logger.debug("Put Last element. queue size = {}", queue.size());
                     inputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -280,45 +280,44 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                     e.printStackTrace();
                 }
             }
-        };
+        });
 
-        Runnable consumer = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    List<VariantAnnotation> batch = new ArrayList<>(batchSize);
-                    VariantAnnotation elem = queue.take();
-                    while (elem != lastElement) {
-                        batch.add(elem);
-                        if(batch.size() == batchSize) {
-                            variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
-                            batch.clear();
-                        }
-                        elem = queue.take();
-                    }
-                    if(!batch.isEmpty()) { //Upload remaining elements
-                        variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-
-        /** Create threads **/
-        List<Thread> consumers = new ArrayList<>(numConsumers);
-        Thread producerThread = new Thread(producer);
         for (int i = 0; i < numConsumers; i++) {
-            consumers.add(new Thread(consumer));
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        List<VariantAnnotation> batch = new ArrayList<>(batchSize);
+                        VariantAnnotation elem = queue.take();
+                        while (elem != lastElement) {
+                            batch.add(elem);
+                            if (batch.size() == batchSize) {
+                                variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+                                batch.clear();
+                                logger.debug("thread updated batch");
+                            }
+                            elem = queue.take();
+                        }
+                        if (!batch.isEmpty()) { //Upload remaining elements
+                            variantDBAdaptor.updateAnnotations(batch, new QueryOptions());
+                        }
+                        logger.debug("thread finished updating annotations");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         }
 
-        /** Start **/
-        producerThread.start();
-        for (Thread consumerThread : consumers) {
-            consumerThread.start();
+        executor.shutdown();
+        try {
+            executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("annotation interrupted");
+            e.printStackTrace();
         }
 
-        /** Join **/
+        /** Join
         try {
             producerThread.join();
             for (Thread consumerThread : consumers) {
@@ -327,7 +326,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
+        **/
 //        while (parser.nextToken() != null) {
 //            VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
 ////            System.out.println("variantAnnotation = " + variantAnnotation);
