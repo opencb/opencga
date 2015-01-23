@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool network-miner ",
+            "executable": "network-miner.sh",
             "inputParams": [
                 {
                     "name": "list",
