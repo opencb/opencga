@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "survival.sh ",
+            "executable": "babelomics/babelomics.sh --tool survival ",
             "inputParams": [
                 {
                     "name": "dataset",

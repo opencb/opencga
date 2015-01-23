@@ -178,8 +178,9 @@ public class JobWSServer extends OpenCGAWSServer {
                     List<String> queryParam = params.get(inputParam.getName());
                     if (queryParam != null && queryParam.size() > 0) {
 
+                        String value = queryParam.get(0).replace(",",System.getProperty("line.separator"));
                         QueryResult<File> createdFileResult = catalogManager.createFile(studyId, File.Format.PLAIN , File.Bioformat.NONE,
-                                relativeFilePath.toString(), queryParam.get(0).getBytes(),  "", true, sessionId);
+                                relativeFilePath.toString(), value.getBytes(),  "", true, sessionId);
                         File createdFile = createdFileResult.getResult().get(0);
 
                         queryParam.set(0, catalogManager.getFileUri(createdFile).getPath());
