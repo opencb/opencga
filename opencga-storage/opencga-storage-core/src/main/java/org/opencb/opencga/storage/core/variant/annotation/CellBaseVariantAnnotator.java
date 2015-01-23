@@ -37,7 +37,6 @@ import java.util.zip.GZIPOutputStream;
 public class CellBaseVariantAnnotator implements VariantAnnotator {
 
 
-
     private final JsonFactory factory;
     private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor;
     private CellBaseClient cellBaseClient;
@@ -97,21 +96,21 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             outputStream = new GZIPOutputStream(outputStream);
         }
 
-        /** Innitialice Json serializer**/
+        /** Initialize Json serializer**/
         ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions = new QueryOptions();
-//        ArrayList<String> exclude = new ArrayList<>();
-//        iteratorQueryOptions.add("exclude", exclude);
+        int batchSize = 100;
+        List<String> include = Arrays.asList("chromosome", "start", "alternative", "reference");
+        iteratorQueryOptions.add("include", include);
         if(options != null) { //Parse query options
-            if (!options.getBoolean(VariantAnnotationManager.ANNOTATE_ALL, false)) {
-                iteratorQueryOptions.put("annotationExists", false);
-            }
+            iteratorQueryOptions = options;
+//            iteratorQueryOptions = new QueryOptions(options.getMap(VariantAnnotationManager.ANNOTATOR_QUERY_OPTIONS, Collections.<String, Object>emptyMap()));
+            batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
         }
 
         Variant variant = null;
-        int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
         List<GenomicVariant> genomicVariantList = new ArrayList<>(batchSize);
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         while(iterator.hasNext()) {

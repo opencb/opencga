@@ -134,7 +134,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
-        return input;
+        return super.postLoad(input, output, params);
     }
 
 }

@@ -43,18 +43,18 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
     static {
         fieldsMap = new HashMap<>();
-        fieldsMap.put(CHROMOSOME_FIELD, "chromosome");
-        fieldsMap.put(START_FIELD, "start");
-        fieldsMap.put(END_FIELD, "end");
-        fieldsMap.put(LENGTH_FIELD, "length");
-        fieldsMap.put(REFERENCE_FIELD, "reference");
-        fieldsMap.put(ALTERNATE_FIELD, "alternative");
-        fieldsMap.put(ID_FIELD, "id");
-        fieldsMap.put(HGVS_FIELD, "hgvs");
-        fieldsMap.put(TYPE_FIELD, "type");
-//        fields.put(NAME_FIELD, "name");
-        fieldsMap.put(FILES_FIELD, "sourceEntries");
-        fieldsMap.put(ANNOTATION_FIELD, "annotation");
+        fieldsMap.put("chromosome", CHROMOSOME_FIELD);
+        fieldsMap.put("start", START_FIELD);
+        fieldsMap.put("end", END_FIELD);
+        fieldsMap.put("length", LENGTH_FIELD);
+        fieldsMap.put("reference", REFERENCE_FIELD);
+        fieldsMap.put("alternative", ALTERNATE_FIELD);
+        fieldsMap.put("id", ID_FIELD);
+        fieldsMap.put("hgvs", HGVS_FIELD);
+        fieldsMap.put("type", TYPE_FIELD);
+//        fields.put("name", NAME_FIELD);
+        fieldsMap.put("sourceEntries", FILES_FIELD);
+        fieldsMap.put("annotation", ANNOTATION_FIELD);
     }
 
     private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;

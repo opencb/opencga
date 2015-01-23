@@ -10,11 +10,16 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
+import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
@@ -27,6 +32,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -42,6 +48,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_SAMPLES = "includeSamples";
     public static final String SOURCE = "source";
     public static final String DB_NAME = "dbName";
+    public static final String SPECIES = "species";
+    public static final String CELLBASE_VERSION = "cellbaseVersion";
+    public static final String CELLBASE_REST_URL = "cellbaseRestUrl";
+    public static final String ANNOTATE = "annotate";
+    public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
 
     public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
 
@@ -172,6 +183,43 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             throw new IOException("Variants input file format not supported");
         }
         return variantJsonReader;
+    }
+
+    @Override
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+        boolean annotate = params.getBoolean(ANNOTATE);
+
+        if (annotate) {
+            String dbName = params.getString(DB_NAME, null);
+            String cellbaseRestUrl = params.getString(CELLBASE_REST_URL);
+            String version = params.getString(CELLBASE_VERSION, "v3");
+            String specie = params.getString(SPECIES, "hsapiens");
+            VariantSource variantSource = params.get(SOURCE, VariantSource.class);
+
+            URI cellbaseUri;
+            VariantAnnotator annotator;
+            try {
+                cellbaseUri = new URI(cellbaseRestUrl);
+                annotator = new CellBaseVariantAnnotator(new CellBaseClient(cellbaseUri, version, specie));
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+                logger.error("Can't annotate variants. Invalid cellbase URI: " + cellbaseRestUrl, e);
+                return input;
+            }
+
+            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName, params));
+
+            QueryOptions annotationOptions = new QueryOptions();
+            if (!params.getBoolean(OVERWRITE_ANNOTATIONS, false)) {
+                annotationOptions.put(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+            }
+            annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(variantSource.getFileId()));    // annotate just the indexed variants
+
+            URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get("/tmp"), dbName, annotationOptions);
+            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
+        }
+
+        return input;
     }
 
 //    @Override

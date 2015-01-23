@@ -325,6 +325,12 @@ public class OptionsParser {
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
 
+        @Parameter(names = {"--annotate"}, description = "Annotate variants as well (optional)")
+        boolean annotate = false;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "")
+        boolean overwriteAnnotations = false;
+
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 

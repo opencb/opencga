@@ -17,8 +17,7 @@ public class VariantAnnotationManager {
     public static final String CLEAN = "clean";
     public static final String FILE_NAME = "fileName";
     public static final String OUT_DIR = "outDir";
-    public static final String ANNOTATE_ALL = "annotateAll";
-    public static final String OVERRIDE_ANNOTATIONS = "override";
+    public static final String ANNOTATOR_QUERY_OPTIONS = "annotatorQueryOptions";   // TODO use or remove
     public static final String BATCH_SIZE = "batchSize";
     public static final String NUM_WRITERS = "numWriters";
 

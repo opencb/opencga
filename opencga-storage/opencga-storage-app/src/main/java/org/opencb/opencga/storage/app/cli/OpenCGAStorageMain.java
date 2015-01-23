@@ -236,6 +236,17 @@ public class OpenCGAStorageMain {
                 params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
                 params.put(VariantStorageManager.SOURCE, source);
                 params.put(VariantStorageManager.DB_NAME, c.dbName);
+                params.put(VariantStorageManager.ANNOTATE, c.annotate);
+                params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
+
+                Properties cellbaseDefaultProperties = new Properties();
+                Properties cellbaseProperties = Config.getProperties("cellbase.properties", cellbaseDefaultProperties);
+                String cellbaseVersion = cellbaseProperties.getProperty("CELLBASE.VERSION", "v3");
+                String cellbaseRest = cellbaseProperties.getProperty("CELLBASE.REST.URL", "");
+                checkNull(cellbaseVersion, "CELLBASE.VERSION");
+                checkNull(cellbaseRest, "CELLBASE.REST.URL");
+                params.put(VariantStorageManager.CELLBASE_VERSION, cellbaseVersion);
+                params.put(VariantStorageManager.CELLBASE_REST_URL, cellbaseRest);
 
                 URI nextFileUri;
                 logger.info("-- Extract variants -- {}", variantsUri);
