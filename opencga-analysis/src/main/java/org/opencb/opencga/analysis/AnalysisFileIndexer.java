@@ -160,6 +160,7 @@ public class AnalysisFileIndexer {
                     .append(" --alias ").append(indexFile.getId())
                     .append(" --study ").append(study.getName())
                     .append(" --study-alias ").append(study.getId())
+                    .append(" --study-type ").append(study.getType())
                     .append(" --dbName ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file).getPath())  //TODO: Make URI-compatible
                     .append(" --outdir ").append(outDirUri.getPath())                    //TODO: Make URI-compatible

@@ -16,6 +16,24 @@ import org.opencb.datastore.core.QueryResult;
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
+    public static final String ID = "id";
+    public static final String REGION = "region";
+    public static final String GENE = "gene";
+    public static final String TYPE = "type";
+    public static final String REFERENCE = "reference";
+    public static final String ALTERNATE = "alternate";
+    public static final String EFFECT = "effect";
+    public static final String STUDIES = "studies";
+    public static final String FILES = "files";
+    public static final String FILE_ID = "fileId";
+    public static final String MAF = "maf";
+    public static final String MGF = "mgf";
+    public static final String MISSING_ALLELES = "missingAlleles";
+    public static final String MISSING_GENOTYPES = "missingGenotypes";
+    public static final String ANNOTATION_EXISTS = "annotationExists";
+    public static final String GENOTYPE = "genotype";
+
+
     /**
      * This method set a data writer object for data serialization. When used no data will be return in
      * QueryResult object.

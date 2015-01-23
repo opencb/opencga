@@ -27,7 +27,7 @@ library(igraph)
 pvals  <- c(1, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005)
 colorize <- function(go){
   col <- "white"
-  x <- as.numeric(fatiGO_results[ fatiGO_results$X.term == go , c(12, 14) ])
+  x <- as.numeric(fatiGO_results[ fatiGO_results$X.term == go , c(6, 7) ])
   if ( ! any(is.na(x)) ) {
     side <- x[1]
     pval <- x[2]
@@ -78,9 +78,8 @@ cat("# Extracting GO for the subgraph\n")
 allgos <- unique(c(unlist(goancestor[significant_go]), significant_go))
 
 
-
 GOsubgraph_sif <- c()
-GOsubgraph_attr <- as.data.frame(setNames(replicate(5,numeric(0), simplify = F), c("GO","name","color","adj_pval","odds_ratio_log")))
+GOsubgraph_attr <- as.data.frame(setNames(replicate(5,numeric(0), simplify = F), c("GO","name","color","adj_pval","lor")))
 
 if( length(allgos) != 0 ){ 
     cat("# Extracting GOsubgraph\n")
@@ -93,8 +92,8 @@ if( length(allgos) != 0 ){
       GOsubgraph_attr$color <- unlist(lapply(GOsubgraph_attr$GO, colorize ))
       GOsubgraph_attr$adj_pval <- fatiGO_results$adj_pvalue[ match(GOsubgraph_attr$GO, fatiGO_results$X.term) ]
       GOsubgraph_attr$adj_pval[ is.na(GOsubgraph_attr$adj_pval) ]  <- 1
-      GOsubgraph_attr$odds_ratio_log <- fatiGO_results$odds_ratio_log[ match(GOsubgraph_attr$GO, fatiGO_results$X.term) ]
-      GOsubgraph_attr$odds_ratio_log[ is.na(GOsubgraph_attr$odds_ratio_log) ]  <- 0
+      GOsubgraph_attr$lor <- fatiGO_results$lor[ match(GOsubgraph_attr$GO, fatiGO_results$X.term) ]
+      GOsubgraph_attr$lor[ is.na(GOsubgraph_attr$lor) ]  <- 0
     }else{
       cat("WARNING: The significant terms are all obsolete and no ancestrir is found\n")
     }

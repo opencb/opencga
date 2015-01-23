@@ -2,7 +2,7 @@
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 #echo "$*"
-$BABELOMICS_HOME/babelomics.sh --tool fatigo $*
+$BABELOMICS_HOME/babelomics.sh --tool fatiscan $*
 
 
 while [[ $# > 1 ]]
@@ -24,7 +24,7 @@ done
 echo "$OUTDIR"
 
 for i in $( ls $OUTDIR | grep "go_molecular_function\|go_biological_process\|go_cellular_component" | grep -v "0.005\|0.05\|0.1\|0.01" | grep ".txt" ); do
-    Rscript $SCRIPT_DIR/fatigo-graph/get_GOsubgraph.r $OUTDIR/$i 0.005
+echo Rscript $SCRIPT_DIR/fatigo-graph/get_GOsubgraph.r $OUTDIR/$i 0.005
     Rscript $SCRIPT_DIR/fatigo-graph/get_nodeAttributes_from_fatiGO.r $OUTDIR/$i 0.005
 
     Rscript $SCRIPT_DIR/fatigo-graph/get_GOsubgraph.r $OUTDIR/$i 0.05
