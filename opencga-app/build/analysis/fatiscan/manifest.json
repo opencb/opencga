@@ -16,8 +16,8 @@
     "globalParams": [],
     "executions": [
         {
-            "id": "fatigo",
-            "name": "Fatigo",
+            "id": "fatiscan",
+            "name": "Fatiscan",
             "executable": "fatiscan.sh",
             "inputParams": [
                 {
@@ -29,7 +29,13 @@
                     "dataType":"txt"
                 }
             ],
-            "inputParamsFromTxt": [],
+            "inputParamsFromTxt": [
+                {
+                    "name": "ranked-list-text",
+                    "dataType": "txt"
+                }
+
+            ],
             "outputParam": "outdir",
             "validParams": [
                 {

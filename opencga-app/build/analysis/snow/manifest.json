@@ -29,12 +29,22 @@
                     "dataType": "txt"
                 }
             ],
+            "inputParamsFromTxt": [
+                {
+                    "name": "list1-text",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "list2-text",
+                    "dataType": "txt"
+                }
+            ],
             "outputParam": "outdir",
             "validParams": [
                 {
                     "name": "list1",
                     "description": "An input file containing a node per line",
-                    "required": "true"
+                    "required": "false"
                 },
                 {
                     "name": "list2",

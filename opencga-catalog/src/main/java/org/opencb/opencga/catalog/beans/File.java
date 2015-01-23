@@ -105,7 +105,7 @@ public class File {
         OTHER_GENOTYPE,
         OTHER_PLINK,
         OTHER_VCF,
-
+        OTHER_PED,
 
         VARIANT,
         ALIGNMENT,

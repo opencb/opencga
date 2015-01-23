@@ -37,6 +37,10 @@
                 {
                     "name": "list1-text",
                     "dataType": "txt"
+                },
+                {
+                    "name": "list2-text",
+                    "dataType": "txt"
                 }
             ],
             "outputParam": "outdir",
