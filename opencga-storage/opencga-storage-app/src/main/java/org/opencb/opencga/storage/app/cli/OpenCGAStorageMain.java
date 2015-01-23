@@ -239,10 +239,10 @@ public class OpenCGAStorageMain {
                 params.put(VariantStorageManager.ANNOTATE, c.annotate);
                 params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
 
-                Properties cellbaseDefaultProperties = new Properties();
-                Properties cellbaseProperties = Config.getProperties("cellbase.properties", cellbaseDefaultProperties);
-                String cellbaseVersion = cellbaseProperties.getProperty("CELLBASE.VERSION", "v3");
-                String cellbaseRest = cellbaseProperties.getProperty("CELLBASE.REST.URL", "");
+                Properties annotatorDefaultProperties = new Properties();
+                Properties annotatorProperties = Config.getProperties("storage.properties", annotatorDefaultProperties);
+                String cellbaseVersion = annotatorProperties.getProperty("CELLBASE.VERSION", "v3");
+                String cellbaseRest = annotatorProperties.getProperty("CELLBASE.REST.URL", "");
                 checkNull(cellbaseVersion, "CELLBASE.VERSION");
                 checkNull(cellbaseRest, "CELLBASE.REST.URL");
                 params.put(VariantStorageManager.CELLBASE_VERSION, cellbaseVersion);

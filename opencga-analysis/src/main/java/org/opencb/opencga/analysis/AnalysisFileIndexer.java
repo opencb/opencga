@@ -167,6 +167,7 @@ public class AnalysisFileIndexer {
                     .append(" --backend ").append(storageEngine)
                     .append(" --include-samples ")
                     .append(" --include-stats ")
+                    .append(" --annotate ")
 //                    .append(" --credentials ")
                     .toString();
 

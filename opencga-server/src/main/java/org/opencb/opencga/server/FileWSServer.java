@@ -715,7 +715,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     QueryResult variantsByRegion;
                     if (histogram) {
                         queryOptions.put("interval", interval);
-                        variantsByRegion = dbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions);
+                        variantsByRegion = dbAdaptor.getAllVariants(queryOptions);
                     } else if (variantSource) {
                         queryOptions.put("fileId", Integer.toString(fileIdNum));
                         variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);

@@ -506,6 +506,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         , xrefs, builder, QueryOperation.OR);
             }
 
+            if (options.containsKey("chromosome")) {
+                List<String> chromosome = getStringList(options.get("chromosome"));
+                addQueryListFilter(DBObjectToVariantConverter.CHROMOSOME_FIELD
+                        , chromosome, builder, QueryOperation.OR);
+            }
+
             /** VARIANT **/
 
             if (options.containsKey(TYPE)) { // && !options.getString("type").isEmpty()) {
