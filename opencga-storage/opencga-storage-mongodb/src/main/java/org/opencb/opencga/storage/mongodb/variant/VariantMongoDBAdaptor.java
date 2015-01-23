@@ -605,14 +605,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            if (options.get("freqgt") != null && !options.getString("freqgt").isEmpty()) {
-                for (String freqgt : getStringList(options.get("freqgt"))) {
-                    String[] split = freqgt.split(":");
-                    addCompQueryFilter(
-                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.FREQGT_FIELD + "." + split[0],
-                            split[1], fileBuilder);
-                }
-            }
+//            if (options.get("freqgt") != null && !options.getString("freqgt").isEmpty()) {
+//                for (String freqgt : getStringList(options.get("freqgt"))) {
+//                    String[] split = freqgt.split(":");
+//                    addCompQueryFilter(
+//                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.FREQGT_FIELD + "." + split[0],
+//                            split[1], fileBuilder);
+//                }
+//            }
 
 
 
