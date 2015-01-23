@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "correlation.sh ",
+            "executable": "babelomics/babelomics.sh --tool correlation ",
             "inputParams": [
                 {
                     "name": "dataset",

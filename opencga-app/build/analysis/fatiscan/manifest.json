@@ -16,9 +16,9 @@
     "globalParams": [],
     "executions": [
         {
-            "id": "fatigo",
-            "name": "Fatigo",
-            "executable": "babelomics/babelomics.sh --tool fatiscan",
+            "id": "fatiscan",
+            "name": "Fatiscan",
+            "executable": "fatiscan.sh",
             "inputParams": [
                 {
                     "name": "ranked-list",
@@ -29,7 +29,13 @@
                     "dataType":"txt"
                 }
             ],
-            "inputParamsFromTxt": [],
+            "inputParamsFromTxt": [
+                {
+                    "name": "ranked-list-text",
+                    "dataType": "txt"
+                }
+
+            ],
             "outputParam": "outdir",
             "validParams": [
                 {

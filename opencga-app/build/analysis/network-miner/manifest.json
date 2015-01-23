@@ -44,7 +44,7 @@
                 {
                     "name": "list",
                     "description": "An input file containing a node per line",
-                    "required": "true"
+                    "required": "false"
                 },
                 {
                     "name": "seedlist",
