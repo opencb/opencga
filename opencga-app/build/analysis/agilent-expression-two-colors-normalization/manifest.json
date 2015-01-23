@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool agilent-expression-two-colors-normalization",
+            "executable": "agilent-expression-two-colors-normalization.sh",
             "inputParams": [
                 {
                     "name": "compressed-file",

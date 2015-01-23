@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool stratification ",
+            "executable": "stratification.sh",
             "inputParams": [
                 {
                     "name": "zip-file",
