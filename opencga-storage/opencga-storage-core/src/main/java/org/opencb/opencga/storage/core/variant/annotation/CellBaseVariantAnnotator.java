@@ -80,14 +80,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             throw new IllegalStateException("Cant createAnnotation without a CellBase source (DBAdaptorFactory or a CellBaseClient)");
         }
 
-        URI fileUri;
         Path path = Paths.get(outDir != null? outDir.toString() : "/tmp" ,fileName + ".annot.json.gz");
-        try {
-            fileUri = new URI("file", path.toString(), null);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            return null;
-        }
+        URI fileUri = path.toUri();
 
         /** Open output stream **/
         OutputStream outputStream;

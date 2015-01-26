@@ -174,15 +174,19 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         builder.append("_");
         builder.append(start);
         builder.append("_");
-        if (reference.length() < Variant.SV_THRESHOLD) {
+        if (reference.equals("-")) {
+
+        } else if (reference.length() < Variant.SV_THRESHOLD) {
             builder.append(reference);
         } else {
             builder.append(new String(CryptoUtils.encryptSha1(reference)));
         }
         
         builder.append("_");
-        
-        if (alternate.length() < Variant.SV_THRESHOLD) {
+
+        if (alternate.equals("-")) {
+
+        } else if (alternate.length() < Variant.SV_THRESHOLD) {
             builder.append(alternate);
         } else {
             builder.append(new String(CryptoUtils.encryptSha1(alternate)));

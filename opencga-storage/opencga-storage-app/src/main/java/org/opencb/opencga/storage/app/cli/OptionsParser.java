@@ -28,8 +28,9 @@ public class OptionsParser {
     private final CommandIndexSequence commandIndexSequence;
     private final CommandFetchVariants commandFetchVariants;
     private final CommandFetchAlignments commandFetchAlignments;
-    private final CommandCreateAnnotations commandCreateAnnotations;
-    private final CommandLoadAnnotations commandLoadAnnotations;
+    private final CommandAnnotateVariants commandAnnotateVariants;
+//    private final CommandCreateAnnotations commandCreateAnnotations;
+//    private final CommandLoadAnnotations commandLoadAnnotations;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -45,8 +46,9 @@ public class OptionsParser {
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
         jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
         jcommander.addCommand(commandFetchAlignments = new CommandFetchAlignments());
-        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
-        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
+        jcommander.addCommand(commandAnnotateVariants = new CommandAnnotateVariants());
+//        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
+//        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
@@ -489,7 +491,7 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
-    class CommandAnnotate extends GeneralParameters {
+    class CommandAnnotateVariants extends GeneralParameters {
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         OpenCGAStorageMain.AnnotationSource annotator = null;
@@ -500,7 +502,7 @@ public class OptionsParser {
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         String annotatorConfig = null;
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = true, arity = 1)
         String dbName;  // TODO rename --database
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
@@ -512,16 +514,16 @@ public class OptionsParser {
         @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
         String outDir = ".";
 
-        @Parameter(names = {"--species"}, description = " ", required = false, arity = 1)
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         String species = "hsapiens";
 
-        @Parameter(names = {"--assembly"}, description = " ", required = false, arity = 1)
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
         String assembly = "GRc37";
 
         @Parameter(names = {"--create"}, description = "Do only the creation of the annotations to a file (specified by --output-filename)")
         boolean create = false;
-        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB")
-        boolean load = false;
+        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
+        String load = null;
 
         @Parameter(names = {"--filter-region"}, description = "comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
@@ -610,6 +612,16 @@ public class OptionsParser {
         return parsedCommand != null? parsedCommand: "";
     }
 
+    Command getCommand() {
+        String parsedCommand = jcommander.getParsedCommand();
+        JCommander jCommander = jcommander.getCommands().get(parsedCommand);
+        List<Object> objects = jCommander.getObjects();
+        if (!objects.isEmpty() && objects.get(0) instanceof Command) {
+            return ((Command) objects.get(0));
+        }
+        return null;
+    }
+
     String usage() {
         StringBuilder builder = new StringBuilder();
         String parsedCommand = jcommander.getParsedCommand();
@@ -665,13 +677,16 @@ public class OptionsParser {
         return commandFetchAlignments;
     }
 
-    CommandCreateAnnotations getCommandCreateAnnotations() {
-        return commandCreateAnnotations;
+    CommandAnnotateVariants getCommandAnnotateVariants() {
+        return commandAnnotateVariants;
     }
+//    CommandCreateAnnotations getCommandCreateAnnotations() {
+//        return commandCreateAnnotations;
+//    }
 
-    CommandLoadAnnotations getCommandLoadAnnotations() {
-        return commandLoadAnnotations;
-    }
+//    CommandLoadAnnotations getCommandLoadAnnotations() {
+//        return commandLoadAnnotations;
+//    }
 
     GeneralParameters getGeneralParameters() {
         return generalParameters;
