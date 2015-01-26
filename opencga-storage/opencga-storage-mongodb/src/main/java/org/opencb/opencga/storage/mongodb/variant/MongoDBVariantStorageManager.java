@@ -94,9 +94,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
         boolean includeStats = params.getBoolean(INCLUDE_STATS);
-        VariantSource source = params.get(SOURCE, VariantSource.class);
+        VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
         String dbName = params.getString(DB_NAME, null);
-//        VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
         int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100"));
 
