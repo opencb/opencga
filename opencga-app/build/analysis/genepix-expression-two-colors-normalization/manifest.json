@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool genepix-expression-two-colors-normalization",
+            "executable": "genepix-expression-two-colors-normalization",
             "inputParams": [
                 {
                     "name": "compressed-file",

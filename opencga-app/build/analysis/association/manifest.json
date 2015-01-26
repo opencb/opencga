@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool association ",
+            "executable": "association.sh",
             "inputParams": [
                 {
                     "name": "zip-file",

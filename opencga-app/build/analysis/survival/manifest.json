@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "survival.sh ",
+            "executable": "survival.sh",
             "inputParams": [
                 {
                     "name": "dataset",

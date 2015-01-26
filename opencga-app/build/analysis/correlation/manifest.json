@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "correlation.sh ",
+            "executable": "correlation.sh",
             "inputParams": [
                 {
                     "name": "dataset",

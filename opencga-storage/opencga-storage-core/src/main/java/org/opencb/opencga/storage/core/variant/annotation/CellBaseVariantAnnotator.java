@@ -126,7 +126,9 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                 );
                 logger.debug("Skip variant! {}", variant);
             } else {
-                GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
+                GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
+                        variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
+                        variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
                 genomicVariantList.add(genomicVariant);
             }
 

@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool clustering ",
+            "executable": "clustering.sh",
             "inputParams": [
                 {
                     "name": "dataset",

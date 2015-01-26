@@ -18,7 +18,7 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool affy-expression-normalization ",
+            "executable": "affy-expression-normalization.sh",
             "inputParams": [
                 {
                     "name": "compressed-file",

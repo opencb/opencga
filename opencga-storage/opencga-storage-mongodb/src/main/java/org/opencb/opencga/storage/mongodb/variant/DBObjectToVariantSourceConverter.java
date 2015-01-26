@@ -5,6 +5,7 @@ import com.mongodb.DBObject;
 import java.util.Calendar;
 import java.util.Map;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
@@ -18,6 +19,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     public final static String FILENAME_FIELD = "fname";
     public final static String STUDYID_FIELD = "sid";
     public final static String STUDYNAME_FIELD = "sname";
+    public final static String STUDYTYPE_FIELD = "stype";
     public final static String DATE_FIELD = "date";
     public final static String SAMPLES_FIELD = "samp";
     
@@ -37,8 +39,9 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     
     @Override
     public VariantSource convertToDataModelType(DBObject object) {
+        VariantStudy.StudyType studyType = VariantStudy.StudyType.fromString(object.get(STUDYTYPE_FIELD).toString());
         VariantSource source = new VariantSource((String) object.get(FILENAME_FIELD), (String) object.get(FILEID_FIELD),
-                (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD));
+                (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD), studyType, VariantSource.Aggregation.NONE);
         
         // Samples
         source.setSamplesPosition((Map) object.get(SAMPLES_FIELD));
@@ -74,7 +77,8 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                 .append(STUDYNAME_FIELD, object.getStudyName())
                 .append(STUDYID_FIELD, object.getStudyId())
                 .append(DATE_FIELD, Calendar.getInstance().getTime())
-                .append(SAMPLES_FIELD, object.getSamplesPosition());
+                .append(SAMPLES_FIELD, object.getSamplesPosition())
+                .append(STUDYTYPE_FIELD, object.getType().toString());
 
         // TODO Pending how to manage the consequence type ranking (calculate during reading?)
 //        BasicDBObject cts = new BasicDBObject();
