@@ -378,7 +378,7 @@ public class OptionsParser {
         boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        VariantAnnotationManager.AnnotationSource annotator = VariantAnnotationManager.AnnotationSource.CELLBASE_REST;
+        VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         boolean overwriteAnnotations = false;

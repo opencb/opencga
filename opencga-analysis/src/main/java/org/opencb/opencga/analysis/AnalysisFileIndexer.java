@@ -157,15 +157,15 @@ public class AnalysisFileIndexer {
             dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" index-variants ")
-                    .append(" --alias ").append(indexFile.getId())
+                    .append(" --file-id ").append(indexFile.getId())
                     .append(" --study ").append(study.getName())
-                    .append(" --study-alias ").append(study.getId())
+                    .append(" --study-id ").append(study.getId())
                     .append(" --study-type ").append(study.getType())
                     .append(" --dbName ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file).getPath())  //TODO: Make URI-compatible
                     .append(" --outdir ").append(outDirUri.getPath())                    //TODO: Make URI-compatible
                     .append(" --backend ").append(storageEngine)
-                    .append(" --include-samples ")
+                    .append(" --include-genotypes ")
                     .append(" --include-stats ")
                     .append(" --annotate ")
 //                    .append(" --credentials ")
