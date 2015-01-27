@@ -129,6 +129,11 @@
                 <filtering>true</filtering>
                 <targetPath>${basedir}/build/conf</targetPath>
             </resource>
+            <resource>
+                <directory>../opencga-storage/opencga-storage-app/build/conf</directory>
+                <filtering>true</filtering>
+                <targetPath>${basedir}/build/conf</targetPath>
+            </resource>
         </resources>
 
         <plugins>

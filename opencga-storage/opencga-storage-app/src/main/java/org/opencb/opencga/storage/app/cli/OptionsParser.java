@@ -1,8 +1,11 @@
 package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.*;
+import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.opencga.storage.core.variant.annotation.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -27,8 +30,9 @@ public class OptionsParser {
     private final CommandIndexSequence commandIndexSequence;
     private final CommandFetchVariants commandFetchVariants;
     private final CommandFetchAlignments commandFetchAlignments;
-    private final CommandCreateAnnotations commandCreateAnnotations;
-    private final CommandLoadAnnotations commandLoadAnnotations;
+    private final CommandAnnotateVariants commandAnnotateVariants;
+//    private final CommandCreateAnnotations commandCreateAnnotations;
+//    private final CommandLoadAnnotations commandLoadAnnotations;
 //    private CommandDownloadAlignments downloadAlignments;
 
     public OptionsParser() {
@@ -44,12 +48,22 @@ public class OptionsParser {
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
         jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
         jcommander.addCommand(commandFetchAlignments = new CommandFetchAlignments());
-        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
-        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
+        jcommander.addCommand(commandAnnotateVariants = new CommandAnnotateVariants());
+//        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
+//        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
+    /**
+     -h | --help
+     -v | --version
+     --log-level INT
+     --verbose
+     --storage-engine TEXT
+     --storage-engine-config FILE
+     */
     interface Command {
+
     }
 
     class GeneralParameters implements Command {
@@ -63,7 +77,22 @@ public class OptionsParser {
         boolean help;
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        private Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<String, String>();
+
+        @Parameter(names = {"-v", "--version"}, description = "print version and exit")
+        boolean version;
+
+        @Parameter(names = {"--verbose"}, description = "log-level to debug")
+        boolean verbose;
+
+        @Parameter(names = {"--log-level"}, description = "one of {error, warn, info, debug, trace}")
+        String logLevel = null; // TODO add validation?
+
+        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in OPENCGA.STORAGE.ENGINES, in storage.properties")
+        String storageEngine = null;
+
+        @Parameter(names = {"--storage-engine-config"}, arity = 1, description = "Path of the file with options to overwrite storage-<Plugin>.properties")
+        String storageEngineConfig = null;
 
         @Override
         public String toString() {
@@ -274,7 +303,7 @@ public class OptionsParser {
         
     }
 
-    class CommandIndex implements Command {
+    class CommandIndex extends GeneralParameters {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
@@ -288,7 +317,7 @@ public class OptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         String outdir = "";
 
-        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file", required = true, arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         String fileId;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
@@ -299,9 +328,6 @@ public class OptionsParser {
 
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
-
-        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> params = new HashMap<>();
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
@@ -310,7 +336,7 @@ public class OptionsParser {
         @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         String study;
 
-        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         String studyId;
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
@@ -319,23 +345,46 @@ public class OptionsParser {
         @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
         boolean includeEffect = false;
 
-        @Parameter(names = {"--include-samples"}, description = "Save samples information (optional)")
-        boolean includeSamples = false;
-
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
 
-        @Parameter(names = {"--annotate"}, description = "Annotate variants as well (optional)")
-        boolean annotate = false;
+        @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
+        boolean includeGenotype = false;
 
-        @Parameter(names = {"--overwrite-annotations"}, description = "")
-        boolean overwriteAnnotations = false;
+        @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
+        boolean compressGenotypes = false;
+
+        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
+        boolean includeSrc = false;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+
+        @Parameter(names = {"--transform"}, description = "Do only the transform phase")
+        boolean transform = false; // stop before load
+
+        @Parameter(names = {"--load"}, description = "Do only the load phase")
+        boolean load = false; // skip transform
+
+        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        boolean gvcf = false;
+        @Parameter(names = {"--bgzip"}, description = "The input file is in bgzip format")
+        boolean bgzip = false;
+
+        @Parameter(names = {"--annotate"}, description = "Annotate variants as well (optional)")
+        boolean annotate = false;
+
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        VariantAnnotationManager.AnnotationSource annotator = null;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
+        boolean overwriteAnnotations = false;
+
+        @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
+        String annotatorConfig = null;
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
@@ -442,11 +491,53 @@ public class OptionsParser {
 
     }
 
-    enum AnnotationSource {
-        CELLBASE_DB_ADAPTOR,
-        CELLBASE_REST
+
+    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
+    class CommandAnnotateVariants extends GeneralParameters {
+
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        VariantAnnotationManager.AnnotationSource annotator = null;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
+        boolean overwriteAnnotations = false;
+
+        @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
+        String annotatorConfig = null;
+
+        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = true, arity = 1)
+        String dbName;  // TODO rename --database
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials = "";
+
+        @Parameter(names = {"-f", "--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        String fileName = "";
+
+        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
+        String outDir = ".";
+
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
+        String species = "hsapiens";
+
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
+        String assembly = "GRc37";
+
+        @Parameter(names = {"--create"}, description = "Do only the creation of the annotations to a file (specified by --output-filename)")
+        boolean create = false;
+        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
+        String load = null;
+
+        @Parameter(names = {"--filter-region"}, description = "comma separated region filters", splitter = CommaParameterSplitter.class)
+        List<String> filterRegion = null;
+
+        @Parameter(names = {"--filter-gene"}, description = "comma separated gene filters", splitter = CommaParameterSplitter.class)
+        String filterGene = null;
+
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
     }
 
+    @Deprecated
     @Parameters(commandNames = {"create-annotations"}, commandDescription = "Create an annotation file.")
     class CommandCreateAnnotations implements Command {
 
@@ -465,8 +556,8 @@ public class OptionsParser {
         @Parameter(names = {"-f", "--fileName"}, description = "Output file name. Default: dbName", required = false, arity = 1)
         String fileName = "";
 
-        @Parameter(names = {"-s", "--annotation-source"}, description = "Output file name. Default: dbName", required = false, arity = 1)
-        AnnotationSource annotationSource = AnnotationSource.CELLBASE_REST;
+        @Parameter(names = {"-s", "--annotation-source"}, description = "Annotation source", required = false, arity = 1)
+        VariantAnnotationManager.AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.CELLBASE_REST;
 
         @Parameter(names = {"--species"}, description = " ", required = true, arity = 1)
         String species;
@@ -499,6 +590,7 @@ public class OptionsParser {
     }
 
 
+    @Deprecated
     @Parameters(commandNames = {"load-annotations"}, commandDescription = "Load an annotation file.")
     class CommandLoadAnnotations implements Command {
 
@@ -520,6 +612,16 @@ public class OptionsParser {
         jcommander.parse(args);
         String parsedCommand = jcommander.getParsedCommand();
         return parsedCommand != null? parsedCommand: "";
+    }
+
+    Command getCommand() {
+        String parsedCommand = jcommander.getParsedCommand();
+        JCommander jCommander = jcommander.getCommands().get(parsedCommand);
+        List<Object> objects = jCommander.getObjects();
+        if (!objects.isEmpty() && objects.get(0) instanceof Command) {
+            return ((Command) objects.get(0));
+        }
+        return null;
     }
 
     String usage() {
@@ -577,13 +679,16 @@ public class OptionsParser {
         return commandFetchAlignments;
     }
 
-    CommandCreateAnnotations getCommandCreateAnnotations() {
-        return commandCreateAnnotations;
+    CommandAnnotateVariants getCommandAnnotateVariants() {
+        return commandAnnotateVariants;
     }
+//    CommandCreateAnnotations getCommandCreateAnnotations() {
+//        return commandCreateAnnotations;
+//    }
 
-    CommandLoadAnnotations getCommandLoadAnnotations() {
-        return commandLoadAnnotations;
-    }
+//    CommandLoadAnnotations getCommandLoadAnnotations() {
+//        return commandLoadAnnotations;
+//    }
 
     GeneralParameters getGeneralParameters() {
         return generalParameters;
