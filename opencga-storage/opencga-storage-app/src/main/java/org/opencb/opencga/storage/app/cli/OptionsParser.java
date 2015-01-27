@@ -141,6 +141,7 @@ public class OptionsParser {
     }
 
 
+    @Deprecated
     @Parameters(commandNames = {"transform-variants"}, commandDescription = "Generates a data model from an input file")
     class CommandTransformVariants implements Command {
 
@@ -178,6 +179,7 @@ public class OptionsParser {
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
     }
 
+    @Deprecated
     @Parameters(commandNames = {"load-variants"}, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadVariants implements Command {
 
@@ -324,24 +326,24 @@ public class OptionsParser {
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         String dbName;
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
     class CommandIndexVariants extends CommandIndex implements Command {
 
-        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
         String study;
 
-        @Parameter(names = {"--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         String studyId;
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         String pedigree;
-
-        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
-        boolean includeEffect = false;
+//
+//        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
+//        boolean includeEffect = false;
 
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
@@ -404,7 +406,7 @@ public class OptionsParser {
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
@@ -502,8 +504,8 @@ public class OptionsParser {
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         String annotatorConfig = null;
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = true, arity = 1)
-        String dbName;  // TODO rename --database
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";

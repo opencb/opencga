@@ -133,8 +133,8 @@ public class OpenCGAStorageMain {
 
             VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
             createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
-
-        } else if (command instanceof OptionsParser.CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
+ /*
+        }else if (command instanceof OptionsParser.CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
             OptionsParser.CommandTransformVariants c = (OptionsParser.CommandTransformVariants) command;
             VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
             URI variantsUri = new URI(null, c.file, null);
@@ -685,7 +685,7 @@ public class OpenCGAStorageMain {
         VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
 
         ObjectMap params = new ObjectMap();
-        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
+//        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
         params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.SOURCE, source);
