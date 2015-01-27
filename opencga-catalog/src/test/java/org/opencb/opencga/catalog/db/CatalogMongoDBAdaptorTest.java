@@ -49,13 +49,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         properties.load(is);
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty("CATALOG.DB.HOST"),
-                Integer.parseInt(properties.getProperty("CATALOG.DB.PORT")));
+                properties.getProperty("OPENCGA.CATALOG.DB.HOST"),
+                Integer.parseInt(properties.getProperty("OPENCGA.CATALOG.DB.PORT")));
 
         MongoCredential mongoCredentials = MongoCredential.createMongoCRCredential(
-                properties.getProperty("CATALOG.DB.USER", ""),
-                properties.getProperty("CATALOG.DB.DATABASE")+"_catalog_test",
-                properties.getProperty("CATALOG.DB.PASSWORD", "").toCharArray());
+                properties.getProperty("OPENCGA.CATALOG.DB.USER", ""),
+                properties.getProperty("OPENCGA.CATALOG.DB.DATABASE")+"_catalog_test",
+                properties.getProperty("OPENCGA.CATALOG.DB.PASSWORD", "").toCharArray());
 
 
         /**

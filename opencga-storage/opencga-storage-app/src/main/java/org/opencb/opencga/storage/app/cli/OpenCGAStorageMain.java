@@ -10,8 +10,6 @@ import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -33,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,11 +45,13 @@ import java.util.*;
  */
 public class OpenCGAStorageMain {
 
-//    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
+    //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
     private static final String opencgaHome;
+    public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
 
     protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     private static OptionsParser parser;
+
 
     static {
         // Finds the installation directory (opencgaHome).
@@ -74,63 +75,20 @@ public class OpenCGAStorageMain {
 
     public static void main(String[] args)
             throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
-            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException {
+            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException {
 
         parser = new OptionsParser();
         OptionsParser.Command command = null;
         try {
             String parsedCommand = parser.parse(args);
-
             if(parser.getGeneralParameters().help || args.length == 0){
                 System.out.println(parser.usage());
                 return;
             }
-
-            switch (parsedCommand) {
-                case "index-variants":
-                    command = parser.getCommandIndexVariants();
-                    break;
-                case "index-alignments":
-                    command = parser.getCommandIndexAlignments();
-                    break;
-                case "index-sequences":
-                    command = parser.getCommandIndexSequence();
-                    break;
-                case "create-accessions":
-                    command = parser.getAccessionsCommand();
-                    break;
-                case "load-variants":
-                    command = parser.getLoadCommand();
-                    break;
-                case "transform-variants":
-                    command = parser.getTransformCommand();
-                    break;
-                case "transform-alignments":
-                    command = parser.getTransformAlignments();
-                    break;
-                case "load-alignments":
-                    command = parser.getLoadAlignments();
-                    break;
-                case "search-variants":
-                case "fetch-variants":
-                    command = parser.getCommandFetchVariants();
-                    break;
-                case "search-alignments":
-                case "fetch-alignments":
-                    command = parser.getCommandFetchAlignments();
-                    break;
-                case "create-annotations":
-                    command = parser.getCommandCreateAnnotations();
-                    break;
-                case "load-annotations":
-                    command = parser.getCommandLoadAnnotations();
-                    break;
-//                case "download-alignments":
-//                    command = parser.getDownloadAlignments();
-//                    break;
-                default:
-                    System.out.println("Command not implemented");
-                    System.exit(1);
+            command = parser.getCommand();
+            if (command == null) {
+                System.out.println("Command not implemented");
+                System.exit(1);
             }
         } catch (ParameterException ex) {
             System.out.println(ex.getMessage());
@@ -141,142 +99,15 @@ public class OpenCGAStorageMain {
 
         if (command instanceof OptionsParser.CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
             OptionsParser.CommandIndexAlignments c = (OptionsParser.CommandIndexAlignments) command;
-            if (c.input.endsWith(".bam") || c.input.endsWith(".sam")) {
-                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
-                ObjectMap params = new ObjectMap();
-                params.putAll(c.params);
+            indexAlignments(c);
 
-                if (c.fileId != null) {
-                    params.put(AlignmentStorageManager.FILE_ID, c.fileId);
-                }
-                params.put(AlignmentStorageManager.PLAIN, false);
-                params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, Arrays.asList("200"));
-                params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true);
-                params.put(AlignmentStorageManager.DB_NAME, c.dbName);
-                params.put(AlignmentStorageManager.COPY_FILE, false);
-                params.put(AlignmentStorageManager.ENCRYPT, "null");
-
-                URI input = new URI(null, c.input, null);
-                URI outdir = c.outdir.isEmpty() ? input.resolve(".") : new URI(null, c.outdir + "/", null).resolve(".");
-//                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
-//                Path credentials = Paths.get(c.credentials);
-
-                URI nextFileUri;
-                logger.info("-- Extract alignments -- {}", input);
-                nextFileUri = alignmentStorageManager.extract(input, outdir, params);
-
-                logger.info("-- PreTransform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
-                logger.info("-- Transform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
-                logger.info("-- PostTransform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
-
-                logger.info("-- PreLoad alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
-                logger.info("-- Load alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.load(nextFileUri, params);
-                logger.info("-- PostLoad alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
-
-//                String fileName;
-//                if(c.fileId != null) {
-//                    fileName = c.fileId + ".bam";
-//                } else {
-//                    fileName = input.resolve(".").relativize(input).toString();
-//                }
-//                URI loadInput = outdir.resolve(fileName + ".coverage.json.gz");
-//                alignmentStorageManager.load(loadInput, params);
-
-            } else {
-                throw new IOException("Unknown file type");
-            }
         } else if (command instanceof OptionsParser.CommandIndexSequence) {
             OptionsParser.CommandIndexSequence c = (OptionsParser.CommandIndexSequence) command;
-            if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
-                Path input = Paths.get(new URI(c.input).getPath());
-                Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(new URI(c.outdir).getPath());
+            indexSequence(c);
 
-                logger.info("Indexing Fasta : " + input.toString());
-                long start = System.currentTimeMillis();
-                SqliteSequenceDBAdaptor sqliteSequenceDBAdaptor = new SqliteSequenceDBAdaptor();
-                File index = null;
-                try {
-                    index = sqliteSequenceDBAdaptor.index(input.toFile(), outdir);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    System.exit(1);
-                }
-                long end = System.currentTimeMillis();
-                logger.info(
-                        "Fasta file '" + input + "' indexed. " +
-                                "Result: '" + index + "' . " +
-                                "Time = " + (end - start) + "ms");
-            } else {
-                throw new IOException("Unknown file type");
-            }
         } else if (command instanceof OptionsParser.CommandIndexVariants) {
             OptionsParser.CommandIndexVariants c = (OptionsParser.CommandIndexVariants) command;
-            if(c.input.endsWith(".vcf") || c.input.endsWith(".vcf.gz")) {
-                VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-                if(c.credentials != null && !c.credentials.isEmpty()) {
-                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-                }
-
-                URI variantsUri = new URI(null, c.input, null);
-                URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? new URI(null, c.pedigree, null) : null;
-                URI outdirUri = c.outdir != null && !c.outdir.isEmpty() ? new URI(null, c.outdir, null).resolve(".") : variantsUri.resolve(".");
-
-                String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
-                VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
-
-                ObjectMap params = new ObjectMap();
-                params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
-                params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
-                params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-                params.put(VariantStorageManager.SOURCE, source);
-                params.put(VariantStorageManager.DB_NAME, c.dbName);
-                params.put(VariantStorageManager.ANNOTATE, c.annotate);
-                params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
-
-                Properties annotatorDefaultProperties = new Properties();
-                Properties annotatorProperties = Config.getProperties("storage.properties", annotatorDefaultProperties);
-                String cellbaseVersion = annotatorProperties.getProperty("CELLBASE.VERSION", "v3");
-                String cellbaseRest = annotatorProperties.getProperty("CELLBASE.REST.URL", "");
-                checkNull(cellbaseVersion, "CELLBASE.VERSION");
-                checkNull(cellbaseRest, "CELLBASE.REST.URL");
-                params.put(VariantStorageManager.CELLBASE_VERSION, cellbaseVersion);
-                params.put(VariantStorageManager.CELLBASE_REST_URL, cellbaseRest);
-
-                URI nextFileUri;
-                logger.info("-- Extract variants -- {}", variantsUri);
-                nextFileUri = variantStorageManager.extract(variantsUri, outdirUri, params);
-
-
-                logger.info("-- PreTransform variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.preTransform(nextFileUri, params);
-                logger.info("-- Transform variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri, params);
-                logger.info("-- PostTransform variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
-
-                source.setFileName(fileName + ".variants.json.gz");
-
-                logger.info("-- PreLoad variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
-                logger.info("-- Load variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.load(nextFileUri, params);
-                logger.info("-- PostLoad variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
-
-//                String fileName;
-//                fileName = outdir != null
-//                        ? outdir.resolve(Paths.get(source.getFileName()).getFileName() + ".variants.json.gz").toString()
-//                        : source.getFileName() + ".variants.json.gz";
-
-//                URI newInput = outdirUri.resolve(fileName + ".variants.json.gz");
-//                source.setFileName(fileName + ".variants.json.gz");
-            }
+            indexVariants(c);
 
         } else if (command instanceof OptionsParser.CommandCreateAccessions) {
             OptionsParser.CommandCreateAccessions c = (OptionsParser.CommandCreateAccessions) command;
@@ -302,7 +133,7 @@ public class OpenCGAStorageMain {
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS,   c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.SOURCE, source);
+            params.put(VariantStorageManager.VARIANT_SOURCE, source);
 
             variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
 
@@ -325,7 +156,7 @@ public class OpenCGAStorageMain {
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.SOURCE, source);
+            params.put(VariantStorageManager.VARIANT_SOURCE, source);
             params.put(VariantStorageManager.DB_NAME, c.dbName);
 
             // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
@@ -644,112 +475,220 @@ public class OpenCGAStorageMain {
                 throw new UnsupportedOperationException("Unable to fetch over all the genome");
 //                System.out.println(dbAdaptor.getAllAlignments(options));
             }
-        } else if(command instanceof OptionsParser.CommandCreateAnnotations) {
-            OptionsParser.CommandCreateAnnotations c = (OptionsParser.CommandCreateAnnotations) command;
+        } else if(command instanceof OptionsParser.CommandAnnotateVariants) {
+            OptionsParser.CommandAnnotateVariants c = (OptionsParser.CommandAnnotateVariants) command;
+            annotateVariants(c);
+        }
+    }
 
-            /**
-             * Create DBAdaptor
-             */
-            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-            if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+    private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
+        /**
+         * Create DBAdaptor
+         */
+        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.storageEngine);
+        if(c.credentials != null && !c.credentials.isEmpty()) {
+            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+        }
+        ObjectMap params = new ObjectMap();
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+
+        /**
+         * Create Annotator
+         */
+        Properties annotatorProperties = Config.getStorageProperties();
+        if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
+            annotatorProperties.load(new FileInputStream(c.annotatorConfig));
+        }
+
+
+        VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
+        if(annotatorSource == null) {
+            annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
+                    annotatorProperties.getProperty(
+                            OPENCGA_STORAGE_ANNOTATOR,
+                            VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
+                    ).toUpperCase()
+            );
+        }
+        logger.info("Annotating with {}", annotatorSource);
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
+        VariantAnnotationManager variantAnnotationManager =
+                new VariantAnnotationManager(annotator, dbAdaptor);
+
+        QueryOptions queryOptions = new QueryOptions();
+        Path outDir = Paths.get(c.outDir);
+
+        boolean doCreate = c.create, doLoad = c.load != null;
+        if (!c.create && c.load == null) {
+            doCreate = true;
+            doLoad = true;
+        }
+
+        URI annotationFile = null;
+        if (doCreate) {
+            long start = System.currentTimeMillis();
+            logger.info("Starting annotation creation ");
+            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, queryOptions);
+            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
+        }
+
+        if (doLoad) {
+            long start = System.currentTimeMillis();
+            logger.info("Starting annotation load");
+            if (annotationFile == null) {
+//                annotationFile = new URI(null, c.load, null);
+                annotationFile = Paths.get(c.load).toUri();
             }
-            ObjectMap params = new ObjectMap();
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
+            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+        }
+    }
 
-            /**
-             * Create Annotator
-             */
-            VariantAnnotator annotator;
-            Properties cellbaseDefaultProperties = new Properties();
-            Properties cellbaseProperties = Config.getProperties("cellbase.properties", cellbaseDefaultProperties);
+    private static void indexSequence(OptionsParser.CommandIndexSequence c) throws URISyntaxException, IOException, FileFormatException {
+        if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
+            Path input = Paths.get(new URI(c.input).getPath());
+            Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(new URI(c.outdir).getPath());
 
-            switch(c.annotationSource) {
-                default:
-                case CELLBASE_REST: {
-                    String cellbaseVersion = getDefault(c.cellbaseVersion, cellbaseProperties.getProperty("CELLBASE.VERSION", "v3"));
-                    String cellbaseRest = getDefault(c.cellbaseRest, cellbaseProperties.getProperty("CELLBASE.REST.URL", ""));
-
-                    checkNull(cellbaseVersion, "cellbaseVersion");
-                    checkNull(cellbaseRest, "cellbaseRest");
-
-                    URI url = new URI(cellbaseRest);
-                    CellBaseClient cellBaseClient = new CellBaseClient(url.getHost(), url.getPort(), url.getPath(), cellbaseVersion, c.species);
-                    annotator = new CellBaseVariantAnnotator(cellBaseClient);
-                }
-                break;
-                case CELLBASE_DB_ADAPTOR: {
-                    String cellbaseHost = getDefault(c.cellbaseHost, cellbaseProperties.getProperty("CELLBASE.DB.HOST", ""));
-                    String cellbaseDatabase = getDefault(c.cellbaseDatabase, cellbaseProperties.getProperty("CELLBASE.DB.NAME", ""));
-                    int cellbasePort = c.cellbasePort == 0 ? Integer.parseInt(cellbaseProperties.getProperty("CELLBASE.DB.PORT", "27017")) : c.cellbasePort;
-                    String cellbaseUser = getDefault(c.cellbaseUser, cellbaseProperties.getProperty("CELLBASE.DB.USER", ""));
-                    String cellbasePassword = getDefault(c.cellbasePassword, cellbaseProperties.getProperty("CELLBASE.DB.PASSWORD", ""));
-
-                    checkNull(cellbaseHost, "cellbaseHost");
-                    checkNull(cellbaseDatabase, "cellbaseDatabase");
-                    checkNull(cellbasePort, "cellbasePort");
-                    checkNull(cellbaseUser, "cellbaseUser");
-                    checkNull(cellbasePassword, "cellbasePassword");
-
-
-                    CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
-                    cellbaseConfiguration.addSpeciesConnection(
-                            c.species,
-                            c.cellbaseAssemly,
-                            cellbaseHost,
-                            cellbaseDatabase,
-                            cellbasePort,
-                            "mongo",
-                            cellbaseUser,
-                            cellbasePassword,
-                            Integer.parseInt(cellbaseProperties.getProperty("CELLBASE.DB.MAX_POOL_SIZE", "10")),
-                            Integer.parseInt(cellbaseProperties.getProperty("CELLBASE.DB.TIMEOUT", "200")));
-                    cellbaseConfiguration.addSpeciesAlias(c.species, c.species);
-
-                    annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, c.species, c.cellbaseAssemly);
-                }
-                break;
+            logger.info("Indexing Fasta : " + input.toString());
+            long start = System.currentTimeMillis();
+            SqliteSequenceDBAdaptor sqliteSequenceDBAdaptor = new SqliteSequenceDBAdaptor();
+            File index = null;
+            try {
+                index = sqliteSequenceDBAdaptor.index(input.toFile(), outdir);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                System.exit(1);
             }
-            org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager variantAnnotationManager =
-                    new VariantAnnotationManager(annotator, dbAdaptor);
+            long end = System.currentTimeMillis();
+            logger.info(
+                    "Fasta file '" + input + "' indexed. " +
+                            "Result: '" + index + "' . " +
+                            "Time = " + (end - start) + "ms");
+        } else {
+            throw new IOException("Unknown file type");
+        }
+    }
 
-            QueryOptions queryOptions = new QueryOptions();
-            Path outDir = Paths.get(c.outDir);
-            variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty()? c.dbName : c.fileName, queryOptions);
+    private static void indexAlignments(OptionsParser.CommandIndexAlignments c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
+        AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
+        ObjectMap params = new ObjectMap();
+        params.putAll(c.params);
 
-//            MongoCredentials cellbaseCredentials = new MongoCredentials(
-//                    c.cellbaseHost,
-//                    c.cellbasePort,
-//                    c.cellbaseDatabase,
-//                    c.cellbaseUser,
-//                    c.cellbasePassword);
-//            MongoCredentials opencgaCredentials = new MongoCredentials(
-//                    c.opencgaHost,
-//                    Integer.parseInt(c.opencgaPort),
-//                    c.opencgaDatabase,
-//                    c.opencgaUser,
-//                    c.opencgaPassword);
+        if (c.fileId != null) {
+            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+        }
+        params.put(AlignmentStorageManager.PLAIN, false);
+        params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, Arrays.asList("200"));
+        params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true);
+        params.put(AlignmentStorageManager.DB_NAME, c.dbName);
+        params.put(AlignmentStorageManager.COPY_FILE, false);
+        params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-//            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(cellbaseCredentials, opencgaCredentials);
-//            variantAnnotationManager.annotate(c.cellbaseSpecies, c.cellbaseAssemly, null);
-        } else if (command instanceof OptionsParser.CommandLoadAnnotations) {
-            OptionsParser.CommandLoadAnnotations c = (OptionsParser.CommandLoadAnnotations) command;
+        URI input = new URI(null, c.input, null);
+        URI outdir = c.outdir.isEmpty() ? input.resolve(".") : new URI(null, c.outdir + "/", null).resolve(".");
+//                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
+//                Path credentials = Paths.get(c.credentials);
 
-            /**
-             * Create DBAdaptor
-             */
-            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-            if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+        URI nextFileUri;
+        logger.info("-- Extract alignments -- {}", input);
+        nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+
+        logger.info("-- PreTransform alignments -- {}", nextFileUri);
+        nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+        logger.info("-- Transform alignments -- {}", nextFileUri);
+        nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+        logger.info("-- PostTransform alignments -- {}", nextFileUri);
+        nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+
+        logger.info("-- PreLoad alignments -- {}", nextFileUri);
+        nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+        logger.info("-- Load alignments -- {}", nextFileUri);
+        nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+        logger.info("-- PostLoad alignments -- {}", nextFileUri);
+        nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+    }
+
+    private static void indexVariants(OptionsParser.CommandIndexVariants c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
+        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
+        if(c.credentials != null && !c.credentials.isEmpty()) {
+            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+        }
+
+        URI variantsUri = new URI(null, c.input, null);
+        URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? new URI(null, c.pedigree, null) : null;
+        URI outdirUri = c.outdir != null && !c.outdir.isEmpty() ? new URI(null, c.outdir, null).resolve(".") : variantsUri.resolve(".");
+
+        String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
+        VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
+
+        ObjectMap params = new ObjectMap();
+        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
+        params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
+        params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
+        params.put(VariantStorageManager.VARIANT_SOURCE, source);
+        params.put(VariantStorageManager.DB_NAME, c.dbName);
+        params.put(VariantStorageManager.ANNOTATE, c.annotate);
+        params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
+
+        if(c.annotate) {
+            //Get annotator config
+            Properties annotatorProperties = Config.getStorageProperties();
+            if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
+                annotatorProperties.load(new FileInputStream(c.annotatorConfig));
             }
-            ObjectMap params = new ObjectMap();
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+            params.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
 
-            VariantAnnotator annotator = new CellBaseVariantAnnotator();
-            org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager variantAnnotationManager =
-                    new VariantAnnotationManager(annotator, dbAdaptor);
+            //Get annotation source
+            VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
+            if(annotatorSource == null) {
+                annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
+                        annotatorProperties.getProperty(
+                                OPENCGA_STORAGE_ANNOTATOR,
+                                VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
+                        ).toUpperCase()
+                );
+            }
+            params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
+        }
 
-            variantAnnotationManager.loadAnnotation(new URI(null, c.fileName, null), new QueryOptions());
+        URI nextFileUri = variantsUri;
+
+
+        boolean extract, transform, load;
+
+        if (!c.load && !c.transform) {
+            extract = true;
+            transform = true;
+            load = true;
+        } else {
+            extract = c.transform;
+            transform = c.transform;
+            load = c.load;
+        }
+
+        if (extract) {
+            logger.info("-- Extract variants -- {}", variantsUri);
+            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri, params);
+        }
+
+        if (transform) {
+            logger.info("-- PreTransform variants -- {}", nextFileUri);
+            nextFileUri = variantStorageManager.preTransform(nextFileUri, params);
+            logger.info("-- Transform variants -- {}", nextFileUri);
+            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri, params);
+            logger.info("-- PostTransform variants -- {}", nextFileUri);
+            nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
+        }
+
+        if (load) {
+            logger.info("-- PreLoad variants -- {}", nextFileUri);
+            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
+            logger.info("-- Load variants -- {}", nextFileUri);
+            nextFileUri = variantStorageManager.load(nextFileUri, params);
+            logger.info("-- PostLoad variants -- {}", nextFileUri);
+            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
         }
     }
 

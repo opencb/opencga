@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.annotation.ConsequenceType;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.annotation.Xref;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -48,7 +50,59 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
     @Override
     public VariantAnnotation convertToDataModelType(DBObject object) {
-        return null;
+        VariantAnnotation va = new VariantAnnotation();
+
+        //ConsequenceType
+        List<ConsequenceType> consequenceTypes = new LinkedList<>();
+        Object cts = object.get(CONSEQUENCE_TYPE_FIELD);
+        if(cts != null && cts instanceof BasicDBList) {
+            for (Object o : ((BasicDBList) cts)) {
+                if(o instanceof DBObject) {
+                    DBObject ct = (DBObject) o;
+
+                    String soa = null;
+                    if(ct.containsField(SO_ACCESSION_FIELD)) {
+                        Integer so = Integer.parseInt("" + ct.get(SO_ACCESSION_FIELD));
+                        soa = ConsequenceTypeMappings.accessionToTerm.get(so);
+                    }
+                    consequenceTypes.add(new ConsequenceType(
+                            (String) ct.get(GENE_NAME_FIELD) /*.toString()*/,
+                            (String) ct.get(ENSEMBL_GENE_ID_FIELD) /*.toString()*/,
+                            (String) ct.get(ENSEMBL_TRANSCRIPT_ID_FIELD) /*.toString()*/,
+                            (String) ct.get(STRAND_FIELD) /*.toString()*/,
+                            (String) ct.get(BIOTYPE_FIELD) /*.toString()*/,
+                            (Integer) ct.get(C_DNA_POSITION_FIELD),
+                            (Integer) ct.get(CDS_POSITION_FIELD),
+                            (Integer) ct.get(A_POSITION_FIELD),
+                            (String) ct.get(A_CHANGE_FIELD) /*.toString() */,
+                            (String) ct.get(CODON_FIELD) /*.toString() */,
+                            soa));
+                }
+            }
+
+        }
+        va.setConsequenceTypes(consequenceTypes);
+
+        //XREfs
+        List<Xref> xrefs = new LinkedList<>();
+        Object xrs = object.get(XREFS_FIELD);
+        if(xrs != null && xrs instanceof BasicDBList) {
+            for (Object o : (BasicDBList) xrs) {
+                if(o instanceof DBObject) {
+                    DBObject xref = (DBObject) o;
+
+                    xrefs.add(new Xref(
+                            (String) xref.get(XREF_ID_FIELD),
+                            (String) xref.get(XREF_SOURCE_FIELD))
+                    );
+                }
+            }
+        }
+        va.setXrefs(xrefs);
+
+
+
+        return va;
     }
 
     @Override

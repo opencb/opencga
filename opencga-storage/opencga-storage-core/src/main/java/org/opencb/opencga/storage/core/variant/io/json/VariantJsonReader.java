@@ -100,6 +100,7 @@ public class VariantJsonReader implements VariantReader {
             source.setFileId(readSource.getFileId());
             source.setStudyName(readSource.getStudyName());
             source.setStudyId(readSource.getStudyId());
+            source.setAggregation(readSource.getAggregation());
             source.setMetadata(readSource.getMetadata());
             source.setPedigree(readSource.getPedigree());
             source.setSamplesPosition(readSource.getSamplesPosition());
