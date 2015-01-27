@@ -152,7 +152,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             getRegionFilter(regionList, qb);
             parseQueryOptions(options, qb);
             DBObject projection = parseProjectionQueryOptions(options);
-            System.out.println(qb.get());
             allResults.add(coll.find(qb.get(), options, variantConverter, projection));
         } else {
             for (Region r : regionList) {
@@ -178,7 +177,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 
                         new BasicDBObject("$in", studyId)));
 
-        logger.info("Query to be executed {}", qb.get().toString());
+        logger.debug("Query to be executed {}", qb.get().toString());
 
         return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
     }
@@ -246,11 +245,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("_id", 1));
 
 //        logger.info("getAllIntervalFrequencies - (>·_·)>");
-        System.out.println(options.toString());
-
-        System.out.println(match.toString());
-        System.out.println(group.toString());
-        System.out.println(sort.toString());
+//        System.out.println(options.toString());
+//
+//        System.out.println(match.toString());
+//        System.out.println(group.toString());
+//        System.out.println(sort.toString());
 
         long dbTimeStart = System.currentTimeMillis();
         QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
@@ -663,7 +662,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         if (options.containsKey("include")) { //Include some
-            List<String> includeList = options.getListAs("include", String.class);
+            List<String> includeList = getStringList(options.get("include"));
             for (String s : includeList) {
                 projection.put(DBObjectToVariantConverter.toShortFieldName(s), 1);
             }
@@ -672,7 +671,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 projection.put(values, 1);
             }
             if (options.containsKey("exclude")) { // Exclude some
-                List<String> excludeList = options.getListAs("exclude", String.class);
+                List<String> excludeList = getStringList(options.get("exclude"));
                 for (String s : excludeList) {
                     projection.removeField(DBObjectToVariantConverter.toShortFieldName(s));
                 }
@@ -680,7 +679,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         if (options.containsKey(FILE_ID) && projection.containsField(DBObjectToVariantConverter.FILES_FIELD)) {
-            logger.info("Excluding files");
 //            List<String> files = options.getListAs(FILES, String.class);
             String file = options.getString(FILE_ID);
             projection.put(

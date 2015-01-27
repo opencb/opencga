@@ -59,7 +59,6 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
             for (Object o : ((BasicDBList) cts)) {
                 if(o instanceof DBObject) {
                     DBObject ct = (DBObject) o;
-                    System.out.println("ct = " + ct);
 
                     String soa = null;
                     if(ct.containsField(SO_ACCESSION_FIELD)) {
@@ -91,7 +90,6 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
             for (Object o : (BasicDBList) xrs) {
                 if(o instanceof DBObject) {
                     DBObject xref = (DBObject) o;
-                    System.out.println("xref = " + xref);
 
                     xrefs.add(new Xref(
                             (String) xref.get(XREF_ID_FIELD),
