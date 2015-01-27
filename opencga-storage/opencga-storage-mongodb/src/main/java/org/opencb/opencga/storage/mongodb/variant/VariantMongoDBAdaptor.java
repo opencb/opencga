@@ -665,7 +665,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options.containsKey("include")) { //Include some
             List<String> includeList = options.getListAs("include", String.class);
             for (String s : includeList) {
-                projection.put(DBObjectToVariantConverter.fieldsMap.get(s), 1);
+                projection.put(DBObjectToVariantConverter.toShortFieldName(s), 1);
             }
         } else { //Include all
             for (String values : DBObjectToVariantConverter.fieldsMap.values()) {
@@ -674,7 +674,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (options.containsKey("exclude")) { // Exclude some
                 List<String> excludeList = options.getListAs("exclude", String.class);
                 for (String s : excludeList) {
-                    projection.removeField(s);
+                    projection.removeField(DBObjectToVariantConverter.toShortFieldName(s));
                 }
             }
         }
@@ -699,7 +699,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
 
-//        logger.info("Return: {}", projection);
+        logger.debug("Projection: {}", projection);
         return projection;
     }
 
