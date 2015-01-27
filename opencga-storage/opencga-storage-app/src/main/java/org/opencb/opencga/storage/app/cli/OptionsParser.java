@@ -19,10 +19,10 @@ public class OptionsParser {
 
     private final GeneralParameters generalParameters;
     private final CommandCreateAccessions accessions;
-    private final CommandTransformVariants transform;
-    private final CommandLoadVariants load;
-    private final CommandTransformAlignments transformAlignments;
-    private final CommandLoadAlignments loadAlignments;
+//    private final CommandTransformVariants transform;
+//    private final CommandLoadVariants load;
+//    private final CommandTransformAlignments transformAlignments;
+//    private final CommandLoadAlignments loadAlignments;
     private final CommandIndexVariants commandIndexVariants;
     private final CommandIndexAlignments commandIndexAlignments;
     private final CommandIndexSequence commandIndexSequence;
@@ -37,10 +37,10 @@ public class OptionsParser {
         jcommander = new JCommander();
         jcommander.addObject(generalParameters = new GeneralParameters());
         jcommander.addCommand(accessions = new CommandCreateAccessions());
-        jcommander.addCommand(transform = new CommandTransformVariants());
-        jcommander.addCommand(load = new CommandLoadVariants());
-        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
-        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
+//        jcommander.addCommand(transform = new CommandTransformVariants());
+//        jcommander.addCommand(load = new CommandLoadVariants());
+//        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
+//        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
         jcommander.addCommand(commandIndexVariants = new CommandIndexVariants());
         jcommander.addCommand(commandIndexAlignments = new CommandIndexAlignments());
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
@@ -204,7 +204,8 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
     }
-    
+
+    @Deprecated
     @Parameters(commandNames = {"transform-alignments"}, commandDescription = "Generates the Alignment data model from an input file")
     class CommandTransformAlignments implements Command {
 
@@ -246,7 +247,8 @@ public class OptionsParser {
 
 
     }
-    
+
+    @Deprecated
     @Parameters(commandNames = {"load-alignments"}, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadAlignments implements Command {
         
@@ -266,7 +268,7 @@ public class OptionsParser {
         String backend = "mongodb";
     }
 
-    
+
     @Parameters(commandNames = {"download-alignments"}, commandDescription = "Downloads a data model from the backend")
     class CommandDownloadAlignments implements Command {
         
@@ -323,8 +325,8 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
-        String backend = "mongodb";
+//        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+//        String backend = "mongodb";
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         String dbName;
@@ -390,10 +392,17 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     class CommandIndexAlignments extends CommandIndex implements Command {
 
+        @Parameter(names = "--transform", description = "Do only the transform phase")
+        boolean transform = false;
+        @Parameter(names = "--load", description = "Do only the load phase")
+        boolean load = false;
+
+        @Parameter(names = "--calculateCoverage", description = "Calculate also coverage while indexing")
+        boolean calculateCoverage = false;
+
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
         @Parameter(names = "--mean-coverage", description = "Add mean coverage values (optional)", required = false)
         List<String> meanCoverage = new LinkedList<String>();
-
     }
 
     @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
@@ -616,10 +625,12 @@ public class OptionsParser {
 
     Command getCommand() {
         String parsedCommand = jcommander.getParsedCommand();
-        JCommander jCommander = jcommander.getCommands().get(parsedCommand);
-        List<Object> objects = jCommander.getObjects();
-        if (!objects.isEmpty() && objects.get(0) instanceof Command) {
-            return ((Command) objects.get(0));
+        if (parsedCommand != null) {
+            JCommander jCommander = jcommander.getCommands().get(parsedCommand);
+            List<Object> objects = jCommander.getObjects();
+            if (!objects.isEmpty() && objects.get(0) instanceof Command) {
+                return ((Command) objects.get(0));
+            }
         }
         return null;
     }
@@ -651,21 +662,21 @@ public class OptionsParser {
         return accessions;
     }
 
-    CommandLoadVariants getLoadCommand() {
-        return load;
-    }
-
-    CommandTransformVariants getTransformCommand() {
-        return transform;
-    }
-
-    CommandTransformAlignments getTransformAlignments() {
-        return transformAlignments;
-    }
-
-    CommandLoadAlignments getLoadAlignments() {
-        return loadAlignments;
-    }
+//    CommandLoadVariants getLoadCommand() {
+//        return load;
+//    }
+//
+//    CommandTransformVariants getTransformCommand() {
+//        return transform;
+//    }
+//
+//    CommandTransformAlignments getTransformAlignments() {
+//        return transformAlignments;
+//    }
+//
+//    CommandLoadAlignments getLoadAlignments() {
+//        return loadAlignments;
+//    }
 
 //    CommandDownloadAlignments getDownloadAlignments() {
 //        return downloadAlignments;

@@ -20,7 +20,6 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -61,7 +60,7 @@ public class OpenCGAStorageMain {
     public static final String CELLBASE_DB_MAX_POOL_SIZE = "CELLBASE.DB.MAX_POOL_SIZE";
     public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
 
-    protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
+    protected static Logger logger;
     private static OptionsParser parser;
 
     enum AnnotationSource {
@@ -101,6 +100,19 @@ public class OpenCGAStorageMain {
                 System.out.println(parser.usage());
                 return;
             }
+            if (parser.getGeneralParameters().version) {
+                String version = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.VERSION");
+                printVersion(version);
+                return;
+            }
+            String logLevel = "info";
+            if (parser.getGeneralParameters().verbose) {
+                logLevel = "debug";
+            }
+            if (parser.getGeneralParameters().logLevel != null) {
+                logLevel = parser.getGeneralParameters().logLevel;
+            }
+            setLogLevel(logLevel);
             command = parser.getCommand();
             if (command == null) {
                 System.out.println("Command not implemented");
@@ -186,7 +198,7 @@ public class OpenCGAStorageMain {
 */
 
 //            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
-
+/*
         } else if (command instanceof OptionsParser.CommandTransformAlignments) { //TODO: Add "preTransform and postTransform" call
             OptionsParser.CommandTransformAlignments c = (OptionsParser.CommandTransformAlignments) command;
             AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
@@ -208,24 +220,24 @@ public class OpenCGAStorageMain {
 
             alignmentStorageManager.transform(inputUri, null, outdirUri, params);
 
-      /*
 
-            Path filePath = Paths.get(c.file);
-            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
-            String backend = c.plain ? "json" : "json.gz";
 
-            if (!filePath.toFile().exists()) {
-                throw new IOException("[Error] File not found : " + c.file);
-            }
-
-            indexAlignments(
-                    c.study, //c.studyId,
-                    filePath,
-                    c.fileId, outdir, null,
-                    backend, null, null,     //Credentials not needed
-                    true,
-                    false,              //Can't be loaded
-                    c.includeCoverage, c.meanCoverage);*/
+//            Path filePath = Paths.get(c.file);
+//            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
+//            String backend = c.plain ? "json" : "json.gz";
+//
+//            if (!filePath.toFile().exists()) {
+//                throw new IOException("[Error] File not found : " + c.file);
+//            }
+//
+//            indexAlignments(
+//                    c.study, //c.studyId,
+//                    filePath,
+//                    c.fileId, outdir, null,
+//                    backend, null, null,     //Credentials not needed
+//                    true,
+//                    false,              //Can't be loaded
+//                    c.includeCoverage, c.meanCoverage);
 
         } else if (command instanceof OptionsParser.CommandLoadAlignments){ //TODO: Add "preLoad" call
             OptionsParser.CommandLoadAlignments c = (OptionsParser.CommandLoadAlignments) command;
@@ -236,7 +248,7 @@ public class OpenCGAStorageMain {
 
             ObjectMap params = new ObjectMap();
 
-//            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true/*c.includeCoverage*/);
+//            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true); //, c.includeCoverage);
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
             params.put(AlignmentStorageManager.DB_NAME, c.dbName);
 
@@ -244,7 +256,7 @@ public class OpenCGAStorageMain {
 
             alignmentStorageManager.load(inputUri, params);
 
-
+*/
         } else if(command instanceof OptionsParser.CommandFetchVariants){
             OptionsParser.CommandFetchVariants c = (OptionsParser.CommandFetchVariants) command;
 
@@ -632,7 +644,12 @@ public class OpenCGAStorageMain {
     }
 
     private static void indexAlignments(OptionsParser.CommandIndexAlignments c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
-        AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
+        AlignmentStorageManager alignmentStorageManager;
+        if (c.storageEngine == null || c.storageEngine.isEmpty()) {
+            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
+        } else {
+            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.storageEngine);
+        }
         ObjectMap params = new ObjectMap();
         params.putAll(c.params);
 
@@ -651,28 +668,51 @@ public class OpenCGAStorageMain {
 //                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
 //                Path credentials = Paths.get(c.credentials);
 
-        URI nextFileUri;
-        logger.info("-- Extract alignments -- {}", input);
-        nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+        boolean extract, transform, load;
+        URI nextFileUri = input;
 
-        logger.info("-- PreTransform alignments -- {}", nextFileUri);
-        nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
-        logger.info("-- Transform alignments -- {}", nextFileUri);
-        nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
-        logger.info("-- PostTransform alignments -- {}", nextFileUri);
-        nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+        if (!c.load && !c.transform) {  // if not present --transform nor --load, do both
+            extract = true;
+            transform = true;
+            load = true;
+        } else {
+            extract = c.transform;
+            transform = c.transform;
+            load = c.load;
+        }
 
-        logger.info("-- PreLoad alignments -- {}", nextFileUri);
-        nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
-        logger.info("-- Load alignments -- {}", nextFileUri);
-        nextFileUri = alignmentStorageManager.load(nextFileUri, params);
-        logger.info("-- PostLoad alignments -- {}", nextFileUri);
-        nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+        if (extract) {
+            logger.info("-- Extract alignments -- {}", input);
+            nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+        }
+
+        if (transform) {
+            logger.info("-- PreTransform alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+            logger.info("-- Transform alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+            logger.info("-- PostTransform alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+        }
+
+        if (load) {
+            logger.info("-- PreLoad alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+            logger.info("-- Load alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+            logger.info("-- PostLoad alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+        }
     }
 
     private static void indexVariants(OptionsParser.CommandIndexVariants c)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
+        VariantStorageManager variantStorageManager;
+        if (c.storageEngine == null || c.storageEngine.isEmpty()) {
+            variantStorageManager = StorageManagerFactory.getVariantStorageManager();
+        } else {
+            variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.storageEngine);
+        }
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
@@ -790,6 +830,17 @@ public class OpenCGAStorageMain {
         System.out.println("Accessioning variants with prefix " + studyPrefix + "...");
         vr.run();
         System.out.println("Variants accessioned!");
+    }
+
+    private static void printVersion(String version) {
+        System.out.println("OpenCGA Storage CLI. Version " + version);
+    }
+
+    private static void setLogLevel(String logLevel) {
+// This small hack allow to configure the appropriate Logger level from the command line, this is done
+// by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     }
 
 
