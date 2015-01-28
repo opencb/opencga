@@ -32,7 +32,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
-    private final String collectionName = "variants";
+    private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
 
     private DataWriter dataWriter;
@@ -57,8 +57,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         acceptedValues.add(MISSING_GENOTYPES);
         acceptedValues.add(ANNOTATION_EXISTS);
     }
-
-    public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName) 
+            throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
@@ -66,12 +66,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
 
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials);
+        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
 
+        collectionName = variantsCollectionName;
+        
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
         archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(true, 
-                new DBObjectToVariantStatsConverter(), credentials);
+                new DBObjectToVariantStatsConverter(), credentials, filesCollectionName);
         variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }
 
@@ -138,6 +140,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
 
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        options.add("sort", new BasicDBObject("chr", 1).append("start", 1));
         return coll.find(qb.get(), options, variantConverter, projection);
     }
 
@@ -858,6 +864,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List list;
         if (value instanceof List) {
             list = (List) value;
+        } if (value == null) {
+            return Collections.emptyList();
         } else {
             list = Arrays.asList(value.toString().split(","));
         }
