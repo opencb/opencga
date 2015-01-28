@@ -60,7 +60,7 @@ public class OpenCGAStorageMain {
     public static final String CELLBASE_DB_MAX_POOL_SIZE = "CELLBASE.DB.MAX_POOL_SIZE";
     public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
 
-    protected static Logger logger;
+    protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     private static OptionsParser parser;
 
     enum AnnotationSource {
@@ -513,7 +513,7 @@ public class OpenCGAStorageMain {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.storageEngine);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
@@ -645,20 +645,21 @@ public class OpenCGAStorageMain {
 
     private static void indexAlignments(OptionsParser.CommandIndexAlignments c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
         AlignmentStorageManager alignmentStorageManager;
-        if (c.storageEngine == null || c.storageEngine.isEmpty()) {
+        String storageEngine = parser.getGeneralParameters().storageEngine;
+        if (storageEngine == null || storageEngine.isEmpty()) {
             alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
         } else {
-            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.storageEngine);
+            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
         }
         ObjectMap params = new ObjectMap();
-        params.putAll(c.params);
+        params.putAll(parser.getGeneralParameters().params);
 
         if (c.fileId != null) {
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
         }
         params.put(AlignmentStorageManager.PLAIN, false);
-        params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, Arrays.asList("200"));
-        params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true);
+        params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
+        params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.calculateCoverage);
         params.put(AlignmentStorageManager.DB_NAME, c.dbName);
         params.put(AlignmentStorageManager.COPY_FILE, false);
         params.put(AlignmentStorageManager.ENCRYPT, "null");
@@ -708,10 +709,11 @@ public class OpenCGAStorageMain {
     private static void indexVariants(OptionsParser.CommandIndexVariants c)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
         VariantStorageManager variantStorageManager;
-        if (c.storageEngine == null || c.storageEngine.isEmpty()) {
+        String storageEngine = parser.getGeneralParameters().storageEngine;
+        if (storageEngine == null || storageEngine.isEmpty()) {
             variantStorageManager = StorageManagerFactory.getVariantStorageManager();
         } else {
-            variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.storageEngine);
+            variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
         }
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));

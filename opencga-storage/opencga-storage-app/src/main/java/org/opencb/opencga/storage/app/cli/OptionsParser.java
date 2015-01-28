@@ -5,10 +5,7 @@ import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -305,7 +302,7 @@ public class OptionsParser {
         
     }
 
-    class CommandIndex extends GeneralParameters {
+    class CommandIndex implements Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
@@ -397,12 +394,12 @@ public class OptionsParser {
         @Parameter(names = "--load", description = "Do only the load phase")
         boolean load = false;
 
-        @Parameter(names = "--calculateCoverage", description = "Calculate also coverage while indexing")
+        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
         boolean calculateCoverage = false;
 
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
-        @Parameter(names = "--mean-coverage", description = "Add mean coverage values (optional)", required = false)
-        List<String> meanCoverage = new LinkedList<String>();
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        List<String> meanCoverage = Collections.singletonList("200");
     }
 
     @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
@@ -502,7 +499,7 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
-    class CommandAnnotateVariants extends GeneralParameters {
+    class CommandAnnotateVariants implements Command {
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         OpenCGAStorageMain.AnnotationSource annotator = null;
