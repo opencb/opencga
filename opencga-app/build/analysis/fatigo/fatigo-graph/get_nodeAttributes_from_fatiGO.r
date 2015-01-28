@@ -83,8 +83,8 @@ names(go_names_hash) <- significant_fatiGO_results$X.term
 
 
 cat("# Building node attribute file \n")
-gene_attr <- data.frame(ids=unique(c(spl(significant_fatiGO_results$list1_positive_ids, ","), 
-                                     spl(significant_fatiGO_results$list2_positive_ids, ","))),
+gene_attr <- data.frame(ids=unique(spl(unique(significant_fatiGO_results$list1_positive_ids), ",")), 
+                                   #spl(unique(significant_fatiGO_results$list2_positive_ids), ","))),
                         stringsAsFactors=F)
 gene_attr$overrepresented_go_list1 <- unlist(lapply(gene_attr$ids, gos_in_genes, T))
 gene_attr$underrepresented_go_list1 <- unlist(lapply(gene_attr$ids, gos_in_genes, F))
