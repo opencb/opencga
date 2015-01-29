@@ -478,29 +478,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (options.containsKey(REGION) && !options.getString(REGION).isEmpty()) {
 //                getRegionFilter(Region.parseRegion(options.getString("region")), builder);
-                String regionParam = options.getString(REGION);
-                if(!regionParam.contains(",")) {
-                    Region region = Region.parseRegion(regionParam);
+                List<String> stringList = getStringList(options.get(REGION));
+
+                DBObject[] objects = new DBObject[stringList.size()];
+                int i = 0;
+                for (String reg : stringList) {
+                    Region region = Region.parseRegion(reg);
                     List<String> chunkIds = getChunkIds(region);
                     DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
                             .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
                             .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
-                    builder.or(regionObject);
-                }else {
-                    String[] regions = regionParam.split(",");
-                    DBObject[] objects = new DBObject[regions.length];
-                    int i = 0;
-                    for (String reg : regions) {
-                        Region region = Region.parseRegion(reg);
-                        List<String> chunkIds = getChunkIds(region);
-                        DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
-                                .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
-                                .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
-                        objects[i] = regionObject;
-                        i++;
-                    }
-                    builder.or(objects);
+                    objects[i] = regionObject;
+                    i++;
                 }
+                builder.or(objects);
+
             }
 
             if (options.containsKey(GENE)) {
@@ -511,8 +503,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         , xrefs, builder, QueryOperation.OR);
             }
 
-            if (options.containsKey("chromosome")) {
-                List<String> chromosome = getStringList(options.get("chromosome"));
+            if (options.containsKey(CHROMOSOME)) {
+                List<String> chromosome = getStringList(options.get(CHROMOSOME));
                 addQueryListFilter(DBObjectToVariantConverter.CHROMOSOME_FIELD
                         , chromosome, builder, QueryOperation.OR);
             }
@@ -545,8 +537,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         , xrefs, builder, QueryOperation.AND);
             }
 
-            if (options.containsKey("annot-ct")) {
-                List<Integer> cts = getIntegersList(options.get("annot-ct"));
+            if (options.containsKey(ANNOT_CONSEQUENCE_TYPE)) {
+                List<Integer> cts = getIntegersList(options.get(ANNOT_CONSEQUENCE_TYPE));
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD
@@ -654,7 +646,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            builder.and(DBObjectToVariantConverter.FILES_FIELD).elemMatch(fileBuilder.get());
+            DBObject fileQuery = fileBuilder.get();
+            if (fileQuery.keySet().size() != 0) {
+                builder.and(DBObjectToVariantConverter.FILES_FIELD).elemMatch(fileQuery);
+            }
         }
 
         return builder;
@@ -861,13 +856,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private List getList(Object value) {
+        return getList(value, ",");
+    }
+
+    private List getList(Object value, String separator) {
         List list;
         if (value instanceof List) {
             list = (List) value;
         } if (value == null) {
             return Collections.emptyList();
         } else {
-            list = Arrays.asList(value.toString().split(","));
+            list = Arrays.asList(value.toString().split(separator));
         }
         return list;
     }

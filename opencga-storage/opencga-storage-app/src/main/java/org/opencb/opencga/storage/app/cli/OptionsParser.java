@@ -538,6 +538,9 @@ public class OptionsParser {
         @Parameter(names = {"--filter-region"}, description = "comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
 
+        @Parameter(names = {"--filter-chromosome"}, description = "comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        List<String> filterChromosome = null;
+
         @Parameter(names = {"--filter-gene"}, description = "comma separated gene filters", splitter = CommaParameterSplitter.class)
         String filterGene = null;
 
