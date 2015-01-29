@@ -38,7 +38,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public VariantWriter getDBWriter(String dbName, ObjectMap params) {
-        VariantSource source = params.get(SOURCE, VariantSource.class);
+        VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         Properties credentialsProperties = new Properties(properties);
 
         MongoCredentials credentials = getMongoCredentials(dbName);

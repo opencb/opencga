@@ -10,8 +10,6 @@ import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -50,23 +48,10 @@ public class OpenCGAStorageMain {
     //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
     private static final String opencgaHome;
     public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
-    public static final String CELLBASE_VERSION = "CELLBASE.VERSION";
-    public static final String CELLBASE_REST_URL = "CELLBASE.REST.URL";
-    public static final String CELLBASE_DB_HOST = "CELLBASE.DB.HOST";
-    public static final String CELLBASE_DB_NAME = "CELLBASE.DB.NAME";
-    public static final String CELLBASE_DB_PORT = "CELLBASE.DB.PORT";
-    public static final String CELLBASE_DB_USER = "CELLBASE.DB.USER";
-    public static final String CELLBASE_DB_PASSWORD = "CELLBASE.DB.PASSWORD";
-    public static final String CELLBASE_DB_MAX_POOL_SIZE = "CELLBASE.DB.MAX_POOL_SIZE";
-    public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
 
     protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     private static OptionsParser parser;
 
-    enum AnnotationSource {
-        CELLBASE_DB_ADAPTOR,
-        CELLBASE_REST
-    }
 
     static {
         // Finds the installation directory (opencgaHome).
@@ -90,7 +75,7 @@ public class OpenCGAStorageMain {
 
     public static void main(String[] args)
             throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
-            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException {
+            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException {
 
         parser = new OptionsParser();
         OptionsParser.Command command = null;
@@ -161,7 +146,7 @@ public class OpenCGAStorageMain {
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS,   c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.SOURCE, source);
+            params.put(VariantStorageManager.VARIANT_SOURCE, source);
 
             variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
 
@@ -184,7 +169,7 @@ public class OpenCGAStorageMain {
             params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
             params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
             params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.SOURCE, source);
+            params.put(VariantStorageManager.VARIANT_SOURCE, source);
             params.put(VariantStorageManager.DB_NAME, c.dbName);
 
             // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
@@ -509,7 +494,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void annotateVariants(OptionsParser.CommandAnnotateVariants c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException {
+    private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
         /**
          * Create DBAdaptor
          */
@@ -523,69 +509,23 @@ public class OpenCGAStorageMain {
         /**
          * Create Annotator
          */
-        VariantAnnotator annotator;
         Properties annotatorProperties = Config.getStorageProperties();
         if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
             annotatorProperties.load(new FileInputStream(c.annotatorConfig));
         }
 
-        if(c.annotator == null) {
-            c.annotator = AnnotationSource.valueOf(
+
+        VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
+        if(annotatorSource == null) {
+            annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
                     annotatorProperties.getProperty(
                             OPENCGA_STORAGE_ANNOTATOR,
-                            AnnotationSource.CELLBASE_REST.name()
+                            VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
                     ).toUpperCase()
             );
         }
-        logger.info("Annotating with {}", c.annotator);
-        switch(c.annotator) {
-            default:
-            case CELLBASE_REST: {
-                String cellbaseVersion = annotatorProperties.getProperty(CELLBASE_VERSION, "v3");
-                String cellbaseRest = annotatorProperties.getProperty(CELLBASE_REST_URL, "");
-
-                checkNull(cellbaseVersion, "cellbaseVersion");
-                checkNull(cellbaseRest, "cellbaseRest");
-
-                URI url = new URI(cellbaseRest);
-                CellBaseClient cellBaseClient = new CellBaseClient(url.getHost(), url.getPort(), url.getPath(), cellbaseVersion, c.species);
-                annotator = new CellBaseVariantAnnotator(cellBaseClient);
-            }
-            break;
-            case CELLBASE_DB_ADAPTOR: {
-                String cellbaseHost = annotatorProperties.getProperty(CELLBASE_DB_HOST, "");
-                String cellbaseDatabase = annotatorProperties.getProperty(CELLBASE_DB_NAME, "");
-                int cellbasePort = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_PORT, "27017"));
-                String cellbaseUser = annotatorProperties.getProperty(CELLBASE_DB_USER, "");
-                String cellbasePassword = annotatorProperties.getProperty(CELLBASE_DB_PASSWORD, "");
-                int maxPoolSize = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_MAX_POOL_SIZE, "10"));
-                int timeout = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_TIMEOUT, "200"));
-
-                checkNull(cellbaseHost, "cellbaseHost");
-                checkNull(cellbaseDatabase, "cellbaseDatabase");
-                checkNull(cellbasePort, "cellbasePort");
-                checkNull(cellbaseUser, "cellbaseUser");
-                checkNull(cellbasePassword, "cellbasePassword");
-
-
-                CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
-                cellbaseConfiguration.addSpeciesConnection(
-                        c.species,
-                        c.assembly,
-                        cellbaseHost,
-                        cellbaseDatabase,
-                        cellbasePort,
-                        "mongo",    //TODO: Change to "mongodb"
-                        cellbaseUser,
-                        cellbasePassword,
-                        maxPoolSize,
-                        timeout);
-                cellbaseConfiguration.addSpeciesAlias(c.species, c.species);
-
-                annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, c.species, c.assembly);
-            }
-            break;
-        }
+        logger.info("Annotating with {}", annotatorSource);
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
         VariantAnnotationManager variantAnnotationManager =
                 new VariantAnnotationManager(annotator, dbAdaptor);
 
@@ -613,20 +553,20 @@ public class OpenCGAStorageMain {
         URI annotationFile = null;
         if (doCreate) {
             long start = System.currentTimeMillis();
-            logger.info("starting annotation creation ");
+            logger.info("Starting annotation creation ");
             annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, queryOptions);
-            logger.info("finished annotation creation {}ms", System.currentTimeMillis() - start);
+            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 
         if (doLoad) {
             long start = System.currentTimeMillis();
-            logger.info("starting annotation load");
+            logger.info("Starting annotation load");
             if (annotationFile == null) {
 //                annotationFile = new URI(null, c.load, null);
                 annotationFile = Paths.get(c.load).toUri();
             }
             variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
-            logger.info("finished annotation load {}ms", System.currentTimeMillis() - start);
+            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
     }
 
@@ -742,24 +682,30 @@ public class OpenCGAStorageMain {
 //        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
         params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
-        params.put(VariantStorageManager.SOURCE, source);
+        params.put(VariantStorageManager.VARIANT_SOURCE, source);
         params.put(VariantStorageManager.DB_NAME, c.dbName);
         params.put(VariantStorageManager.ANNOTATE, c.annotate);
         params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
 
         if(c.annotate) {
+            //Get annotator config
             Properties annotatorProperties = Config.getStorageProperties();
             if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
                 annotatorProperties.load(new FileInputStream(c.annotatorConfig));
             }
-            String cellbaseVersion = annotatorProperties.getProperty(CELLBASE_VERSION, "v3");
-            String cellbaseRest = annotatorProperties.getProperty(CELLBASE_REST_URL, "");
+            params.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
 
-            checkNull(cellbaseVersion, CELLBASE_VERSION);
-            checkNull(cellbaseRest, CELLBASE_REST_URL);
-
-            params.put(VariantStorageManager.CELLBASE_VERSION, cellbaseVersion);
-            params.put(VariantStorageManager.CELLBASE_REST_URL, cellbaseRest);
+            //Get annotation source
+            VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
+            if(annotatorSource == null) {
+                annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
+                        annotatorProperties.getProperty(
+                                OPENCGA_STORAGE_ANNOTATOR,
+                                VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
+                        ).toUpperCase()
+                );
+            }
+            params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
         }
 
         URI nextFileUri = variantsUri;

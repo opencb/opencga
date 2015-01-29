@@ -4,6 +4,8 @@ import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.opencga.storage.core.variant.annotation.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.util.*;
 
@@ -377,7 +379,7 @@ public class OptionsParser {
         boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        OpenCGAStorageMain.AnnotationSource annotator = OpenCGAStorageMain.AnnotationSource.CELLBASE_REST;
+        VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         boolean overwriteAnnotations = false;
@@ -502,7 +504,7 @@ public class OptionsParser {
     class CommandAnnotateVariants implements Command {
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        OpenCGAStorageMain.AnnotationSource annotator = null;
+        VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         boolean overwriteAnnotations = false;
@@ -566,7 +568,7 @@ public class OptionsParser {
         String fileName = "";
 
         @Parameter(names = {"-s", "--annotation-source"}, description = "Annotation source", required = false, arity = 1)
-        OpenCGAStorageMain.AnnotationSource annotationSource = OpenCGAStorageMain.AnnotationSource.CELLBASE_REST;
+        VariantAnnotationManager.AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.CELLBASE_REST;
 
         @Parameter(names = {"--species"}, description = " ", required = true, arity = 1)
         String species;
