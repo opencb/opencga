@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -229,15 +231,34 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             genomicVariantStringList.add(genomicVariant.toString());
         }
 
-        queryResponse = cellBaseClient.get(
-                CellBaseClient.Category.genomic,
-                CellBaseClient.SubCategory.variant,
-                genomicVariantStringList,
-                CellBaseClient.Resource.fullAnnotation,
-                null);
+        try {
+            queryResponse = cellBaseClient.get(
+                    CellBaseClient.Category.genomic,
+                    CellBaseClient.SubCategory.variant,
+                    genomicVariantStringList,
+                    CellBaseClient.Resource.fullAnnotation,
+                    null);
+        } catch (JsonProcessingException e ) {
+            queryResponse = null;
+        }
         if(queryResponse == null) {
-            logger.error("CellBase REST error. Returned null. Skipping variants. {}", cellBaseClient.getLastQuery());
-            return Collections.emptyList();
+            logger.warn("CellBase REST error. Returned null. {}", cellBaseClient.getLastQuery());
+
+            if (genomicVariantList.size() == 1) {
+                logger.error("CellBase REST error. Skipping variant. {}", genomicVariantList.get(0));
+                return Collections.emptyList();
+            }
+
+            List<VariantAnnotation> variantAnnotationList = new LinkedList<>();
+            List<GenomicVariant> genomicVariants1 = genomicVariantList.subList(0, genomicVariantList.size() / 2);
+            if (!genomicVariants1.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants1));
+            }
+            List<GenomicVariant> genomicVariants2 = genomicVariantList.subList(genomicVariantList.size() / 2, genomicVariantList.size());
+            if (!genomicVariants2.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants2));
+            }
+            return variantAnnotationList;
         }
 
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
