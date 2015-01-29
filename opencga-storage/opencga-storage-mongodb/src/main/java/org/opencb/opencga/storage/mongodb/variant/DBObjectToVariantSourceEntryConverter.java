@@ -106,7 +106,14 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Alternate alleles
         if (object.containsField(ALTERNATES_FIELD)) {
-            file.setSecondaryAlternates((String[]) object.get(ALTERNATES_FIELD));
+            List list = (List) object.get(ALTERNATES_FIELD);
+            String[] alternatives = new String[list.size()];
+            int i = 0;
+            for (Object o : list) {
+                alternatives[i] = o.toString();
+                i++;
+            }
+            file.setSecondaryAlternates(alternatives);
         }
         
         // Attributes

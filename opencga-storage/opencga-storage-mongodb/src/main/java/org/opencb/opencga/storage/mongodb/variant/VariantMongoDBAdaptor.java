@@ -665,7 +665,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options.containsKey("include")) { //Include some
             List<String> includeList = getStringList(options.get("include"));
             for (String s : includeList) {
-                projection.put(DBObjectToVariantConverter.toShortFieldName(s), 1);
+                String key = DBObjectToVariantConverter.toShortFieldName(s);
+                if (key != null) {
+                    projection.put(key, 1);
+                } else {
+                    logger.warn("Unknown include field: {}", s);
+                }
             }
         } else { //Include all
             for (String values : DBObjectToVariantConverter.fieldsMap.values()) {
@@ -674,7 +679,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (options.containsKey("exclude")) { // Exclude some
                 List<String> excludeList = getStringList(options.get("exclude"));
                 for (String s : excludeList) {
-                    projection.removeField(DBObjectToVariantConverter.toShortFieldName(s));
+                    String key = DBObjectToVariantConverter.toShortFieldName(s);
+                    if (key != null) {
+                        projection.removeField(key);
+                    }
+                    logger.warn("Unknown exclude field: {}", s);
                 }
             }
         }
@@ -863,7 +872,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List list;
         if (value instanceof List) {
             list = (List) value;
-        } if (value == null) {
+        } else if (value == null) {
             return Collections.emptyList();
         } else {
             list = Arrays.asList(value.toString().split(separator));

@@ -166,13 +166,16 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
 
         /** Getting iterator from OpenCGA Variant database. **/
-        QueryOptions iteratorQueryOptions = new QueryOptions();
+        QueryOptions iteratorQueryOptions;
+        if(options == null) {
+            iteratorQueryOptions = new QueryOptions();
+        } else {
+            iteratorQueryOptions = new QueryOptions(options);
+        }
         int batchSize = 100;
-        List<String> include = Arrays.asList("chromosome", "start", "alternative", "reference");
+        List<String> include = Arrays.asList("chromosome", "start",  "end", "alternative", "reference");
         iteratorQueryOptions.add("include", include);
         if(options != null) { //Parse query options
-            iteratorQueryOptions = options;
-//            iteratorQueryOptions = new QueryOptions(options.getMap(VariantAnnotationManager.ANNOTATOR_QUERY_OPTIONS, Collections.<String, Object>emptyMap()));
             batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
         }
 
@@ -231,6 +234,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             genomicVariantStringList.add(genomicVariant.toString());
         }
 
+        boolean queryError = false;
         try {
             queryResponse = cellBaseClient.get(
                     CellBaseClient.Category.genomic,
@@ -238,11 +242,17 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                     genomicVariantStringList,
                     CellBaseClient.Resource.fullAnnotation,
                     null);
+            if (queryResponse == null) {
+                logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
+                queryError = true;
+            }
         } catch (JsonProcessingException e ) {
+            logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery(), e);
+            queryError = true;
             queryResponse = null;
         }
-        if(queryResponse == null) {
-            logger.warn("CellBase REST error. Returned null. {}", cellBaseClient.getLastQuery());
+        if(queryError) {
+//            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
 
             if (genomicVariantList.size() == 1) {
                 logger.error("CellBase REST error. Skipping variant. {}", genomicVariantList.get(0));
