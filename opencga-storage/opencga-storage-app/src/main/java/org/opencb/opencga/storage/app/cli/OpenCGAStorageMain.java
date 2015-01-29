@@ -590,6 +590,18 @@ public class OpenCGAStorageMain {
                 new VariantAnnotationManager(annotator, dbAdaptor);
 
         QueryOptions queryOptions = new QueryOptions();
+        if (c.filterRegion != null) {
+            queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
+        }
+        if (c.filterChromosome != null) {
+            queryOptions.add(VariantDBAdaptor.CHROMOSOME, c.filterChromosome);
+        }
+        if (c.filterGene != null) {
+            queryOptions.add(VariantDBAdaptor.GENE, c.filterGene);
+        }
+        if (c.filterAnnotConsequenceType != null) {
+            queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, c.filterAnnotConsequenceType);
+        }
         Path outDir = Paths.get(c.outDir);
 
         boolean doCreate = c.create, doLoad = c.load != null;
