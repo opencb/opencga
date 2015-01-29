@@ -142,9 +142,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         if (includeEffect) {
             taskList.add(new VariantEffectTask());
         }
-        if (includeStats) {
-            taskList.add(new VariantStatsTask(reader, source));
-        }
+
+//        todo remove:
+//        if (includeStats) {
+//            taskList.add(new VariantStatsTask(reader, source));
+//        }
 
         //Writers
         List<VariantWriter> writers = new ArrayList<>();
@@ -153,7 +155,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
             variantWriter.includeEffect(includeEffect);
-            variantWriter.includeStats(includeStats);
+//            variantWriter.includeStats(includeStats);
         }
 
         //Runner
@@ -217,6 +219,10 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
             URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get("/tmp"), dbName, annotationOptions);
             variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
+        }
+
+        if (params.getBoolean(INCLUDE_STATS)) {
+
         }
 
         return input;
