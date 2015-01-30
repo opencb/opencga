@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -164,13 +166,16 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
 
         /** Getting iterator from OpenCGA Variant database. **/
-        QueryOptions iteratorQueryOptions = new QueryOptions();
+        QueryOptions iteratorQueryOptions;
+        if(options == null) {
+            iteratorQueryOptions = new QueryOptions();
+        } else {
+            iteratorQueryOptions = new QueryOptions(options);
+        }
         int batchSize = 100;
-        List<String> include = Arrays.asList("chromosome", "start", "alternative", "reference");
+        List<String> include = Arrays.asList("chromosome", "start",  "end", "alternative", "reference");
         iteratorQueryOptions.add("include", include);
         if(options != null) { //Parse query options
-            iteratorQueryOptions = options;
-//            iteratorQueryOptions = new QueryOptions(options.getMap(VariantAnnotationManager.ANNOTATOR_QUERY_OPTIONS, Collections.<String, Object>emptyMap()));
             batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
         }
 
@@ -229,15 +234,41 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             genomicVariantStringList.add(genomicVariant.toString());
         }
 
-        queryResponse = cellBaseClient.get(
-                CellBaseClient.Category.genomic,
-                CellBaseClient.SubCategory.variant,
-                genomicVariantStringList,
-                CellBaseClient.Resource.fullAnnotation,
-                null);
-        if(queryResponse == null) {
-            logger.error("CellBase REST error. Returned null. Skipping variants. {}", cellBaseClient.getLastQuery());
-            return Collections.emptyList();
+        boolean queryError = false;
+        try {
+            queryResponse = cellBaseClient.get(
+                    CellBaseClient.Category.genomic,
+                    CellBaseClient.SubCategory.variant,
+                    genomicVariantStringList,
+                    CellBaseClient.Resource.fullAnnotation,
+                    null);
+            if (queryResponse == null) {
+                logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
+                queryError = true;
+            }
+        } catch (JsonProcessingException e ) {
+            logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery(), e);
+            queryError = true;
+            queryResponse = null;
+        }
+        if(queryError) {
+//            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
+
+            if (genomicVariantList.size() == 1) {
+                logger.error("CellBase REST error. Skipping variant. {}", genomicVariantList.get(0));
+                return Collections.emptyList();
+            }
+
+            List<VariantAnnotation> variantAnnotationList = new LinkedList<>();
+            List<GenomicVariant> genomicVariants1 = genomicVariantList.subList(0, genomicVariantList.size() / 2);
+            if (!genomicVariants1.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants1));
+            }
+            List<GenomicVariant> genomicVariants2 = genomicVariantList.subList(genomicVariantList.size() / 2, genomicVariantList.size());
+            if (!genomicVariants2.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants2));
+            }
+            return variantAnnotationList;
         }
 
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();

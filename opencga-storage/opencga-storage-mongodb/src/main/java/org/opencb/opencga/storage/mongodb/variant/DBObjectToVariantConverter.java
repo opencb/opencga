@@ -83,15 +83,21 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     
     @Override
     public Variant convertToDataModelType(DBObject object) {
-        Variant variant = new Variant((String) object.get(CHROMOSOME_FIELD), (int) object.get(START_FIELD), (int) object.get(END_FIELD), 
-                (String) object.get(REFERENCE_FIELD), (String) object.get(ALTERNATE_FIELD));
+        String chromosome = (String) object.get(CHROMOSOME_FIELD);
+        int start = (int) object.get(START_FIELD);
+        int end = (int) object.get(END_FIELD);
+        String reference = (String) object.get(REFERENCE_FIELD);
+        String alternate = (String) object.get(ALTERNATE_FIELD);
+        Variant variant = new Variant(chromosome, start, end, reference, alternate);
         variant.setId((String) object.get(ID_FIELD));
         
         // Transform HGVS: List of map entries -> Map of lists
         BasicDBList mongoHgvs = (BasicDBList) object.get(HGVS_FIELD);
-        for (Object o : mongoHgvs) {
-            DBObject dbo = (DBObject) o;
-            variant.addHgvs((String) dbo.get(TYPE_FIELD), (String) dbo.get(NAME_FIELD));
+        if (mongoHgvs != null) {
+            for (Object o : mongoHgvs) {
+                DBObject dbo = (DBObject) o;
+                variant.addHgvs((String) dbo.get(TYPE_FIELD), (String) dbo.get(NAME_FIELD));
+            }
         }
         
         // Files

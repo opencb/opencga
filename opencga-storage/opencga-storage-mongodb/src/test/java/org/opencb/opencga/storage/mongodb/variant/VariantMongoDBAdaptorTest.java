@@ -62,7 +62,7 @@ public class VariantMongoDBAdaptorTest {
 //        vr.run();
         
         // Initialize query builder
-        vqb = new VariantMongoDBAdaptor(credentials);
+        vqb = new VariantMongoDBAdaptor(credentials, "variants", "files");
     }
 
     @AfterClass
@@ -268,7 +268,7 @@ public class VariantMongoDBAdaptorTest {
             assertTrue(((int) prevObject.get("count")) <= ((int) object.get("count")));
         }
     }
-    
+
 
     
 //    @Test

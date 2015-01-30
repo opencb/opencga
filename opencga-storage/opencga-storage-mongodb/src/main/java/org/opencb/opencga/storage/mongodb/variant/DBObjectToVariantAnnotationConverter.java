@@ -60,10 +60,16 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 if(o instanceof DBObject) {
                     DBObject ct = (DBObject) o;
 
-                    String soa = null;
+                    List<String> soAccessionNames = new LinkedList<>();
                     if(ct.containsField(SO_ACCESSION_FIELD)) {
-                        Integer so = Integer.parseInt("" + ct.get(SO_ACCESSION_FIELD));
-                        soa = ConsequenceTypeMappings.accessionToTerm.get(so);
+                        if (ct.get(SO_ACCESSION_FIELD) instanceof List) {
+                            List<Integer> list = (List) ct.get(SO_ACCESSION_FIELD);
+                            for (Integer so : list) {
+                                soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(so));
+                            }
+                        } else {
+                            soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(ct.get(SO_ACCESSION_FIELD)));
+                        }
                     }
                     consequenceTypes.add(new ConsequenceType(
                             (String) ct.get(GENE_NAME_FIELD) /*.toString()*/,
@@ -76,7 +82,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                             (Integer) ct.get(A_POSITION_FIELD),
                             (String) ct.get(A_CHANGE_FIELD) /*.toString() */,
                             (String) ct.get(CODON_FIELD) /*.toString() */,
-                            soa));
+                            null,
+                            soAccessionNames));
                 }
             }
 
@@ -131,9 +138,16 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 putNotNull(ct, BIOTYPE_FIELD, consequenceType.getBiotype());
                 putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getcDnaPosition());
                 putNotNull(ct, CDS_POSITION_FIELD, consequenceType.getCdsPosition());
-                putNotNull(ct, A_POSITION_FIELD, consequenceType.getaPosition());
-                putNotNull(ct, A_CHANGE_FIELD, consequenceType.getaChange());
-                putNotNull(ct, SO_ACCESSION_FIELD, consequenceType.getSOAccession());
+                putNotNull(ct, A_POSITION_FIELD, consequenceType.getAaPosition());
+                putNotNull(ct, A_CHANGE_FIELD, consequenceType.getAaChange());
+
+                List<Integer> soAccession = new LinkedList<>();
+                if (consequenceType.getSoTerms() != null) {
+                    for (ConsequenceType.ConsequenceTypeEntry entry : consequenceType.getSoTerms()) {
+                        soAccession.add(ConsequenceTypeMappings.termToAccession.get(entry.getSoName()));
+                    }
+                }
+                putNotNull(ct, SO_ACCESSION_FIELD, soAccession);
 
                 cts.add(ct);
 

@@ -48,7 +48,7 @@ public class VariantWSServer extends GenericWSServer {
             String pass = properties.getProperty("VARIANT.STORAGE.PASS");
 
             credentials = new MongoCredentials(host, port, db, user, pass);
-            variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials);
+            variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials, "variants", "files");
 
 
             jsonObjectMapper = new ObjectMapper();

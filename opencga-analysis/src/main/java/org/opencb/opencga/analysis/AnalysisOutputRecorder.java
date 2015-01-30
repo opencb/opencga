@@ -1,5 +1,7 @@
 package org.opencb.opencga.analysis;
 
+import com.mongodb.util.JSON;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -9,11 +11,15 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.*;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +39,7 @@ public class AnalysisOutputRecorder {
     private final CatalogManager catalogManager;
     private final String sessionId;
     private final String policy = "delete";
+    private final boolean calculateChecksum = false;
 
     public AnalysisOutputRecorder(CatalogManager catalogManager, String sessionId) {
         this.catalogManager = catalogManager;
@@ -74,7 +81,7 @@ public class AnalysisOutputRecorder {
 
                 File file = fileQueryResult.getResult().get(0);
                 fileIds.add(file.getId());
-                catalogFileManager.upload(uri, file, null, sessionId, false, false, true, true);
+                catalogFileManager.upload(uri, file, null, sessionId, false, false, true, calculateChecksum);
             }
         } catch (CatalogException | IOException e) {
             e.printStackTrace();
@@ -99,7 +106,7 @@ public class AnalysisOutputRecorder {
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
-            //TODO: "input" files could be modified my the tool. Have to be scanned, calculate the new Checksum and
+            //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
 
         } catch (CatalogException e) {
             e.printStackTrace(); //TODO: Handle exception

@@ -506,7 +506,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     /* TYPE_FILE UTILS */
-    private java.io.File createDebugFile() throws IOException {
+    static java.io.File createDebugFile() throws IOException {
         String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
 

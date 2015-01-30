@@ -25,6 +25,11 @@ public class CatalogFileManager {
         this.catalogManager = catalogManager;
     }
 
+    public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
+                       boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum)
+            throws CatalogIOManagerException {
+        upload(sourceUri, file, sourceChecksum, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, 10000000);
+    }
     /**
      * Upload file to a created entry file in Catalog.
      *
@@ -37,11 +42,12 @@ public class CatalogFileManager {
      * @param ignoreStatus      Ignore the status (uploading, uploaded, ready) from Catalog
      * @param overwrite         Overwrite if there is a file in the target
      * @param deleteSource      After moving, delete file
-     * @param secureMove        Don't check checksum. (pending)
+     * @param calculateChecksum Calculate checksum
+     * @param moveThreshold     File size threshold to move a file instead of copy.
      * @throws CatalogIOManagerException
      */
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
-                       boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean secureMove)
+                       boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum, long moveThreshold)
             throws CatalogIOManagerException {
 
         URI targetUri;
@@ -58,12 +64,6 @@ public class CatalogFileManager {
         if(deleteSource) {
             //TODO: Check if can delete source
         }
-
-//        long size = sourceIOManager.getFileSize(sourceUri);       //TODO: Add fileStats methods
-//        String creationDate = sourceIOManager.getCreationDate(sourceUri);
-        long size = 0;
-        String creationDate = TimeUtils.getTime();
-
 
         //Check status
         switch (file.getStatus()) {
@@ -87,40 +87,79 @@ public class CatalogFileManager {
                     "Needs 'overwrite = true' for continue.");
         }
 
-        if(sourceChecksum == null || sourceChecksum.isEmpty()) {
-            sourceChecksum = sourceIOManager.calculateChecksum(sourceUri);
-        }
-
+        // Get file stats
+        long size = 0;
         try {
-            copy(sourceIOManager, sourceUri, targetIOManager, targetUri);
-        } catch (CatalogIOManagerException | IOException e) {
-            throw new CatalogIOManagerException("Error while copying file. ", e);
+            size = sourceIOManager.getFileSize(sourceUri);
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            logger.error("Can't get fileSize", e);
         }
+        String creationDate = TimeUtils.getTime();
+//        String creationDate = sourceIOManager.getCreationDate(sourceUri);
 
-        String targetChecksum;
-        try {
-            targetChecksum = targetIOManager.calculateChecksum(targetUri);
-        } catch (CatalogIOManagerException catalogIOManagerException) {
-            try {
-                targetIOManager.deleteFile(targetUri);
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
-                //You fail at failing!
-                throw new CatalogIOManagerException(
-                        "Fail calculating target checksum : " + catalogIOManagerException.getMessage() + "" +
-                        "Fail deleting target file : " + ioException.getMessage(), catalogIOManagerException);
+
+        //Calculate source checksum
+        if (sourceChecksum == null || sourceChecksum.isEmpty()) {
+            if (calculateChecksum) {
+                sourceChecksum = sourceIOManager.calculateChecksum(sourceUri);
+            } else {    //Do not calculate checksum.
+                sourceChecksum = "null";
             }
-            throw catalogIOManagerException;
         }
 
+        //Move or copy file
+        boolean fileMoved = false;
+        String targetChecksum = "";
+        if (size < moveThreshold && sourceIOManager == targetIOManager) {
+            try {
+                logger.info("Moving file {} -> {}", sourceUri, targetUri);
+                sourceIOManager.moveFile(sourceUri, targetUri);
+                targetChecksum = sourceChecksum;
+                fileMoved = true;
+            } catch (IOException | CatalogIOManagerException e) {
+                e.printStackTrace();
+                logger.error("Error moving a file.", e);
+            }
+        }
+
+        //If there was an error moving file or have to be copied
+        if (!fileMoved) {
+            try {
+                copy(sourceIOManager, sourceUri, targetIOManager, targetUri);
+            } catch (CatalogIOManagerException | IOException e) {
+                throw new CatalogIOManagerException("Error while copying file. ", e);
+            }
+
+            try {
+                if (calculateChecksum) {
+                    targetChecksum = targetIOManager.calculateChecksum(targetUri);
+                } else {
+                    targetChecksum = sourceChecksum;
+                }
+            } catch (CatalogIOManagerException catalogIOManagerException) {
+                try {
+                    targetIOManager.deleteFile(targetUri);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                    //You fail at failing!
+                    throw new CatalogIOManagerException(
+                            "Fail calculating target checksum : " + catalogIOManagerException.getMessage() + "" +
+                            "Fail deleting target file : " + ioException.getMessage(), catalogIOManagerException);
+                }
+                throw catalogIOManagerException;
+            }
+        }
+
+        //Check status
         if(targetChecksum.equals(sourceChecksum)) {
             logger.info("Checksum matches {}", sourceChecksum);
 
             //Update file
             ObjectMap parameters = new ObjectMap();
             parameters.put("status", File.Status.READY);
-//            parameters.put("diskUsage", size);  // TODO
-//            parameters.put("creationDate", creationDate);
+            parameters.put("diskUsage", size);
+            parameters.put("creationDate", creationDate);
             parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);
@@ -128,7 +167,7 @@ public class CatalogFileManager {
                 throw new CatalogIOManagerException("Can't update file properties in Catalog.", e);
             }
 
-            if(deleteSource) {
+            if(deleteSource && !fileMoved) {
                 logger.info("Deleting file {} ", sourceUri);
                 try {
                     sourceIOManager.deleteFile(sourceUri);
@@ -137,11 +176,20 @@ public class CatalogFileManager {
                 }
             }
         } else {
-            throw new CatalogIOManagerException("Checksum mismatches at moving files.");
+            throw new CatalogIOManagerException("Checksum mismatches at moving files. " + sourceChecksum + " =! " + targetChecksum);
         }
 
     }
 
+    /**
+     *
+     * @param sourceIOManager   Source IOManager
+     * @param source            Source file
+     * @param targetIOManager   Target IOManager
+     * @param target            Target file
+     * @throws IOException
+     * @throws CatalogIOManagerException
+     */
     private void copy(CatalogIOManager sourceIOManager, URI source, CatalogIOManager targetIOManager, URI target)
             throws IOException, CatalogIOManagerException {
 

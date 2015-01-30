@@ -327,7 +327,7 @@ public class OptionsParser {
 //        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
 //        String backend = "mongodb";
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
     }
 
@@ -352,10 +352,10 @@ public class OptionsParser {
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
         boolean includeGenotype = false;
 
-        @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
+        @Parameter(names = {"--compress-genotypes"}, description = "[PENDING] Store genotypes as lists of samples")
         boolean compressGenotypes = false;
 
-        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
+        @Parameter(names = {"--include-src"}, description = "[PENDING] Store also the source vcf row of each variant")
         boolean includeSrc = false;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
@@ -370,9 +370,9 @@ public class OptionsParser {
         @Parameter(names = {"--load"}, description = "Do only the load phase")
         boolean load = false; // skip transform
 
-        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
         boolean gvcf = false;
-        @Parameter(names = {"--bgzip"}, description = "The input file is in bgzip format")
+        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
         boolean bgzip = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate variants as well (optional)")
@@ -393,6 +393,7 @@ public class OptionsParser {
 
         @Parameter(names = "--transform", description = "Do only the transform phase")
         boolean transform = false;
+
         @Parameter(names = "--load", description = "Do only the load phase")
         boolean load = false;
 
@@ -512,7 +513,7 @@ public class OptionsParser {
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         String annotatorConfig = null;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
@@ -535,16 +536,16 @@ public class OptionsParser {
         @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
         String load = null;
 
-        @Parameter(names = {"--filter-region"}, description = "comma separated region filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
 
-        @Parameter(names = {"--filter-chromosome"}, description = "comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
         List<String> filterChromosome = null;
 
-        @Parameter(names = {"--filter-gene"}, description = "comma separated gene filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         String filterGene = null;
 
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
         List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
     }
 
