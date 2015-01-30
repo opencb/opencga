@@ -34,6 +34,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public static final String ANNOTATION_EXISTS = "annotationExists";
     public static final String GENOTYPE = "genotype";
     public static final String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
+    public static final String ANNOT_XREF = "annot-xref";
 
     /**
      * This method set a data writer object for data serialization. When used no data will be return in
