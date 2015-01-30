@@ -41,6 +41,11 @@
                     "name": "estimator",
                     "description": "Global score estimator",
                     "required": "false"
+                },
+		{
+                    "name": "gt",
+                    "description": "",
+                    "required": "false"
                 }
             ],
             "configAttr": [],
