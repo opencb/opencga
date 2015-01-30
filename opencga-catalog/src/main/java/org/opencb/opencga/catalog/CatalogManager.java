@@ -1152,8 +1152,9 @@ public class CatalogManager {
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
             case INDEX:
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
-                return catalogDBAdaptor.modifyFile(fileId, objectMap);
+                throw new CatalogException("Can't delete INDEX file");
+                //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
         return null;
     }

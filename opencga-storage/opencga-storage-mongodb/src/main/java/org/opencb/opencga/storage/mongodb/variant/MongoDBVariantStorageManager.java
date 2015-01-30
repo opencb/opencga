@@ -38,7 +38,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public VariantWriter getDBWriter(String dbName, ObjectMap params) {
-        VariantSource source = params.get(SOURCE, VariantSource.class);
+        VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         Properties credentialsProperties = new Properties(properties);
 
         MongoCredentials credentials = getMongoCredentials(dbName);
@@ -53,8 +53,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public VariantDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
         MongoCredentials credentials = getMongoCredentials(dbName);
         VariantMongoDBAdaptor variantMongoDBAdaptor;
+
+        String variantsCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
+        String filesCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
         try {
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials);
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection);
         } catch (UnknownHostException e) {
             e.printStackTrace();
             return null;

@@ -32,7 +32,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
     private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
-    private final String collectionName = "variants";
+    private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
 
     private DataWriter dataWriter;
@@ -57,8 +57,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         acceptedValues.add(MISSING_GENOTYPES);
         acceptedValues.add(ANNOTATION_EXISTS);
     }
-
-    public VariantMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName) 
+            throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
@@ -66,12 +66,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
 
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials);
+        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
 
+        collectionName = variantsCollectionName;
+        
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
         archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(true, 
-                new DBObjectToVariantStatsConverter(), credentials);
+                new DBObjectToVariantStatsConverter(), credentials, filesCollectionName);
         variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
     }
 
@@ -138,6 +140,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
 
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        options.add("sort", new BasicDBObject("chr", 1).append("start", 1));
         return coll.find(qb.get(), options, variantConverter, projection);
     }
 
@@ -152,7 +158,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             getRegionFilter(regionList, qb);
             parseQueryOptions(options, qb);
             DBObject projection = parseProjectionQueryOptions(options);
-            System.out.println(qb.get());
             allResults.add(coll.find(qb.get(), options, variantConverter, projection));
         } else {
             for (Region r : regionList) {
@@ -178,7 +183,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 
                         new BasicDBObject("$in", studyId)));
 
-        logger.info("Query to be executed {}", qb.get().toString());
+        logger.debug("Query to be executed {}", qb.get().toString());
 
         return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
     }
@@ -246,11 +251,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("_id", 1));
 
 //        logger.info("getAllIntervalFrequencies - (>·_·)>");
-        System.out.println(options.toString());
-
-        System.out.println(match.toString());
-        System.out.println(group.toString());
-        System.out.println(sort.toString());
+//        System.out.println(options.toString());
+//
+//        System.out.println(match.toString());
+//        System.out.println(group.toString());
+//        System.out.println(sort.toString());
 
         long dbTimeStart = System.currentTimeMillis();
         QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
@@ -473,29 +478,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (options.containsKey(REGION) && !options.getString(REGION).isEmpty()) {
 //                getRegionFilter(Region.parseRegion(options.getString("region")), builder);
-                String regionParam = options.getString(REGION);
-                if(!regionParam.contains(",")) {
-                    Region region = Region.parseRegion(regionParam);
+                List<String> stringList = getStringList(options.get(REGION));
+
+                DBObject[] objects = new DBObject[stringList.size()];
+                int i = 0;
+                for (String reg : stringList) {
+                    Region region = Region.parseRegion(reg);
                     List<String> chunkIds = getChunkIds(region);
                     DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
                             .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
                             .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
-                    builder.or(regionObject);
-                }else {
-                    String[] regions = regionParam.split(",");
-                    DBObject[] objects = new DBObject[regions.length];
-                    int i = 0;
-                    for (String reg : regions) {
-                        Region region = Region.parseRegion(reg);
-                        List<String> chunkIds = getChunkIds(region);
-                        DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
-                                .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
-                                .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
-                        objects[i] = regionObject;
-                        i++;
-                    }
-                    builder.or(objects);
+                    objects[i] = regionObject;
+                    i++;
                 }
+                builder.or(objects);
+
             }
 
             if (options.containsKey(GENE)) {
@@ -506,8 +503,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         , xrefs, builder, QueryOperation.OR);
             }
 
-            if (options.containsKey("chromosome")) {
-                List<String> chromosome = getStringList(options.get("chromosome"));
+            if (options.containsKey(CHROMOSOME)) {
+                List<String> chromosome = getStringList(options.get(CHROMOSOME));
                 addQueryListFilter(DBObjectToVariantConverter.CHROMOSOME_FIELD
                         , chromosome, builder, QueryOperation.OR);
             }
@@ -532,16 +529,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(options.getBoolean(ANNOTATION_EXISTS));
             }
 
-            if (options.containsKey("annot-xref")) {
-                List<String> xrefs = getStringList(options.get("annot-xref"));
+            if (options.containsKey(ANNOT_XREF)) {
+                List<String> xrefs = getStringList(options.get(ANNOT_XREF));
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
                         , xrefs, builder, QueryOperation.AND);
             }
 
-            if (options.containsKey("annot-ct")) {
-                List<Integer> cts = getIntegersList(options.get("annot-ct"));
+            if (options.containsKey(ANNOT_CONSEQUENCE_TYPE)) {
+                List<Integer> cts = getIntegersList(options.get(ANNOT_CONSEQUENCE_TYPE));
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD
@@ -649,7 +646,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            builder.and(DBObjectToVariantConverter.FILES_FIELD).elemMatch(fileBuilder.get());
+            DBObject fileQuery = fileBuilder.get();
+            if (fileQuery.keySet().size() != 0) {
+                builder.and(DBObjectToVariantConverter.FILES_FIELD).elemMatch(fileQuery);
+            }
         }
 
         return builder;
@@ -663,24 +663,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         if (options.containsKey("include")) { //Include some
-            List<String> includeList = options.getListAs("include", String.class);
+            List<String> includeList = getStringList(options.get("include"));
             for (String s : includeList) {
-                projection.put(DBObjectToVariantConverter.fieldsMap.get(s), 1);
+                String key = DBObjectToVariantConverter.toShortFieldName(s);
+                if (key != null) {
+                    projection.put(key, 1);
+                } else {
+                    logger.warn("Unknown include field: {}", s);
+                }
             }
         } else { //Include all
             for (String values : DBObjectToVariantConverter.fieldsMap.values()) {
                 projection.put(values, 1);
             }
             if (options.containsKey("exclude")) { // Exclude some
-                List<String> excludeList = options.getListAs("exclude", String.class);
+                List<String> excludeList = getStringList(options.get("exclude"));
                 for (String s : excludeList) {
-                    projection.removeField(s);
+                    String key = DBObjectToVariantConverter.toShortFieldName(s);
+                    if (key != null) {
+                        projection.removeField(key);
+                    }
+                    logger.warn("Unknown exclude field: {}", s);
                 }
             }
         }
 
         if (options.containsKey(FILE_ID) && projection.containsField(DBObjectToVariantConverter.FILES_FIELD)) {
-            logger.info("Excluding files");
 //            List<String> files = options.getListAs(FILES, String.class);
             String file = options.getString(FILE_ID);
             projection.put(
@@ -699,7 +707,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
 
-//        logger.info("Return: {}", projection);
+        logger.debug("Projection: {}", projection);
         return projection;
     }
 
@@ -857,11 +865,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private List getList(Object value) {
+        return getList(value, ",");
+    }
+
+    private List getList(Object value, String separator) {
         List list;
         if (value instanceof List) {
             list = (List) value;
+        } else if (value == null) {
+            return Collections.emptyList();
         } else {
-            list = Arrays.asList(value.toString().split(","));
+            list = Arrays.asList(value.toString().split(separator));
         }
         return list;
     }

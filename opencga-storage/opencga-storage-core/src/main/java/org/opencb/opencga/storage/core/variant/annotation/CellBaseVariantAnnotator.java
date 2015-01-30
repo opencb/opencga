@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -44,6 +46,19 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     private VariationDBAdaptor variationDBAdaptor;
     private DBAdaptorFactory dbAdaptorFactory;
 
+    public static final String CELLBASE_VERSION = "CELLBASE.VERSION";
+    public static final String CELLBASE_REST_URL = "CELLBASE.REST.URL";
+
+    public static final String CELLBASE_DB_HOST = "CELLBASE.DB.HOST";
+    public static final String CELLBASE_DB_NAME = "CELLBASE.DB.NAME";
+    public static final String CELLBASE_DB_PORT = "CELLBASE.DB.PORT";
+    public static final String CELLBASE_DB_USER = "CELLBASE.DB.USER";
+    public static final String CELLBASE_DB_PASSWORD = "CELLBASE.DB.PASSWORD";
+    public static final String CELLBASE_DB_MAX_POOL_SIZE = "CELLBASE.DB.MAX_POOL_SIZE";
+    public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
+
+
+
     protected static Logger logger = LoggerFactory.getLogger(CellBaseVariantAnnotator.class);
 
     public CellBaseVariantAnnotator() {
@@ -71,6 +86,63 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
     }
 
+    public static CellBaseVariantAnnotator buildCellbaseAnnotator(Properties annotatorProperties, String species, String assembly, boolean restConnection)
+            throws VariantAnnotatorException {
+        if (restConnection) {
+            String cellbaseVersion = annotatorProperties.getProperty(CELLBASE_VERSION, "v3");
+            String cellbaseRest = annotatorProperties.getProperty(CELLBASE_REST_URL, "");
+
+            checkNull(cellbaseVersion, CELLBASE_VERSION);
+            checkNull(cellbaseRest, CELLBASE_REST_URL);
+
+            CellBaseClient cellBaseClient;
+            try {
+                URI url = new URI(cellbaseRest);
+                cellBaseClient = new CellBaseClient(url.getHost(), url.getPort(), url.getPath(), cellbaseVersion, species);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+                throw new VariantAnnotatorException("Invalid URL : " + cellbaseRest, e);
+            }
+            return new CellBaseVariantAnnotator(cellBaseClient);
+        } else {
+            String cellbaseHost = annotatorProperties.getProperty(CELLBASE_DB_HOST, "");
+            String cellbaseDatabase = annotatorProperties.getProperty(CELLBASE_DB_NAME, "");
+            int cellbasePort = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_PORT, "27017"));
+            String cellbaseUser = annotatorProperties.getProperty(CELLBASE_DB_USER, "");
+            String cellbasePassword = annotatorProperties.getProperty(CELLBASE_DB_PASSWORD, "");
+            int maxPoolSize = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_MAX_POOL_SIZE, "10"));
+            int timeout = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_TIMEOUT, "200"));
+
+            checkNull(cellbaseHost, CELLBASE_DB_HOST);
+            checkNull(cellbaseDatabase, CELLBASE_DB_NAME);
+            checkNull(cellbaseUser, CELLBASE_DB_USER);
+            checkNull(cellbasePassword, CELLBASE_DB_PASSWORD);
+
+
+            CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
+            cellbaseConfiguration.addSpeciesConnection(
+                    species,
+                    assembly,
+                    cellbaseHost,
+                    cellbaseDatabase,
+                    cellbasePort,
+                    "mongo",    //TODO: Change to "mongodb"
+                    cellbaseUser,
+                    cellbasePassword,
+                    maxPoolSize,
+                    timeout);
+            cellbaseConfiguration.addSpeciesAlias(species, species);
+
+            return new CellBaseVariantAnnotator(cellbaseConfiguration, species, assembly);
+        }
+    }
+
+    private static void checkNull(String value, String name) throws VariantAnnotatorException {
+        if(value == null || value.isEmpty()) {
+            throw new VariantAnnotatorException("Missing value: " + name);
+        }
+    }
+
     /////// CREATE ANNOTATION
 
     @Override
@@ -94,21 +166,29 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
 
         /** Getting iterator from OpenCGA Variant database. **/
-        QueryOptions iteratorQueryOptions = new QueryOptions();
+        QueryOptions iteratorQueryOptions;
+        if(options == null) {
+            iteratorQueryOptions = new QueryOptions();
+        } else {
+            iteratorQueryOptions = new QueryOptions(options);
+        }
         int batchSize = 100;
-        List<String> include = Arrays.asList("chromosome", "start", "alternative", "reference");
+        List<String> include = Arrays.asList("chromosome", "start",  "end", "alternative", "reference");
         iteratorQueryOptions.add("include", include);
         if(options != null) { //Parse query options
-            iteratorQueryOptions = options;
-//            iteratorQueryOptions = new QueryOptions(options.getMap(VariantAnnotationManager.ANNOTATOR_QUERY_OPTIONS, Collections.<String, Object>emptyMap()));
             batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
         }
 
         Variant variant = null;
         List<GenomicVariant> genomicVariantList = new ArrayList<>(batchSize);
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
+        int readsCounter = 0;
         while(iterator.hasNext()) {
             variant = iterator.next();
+            readsCounter++;
+            if (readsCounter % 1000 == 0) {
+                logger.info("Element {}", readsCounter);
+            }
 
             // If Variant is SV some work is needed
             if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
@@ -126,7 +206,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                 genomicVariantList.add(genomicVariant);
             }
 
-            if(genomicVariantList.size() == batchSize || !iterator.hasNext()) {
+            if(genomicVariantList.size() == batchSize || !iterator.hasNext() && !genomicVariantList.isEmpty()) {
                 List<VariantAnnotation> variantAnnotationList;
                 if(cellBaseClient != null) {
                     variantAnnotationList = getVariantAnnotationsREST(genomicVariantList);
@@ -154,15 +234,41 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             genomicVariantStringList.add(genomicVariant.toString());
         }
 
-        queryResponse = cellBaseClient.get(
-                CellBaseClient.Category.genomic,
-                CellBaseClient.SubCategory.variant,
-                genomicVariantStringList,
-                CellBaseClient.Resource.fullAnnotation,
-                null);
-        if(queryResponse == null) {
-            logger.error("CellBase REST error. Returned null. Skipping variants. {}", cellBaseClient.getLastQuery());
-            return Collections.emptyList();
+        boolean queryError = false;
+        try {
+            queryResponse = cellBaseClient.get(
+                    CellBaseClient.Category.genomic,
+                    CellBaseClient.SubCategory.variant,
+                    genomicVariantStringList,
+                    CellBaseClient.Resource.fullAnnotation,
+                    null);
+            if (queryResponse == null) {
+                logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
+                queryError = true;
+            }
+        } catch (JsonProcessingException e ) {
+            logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery(), e);
+            queryError = true;
+            queryResponse = null;
+        }
+        if(queryError) {
+//            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
+
+            if (genomicVariantList.size() == 1) {
+                logger.error("CellBase REST error. Skipping variant. {}", genomicVariantList.get(0));
+                return Collections.emptyList();
+            }
+
+            List<VariantAnnotation> variantAnnotationList = new LinkedList<>();
+            List<GenomicVariant> genomicVariants1 = genomicVariantList.subList(0, genomicVariantList.size() / 2);
+            if (!genomicVariants1.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants1));
+            }
+            List<GenomicVariant> genomicVariants2 = genomicVariantList.subList(genomicVariantList.size() / 2, genomicVariantList.size());
+            if (!genomicVariants2.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants2));
+            }
+            return variantAnnotationList;
         }
 
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();

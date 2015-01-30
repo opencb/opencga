@@ -10,16 +10,16 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
-import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.variant.lib.runners.VariantRunner;
@@ -32,7 +32,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -46,12 +45,15 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_EFFECT = "includeEffect";
     public static final String INCLUDE_STATS = "includeStats";
     public static final String INCLUDE_SAMPLES = "includeSamples";
-    public static final String SOURCE = "source";
+    public static final String VARIANT_SOURCE = "variantSource";
     public static final String DB_NAME = "dbName";
+
     public static final String SPECIES = "species";
-    public static final String CELLBASE_VERSION = "cellbaseVersion";
-    public static final String CELLBASE_REST_URL = "cellbaseRestUrl";
+    public static final String ASSEMBLY = "assembly";
+
     public static final String ANNOTATE = "annotate";
+    public static final String ANNOTATION_SOURCE = "annotationSource";
+    public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
 
     public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
@@ -108,7 +110,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
         boolean includeStats = params.getBoolean(INCLUDE_STATS);
-        VariantSource source = params.get(SOURCE, VariantSource.class);
+        VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
         int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100"));
@@ -190,22 +192,21 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     @Override
     public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
         boolean annotate = params.getBoolean(ANNOTATE);
+        VariantAnnotationManager.AnnotationSource annotationSource = params.get(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.class);
+        Properties annotatorProperties = params.get(ANNOTATOR_PROPERTIES, Properties.class);
 
         if (annotate) {
             String dbName = params.getString(DB_NAME, null);
-            String cellbaseRestUrl = params.getString(CELLBASE_REST_URL);
-            String version = params.getString(CELLBASE_VERSION, "v3");
-            String specie = params.getString(SPECIES, "hsapiens");
-            VariantSource variantSource = params.get(SOURCE, VariantSource.class);
+            String species = params.getString(SPECIES, "hsapiens");
+            String assembly = params.getString(ASSEMBLY, "");
+            VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
-            URI cellbaseUri;
             VariantAnnotator annotator;
             try {
-                cellbaseUri = new URI(cellbaseRestUrl);
-                annotator = new CellBaseVariantAnnotator(new CellBaseClient(cellbaseUri, version, specie));
-            } catch (URISyntaxException e) {
+                annotator = VariantAnnotationManager.buildVariantAnnotator(annotationSource, annotatorProperties, species, assembly);
+            } catch (VariantAnnotatorException e) {
                 e.printStackTrace();
-                logger.error("Can't annotate variants. Invalid cellbase URI: " + cellbaseRestUrl, e);
+                logger.error("Can't annotate variants." , e);
                 return input;
             }
 
@@ -217,8 +218,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             }
             annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(variantSource.getFileId()));    // annotate just the indexed variants
 
-            URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get("/tmp"), dbName, annotationOptions);
-            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
+            annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
+            annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
+            variantAnnotationManager.annotate(annotationOptions);
+//            URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get(output.getPath()), dbName + "." + TimeUtils.getTime(), annotationOptions);
+//            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
         }
 
         if (params.getBoolean(INCLUDE_STATS)) {

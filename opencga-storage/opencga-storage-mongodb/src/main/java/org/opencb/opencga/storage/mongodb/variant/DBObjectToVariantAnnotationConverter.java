@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.annotation.ConsequenceType;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.annotation.Xref;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -48,7 +50,66 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
     @Override
     public VariantAnnotation convertToDataModelType(DBObject object) {
-        return null;
+        VariantAnnotation va = new VariantAnnotation();
+
+        //ConsequenceType
+        List<ConsequenceType> consequenceTypes = new LinkedList<>();
+        Object cts = object.get(CONSEQUENCE_TYPE_FIELD);
+        if(cts != null && cts instanceof BasicDBList) {
+            for (Object o : ((BasicDBList) cts)) {
+                if(o instanceof DBObject) {
+                    DBObject ct = (DBObject) o;
+
+                    List<String> soAccessionNames = new LinkedList<>();
+                    if(ct.containsField(SO_ACCESSION_FIELD)) {
+                        if (ct.get(SO_ACCESSION_FIELD) instanceof List) {
+                            List<Integer> list = (List) ct.get(SO_ACCESSION_FIELD);
+                            for (Integer so : list) {
+                                soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(so));
+                            }
+                        } else {
+                            soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(ct.get(SO_ACCESSION_FIELD)));
+                        }
+                    }
+                    consequenceTypes.add(new ConsequenceType(
+                            (String) ct.get(GENE_NAME_FIELD) /*.toString()*/,
+                            (String) ct.get(ENSEMBL_GENE_ID_FIELD) /*.toString()*/,
+                            (String) ct.get(ENSEMBL_TRANSCRIPT_ID_FIELD) /*.toString()*/,
+                            (String) ct.get(STRAND_FIELD) /*.toString()*/,
+                            (String) ct.get(BIOTYPE_FIELD) /*.toString()*/,
+                            (Integer) ct.get(C_DNA_POSITION_FIELD),
+                            (Integer) ct.get(CDS_POSITION_FIELD),
+                            (Integer) ct.get(A_POSITION_FIELD),
+                            (String) ct.get(A_CHANGE_FIELD) /*.toString() */,
+                            (String) ct.get(CODON_FIELD) /*.toString() */,
+                            null,
+                            soAccessionNames));
+                }
+            }
+
+        }
+        va.setConsequenceTypes(consequenceTypes);
+
+        //XREfs
+        List<Xref> xrefs = new LinkedList<>();
+        Object xrs = object.get(XREFS_FIELD);
+        if(xrs != null && xrs instanceof BasicDBList) {
+            for (Object o : (BasicDBList) xrs) {
+                if(o instanceof DBObject) {
+                    DBObject xref = (DBObject) o;
+
+                    xrefs.add(new Xref(
+                            (String) xref.get(XREF_ID_FIELD),
+                            (String) xref.get(XREF_SOURCE_FIELD))
+                    );
+                }
+            }
+        }
+        va.setXrefs(xrefs);
+
+
+
+        return va;
     }
 
     @Override
@@ -58,7 +119,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         List<DBObject> cts = new LinkedList<>();
 
         //ID
-        if (object.getId() != null) {
+        if (object.getId() != null && !object.getId().isEmpty()) {
             xrefs.add(convertXrefToStorage(object.getId(), "dbSNP"));
         }
 
@@ -77,19 +138,26 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 putNotNull(ct, BIOTYPE_FIELD, consequenceType.getBiotype());
                 putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getcDnaPosition());
                 putNotNull(ct, CDS_POSITION_FIELD, consequenceType.getCdsPosition());
-                putNotNull(ct, A_POSITION_FIELD, consequenceType.getaPosition());
-                putNotNull(ct, A_CHANGE_FIELD, consequenceType.getaChange());
-                putNotNull(ct, SO_ACCESSION_FIELD, consequenceType.getSOAccession());
+                putNotNull(ct, A_POSITION_FIELD, consequenceType.getAaPosition());
+                putNotNull(ct, A_CHANGE_FIELD, consequenceType.getAaChange());
+
+                List<Integer> soAccession = new LinkedList<>();
+                if (consequenceType.getSoTerms() != null) {
+                    for (ConsequenceType.ConsequenceTypeEntry entry : consequenceType.getSoTerms()) {
+                        soAccession.add(ConsequenceTypeMappings.termToAccession.get(entry.getSoName()));
+                    }
+                }
+                putNotNull(ct, SO_ACCESSION_FIELD, soAccession);
 
                 cts.add(ct);
 
-                if (consequenceType.getGeneName() != null) {
+                if (consequenceType.getGeneName() != null && !consequenceType.getGeneName().isEmpty()) {
                     xrefs.add(convertXrefToStorage(consequenceType.getGeneName(), "HGNC"));
                 }
-                if (consequenceType.getEnsemblGeneId() != null) {
+                if (consequenceType.getEnsemblGeneId() != null && !consequenceType.getEnsemblGeneId().isEmpty()) {
                     xrefs.add(convertXrefToStorage(consequenceType.getEnsemblGeneId(), "ensemblGene"));
                 }
-                if (consequenceType.getEnsemblTranscriptId() != null) {
+                if (consequenceType.getEnsemblTranscriptId() != null && !consequenceType.getEnsemblTranscriptId().isEmpty()) {
                     xrefs.add(convertXrefToStorage(consequenceType.getEnsemblTranscriptId(), "ensemblTranscript"));
                 }
 

@@ -18,6 +18,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     public static final String ID = "id";
     public static final String REGION = "region";
+    public static final String CHROMOSOME = "chromosome";
     public static final String GENE = "gene";
     public static final String TYPE = "type";
     public static final String REFERENCE = "reference";
@@ -32,6 +33,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public static final String MISSING_GENOTYPES = "missingGenotypes";
     public static final String ANNOTATION_EXISTS = "annotationExists";
     public static final String GENOTYPE = "genotype";
+    public static final String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
+    public static final String ANNOT_XREF = "annot-xref";
 
     /**
      * This method set a data writer object for data serialization. When used no data will be return in
