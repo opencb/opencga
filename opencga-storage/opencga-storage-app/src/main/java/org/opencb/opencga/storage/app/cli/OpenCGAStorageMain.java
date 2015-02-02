@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.impl.SimpleLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,31 +47,15 @@ import java.util.*;
 public class OpenCGAStorageMain {
 
     //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
-    private static final String opencgaHome;
+    private static String opencgaHome;
     public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
 
-    protected static Logger logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
+    protected static Logger logger = null;// LoggerFactory.getLogger(OpenCGAStorageMain.class);
     private static OptionsParser parser;
 
 
     static {
-        // Finds the installation directory (opencgaHome).
-        // Searches first in System Property "app.home" set by the shell script.
-        // If not found, then in the environment variable "OPENCGA_HOME".
-        // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
-        String propertyAppHome = System.getProperty("app.home");
-        logger.debug("propertyAppHome = {}", propertyAppHome);
-        if (propertyAppHome != null) {
-            opencgaHome = propertyAppHome;
-        } else {
-            String envAppHome = System.getenv("OPENCGA_HOME");
-            if (envAppHome != null) {
-                opencgaHome = envAppHome;
-            } else {
-                opencgaHome = Paths.get("opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
-            }
-        }
-        Config.setOpenCGAHome(opencgaHome);
+
     }
 
     public static void main(String[] args)
@@ -81,15 +66,6 @@ public class OpenCGAStorageMain {
         OptionsParser.Command command = null;
         try {
             String parsedCommand = parser.parse(args);
-            if(parser.getGeneralParameters().help || args.length == 0){
-                System.out.println(parser.usage());
-                return;
-            }
-            if (parser.getGeneralParameters().version) {
-                String version = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.VERSION");
-                printVersion(version);
-                return;
-            }
             String logLevel = "info";
             if (parser.getGeneralParameters().verbose) {
                 logLevel = "debug";
@@ -98,6 +74,17 @@ public class OpenCGAStorageMain {
                 logLevel = parser.getGeneralParameters().logLevel;
             }
             setLogLevel(logLevel);
+            setOpenCGAHome();
+
+            if(parser.getGeneralParameters().help || args.length == 0) {
+                System.out.println(parser.usage());
+                return;
+            }
+            if (parser.getGeneralParameters().version) {
+                String version = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.VERSION");
+                printVersion(version);
+                return;
+            }
             command = parser.getCommand();
             if (command == null) {
                 System.out.println("Command not implemented");
@@ -494,6 +481,26 @@ public class OpenCGAStorageMain {
         }
     }
 
+    private static void setOpenCGAHome() {
+        // Finds the installation directory (opencgaHome).
+        // Searches first in System Property "app.home" set by the shell script.
+        // If not found, then in the environment variable "OPENCGA_HOME".
+        // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
+        String propertyAppHome = System.getProperty("app.home");
+        logger.debug("propertyAppHome = {}", propertyAppHome);
+        if (propertyAppHome != null) {
+            opencgaHome = propertyAppHome;
+        } else {
+            String envAppHome = System.getenv("OPENCGA_HOME");
+            if (envAppHome != null) {
+                opencgaHome = envAppHome;
+            } else {
+                opencgaHome = Paths.get("opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
+            }
+        }
+        Config.setOpenCGAHome(opencgaHome);
+    }
+
     private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
         /**
@@ -813,6 +820,21 @@ public class OpenCGAStorageMain {
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
+        if (logger instanceof SimpleLogger) {
+            SimpleLogger simpleLogger = (SimpleLogger) logger;
+        }
+
+//        System.out.println("org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY = " + SimpleLogger.DEFAULT_LOG_LEVEL_KEY);
+//        System.out.println("logLevel = " + logLevel);
+//        logger.error("error log");
+//        logger.info("info log");
+//        logger.debug("debug log");
+//        System.out.println("error?: " + logger.isErrorEnabled());
+//        System.out.println("info?: " + logger.isInfoEnabled());
+//        System.out.println("debug?: " + logger.isDebugEnabled());
+//        System.out.println("logger.getClass() = " + logger.getClass());
+//        System.out.println("org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY = " + SimpleLogger.DEFAULT_LOG_LEVEL_KEY);
+
     }
 
 
