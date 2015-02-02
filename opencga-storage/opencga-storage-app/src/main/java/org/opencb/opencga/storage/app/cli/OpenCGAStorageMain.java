@@ -543,9 +543,6 @@ public class OpenCGAStorageMain {
         if (c.filterRegion != null) {
             queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
         }
-        if (!c.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
-        }
         if (c.filterChromosome != null) {
             queryOptions.add(VariantDBAdaptor.CHROMOSOME, c.filterChromosome);
         }

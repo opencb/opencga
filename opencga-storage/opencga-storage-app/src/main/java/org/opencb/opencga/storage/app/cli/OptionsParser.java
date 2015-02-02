@@ -620,6 +620,42 @@ public class OptionsParser {
 
     }
 
+    @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load annotations into a database.")
+    class CommandStatsVariants implements Command {
+
+        @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
+        boolean overwriteStats = false;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials = "";
+
+        @Parameter(names = {"-f", "--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        String fileName = "";
+
+        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
+        String outDir = ".";
+        @Parameter(names = {"--create"}, description = "Do only the creation of the annotations to a file (specified by --output-filename)")
+        boolean create = false;
+        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
+        String load = null;
+/* TODO: filters?
+        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
+        List<String> filterRegion = null;
+
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        List<String> filterChromosome = null;
+
+        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
+        String filterGene = null;
+
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+        */
+    }
+
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
         String parsedCommand = jcommander.getParsedCommand();
