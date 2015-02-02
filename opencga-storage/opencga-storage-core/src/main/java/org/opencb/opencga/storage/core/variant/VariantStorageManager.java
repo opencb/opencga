@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.variant.lib.runners.VariantRunner;
 import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
 import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
@@ -109,7 +110,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
-        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+//        boolean includeStats = params.getBoolean(INCLUDE_STATS);
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
@@ -226,7 +227,10 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         }
 
         if (params.getBoolean(INCLUDE_STATS)) {
-
+            // TODO add filters
+            String dbName = params.getString(DB_NAME, null);
+            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
+            variantStatisticsCalculator.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), new QueryOptions());
         }
 
         return input;

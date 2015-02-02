@@ -3,16 +3,22 @@ package org.opencb.opencga.storage.core.variant.stats;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.cellbase.core.lib.dbquery.QueryOptions;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -20,21 +26,22 @@ import java.util.zip.GZIPOutputStream;
  */
 public class VariantStatisticsCalculator {
 
-
+    private static final String BATCH_SIZE = "batchSize";
     private ObjectMapper jsonObjectMapper;
+    protected static Logger logger = LoggerFactory.getLogger(VariantStatisticsCalculator.class);
 
     public VariantStatisticsCalculator() {
         this.jsonObjectMapper = new ObjectMapper(new JsonFactory());
     }
 
-    public URI createStats(VariantDBAdaptor variantDBAdaptor, Path outDir, String filename, QueryOptions options) throws IOException {
-
-        Path path = Paths.get(outDir != null ? outDir.toString() : "/tmp", filename + ".stats.json.gz");
-        URI fileUri = path.toUri();
+    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, QueryOptions options) throws IOException {
 
         /** Open output stream **/
+
         OutputStream outputStream;
-        outputStream = new FileOutputStream(path.toFile());
+        Path filePath = Paths.get(output);
+        outputStream = new FileOutputStream(filePath.toFile());
+        logger.info("writing stats to {}", filePath);
         if(options != null && options.getBoolean("gzip", true)) {
             outputStream = new GZIPOutputStream(outputStream);
         }
@@ -44,59 +51,30 @@ public class VariantStatisticsCalculator {
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions = new QueryOptions();
-        int batchSize = 100;
 
+//        int batchSize = 100;  // future optimization, threads, etc
 
-        List<String> include = Arrays.asList("chromosome", "start", "alternative", "reference");
-        iteratorQueryOptions.add("include", include);
         if(options != null) { //Parse query options
             iteratorQueryOptions = options;
-//            iteratorQueryOptions = new QueryOptions(options.getMap(VariantAnnotationManager.ANNOTATOR_QUERY_OPTIONS, Collections.<String, Object>emptyMap()));
-            batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
+//            batchSize = options.getInt(BATCH_SIZE, batchSize);
         }
 
-        Variant variant = null;
-        List<GenomicVariant> genomicVariantList = new ArrayList<>(batchSize);
+        logger.info("starting stats calculation");
+        long start = System.currentTimeMillis();
+
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         while(iterator.hasNext()) {
-            variant = iterator.next();
-
-            // If Variant is SV some work is needed
-            if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
-//                logger.info("Skip variant! {}", genomicVariant);
-                logger.info("Skip variant! {}", variant.getChromosome() + ":" +
-                                variant.getStart() + ":" +
-                                (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
-                                (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
-                );
-                logger.debug("Skip variant! {}", variant);
-            } else {
-                GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
-                        variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
-                        variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
-                genomicVariantList.add(genomicVariant);
-            }
-
-            if(genomicVariantList.size() == batchSize || !iterator.hasNext()) {
-                List<VariantAnnotation> variantAnnotationList;
-                if(cellBaseClient != null) {
-                    variantAnnotationList = getVariantAnnotationsREST(genomicVariantList);
-                } else {
-                    variantAnnotationList = getVariantAnnotationsDbAdaptor(genomicVariantList);
-                }
-                for (VariantAnnotation variantAnnotation : variantAnnotationList) {
-                    outputStream.write(writer.writeValueAsString(variantAnnotation).getBytes());
-                    outputStream.write('\n');
-                }
-                genomicVariantList.clear();
+            Variant variant = iterator.next();
+            for (VariantSourceEntry file : variant.getSourceEntries().values()) {
+                VariantStats variantStats = new VariantStats(variant);
+                file.setStats(variantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
+                outputStream.write(writer.writeValueAsString(variantStats).getBytes());
             }
         }
-
+        logger.info("finishing stats calculation, time: {}ms", System.currentTimeMillis() - start);
 
         outputStream.close();
-
-
-        return fileUri;
+        return output;
     }
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
