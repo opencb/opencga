@@ -20,6 +20,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         this.jsonObjectMapper = new ObjectMapper(factory);
         this.dbAdaptorFactory = null;
         this.cellBaseClient = null;
+        jsonObjectMapper.addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
     }
 
     public CellBaseVariantAnnotator(CellbaseConfiguration cellbaseConfiguration, String cellbaseSpecies, String cellbaseAssembly) {
@@ -80,10 +82,11 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
     public CellBaseVariantAnnotator(CellBaseClient cellBaseClient) {
         this();
-        this.cellBaseClient = cellBaseClient;
         if(cellBaseClient == null) {
             throw new NullPointerException("CellBaseClient can not be null");
         }
+        this.cellBaseClient = cellBaseClient;
+        cellBaseClient.getObjectMapper().addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
     }
 
     public static CellBaseVariantAnnotator buildCellbaseAnnotator(Properties annotatorProperties, String species, String assembly, boolean restConnection)
@@ -98,7 +101,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             CellBaseClient cellBaseClient;
             try {
                 URI url = new URI(cellbaseRest);
-                cellBaseClient = new CellBaseClient(url.getHost(), url.getPort(), url.getPath(), cellbaseVersion, species);
+                cellBaseClient = new CellBaseClient(url, cellbaseVersion, species);
             } catch (URISyntaxException e) {
                 e.printStackTrace();
                 throw new VariantAnnotatorException("Invalid URL : " + cellbaseRest, e);
