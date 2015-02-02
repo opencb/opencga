@@ -1,13 +1,18 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.annotation.*;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -29,23 +34,30 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String AA_POSITION_FIELD = "aaPos";
     public static final String AA_CHANGE_FIELD = "aaChange";
     public static final String SO_ACCESSION_FIELD = "so";
+    public static final String PROTEIN_SUBSTITUTION_SCORE_FIELD = "ps_score";
+    public static final String POLYPHEN_FIELD = "polyphen";
+    public static final String SIFT_FIELD = "sift";
 
     public static final String XREFS_FIELD = "xrefs";
     public final static String XREF_ID_FIELD = "id";
     public final static String XREF_SOURCE_FIELD = "src";
 
-    public static final String PROTEIN_SUBSTITUTION_SCORE_FIELD = "ps_score";
     public static final String CONSERVED_REGION_SCORE_FIELD = "cr_score";
     public final static String SCORE_SCORE_FIELD = "sc";
     public final static String SCORE_SOURCE_FIELD = "src";
     public final static String SCORE_DESCRIPTION_FIELD = "desc";
 
-    private final ObjectMapper jsonObjectMapper;
+    public static final String CLINICAL_DATA_FIELD = "clinicalData";
+
+    private final ObjectWriter writer;
+
+    protected static Logger logger = LoggerFactory.getLogger(DBObjectToVariantAnnotationConverter.class);
 
     public DBObjectToVariantAnnotationConverter() {
-        jsonObjectMapper = new ObjectMapper();
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        writer = jsonObjectMapper.writer();
     }
 
     @Override
@@ -84,6 +96,18 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                                     getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")
                             ));
                         }
+                    }
+                    if (ct.containsField(POLYPHEN_FIELD)) {
+                        DBObject dbObject = (DBObject) ct.get(POLYPHEN_FIELD);
+                        proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
+                                "Polyphen",
+                                getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
+                    }
+                    if (ct.containsField(SIFT_FIELD)) {
+                        DBObject dbObject = (DBObject) ct.get(SIFT_FIELD);
+                        proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
+                                "Sift",
+                                getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
                     }
 
 
@@ -137,6 +161,13 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
         va.setXrefs(xrefs);
 
+
+        //Clinical Data
+        if (object.containsField(CLINICAL_DATA_FIELD)) {
+            DBObject clinicalData = ((DBObject) object.get(CLINICAL_DATA_FIELD));
+            va.setClinicalData(clinicalData.toMap());
+        }
+
         return va;
     }
 
@@ -182,7 +213,13 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     List<DBObject> proteinSubstitutionScores = new LinkedList<>();
                     for (Score score : consequenceType.getProteinSubstitutionScores()) {
                         if (score != null) {
-                            proteinSubstitutionScores.add(convertScoreToStorage(score));
+                            if (score.getSource().equals("Polyphen")) {
+                                putNotNull(ct, POLYPHEN_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
+                            } else if (score.getSource().equals("Sift")) {
+                                putNotNull(ct, SIFT_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
+                            } else {
+                                proteinSubstitutionScores.add(convertScoreToStorage(score));
+                            }
                         }
                     }
                     putNotNull(ct, PROTEIN_SUBSTITUTION_SCORE_FIELD, proteinSubstitutionScores);
@@ -225,13 +262,33 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
         putNotNull(dbObject, XREFS_FIELD, xrefs);
 
+        //Clinical Data
+        if (object.getClinicalData() != null) {
+            List<DBObject> clinicalData = new LinkedList<>();
+            for (Map.Entry<String, Object> entry : object.getClinicalData().entrySet()) {
+                if (entry.getValue() != null) {
+                    try {
+                        clinicalData.add(new BasicDBObject(entry.getKey(), JSON.parse(writer.writeValueAsString(entry.getValue()))));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                        logger.error("Error serializing Clinical Data " + entry.getValue().getClass(), e);
+                    }
+                }
+            }
+            putNotNull(dbObject, CLINICAL_DATA_FIELD, clinicalData);
+        }
+
         return dbObject;
     }
 
     private DBObject convertScoreToStorage(Score score) {
-        DBObject dbObject = new BasicDBObject(SCORE_SCORE_FIELD, score.getScore());
-        putNotNull(dbObject, SCORE_SOURCE_FIELD, score.getSource());
-        putNotNull(dbObject, SCORE_DESCRIPTION_FIELD, score.getDescription());
+        return convertScoreToStorage(score.getScore(), score.getSource(), score.getDescription());
+    }
+
+    private DBObject convertScoreToStorage(double score, String source, String description) {
+        DBObject dbObject = new BasicDBObject(SCORE_SCORE_FIELD, score);
+        putNotNull(dbObject, SCORE_SOURCE_FIELD, source);
+        putNotNull(dbObject, SCORE_DESCRIPTION_FIELD, description);
         return dbObject;
     }
 

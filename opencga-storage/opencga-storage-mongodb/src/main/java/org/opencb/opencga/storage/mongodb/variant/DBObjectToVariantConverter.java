@@ -115,6 +115,10 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         DBObject mongoAnnotation = (DBObject) object.get(ANNOTATION_FIELD);
         if (mongoAnnotation != null) {
             VariantAnnotation annotation = variantAnnotationConverter.convertToDataModelType(mongoAnnotation);
+            annotation.setChromosome(variant.getChromosome());
+            annotation.setAlternativeAllele(variant.getAlternate());
+            annotation.setReferenceAllele(variant.getReference());
+            annotation.setStart(variant.getStart());
             variant.setAnnotation(annotation);
         }
         return variant;
