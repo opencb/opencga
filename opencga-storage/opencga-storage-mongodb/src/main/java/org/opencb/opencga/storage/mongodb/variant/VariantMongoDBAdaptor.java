@@ -443,8 +443,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
             DBObject find = new BasicDBObject("_id", id);
             DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
+            DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
+//            System.out.println("convertedVariantAnnotation = " + convertedVariantAnnotation);
             DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD,
-                    converter.convertToStorageType(variantAnnotation)));
+                    convertedVariantAnnotation));
             builder.find(find).updateOne(update);
         }
 
@@ -553,6 +555,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         , biotypes, builder, QueryOperation.AND);
             }
 
+            if (options.containsKey("polyphen")) {
+                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.POLYPHEN_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString("polyphen"), builder);
+            }
+
+            if (options.containsKey("sift")) {
+                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SIFT_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString("sift"), builder);
+            }
+
+            if (options.containsKey("protein_substitution")) {
+                List<String> list = getStringList(options.get("protein_substitution"));
+                addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.PROTEIN_SUBSTITUTION_SCORE_FIELD, list, builder);
+            }
+
+            if (options.containsKey("conserved_region")) {
+                List<String> list = getStringList(options.get("conserved_region"));
+                addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSERVED_REGION_SCORE_FIELD, list, builder);
+            }
+
 
             /** FILES **/
             QueryBuilder fileBuilder = QueryBuilder.start();
@@ -652,6 +681,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
+        logger.info("Find = " + builder.get());
         return builder;
     }
 
@@ -662,8 +692,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             return projection;
         }
 
-        if (options.containsKey("include")) { //Include some
-            List<String> includeList = getStringList(options.get("include"));
+        List<String> includeList = getStringList(options.get("include"));
+        if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
                 String key = DBObjectToVariantConverter.toShortFieldName(s);
                 if (key != null) {
@@ -682,8 +712,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     String key = DBObjectToVariantConverter.toShortFieldName(s);
                     if (key != null) {
                         projection.removeField(key);
+                    } else {
+                        logger.warn("Unknown exclude field: {}", s);
                     }
-                    logger.warn("Unknown exclude field: {}", s);
                 }
             }
         }
@@ -707,7 +738,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
 
-        logger.debug("Projection: {}", projection);
+        logger.info("Projection: {}", projection);
         return projection;
     }
 
@@ -777,7 +808,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-
+    private QueryBuilder addScoreFilter(String key, List<String> list, QueryBuilder builder) {
+//        ArrayList<DBObject> and = new ArrayList<>(list.size());
+//        DBObject[] ands = new DBObject[list.size()];
+        List<DBObject> ands = new ArrayList<>();
+        for (String elem : list) {
+            String[] split = elem.split(":");
+            if (split.length == 2) {
+                String source = split[0];
+                String score = split[1];
+                QueryBuilder scoreBuilder = new QueryBuilder();
+                scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(source);
+                addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD
+                        , score, scoreBuilder);
+//                builder.and(key).elemMatch(scoreBuilder.get());
+                ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
+            } else {
+                logger.error("Bad score filter: " + elem);
+            }
+        }
+        if (!ands.isEmpty()) {
+            builder.and(ands.toArray(new DBObject[ands.size()]));
+        }
+        return builder;
+    }
 
     private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
         List<String> chunkIds = getChunkIds(region);

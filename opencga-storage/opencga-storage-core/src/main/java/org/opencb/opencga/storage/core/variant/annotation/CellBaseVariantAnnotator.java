@@ -347,7 +347,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
         final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
-        ExecutorService executor = Executors.newFixedThreadPool(numConsumers);
+        final int numProducers = 1;
+        ExecutorService executor = Executors.newFixedThreadPool(numConsumers + numProducers);
         final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize*numConsumers*2);
         final VariantAnnotation lastElement = new VariantAnnotation();
 
