@@ -1,11 +1,20 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.mongodb.util.JSON;
+import org.bson.BSON;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
@@ -112,22 +121,29 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         }
 
         // TODO Save pedigree information
-        
+
         // Metadata
+        Logger logger = Logger.getLogger(DBObjectToVariantSourceConverter.class.getName());
         Map<String, Object> meta = object.getMetadata();
         BasicDBObject metadataMongo = new BasicDBObject();
         for (Map.Entry<String, Object> metaEntry : meta.entrySet()) {
             if (metaEntry.getKey().equals("variantFileHeader")) {
                 metadataMongo.append(HEADER_FIELD, metaEntry.getValue());
             } else if (!metaEntry.getKey().contains(".")) {
-                metadataMongo.append(metaEntry.getKey(), metaEntry.getValue());
+                ObjectMapper mapper = new ObjectMapper();
+                ObjectWriter writer = mapper.writer();
+                try {
+                    metadataMongo.append(metaEntry.getKey(), JSON.parse(writer.writeValueAsString(metaEntry.getValue())));
+                } catch (JsonProcessingException e) {
+                    logger.log(Level.WARNING, "Metadata key {0} could not be parsed in json", metaEntry.getKey());
+                    logger.log(Level.INFO, "{}", e.toString());
+                }
             } else {
-                 Logger.getLogger(DBObjectToVariantSourceConverter.class.getName())
-                         .log(Level.WARNING, "Metadata key {0} could not be inserted", metaEntry.getKey());
+                 logger.log(Level.WARNING, "Metadata key {0} could not be inserted", metaEntry.getKey());
             }
         }
         studyMongo = studyMongo.append(METADATA_FIELD, metadataMongo);
-        
+
         return studyMongo;
     }
     
