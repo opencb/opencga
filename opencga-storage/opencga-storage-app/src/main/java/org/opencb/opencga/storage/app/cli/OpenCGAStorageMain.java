@@ -529,6 +529,9 @@ public class OpenCGAStorageMain {
         VariantAnnotationManager variantAnnotationManager =
                 new VariantAnnotationManager(annotator, dbAdaptor);
 
+        /**
+         * Annotation options
+         */
         QueryOptions queryOptions = new QueryOptions();
         if (c.filterRegion != null) {
             queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
@@ -545,8 +548,14 @@ public class OpenCGAStorageMain {
         if (c.filterAnnotConsequenceType != null) {
             queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, c.filterAnnotConsequenceType);
         }
+        if (!c.overwriteAnnotations) {
+            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+        }
         Path outDir = Paths.get(c.outDir);
 
+        /**
+         * Create and load annotations
+         */
         boolean doCreate = c.create, doLoad = c.load != null;
         if (!c.create && c.load == null) {
             doCreate = true;

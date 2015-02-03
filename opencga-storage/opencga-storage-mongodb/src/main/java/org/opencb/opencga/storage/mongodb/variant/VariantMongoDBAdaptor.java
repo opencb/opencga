@@ -531,8 +531,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(options.getBoolean(ANNOTATION_EXISTS));
             }
 
-            if (options.containsKey("annot-xref")) {
-                List<String> xrefs = getStringList(options.get("annot-xref"));
+            if (options.containsKey(ANNOT_XREF)) {
+                List<String> xrefs = getStringList(options.get(ANNOT_XREF));
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD

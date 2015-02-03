@@ -7,6 +7,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.formats.variant.vcf4.VcfFormatHeader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 
@@ -29,6 +30,7 @@ public class DBObjectToVariantSourceConverterTest {
         source.getSamplesPosition().put("NA002", 2);
         source.getSamplesPosition().put("NA003", 3);
         source.addMetadata("header", "##fileformat=v4.1");
+        source.addMetadata("FORMAT", new VcfFormatHeader("id", "1", "Integer", "description"));
         VariantGlobalStats global = new VariantGlobalStats(10, 4, 7, 3, 0, 9, 4, 4, -1, 20.5f, null);
         source.setStats(global);
         
@@ -63,7 +65,9 @@ public class DBObjectToVariantSourceConverterTest {
     public void testConvertToDataModelType() {
         DBObjectToVariantSourceConverter converter = new DBObjectToVariantSourceConverter();
         DBObject converted = converter.convertToStorageType(source);
-       
+
+        converted.toString();
+
         assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.FILENAME_FIELD), converted.get(DBObjectToVariantSourceConverter.FILENAME_FIELD));
         assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.FILEID_FIELD), converted.get(DBObjectToVariantSourceConverter.FILEID_FIELD));
         assertEquals(mongoSource.get(DBObjectToVariantSourceConverter.STUDYNAME_FIELD), converted.get(DBObjectToVariantSourceConverter.STUDYNAME_FIELD));

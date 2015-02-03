@@ -228,13 +228,13 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
                 cts.add(ct);
 
-                if (consequenceType.getGeneName() != null) {
+                if (consequenceType.getGeneName() != null && !consequenceType.getGeneName().isEmpty()) {
                     xrefs.add(convertXrefToStorage(consequenceType.getGeneName(), "HGNC"));
                 }
-                if (consequenceType.getEnsemblGeneId() != null) {
+                if (consequenceType.getEnsemblGeneId() != null && !consequenceType.getEnsemblGeneId().isEmpty()) {
                     xrefs.add(convertXrefToStorage(consequenceType.getEnsemblGeneId(), "ensemblGene"));
                 }
-                if (consequenceType.getEnsemblTranscriptId() != null) {
+                if (consequenceType.getEnsemblTranscriptId() != null && !consequenceType.getEnsemblTranscriptId().isEmpty()) {
                     xrefs.add(convertXrefToStorage(consequenceType.getEnsemblTranscriptId(), "ensemblTranscript"));
                 }
 
