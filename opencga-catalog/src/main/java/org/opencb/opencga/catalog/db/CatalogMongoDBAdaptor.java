@@ -1787,7 +1787,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         long startTime = startQuery();
 
         checkStudyId(studyId);
-        QueryResult<Long> count = sampleCollection.count(new BasicDBObject("name", sample.getName()));
+        QueryResult<Long> count = sampleCollection.count(
+                new BasicDBObject("name", sample.getName()).append(_STUDY_ID, studyId));
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Sample { name: '" + sample.getName() + "'} already exists.");
         }
@@ -1932,7 +1933,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<Long> count = studyCollection.count(new BasicDBObject("variableSets.name", variableSet.getName()));
+        QueryResult<Long> count = studyCollection.count(
+                new BasicDBObject("variableSets.name", variableSet.getName()).append("id", studyId));
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
         }
@@ -1974,7 +1976,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<Long> count = sampleCollection.count(new BasicDBObject("annotationSets.id", annotationSet.getId()));
+        QueryResult<Long> count = sampleCollection.count(
+                new BasicDBObject("annotationSets.id", annotationSet.getId()).append("id", sampleId));
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("AnnotationSet { id: " + annotationSet.getId() + "} already exists.");
         }
