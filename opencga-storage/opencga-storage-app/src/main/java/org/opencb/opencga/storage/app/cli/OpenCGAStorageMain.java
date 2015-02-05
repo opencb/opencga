@@ -823,17 +823,15 @@ public class OpenCGAStorageMain {
         if (logger instanceof SimpleLogger) {
             SimpleLogger simpleLogger = (SimpleLogger) logger;
         }
-
-//        System.out.println("org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY = " + SimpleLogger.DEFAULT_LOG_LEVEL_KEY);
-//        System.out.println("logLevel = " + logLevel);
 //        logger.error("error log");
+//        logger.warn("warn log");
 //        logger.info("info log");
 //        logger.debug("debug log");
+//        logger.trace("trace log");
 //        System.out.println("error?: " + logger.isErrorEnabled());
 //        System.out.println("info?: " + logger.isInfoEnabled());
 //        System.out.println("debug?: " + logger.isDebugEnabled());
 //        System.out.println("logger.getClass() = " + logger.getClass());
-//        System.out.println("org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY = " + SimpleLogger.DEFAULT_LOG_LEVEL_KEY);
 
     }
 

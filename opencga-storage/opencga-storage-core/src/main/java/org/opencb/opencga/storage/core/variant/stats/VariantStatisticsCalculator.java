@@ -9,6 +9,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -20,8 +21,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -67,6 +67,10 @@ public class VariantStatisticsCalculator {
 //            batchSize = options.getInt(BATCH_SIZE, batchSize);
         }
 
+        // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
+        iteratorQueryOptions.add("include", include);
+
         logger.info("starting stats calculation");
         long start = System.currentTimeMillis();
 
@@ -94,17 +98,41 @@ public class VariantStatisticsCalculator {
         InputStream inputStream;
         inputStream = new FileInputStream(input.toFile());
         inputStream = new GZIPInputStream(inputStream);
+        logger.info("starting stats loading from {}", input);
+        long start = System.currentTimeMillis();
 
         /** Initialize Json parse **/
         JsonParser parser = jsonFactory.createParser(inputStream);
 
+        int batchSize = options.getInt(VariantStatisticsCalculator.BATCH_SIZE, 1000);
+        ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(batchSize);
+        int writes = 0;
+        int variantsNumber = 0;
+
         while (parser.nextToken() != null) {
-            VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
+            variantsNumber++;
+            statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
 
-            VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+            VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // needed?
 
-            variantDBAdaptor.updateStats(Collections.singletonList(variantStatsWrapper), options);
+            if (statsBatch.size() == batchSize) {
+                QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, options);
+                writes += writeResult.getNumResults();
+                logger.info("stats loaded up to position {}", statsBatch.get(statsBatch.size()-1).getPosition());
+                statsBatch.clear();
+            }
+        }
 
+        if (!statsBatch.isEmpty()) {
+            QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, options);
+            writes += writeResult.getNumResults();
+            logger.info("stats loaded up to position {}", statsBatch.get(statsBatch.size()-1).getPosition());
+            statsBatch.clear();
+        }
+
+        logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
+        if (writes < variantsNumber) {
+            logger.warn("provided statistics of {} variants, but only {} were updated", variantsNumber, writes);
         }
     }
 }

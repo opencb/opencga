@@ -485,9 +485,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         // TODO handle if the variant didn't had that studyId in the files array
+        // TODO check the substitution is done right if the stats are already present
         BulkWriteResult writeResult = builder.execute();
+        int writes = writeResult.getModifiedCount();
 
-        return new QueryResult<>("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+        return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
 
     @Override
@@ -692,6 +694,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
+    /**
+     * when the tags "include" or "exclude" The names are the same as the members of Variant.
+     * @param options
+     * @return
+     */
     private DBObject parseProjectionQueryOptions(QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
@@ -699,7 +706,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             return projection;
         }
 
-        if (options.containsKey("include")) { //Include some
+        if (options.containsKey("include")) { //Include some.
             List<String> includeList = getStringList(options.get("include"));
             for (String s : includeList) {
                 String key = DBObjectToVariantConverter.toShortFieldName(s);
