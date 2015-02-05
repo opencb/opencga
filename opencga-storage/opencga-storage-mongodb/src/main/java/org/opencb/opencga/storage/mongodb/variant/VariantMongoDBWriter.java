@@ -231,13 +231,13 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     
     @Override
     protected boolean buildBatchIndex(List<Variant> data) {
-        variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1));
-        variantsCollection.createIndex(new BasicDBObject("_at.gn", 1));
-        variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1));
+//        variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1));
+//        variantsCollection.createIndex(new BasicDBObject("_at.gn", 1));
+//        variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
+//        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
+//        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
+//        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+//                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1));
         return true;
     }
 
