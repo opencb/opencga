@@ -27,27 +27,29 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantSourceConverter variantSourceConverter;
+    private final String collectionName;
 
     
-    public VariantSourceMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", credentials.getUsername())
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        this.collectionName = collectionName;
         variantSourceConverter = new DBObjectToVariantSourceConverter();
     }
 
     @Override
     public QueryResult countSources() {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         return coll.count();
     }
 
     @Override
     public QueryResult<VariantSource> getAllSources(QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
         
@@ -56,7 +58,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
         options.put("studyId", studyId);
         parseQueryOptions(options, qb);
@@ -66,7 +68,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
 //        getStudyIdFilter(studyIds, qb);
         options.put("studyId", studyIds);
@@ -171,7 +173,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
      * @return The QueryResult with information of how long the query took
      */
     private QueryResult populateSamplesInSources() {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         DBObject returnFields = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
         QueryResult queryResult = coll.find(null, null, null, returnFields);

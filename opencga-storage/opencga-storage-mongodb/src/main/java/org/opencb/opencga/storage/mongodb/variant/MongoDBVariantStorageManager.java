@@ -8,6 +8,7 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.lib.data.source.Source;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
@@ -53,8 +54,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public VariantDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
         MongoCredentials credentials = getMongoCredentials(dbName);
         VariantMongoDBAdaptor variantMongoDBAdaptor;
+
+        String variantsCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
+        String filesCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
         try {
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials);
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection);
         } catch (UnknownHostException e) {
             e.printStackTrace();
             return null;
@@ -95,6 +99,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
         boolean includeStats = params.getBoolean(INCLUDE_STATS);
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
+        params.put(VARIANT_SOURCE, source);
         String dbName = params.getString(DB_NAME, null);
 
         int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100"));

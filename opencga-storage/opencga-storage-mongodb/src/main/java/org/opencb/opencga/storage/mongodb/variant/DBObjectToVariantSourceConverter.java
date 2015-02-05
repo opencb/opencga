@@ -1,9 +1,20 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.mongodb.util.JSON;
+import org.bson.BSON;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
@@ -28,6 +39,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     public final static String NUMVARIANTS_FIELD = "nVar";
     public final static String NUMSNPS_FIELD = "nSnp";
     public final static String NUMINDELS_FIELD = "nIndel";
+    public final static String NUMSTRUCTURAL_FIELD = "nSv";
     public final static String NUMPASSFILTERS_FIELD = "nPass";
     public final static String NUMTRANSITIONS_FIELD = "nTi";
     public final static String NUMTRANSVERSIONS_FIELD = "nTv";
@@ -48,23 +60,30 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         
         // Statistics
         DBObject statsObject = (DBObject) object.get(STATS_FIELD);
-        VariantGlobalStats stats = new VariantGlobalStats();
         if (statsObject != null) {
-            stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
-            stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
-            stats.setSnpsCount((int) statsObject.get(NUMSNPS_FIELD));
-            stats.setIndelsCount((int) statsObject.get(NUMINDELS_FIELD));
-            stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
-            stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
-            stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
-            stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+            VariantGlobalStats stats = new VariantGlobalStats(
+                    (int) statsObject.get(NUMVARIANTS_FIELD), (int) statsObject.get(NUMSAMPLES_FIELD), 
+                    (int) statsObject.get(NUMSNPS_FIELD), (int) statsObject.get(NUMINDELS_FIELD), 
+                    0, // TODO Add structural variants to schema!
+                    (int) statsObject.get(NUMPASSFILTERS_FIELD), 
+                    (int) statsObject.get(NUMTRANSITIONS_FIELD), (int) statsObject.get(NUMTRANSVERSIONS_FIELD), 
+                    -1, ((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue(), null
+            );
+//            stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
+//            stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
+//            stats.setSnpsCount((int) statsObject.get(NUMSNPS_FIELD));
+//            stats.setIndelsCount((int) statsObject.get(NUMINDELS_FIELD));
+//            stats.setPassCount((int) statsObject.get(NUMPASSFILTERS_FIELD));
+//            stats.setTransitionsCount((int) statsObject.get(NUMTRANSITIONS_FIELD));
+//            stats.setTransversionsCount((int) statsObject.get(NUMTRANSVERSIONS_FIELD));
+//            stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
+            source.setStats(stats);
         }
-        source.setStats(stats);
         
         // Metadata
         BasicDBObject metadata = (BasicDBObject) object.get(METADATA_FIELD);
         for (Map.Entry<String, Object> o : metadata.entrySet()) {
-            source.addMetadata(o.getKey(), o.getValue().toString());
+            source.addMetadata(o.getKey(), o.getValue());
         }
         
         return source;
@@ -102,12 +121,29 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         }
 
         // TODO Save pedigree information
-        
+
         // Metadata
+        Logger logger = Logger.getLogger(DBObjectToVariantSourceConverter.class.getName());
         Map<String, Object> meta = object.getMetadata();
-        DBObject metadataMongo = new BasicDBObject(HEADER_FIELD, meta.get("variantFileHeader"));
+        BasicDBObject metadataMongo = new BasicDBObject();
+        for (Map.Entry<String, Object> metaEntry : meta.entrySet()) {
+            if (metaEntry.getKey().equals("variantFileHeader")) {
+                metadataMongo.append(HEADER_FIELD, metaEntry.getValue());
+            } else if (!metaEntry.getKey().contains(".")) {
+                ObjectMapper mapper = new ObjectMapper();
+                ObjectWriter writer = mapper.writer();
+                try {
+                    metadataMongo.append(metaEntry.getKey(), JSON.parse(writer.writeValueAsString(metaEntry.getValue())));
+                } catch (JsonProcessingException e) {
+                    logger.log(Level.WARNING, "Metadata key {0} could not be parsed in json", metaEntry.getKey());
+                    logger.log(Level.INFO, "{}", e.toString());
+                }
+            } else {
+                 logger.log(Level.WARNING, "Metadata key {0} could not be inserted", metaEntry.getKey());
+            }
+        }
         studyMongo = studyMongo.append(METADATA_FIELD, metadataMongo);
-        
+
         return studyMongo;
     }
     

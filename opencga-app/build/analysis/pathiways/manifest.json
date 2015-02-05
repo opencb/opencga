@@ -263,6 +263,10 @@
         {
           "name": "vcfFile",
           "dataType": "txt"
+        },
+        {
+          "name": "annotvcf",
+          "dataType": "txt"
         }
       ],
       "inputParamsFromTxt": [],

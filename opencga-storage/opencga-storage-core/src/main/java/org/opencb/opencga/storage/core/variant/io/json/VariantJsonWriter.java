@@ -17,6 +17,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**
@@ -38,7 +39,7 @@ public class VariantJsonWriter implements VariantWriter {
     private OutputStream fileStream;
 
     private long numVariantsWritten;
-    
+
     public VariantJsonWriter(VariantSource source, Path outdir) {
         this.source = source;
         this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath(); 
@@ -67,7 +68,8 @@ public class VariantJsonWriter implements VariantWriter {
         jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
-        
+        jsonObjectMapper.addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
+
         try {
             variantsGenerator = factory.createGenerator(variantsStream);
             fileGenerator = factory.createGenerator(fileStream);

@@ -22,14 +22,16 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
+    private final String collectionName;
 
-    public StudyMongoDBAdaptor(MongoCredentials credentials) throws UnknownHostException {
+    public StudyMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", credentials.getUsername())
                 .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        this.collectionName = collectionName;
     }
 
     @Override
@@ -37,7 +39,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 //        db.files.aggregate( { $project : { _id : 0, sid : 1, sname : 1 } },
 //                    { $group : { _id : { studyId : "$sid", studyName : "$sname"} }}, 
 //                    { $project : { "studyId" : "$_id.studyId", "studyName" : "$_id.studyName", "_id" : 0 }} )
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         DBObject project1 = new BasicDBObject("$project", new BasicDBObject("_id", 0)
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1)
                 .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, 1));
@@ -58,7 +60,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     
     @Override
     public QueryResult findStudyNameOrStudyId(String study, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
         qb.or(new BasicDBObject(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, study), new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, study));
 //        parseQueryOptions(options, qb);
@@ -78,7 +80,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         //                           _id : { studyId : "$studyId", studyName : "$studyName"}, 
         //                           numSources : { $sum : 1} 
         //                     }} )
-        MongoDBCollection coll = db.getCollection("files");
+        MongoDBCollection coll = db.getCollection(collectionName);
         
         QueryBuilder qb = QueryBuilder.start();
         getStudyIdFilter(studyId, qb);

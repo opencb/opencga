@@ -57,11 +57,12 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      * connection details to the database where the samples are stored.
      * 
      * @param credentials Parameters for connecting to the database
+     * @param collectionName Collection that stores the variant sources
      */
-    public DBObjectToSamplesConverter(MongoCredentials credentials) {
+    public DBObjectToSamplesConverter(MongoCredentials credentials, String collectionName) {
         try {
             this.samples = null;
-            this.sourceDbAdaptor = new VariantSourceMongoDBAdaptor(credentials);
+            this.sourceDbAdaptor = new VariantSourceMongoDBAdaptor(credentials, collectionName);
         } catch (UnknownHostException ex) {
             Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
         }

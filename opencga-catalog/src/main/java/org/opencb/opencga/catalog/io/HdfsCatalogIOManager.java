@@ -92,6 +92,11 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     public void copyFile(URI source, URI destination) { }
 
     @Override
+    public void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException {
+
+    }
+
+    @Override
     public URI getTmpUri() {
         return null;
     }
@@ -120,6 +125,12 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     public List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException {
         return null;
     }
+
+    @Override
+    public long getFileSize(URI file) throws CatalogIOManagerException {
+        return 0;
+    }
+
 
 
 }

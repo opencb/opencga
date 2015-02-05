@@ -128,6 +128,17 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             throw new CatalogIOManagerException("Expected posix file system URIs.");
         }
     }
+
+    @Override
+    public void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException {
+        checkUri(source);
+        if (source.getScheme().equals("file") && target.getScheme().equals("file")) {
+            Files.move(Paths.get(source), Paths.get(target));
+        } else {
+            throw new CatalogIOManagerException("Can't move from " + source.getScheme() + " to " + target.getScheme());
+        }
+    }
+
     /*****************************
      * Get Path methods
      * ***************************
@@ -526,6 +537,20 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
         return fileUris;
     }
+
+    @Override
+    public long getFileSize(URI file) throws CatalogIOManagerException {
+        if (file.getScheme().equals("file")) {
+            try {
+                return Files.size(Paths.get(file));
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new CatalogIOManagerException("Can't get file size", e);
+            }
+        }
+        throw new CatalogIOManagerException("Unknown scheme: " + file.getScheme());
+    }
+
 
 
 //    public String getFileTableFromJob(Path jobPath, String filename, String start, String limit, String colNames,

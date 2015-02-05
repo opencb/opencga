@@ -18,6 +18,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     public static final String ID = "id";
     public static final String REGION = "region";
+    public static final String CHROMOSOME = "chromosome";
     public static final String GENE = "gene";
     public static final String TYPE = "type";
     public static final String REFERENCE = "reference";
@@ -32,6 +33,66 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public static final String MISSING_GENOTYPES = "missingGenotypes";
     public static final String ANNOTATION_EXISTS = "annotationExists";
     public static final String GENOTYPE = "genotype";
+    public static final String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
+    public static final String ANNOT_XREF = "annot-xref";
+    public static final String ANNOT_BIOTYPE = "annot-biotype";
+    public static final String POLYPHEN = "polyphen";
+    public static final String SIFT = "sift";
+    public static final String PROTEIN_SUBSTITUTION = "protein_substitution";
+    public static final String CONSERVED_REGION = "conserved_region";
+    public static final String MERGE = "merge";
+
+    static public class QueryParams {
+        public static final Set<String> acceptedValues;
+        static {
+            acceptedValues = new HashSet<>();
+            acceptedValues.add(ID);
+            acceptedValues.add(REGION);
+            acceptedValues.add(CHROMOSOME);
+            acceptedValues.add(GENE);
+            acceptedValues.add(TYPE);
+            acceptedValues.add(REFERENCE);
+            acceptedValues.add(ALTERNATE);
+            acceptedValues.add(EFFECT);
+            acceptedValues.add(STUDIES);
+            acceptedValues.add(FILES);
+            acceptedValues.add(FILE_ID);
+            acceptedValues.add(MAF);
+            acceptedValues.add(MGF);
+            acceptedValues.add(MISSING_ALLELES);
+            acceptedValues.add(MISSING_GENOTYPES);
+            acceptedValues.add(ANNOTATION_EXISTS);
+            acceptedValues.add(GENOTYPE);
+            acceptedValues.add(ANNOT_CONSEQUENCE_TYPE);
+            acceptedValues.add(ANNOT_XREF);
+            acceptedValues.add(ANNOT_BIOTYPE);
+            acceptedValues.add(POLYPHEN);
+            acceptedValues.add(SIFT);
+            acceptedValues.add(PROTEIN_SUBSTITUTION);
+            acceptedValues.add(CONSERVED_REGION);
+            acceptedValues.add(MERGE);
+        }
+
+        //TODO: Think about this
+        public static QueryOptions checkQueryOptions(QueryOptions options) throws Exception {
+            QueryOptions filteredQueryOptions = new QueryOptions(options);
+            Iterator<Map.Entry<String, Object>> iterator = filteredQueryOptions.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, Object> entry = iterator.next();
+                if (acceptedValues.contains(entry.getKey())) {
+                    if (entry.getValue() == null || entry.toString().isEmpty()) {
+                        iterator.remove();
+                    } else {
+                        //TODO: check type
+                    }
+                } else {
+                    iterator.remove();
+                    System.out.println("Unknown query param " + entry.getKey());
+                }
+            }
+            return filteredQueryOptions;
+        }
+    }
 
     /**
      * This method set a data writer object for data serialization. When used no data will be return in

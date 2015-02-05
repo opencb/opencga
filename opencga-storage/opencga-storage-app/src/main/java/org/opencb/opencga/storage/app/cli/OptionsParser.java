@@ -7,10 +7,7 @@ import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -21,10 +18,10 @@ public class OptionsParser {
 
     private final GeneralParameters generalParameters;
     private final CommandCreateAccessions accessions;
-    private final CommandTransformVariants transform;
-    private final CommandLoadVariants load;
-    private final CommandTransformAlignments transformAlignments;
-    private final CommandLoadAlignments loadAlignments;
+//    private final CommandTransformVariants transform;
+//    private final CommandLoadVariants load;
+//    private final CommandTransformAlignments transformAlignments;
+//    private final CommandLoadAlignments loadAlignments;
     private final CommandIndexVariants commandIndexVariants;
     private final CommandIndexAlignments commandIndexAlignments;
     private final CommandIndexSequence commandIndexSequence;
@@ -39,10 +36,10 @@ public class OptionsParser {
         jcommander = new JCommander();
         jcommander.addObject(generalParameters = new GeneralParameters());
         jcommander.addCommand(accessions = new CommandCreateAccessions());
-        jcommander.addCommand(transform = new CommandTransformVariants());
-        jcommander.addCommand(load = new CommandLoadVariants());
-        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
-        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
+//        jcommander.addCommand(transform = new CommandTransformVariants());
+//        jcommander.addCommand(load = new CommandLoadVariants());
+//        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
+//        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
         jcommander.addCommand(commandIndexVariants = new CommandIndexVariants());
         jcommander.addCommand(commandIndexAlignments = new CommandIndexAlignments());
         jcommander.addCommand(commandIndexSequence = new CommandIndexSequence());
@@ -143,6 +140,7 @@ public class OptionsParser {
     }
 
 
+    @Deprecated
     @Parameters(commandNames = {"transform-variants"}, commandDescription = "Generates a data model from an input file")
     class CommandTransformVariants implements Command {
 
@@ -180,6 +178,7 @@ public class OptionsParser {
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
     }
 
+    @Deprecated
     @Parameters(commandNames = {"load-variants"}, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadVariants implements Command {
 
@@ -204,7 +203,8 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
     }
-    
+
+    @Deprecated
     @Parameters(commandNames = {"transform-alignments"}, commandDescription = "Generates the Alignment data model from an input file")
     class CommandTransformAlignments implements Command {
 
@@ -246,7 +246,8 @@ public class OptionsParser {
 
 
     }
-    
+
+    @Deprecated
     @Parameters(commandNames = {"load-alignments"}, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadAlignments implements Command {
         
@@ -266,7 +267,7 @@ public class OptionsParser {
         String backend = "mongodb";
     }
 
-    
+
     @Parameters(commandNames = {"download-alignments"}, commandDescription = "Downloads a data model from the backend")
     class CommandDownloadAlignments implements Command {
         
@@ -303,7 +304,7 @@ public class OptionsParser {
         
     }
 
-    class CommandIndex extends GeneralParameters {
+    class CommandIndex implements Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
@@ -323,27 +324,27 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
-        String backend = "mongodb";
+//        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+//        String backend = "mongodb";
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
     class CommandIndexVariants extends CommandIndex implements Command {
 
-        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
         String study;
 
-        @Parameter(names = {"--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         String studyId;
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         String pedigree;
-
-        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
-        boolean includeEffect = false;
+//
+//        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
+//        boolean includeEffect = false;
 
         @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
         boolean includeStats = false;
@@ -351,10 +352,10 @@ public class OptionsParser {
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
         boolean includeGenotype = false;
 
-        @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
+        @Parameter(names = {"--compress-genotypes"}, description = "[PENDING] Store genotypes as lists of samples")
         boolean compressGenotypes = false;
 
-        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
+        @Parameter(names = {"--include-src"}, description = "[PENDING] Store also the source vcf row of each variant")
         boolean includeSrc = false;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
@@ -369,9 +370,9 @@ public class OptionsParser {
         @Parameter(names = {"--load"}, description = "Do only the load phase")
         boolean load = false; // skip transform
 
-        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
         boolean gvcf = false;
-        @Parameter(names = {"--bgzip"}, description = "The input file is in bgzip format")
+        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
         boolean bgzip = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate variants as well (optional)")
@@ -390,10 +391,18 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     class CommandIndexAlignments extends CommandIndex implements Command {
 
-        //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
-        @Parameter(names = "--mean-coverage", description = "Add mean coverage values (optional)", required = false)
-        List<String> meanCoverage = new LinkedList<String>();
+        @Parameter(names = "--transform", description = "Do only the transform phase")
+        boolean transform = false;
 
+        @Parameter(names = "--load", description = "Do only the load phase")
+        boolean load = false;
+
+        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
+        boolean calculateCoverage = false;
+
+        //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        List<String> meanCoverage = Collections.singletonList("200");
     }
 
     @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
@@ -406,7 +415,7 @@ public class OptionsParser {
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
@@ -493,7 +502,7 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
-    class CommandAnnotateVariants extends GeneralParameters {
+    class CommandAnnotateVariants implements Command {
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         VariantAnnotationManager.AnnotationSource annotator = null;
@@ -504,8 +513,8 @@ public class OptionsParser {
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         String annotatorConfig = null;
 
-        @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = true, arity = 1)
-        String dbName;  // TODO rename --database
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
@@ -527,13 +536,16 @@ public class OptionsParser {
         @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
         String load = null;
 
-        @Parameter(names = {"--filter-region"}, description = "comma separated region filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
 
-        @Parameter(names = {"--filter-gene"}, description = "comma separated gene filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        List<String> filterChromosome = null;
+
+        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         String filterGene = null;
 
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
         List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
     }
 
@@ -616,10 +628,12 @@ public class OptionsParser {
 
     Command getCommand() {
         String parsedCommand = jcommander.getParsedCommand();
-        JCommander jCommander = jcommander.getCommands().get(parsedCommand);
-        List<Object> objects = jCommander.getObjects();
-        if (!objects.isEmpty() && objects.get(0) instanceof Command) {
-            return ((Command) objects.get(0));
+        if (parsedCommand != null) {
+            JCommander jCommander = jcommander.getCommands().get(parsedCommand);
+            List<Object> objects = jCommander.getObjects();
+            if (!objects.isEmpty() && objects.get(0) instanceof Command) {
+                return ((Command) objects.get(0));
+            }
         }
         return null;
     }
@@ -651,21 +665,21 @@ public class OptionsParser {
         return accessions;
     }
 
-    CommandLoadVariants getLoadCommand() {
-        return load;
-    }
-
-    CommandTransformVariants getTransformCommand() {
-        return transform;
-    }
-
-    CommandTransformAlignments getTransformAlignments() {
-        return transformAlignments;
-    }
-
-    CommandLoadAlignments getLoadAlignments() {
-        return loadAlignments;
-    }
+//    CommandLoadVariants getLoadCommand() {
+//        return load;
+//    }
+//
+//    CommandTransformVariants getTransformCommand() {
+//        return transform;
+//    }
+//
+//    CommandTransformAlignments getTransformAlignments() {
+//        return transformAlignments;
+//    }
+//
+//    CommandLoadAlignments getLoadAlignments() {
+//        return loadAlignments;
+//    }
 
 //    CommandDownloadAlignments getDownloadAlignments() {
 //        return downloadAlignments;

@@ -112,6 +112,8 @@ public abstract class CatalogIOManager {
 
     public abstract void copyFile(URI source, URI target) throws IOException, CatalogIOManagerException;
 
+    public abstract void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException;
+
 
     public URI getUsersUri() throws CatalogIOManagerException {
         return rootDir.resolve(OPENCGA_USERS_FOLDER);
@@ -468,4 +470,7 @@ public abstract class CatalogIOManager {
 
     public abstract List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException;
 
+    public abstract long getFileSize(URI file) throws CatalogIOManagerException;
+
+//    public abstract String getCreationDate(URI file);
 }

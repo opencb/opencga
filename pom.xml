@@ -68,11 +68,22 @@
         <url>https://github.com/opencb/opencga</url>
     </scm>
 
+    <repositories>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <opencga.version>0.4.0</opencga.version>
         <java.version>1.7</java.version>
         <datastore.version>0.3.0</datastore.version>
-        <cellbase.version>3.1.0-beta</cellbase.version>
+        <cellbase.version>3.1-SNAPSHOT</cellbase.version>
         <biodata.version>0.3.0-beta</biodata.version>
     </properties>
 
