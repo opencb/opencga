@@ -558,7 +558,7 @@ public class OpenCGAStorageMain {
         if (!c.overwriteAnnotations) {
             queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
         }
-        Path outDir = Paths.get(c.outDir);
+        Path outDir = Paths.get(c.outdir);
 
         /**
          * Create and load annotations
@@ -622,6 +622,20 @@ public class OpenCGAStorageMain {
         } else {
             alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
         }
+        URI input = new URI(null, c.input, null);
+        if(c.credentials != null && !c.credentials.isEmpty()) {
+            alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
+        }
+
+        URI outdir;
+        if (c.outdir != null && !c.outdir.isEmpty()) {
+            outdir = new URI(null, c.outdir + (c.outdir.endsWith("/") ? "" : "/"), null).resolve(".");
+        } else {
+            outdir = input.resolve(".");
+        }
+
+        assertDirectoryExists(outdir);
+
         ObjectMap params = new ObjectMap();
         params.putAll(parser.getGeneralParameters().params);
 
@@ -634,11 +648,6 @@ public class OpenCGAStorageMain {
         params.put(AlignmentStorageManager.DB_NAME, c.dbName);
         params.put(AlignmentStorageManager.COPY_FILE, false);
         params.put(AlignmentStorageManager.ENCRYPT, "null");
-
-        URI input = new URI(null, c.input, null);
-        URI outdir = c.outdir.isEmpty() ? input.resolve(".") : new URI(null, c.outdir + "/", null).resolve(".");
-//                Path tmp = c.tmp.isEmpty() ? outdir : Paths.get(URI.create(c.tmp).getPath());
-//                Path credentials = Paths.get(c.credentials);
 
         boolean extract, transform, load;
         URI nextFileUri = input;
@@ -692,7 +701,13 @@ public class OpenCGAStorageMain {
 
         URI variantsUri = new URI(null, c.input, null);
         URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? new URI(null, c.pedigree, null) : null;
-        URI outdirUri = c.outdir != null && !c.outdir.isEmpty() ? new URI(null, c.outdir, null).resolve(".") : variantsUri.resolve(".");
+        URI outdirUri;
+        if (c.outdir != null && !c.outdir.isEmpty()) {
+            outdirUri = new URI(null, c.outdir + (c.outdir.endsWith("/") ? "" : "/"), null).resolve(".");
+        } else {
+            outdirUri = variantsUri.resolve(".");
+        }
+        assertDirectoryExists(outdirUri);
 
         String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
         VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
@@ -833,6 +848,13 @@ public class OpenCGAStorageMain {
 //        System.out.println("debug?: " + logger.isDebugEnabled());
 //        System.out.println("logger.getClass() = " + logger.getClass());
 
+    }
+
+    private static void assertDirectoryExists(URI outdir) {
+        if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
+            logger.error("given output directory does not exist, please create it first.");
+            System.exit(1);
+        }
     }
 
 

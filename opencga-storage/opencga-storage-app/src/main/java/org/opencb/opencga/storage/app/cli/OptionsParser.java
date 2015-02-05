@@ -221,7 +221,7 @@ public class OptionsParser {
       //  String studyId;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
-        String outdir = ".";
+        String outdir = "./";
         
         
         @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
@@ -522,8 +522,8 @@ public class OptionsParser {
         @Parameter(names = {"-f", "--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
         String fileName = "";
 
-        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
-        String outDir = ".";
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+        String outdir = "./";
 
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         String species = "hsapiens";
@@ -562,8 +562,8 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--dbName"}, description = "OpenCGA DB name to read variants.", required = true, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
-        String outDir = ".";
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+        String outdir = "./";
 
         @Parameter(names = {"-f", "--fileName"}, description = "Output file name. Default: dbName", required = false, arity = 1)
         String fileName = "";
