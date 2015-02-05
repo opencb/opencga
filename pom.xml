@@ -68,6 +68,17 @@
         <url>https://github.com/opencb/opencga</url>
     </scm>
 
+    <repositories>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <opencga.version>0.4.0</opencga.version>
         <java.version>1.7</java.version>

@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
  */
 public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
-    public static final Set<String> acceptedValues;
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
@@ -43,24 +43,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
-    static {
-        acceptedValues = new HashSet<>();
-        acceptedValues.add(ID);
-        acceptedValues.add(REGION);
-        acceptedValues.add(GENE);
-        acceptedValues.add(TYPE);
-        acceptedValues.add(REFERENCE);
-        acceptedValues.add(ALTERNATE);
-        acceptedValues.add(EFFECT);
-        acceptedValues.add(STUDIES);
-        acceptedValues.add(FILES);
-        acceptedValues.add(FILE_ID);
-        acceptedValues.add(MAF);
-        acceptedValues.add(MGF);
-        acceptedValues.add(MISSING_ALLELES);
-        acceptedValues.add(MISSING_GENOTYPES);
-        acceptedValues.add(ANNOTATION_EXISTS);
-    }
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName) 
             throws UnknownHostException {
         // Mongo configuration
@@ -156,7 +138,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<QueryResult> allResults = new ArrayList<>(regionList.size());
         // If the user asks to merge the results, run only one query,
         // otherwise delegate in the method to query regions one by one
-        if (options.getBoolean("merge", false)) {
+        if (options.getBoolean(MERGE, false)) {
             MongoDBCollection coll = db.getCollection(collectionName);
             QueryBuilder qb = QueryBuilder.start();
             getRegionFilter(regionList, qb);
@@ -447,8 +429,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
             DBObject find = new BasicDBObject("_id", id);
             DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
+            DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
+//            System.out.println("convertedVariantAnnotation = " + convertedVariantAnnotation);
             DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD,
-                    converter.convertToStorageType(variantAnnotation)));
+                    convertedVariantAnnotation));
             builder.find(find).updateOne(update);
         }
 
@@ -577,19 +561,58 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (options.containsKey(ANNOT_CONSEQUENCE_TYPE)) {
-                List<Integer> cts = getIntegersList(options.get(ANNOT_CONSEQUENCE_TYPE));
+//                List<Integer> cts = getIntegersList(options.get(ANNOT_CONSEQUENCE_TYPE));
+                List<String> cts = getStringList(options.get(ANNOT_CONSEQUENCE_TYPE));
+                List<Integer> ctsInteger = new ArrayList<>(cts.size());
+                for (String ct : cts) {
+                    if(ct.startsWith("SO:")) {
+                        ct = ct.substring(3);
+                    }
+                    try {
+                        ctsInteger.add(Integer.parseInt(ct));
+                    } catch (NumberFormatException e) {
+                        logger.error("Error parsing integer ", e);
+                    }
+                }
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD
-                        , cts, builder, QueryOperation.AND);
+                        , ctsInteger, builder, QueryOperation.AND);
             }
 
-            if (options.containsKey("annot-biotype")) {
-                List<String> biotypes = getStringList(options.get("annot-biotype"));
+            if (options.containsKey(ANNOT_BIOTYPE)) {
+                List<String> biotypes = getStringList(options.get(ANNOT_BIOTYPE));
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.BIOTYPE_FIELD
                         , biotypes, builder, QueryOperation.AND);
+            }
+
+            if (options.containsKey(POLYPHEN)) {
+                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.POLYPHEN_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString(POLYPHEN), builder);
+            }
+
+            if (options.containsKey(SIFT)) {
+                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SIFT_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString(SIFT), builder);
+            }
+
+            if (options.containsKey(PROTEIN_SUBSTITUTION)) {
+                List<String> list = getStringList(options.get(PROTEIN_SUBSTITUTION));
+                addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.PROTEIN_SUBSTITUTION_SCORE_FIELD, list, builder);
+            }
+
+            if (options.containsKey(CONSERVED_REGION)) {
+                List<String> list = getStringList(options.get(CONSERVED_REGION));
+                addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSERVED_REGION_SCORE_FIELD, list, builder);
             }
 
 
@@ -598,14 +621,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (options.containsKey(STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
                 addQueryListFilter(
-                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getListAs(STUDIES, String.class),
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, getStringList(options.get(STUDIES)),
                         fileBuilder, QueryOperation.AND);
             }
 
             if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
                 addQueryListFilter(
-                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getListAs(FILES, String.class),
-                        fileBuilder, QueryOperation.AND);
+                        DBObjectToVariantSourceConverter.FILEID_FIELD, getStringList(options.get(FILES)),
+                                fileBuilder, QueryOperation.AND);
             }
 
             if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
@@ -691,6 +714,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
+        logger.info("Find = " + builder.get());
         return builder;
     }
 
@@ -706,8 +730,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             return projection;
         }
 
-        if (options.containsKey("include")) { //Include some.
-            List<String> includeList = getStringList(options.get("include"));
+        List<String> includeList = getStringList(options.get("include"));
+        if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
                 String key = DBObjectToVariantConverter.toShortFieldName(s);
                 if (key != null) {
@@ -726,8 +750,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     String key = DBObjectToVariantConverter.toShortFieldName(s);
                     if (key != null) {
                         projection.removeField(key);
+                    } else {
+                        logger.warn("Unknown exclude field: {}", s);
                     }
-                    logger.warn("Unknown exclude field: {}", s);
                 }
             }
         }
@@ -751,7 +776,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
 
-        logger.debug("Projection: {}", projection);
+        logger.info("Projection: {}", projection);
         return projection;
     }
 
@@ -821,7 +846,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-
+    private QueryBuilder addScoreFilter(String key, List<String> list, QueryBuilder builder) {
+//        ArrayList<DBObject> and = new ArrayList<>(list.size());
+//        DBObject[] ands = new DBObject[list.size()];
+        List<DBObject> ands = new ArrayList<>();
+        for (String elem : list) {
+            String[] split = elem.split(":");
+            if (split.length == 2) {
+                String source = split[0];
+                String score = split[1];
+                QueryBuilder scoreBuilder = new QueryBuilder();
+                scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(source);
+                addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD
+                        , score, scoreBuilder);
+//                builder.and(key).elemMatch(scoreBuilder.get());
+                ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
+            } else {
+                logger.error("Bad score filter: " + elem);
+            }
+        }
+        if (!ands.isEmpty()) {
+            builder.and(ands.toArray(new DBObject[ands.size()]));
+        }
+        return builder;
+    }
 
     private QueryBuilder getRegionFilter(Region region, QueryBuilder builder) {
         List<String> chunkIds = getChunkIds(region);
