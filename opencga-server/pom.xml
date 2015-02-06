@@ -38,12 +38,6 @@
             <version>${opencga.version}</version>
         </dependency>
 
-        <!--<dependency>-->
-        <!--<groupId>org.opencb.variant</groupId>-->
-        <!--<artifactId>variant-cli</artifactId>-->
-        <!--<version>1.0.0</version>-->
-        <!--</dependency>-->
-
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -59,6 +53,10 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>

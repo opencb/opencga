@@ -1,19 +1,5 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.commons.containers.list.SortedList;
-import org.opencb.commons.run.Task;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.data.source.Source;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
-import org.opencb.variant.lib.runners.VariantRunner;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -22,6 +8,18 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.containers.list.SortedList;
+import org.opencb.commons.run.Task;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 /**
  * Created by imedina on 13/08/14.
