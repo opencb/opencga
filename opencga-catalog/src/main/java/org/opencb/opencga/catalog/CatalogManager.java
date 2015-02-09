@@ -32,12 +32,18 @@ import java.util.regex.Pattern;
 
 public class CatalogManager {
 
+    /* DBAdaptor properties */
     public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
     public static final String CATALOG_DB_DATABASE = "OPENCGA.CATALOG.DB.DATABASE";
     public static final String CATALOG_DB_PASSWORD = "OPENCGA.CATALOG.DB.PASSWORD";
     public static final String CATALOG_DB_HOST = "OPENCGA.CATALOG.DB.HOST";
     public static final String CATALOG_DB_PORT = "OPENCGA.CATALOG.DB.PORT";
+    /* IOManager properties */
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
+    /* Manager policies properties */
+    public static final String CATALOG_MANAGER_POLICY_CREATION_USER = "OPENCGA.CATALOG.MANAGER.POLICY.CREATION_USER";
+
+
 
     private CatalogDBAdaptor catalogDBAdaptor;
     private CatalogIOManager ioManager;
@@ -47,11 +53,13 @@ public class CatalogManager {
 
 
     private Properties properties;
+    private String creationUserPolicy;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
+
 
 
     /*public CatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
@@ -62,6 +70,7 @@ public class CatalogManager {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
+        configureManager(properties);
         configureIOManager(properties);
     }
 
@@ -79,6 +88,7 @@ public class CatalogManager {
             throw e;
         }
 
+        configureManager(properties);
         configureDBAdaptor(properties);
         configureIOManager(properties);
     }
@@ -87,6 +97,7 @@ public class CatalogManager {
             throws IOException, CatalogIOManagerException, CatalogDBException {
         this.properties = properties;
 
+        configureManager(properties);
         configureDBAdaptor(properties);
         configureIOManager(properties);
     }
@@ -120,6 +131,10 @@ public class CatalogManager {
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
 
+    }
+
+    private void configureManager(Properties properties) {
+        creationUserPolicy = properties.getProperty(CATALOG_MANAGER_POLICY_CREATION_USER, "always");
     }
 
     /**
@@ -268,6 +283,11 @@ public class CatalogManager {
 
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options)
             throws CatalogException {
+        return createUser(id, name, email, password, organization, options, null);
+    }
+
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options, String sessionId)
+            throws CatalogException {
         checkParameter(id, "id");
         checkParameter(password, "password");
         checkParameter(name, "name");
@@ -275,6 +295,30 @@ public class CatalogManager {
         organization = organization != null ? organization : "";
 
         User user = new User(id, name, email, password, organization, User.Role.USER, "");
+
+        String userId = null;
+        switch (creationUserPolicy) {
+            case "onlyAdmin":
+                userId = getUserIdBySessionId(sessionId);
+                if (!userId.isEmpty() && getUserRole(userId).equals(User.Role.ADMIN)) {
+                    user.getAttributes().put("creatorUserId", userId);
+                } else {
+                    throw new CatalogException("CreateUser Fail. Required Admin role");
+                }
+                break;
+            case "anyLoggedUser":
+                checkParameter(sessionId, "sessionId");
+                userId = getUserIdBySessionId(sessionId);
+                if (userId.isEmpty()) {
+                    throw new CatalogException("CreateUser Fail. Required existing account");
+                }
+                user.getAttributes().put("creatorUserId", userId);
+                break;
+            case "always":
+            default:
+                break;
+        }
+
 
         try {
             ioManager.createUser(user.getId());
@@ -334,15 +378,15 @@ public class CatalogManager {
         return catalogDBAdaptor.logoutAnonymous(sessionId);
     }
 
-    public QueryResult changePassword(String userId, String password, String nPassword1, String sessionId)
+    public QueryResult changePassword(String userId, String oldPassword, String newPassword, String sessionId)
             throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
-        checkParameter(password, "password");
-        checkParameter(nPassword1, "nPassword1");
+        checkParameter(oldPassword, "oldPassword");
+        checkParameter(newPassword, "newPassword");
         checkSessionId(userId, sessionId);  //Only the user can change his own password
         catalogDBAdaptor.updateUserLastActivity(userId);
-        return catalogDBAdaptor.changePassword(userId, password, nPassword1);
+        return catalogDBAdaptor.changePassword(userId, oldPassword, newPassword);
     }
 
     public QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogException {
