@@ -5,10 +5,13 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.containers.list.SortedList;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.data.source.Source;
+import org.opencb.opencga.storage.core.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
@@ -19,15 +22,14 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by imedina on 13/08/14.
  */
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
+    //StorageEngine specific Properties
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOST";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PORT";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
@@ -36,9 +38,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS   = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
+
+    //StorageEngine specific params
+    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
+    public static final String BULK_SIZE = "bulkSize";
+    public static final String INCLUDE_SRC = "includeSrc";
 
     @Override
-    public VariantWriter getDBWriter(String dbName, ObjectMap params) {
+    public VariantMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         Properties credentialsProperties = new Properties(properties);
 
@@ -96,13 +105,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         Path input = Paths.get(inputUri.getPath());
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
-        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
-        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+        boolean includeEffect  = params.getBoolean(INCLUDE_EFFECT);
+        boolean includeStats   = params.getBoolean(INCLUDE_STATS);
+        boolean includeSrc     = params.getBoolean(INCLUDE_SRC);
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
         params.put(VARIANT_SOURCE, source);
         String dbName = params.getString(DB_NAME, null);
 
-        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100"));
+        int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100")));
+        int bulkSize = params.getInt(BULK_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE, "" + batchSize)));
+        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
 
         //Reader
         VariantReader variantJsonReader;
@@ -113,9 +125,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
 
         //Writers
-        VariantWriter variantDBWriter = this.getDBWriter(dbName, params);
         List<VariantWriter> writers = new ArrayList<>();
-        writers.add(variantDBWriter);
+        for (int i = 0; i < numWriters; i++) {
+            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
+            variantDBWriter.setBulkSize(bulkSize);
+            variantDBWriter.includeSrc(includeSrc);
+            writers.add(variantDBWriter);
+        }
 
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
@@ -124,11 +140,18 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         //Runner
-        VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
+//        VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
+        Runner<Variant> r = new ThreadRunner<>(
+                variantJsonReader,
+                Collections.<List<? extends DataWriter<Variant>>>singleton(writers),
+                Collections.<Task<Variant>>emptyList(),
+                batchSize,
+                new Variant());
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
-        vr.run();
+//        vr.run();
+        r.run();
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants loaded!");

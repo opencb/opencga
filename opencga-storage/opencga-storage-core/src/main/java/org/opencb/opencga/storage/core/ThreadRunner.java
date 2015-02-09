@@ -18,14 +18,13 @@ public class ThreadRunner<T> extends Runner<T> {
     ExecutorService executor;
     private T lastElement;
     private Logger logger = LoggerFactory.getLogger(ThreadRunner.class);
-    @Deprecated Map<DataWriter<T>, Integer> threadsPerWriters = new HashMap<>();
     private final int numWriters;
     private final int numReaders;
     private List<BlockingQueue<T>> queues;
     private List<DataWriter<T>> writers;
-    private Set<List<DataWriter<T>>> writersSet;
+    private Set<List<? extends DataWriter<T>>> writersSet;
 
-    public ThreadRunner(DataReader<T> reader, Set<List<DataWriter<T>>> writersSet, List<Task<T>> tasks, int batchSize, T lastElement) {
+    public ThreadRunner(DataReader<T> reader, Set<List<? extends DataWriter<T>>> writersSet, List<Task<T>> tasks, int batchSize, T lastElement) {
         super(reader, null, tasks, batchSize);
         this.writersSet = writersSet;
         this.writers = new LinkedList<>();
@@ -39,66 +38,34 @@ public class ThreadRunner<T> extends Runner<T> {
         numReaders = 1;
         this.lastElement = lastElement;
 
-
     }
-
-    @Deprecated public ThreadRunner(DataReader<T> reader, Map<DataWriter<T>, Integer> writersMap, List<Task<T>> tasks, int batchSize, T lastElement) {
-        super(reader, new ArrayList<DataWriter<T>>(writersMap.keySet()), tasks, batchSize);
-        this.threadsPerWriters = writersMap;
-        int w = 0;
-        for (Integer integer : threadsPerWriters.values()) {
-            w += integer;
-        }
-        numWriters = w;
-        numReaders = 1;
-    }
-
-    @Deprecated public ThreadRunner(DataReader<T> reader, List<DataWriter<T>> writers, List<Task<T>> tasks, int batchSize, T lastElement) {
-        super(reader, writers, tasks, batchSize);
-        this.lastElement = lastElement;
-        this.numReaders = 1;
-        int w = 0;
-        for (DataWriter<T> writer : writers) {
-            threadsPerWriters.put(writer, 10);
-            w += 10;
-        }
-        numWriters = w;
-    }
-
 
     private void setQueues() throws IOException {
         executor = Executors.newFixedThreadPool(numReaders + numWriters);
 
         queues = new ArrayList<BlockingQueue<T>>(writersSet.size());
-        for (List<DataWriter<T>> dataWriters : writersSet) {
+        for (List<? extends DataWriter<T>> dataWriters : writersSet) {
             BlockingQueue queue = new ArrayBlockingQueue(batchSize * dataWriters.size() * 2);
             queues.add(queue);
             for (DataWriter<T> dataWriter : dataWriters) {
                 executor.execute(new Writer(queue, dataWriter));
             }
         }
-//        for (DataWriter<T> writer : writers) {
-//            BlockingQueue queue = new ArrayBlockingQueue(batchSize * threadsPerWriters.get(writer) * 2);
-//            queues.add(queue);
-//            for (int i = 0; i < threadsPerWriters.get(writer); i++) {
-//                executor.execute(new Writer(queue, writer));
-//            }
-//        }
 
         for (int i = 0; i < numReaders; i++) {
-            executor.execute(new Reader(queues, reader, numWriters));
+            executor.execute(new Reader(queues, reader));
         }
     }
 
     @Override
     public void run() throws IOException {
+
+        this.readerInit();
+        this.writerInit();
+
+        this.launchPre();
+
         setQueues();
-
-//        this.readerInit();
-//        this.writerInit();
-
-//        this.launchPre();
-
         executor.shutdown();
         try {
             executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
@@ -107,16 +74,33 @@ public class ThreadRunner<T> extends Runner<T> {
             e.printStackTrace();
         }
 
-//        this.launchPost();
+        this.launchPost();
 
-//        this.readerClose();
-//        this.writerClose();
+        this.readerClose();
+        this.writerClose();
         for (DataWriter<T> writer : writers) {
             writer.post();
             writer.close();
         }
     }
 
+    @Override
+    public void writerInit() {
+
+        for (DataWriter<T> dw : writers) {
+            dw.open();
+            dw.pre();
+        }
+
+    }
+
+    @Override
+    public void writerClose() {
+        for (DataWriter<T> dw : writers) {
+            dw.post();
+            dw.close();
+        }
+    }
 
     class Writer implements Runnable {
         private BlockingQueue<T> queue;
@@ -140,6 +124,7 @@ public class ThreadRunner<T> extends Runner<T> {
                     }
                     elem = queue.take();
                 }
+                queue.put(lastElement);
                 if (!batch.isEmpty()) { //Upload remaining elements
                     writer.write(batch);
                 }
@@ -154,12 +139,12 @@ public class ThreadRunner<T> extends Runner<T> {
     class Reader implements Runnable {
         private List<BlockingQueue<T>> queues;
         private DataReader<T> reader;
-        private int numConsumers;
+//        private int numConsumers;
 
-        public Reader(List<BlockingQueue<T>> queues, DataReader<T> reader, int numConsumers) {
+        public Reader(List<BlockingQueue<T>> queues, DataReader<T> reader/*, int numConsumers*/) {
             this.queues = queues;
             this.reader = reader;
-            this.numConsumers = numConsumers;
+//            this.numConsumers = numConsumers;
         }
 
 //        public Reader(List<BlockingQueue<T>> queues, DataReader<T> reader, Map<DataWriter<T>, Integer> threadsPerWriters) {
@@ -183,12 +168,12 @@ public class ThreadRunner<T> extends Runner<T> {
                         read = reader.read(readeBatchSize);
                     }
                 }
-                for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
+//                for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
                     for (BlockingQueue<T> queue : queues) {
                         queue.put(lastElement);
                     }
-                }
-                logger.info("thread finished updating annotations");
+//                }
+                logger.info("thread finished reading");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

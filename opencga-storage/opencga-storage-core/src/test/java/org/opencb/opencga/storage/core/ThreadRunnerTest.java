@@ -92,7 +92,7 @@ public class ThreadRunnerTest extends GenericTest {
         List<DataWriter<String>> stringWriters = Arrays.<DataWriter<String>>asList(new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os),new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os), new StringWriter(os));
         ThreadRunner<String> runner = new ThreadRunner<>(
                 new StringReader(10000),
-                Collections.<List<DataWriter<String>>>singleton(stringWriters),
+                Collections.<List<? extends DataWriter<String>>>singleton(stringWriters),
                 Collections.<Task<String>>emptyList(), 100, "");
         runner.run();
         os.flush();

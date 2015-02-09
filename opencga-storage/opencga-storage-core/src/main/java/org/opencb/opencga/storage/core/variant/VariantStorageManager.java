@@ -55,6 +55,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String ANNOTATION_SOURCE = "annotationSource";
     public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
+    public static final String BATCH_SIZE = "batchSize";
 
     public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
 
