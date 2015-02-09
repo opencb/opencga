@@ -44,6 +44,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_EFFECT = "includeEffect";
     public static final String INCLUDE_STATS = "includeStats";
     public static final String INCLUDE_SAMPLES = "includeSamples";
+    public static final String INCLUDE_SRC = "includeSrc";
     public static final String VARIANT_SOURCE = "variantSource";
     public static final String DB_NAME = "dbName";
 
