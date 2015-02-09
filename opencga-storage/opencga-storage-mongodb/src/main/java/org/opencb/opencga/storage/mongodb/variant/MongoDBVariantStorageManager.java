@@ -1,5 +1,14 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -10,19 +19,11 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.data.source.Source;
+
 import org.opencb.opencga.storage.core.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
-import org.opencb.variant.lib.runners.VariantRunner;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
 
 /**
  * Created by imedina on 13/08/14.
@@ -107,7 +108,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect  = params.getBoolean(INCLUDE_EFFECT);
         boolean includeStats   = params.getBoolean(INCLUDE_STATS);
-        boolean includeSrc     = params.getBoolean(INCLUDE_SRC);
+        boolean includeSrc     = params.getBoolean(INCLUDE_SRC, true);
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
         params.put(VARIANT_SOURCE, source);
         String dbName = params.getString(DB_NAME, null);

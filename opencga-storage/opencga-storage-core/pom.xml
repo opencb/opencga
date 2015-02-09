@@ -36,7 +36,7 @@
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-mongodb</artifactId>
-            <exclusions>
+<!--            <exclusions>
                 <exclusion>
                     <groupId>org.opencb.biodata</groupId>
                     <artifactId>biodata-formats</artifactId>
@@ -49,7 +49,7 @@
                     <groupId>org.mongodb</groupId>
                     <artifactId>mongo-java-driver</artifactId>
                 </exclusion>
-            </exclusions>
+            </exclusions>-->
         </dependency>
     </dependencies>
 </project>
