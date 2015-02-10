@@ -94,8 +94,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         Path input = Paths.get(inputUri.getPath());
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
-        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
-        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+
+        boolean includeEffect  = params.getBoolean(INCLUDE_EFFECT);
+        boolean includeStats   = params.getBoolean(INCLUDE_STATS);
+        boolean includeSrc     = params.getBoolean(INCLUDE_SRC, true);
+
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
         params.put(VARIANT_SOURCE, source);
         String dbName = params.getString(DB_NAME, null);

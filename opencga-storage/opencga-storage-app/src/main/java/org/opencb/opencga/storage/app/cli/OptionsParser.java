@@ -53,6 +53,13 @@ public class OptionsParser {
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
+    class Command {
+
+        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+        Map<String, String> params = new HashMap<>();
+
+    }
+
     /**
      -h | --help
      -v | --version
@@ -61,11 +68,7 @@ public class OptionsParser {
      --storage-engine TEXT
      --storage-engine-config FILE
      */
-    interface Command {
-
-    }
-
-    class GeneralParameters implements Command {
+    class GeneralParameters extends Command {
         @Parameter(names = { "--properties-path" }, description = "Properties path")
         String propertiesPath = null;
 
@@ -111,7 +114,7 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"create-accessions"}, commandDescription = "Creates accession IDs for an input file")
-    class CommandCreateAccessions implements Command {
+    class CommandCreateAccessions extends Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to annotation with accession IDs", required = true, arity = 1)
         String input;
@@ -144,7 +147,7 @@ public class OptionsParser {
 
     @Deprecated
     @Parameters(commandNames = {"transform-variants"}, commandDescription = "Generates a data model from an input file")
-    class CommandTransformVariants implements Command {
+    class CommandTransformVariants extends Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to transform into the OpenCGA data model", required = true, arity = 1)
         String file;
@@ -182,7 +185,7 @@ public class OptionsParser {
 
     @Deprecated
     @Parameters(commandNames = {"load-variants"}, commandDescription = "Loads an already generated data model into a backend")
-    class CommandLoadVariants implements Command {
+    class CommandLoadVariants extends Command {
 
         @Parameter(names = {"-i", "--input"}, description = "Prefix of files to save in the selected backend", required = true, arity = 1)
         String input;
@@ -208,7 +211,7 @@ public class OptionsParser {
 
     @Deprecated
     @Parameters(commandNames = {"transform-alignments"}, commandDescription = "Generates the Alignment data model from an input file")
-    class CommandTransformAlignments implements Command {
+    class CommandTransformAlignments extends Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to transform into the OpenCGA data model", required = true, arity = 1)
         String file;
@@ -238,7 +241,7 @@ public class OptionsParser {
         
         
 //        @Parameters(commandNames = {"--include-coverage"}, commandDescription = "Save coverage information (optional)")
-//        class CommandCoverage implements Command {
+//        class CommandCoverage extends Command {
 //            @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
 //            boolean plain = false;
 //        }
@@ -251,7 +254,7 @@ public class OptionsParser {
 
     @Deprecated
     @Parameters(commandNames = {"load-alignments"}, commandDescription = "Loads an already generated data model into a backend")
-    class CommandLoadAlignments implements Command {
+    class CommandLoadAlignments extends Command {
         
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be loaded", required = true, arity = 1)
         String fileId;
@@ -271,7 +274,7 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"download-alignments"}, commandDescription = "Downloads a data model from the backend")
-    class CommandDownloadAlignments implements Command {
+    class CommandDownloadAlignments extends Command {
         
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be extracted", required = true, arity = 1)
         String alias;
@@ -306,7 +309,7 @@ public class OptionsParser {
         
     }
 
-    class CommandIndex implements Command {
+    class CommandIndex extends Command {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
@@ -334,7 +337,7 @@ public class OptionsParser {
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
-    class CommandIndexVariants extends CommandIndex implements Command {
+    class CommandIndexVariants extends CommandIndex {
 
         @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
         String study;
@@ -391,7 +394,7 @@ public class OptionsParser {
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
-    class CommandIndexAlignments extends CommandIndex implements Command {
+    class CommandIndexAlignments extends CommandIndex {
 
         @Parameter(names = "--transform", description = "Do only the transform phase")
         boolean transform = false;
@@ -408,11 +411,11 @@ public class OptionsParser {
     }
 
     @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
-    class CommandIndexSequence extends CommandIndex implements Command {
+    class CommandIndexSequence extends CommandIndex {
 
     }
 
-    class CommandFetch implements Command {
+    class CommandFetch extends Command {
         //File location parameters
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
@@ -504,7 +507,7 @@ public class OptionsParser {
 
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
-    class CommandAnnotateVariants implements Command {
+    class CommandAnnotateVariants extends Command {
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         VariantAnnotationManager.AnnotationSource annotator = null;
@@ -553,7 +556,7 @@ public class OptionsParser {
 
     @Deprecated
     @Parameters(commandNames = {"create-annotations"}, commandDescription = "Create an annotation file.")
-    class CommandCreateAnnotations implements Command {
+    class CommandCreateAnnotations extends Command {
 
         @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
@@ -606,7 +609,7 @@ public class OptionsParser {
 
     @Deprecated
     @Parameters(commandNames = {"load-annotations"}, commandDescription = "Load an annotation file.")
-    class CommandLoadAnnotations implements Command {
+    class CommandLoadAnnotations extends Command {
 
         @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";

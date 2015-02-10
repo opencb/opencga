@@ -75,7 +75,7 @@ public class OpenCGAStorageMain {
                 logLevel = parser.getGeneralParameters().logLevel;
             }
             setLogLevel(logLevel);
-            setOpenCGAHome();
+            Config.setOpenCGAHome(opencgaHome);
 
             if(parser.getGeneralParameters().help || args.length == 0) {
                 System.out.println(parser.usage());
@@ -485,26 +485,6 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void setOpenCGAHome() {
-        // Finds the installation directory (opencgaHome).
-        // Searches first in System Property "app.home" set by the shell script.
-        // If not found, then in the environment variable "OPENCGA_HOME".
-        // If none is found, it supposes "debug-mode" and the opencgaHome is in .../opencga/opencga-app/build/
-        String propertyAppHome = System.getProperty("app.home");
-        logger.debug("propertyAppHome = {}", propertyAppHome);
-        if (propertyAppHome != null) {
-            opencgaHome = propertyAppHome;
-        } else {
-            String envAppHome = System.getenv("OPENCGA_HOME");
-            if (envAppHome != null) {
-                opencgaHome = envAppHome;
-            } else {
-                opencgaHome = Paths.get("opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
-            }
-        }
-        Config.setOpenCGAHome(opencgaHome);
-    }
-
     private static void indexSequence(OptionsParser.CommandIndexSequence c) throws URISyntaxException, IOException, FileFormatException {
         if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
             Path input = Paths.get(new URI(c.input).getPath());
@@ -564,6 +544,8 @@ public class OpenCGAStorageMain {
         params.put(AlignmentStorageManager.DB_NAME, c.dbName);
         params.put(AlignmentStorageManager.COPY_FILE, false);
         params.put(AlignmentStorageManager.ENCRYPT, "null");
+
+        params.putAll(c.params);
 
         boolean extract, transform, load;
         URI nextFileUri = input;
@@ -653,6 +635,8 @@ public class OpenCGAStorageMain {
             }
             params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
         }
+
+        params.putAll(c.params);
 
         URI nextFileUri = variantsUri;
 
@@ -876,318 +860,12 @@ public class OpenCGAStorageMain {
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
-
-//        logger.error("error log");
-//        logger.warn("warn log");
-//        logger.info("info log");
-//        logger.debug("debug log");
-//        logger.trace("trace log");
-//        System.out.println("error?: " + logger.isErrorEnabled());
-//        System.out.println("info?: " + logger.isInfoEnabled());
-//        System.out.println("debug?: " + logger.isDebugEnabled());
-//        System.out.println("logger.getClass() = " + logger.getClass());
-
     }
 
-    private static void assertDirectoryExists(URI outdir) {
+    private static void assertDirectoryExists(URI outdir){
         if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
             logger.error("given output directory does not exist, please create it first.");
             System.exit(1);
         }
     }
-
-
-/*    @Deprecated
-    private static void indexVariants(String step, VariantSource source, Path mainFilePath, Path auxiliaryFilePath, Path outdir, String backend,
-                                      Path credentialsPath, boolean includeEffect, boolean includeStats, boolean includeSamples)//, String aggregated)
-            throws IOException, IllegalOpenCGACredentialsException {
-
-        VariantReader reader = null;
-        PedigreeReader pedReader = ("transform".equals(step) && auxiliaryFilePath != null) ?
-                new PedigreePedReader(auxiliaryFilePath.toString()) : null;
-
-        if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
-            switch (source.getAggregation()) {
-                case NONE:
-                    reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString());
-                    break;
-                case BASIC:
-                    reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
-                    break;
-                case EVS:
-                    reader = new VariantVcfReader(source, mainFilePath.toAbsolutePath().toString(), new VariantVcfEVSFactory());
-                    break;
-            }
-        } else if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
-            assert (auxiliaryFilePath != null);
-            reader = new VariantJsonReader(source, mainFilePath.toAbsolutePath().toString(), auxiliaryFilePath.toAbsolutePath().toString());
-        } else {
-            throw new IOException("Variants input file format not supported");
-        }
-
-        List<VariantWriter> writers = new ArrayList<>();
-
-        List<Task<Variant>> taskList = new SortedList<>();
-
-        // TODO Restore when SQLite and Monbase are once again ready!!
-        if (backend.equalsIgnoreCase("mongo")) {
-            Properties properties = new Properties();
-            properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-            OpenCGACredentials credentials = new MongoCredentials(properties);
-            writers.add(new VariantMongoWriter(source, (MongoCredentials) credentials,
-                    properties.getProperty("collection_variants", "variants"),
-                    properties.getProperty("collection_files", "files")));
-        } else if (backend.equalsIgnoreCase("json")) {
-//            credentials = new MongoCredentials(properties);
-            writers.add(new VariantJsonWriter(source, outdir));
-        }
-//        else if (backend.equalsIgnoreCase("sqlite")) {
-//            credentials = new SqliteCredentials(properties);
-//            writers.add(new VariantVcfSqliteWriter((SqliteCredentials) credentials));
-//        } else if (backend.equalsIgnoreCase("monbase")) {
-//            credentials = new MonbaseCredentials(properties);
-//            writers.add(new VariantVcfMonbaseDataWriter(source, "opencga-hsapiens", (MonbaseCredentials) credentials));// TODO Restore when SQLite and Monbase are once again ready!!
-//        }
-
-
-        // If a JSON file is provided, then stats and effects do not need to be recalculated
-        if (!source.getFileName().endsWith(".json") && !source.getFileName().endsWith(".json.gz")) {
-            if (includeEffect) {
-                taskList.add(new VariantEffectTask());
-            }
-
-            if (includeStats) {
-                taskList.add(new VariantStatsTask(reader, source));
-            }
-        }
-
-        for (VariantWriter variantWriter : writers) {
-            variantWriter.includeSamples(includeSamples);
-            variantWriter.includeEffect(includeEffect);
-            variantWriter.includeStats(includeStats);
-        }
-
-        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList);
-
-        System.out.println("Indexing variants...");
-        vr.run();
-        System.out.println("Variants indexed!");
-    }
-*/
-/*
-
-    @Deprecated
-    private static void indexAlignments(
-            String study, //String studyId,
-            Path filePath, 
-            String fileId, Path outdir, Region region, 
-            String backend, Path credentialsPath, Configuration config, 
-            boolean compact,
-            boolean loadCoverage,
-            boolean calculeCoverage, List<String> meanCoverageValues) throws IOException {
-        String TABLE_NAME = "alignments";
-        AlignmentDataReader reader;
-        //List<AlignmentDataWriter<Alignment, AlignmentHeader>> writers = new LinkedList<>();
-        List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
-        if(outdir == null) outdir = Paths.get(".");
-        Properties properties = null;
-        
-        if(credentialsPath != null){
-            properties = new Properties();
-            properties.load(new InputStreamReader(new FileInputStream(credentialsPath.toString())));
-        }
-//
-//            Configure Readers
-//
-        
-        String filePathString = filePath.toAbsolutePath().toString();
-        String lowerCaseFileName = filePath.getFileName().toString().toLowerCase();
-        String baseFileName = filePathString.substring(0, filePathString.lastIndexOf("."));
-        String extension = filePathString.substring(filePathString.lastIndexOf("."), filePathString.length());
-        if (lowerCaseFileName.endsWith(".sam")) {
-            reader = new AlignmentSamDataReader(filePathString, study);
-        } else if (lowerCaseFileName.endsWith(".bam")) {
-            reader = new AlignmentBamDataReader(filePathString, study);
-        } else if (lowerCaseFileName.endsWith(".json")) {
-//            String headerJsonFilename = filePathString.substring(0, filePathString.lastIndexOf(".", 2)) + ".header.json";
-//            reader = new AlignmentJsonDataReader(filePathString, headerJsonFilename);
-            baseFileName = baseFileName.substring(0, baseFileName.lastIndexOf("."));
-            reader = new AlignmentJsonDataReader(baseFileName, false);
-        } else if(lowerCaseFileName.endsWith(".json.gz")){
-//            String headerJsonFilename = filePathString.substring(0, filePathString.lastIndexOf(".", 3)) + ".header.json.gz";
-//            reader = new AlignmentJsonDataReader(filePathString, headerJsonFilename);
-            baseFileName = baseFileName.substring(0, baseFileName.lastIndexOf("."));
-            baseFileName = baseFileName.substring(0, baseFileName.lastIndexOf("."));
-            extension = ".json.gz";
-            reader = new AlignmentJsonDataReader(baseFileName, true);
-        } else if(lowerCaseFileName.endsWith(".hbase")){
-            AlignmentHBaseDataReader hbdr = new AlignmentHBaseDataReader(properties, TABLE_NAME,  baseFileName);
-            reader = hbdr;
-            if(region != null) {
-                hbdr.setRegion(region);
-            }
-        } else {
-            throw new IOException("Alignment input file format not supported : " + filePath);
-        }
-        
-        
-//
-//            Configure Backend
-//
-        if(backend.equalsIgnoreCase("json") || backend.equalsIgnoreCase("json.gz")) {
-            boolean gzip = backend.endsWith(".gz");
-            String baseOutputFilename = Paths.get(outdir.toString(), fileId).toAbsolutePath().toString();
-            writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, baseOutputFilename, gzip)));
-            if(calculeCoverage || loadCoverage){
-                writers.add(new AlignmentCoverageJsonDataWriter(baseOutputFilename, gzip));
-            }
-        } else if (backend.equalsIgnoreCase("hbase")) {
-            if (calculeCoverage || loadCoverage) {
-                if (properties != null){
-                    writers.add(new AlignmentRegionCoverageHBaseDataWriter(properties, TABLE_NAME , Paths.get(baseFileName).getFileName().toString()));
-                }else{
-                    writers.add(new AlignmentRegionCoverageHBaseDataWriter(config, TABLE_NAME, Paths.get(baseFileName).getFileName().toString()));
-                }
-            }
-            if (properties != null){
-                writers.add(new AlignmentRegionHBaseDataWriter( properties, TABLE_NAME, Paths.get(baseFileName).getFileName().toString(), reader));
-            }else{
-                writers.add(new AlignmentRegionHBaseDataWriter( config, TABLE_NAME, Paths.get(baseFileName).getFileName().toString(), reader));
-            }
-        } else if (backend.equalsIgnoreCase("sam")) {
-            if(calculeCoverage || loadCoverage){
-                throw new UnsupportedOperationException("Can't write coverage in this backend.");
-            }
-            System.out.println("[CAUTION] Unimplemented Extraction");
-            if(fileId == null){
-                fileId = "/tmp/unimplemented.sam";
-            }
-            writers.add(new AlignmentRegionDataWriter(new AlignmentSamDataWriter(fileId, reader)));
-        } else {
-            throw new IOException("Alignment backend format not supported : " + backend);
-        }
-        
-//
-//         Configure Tasks
-//
-        if(compact){
-            QueryOptions queryOptions = new QueryOptions();
-            AlignmentRegionCompactorTask alignmentRegionCompactorTask = new AlignmentRegionCompactorTask(queryOptions);
-            tasks.add(alignmentRegionCompactorTask);
-        }
-        if(calculeCoverage){
-            AlignmentRegionCoverageCalculatorTask coverageTask = new AlignmentRegionCoverageCalculatorTask();
-            for(String name : meanCoverageValues){
-                coverageTask.addMeanCoverageCalculator(name);
-            }
-            tasks.add(coverageTask);
-        }
-        if(loadCoverage) {
-            String coverageJsonFilename;
-            if (lowerCaseFileName.endsWith(".json")) {
-                //coverageJsonFilename = filePathString.substring(0, filePathString.lastIndexOf(".", 2)) + ".coverage.json";
-                coverageJsonFilename = baseFileName += ".coverage.json";
-            } else if (lowerCaseFileName.endsWith(".json.gz")) {
-                //coverageJsonFilename = filePathString.substring(0, filePathString.lastIndexOf(".", 2)) + ".coverage.json.gz";
-                coverageJsonFilename = baseFileName += ".coverage.json.gz";
-            } else {
-                throw new UnsupportedOperationException("Coverage can be loaded only from Json");
-            }
-            AlignmentRegionCoverageFromJsonTask alignmentRegionCoverageFromJsonTask = new AlignmentRegionCoverageFromJsonTask(coverageJsonFilename);
-            tasks.add(alignmentRegionCoverageFromJsonTask);
-        }
-        
-        
-        AlignmentRegionDataReader regionReader = new AlignmentRegionDataReader(reader);
-        Runner<AlignmentRegion> runner = new Runner<>(regionReader, writers, tasks, 1);
-        
-        runner.run();
-    }
-
-
-    //TODO
-    private static void transformAlignments(CommandTransformAlignments c) throws IOException{
-        AlignmentDataReader reader;
-        List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
-
-        if(c.file.endsWith(".sam")){
-            reader = new AlignmentSamDataReader(c.file, c.study);
-        } else if (c.file.endsWith(".bam")) {
-            reader = new AlignmentBamDataReader(c.file, c.study);
-        } else {
-            throw new UnsupportedOperationException("[ERROR] Unsuported file input format : " + c.file);
-        }
-        
-        writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, Paths.get(c.outdir,c.fileId).toString(), c.plain)));
-        
-        AlignmentRegionDataReader regionReader = new AlignmentRegionDataReader(reader);
-        Runner<AlignmentRegion> runner = new Runner<>(regionReader, writers, tasks, 1);
-
-        runner.run();
-    }
-    
-    //TODO
-    private static void loadAlignments(CommandLoadAlignments c) throws IOException  {
-        AlignmentDataReader reader;
-        Properties properties = null;
-        if (c.credentials != null) {
-            properties = new Properties();
-            properties.load(new InputStreamReader(new FileInputStream(c.credentials)));
-        }
-        
-        switch(c.backend){
-            case "hbase" :
-                
-                break;
-            default:
-                throw new UnsupportedOperationException("[ERROR] Unsupported backend : " + c.backend);
-        }
-        
-    }
-    private static void downloadAlignments(CommandDownloadAlignments c) throws IOException {
-        AlignmentDataReader reader;
-        Properties properties = null;
-
-        if (c.credentials != null) {
-            properties = new Properties();
-            properties.load(new InputStreamReader(new FileInputStream(c.credentials)));
-        }
-        switch(c.backend){
-            case "hbase":
-                AlignmentHBaseDataReader hb = new AlignmentHBaseDataReader(properties, "alignments", c.alias);
-                if(c.region != null){
-                    hb.setRegion(new Region(c.region));
-                }
-                reader = hb;
-                break;
-            default:
-                throw new UnsupportedOperationException("[ERROR] Unsupported backend : " + c.backend);
-        }
-        List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-        boolean gzip = false;
-        switch(c.format){
-            case "json.gz":
-                gzip = true;
-            case "json":
-                writers.add(new AlignmentRegionDataWriter(new AlignmentJsonDataWriter(reader, Paths.get(c.outdir, c.alias).toString(), gzip)));
-                break;
-            case "sam":
-                writers.add(new AlignmentRegionDataWriter(new AlignmentSamDataWriter(Paths.get(c.outdir, c.alias).toString(), reader)));
-                break;
-            case "bam":
-                writers.add(new AlignmentRegionDataWriter(new AlignmentBamDataWriter(Paths.get(c.outdir, c.alias).toString(), reader)));
-                break;
-            default:
-                throw new UnsupportedOperationException("[ERROR] Unsupported format : " + c.format);
-        }
-        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
-
-        AlignmentRegionDataReader regionReader = new AlignmentRegionDataReader(reader);
-        Runner<AlignmentRegion> runner = new Runner<>(regionReader, writers, tasks, 1);
-
-        runner.run();
-    }*/
-    
 }
