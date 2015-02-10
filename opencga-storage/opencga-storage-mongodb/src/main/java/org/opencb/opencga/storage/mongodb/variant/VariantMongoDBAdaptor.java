@@ -714,7 +714,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.info("Find = " + builder.get());
+        logger.debug("Find = " + builder.get());
         return builder;
     }
 
@@ -776,7 +776,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
 
-        logger.info("Projection: {}", projection);
+        logger.debug("Projection: {}", projection);
         return projection;
     }
 

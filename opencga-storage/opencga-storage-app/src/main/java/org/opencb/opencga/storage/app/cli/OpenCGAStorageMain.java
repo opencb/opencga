@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.SimpleLogger;
@@ -478,6 +479,9 @@ public class OpenCGAStorageMain {
         } else if(command instanceof OptionsParser.CommandAnnotateVariants) {
             OptionsParser.CommandAnnotateVariants c = (OptionsParser.CommandAnnotateVariants) command;
             annotateVariants(c);
+        } else if (command instanceof OptionsParser.CommandStatsVariants) {
+            OptionsParser.CommandStatsVariants c = (OptionsParser.CommandStatsVariants) command;
+            statsVariants(c);
         }
     }
 
@@ -499,91 +503,6 @@ public class OpenCGAStorageMain {
             }
         }
         Config.setOpenCGAHome(opencgaHome);
-    }
-
-    private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
-        /**
-         * Create DBAdaptor
-         */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
-        ObjectMap params = new ObjectMap();
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
-
-        /**
-         * Create Annotator
-         */
-        Properties annotatorProperties = Config.getStorageProperties();
-        if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
-            annotatorProperties.load(new FileInputStream(c.annotatorConfig));
-        }
-
-
-        VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
-        if(annotatorSource == null) {
-            annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
-                    annotatorProperties.getProperty(
-                            OPENCGA_STORAGE_ANNOTATOR,
-                            VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
-                    ).toUpperCase()
-            );
-        }
-        logger.info("Annotating with {}", annotatorSource);
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
-        VariantAnnotationManager variantAnnotationManager =
-                new VariantAnnotationManager(annotator, dbAdaptor);
-
-        /**
-         * Annotation options
-         */
-        QueryOptions queryOptions = new QueryOptions();
-        if (c.filterRegion != null) {
-            queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
-        }
-        if (c.filterChromosome != null) {
-            queryOptions.add(VariantDBAdaptor.CHROMOSOME, c.filterChromosome);
-        }
-        if (c.filterGene != null) {
-            queryOptions.add(VariantDBAdaptor.GENE, c.filterGene);
-        }
-        if (c.filterAnnotConsequenceType != null) {
-            queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, c.filterAnnotConsequenceType);
-        }
-        if (!c.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
-        }
-        Path outDir = Paths.get(c.outdir);
-
-        /**
-         * Create and load annotations
-         */
-        boolean doCreate = c.create, doLoad = c.load != null;
-        if (!c.create && c.load == null) {
-            doCreate = true;
-            doLoad = true;
-        }
-
-        URI annotationFile = null;
-        if (doCreate) {
-            long start = System.currentTimeMillis();
-            logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, queryOptions);
-            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
-        }
-
-        if (doLoad) {
-            long start = System.currentTimeMillis();
-            logger.info("Starting annotation load");
-            if (annotationFile == null) {
-//                annotationFile = new URI(null, c.load, null);
-                annotationFile = Paths.get(c.load).toUri();
-            }
-            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
-            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
-        }
     }
 
     private static void indexSequence(OptionsParser.CommandIndexSequence c) throws URISyntaxException, IOException, FileFormatException {
@@ -687,11 +606,7 @@ public class OpenCGAStorageMain {
             throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
-        if (storageEngine == null || storageEngine.isEmpty()) {
-            variantStorageManager = StorageManagerFactory.getVariantStorageManager();
-        } else {
-            variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
-        }
+        variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
@@ -778,6 +693,157 @@ public class OpenCGAStorageMain {
         }
     }
 
+    private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, String fromAccession, Path outdir) throws IOException {
+        String studyId = source.getStudyId();
+        String studyPrefix = studyId.substring(studyId.length() - 6);
+        VcfRawReader reader = new VcfRawReader(variantsPath.toString());
+
+        List<DataWriter> writers = new ArrayList<>();
+        String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
+        if (variantsPath.toString().endsWith(".gz")) {
+            variantsFilename = Files.getNameWithoutExtension(variantsFilename);
+        }
+        writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
+
+        List<Task<VcfRecord>> taskList = new ArrayList<>();
+        taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));
+
+        Runner vr = new Runner(reader, writers, taskList);
+
+        System.out.println("Accessioning variants with prefix " + studyPrefix + "...");
+        vr.run();
+        System.out.println("Variants accessioned!");
+    }
+
+    private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
+        /**
+         * Create DBAdaptor
+         */
+        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+        if(c.credentials != null && !c.credentials.isEmpty()) {
+            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+        }
+        ObjectMap params = new ObjectMap();
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+
+        /**
+         * Create Annotator
+         */
+        Properties annotatorProperties = Config.getStorageProperties();
+        if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
+            annotatorProperties.load(new FileInputStream(c.annotatorConfig));
+        }
+
+
+        VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
+        if(annotatorSource == null) {
+            annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
+                    annotatorProperties.getProperty(
+                            OPENCGA_STORAGE_ANNOTATOR,
+                            VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
+                    ).toUpperCase()
+            );
+        }
+        logger.info("Annotating with {}", annotatorSource);
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
+        VariantAnnotationManager variantAnnotationManager =
+                new VariantAnnotationManager(annotator, dbAdaptor);
+
+        /**
+         * Annotation options
+         */
+        QueryOptions queryOptions = new QueryOptions();
+        if (c.filterRegion != null) {
+            queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
+        }
+        if (c.filterChromosome != null) {
+            queryOptions.add(VariantDBAdaptor.CHROMOSOME, c.filterChromosome);
+        }
+        if (c.filterGene != null) {
+            queryOptions.add(VariantDBAdaptor.GENE, c.filterGene);
+        }
+        if (c.filterAnnotConsequenceType != null) {
+            queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, c.filterAnnotConsequenceType);
+        }
+        if (!c.overwriteAnnotations) {
+            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+        }
+        Path outDir = Paths.get(c.outdir);
+
+        /**
+         * Create and load annotations
+         */
+        boolean doCreate = c.create, doLoad = c.load != null;
+        if (!c.create && c.load == null) {
+            doCreate = true;
+            doLoad = true;
+        }
+
+        URI annotationFile = null;
+        if (doCreate) {
+            long start = System.currentTimeMillis();
+            logger.info("Starting annotation creation ");
+            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, queryOptions);
+            logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
+        }
+
+        if (doLoad) {
+            long start = System.currentTimeMillis();
+            logger.info("Starting annotation load");
+            if (annotationFile == null) {
+//                annotationFile = new URI(null, c.load, null);
+                annotationFile = Paths.get(c.load).toUri();
+            }
+            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
+            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+        }
+
+    }
+
+    private static void statsVariants(OptionsParser.CommandStatsVariants c)
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException {
+
+        /**
+         * query options
+         */
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, new VariantSource(null, c.fileId, c.studyId, null));
+        queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
+
+        /**
+         * Create DBAdaptor
+         */
+        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+        if(c.credentials != null && !c.credentials.isEmpty()) {
+            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+        }
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
+
+        /**
+         * Create and load stats
+         */
+        boolean doCreate = c.create, doLoad = c.load != null;
+        if (!c.create && c.load == null) {
+            doCreate = doLoad = true;
+        }
+
+        URI outputUri = Paths.get(c.load == null? "": c.load).toUri();
+        VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
+        if (doCreate) {
+            outputUri = new URI(null, c.outdir, null);
+            assertDirectoryExists(outputUri);
+            String filename = c.fileName.isEmpty() ? c.dbName : c.fileName;
+            outputUri = outputUri.resolve(filename);
+            outputUri = variantStatisticsCalculator.createStats(dbAdaptor, outputUri, queryOptions);
+        }
+
+        if (doLoad) {
+            variantStatisticsCalculator.loadStats(dbAdaptor, outputUri, queryOptions);
+        }
+    }
+
+
     private static String getDefault(String value, String defaultValue) {
         return value == null || value.isEmpty() ? defaultValue : value;
     }
@@ -801,28 +867,6 @@ public class OpenCGAStorageMain {
         System.exit(1);
     }
 
-    private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, String fromAccession, Path outdir) throws IOException {
-        String studyId = source.getStudyId();
-        String studyPrefix = studyId.substring(studyId.length() - 6);
-        VcfRawReader reader = new VcfRawReader(variantsPath.toString());
-
-        List<DataWriter> writers = new ArrayList<>();
-        String variantsFilename = Files.getNameWithoutExtension(variantsPath.getFileName().toString());
-        if (variantsPath.toString().endsWith(".gz")) {
-            variantsFilename = Files.getNameWithoutExtension(variantsFilename);
-        }
-        writers.add(new VcfRawWriter(reader, outdir.toString() + "/" + variantsFilename + "_accessioned" + ".vcf"));
-
-        List<Task<VcfRecord>> taskList = new ArrayList<>();
-        taskList.add(new CreateAccessionTask(source, globalPrefix, studyPrefix, fromAccession));
-
-        Runner vr = new Runner(reader, writers, taskList);
-
-        System.out.println("Accessioning variants with prefix " + studyPrefix + "...");
-        vr.run();
-        System.out.println("Variants accessioned!");
-    }
-
     private static void printVersion(String version) {
         System.out.println("OpenCGA Storage CLI. Version " + version);
     }
@@ -832,9 +876,7 @@ public class OpenCGAStorageMain {
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
-        if (logger instanceof SimpleLogger) {
-            SimpleLogger simpleLogger = (SimpleLogger) logger;
-        }
+
 //        logger.error("error log");
 //        logger.warn("warn log");
 //        logger.info("info log");

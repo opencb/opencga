@@ -229,7 +229,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         if (params.getBoolean(INCLUDE_STATS)) {
             // TODO add filters
             logger.debug("about to calculate stats");
-            String dbName = params.getString(DB_NAME, null);
+            String dbName = params.getString(DB_NAME, "defaultDatabase");
             VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
             URI statsUri = variantStatisticsCalculator.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), new QueryOptions(params));
             variantStatisticsCalculator.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
