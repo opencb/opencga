@@ -626,7 +626,7 @@ public class OptionsParser {
     }
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load annotations into a database.")
-    class CommandStatsVariants implements Command {
+    class CommandStatsVariants extends Command {
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         boolean overwriteStats = false;

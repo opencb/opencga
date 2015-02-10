@@ -75,7 +75,7 @@ public class OpenCGAStorageMain {
                 logLevel = parser.getGeneralParameters().logLevel;
             }
             setLogLevel(logLevel);
-            Config.setOpenCGAHome(opencgaHome);
+            Config.setOpenCGAHome();
 
             if(parser.getGeneralParameters().help || args.length == 0) {
                 System.out.println(parser.usage());

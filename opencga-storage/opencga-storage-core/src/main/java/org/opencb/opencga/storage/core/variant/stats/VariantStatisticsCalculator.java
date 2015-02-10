@@ -17,7 +17,6 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.validation.constraints.NotNull;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
@@ -44,7 +43,7 @@ public class VariantStatisticsCalculator {
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
     }
 
-    public URI createStats(VariantDBAdaptor variantDBAdaptor, @NotNull URI output, QueryOptions options) throws IOException {
+    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, QueryOptions options) throws IOException {
 
         /** Open output streams **/
         OutputStream outputVariantsStream;
