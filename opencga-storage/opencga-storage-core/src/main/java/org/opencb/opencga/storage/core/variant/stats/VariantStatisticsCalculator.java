@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -113,33 +114,32 @@ public class VariantStatisticsCalculator {
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
 
+        logger.info("starting stats loading from {}", uri);
+        long start = System.currentTimeMillis();
+
+        loadVariantStats(variantDBAdaptor, uri, options);
+//        System.out.println("uri = " + uri);
+        URI sourceUri = uri.resolve(uri.getPath().replace(VARIANT_STATS_SUFFIX, SOURCE_STATS_SUFFIX));
+//        System.out.println("uri source = " + sourceUri);
+        loadSourceStats(variantDBAdaptor, sourceUri, options);
+
+        logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
+    }
+    public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
+
         /** Open input streams **/
         Path variantInput = Paths.get(uri.getPath());
         InputStream variantInputStream;
         variantInputStream = new FileInputStream(variantInput.toFile());
         variantInputStream = new GZIPInputStream(variantInputStream);
-        logger.info("starting stats loading from {}", variantInput);
-        long start = System.currentTimeMillis();
-
-        Path sourceInput = Paths.get(uri.getPath().replace(VARIANT_STATS_SUFFIX, SOURCE_STATS_SUFFIX));
-        InputStream sourceInputStream;
-        sourceInputStream = new FileInputStream(sourceInput.toFile());
-        sourceInputStream = new GZIPInputStream(sourceInputStream);
 
         /** Initialize Json parse **/
         JsonParser parser = jsonFactory.createParser(variantInputStream);
-        JsonParser sourceParser = jsonFactory.createParser(sourceInputStream);
 
         int batchSize = options.getInt(VariantStatisticsCalculator.BATCH_SIZE, 1000);
         ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(batchSize);
         int writes = 0;
         int variantsNumber = 0;
-        VariantSourceStats variantSourceStats;
-//        if (sourceParser.nextToken() != null) {
-            variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
-//        }
-        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // needed?
-
 
         while (parser.nextToken() != null) {
             variantsNumber++;
@@ -160,13 +160,34 @@ public class VariantStatisticsCalculator {
             statsBatch.clear();
         }
 
-//        DBObject studyMongo = sourceConverter.convertToStorageType(source);
-//        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
-//        WriteResult wr = filesCollection.update(query, studyMongo, true, false);
-        logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
         if (writes < variantsNumber) {
             logger.warn("provided statistics of {} variants, but only {} were updated", variantsNumber, writes);
             logger.info("note: maybe those variants didn't had the proper study?");
         }
+
+    }
+    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
+
+        /** Open input streams **/
+        Path sourceInput = Paths.get(uri.getPath());
+        InputStream sourceInputStream;
+        sourceInputStream = new FileInputStream(sourceInput.toFile());
+        sourceInputStream = new GZIPInputStream(sourceInputStream);
+
+        /** Initialize Json parse **/
+        JsonParser sourceParser = jsonFactory.createParser(sourceInputStream);
+
+        VariantSourceStats variantSourceStats;
+//        if (sourceParser.nextToken() != null) {
+            variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
+//        }
+        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // needed?
+
+        // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource.getFileId()
+        variantDBAdaptor.getVariantSourceDBAdaptor().updateSourceStats(variantSourceStats, options);
+
+//        DBObject studyMongo = sourceConverter.convertToStorageType(source);
+//        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
+//        WriteResult wr = filesCollection.update(query, studyMongo, true, false);
     }
 }
