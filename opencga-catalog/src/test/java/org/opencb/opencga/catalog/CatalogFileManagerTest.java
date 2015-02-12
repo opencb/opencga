@@ -9,10 +9,7 @@ import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.beans.User;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.io.IOException;

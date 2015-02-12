@@ -35,11 +35,11 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
 
-    public HdfsCatalogIOManager(String propertiesFile) throws IOException, CatalogIOManagerException {
+    public HdfsCatalogIOManager(String propertiesFile) throws CatalogIOManagerException {
         super(propertiesFile);
     }
 
-    public HdfsCatalogIOManager(Properties properties) throws IOException, CatalogIOManagerException {
+    public HdfsCatalogIOManager(Properties properties) throws CatalogIOManagerException {
         super(properties);
     }
 
@@ -64,7 +64,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public URI createDirectory(URI uri, boolean parents) throws IOException {
+    public URI createDirectory(URI uri, boolean parents) throws CatalogIOManagerException {
         return null;
     }
 

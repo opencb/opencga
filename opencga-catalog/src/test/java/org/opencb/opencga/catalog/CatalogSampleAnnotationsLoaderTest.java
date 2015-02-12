@@ -7,6 +7,7 @@ import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.*;
 import org.opencb.opencga.catalog.beans.*;
 
 import java.io.IOException;

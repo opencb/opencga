@@ -22,7 +22,7 @@ public class CatalogIOManagerFactory {
     public CatalogIOManager get(URI uri) throws IOException, CatalogIOManagerException {
         return get(uri.getScheme());
     }
-    public CatalogIOManager get(String io) throws IOException, CatalogIOManagerException {
+    public CatalogIOManager get(String io) throws CatalogIOManagerException {
         if(io == null) {
             io = DEFAULT_CATALOG_SCHEME;
         }
