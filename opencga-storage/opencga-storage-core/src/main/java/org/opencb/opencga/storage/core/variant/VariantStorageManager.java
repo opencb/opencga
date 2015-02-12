@@ -42,12 +42,13 @@ import java.util.*;
 public abstract class VariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
 
 
-    public static final String INCLUDE_EFFECT = "includeEffect";
+//    public static final String INCLUDE_EFFECT = "includeEffect";
     public static final String INCLUDE_STATS = "includeStats";
     public static final String INCLUDE_SAMPLES = "includeSamples";
     public static final String INCLUDE_SRC = "includeSrc";
     public static final String VARIANT_SOURCE = "variantSource";
     public static final String DB_NAME = "dbName";
+    public static final String COMPRESS_GENOTYPES = "compressGenotypes";
 
     public static final String SPECIES = "species";
     public static final String ASSEMBLY = "assembly";
@@ -56,8 +57,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String ANNOTATION_SOURCE = "annotationSource";
     public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
+    public static final String BATCH_SIZE = "batchSize";
 
-    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
+    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE   = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
+    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SRC            = "OPENCGA.STORAGE.VARIANT.INCLUDE_SRC";
+    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
+    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_STATS          = "OPENCGA.STORAGE.VARIANT.INCLUDE_STATS";
 
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
@@ -108,9 +113,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
-        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
-        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
-//        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+
+        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
+//        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
+        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
+        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
@@ -150,12 +158,14 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         //Writers
         List<VariantWriter> writers = new ArrayList<>();
-        writers.add(new VariantJsonWriter(source, output));
+        VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
+        jsonWriter.includeSrc(includeSrc);
+        writers.add(jsonWriter);
 
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
-            variantWriter.includeEffect(includeEffect);
-//            variantWriter.includeStats(includeStats);
+//            variantWriter.includeEffect(includeEffect);   //Deprecated
+            variantWriter.includeStats(includeStats);
         }
 
         //Runner

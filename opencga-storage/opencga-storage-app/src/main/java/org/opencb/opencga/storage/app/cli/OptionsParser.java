@@ -357,16 +357,16 @@ public class OptionsParser {
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
         boolean includeGenotype = false;
 
-        @Parameter(names = {"--compress-genotypes"}, description = "[PENDING] Store genotypes as lists of samples")
+        @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
         boolean compressGenotypes = false;
 
-        @Parameter(names = {"--include-src"}, description = "[PENDING] Store also the source vcf row of each variant")
+        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
         boolean includeSrc = false;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--transform"}, description = "Do only the transform phase")
@@ -380,7 +380,7 @@ public class OptionsParser {
         @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
         boolean bgzip = false;
 
-        @Parameter(names = {"--annotate"}, description = "Annotate variants as well (optional)")
+        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step (optional)")
         boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")

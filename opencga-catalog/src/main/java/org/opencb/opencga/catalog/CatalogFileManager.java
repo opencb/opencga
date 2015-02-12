@@ -41,7 +41,7 @@ public class CatalogFileManager {
      * @param sessionId         Valid sessionID to modify the File in Catalog
      * @param ignoreStatus      Ignore the status (uploading, uploaded, ready) from Catalog
      * @param overwrite         Overwrite if there is a file in the target
-     * @param deleteSource      After moving, delete file
+     * @param deleteSource      After moving, delete file. If false, force copy.
      * @param calculateChecksum Calculate checksum
      * @param moveThreshold     File size threshold to move a file instead of copy.
      * @throws CatalogIOManagerException
@@ -111,7 +111,7 @@ public class CatalogFileManager {
         //Move or copy file
         boolean fileMoved = false;
         String targetChecksum = "";
-        if (size < moveThreshold && sourceIOManager == targetIOManager) {
+        if (size < moveThreshold && sourceIOManager == targetIOManager && deleteSource) {
             try {
                 logger.info("Moving file {} -> {}", sourceUri, targetUri);
                 sourceIOManager.moveFile(sourceUri, targetUri);

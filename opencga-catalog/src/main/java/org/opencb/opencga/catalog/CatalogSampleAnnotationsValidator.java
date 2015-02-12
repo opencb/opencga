@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Created by jacobo on 14/12/14.
  */
-public class CatalogSampleAnnotations {
+public class CatalogSampleAnnotationsValidator {
 
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
@@ -28,9 +28,13 @@ public class CatalogSampleAnnotations {
     public static void checkVariable(Variable variable) throws CatalogException {
         List<String> acceptedValues = new LinkedList<>();
         if (variable.getAllowedValues() != null) {
-            for (String acceptedValue : variable.getAllowedValues()) {
-                Collections.addAll(acceptedValues, acceptedValue.split(","));
-            }
+            acceptedValues.addAll(variable.getAllowedValues());
+//            for (String acceptedValue : variable.getAllowedValues()) {
+//                if(acceptedValue.startsWith("\"") && acceptedValue.endsWith("\"")) {
+//                    acceptedValue = acceptedValue.substring(1, acceptedValue.length()-1);
+//                }
+//                Collections.addAll(acceptedValues, acceptedValue.split(","));
+//            }
         }
         variable.setAllowedValues(acceptedValues);
 
@@ -190,7 +194,7 @@ public class CatalogSampleAnnotations {
 
         switch (variable.getType()) {
             case BOOLEAN:
-                    return;
+                return;
             case CATEGORICAL: {
                 String stringValue = (String)realValue;
                 if(variable.getAllowedValues().contains(stringValue)) {
