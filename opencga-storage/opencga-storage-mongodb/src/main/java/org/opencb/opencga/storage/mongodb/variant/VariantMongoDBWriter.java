@@ -50,6 +50,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private boolean includeEffect;
     private boolean includeSrc = true;
     private boolean includeSamples;
+    private boolean compressSamples = true;
+    private String defaultGenotype = null;
 
     private List<String> samples;
 
@@ -73,6 +75,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long checkExistsTime = 0;
     private long checkExistsDBTime = 0;
     private long bulkTime = 0;
+
 
     public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials) {
         this(source, credentials, "variants", "files");
@@ -115,7 +118,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             } else {
                 mongoClient = new MongoClient(address);
             }
-            System.out.println("credentials.getMongoDbName() = " + credentials.getMongoDbName());
             db = mongoClient.getDB(credentials.getMongoDbName());
         } catch (UnknownHostException ex) {
             Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, null, ex);
@@ -158,7 +160,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     @Override
     public boolean write(List<Variant> data) {
-        return write_updateInsert(data);
+        return write_setOnInsert(data);
     }
 
     public boolean write_old(List<Variant> data) {
@@ -446,9 +448,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             executeBulk();
         }
         writeSourceSummary(source);
-        logger.info("checkExistsTime " + checkExistsTime);
-        logger.info("checkExistsDBTime " + checkExistsDBTime);
-        logger.info("bulkTime " + bulkTime);
+        logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
+        logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
+        logger.debug("bulkTime " + bulkTime / 1000000.0 + "ms ");
         return true;
     }
 
@@ -477,31 +479,37 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         includeEffect = b;
     }
 
+    public void setCompressSamples(boolean compressSamples) {
+        this.compressSamples = compressSamples;
+    }
+
+    public void setDefaultGenotype(String defaultGenotype) {
+        this.defaultGenotype = defaultGenotype;
+    }
     private void setConverters() {
-        boolean compressSamples;
-        boolean defaultValue;
-        switch (source.getType()) {
-            case FAMILY:
-            case TRIO:
-                compressSamples = true;
-                defaultValue = false;
-                break;
-            case CONTROL:
-            case CASE:
-            case CASE_CONTROL:
-            case COLLECTION:
-            default:
-                compressSamples = true;
-                defaultValue = true;
-        }
+//        switch (source.getType()) {
+//            case FAMILY:
+//            case TRIO:
+//                compressSamples = true;
+//                defaultValue = false;
+//                break;
+//            case CONTROL:
+//            case CASE:
+//            case CASE_CONTROL:
+//            case COLLECTION:
+//            default:
+//                compressSamples = true;
+//                defaultValue = true;
+//        }
 
         samples = source.getSamples();
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = new DBObjectToVariantStatsConverter();
-        // TODO Allow to configure samples compression
+
+        boolean useDefaultGenotype = defaultGenotype != null && !defaultGenotype.isEmpty();
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                compressSamples, defaultValue,
+                compressSamples, useDefaultGenotype,
                 includeSamples ? samples : null,
                 includeStats ? statsConverter : null);
         sourceEntryConverter.setIncludeSrc(includeSrc);

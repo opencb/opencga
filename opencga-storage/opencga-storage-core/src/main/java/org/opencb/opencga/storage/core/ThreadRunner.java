@@ -78,10 +78,6 @@ public class ThreadRunner<T> extends Runner<T> {
 
         this.readerClose();
         this.writerClose();
-        for (DataWriter<T> writer : writers) {
-            writer.post();
-            writer.close();
-        }
     }
 
     @Override
@@ -128,7 +124,7 @@ public class ThreadRunner<T> extends Runner<T> {
                 if (!batch.isEmpty()) { //Upload remaining elements
                     writer.write(batch);
                 }
-                logger.info("thread finished writing");
+                logger.debug("Thread finished writing");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -173,7 +169,7 @@ public class ThreadRunner<T> extends Runner<T> {
                         queue.put(lastElement);
                     }
 //                }
-                logger.info("thread finished reading");
+                logger.debug("Thread finished reading");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

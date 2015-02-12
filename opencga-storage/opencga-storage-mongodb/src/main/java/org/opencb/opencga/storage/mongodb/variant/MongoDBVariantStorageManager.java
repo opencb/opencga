@@ -41,11 +41,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
     //StorageEngine specific params
     public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
     public static final String BULK_SIZE = "bulkSize";
     public static final String INCLUDE_SRC = "includeSrc";
+    public static final String DEFAULT_GENOTYPE = "defaultGenotype";
 
     @Override
     public VariantMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
@@ -105,10 +108,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         Path input = Paths.get(inputUri.getPath());
 
-        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
-        boolean includeEffect  = params.getBoolean(INCLUDE_EFFECT);
-        boolean includeStats   = params.getBoolean(INCLUDE_STATS);
-        boolean includeSrc     = params.getBoolean(INCLUDE_SRC, true);
+        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
+//        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
+        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
+        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+
+        String defaultGenotype = params.getString(DEFAULT_GENOTYPE, properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE, ""));
+        boolean compressSamples = params.getBoolean(COMPRESS_GENOTYPES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES, "false")));
+
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
         params.put(VARIANT_SOURCE, source);
         String dbName = params.getString(DB_NAME, null);
@@ -131,12 +138,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
             variantDBWriter.setBulkSize(bulkSize);
             variantDBWriter.includeSrc(includeSrc);
+            variantDBWriter.setCompressSamples(compressSamples);
+            variantDBWriter.setDefaultGenotype(defaultGenotype);
             writers.add(variantDBWriter);
         }
 
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
-            variantWriter.includeEffect(includeEffect);
+//            variantWriter.includeEffect(includeEffect); //Deprecated
             variantWriter.includeStats(includeStats);
         }
 
