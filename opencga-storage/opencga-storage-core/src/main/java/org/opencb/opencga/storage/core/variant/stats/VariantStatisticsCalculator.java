@@ -50,7 +50,7 @@ public class VariantStatisticsCalculator {
         OutputStream outputVariantsStream;
         Path fileVariantsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         outputVariantsStream = new FileOutputStream(fileVariantsPath.toFile());
-        logger.info("writing stats to {}", fileVariantsPath);
+        logger.info("will write stats to {}", fileVariantsPath);
         if(options != null && options.getBoolean("gzip", true)) {
             outputVariantsStream = new GZIPOutputStream(outputVariantsStream);
         }
@@ -58,7 +58,7 @@ public class VariantStatisticsCalculator {
         OutputStream outputSourceStream;
         Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
         outputSourceStream = new FileOutputStream(fileSourcePath.toFile());
-        logger.info("writing source stats to {}", fileSourcePath);
+        logger.info("will write source stats to {}", fileSourcePath);
         if(options != null && options.getBoolean("gzip", true)) {
             outputSourceStream = new GZIPOutputStream(outputSourceStream);
         }

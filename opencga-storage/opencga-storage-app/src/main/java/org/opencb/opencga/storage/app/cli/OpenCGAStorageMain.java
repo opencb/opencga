@@ -18,6 +18,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -817,7 +818,7 @@ public class OpenCGAStorageMain {
         if (doCreate) {
             outputUri = new URI(null, c.outdir, null);
             assertDirectoryExists(outputUri);
-            String filename = c.fileName.isEmpty() ? c.dbName : c.fileName;
+            String filename = (c.fileName.isEmpty() ? c.dbName : c.fileName) + "." + TimeUtils.getTime();
             outputUri = outputUri.resolve(filename);
             outputUri = variantStatisticsCalculator.createStats(dbAdaptor, outputUri, queryOptions);
         }
