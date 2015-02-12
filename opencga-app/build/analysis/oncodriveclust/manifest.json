@@ -36,8 +36,12 @@
                     "name": "gver",
                     "description": "Human genome release",
                     "required": "false"
-                }
-
+                },
+		{
+	            "name": "gt",
+	            "description": "",
+	            "required": "false"
+	        }
             ],
             "configAttr": [],
             "testCmd": ""

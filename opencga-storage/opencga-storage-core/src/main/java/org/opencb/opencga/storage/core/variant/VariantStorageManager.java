@@ -10,6 +10,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.biodata.tools.variant.tasks.VariantStatsTask;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
@@ -22,9 +24,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
-import org.opencb.variant.lib.runners.VariantRunner;
-import org.opencb.variant.lib.runners.tasks.VariantEffectTask;
-import org.opencb.variant.lib.runners.tasks.VariantStatsTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +44,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_EFFECT = "includeEffect";
     public static final String INCLUDE_STATS = "includeStats";
     public static final String INCLUDE_SAMPLES = "includeSamples";
+    public static final String INCLUDE_SRC = "includeSrc";
     public static final String VARIANT_SOURCE = "variantSource";
     public static final String DB_NAME = "dbName";
 
@@ -141,9 +141,6 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
-        if (includeEffect) {
-            taskList.add(new VariantEffectTask());
-        }
         if (includeStats) {
             taskList.add(new VariantStatsTask(reader, source));
         }

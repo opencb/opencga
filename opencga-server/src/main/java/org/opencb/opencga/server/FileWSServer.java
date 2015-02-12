@@ -278,10 +278,34 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{fileId}/download")
+    @Produces("application/json")
+    @ApiOperation(value = "File download")
+    public Response download(
+            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId) {
+        String content = "";
+        DataInputStream stream;
+        File file = null;
+        try {
+            QueryResult<File> queryResult = catalogManager.getFile(catalogManager.getFileId(Integer.toString(fileId)), this.getQueryOptions(), sessionId);
+            file = queryResult.getResult().get(0);
+            stream = catalogManager.downloadFile(fileId, sessionId);
+
+//             content = org.apache.commons.io.IOUtils.toString(stream);
+        } catch (CatalogException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+//        createOkResponse(content, MediaType.TEXT_PLAIN)
+        return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
+    }
+
+
+    @GET
     @Path("/{fileId}/content")
     @Produces("application/json")
     @ApiOperation(value = "File content")
-    public Response download(
+    public Response content(
             @PathParam(value = "fileId") @FormDataParam("fileId") int fileId,
             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit

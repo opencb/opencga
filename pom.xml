@@ -82,9 +82,9 @@
     <properties>
         <opencga.version>0.4.0</opencga.version>
         <java.version>1.7</java.version>
-        <datastore.version>0.3.0</datastore.version>
+        <datastore.version>0.3-SNAPSHOT</datastore.version>
         <cellbase.version>3.1-SNAPSHOT</cellbase.version>
-        <biodata.version>0.3.0-beta</biodata.version>
+        <biodata.version>0.3-SNAPSHOT</biodata.version>
     </properties>
 
     <dependencyManagement>
@@ -128,15 +128,20 @@
                 <version>${biodata.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.opencb.variant</groupId>
-                <artifactId>variant-lib</artifactId>
-                <version>1.2.0</version>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>biodata-models</artifactId>
+                <version>${biodata.version}</version>
             </dependency>
-            <!--<dependency>-->
-            <!--<groupId>org.opencb.commons</groupId>-->
-            <!--<artifactId>bioformats</artifactId>-->
-            <!--<version>2.0.0</version>-->
-            <!--</dependency>-->
+            <dependency>
+                <groupId>org.opencb.biodata</groupId>
+                <artifactId>biodata-tools</artifactId>
+                <version>${biodata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>bioformats</artifactId>
+                <version>2.0.0</version>
+            </dependency>
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>
@@ -148,12 +153,6 @@
                 <version>${cellbase.version}</version>
                 <scope>compile</scope>
             </dependency>
-            <!--<dependency>-->
-            <!--<groupId>org.opencb.cellbase</groupId>-->
-            <!--<artifactId>cellbase-lib-beta</artifactId>-->
-            <!--<version>3.0.0</version>-->
-            <!--<scope>compile</scope>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.datastore</groupId>
                 <artifactId>datastore-core</artifactId>
@@ -173,11 +172,6 @@
                 <artifactId>guava</artifactId>
                 <version>16.0.1</version>
             </dependency>
-            <!--<dependency>-->
-                <!--<groupId>com.google.protobuf</groupId>-->
-                <!--<artifactId>protobuf-java</artifactId>-->
-                <!--<version>2.5.0</version>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
@@ -194,22 +188,11 @@
                 <artifactId>jcommander</artifactId>
                 <version>1.30</version>
             </dependency>
-            <!--<dependency>-->
-            <!--<groupId>net.sf</groupId>-->
-            <!--<artifactId>samtools</artifactId>-->
-            <!--<version>1.72</version>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.utgenome.thirdparty</groupId>
                 <artifactId>picard</artifactId>
                 <version>1.86.0</version>
             </dependency>
-            <!--<dependency>-->
-            <!--<groupId>com.google.code.gson</groupId>-->
-            <!--<artifactId>gson</artifactId>-->
-            <!--<version>2.2.2</version>-->
-            <!--<scope>compile</scope>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
@@ -249,6 +232,11 @@
             <dependency>
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
+                <version>2.3</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
                 <version>2.3</version>
             </dependency>
             <dependency>
