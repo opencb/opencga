@@ -609,6 +609,7 @@ public class OpenCGAStorageMain {
 
         ObjectMap params = new ObjectMap();
 //        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
+        params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
         params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.INCLUDE_SRC, c.includeSrc);

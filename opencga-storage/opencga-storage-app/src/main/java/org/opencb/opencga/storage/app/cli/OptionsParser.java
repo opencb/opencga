@@ -351,7 +351,7 @@ public class OptionsParser {
 //        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
 //        boolean includeEffect = false;
 
-        @Parameter(names = {"--include-stats"}, description = "Save statistics information (optional)")
+        @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file (optional)")
         boolean includeStats = false;
 
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
@@ -379,6 +379,9 @@ public class OptionsParser {
         boolean gvcf = false;
         @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
         boolean bgzip = false;
+
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate statistics information over de indexed variants after the load step (optional)")
+        boolean calculateStats = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step (optional)")
         boolean annotate = false;

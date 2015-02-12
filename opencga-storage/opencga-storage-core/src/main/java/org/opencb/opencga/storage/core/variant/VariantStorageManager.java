@@ -42,13 +42,13 @@ import java.util.*;
 public abstract class VariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
 
 
-//    public static final String INCLUDE_EFFECT = "includeEffect";
-    public static final String INCLUDE_STATS = "includeStats";
-    public static final String INCLUDE_SAMPLES = "includeSamples";
-    public static final String INCLUDE_SRC = "includeSrc";
-    public static final String VARIANT_SOURCE = "variantSource";
+    public static final String INCLUDE_STATS = "includeStats";              //Include existing stats on the original file.
+    public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)
+    public static final String INCLUDE_SRC = "includeSrc";                  //Include original source file on the transformed file and the final db
+    public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
+    public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
+    public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String DB_NAME = "dbName";
-    public static final String COMPRESS_GENOTYPES = "compressGenotypes";
 
     public static final String SPECIES = "species";
     public static final String ASSEMBLY = "assembly";
@@ -233,7 +233,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
         }
 
-        if (params.getBoolean(INCLUDE_STATS)) {
+        if (params.getBoolean(CALCULATE_STATS)) {
             // TODO add filters
             logger.debug("about to calculate stats");
             String dbName = params.getString(DB_NAME, "defaultDatabase");
