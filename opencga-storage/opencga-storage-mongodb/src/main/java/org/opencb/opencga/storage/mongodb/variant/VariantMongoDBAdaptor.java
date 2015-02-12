@@ -463,7 +463,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             , variantSource.getStudyId());
             DBObject update = new BasicDBObject("$set", new BasicDBObject(
                     DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
-                    , statsConverter.convertToStorageType(variantStats)));
+                    , new BasicDBObject("all", statsConverter.convertToStorageType(variantStats))));
 
             builder.find(find).updateOne(update);
         }
