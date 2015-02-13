@@ -5,10 +5,8 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -23,6 +21,7 @@ import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 /**
@@ -133,28 +132,24 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
 
         //Writers
-        List<VariantWriter> writers = new ArrayList<>();
+        List<DataWriter<Variant>> writerList = new LinkedList<>();
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
             variantDBWriter.setBulkSize(bulkSize);
             variantDBWriter.includeSrc(includeSrc);
+            variantDBWriter.includeSamples(includeSamples);
+            variantDBWriter.includeStats(includeStats);
             variantDBWriter.setCompressSamples(compressSamples);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
-            writers.add(variantDBWriter);
-        }
-
-        for (VariantWriter variantWriter : writers) {
-            variantWriter.includeSamples(includeSamples);
-//            variantWriter.includeEffect(includeEffect); //Deprecated
-            variantWriter.includeStats(includeStats);
+            writerList.add(variantDBWriter);
         }
 
         //Runner
 //        VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
         Runner<Variant> r = new ThreadRunner<>(
                 variantJsonReader,
-                Collections.<List<? extends DataWriter<Variant>>>singleton(writers),
-                Collections.<Task<Variant>>emptyList(),
+                Collections.<List<DataWriter<Variant>>>singleton(writerList),
+                Collections.<List<Task<Variant>>>emptyList(),
                 batchSize,
                 new Variant());
 
