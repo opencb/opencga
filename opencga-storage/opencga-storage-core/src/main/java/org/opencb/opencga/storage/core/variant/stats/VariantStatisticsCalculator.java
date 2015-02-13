@@ -117,7 +117,7 @@ public class VariantStatisticsCalculator {
         outputSourceStream.write(sourceWriter.writeValueAsString(variantSourceStats).getBytes());
         outputVariantsStream.close();
         outputSourceStream.close();
-        return fileVariantsPath.toUri();
+        return output;
     }
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
