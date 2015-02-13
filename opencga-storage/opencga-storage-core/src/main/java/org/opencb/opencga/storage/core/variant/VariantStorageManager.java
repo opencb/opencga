@@ -6,6 +6,7 @@ import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -16,8 +17,13 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
@@ -61,12 +67,71 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
 
+    private CatalogManager catalogManager = null;
 
     public VariantStorageManager() {
         this.properties = new Properties();
     }
 
-    //@Override
+    public final QueryResult<Variant> getAllVariants(QueryOptions options, String sessionId) throws StorageManagerException {
+        List<Integer> files = options.getListAs(VariantDBAdaptor.FILES, Integer.class);
+        Map<Integer, File> fileMap = getFilesMap(files, sessionId);
+        checkFiles(fileMap.values());
+
+        String dbName = options.getString(DB_NAME, catalogManager.getUserIdBySessionId(sessionId));
+        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, options);
+
+        return dbAdaptor.getAllVariants(options);
+    }
+
+    public final List<QueryResult<Variant>> getAllVariantsByRegionList(
+            List<Region> regionList, QueryOptions options, String sessionId)
+            throws StorageManagerException {
+
+        List<Integer> files = options.getListAs(VariantDBAdaptor.FILES, Integer.class);
+        Map<Integer, File> fileMap = getFilesMap(files, sessionId);
+        checkFiles(fileMap.values());
+
+        String dbName = options.getString(DB_NAME, catalogManager.getUserIdBySessionId(sessionId));
+        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, options);
+
+        return dbAdaptor.getAllVariantsByRegionList(regionList, options);
+    }
+
+    private CatalogManager getCatalogManager () throws CatalogException {
+        if (catalogManager == null) {
+            catalogManager = new CatalogManager(properties);
+        }
+        return catalogManager;
+    }
+
+    private Map<Integer, File> getFilesMap(List<Integer> files, String sessionId) throws StorageManagerException {
+        Map<Integer, File> fileMap;
+        fileMap = new HashMap<>();
+        try {
+            for (Integer fileId : files) {
+                QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
+                File file = fileQueryResult.getResult().get(0);
+                fileMap.put(fileId, file);
+            }
+        } catch (CatalogException e) {
+            throw new StorageManagerException("CatalogManager problem", e);
+        }
+        return fileMap;
+    }
+
+    private void checkFiles(Collection<File> values) throws StorageManagerException {
+        for (File file : values) {
+            if (!file.getType().equals(File.Type.INDEX)) {
+                throw new StorageManagerException("Expected file type = INDEX");
+            } else if (!file.getBioformat().equals(File.Bioformat.VARIANT)) {
+                throw new StorageManagerException("Expected file bioformat = VARIANT");
+            }
+        }
+    }
+
+
+    @Override
     public void addConfigUri(URI configUri){
         if(configUri != null
                 && Paths.get(configUri.getPath()).toFile().exists()

@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
@@ -130,8 +131,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public List<QueryResult> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        List<QueryResult> allResults = new ArrayList<>(regionList.size());
+    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
+        List<QueryResult<Variant>> allResults = new ArrayList<>(regionList.size());
         // If the user asks to merge the results, run only one query,
         // otherwise delegate in the method to query regions one by one
         if (options.getBoolean(MERGE, false)) {

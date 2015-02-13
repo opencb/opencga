@@ -9,6 +9,7 @@ import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -345,7 +346,7 @@ public class OpenCGAStorageMain {
                             Math.min((i + 1) * subListSize, regions.size()));
 
                     logger.info("subRegions = " + subRegions);
-                    List<QueryResult> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
                     logger.info("{}", queryResults);
                 }
             } else if(gffReader != null) {
@@ -358,7 +359,7 @@ public class OpenCGAStorageMain {
                     }
 
                     logger.info("subRegions = " + subRegions);
-                    List<QueryResult> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
                     logger.info("{}", queryResults);
                 }
             } else {

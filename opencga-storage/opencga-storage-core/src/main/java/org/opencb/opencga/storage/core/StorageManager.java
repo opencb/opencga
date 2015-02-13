@@ -5,20 +5,15 @@ import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Properties;
 
 /**
  * @author imedina
  * @param <DBWRITER>
  * @param <DBADAPTOR>
  */
-public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
+public interface StorageManager<DBWRITER, DBADAPTOR> {
 
     public void addConfigUri(URI configUri);
-
-//    public DBWRITER getDBSchemaWriter(Path output);
-//    public READER getDBSchemaReader(Path input) throws IOException;
 
     /**
      * ETL cycle consists of the following execution steps:
@@ -53,6 +48,31 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
     public URI load(URI input, ObjectMap params) throws IOException;
 
     public URI postLoad(URI input, URI output, ObjectMap params) throws IOException;
+//
+//    public final URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+//        return getETL().preTransform(input, params);
+//    }
+//
+//    public final URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException {
+//        return getETL().transform(input, pedigree, output, params);
+//    }
+//
+//    public final URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+//        return getETL().postTransform(input, params);
+//    }
+//
+//
+//    public final URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+//        return getETL().preLoad(input, output, params);
+//    }
+//
+//    public final URI load(URI input, ObjectMap params) throws IOException {
+//        return getETL().load(input, params);
+//    }
+//
+//    public final URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+//        return getETL().postLoad(input, output, params);
+//    }
 
 
     /**

@@ -126,7 +126,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      */
     public QueryResult getAllVariantsByRegion(Region region, QueryOptions options);
 
-    public List<QueryResult> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
+    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
     
     /**

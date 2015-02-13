@@ -83,6 +83,7 @@ public class CatalogManager implements ICatalogManager {
             throws IOException, CatalogIOManagerException, CatalogDBException {
 //        properties = Config.getAccountProperties();
 
+        System.out.println("CatalogManager rootdir");
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
         properties = new Properties();
         try {
@@ -100,9 +101,11 @@ public class CatalogManager implements ICatalogManager {
     public CatalogManager(Properties properties)
             throws CatalogIOManagerException, CatalogDBException {
         this.properties = properties;
-
+        System.out.println("CatalogManager configureManager");
         configureManager(properties);
+        System.out.println("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
+        System.out.println("CatalogManager configureIOManager");
         configureIOManager(properties);
     }
 
@@ -136,6 +139,10 @@ public class CatalogManager implements ICatalogManager {
     private void configureDBAdaptor(Properties properties)
             throws CatalogDBException {
 
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            System.out.println("entry.getKey() = " + entry.getKey());
+            System.out.println("entry.getValue() = " + entry.getValue());
+        }
         MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
                 properties.getProperty(CATALOG_DB_USER, ""),
                 properties.getProperty(CATALOG_DB_DATABASE, ""),
@@ -147,6 +154,7 @@ public class CatalogManager implements ICatalogManager {
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
 
+        System.out.println("catalogDBAdaptor = " + catalogDBAdaptor);
     }
 
     private void configureManager(Properties properties) {
