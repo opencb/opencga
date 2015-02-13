@@ -67,7 +67,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllVariants(QueryOptions options) {
+    public QueryResult<Variant> getAllVariants(QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         QueryBuilder qb = QueryBuilder.start();
@@ -80,7 +80,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public QueryResult getVariantById(String id, QueryOptions options) {
+    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
 //        BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
@@ -104,10 +104,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public List<QueryResult> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
-        List<QueryResult> allResults = new ArrayList<>(idList.size());
+    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
+        List<QueryResult<Variant>> allResults = new ArrayList<>(idList.size());
         for (String r : idList) {
-            QueryResult queryResult = getVariantById(r, options);
+            QueryResult<Variant> queryResult = getVariantById(r, options);
             allResults.add(queryResult);
         }
         return allResults;
@@ -115,7 +115,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
+    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         QueryBuilder qb = QueryBuilder.start();

@@ -108,12 +108,12 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    public QueryResult getAllVariants(QueryOptions options);
+    public QueryResult<Variant> getAllVariants(QueryOptions options);
 
 
-    public QueryResult getVariantById(String id, QueryOptions options);
+    public QueryResult<Variant> getVariantById(String id, QueryOptions options);
 
-    public List<QueryResult> getAllVariantsByIdList(List<String> idList, QueryOptions options);
+    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -124,11 +124,28 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    public QueryResult getAllVariantsByRegion(Region region, QueryOptions options);
+    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
 
     public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
-    
+
+    QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
+
+    QueryResult groupBy(String field, QueryOptions options);
+
+
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor();
+
+    @Override
+    public VariantDBIterator iterator();
+
+    public VariantDBIterator iterator(QueryOptions options);
+
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    public boolean close();
+
+
     /**
      * Given a genomic region and studies IDs, it retrieves a set of variants and, optionally, all the information
      * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
@@ -141,11 +158,6 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      */
     @Deprecated
     QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
-
-    
-    QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
-
-    QueryResult groupBy(String field, QueryOptions options);
 
 
     @Deprecated
@@ -173,11 +185,11 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 //    QueryResult getEffectsByVariant(Variant variant, QueryOptions options);
 
 
-//    QueryResult getAllBySample(Sample sample, QueryOptions options);
-//
 //    QueryResult getAllBySampleList(List<Sample> samples, QueryOptions options);
 
 
+    //    QueryResult getAllBySample(Sample sample, QueryOptions options);
+//
 //    @Deprecated
 //    List<VariantInfo> getRecords(Map<String, String> options);
 //
@@ -188,17 +200,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 //    List<VariantEffect> getEffect(Map<String, String> options);
 //
 //    @Deprecated
+
 //    VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
-
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor();
-
-    @Override
-    public VariantDBIterator iterator();
-
-    public VariantDBIterator iterator(QueryOptions options);
-
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
-    public boolean close();
 
 }

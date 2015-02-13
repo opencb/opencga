@@ -73,62 +73,62 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         this.properties = new Properties();
     }
 
-    public final QueryResult<Variant> getAllVariants(QueryOptions options, String sessionId) throws StorageManagerException {
-        List<Integer> files = options.getListAs(VariantDBAdaptor.FILES, Integer.class);
-        Map<Integer, File> fileMap = getFilesMap(files, sessionId);
-        checkFiles(fileMap.values());
-
-        String dbName = options.getString(DB_NAME, catalogManager.getUserIdBySessionId(sessionId));
-        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, options);
-
-        return dbAdaptor.getAllVariants(options);
-    }
-
-    public final List<QueryResult<Variant>> getAllVariantsByRegionList(
-            List<Region> regionList, QueryOptions options, String sessionId)
-            throws StorageManagerException {
-
-        List<Integer> files = options.getListAs(VariantDBAdaptor.FILES, Integer.class);
-        Map<Integer, File> fileMap = getFilesMap(files, sessionId);
-        checkFiles(fileMap.values());
-
-        String dbName = options.getString(DB_NAME, catalogManager.getUserIdBySessionId(sessionId));
-        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, options);
-
-        return dbAdaptor.getAllVariantsByRegionList(regionList, options);
-    }
-
-    private CatalogManager getCatalogManager () throws CatalogException {
-        if (catalogManager == null) {
-            catalogManager = new CatalogManager(properties);
-        }
-        return catalogManager;
-    }
-
-    private Map<Integer, File> getFilesMap(List<Integer> files, String sessionId) throws StorageManagerException {
-        Map<Integer, File> fileMap;
-        fileMap = new HashMap<>();
-        try {
-            for (Integer fileId : files) {
-                QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
-                File file = fileQueryResult.getResult().get(0);
-                fileMap.put(fileId, file);
-            }
-        } catch (CatalogException e) {
-            throw new StorageManagerException("CatalogManager problem", e);
-        }
-        return fileMap;
-    }
-
-    private void checkFiles(Collection<File> values) throws StorageManagerException {
-        for (File file : values) {
-            if (!file.getType().equals(File.Type.INDEX)) {
-                throw new StorageManagerException("Expected file type = INDEX");
-            } else if (!file.getBioformat().equals(File.Bioformat.VARIANT)) {
-                throw new StorageManagerException("Expected file bioformat = VARIANT");
-            }
-        }
-    }
+//    public final QueryResult<Variant> getAllVariants(QueryOptions options, String sessionId) throws StorageManagerException {
+//        List<Integer> files = options.getListAs(VariantDBAdaptor.FILES, Integer.class);
+//        Map<Integer, File> fileMap = getFilesMap(files, sessionId);
+//        checkFiles(fileMap.values());
+//
+//        String dbName = options.getString(DB_NAME, catalogManager.getUserIdBySessionId(sessionId));
+//        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, options);
+//
+//        return dbAdaptor.getAllVariants(options);
+//    }
+//
+//    public final List<QueryResult<Variant>> getAllVariantsByRegionList(
+//            List<Region> regionList, QueryOptions options, String sessionId)
+//            throws StorageManagerException {
+//
+//        List<Integer> files = options.getListAs(VariantDBAdaptor.FILES, Integer.class);
+//        Map<Integer, File> fileMap = getFilesMap(files, sessionId);
+//        checkFiles(fileMap.values());
+//
+//        String dbName = options.getString(DB_NAME, catalogManager.getUserIdBySessionId(sessionId));
+//        VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, options);
+//
+//        return dbAdaptor.getAllVariantsByRegionList(regionList, options);
+//    }
+//
+//    private CatalogManager getCatalogManager () throws CatalogException {
+//        if (catalogManager == null) {
+//            catalogManager = new CatalogManager(properties);
+//        }
+//        return catalogManager;
+//    }
+//
+//    private Map<Integer, File> getFilesMap(List<Integer> files, String sessionId) throws StorageManagerException {
+//        Map<Integer, File> fileMap;
+//        fileMap = new HashMap<>();
+//        try {
+//            for (Integer fileId : files) {
+//                QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
+//                File file = fileQueryResult.getResult().get(0);
+//                fileMap.put(fileId, file);
+//            }
+//        } catch (CatalogException e) {
+//            throw new StorageManagerException("CatalogManager problem", e);
+//        }
+//        return fileMap;
+//    }
+//
+//    private void checkFiles(Collection<File> values) throws StorageManagerException {
+//        for (File file : values) {
+//            if (!file.getType().equals(File.Type.INDEX)) {
+//                throw new StorageManagerException("Expected file type = INDEX");
+//            } else if (!file.getBioformat().equals(File.Bioformat.VARIANT)) {
+//                throw new StorageManagerException("Expected file bioformat = VARIANT");
+//            }
+//        }
+//    }
 
 
     @Override
