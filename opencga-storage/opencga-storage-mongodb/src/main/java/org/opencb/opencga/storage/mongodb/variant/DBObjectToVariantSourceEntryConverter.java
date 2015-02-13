@@ -27,7 +27,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     
     
     private boolean includeSamples;
-    
+    private boolean includeSrc;
+
     private List<String> samples;
     
     private DBObjectToSamplesConverter samplesConverter;
@@ -35,10 +36,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     /**
      * Create a converter between VariantSourceEntry and DBObject entities when 
- there is no need to provide a list of samples nor statistics.
+     * there is no need to provide a list of samples or statistics.
      */
     public DBObjectToVariantSourceEntryConverter() {
         this.includeSamples = false;
+        this.includeSrc = false;
         this.samples = null;
         this.samplesConverter = null;
         this.statsConverter = null;
@@ -96,7 +98,10 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         this.samplesConverter = new DBObjectToSamplesConverter(credentials, collectionName);
         this.statsConverter = statsConverter;
     }
-    
+
+    public void setIncludeSrc(boolean includeSrc) {
+        this.includeSrc = includeSrc;
+    }
     
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
@@ -120,7 +125,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         if (object.containsField(ATTRIBUTES_FIELD)) {
             file.setAttributes(((DBObject) object.get(ATTRIBUTES_FIELD)).toMap());
             // Unzip the "src" field, if available
-            if (((DBObject) object.get(ATTRIBUTES_FIELD)).containsField("src")) {
+            if (includeSrc && ((DBObject) object.get(ATTRIBUTES_FIELD)).containsField("src")) {
                 byte[] o = (byte[]) ((DBObject) object.get(ATTRIBUTES_FIELD)).get("src");
                 try {
                     file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));
@@ -166,13 +171,17 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             for (Map.Entry<String, String> entry : object.getAttributes().entrySet()) {
                 Object value = entry.getValue();
                 if (entry.getKey().equals("src")) {
-                    try {
-                        value = org.opencb.commons.utils.StringUtils.gzip(entry.getValue());
-                    } catch (IOException ex) {
-                        Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                    if (includeSrc) {
+                        try {
+                            value = org.opencb.commons.utils.StringUtils.gzip(entry.getValue());
+                        } catch (IOException ex) {
+                            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } else {
+                        continue;
                     }
                 }
-                
+
                 if (attrs == null) {
                     attrs = new BasicDBObject(entry.getKey(), value);
                 } else {
