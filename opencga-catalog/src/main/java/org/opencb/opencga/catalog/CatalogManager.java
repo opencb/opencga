@@ -45,7 +45,11 @@ public class CatalogManager implements ICatalogManager {
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
     /* Manager policies properties */
     public static final String CATALOG_MANAGER_POLICY_CREATION_USER = "OPENCGA.CATALOG.MANAGER.POLICY.CREATION_USER";
-
+    /* Other properties */
+    public static final String CATALOG_MAIL_USER = "CATALOG.MAIL.USER";
+    public static final String CATALOG_MAIL_PASSWORD = "CATALOG.MAIL.PASSWORD";
+    public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
+    public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
 
     private CatalogDBAdaptor catalogDBAdaptor;
@@ -457,10 +461,10 @@ public class CatalogManager implements ICatalogManager {
 
         QueryResult qr = catalogDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        String mailUser = properties.getProperty("CATALOG.MAIL.USER");
-        String mailPassword = properties.getProperty("CATALOG.MAIL.PASSWORD");
-        String mailHost = properties.getProperty("CATALOG.MAIL.HOST");
-        String mailPort = properties.getProperty("CATALOG.MAIL.PORT");
+        String mailUser = properties.getProperty(CATALOG_MAIL_USER);
+        String mailPassword = properties.getProperty(CATALOG_MAIL_PASSWORD);
+        String mailHost = properties.getProperty(CATALOG_MAIL_HOST);
+        String mailPort = properties.getProperty(CATALOG_MAIL_PORT);
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
