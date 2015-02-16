@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.SimpleLogger;
@@ -799,6 +800,11 @@ public class OpenCGAStorageMain {
         queryOptions.put(VariantStorageManager.VARIANT_SOURCE, new VariantSource(null, c.fileId, c.studyId, null));
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
 
+        List<String> sampleNames = new LinkedList<>();
+        sampleNames.add("C973");
+        sampleNames.add("C974");
+        Set<String> samples = new HashSet<>(sampleNames); // currently, do not filter samples. in the future: new HashSet<>();
+//        Set<String> samples = null; // currently, do not filter samples. in the future: new HashSet<>();
         /**
          * Create DBAdaptor
          */
@@ -817,17 +823,17 @@ public class OpenCGAStorageMain {
         }
 
         URI outputUri = Paths.get(c.load == null? "": c.load).toUri();
-        VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
+        VariantStatsManager variantStatsManager = new VariantStatsManager();
         if (doCreate) {
             outputUri = new URI(null, c.outdir, null);
             assertDirectoryExists(outputUri);
             String filename = (c.fileName.isEmpty() ? c.dbName : c.fileName) + "." + TimeUtils.getTime();
             outputUri = outputUri.resolve(filename);
-            outputUri = variantStatisticsCalculator.createStats(dbAdaptor, outputUri, queryOptions);
+            outputUri = variantStatsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
         }
 
         if (doLoad) {
-            variantStatisticsCalculator.loadStats(dbAdaptor, outputUri, queryOptions);
+            variantStatsManager.loadStats(dbAdaptor, outputUri, queryOptions);
         }
     }
 

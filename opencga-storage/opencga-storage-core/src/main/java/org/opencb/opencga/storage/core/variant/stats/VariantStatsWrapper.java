@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant.stats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**
- * Created by jmmut on 3/02/15.
+ * Class to link a VariantStats with its variant, using just the chromosome and the position.
  */
 public class VariantStatsWrapper {
     private String chromosome;

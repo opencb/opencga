@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -237,9 +238,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             // TODO add filters
             logger.debug("about to calculate stats");
             String dbName = params.getString(DB_NAME, "defaultDatabase");
-            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
-            URI statsUri = variantStatisticsCalculator.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), new QueryOptions(params));
-            variantStatisticsCalculator.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
+            VariantStatsManager variantStatsManager = new VariantStatsManager();
+            URI statsUri = variantStatsManager.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), null, new QueryOptions(params));
+            variantStatsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
         return input;
