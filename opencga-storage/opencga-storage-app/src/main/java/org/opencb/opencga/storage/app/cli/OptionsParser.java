@@ -28,6 +28,7 @@ public class OptionsParser {
     private final CommandFetchVariants commandFetchVariants;
     private final CommandFetchAlignments commandFetchAlignments;
     private final CommandAnnotateVariants commandAnnotateVariants;
+    private final CommandStatsVariants commandStatsVariants;
 //    private final CommandCreateAnnotations commandCreateAnnotations;
 //    private final CommandLoadAnnotations commandLoadAnnotations;
 //    private CommandDownloadAlignments downloadAlignments;
@@ -46,6 +47,7 @@ public class OptionsParser {
         jcommander.addCommand(commandFetchVariants = new CommandFetchVariants());
         jcommander.addCommand(commandFetchAlignments = new CommandFetchAlignments());
         jcommander.addCommand(commandAnnotateVariants = new CommandAnnotateVariants());
+        jcommander.addCommand(commandStatsVariants = new CommandStatsVariants());
 //        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
 //        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
 //        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
@@ -224,7 +226,7 @@ public class OptionsParser {
       //  String studyId;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
-        String outdir = ".";
+        String outdir = "./";
         
         
         @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
@@ -367,10 +369,10 @@ public class OptionsParser {
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional)", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
-        @Parameter(names = {"--transform"}, description = "Do only the transform phase")
+        @Parameter(names = {"--transform"}, description = "Run only the transform phase")
         boolean transform = false; // stop before load
 
-        @Parameter(names = {"--load"}, description = "Do only the load phase")
+        @Parameter(names = {"--load"}, description = "Run only the load phase")
         boolean load = false; // skip transform
 
         @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
@@ -394,10 +396,10 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     class CommandIndexAlignments extends CommandIndex {
 
-        @Parameter(names = "--transform", description = "Do only the transform phase")
+        @Parameter(names = "--transform", description = "Run only the transform phase")
         boolean transform = false;
 
-        @Parameter(names = "--load", description = "Do only the load phase")
+        @Parameter(names = "--load", description = "Run only the load phase")
         boolean load = false;
 
         @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
@@ -522,11 +524,11 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-f", "--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
         String fileName = "";
 
-        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
-        String outDir = ".";
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+        String outdir = "./";
 
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         String species = "hsapiens";
@@ -534,9 +536,9 @@ public class OptionsParser {
         @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
         String assembly = "GRc37";
 
-        @Parameter(names = {"--create"}, description = "Do only the creation of the annotations to a file (specified by --output-filename)")
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         boolean create = false;
-        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
+        @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         String load = null;
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
@@ -565,8 +567,8 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--dbName"}, description = "OpenCGA DB name to read variants.", required = true, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-o", "--outDir"}, description = "Outdir.", required = false, arity = 1)
-        String outDir = ".";
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+        String outdir = "./";
 
         @Parameter(names = {"-f", "--fileName"}, description = "Output file name. Default: dbName", required = false, arity = 1)
         String fileName = "";
@@ -621,6 +623,48 @@ public class OptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Input file name. ", required = true, arity = 1)
         String fileName = "";
 
+    }
+
+    @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
+    class CommandStatsVariants extends Command {
+
+        @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
+        boolean overwriteStats = false;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        String studyId;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        String fileId;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        String dbName;
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        String credentials = "";
+
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        String fileName = "";
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+        String outdir = ".";
+        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+        boolean create = false;
+        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
+        String load = null;
+/* TODO: filters?
+        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
+        List<String> filterRegion = null;
+
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        List<String> filterChromosome = null;
+
+        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
+        String filterGene = null;
+
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+        */
     }
 
     String parse(String[] args) throws ParameterException {
@@ -698,6 +742,9 @@ public class OptionsParser {
 
     CommandAnnotateVariants getCommandAnnotateVariants() {
         return commandAnnotateVariants;
+    }
+    CommandStatsVariants getCommandStatsVariants() {
+        return commandStatsVariants;
     }
 //    CommandCreateAnnotations getCommandCreateAnnotations() {
 //        return commandCreateAnnotations;

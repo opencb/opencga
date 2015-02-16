@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +110,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
         boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
-        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+//        boolean includeStats = params.getBoolean(INCLUDE_STATS);
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
@@ -141,9 +142,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
-        if (includeStats) {
-            taskList.add(new VariantStatsTask(reader, source));
-        }
+
+//        todo remove:
+//        if (includeStats) {
+//            taskList.add(new VariantStatsTask(reader, source));
+//        }
 
         //Writers
         List<VariantWriter> writers = new ArrayList<>();
@@ -152,7 +155,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
             variantWriter.includeEffect(includeEffect);
-            variantWriter.includeStats(includeStats);
+//            variantWriter.includeStats(includeStats);
         }
 
         //Runner
@@ -218,6 +221,15 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             variantAnnotationManager.annotate(annotationOptions);
 //            URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get(output.getPath()), dbName + "." + TimeUtils.getTime(), annotationOptions);
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
+        }
+
+        if (params.getBoolean(INCLUDE_STATS)) {
+            // TODO add filters
+            logger.debug("about to calculate stats");
+            String dbName = params.getString(DB_NAME, "defaultDatabase");
+            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
+            URI statsUri = variantStatisticsCalculator.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), new QueryOptions(params));
+            variantStatisticsCalculator.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
         return input;
