@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantEffect;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
@@ -193,7 +194,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         long startQuery = System.nanoTime();
         BasicDBObject query = new BasicDBObject("_id", new BasicDBObject("$in", variantIds));
         QueryResult<DBObject> idsResult =
-                variantMongoCollection.find(query, null, new BasicDBObject("_id", true));
+                variantMongoCollection.find(query, new BasicDBObject("_id", true), null);
         this.checkExistsDBTime += System.nanoTime() - startQuery;
 
         for (DBObject dbObject : idsResult.getResult()) {
@@ -437,7 +438,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         DBObject studyMongo = sourceConverter.convertToStorageType(source);
         DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
 //        WriteResult wr = filesCollection.update(query, studyMongo, true, false);
-        filesMongoCollection.update(query, studyMongo, true, false);
+        filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
 //        return wr.getLastError().ok(); // TODO Is this a proper return statement?
         return true;
     }

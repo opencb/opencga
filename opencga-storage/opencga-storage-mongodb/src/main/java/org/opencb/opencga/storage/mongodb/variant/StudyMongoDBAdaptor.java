@@ -50,7 +50,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
                 .append("studyName", "$_id.studyName")
                 .append("_id", 0));
         
-        return coll.aggregate("$studyList", Arrays.asList(project1, group, project2), null);
+        return coll.aggregate(/*"$studyList", */Arrays.asList(project1, group, project2), null);
     }
 
     @Override
@@ -65,11 +65,11 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         qb.or(new BasicDBObject(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, study), new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, study));
 //        parseQueryOptions(options, qb);
         
-        DBObject returnFields = new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1).append("_id", 0);
+        DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1).append("_id", 0);
         
         options.add("limit", 1);
         
-        return coll.find(qb.get(), options, null, returnFields);
+        return coll.find(qb.get(), projection, options);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
                 .append("numFiles", new BasicDBObject("$sum", 1)));
         
         
-        QueryResult aggregationResult = coll.aggregate("$studyInfo", Arrays.asList(match, project, group), options);
+        QueryResult aggregationResult = coll.aggregate(/*"$studyInfo", */Arrays.asList(match, project, group), options);
         Iterable<DBObject> results = aggregationResult.getResult();
         DBObject dbo = results.iterator().next();
         DBObject dboId = (DBObject) dbo.get("_id");

@@ -56,7 +56,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options, variantSourceConverter);
+        return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         options.put("studyId", studyId);
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options, variantSourceConverter);
+        return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         options.put("studyId", studyIds);
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options, variantSourceConverter);
+        return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -177,9 +177,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
      */
     private QueryResult populateSamplesInSources() {
         MongoDBCollection coll = db.getCollection(collectionName);
-        DBObject returnFields = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
+        DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
-        QueryResult queryResult = coll.find(null, null, null, returnFields);
+        QueryResult queryResult = coll.find((DBObject)null, projection, null);
         
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
@@ -250,7 +250,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, variantSourceStats.getStudyId());
         DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats));
 
-        return coll.update(find, update, false, false);
+        return coll.update(find, update, null);
     }
 
 
