@@ -222,6 +222,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
 
         //Get the inserted user.
+        user.setProjects(projects);
         List<User> result = getUser(user.getId(), options, "").getResult();
 
         return endQuery("insertUser", startTime, result, errorMsg, null);
@@ -1106,6 +1107,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
         DBObject fileDBObject = getDbObject(file, "File");
         fileDBObject.put(_STUDY_ID, studyId);
+        fileDBObject.put(_ID, newFileId);
 
         try {
             fileCollection.insert(fileDBObject);
@@ -1825,13 +1827,64 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        String warning = "";
+
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
         DBObject query = new BasicDBObject(_STUDY_ID, studyId);
 
+        // Sample Filters  //
+        if (options.containsKey( "id" )) {
+            query.put("id", options.get("id"));
+        }
+        if (options.containsKey( "source" )) {
+            query.put("source", options.get("source"));
+        }
+
+        // AnnotationSet Filters //
+        BasicDBObject annotationSetFilter = new BasicDBObject();
+        if (options.containsKey( "variableSetId" )) {
+            annotationSetFilter.put("variableSetId", options.get("variableSetId"));
+        }
+        if (options.containsKey( "annotationSetId" )) {
+            annotationSetFilter.put("id", options.get("annotationSetId"));
+        }
+
+        List<DBObject> annotationFilters = new LinkedList<>();
+        // Annotation Filters
+        if (options.containsKey("annotation")) {
+            String[] annotations = options.getString("annotation").split(",");
+            for (String annotation : annotations) {
+                String[] split = annotation.split(":", 2);
+                if (split.length != 2) {
+                    String w = "Malformed annotation query : " + annotation;
+                    warning += w + "\n";
+                    logger.warn(warning);
+                    continue;
+                }
+//                annotationFilters.add(
+//                        new BasicDBObject("annotations",
+//                                new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+//                                        .start("id", split[0])
+//                                        .add("value", split[1]).get()
+//                                )
+//                        )
+//                );
+                annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], split[1] ));
+            }
+        }
+
+        if (!annotationFilters.isEmpty()) {
+            annotationSetFilter.put("$and", annotationFilters);
+        }
+        if (!annotationSetFilter.isEmpty()) {
+            query.put("annotationSets", new BasicDBObject("$elemMatch", annotationSetFilter));
+        }
         QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
         List<Sample> samples = parseSamples(queryResult);
 
-        return endQuery("getAllSamples", startTime, samples);
+        QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);
+        result.setNumTotalResults(queryResult.getNumTotalResults());
+        return result;
     }
 
     @Override
@@ -1983,6 +2036,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
 
         DBObject object = getDbObject(annotationSet, "AnnotationSet");
+        Map<String, String> annotationMap = new HashMap<>();
+        for (Annotation annotation : annotationSet.getAnnotations()) {
+            annotationMap.put(annotation.getId(), annotation.getValue().toString());
+        }
+        object.put("_annotMap", annotationMap);
+
         DBObject query = new BasicDBObject("id", sampleId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
 
