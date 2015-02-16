@@ -6,7 +6,10 @@ import com.mongodb.QueryBuilder;
 import java.net.UnknownHostException;
 import java.util.*;
 
+import com.mongodb.WriteResult;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -53,7 +56,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options, variantSourceConverter);
+        return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -63,7 +66,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         options.put("studyId", studyId);
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options, variantSourceConverter);
+        return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -74,7 +77,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         options.put("studyId", studyIds);
         parseQueryOptions(options, qb);
         
-        return coll.find(qb.get(), options, variantSourceConverter);
+        return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -174,9 +177,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
      */
     private QueryResult populateSamplesInSources() {
         MongoDBCollection coll = db.getCollection(collectionName);
-        DBObject returnFields = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
+        DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
-        QueryResult queryResult = coll.find(null, null, null, returnFields);
+        QueryResult queryResult = coll.find((DBObject)null, projection, null);
         
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
@@ -227,5 +230,28 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         queryResult.setResult(samples);
         queryResult.setNumTotalResults(fileIds.size());
     }
+
+
+    @Override
+    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, QueryOptions queryOptions) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+
+        VariantGlobalStats global = variantSourceStats.getFileStats();
+        DBObject globalStats = new BasicDBObject(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD, global.getSamplesCount())
+                .append(DBObjectToVariantSourceConverter.NUMVARIANTS_FIELD, global.getVariantsCount())
+                .append(DBObjectToVariantSourceConverter.NUMSNPS_FIELD, global.getSnpsCount())
+                .append(DBObjectToVariantSourceConverter.NUMINDELS_FIELD, global.getIndelsCount())
+                .append(DBObjectToVariantSourceConverter.NUMPASSFILTERS_FIELD, global.getPassCount())
+                .append(DBObjectToVariantSourceConverter.NUMTRANSITIONS_FIELD, global.getTransitionsCount())
+                .append(DBObjectToVariantSourceConverter.NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
+                .append(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD, (double) global.getMeanQuality());
+
+        DBObject find = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, variantSourceStats.getFileId())
+                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, variantSourceStats.getStudyId());
+        DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats));
+
+        return coll.update(find, update, null);
+    }
+
 
 }
