@@ -451,6 +451,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         VariantStats variantStats;
         VariantSource variantSource;
 
+        // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
             variantStats = wrapper.getVariantStats();
             String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),

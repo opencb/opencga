@@ -817,23 +817,31 @@ public class OpenCGAStorageMain {
         /**
          * Create and load stats
          */
+        String filename = c.fileName.isEmpty() ? c.dbName : c.fileName;
         boolean doCreate = c.create, doLoad = c.load != null;
         if (!c.create && c.load == null) {
             doCreate = doLoad = true;
+        } else if (c.load != null) {
+            filename = c.load;
         }
 
-        URI outputUri = Paths.get(c.load == null? "": c.load).toUri();
+        URI outputUri = new URI(null, c.outdir + (!c.outdir.isEmpty() && !c.outdir.endsWith("/")? "/": ""), null);
+        assertDirectoryExists(outputUri);
         VariantStatsManager variantStatsManager = new VariantStatsManager();
-        if (doCreate) {
-            outputUri = new URI(null, c.outdir, null);
-            assertDirectoryExists(outputUri);
-            String filename = (c.fileName.isEmpty() ? c.dbName : c.fileName) + "." + TimeUtils.getTime();
-            outputUri = outputUri.resolve(filename);
-            outputUri = variantStatsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
-        }
+        try {
+            if (doCreate) {
+                filename += "." + TimeUtils.getTime();
+                outputUri = outputUri.resolve(filename);
+                outputUri = variantStatsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
+            }
 
-        if (doLoad) {
-            variantStatsManager.loadStats(dbAdaptor, outputUri, queryOptions);
+            if (doLoad) {
+                outputUri = outputUri.resolve(filename);
+                variantStatsManager.loadStats(dbAdaptor, outputUri, queryOptions);
+            }
+        } catch (IOException e) {   // file not found?
+            logger.error(e.getMessage());
+            System.exit(1);
         }
     }
 
@@ -874,7 +882,7 @@ public class OpenCGAStorageMain {
 
     private static void assertDirectoryExists(URI outdir){
         if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
-            logger.error("given output directory does not exist, please create it first.");
+            logger.error("given output directory {} does not exist, please create it first.", outdir);
             System.exit(1);
         }
     }
