@@ -1602,17 +1602,14 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String[] acceptedLongParams = {"startTime", "endTime", "diskUsage"};
         for (String s : acceptedLongParams) {
             if(parameters.containsKey(s)) {
-                Object value = parameters.get(s);    //TODO: Add "getLong" to "ObjectMap"
-                if(value instanceof Long) {
-                    jobParameters.put(s, value);
-                }
+                jobParameters.put(s, parameters.getLong(s));
             }
         }
 
-        String[] acceptedListParams = {"output"};
-        for (String s : acceptedListParams) {
+        String[] acceptedIntegerListParams = {"output"};
+        for (String s : acceptedIntegerListParams) {
             if(parameters.containsKey(s)) {
-                jobParameters.put(s, parameters.getListAs(s, Integer.class));
+                jobParameters.put(s, parameters.getAsIntegerList(s));
             }
         }
 
@@ -2155,7 +2152,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         String[] filteringLists = {"include", "exclude"};
         for (String listName : filteringLists) {
-            List<String> list = filteredOptions.getListAs(listName, String.class, null);
+            List<String> list = filteredOptions.getAsStringList(listName);
             List<String> filteredList = new LinkedList<>();
             int length = route.length();
             if(list != null) {
