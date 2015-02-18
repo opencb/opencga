@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
@@ -123,6 +124,7 @@ public class ThreadRunnerTest extends GenericTest {
         }
     }
 
+    @Ignore
     @Test
     public void testRun() throws Exception {
         FileOutputStream os = new FileOutputStream("/tmp/test.txt");
@@ -173,12 +175,12 @@ public class ThreadRunnerTest extends GenericTest {
                 )
         );
 
-        ThreadRunner<String> runner = new ThreadRunner<>(
-                new StringReader(10000),
-                writerSet,
-                tasksLists,
-                1,
-                "");
-        runner.run();
+//        ThreadRunner<String> runner = new ThreadRunner<>(
+//                new StringReader(10000),
+//                writerSet,
+//                tasksLists,
+//                1,
+//                "");
+//        runner.run();
     }
 }
