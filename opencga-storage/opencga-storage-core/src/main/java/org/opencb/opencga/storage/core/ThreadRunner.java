@@ -206,7 +206,7 @@ public class ThreadRunner {
         }
     }
 
-    protected class TaskNode<I, O> extends Node<I,O,Task<I,O>> {
+    public class TaskNode<I, O> extends Node<I,O,Task<I,O>> {
         private TaskNode(List<Task<I, O>> tasks, String name) {
             super(tasks, name);
         }
@@ -236,7 +236,7 @@ public class ThreadRunner {
         }
     }
 
-    protected class SimpleTaskNode<I> extends Node<I, I, org.opencb.commons.run.Task<I>> {
+    public class SimpleTaskNode<I> extends Node<I, I, org.opencb.commons.run.Task<I>> {
         private SimpleTaskNode(List<org.opencb.commons.run.Task<I>> tasks, String name) {
             super(tasks, name);
         }
@@ -266,7 +266,7 @@ public class ThreadRunner {
         }
     }
 
-    protected class WriterNode<I> extends Node<I,Object, DataWriter<I>> {
+    public class WriterNode<I> extends Node<I,Object, DataWriter<I>> {
         private WriterNode(List<DataWriter<I>> tasks, String name) {
             super(tasks, name);
         }

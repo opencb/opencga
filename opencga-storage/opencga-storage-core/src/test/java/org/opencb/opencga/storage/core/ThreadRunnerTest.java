@@ -85,7 +85,7 @@ public class ThreadRunnerTest extends GenericTest {
         @Override
         public boolean apply(List<ObjectMap> batch) throws IOException {
             for (ObjectMap objectMap : batch) {
-                List<Integer> array = objectMap.getAsIntegerList("array");
+                List<Integer> array = (List) objectMap.get("array");
                 int sum = 0;
                 for (Integer integer : array) {
                     sum += integer;
