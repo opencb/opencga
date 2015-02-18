@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.MongoCredential;
-import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -1254,6 +1253,7 @@ public class CatalogManager {
         checkObj(parameters, "Parameters");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        File file = getFile(fileId, sessionId).getResult().get(0);
         switch (getUserRole(userId)) {
             case ADMIN:
                 logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
@@ -1263,9 +1263,44 @@ public class CatalogManager {
                     throw new CatalogDBException("User " + userId + " can't modify the file " + fileId);
                 }
                 for (String s : parameters.keySet()) {
-                    if (!s.matches("name|type|format|bioformat|description|status|attributes|stats|jobId")) {
-                        throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                    switch (s) { //Special cases
+                        //Can be modified anytime
+                        case "format":
+                        case "bioformat":
+                        case "description":
+                        case "status":
+                        case "attributes":
+                        case "stats":
+                            break;
+                        //Can only be modified when file.status == INDEXING
+                        case "jobId":
+                            if (!file.getStatus().equals(File.Status.INDEXING)) {
+                                throw new CatalogDBException("Parameter '" + s + "' can't be changed when " +
+                                        "status == " + file.getStatus().name() + ". " +
+                                        "Required status INDEXING or admin account");
+                            }
+                            break;
+
+                        //Can only be modified when file.status == UPLOADING
+                        case "creationDate":
+                        case "diskUsage":
+                            if (!file.getStatus().equals(File.Status.UPLOADING)) {
+                                throw new CatalogDBException("Parameter '" + s + "' can't be changed when " +
+                                        "status == " + file.getStatus().name() + ". " +
+                                        "Required status UPLOADING or admin account");
+                            }
+                            break;
+                        case "type":
+                        case "path":    //Path and Name must be changed with "raname" and/or "move" methods.
+                        case "name":
+                        default:
+                            throw new CatalogDBException("Parameter '" + s + "' can't be changed. " +
+                                    "Requires admin account");
                     }
+//                    if (!s.matches("name|type|format|bioformat|description|status|attributes|stats|jobId")) {
+//
+//                        throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+//                    }
                 }
                 break;
         }
@@ -2121,7 +2156,7 @@ public class CatalogManager {
         }
 
         VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
-        CatalogSampleAnnotations.checkVariableSet(variableSet);
+        CatalogSampleAnnotationsValidator.checkVariableSet(variableSet);
 
         return catalogDBAdaptor.createVariableSet(studyId, variableSet);
     }
@@ -2142,6 +2177,14 @@ public class CatalogManager {
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
+                                                     String sessionId) throws CatalogException {
+        return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
+    }
+
+    /* package */ QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
+                                                     Map<String, Object> annotations,
+                                                     Map<String, Object> attributes,
+                                                     boolean checkAnnotationSet,
                                                      String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -2170,7 +2213,9 @@ public class CatalogManager {
                 new QueryOptions("include", Collections.singletonList("annotationSets")));
 
         List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
-        CatalogSampleAnnotations.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+        if (checkAnnotationSet) {
+            CatalogSampleAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+        }
 
         return catalogDBAdaptor.annotateSample(sampleId, annotationSet);
     }

@@ -39,6 +39,9 @@ public class VariantJsonWriter implements VariantWriter {
     private OutputStream fileStream;
 
     private long numVariantsWritten;
+    private boolean includeSrc;
+    private boolean includeStats;
+    private boolean includeSamples;
 
     public VariantJsonWriter(VariantSource source, Path outdir) {
         this.source = source;
@@ -99,6 +102,19 @@ public class VariantJsonWriter implements VariantWriter {
     public boolean write(List<Variant> batch) {
         for (Variant variant : batch) {
             try {
+                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+                    if (!includeSrc) {
+                        if (variantSourceEntry.getAttributes().containsKey("src")) {
+                            variantSourceEntry.getAttributes().remove("src");
+                        }
+                    }
+                    if (!includeSamples) {
+                        variantSourceEntry.getSamplesData().clear();
+                    }
+                    if (!includeStats) {
+                        variantSourceEntry.setStats(null);
+                    }
+                }
                 variantsGenerator.writeObject(variant);
                 variantsGenerator.writeRaw('\n');
             } catch (IOException ex) {
@@ -149,10 +165,18 @@ public class VariantJsonWriter implements VariantWriter {
 
 
     @Override
-    public void includeStats(boolean stats) { }
+    public void includeStats(boolean stats) {
+        this.includeStats = stats;
+    }
+
+    public void includeSrc(boolean src) {
+        this.includeSrc = src;
+    }
 
     @Override
-    public void includeSamples(boolean samples) { }
+    public void includeSamples(boolean samples) {
+        this.includeSamples = samples;
+    }
 
     @Override
     public void includeEffect(boolean effect) { }
