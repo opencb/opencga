@@ -1,19 +1,22 @@
 package org.opencb.opencga.storage.core;
 
-import org.junit.Ignore;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.math.RandomUtils;
 import org.junit.Test;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ThreadRunnerTest extends GenericTest {
 
@@ -41,12 +44,55 @@ public class ThreadRunnerTest extends GenericTest {
         @Override
         public List<String> read(int batchSize) {
             ArrayList<String> batch = new ArrayList<String>(batchSize);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             for (int i = 0; i < batchSize && num < max; i++) {
                 num++;
 //                batch.add( String.format("%7d %s", num, StringUtils.randomString(10)));
-                batch.add( StringUtils.randomString(10) );
+//                batch.add( StringUtils.randomString(10) );
+                batch.add( String.format("{ \"id\": %d, \"string\": \"%s\", \"array\": [%d, %d, %d]}",
+                        num, StringUtils.randomString(10), RandomUtils.nextInt()%1024, RandomUtils.nextInt()%1024, RandomUtils.nextInt()%1024));
             }
+            System.out.println("batchSize " + batch.size());
             return batch;
+        }
+    }
+
+    static class Parser extends ThreadRunner.Task<String, ObjectMap> {
+        private final ObjectMapper mapper;
+
+        public Parser() {
+            super();
+            JsonFactory factory = new JsonFactory();
+            mapper = new ObjectMapper(factory);
+        }
+
+        @Override
+        public List<ObjectMap> apply(List<String> batch) throws IOException {
+            List<ObjectMap> newBatch = new ArrayList<>(batch.size());
+            for (String s : batch) {
+                ObjectMap objectMap = mapper.readValue(s.toString(), ObjectMap.class);
+                newBatch.add(objectMap);
+            }
+            return newBatch;
+        }
+    }
+
+    static class Sum extends org.opencb.commons.run.Task<ObjectMap> {
+        @Override
+        public boolean apply(List<ObjectMap> batch) throws IOException {
+            for (ObjectMap objectMap : batch) {
+                List<Integer> array = objectMap.getAsIntegerList("array");
+                int sum = 0;
+                for (Integer integer : array) {
+                    sum += integer;
+                }
+                objectMap.put("sum", sum);
+            }
+            return true;
         }
     }
 
@@ -86,10 +132,8 @@ public class ThreadRunnerTest extends GenericTest {
             this.os = os;
         }
 
-        @Override
-        public boolean open() {return true;}
-        @Override
-        public boolean close() {
+        @Override public boolean open() {return true;}
+        @Override public boolean close() {
             try {
                 os.flush();
                 os.close();
@@ -98,18 +142,13 @@ public class ThreadRunnerTest extends GenericTest {
             }
             return true;
         }
-        @Override
-        public boolean pre() {return true;}
-        @Override
-        public boolean post() {
+        @Override public boolean pre() {return true;}
+        @Override public boolean post() {
             System.out.println("num = " + num);
             return true;
         }
-        @Override
-        public boolean write(String elem) {return write(Collections.singletonList(elem));}
-
-        @Override
-        public boolean write(List<String> batch) {
+        @Override public boolean write(String elem) {return write(Collections.singletonList(elem));}
+        @Override public boolean write(List<String> batch) {
             for (String s : batch) {
                 num++;
                 try {
@@ -123,64 +162,71 @@ public class ThreadRunnerTest extends GenericTest {
             return true;
         }
     }
+    class ObjectMapWriter implements DataWriter<ObjectMap> {
+        int num = 0;
+        OutputStream os;
 
-    @Ignore
+        public ObjectMapWriter(OutputStream os) {
+            this.os = os;
+        }
+
+        @Override public boolean open() {return true;}
+        @Override public boolean close() {
+            try {
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return true;
+        }
+        @Override public boolean pre() {return true;}
+        @Override public boolean post() {
+            System.out.println("num = " + num);
+            return true;
+        }
+        @Override public boolean write(ObjectMap elem) {return write(Collections.singletonList(elem));}
+        @Override public boolean write(List<ObjectMap> batch) {
+            for (ObjectMap o : batch) {
+                num++;
+                try {
+                    synchronized (os) {
+                        os.write(o.toJson().getBytes());
+                        os.write('\n');
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return true;
+        }
+    }
+
     @Test
     public void testRun() throws Exception {
         FileOutputStream os = new FileOutputStream("/tmp/test.txt");
         FileOutputStream os2 = new FileOutputStream("/tmp/test2.txt");
 
-        Set<List<DataWriter<String>>> writerSet = new HashSet<>();
-        writerSet.add(
-                Arrays.<DataWriter<String>>asList(
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os),
-                        new StringWriter(os)
-                )
-        );
-        writerSet.add(
-                Arrays.<DataWriter<String>>asList(
-                        new StringWriter(os2),
-                        new StringWriter(os2),
-                        new StringWriter(os2)
-                )
-        );
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        ThreadRunner threadDGARunner = new ThreadRunner(executorService, 100);
 
-        List<List<Task<String>>> tasksLists = Arrays.asList(
-                Arrays.<Task<String>>asList(
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask(),
-                        new StringTask())
-                , Arrays.<Task<String>>asList(
-                        new StringNumerateTask(),
-                        new StringNumerateTask(),
-                        new StringNumerateTask(),
-                        new StringNumerateTask(),
-                        new StringNumerateTask(),
-                        new StringNumerateTask(),
-                        new StringNumerateTask(),
-                        new StringNumerateTask()
-                )
-        );
+        ThreadRunner.ReadNode<String> readerNode = threadDGARunner.newReaderNode(new StringReader(10000), 10);
+        ThreadRunner.TaskNode<String, ObjectMap> parserNode = threadDGARunner.newTaskNode(new Parser(), 100);
+//        ThreadRunner.SimpleTaskNode<ObjectMap> sumNode = threadDGARunner.newSimpleTaskNode(new Sum(), 10);
+//        ThreadRunner.WriterNode<ObjectMap> objectMapWriterNode = threadDGARunner.newWriterNode(new ObjectMapWriter(os), 10);
+        ThreadRunner.WriterNode<ObjectMap> objectMapWriterNode2 = threadDGARunner.newWriterNode(new ObjectMapWriter(os2), 10);
 
-//        ThreadRunner<String> runner = new ThreadRunner<>(
-//                new StringReader(10000),
-//                writerSet,
-//                tasksLists,
-//                1,
-//                "");
-//        runner.run();
+        readerNode.append(parserNode);
+//        parserNode.append(sumNode);
+        parserNode.append(objectMapWriterNode2);
+//        sumNode.append(objectMapWriterNode);
+
+        threadDGARunner.run();
+
+        os.flush();
+        os.close();
+
+        os2.flush();
+        os2.close();
     }
 }
