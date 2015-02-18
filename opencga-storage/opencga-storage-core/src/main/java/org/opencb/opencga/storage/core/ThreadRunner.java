@@ -1,5 +1,10 @@
 package org.opencb.opencga.storage.core;
 
+        import org.opencb.commons.io.DataReader;
+        import org.opencb.commons.io.DataWriter;
+        import org.opencb.commons.run.Task;
+
+        import java.io.IOException;
         import java.util.*;
         import java.util.concurrent.*;
 
@@ -13,13 +18,15 @@ public class ThreadRunner {
     private List<TaskNode> taskNodes = new LinkedList<>();
     private List<WriterNode> writerNodes = new LinkedList<>();
     private List<Node> nodes = new LinkedList<>();
-    private final Object syncObject = new Object();
+    private final int batchSize;
 
+    private final Object syncObject = new Object();
     private static final List<Object> SINGLETON_LIST = Collections.singletonList(new Object());
     private static final List LAST_BATCH = new LinkedList();
 
-    public ThreadRunner(ExecutorService executorService) {
+    public ThreadRunner(ExecutorService executorService, int batchSize) {
         this.executorService = executorService;
+        this.batchSize = batchSize;
     }
 
     public <I,O> TaskNode<I,O> newTaskNode(List<Task<I,O>> tasks) {
@@ -38,42 +45,34 @@ public class ThreadRunner {
         return taskNode;
     }
 
-    public <O> ReadNode<O> newReaderNode(List<Reader<O>> readers) {
-        List<Task<Object, O>> tasks = new ArrayList<>(readers.size());
-        for (Reader<O> r : readers) {
-            tasks.add(r);
-        }
-        ReadNode<O> readNode = new ReadNode<>(tasks, "reader-node-" + readNodes.size());
+    public <O> ReadNode<O> newReaderNode(List<DataReader<O>> readers) {
+        ReadNode<O> readNode = new ReadNode<>(readers, "reader-node-" + readNodes.size());
         readNodes.add(readNode);
         return readNode;
     }
 
-    public <O> ReadNode<O> newReaderNode(Reader<O> reader, int n) {
-        List<Task<Object, O>> tasks = new ArrayList<>(n);
+    public <O> ReadNode<O> newReaderNode(DataReader<O> reader, int n) {
+        List<DataReader<O>> readers = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            tasks.add(reader);
+            readers.add(reader);
         }
-        ReadNode<O> readNode = new ReadNode<>(tasks, "reader-node-" + readNodes.size());
+        ReadNode<O> readNode = new ReadNode<>(readers, "reader-node-" + readNodes.size());
         readNodes.add(readNode);
         return readNode;
     }
 
-    public <I> WriterNode<I> newWriterNode(List<Writer<I>> writers) {
-        List<Task<I, Object>> tasks = new ArrayList<>(writers.size());
-        for (Writer<I> w : writers) {
-            tasks.add(w);
-        }
-        WriterNode<I> writerNode = new WriterNode<>(tasks, "writer-node-" + writerNodes.size());
+    public <I> WriterNode<I> newWriterNode(List<DataWriter<I>> writers) {
+        WriterNode<I> writerNode = new WriterNode<>(writers, "writer-node-" + writerNodes.size());
         writerNodes.add(writerNode);
         return writerNode;
     }
 
-    public <I> WriterNode<I> newWriterNode(Writer<I> writer, int n) {
-        List<Task<I, Object>> tasks = new ArrayList<>(n);
+    public <I> WriterNode<I> newWriterNode(DataWriter<I> writer, int n) {
+        List<DataWriter<I>> writers = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            tasks.add(writer);
+            writers.add(writer);
         }
-        WriterNode<I> writerNode = new WriterNode<>(tasks, "writer-node-" + writerNodes.size());
+        WriterNode<I> writerNode = new WriterNode<>(writers, "writer-node-" + writerNodes.size());
         writerNodes.add(writerNode);
         return writerNode;
     }
@@ -89,6 +88,7 @@ public class ThreadRunner {
         nodes.addAll(writerNodes);
 
         for (Node node : nodes) {
+            node.init();
             node.pre();
         }
 
@@ -130,41 +130,39 @@ public class ThreadRunner {
         executorService.shutdown();
     }
 
-    public static abstract class Task<I, O> /*extends org.opencb.commons.run.Task<I>*/ {
+    public static abstract class Task<I, O> {
         public boolean pre() {return true;}
-//        public abstract boolean apply(List<I> batch);
+        public abstract List<O> apply(List<I> batch);
         public boolean post() {return true;}
-
-        public abstract List<O> process(List<I> batch);
     }
 
-    public static abstract class Reader<O> extends Task<Object, O> /*implements DataReader<O>*/ {
-        public boolean open() {return true;}
-        @Override public boolean pre() {return true;}
-        public abstract List<O> read();
-        @Override public boolean post() {return true;}
-        public boolean close() {return true;}
+//    public static abstract class Reader<O> extends Task<Object, O> /*implements DataReader<O>*/ {
+//        public boolean open() {return true;}
+//        @Override public boolean pre() {return true;}
+//        public abstract List<O> read();
+//        @Override public boolean post() {return true;}
+//        public boolean close() {return true;}
+//
+//        public final List<O> process(List<Object> batch) {
+//            return read();
+//        }
+//    }
+//
+//    public static abstract class Writer<I> extends Task<I, Object> /*implements DataWriter<I>*/ {
+//        public boolean open() {return true;}
+//        @Override public boolean pre() {return true;}
+//        public abstract boolean write(List<I> batch);
+//        @Override public boolean post() {return true;}
+//        public boolean close() {return true;}
+//
+//        public final List<Object> process(List<I> batch) {
+//            write(batch);
+//            return Collections.emptyList();
+//        }
+//    }
 
-        public final List<O> process(List<Object> batch) {
-            return read();
-        }
-    }
-
-    public static abstract class Writer<I> extends Task<I, Object> /*implements DataWriter<I>*/ {
-        public boolean open() {return true;}
-        @Override public boolean pre() {return true;}
-        public abstract boolean write(List<I> batch);
-        @Override public boolean post() {return true;}
-        public boolean close() {return true;}
-
-        public final List<Object> process(List<I> batch) {
-            write(batch);
-            return Collections.emptyList();
-        }
-    }
-
-    public class ReadNode<O> extends Node<Object, O> {
-        private ReadNode(List<Task<Object, O>> tasks, String name) {
+    public class ReadNode<O> extends Node<Object, O, DataReader<O>> {
+        private ReadNode(List<DataReader<O>> tasks, String name) {
             super(tasks, name);
         }
 
@@ -179,7 +177,7 @@ public class ThreadRunner {
                 if (!oList.isEmpty()) {
                     start();
                 } else {
-                    if (!lastBatchSended) {
+                    if (!isLastBatchSent()) {
                         submit(LAST_BATCH);
                     }
 //                    lastBatch = true;
@@ -190,55 +188,141 @@ public class ThreadRunner {
                 }
             return oList;
         }
+
+        @Override
+        protected List<O> execute(DataReader<O> reader, List<Object> batch) {
+            return reader.read(batchSize);
+        }
+
+        @Override
+        protected void pre() {
+            for (DataReader<O> reader : tasks) {
+                reader.open();
+                reader.pre();
+            }
+        }
+
+        @Override
+        protected void post() {
+            for (DataReader<O> reader : tasks) {
+                reader.post();
+                reader.close();
+            }
+        }
     }
 
-
-    protected class TaskNode<I, O> extends Node<I,O> {
+    protected class TaskNode<I, O> extends Node<I,O,Task<I,O>> {
         private TaskNode(List<Task<I, O>> tasks, String name) {
             super(tasks, name);
         }
-    }
 
-    protected class WriterNode<I> extends Node<I,Object> {
-        private WriterNode(List<Task<I, Object>> tasks, String name) {
-            super(tasks, name);
+        @Override
+        protected List<O> execute(Task<I, O> task, List<I> batch) {
+            return task.apply(batch);
+        }
+
+        @Override
+        protected void pre() {
+            for (Task<I, O> task : tasks) {
+                task.pre();
+            }
+        }
+
+        @Override
+        protected void post() {
+            for (Task<I, O> task : tasks) {
+                task.post();
+            }
         }
     }
 
-    abstract class Node<I, O> {
-        private final List<Task<I, O>> tasks;
-        private final BlockingQueue<Task<I,O>> taskQueue;
-        private List<Node<O, ?>> nodes;
-        private int pendingJobs;
-        protected final String name;
-        protected boolean lastBatch;
-        protected boolean lastBatchSended;
+    protected class SimpleTaskNode<I> extends Node<I, I, org.opencb.commons.run.Task<I>> {
+        private SimpleTaskNode(List<org.opencb.commons.run.Task<I>> tasks, String name) {
+            super(tasks, name);
+        }
 
-        public Node(List<Task<I, O>> tasks, String name) {
+        @Override
+        protected void pre() {
+            for (org.opencb.commons.run.Task<I> task : tasks) {
+                task.pre();
+            }
+        }
+
+        @Override
+        protected void post() {
+            for (org.opencb.commons.run.Task<I> task : tasks) {
+                task.post();
+            }
+        }
+
+        @Override
+        protected List<I> execute(org.opencb.commons.run.Task<I> task, List<I> batch) {
+            try {
+                task.apply(batch);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return batch;
+        }
+    }
+
+    protected class WriterNode<I> extends Node<I,Object, DataWriter<I>> {
+        private WriterNode(List<DataWriter<I>> tasks, String name) {
+            super(tasks, name);
+        }
+
+        @Override
+        protected void pre() {
+            for (DataWriter<I> writer : tasks) {
+                writer.open();
+                writer.pre();
+            }
+        }
+
+        @Override
+        protected void post() {
+            for (DataWriter<I> writer : tasks) {
+                writer.post();
+                writer.close();
+            }
+        }
+
+        @Override
+        protected List<Object> execute(DataWriter<I> writer, List<I> batch) {
+            writer.write(batch);
+            return SINGLETON_LIST;
+        }
+    }
+
+    abstract class Node<I, O, EXECUTOR> {
+        protected final List<EXECUTOR> tasks;
+        protected final String name;
+        private final BlockingQueue<EXECUTOR> taskQueue;
+        private List<Node<O, ?, ?>> nodes;
+        private int pendingJobs;
+        private boolean lastBatch;
+        private boolean lastBatchSent;
+
+        public Node(List<EXECUTOR> tasks, String name) {
             this.tasks = tasks;
             this.name = name;
             taskQueue = new ArrayBlockingQueue<>(tasks.size(), false, tasks);
             nodes = new LinkedList<>();
         }
 
-        /*package*/ void pre () {
+        /* package */ void init()  {
             pendingJobs = 0;
             lastBatch = false;
-            lastBatchSended = false;
-            for (Task<I, O> task : tasks) {
-                task.pre();
-            }
+            lastBatchSent = false;
         }
 
-        /*package*/ void post () {
-            for (Task<I, O> task : tasks) {
-                task.post();
-            }
-        }
+        protected abstract void pre ();
+
+        protected abstract void post ();
 
         /*package*/ List<O> doJob(List<I> batch) {
             List<O> generatedBatch;
-            assert lastBatchSended == false;
+            assert lastBatchSent == false;
             if (batch == LAST_BATCH) {
                 lastBatch = true;
                 pendingJobs--;
@@ -246,11 +330,11 @@ public class ThreadRunner {
                 generatedBatch = Collections.emptyList();
             } else {
 
-                Task<I, O> task = null;
+                EXECUTOR task = null;
                 task = taskQueue.poll();
 
                 boolean nextNodesAvailable = true;
-                for (Node<O, ?> node : nodes) {
+                for (Node<O, ?, ?> node : nodes) {
                     nextNodesAvailable &= node.isAvailable();
                 }
 
@@ -267,9 +351,9 @@ public class ThreadRunner {
                     generatedBatch = null;
                 } else {
 
-                    generatedBatch = task.process(batch);
+                    generatedBatch = execute(task, batch);
                     System.out.println(name + " - end job");
-                    for (Node<O, ?> node : nodes) {
+                    for (Node<O, ?, ?> node : nodes) {
                         node.submit(generatedBatch);
                     }
 
@@ -283,12 +367,12 @@ public class ThreadRunner {
                 }
             }
             if (isFinished()) {
-                if (!lastBatchSended) {
+                if (!lastBatchSent) {
                     generatedBatch = LAST_BATCH;
-                    for (Node<O, ?> node : nodes) {
+                    for (Node<O, ?, ?> node : nodes) {
                         node.submit(LAST_BATCH);
                     }
-                    lastBatchSended = true;
+                    lastBatchSent = true;
                 }
                 System.out.println("Node '" + name + "' is finished");
                 synchronized (syncObject) {
@@ -297,6 +381,8 @@ public class ThreadRunner {
             }
             return generatedBatch;
         }
+
+        protected abstract List<O> execute(EXECUTOR task, List<I> batch);
 
         private void resubmit(final List<I> batch) {
             executorService.submit(new Runnable() {
@@ -320,7 +406,11 @@ public class ThreadRunner {
             return pendingJobs == 0 && lastBatch;
         }
 
-        public void append(Node<O, ?> node) {
+        public boolean isLastBatchSent() {
+            return lastBatchSent;
+        }
+
+        public void append(Node<O, ?, ?> node) {
             nodes.add(node);
         }
 
