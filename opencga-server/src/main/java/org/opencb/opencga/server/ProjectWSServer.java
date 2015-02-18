@@ -1,14 +1,12 @@
 package org.opencb.opencga.server;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.CatalogException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -18,7 +16,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 @Path("/projects")
-@Api(value = "projects", description = "projects")
+@Api(value = "projects", description = "projects", position = 2)
 public class ProjectWSServer extends OpenCGAWSServer {
 
     public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -27,9 +25,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Create project")
-
     public Response createProject(
             @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
             @ApiParam(value = "name", required = true) @QueryParam("name") String name,
@@ -41,11 +38,11 @@ public class ProjectWSServer extends OpenCGAWSServer {
         QueryResult queryResult;
         try {
 
-            queryResult = catalogManager.createProject(userId, name, alias, description, organization, sessionId);
+            queryResult = catalogManager.createProject(userId, name, alias, description, organization, this.getQueryOptions(), sessionId);
 
             return createOkResponse(queryResult);
 
-        } catch (CatalogManagerException | CatalogIOManagerException | JsonProcessingException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -54,35 +51,34 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/info")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Project information")
-
     public Response info(
             @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getProject(projectId, sessionId);
+            queryResult = catalogManager.getProject(projectId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
     }
 
     @GET
-    @Path("/{ownerId}/all-projects")
-    @Produces("text/plain")
-    @ApiOperation(value = "Project information")
+    @Path("/{projectId}/studies")
+    @Produces("application/json")
+    @ApiOperation(value = "Study information")
 
-    public Response getAllProjects(
-            @ApiParam(value = "ownerId", required = true) @PathParam("ownerId") String ownerId
+    public Response getAllStudies(
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
     ) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.getAllProjects(ownerId, sessionId);
+            queryResult = catalogManager.getAllStudies(projectId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogManagerException | JsonProcessingException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
@@ -90,7 +86,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/modify")
-    @Produces("text/plain")
+    @Produces("application/json")
     @ApiOperation(value = "Project modify")
     public Response modifyUser(
             @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId,
@@ -110,7 +106,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogManagerException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

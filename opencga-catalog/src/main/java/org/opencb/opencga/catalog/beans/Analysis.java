@@ -10,6 +10,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+@Deprecated
 public class Analysis {
 
     private int id;

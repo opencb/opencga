@@ -15,35 +15,68 @@ import org.xml.sax.InputSource;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class SgeManager {
 
 
+    private static final Map<String, String> stateDic;
+    public static final String UNKNOWN = "unknown";
+    public static final String RUNNING = "running";
+    public static final String TRANSFERRED = "transferred";
+    public static final String QUEUED = "queued";
+    public static final String ERROR = "error";
+    public static final String FINISHED = "finished";
+    public static final String EXECUTION_ERROR = "execution error";
+
     protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
     private static Properties analysisProperties = Config.getAnalysisProperties();
 
-    public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine,
-                                String queue) throws Exception {
-        // init sge job
-        String sgeCommandLine = "qsub -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
-                + outdir + "/sge_err.log -q " + queue + " -b y " + commandLine;
-        logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
-
-        // thrown command to shell
-        Command sgeCommand = new Command(sgeCommandLine);
-        SingleProcess sp = new SingleProcess(sgeCommand);
-        sp.getRunnableProcess().run();
+    static {
+        stateDic = new HashMap<String, String>();
+        stateDic.put("r", RUNNING);
+        stateDic.put("t", TRANSFERRED);
+        stateDic.put("qw", QUEUED);
+        stateDic.put("Eqw", ERROR);
     }
 
-    public static void queueJob(String toolName, String wumJobId, int wumUserId, String outdir, String commandLine)
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine)
             throws Exception {
+        queueJob(toolName, wumJobName, wumUserId, outdir, commandLine, getQueueName(toolName));
+    }
 
-        // init sge job
-        String sgeCommandLine = "qsub -N " + getSgeJobName(toolName, wumJobId) + " -o " + outdir + "/sge_out.log -e "
-                + outdir + "/sge_err.log -q " + getQueueName(toolName) + " -b y " + commandLine;
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue)
+            throws Exception {
+        queueJob(toolName, wumJobName, wumUserId, outdir, commandLine, queue, "");
+    }
+
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, URI outdir, String commandLine, String queue, String logFileId)
+            throws Exception {
+        if (outdir.getScheme() != null && !outdir.getScheme().equals("file")) {
+            throw new IOException("Unsupported outdir for QueueJob");
+        }
+        queueJob(toolName, wumJobName, wumUserId, outdir.getPath(), commandLine, queue, logFileId);
+    }
+    @Deprecated
+    public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue, String logFileId)
+            throws Exception {
+        logFileId = logFileId == null || logFileId.isEmpty()? "" : "." + logFileId;
+        queue = queue == null || queue.isEmpty()? getQueueName(toolName) : queue;
+        String outFile = Paths.get(outdir, "sge_out" + logFileId + ".log").toString();
+        String errFile = Paths.get(outdir, "sge_err" + logFileId + ".log").toString();
+                // init sge job
+                String sgeCommandLine = "qsub -V " +
+                        " -N " + getSgeJobName(toolName, wumJobName) +
+                        " -o " + outFile +
+                        " -e " + errFile +
+                        " -q " + queue +
+                        " -b y " + commandLine;
+
         logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
 
         // thrown command to shell
@@ -51,6 +84,7 @@ public class SgeManager {
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
     }
+
 
     private static String getSgeJobName(String toolName, String wumJobId) {
         return toolName.replace(" ", "_") + "_" + wumJobId;
@@ -105,12 +139,7 @@ public class SgeManager {
     }
 
     public static String status(String jobId) throws Exception {
-        String status = "unknown";
-        Map<String, String> stateDic = new HashMap<String, String>();
-        stateDic.put("r", "running");
-        stateDic.put("t", "transferred");
-        stateDic.put("qw", "queued");
-        stateDic.put("Eqw", "error");
+        String status = UNKNOWN;
 
         String xml = null;
         try {
@@ -160,18 +189,18 @@ public class SgeManager {
             }
         }
 
-        if (!status.equals("unknown")) {
+        if (!status.equals(UNKNOWN)) {
             status = stateDic.get(status);
         } else {
-            String command = "qacct -j " + jobId;
-            logger.info(command);
+            String command = "qacct -j *" + jobId + "*";
+//            logger.info(command);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             String exitStatus = null;
             String failed = null;
             while ((line = in.readLine()) != null) {
-                logger.info(line);
+//                logger.info(line);
                 if (line.contains("exit_status")) {
                     exitStatus = line.replace("exit_status", "").trim();
                 }
@@ -187,9 +216,9 @@ public class SgeManager {
                     status = "queue error";
                 }
                 if ("0".equals(exitStatus)) {
-                    status = "finished";
+                    status = FINISHED;
                 } else {
-                    status = "execution error";
+                    status = EXECUTION_ERROR;
                 }
             }
         }

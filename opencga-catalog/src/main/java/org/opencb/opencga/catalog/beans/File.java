@@ -13,61 +13,127 @@ import java.util.Map;
 public class File {
 
     private int id;
+
     /**
      * File name.
      */
     private String name;
+
     /**
-     * Formats: file, folder
+     * Formats: file, folder, index
      */
-    private String type;
+    private Type type;
+
     /**
      * Formats: txt, executable, image, ...
      */
-    private String format;
+    private Format format;
+
     /**
      * BAM, VCF, ...
      */
-    private String bioformat;
+    private Bioformat bioformat;
+
     /**
      * file://, hdfs://
      */
-    private String uriScheme;
+//    private String uriScheme;   // quitar
     private String path;
-    private String creatorId;
+    private String ownerId;
     private String creationDate;
     private String description;
 
-    private String status;
+    private Status status;
     private long diskUsage;
 
     //private int studyId;
     private int experimentId;
     private List<Integer> sampleIds;
+
     /**
      * This field values -1 when file has been uploaded.
      */
     private int jobId;
     private List<Acl> acl;
 
-
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
     /* Status */
-    public static final String UPLOADING = "uploading";
-    public static final String UPLOADED = "uploaded";
-    public static final String READY = "ready";
+    public enum Status {
+        INDEXING,
+        UPLOADING,
+        UPLOADED,
+        READY,
+        DELETING,
+        DELETED
+    }
 
-    /* Type */
-    public static final String FOLDER = "folder";
-    public static final String FILE = "file";
+    public enum Type {
+        FOLDER,
+        FILE,
+        INDEX
+    }
 
-    /* Formats */
-    public static final String PLAIN = "plain";
-    public static final String GZIP = "gzip";
-    public static final String EXECUTABLE = "executable";
-    public static final String IMAGE = "image";
+    public enum Format {
+        PLAIN,
+        GZIP,
+        BINARY,
+        EXECUTABLE,
+        IMAGE
+    }
+
+    public enum Bioformat {
+        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
+        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
+        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
+        DATAMATRIX_EXPRESSION,
+        DATAMATRIX_SNP,
+        IDLIST_GENE,
+        IDLIST_TRANSCRIPT,
+        IDLIST_PROTEIN,
+        IDLIST_SNP,
+        IDLIST_FUNCTIONALTERMS,
+        IDLIST_RANKED,
+        ANNOTATION_GENEVSANNOTATION,
+
+        OTHER_NEWICK,
+        OTHER_BLAST,
+        OTHER_INTERACTION,
+        OTHER_GENOTYPE,
+        OTHER_PLINK,
+        OTHER_VCF,
+        OTHER_PED,
+
+        VARIANT,
+        ALIGNMENT,
+        SEQUENCE,
+        VCF4,
+        NONE
+        }
+
+//    public static final String INDEXING = "indexing";
+//    public static final String UPLOADING = "uploading";
+//    public static final String UPLOADED = "uploaded";
+//    public static final String READY = "ready";
+//    public static final String DELETING = "deleting";
+//    public static final String DELETED = "deleted";
+//
+//    /* Type */
+//    public static final String TYPE_FOLDER = "folder";
+//    public static final String TYPE_FILE = "file";
+//    public static final String TYPE_INDEX = "index";
+//
+//    /* Formats */
+//    public static final String PLAIN = "plain";
+//    public static final String GZIP = "gzip";
+//    public static final String EXECUTABLE = "executable";
+//    public static final String IMAGE = "image";
+
+    /* Attributes known values */
+    public static final String DELETE_DATE = "deleteDate";      //Long
 
     /**
      * To think:
@@ -77,29 +143,32 @@ public class File {
     public File() {
     }
 
-    public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
-                String description, String status, long diskUsage) {
-        this(-1, name, type, format, bioformat, uriScheme, path, creatorId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String description, Status status, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
+                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>());
     }
 
-    public File(String name, String type, String format, String bioformat, String uriScheme, String path, String creatorId,
-                String creationDate, String description, String status, long diskUsage) {
-        this(-1, name, type, format, bioformat, uriScheme, path, creatorId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(), new HashMap<String, Object>());
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String creationDate, String description, Status status, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
+                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>());
     }
 
-    public File(int id, String name, String type, String format, String bioformat, String uriScheme, String path,
-                String creatorId, String creationDate, String description, String status, long diskUsage, int experimentId,
-                List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats, Map<String, Object> attributes) {
+    public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String creationDate, String description, Status status, long diskUsage, int experimentId,
+                List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats,
+                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.format = format;
         this.bioformat = bioformat;
-        this.uriScheme = uriScheme;
+//        this.uriScheme = uriScheme;
         this.path = path;
-        this.creatorId = creatorId;
+        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
@@ -110,29 +179,31 @@ public class File {
         this.acl = acl;
         this.stats = stats;
         this.attributes = attributes;
+//        this.indices = indices;
     }
 
     @Override
     public String toString() {
-        return "File{" + "\n\t" +
-                "id=" + id + "\n\t" +
-                ", name='" + name + '\'' + "\n\t" +
-                ", type='" + type + '\'' + "\n\t" +
-                ", format='" + format + '\'' + "\n\t" +
-                ", bioformat='" + bioformat + '\'' + "\n\t" +
-                ", uriScheme='" + uriScheme + '\'' + "\n\t" +
-                ", path='" + path + '\'' + "\n\t" +
-                ", creatorId='" + creatorId + '\'' + "\n\t" +
-                ", creationDate='" + creationDate + '\'' + "\n\t" +
-                ", description='" + description + '\'' + "\n\t" +
-                ", status='" + status + '\'' + "\n\t" +
-                ", diskUsage=" + diskUsage + "\n\t" +
-                ", experimentId=" + experimentId + "\n\t" +
-                ", sampleIds=" + sampleIds + "\n\t" +
-                ", jobId=" + jobId + "\n\t" +
-                ", acl=" + acl + "\n\t" +
-                ", stats=" + stats + "\n\t" +
-                ", attributes=" + attributes + "\n" +
+        return "File {" + "\n\t" +
+                "id:" + id + "\n\t" +
+                ", name:'" + name + '\'' + "\n\t" +
+                ", type:'" + type + '\'' + "\n\t" +
+                ", format:'" + format + '\'' + "\n\t" +
+                ", bioformat:'" + bioformat + '\'' + "\n\t" +
+//                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
+                ", path:'" + path + '\'' + "\n\t" +
+                ", ownerId:'" + ownerId + '\'' + "\n\t" +
+                ", creationDate:'" + creationDate + '\'' + "\n\t" +
+                ", description:'" + description + '\'' + "\n\t" +
+                ", status:'" + status + '\'' + "\n\t" +
+                ", diskUsage:" + diskUsage + "\n\t" +
+                ", experimentId:" + experimentId + "\n\t" +
+                ", sampleIds:" + sampleIds + "\n\t" +
+                ", jobId:" + jobId + "\n\t" +
+                ", acl:" + acl + "\n\t" +
+                ", stats:" + stats + "\n\t" +
+                ", attributes:" + attributes + "\n\t" +
+//                ", indices:" + indices + "\n" +
                 '}';
     }
 
@@ -152,36 +223,28 @@ public class File {
         this.name = name;
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(Type type) {
         this.type = type;
     }
 
-    public String getFormat() {
+    public Format getFormat() {
         return format;
     }
 
-    public void setFormat(String format) {
+    public void setFormat(Format format) {
         this.format = format;
     }
 
-    public String getBioformat() {
+    public Bioformat getBioformat() {
         return bioformat;
     }
 
-    public void setBioformat(String bioformat) {
+    public void setBioformat(Bioformat bioformat) {
         this.bioformat = bioformat;
-    }
-
-    public String getUriScheme() {
-        return uriScheme;
-    }
-
-    public void setUriScheme(String uriScheme) {
-        this.uriScheme = uriScheme;
     }
 
     public String getPath() {
@@ -192,12 +255,12 @@ public class File {
         this.path = path;
     }
 
-    public String getCreatorId() {
-        return creatorId;
+    public String getOwnerId() {
+        return ownerId;
     }
 
-    public void setCreatorId(String creatorId) {
-        this.creatorId = creatorId;
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getCreationDate() {
@@ -216,11 +279,11 @@ public class File {
         this.description = description;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
@@ -244,6 +307,10 @@ public class File {
         return sampleIds;
     }
 
+    public void setSampleIds(List<Integer> sampleIds) {
+        this.sampleIds = sampleIds;
+    }
+
     public int getJobId() {
         return jobId;
     }
@@ -260,8 +327,12 @@ public class File {
         this.acl = acl;
     }
 
-    public void setSampleIds(List<Integer> sampleIds) {
-        this.sampleIds = sampleIds;
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
     }
 
     public Map<String, Object> getAttributes() {
@@ -270,13 +341,5 @@ public class File {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public void setStats(Map<String, Object> stats) {
-        this.stats = stats;
     }
 }

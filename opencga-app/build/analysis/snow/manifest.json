@@ -18,16 +18,24 @@
         {
             "id": "default",
             "name": "default",
-            "executable": "babelomics/babelomics.sh --tool snow ",
+            "executable": "snow.sh",
             "inputParams": [
                 {
                     "name": "list1",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "list2",
                     "dataType": "txt"
                 }
             ],
             "inputParamsFromTxt": [
                 {
                     "name": "list1-text",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "list2-text",
                     "dataType": "txt"
                 }
             ],
@@ -36,7 +44,12 @@
                 {
                     "name": "list1",
                     "description": "An input file containing a node per line",
-                    "required": "true"
+                    "required": "false"
+                },
+                {
+                    "name": "list2",
+                    "description": "An input file containing a node per line",
+                    "required": "false"
                 },
                 {
                     "name": "interactome",

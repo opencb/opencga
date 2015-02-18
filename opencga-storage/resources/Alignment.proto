@@ -1,0 +1,100 @@
+
+/**
+ *
+ *
+ * protoc --java_out ../src/main/java/ Alignment.proto
+ */
+
+package org.opencb.opencga.storage.alignment.proto;
+option java_outer_classname = "AlignmentProto";
+
+
+message Difference {
+    enum DifferenceOperator {
+        INSERTION = 1;
+        DELETION = 2;
+        MISMATCH = 3;
+        SKIPPED_REGION = 4;
+        SOFT_CLIPPING = 5;
+        HARD_CLIPPING = 6;
+        PADDING = 7;
+    };
+    required DifferenceOperator operator = 1;       //TODO: Default op? Summary, Bucket or Alignment level?
+    optional uint32 pos = 2;     //If missing, starts at the end of the last difference.
+    optional uint32 length = 3;  //If missing, length is length of sequence. If missing too, length is 1 //TODO: defaultDiffLength?
+    optional bytes sequence = 4; //If missing, take from the reference sequence.
+}
+
+message AlignmentRecord {
+    required string name = 1;
+    required uint32 pos = 2; // position relative to the alignment region
+    optional uint32 flags = 3;
+    optional uint32 len = 4;
+    required uint32 mapq = 5;
+    required string qualities = 6;
+    optional string rnext = 7;
+    required sint32 relativePnext = 8;
+    required sint32 inferredInsertSize = 9;
+    repeated Difference diffs = 10;
+    repeated uint32 tags = 11 [packed = true];
+}
+
+message AlignmentBucket {
+    required uint32 summaryIndex = 1;
+    optional uint32 overlapped = 2;
+
+    repeated AlignmentRecord alignmentRecords = 9;
+}
+
+message Summary{
+    message Pair {
+        required uint32 key = 1;
+
+        /*
+         *   TYPES:
+         *   A [!-~] Printable character
+         *   i [-+]?[0-9]+ Singed 32-bit integer
+         *   f [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)? Single-precision
+         *   oating number
+         *   Z [ !-~]+ Printable string, including space
+         *   H [0-9A-F]+ Byte array in the Hex format2
+         *   B [cCsSiIf](,[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?)+ Integer or numeric array
+         */
+
+        optional uint32 avalue = 2;
+        optional sint32 ivalue = 3;
+        optional float fvalue = 4;
+        optional string zvalue = 5;
+
+    }
+
+    required uint32 defaultFlag = 1;
+    required uint32 defaultLen = 2;
+    required string defaultRNext = 3;
+    required uint32 defaultOverlapped = 4;
+
+    required string keys = 8;    //Concatenated tags.
+    repeated Pair values = 9;
+
+}
+
+message Header {
+
+    required uint32 bucketSize = 2;
+    optional bytes SamHeader = 3;
+}
+
+
+
+message MeanCoverage {
+    required float coverage = 1;
+}
+
+
+message Coverage {
+    repeated uint32 all = 1[packed = true];
+    repeated uint32 a = 2[packed = true];
+    repeated uint32 c = 3[packed = true];
+    repeated uint32 g = 4[packed = true];
+    repeated uint32 t = 5[packed = true];
+}

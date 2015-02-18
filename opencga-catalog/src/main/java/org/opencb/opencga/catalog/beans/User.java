@@ -19,49 +19,48 @@ public class User {
     /**
      * This specifies the role of this user in OpenCGA, possible values: admin, user, demo, ...
      */
-    private String role;
+    private Role role;
     private String status;
     private String lastActivity;
     private long diskUsage;
     private long diskQuota;
 
-    private List<Project> projects = new ArrayList<>();
-//    private List<Analysis> analyses = new ArrayList<>();
+    private List<Project> projects;
+    private List<Tool> tools;
 
-    private List<Tool> plugins = new ArrayList<>();
     /**
-     * Open and closed session of this user. More than one session can be open, i.e. logged from Chrome and Firefox
+     * Open and closed sessions for this user.
+     * More than one session can be open, i.e. logged from Chrome and Firefox
      */
     private List<Session> sessions;
 
-    private Map<String, Object> configs = new HashMap<>();
-
+    private Map<String, Object> configs;
     private Map<String, Object> attributes;
+
     /**
      * Things to think about:
      private List<Credential> credentials = new ArrayList<Credential>();
         private List<Bucket> buckets = new ArrayList<Bucket>();
      */
 
-    public static final String ROLE_ADMIN = "admin";
-    public static final String ROLE_USER = "user";
-    public static final String ROLE_ANONYMOUS = "anonymous";
+    public enum Role {
+        ADMIN,  //= "admin";
+        USER,  //= "user";
+        ANONYMOUS  //= "anonymous";
+    }
 
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, String role, String status) {
+    public User(String id, String name, String email, String password, String organization, Role role, String status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
-               // new ArrayList<Analysis>(),
                 new ArrayList<Tool>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public User(String id, String name, String email, String password, String organization, String role, String status,
-                String lastActivity, long diskUsage, long diskQuota, List<Project> projects,
-                //List<Analysis> analyses,
-                List<Tool> plugins, List<Session> sessions, Map<String, Object> configs,
-                Map<String, Object> attributes) {
+    public User(String id, String name, String email, String password, String organization, Role role, String status,
+                String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
+                List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -73,8 +72,7 @@ public class User {
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;
         this.projects = projects;
-      //  this.analyses = analyses;
-        this.plugins = plugins;
+        this.tools = tools;
         this.sessions = sessions;
         this.configs = configs;
         this.attributes = attributes;
@@ -94,7 +92,7 @@ public class User {
                 ", diskUsage=" + diskUsage +
                 ", diskQuota=" + diskQuota +
                 ", projects=" + projects +
-                ", plugins=" + plugins +
+                ", tools=" + tools +
                 ", sessions=" + sessions +
                 ", configs=" + configs +
                 ", attributes=" + attributes +
@@ -141,11 +139,11 @@ public class User {
         this.organization = organization;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 
@@ -189,12 +187,12 @@ public class User {
         this.projects = projects;
     }
 
-    public List<Tool> getPlugins() {
-        return plugins;
+    public List<Tool> getTools() {
+        return tools;
     }
 
-    public void setPlugins(List<Tool> plugins) {
-        this.plugins = plugins;
+    public void setTools(List<Tool> tools) {
+        this.tools = tools;
     }
 
     public List<Session> getSessions() {
@@ -220,4 +218,5 @@ public class User {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
+
 }

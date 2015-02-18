@@ -2,8 +2,11 @@ package org.opencb.opencga.catalog.beans;
 
 import org.opencb.opencga.lib.common.TimeUtils;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -21,32 +24,61 @@ public class Job {
     private String outputError;
     private String commandLine;
     private int visits;
-    private String status;
+    private Status status;
     private long diskUsage;
 
-    private String outDir;
+    private int outDirId;
+    private URI tmpOutDirUri;
+
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
 
-    /**
-     * To think about:
-     * private Index index;
-     */
+    private List<String> tags;
+    private Map<String, Object> attributes;
 
-    public static final String QUEUED = "queued";
-    public static final String RUNNING = "running";
-    public static final String DONE = "done";
+    private Map<String, Object> resourceManagerAttributes;
+
+    public enum Status {
+       PREPARED, //= "prepared";
+       ERROR, //= "error";     //Job finished with errors
+       QUEUED, //= "queued";
+       RUNNING, //= "running";
+       DONE, //= "done";       //Job finished, but output not ready
+       READY, //= "ready";     //Job finished and ready
+    }
+
+    public enum Type {
+        ANALYSIS, //= "analysis";
+        INDEX    //= "index";
+    }
+
+    /* ResourceManagerAttributes known keys */
+    public static final String TYPE = "type";
+    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
+    public static final String INDEXED_FILE_ID = "indexedFileId";
 
     public Job() {
     }
+
+    @Deprecated
     public Job(String name, String userId, String toolName, String description, String commandLine,
-               String outDir,  List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, QUEUED, 0,
-                outDir, input, new LinkedList<Integer>());
+               List<Integer> input) {
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, Status.PREPARED, 0,
+                -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>());
     }
+
+    public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
+               URI tmpOutDirUri, List<Integer> input) {
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status.PREPARED, 0,
+                outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
+                new HashMap<String, Object>());
+    }
+
     public Job(int id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, int visits, String status,
-               long diskUsage, String outDir, List<Integer> input, List<Integer> output) {
+               long startTime, long endTime, String outputError, String commandLine, int visits, Status status,
+               long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
+               List<Integer> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -60,9 +92,19 @@ public class Job {
         this.visits = visits;
         this.status = status;
         this.diskUsage = diskUsage;
-        this.outDir = outDir;
+        this.outDirId = outDirId;
+//        this.tmpOutDirId = tmpOutDirId;
+        this.tmpOutDirUri = tmpOutDirUri;
+//        this.outDir = outDir;
         this.input = input;
         this.output = output;
+        this.tags = tags;
+        this.attributes = attributes;
+        this.resourceManagerAttributes = resourceManagerAttributes;
+
+        //Initializing attributes maps.
+        this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
+        this.resourceManagerAttributes.put(Job.TYPE, Type.ANALYSIS);
     }
 
     @Override
@@ -71,7 +113,6 @@ public class Job {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", userId='" + userId + '\'' +
-//                ", analysisId=" + analysisId +
                 ", toolName='" + toolName + '\'' +
                 ", date='" + date + '\'' +
                 ", description='" + description + '\'' +
@@ -82,9 +123,13 @@ public class Job {
                 ", visits=" + visits +
                 ", status='" + status + '\'' +
                 ", diskUsage=" + diskUsage +
-                ", outDir='" + outDir + '\'' +
+                ", outDirId=" + outDirId +
+                ", tmpOutDirUri=" + tmpOutDirUri +
                 ", input=" + input +
                 ", output=" + output +
+                ", tags=" + tags +
+                ", attributes=" + attributes +
+                ", resourceManagerAttributes=" + resourceManagerAttributes +
                 '}';
     }
 
@@ -111,14 +156,6 @@ public class Job {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-//
-//    public int getAnalysisId() {
-//        return analysisId;
-//    }
-//
-//    public void setAnalysisId(int analysisId) {
-//        this.analysisId = analysisId;
-//    }
 
     public String getToolName() {
         return toolName;
@@ -184,11 +221,11 @@ public class Job {
         this.visits = visits;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
@@ -200,12 +237,20 @@ public class Job {
         this.diskUsage = diskUsage;
     }
 
-    public String getOutDir() {
-        return outDir;
+    public int getOutDirId() {
+        return outDirId;
     }
 
-    public void setOutDir(String outDir) {
-        this.outDir = outDir;
+    public void setOutDirId(int outDirId) {
+        this.outDirId = outDirId;
+    }
+
+    public URI getTmpOutDirUri() {
+        return tmpOutDirUri;
+    }
+
+    public void setTmpOutDirUri(URI tmpOutDirUri) {
+        this.tmpOutDirUri = tmpOutDirUri;
     }
 
     public List<Integer> getInput() {
@@ -222,5 +267,30 @@ public class Job {
 
     public void setOutput(List<Integer> output) {
         this.output = output;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+
+
+    public Map<String, Object> getResourceManagerAttributes() {
+        return resourceManagerAttributes;
+    }
+
+    public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) {
+        this.resourceManagerAttributes = resourceManagerAttributes;
     }
 }

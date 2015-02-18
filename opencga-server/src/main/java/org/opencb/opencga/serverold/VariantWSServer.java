@@ -8,12 +8,12 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MongoCredentials;
-import org.opencb.opencga.storage.variant.json.VariantSourceEntryJsonMixin;
-import org.opencb.opencga.storage.variant.json.GenotypeJsonMixin;
-import org.opencb.opencga.storage.variant.json.VariantSourceJsonMixin;
-import org.opencb.opencga.storage.variant.json.VariantStatsJsonMixin;
-import org.opencb.opencga.storage.variant.mongodb.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -48,7 +48,7 @@ public class VariantWSServer extends GenericWSServer {
             String pass = properties.getProperty("VARIANT.STORAGE.PASS");
 
             credentials = new MongoCredentials(host, port, db, user, pass);
-            variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials);
+            variantMongoDbAdaptor = new VariantMongoDBAdaptor(credentials, "variants", "files");
 
 
             jsonObjectMapper = new ObjectMapper();
@@ -155,7 +155,7 @@ public class VariantWSServer extends GenericWSServer {
                 if (interval > 0) {
                     queryOptions.put("interval", interval);
                 }
-                return createOkResponse(variantMongoDbAdaptor.getVariantsHistogramByRegion(regions.get(0), queryOptions));
+                return createOkResponse(variantMongoDbAdaptor.getVariantFrequencyByRegion(regions.get(0), queryOptions));
             }
         } else if (regionsSize <= MAX_REGION) {
             List<QueryResult> allVariantsByRegionList = variantMongoDbAdaptor.getAllVariantsByRegionList(regions, queryOptions);

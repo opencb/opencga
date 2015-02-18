@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -73,7 +74,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void deleteFile(URI fileUri) throws IOException {
+    public void deleteFile(URI fileUri) throws IOException {
 
     }
 
@@ -88,17 +89,25 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
+    public void copyFile(URI source, URI destination) { }
+
+    @Override
+    public void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException {
+
+    }
+
+    @Override
     public URI getTmpUri() {
         return null;
     }
 
     @Override
-    public void createFile(String userId, String projectId, String studyId, String filePath, InputStream inputStream) throws CatalogIOManagerException {
+    public void createFile(URI fileUri, InputStream inputStream) throws CatalogIOManagerException {
 
     }
 
     @Override
-    public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId, int start, int limit) throws CatalogIOManagerException, IOException {
+    public DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOManagerException, IOException {
         return null;
     }
 
@@ -106,6 +115,22 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     public DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
         return null;
     }
+
+    @Override
+    public String calculateChecksum(URI file) {
+        return null;
+    }
+
+    @Override
+    public List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException {
+        return null;
+    }
+
+    @Override
+    public long getFileSize(URI file) throws CatalogIOManagerException {
+        return 0;
+    }
+
 
 
 }

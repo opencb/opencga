@@ -13,18 +13,26 @@ public class Study {
     private int id;
     private String name;
     private String alias;
-    private String type;
+    private Type type;
     private String creatorId;
     private String creationDate;
     private String description;
     private String status;
+    private String lastActivity;
     private long diskUsage;
     private String cipher;
 
     private List<Acl> acl;
     private List<Experiment> experiments;
+
     private List<File> files;
-    private List<Analysis> analyses;
+    private List<Job> jobs;
+    private List<Sample> samples;
+
+    private List<Dataset> datasets;
+    private List<Cohort> cohorts;
+
+    private List<VariableSet> variableSets;
 
     private URI uri;
 
@@ -34,24 +42,32 @@ public class Study {
     /**
      * To think about:
         public static final String STUDY_TYPE = "study_type";
-        private List<File> files;
-        private List<Dataset> files;
         private List<Sample> files;
         private List<SampleAnnotationDescription> files;
      */
 
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        FAMILY,
+        TRIO
+    }
+
     public Study() {
     }
 
-    public Study(String name, String alias, String type, String description, String status, URI uri) {
-        this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, 0, "", new ArrayList<Acl>(),
-                new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Analysis>(),
-                uri, new HashMap<String, Object>(), new HashMap<String, Object>());
+    public Study(String name, String alias, Type type, String description, String status, URI uri) {
+        this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
+                new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
+                new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(), uri, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public Study(int id, String name, String alias, String type, String creatorId, String creationDate,
-                 String description, String status, long diskUsage, String cipher, List<Acl> acl,
-                 List<Experiment> experiments, List<File> files, List<Analysis> analyses, URI uri,
+    public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
+                 String description, String status, String lastActivity, long diskUsage, String cipher, List<Acl> acl,
+                 List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
+                 List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -61,12 +77,17 @@ public class Study {
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
+        this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
         this.acl = acl;
         this.experiments = experiments;
         this.files = files;
-        this.analyses = analyses;
+        this.jobs = jobs;
+        this.samples = samples;
+        this.datasets = datasets;
+        this.cohorts = cohorts;
+        this.variableSets = variableSets;
         this.uri = uri;
         this.stats = stats;
         this.attributes = attributes;
@@ -78,17 +99,22 @@ public class Study {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", alias='" + alias + '\'' +
-                ", type='" + type + '\'' +
+                ", type=" + type +
                 ", creatorId='" + creatorId + '\'' +
                 ", creationDate='" + creationDate + '\'' +
                 ", description='" + description + '\'' +
                 ", status='" + status + '\'' +
+                ", lastActivity='" + lastActivity + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", cipher='" + cipher + '\'' +
                 ", acl=" + acl +
                 ", experiments=" + experiments +
                 ", files=" + files +
-                ", analyses=" + analyses +
+                ", jobs=" + jobs +
+                ", samples=" + samples +
+                ", datasets=" + datasets +
+                ", cohorts=" + cohorts +
+                ", variableSets=" + variableSets +
                 ", uri=" + uri +
                 ", stats=" + stats +
                 ", attributes=" + attributes +
@@ -119,11 +145,11 @@ public class Study {
         this.alias = alias;
     }
 
-    public String getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(Type type) {
         this.type = type;
     }
 
@@ -159,6 +185,14 @@ public class Study {
         this.status = status;
     }
 
+    public String getLastActivity() {
+        return lastActivity;
+    }
+
+    public void setLastActivity(String lastActivity) {
+        this.lastActivity = lastActivity;
+    }
+
     public long getDiskUsage() {
         return diskUsage;
     }
@@ -183,14 +217,6 @@ public class Study {
         this.acl = acl;
     }
 
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
-
     public List<Experiment> getExperiments() {
         return experiments;
     }
@@ -205,6 +231,46 @@ public class Study {
 
     public void setFiles(List<File> files) {
         this.files = files;
+    }
+
+    public List<Job> getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(List<Job> jobs) {
+        this.jobs = jobs;
+    }
+
+    public List<Sample> getSamples() {
+        return samples;
+    }
+
+    public void setSamples(List<Sample> samples) {
+        this.samples = samples;
+    }
+
+    public List<Dataset> getDatasets() {
+        return datasets;
+    }
+
+    public void setDatasets(List<Dataset> datasets) {
+        this.datasets = datasets;
+    }
+
+    public List<Cohort> getCohorts() {
+        return cohorts;
+    }
+
+    public void setCohorts(List<Cohort> cohorts) {
+        this.cohorts = cohorts;
+    }
+
+    public List<VariableSet> getVariableSets() {
+        return variableSets;
+    }
+
+    public void setVariableSets(List<VariableSet> variableSets) {
+        this.variableSets = variableSets;
     }
 
     public URI getUri() {
@@ -223,11 +289,11 @@ public class Study {
         this.stats = stats;
     }
 
-    public List<Analysis> getAnalyses() {
-        return analyses;
+    public Map<String, Object> getAttributes() {
+        return attributes;
     }
 
-    public void setAnalyses(List<Analysis> analyses) {
-        this.analyses = analyses;
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -12,27 +11,28 @@ public class Sample {
     private String name;
     private String source;
     private Individual individual;
-    private int studyId;
     private String description;
 
-    private List<SampleAnnotation> sampleAnnotations;
+    private List<AnnotationSet> annotationSets;
+
+    private Map<String, Object> attributes;
 
     public Sample() {
     }
 
-    public Sample(int id, String name, String source, Individual individual, int studyId, String description) {
-        this(id, name, source, individual, studyId, description, new LinkedList<SampleAnnotation>());
+    public Sample(int id, String name, String source, Individual individual, String description) {
+        this(id, name, source, individual, description, new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
     }
 
-    public Sample(int id, String name, String source, Individual individual, int studyId, String description,
-                  List<SampleAnnotation> sampleAnnotations) {
+    public Sample(int id, String name, String source, Individual individual, String description,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individual = individual;
-        this.studyId = studyId;
         this.description = description;
-        this.sampleAnnotations = sampleAnnotations;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
     }
 
     @Override
@@ -42,9 +42,9 @@ public class Sample {
                 ", name='" + name + '\'' +
                 ", source='" + source + '\'' +
                 ", individual=" + individual +
-                ", studyId=" + studyId +
                 ", description='" + description + '\'' +
-                ", sampleAnnotations=" + sampleAnnotations +
+                ", annotationSets=" + annotationSets +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -80,14 +80,6 @@ public class Sample {
         this.individual = individual;
     }
 
-    public int getStudyId() {
-        return studyId;
-    }
-
-    public void setStudyId(int studyId) {
-        this.studyId = studyId;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -96,11 +88,19 @@ public class Sample {
         this.description = description;
     }
 
-    public List<SampleAnnotation> getSampleAnnotations() {
-        return sampleAnnotations;
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
     }
 
-    public void setSampleAnnotations(List<SampleAnnotation> sampleAnnotations) {
-        this.sampleAnnotations = sampleAnnotations;
+    public void setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
     }
 }

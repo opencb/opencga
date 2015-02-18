@@ -12,6 +12,14 @@ public class ConfigAttr {
         this.value = value;
     }
 
+    @Override
+    public String toString() {
+        return "ConfigAttr{" +
+                "name='" + name + '\'' +
+                ", value='" + value + '\'' +
+                '}';
+    }
+
     public String getName() {
         return name;
     }

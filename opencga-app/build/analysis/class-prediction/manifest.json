@@ -1,0 +1,156 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "class-prediction",
+    "name": "class-prediction",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "class-prediction.sh",
+            "inputParams": [
+                {
+                    "name": "dataset",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "test",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "class",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "class-file",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "dataset",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "dataset-arff",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "feature-filter",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "feature-selection",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "folds",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "kfold",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "knn",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "knn-neighbors",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "knn-tune",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "loo",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "random-forest",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "random-forest-trees",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "random-forest-tune",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "repeats",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-filter",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "species",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "svm",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "svm-cost",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "svm-tune",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "test",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "test-arff",
+                    "description": "",
+                    "required": "false"
+                }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}

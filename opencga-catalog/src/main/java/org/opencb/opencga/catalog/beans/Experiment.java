@@ -25,12 +25,14 @@ public class Experiment {
     public Experiment() {
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab, String center, String responsible, String description) {
-        this(id, name, type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<String, Object>());
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,
+                      String lab, String center, String responsible, String description) {
+        this(id, name, type, platform, manufacturer, date, lab, center, responsible,
+                description, new HashMap<String, Object>());
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab, String center,
-                      String responsible, String description, Map<String, Object> attributes) {
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,
+                      String lab, String center, String responsible, String description, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;

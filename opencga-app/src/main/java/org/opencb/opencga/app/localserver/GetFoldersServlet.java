@@ -1,7 +1,5 @@
 package org.opencb.opencga.app.localserver;
 
-import org.opencb.opencga.app.cli.OpenCGAMain;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;

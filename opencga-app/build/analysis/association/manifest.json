@@ -1,0 +1,81 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "association",
+    "name": "association",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "association.sh",
+            "inputParams": [
+                {
+                    "name": "zip-file",
+                    "dataType": "txt"
+                },
+                {
+                    "name": "map-file",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "maf",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "map-file",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "ped-file",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "plink",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "pvalue-cutoff",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "species",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "test",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "zip-file",
+                    "description": "",
+                    "required": "false"
+                }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}

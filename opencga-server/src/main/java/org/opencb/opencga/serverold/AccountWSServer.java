@@ -151,7 +151,7 @@ public class AccountWSServer extends GenericWSServer {
     // Session session = new Session(IPaddr);
     //
     // try {
-    // userManager.createUser(accountId,password,accountName,email,session);
+    // userManager.insertUser(accountId,password,accountName,email,session);
     // } catch (AccountManagementException e) {
     // return createErrorResponse(e.toString());
     // }

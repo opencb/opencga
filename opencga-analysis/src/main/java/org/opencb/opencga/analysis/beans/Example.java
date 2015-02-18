@@ -16,6 +16,15 @@ public class Example {
         this.options = options;
     }
 
+    @Override
+    public String toString() {
+        return "Example{" +
+                "name='" + name + '\'' +
+                ", executionId='" + executionId + '\'' +
+                ", options=" + options +
+                '}';
+    }
+
     public String getName() {
         return name;
     }

@@ -2,7 +2,6 @@ package org.opencb.opencga.account.db;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.cellbase.core.lib.dbquery.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 

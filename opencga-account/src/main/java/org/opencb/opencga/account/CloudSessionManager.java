@@ -3,6 +3,7 @@ package org.opencb.opencga.account;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.opencga.account.beans.*;
 import org.opencb.opencga.account.db.AccountFileManager;
@@ -14,8 +15,6 @@ import org.opencb.opencga.account.io.IOManagementException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
 import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.storage.datamanagers.VcfManager;
-import org.opencb.opencga.storage.datamanagers.bam.BamManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +25,9 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.regex.Pattern;
-import org.opencb.biodata.models.feature.Region;
 
-import org.opencb.commons.containers.QueryResult;
-import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.SqliteCredentials;
-import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
-import org.opencb.opencga.storage.alignment.TabixAlignmentQueryBuilder;
+//import org.opencb.opencga.storage.datamanagers.VcfManager;
+//import org.opencb.opencga.storage.datamanagers.bam.BamManager;
 
 public class CloudSessionManager {
 
@@ -466,38 +461,39 @@ public class CloudSessionManager {
 //    }
 
     public QueryResult fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-        AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
-        Region region = Region.parseRegion(regionStr);
-        QueryOptions options = new QueryOptions(params, true);
         QueryResult queryResult = null;
-
-        boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
-        boolean includeAlignments = params.containsKey("alignments") && Boolean.parseBoolean(params.get("alignments").get(0));
-        boolean includeCoverage = params.containsKey("coverage") && Boolean.parseBoolean(params.get("coverage").get(0));
-
-        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap> 
-            queryResult = queryBuilder.getAlignmentsHistogramByRegion(region,
-                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
-                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-
-        } else if ((includeAlignments && includeCoverage) ||
-                (!includeAlignments && !includeCoverage)) { // If both or none requested: QueryResult<AlignmentRegion>
-            queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
-
-        } else if (includeAlignments) { // Query the alignments themselves: QueryResult<Alignment> 
-            queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
-
-        } else if (includeCoverage) { // Query the alignments' coverage: QueryResult<RegionCoverage>
-            queryResult = queryBuilder.getCoverageByRegion(region, options);
-        }
+//        AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
+//        Region region = Region.parseRegion(regionStr);
+//        QueryOptions options = new QueryOptions(params, true);
+//
+//        boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
+//        boolean includeAlignments = params.containsKey("alignments") && Boolean.parseBoolean(params.get("alignments").get(0));
+//        boolean includeCoverage = params.containsKey("coverage") && Boolean.parseBoolean(params.get("coverage").get(0));
+//
+//        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap>
+//            queryResult = queryBuilder.getAlignmentsHistogramByRegion(region,
+//                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
+//                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
+//
+//        } else if ((includeAlignments && includeCoverage) ||
+//                (!includeAlignments && !includeCoverage)) { // If both or none requested: QueryResult<AlignmentRegion>
+//            queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
+//
+//        } else if (includeAlignments) { // Query the alignments themselves: QueryResult<Alignment>
+//            queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
+//
+//        } else if (includeCoverage) { // Query the alignments' coverage: QueryResult<RegionCoverage>
+//            queryResult = queryBuilder.getCoverageByRegion(region, options);
+//        }
 
         return queryResult;
     }
 
     
     public String fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-        VcfManager vcfManager = new VcfManager();
-        return vcfManager.getByRegion(objectPath, regionStr, params);
+//        VcfManager vcfManager = new VcfManager();
+//        return vcfManager.getByRegion(objectPath, regionStr, params);
+        return "";
     }
   
 /*    
@@ -522,7 +518,7 @@ public class CloudSessionManager {
 
         if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap> 
             // TODO
-            queryResult = queryBuilder.getVariantsHistogramByRegion(region, studyName,
+            queryResult = queryBuilder.getVariantFrequencyByRegion(region, studyName,
                     params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
                     params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
 
@@ -548,18 +544,18 @@ public class CloudSessionManager {
         boolean indexReady;
         switch (objectItem.getFileFormat()) {
             case "bam":
-                indexReady = BamManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
-                if (force || !indexReady) {
-                    sgeJobName = BamManager.createIndex(getObjectPath(accountId, bucketId, objectId));
-                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
-                }
+//                indexReady = BamManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
+//                if (force || !indexReady) {
+//                    sgeJobName = BamManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+//                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
+//                }
                 break;
             case "vcf":
-                indexReady = VcfManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
-                if (force || !indexReady) {
-                    sgeJobName = VcfManager.createIndex(getObjectPath(accountId, bucketId, objectId));
-                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
-                }
+//                indexReady = VcfManager.checkIndex(ioManager.getObjectPath(accountId, bucketId, objectId));
+//                if (force || !indexReady) {
+//                    sgeJobName = VcfManager.createIndex(getObjectPath(accountId, bucketId, objectId));
+//                    accountManager.setObjectStatus(accountId, bucketId, objectId, sgeJobName, sessionId);
+//                }
                 break;
         }
 

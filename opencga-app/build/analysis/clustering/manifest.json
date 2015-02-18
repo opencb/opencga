@@ -1,0 +1,87 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "clustering",
+    "name": "clustering",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "clustering.sh",
+            "inputParams": [
+                {
+                    "name": "dataset",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "dataset",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "distance",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "feature-filter",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "gene-clustering",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "gene-kvalue",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "method",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-clustering",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-filter",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "sample-kvalue",
+                    "description": "",
+                    "required": "false"
+                },
+                {
+                    "name": "species",
+                    "description": "",
+                    "required": "false"
+                }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}

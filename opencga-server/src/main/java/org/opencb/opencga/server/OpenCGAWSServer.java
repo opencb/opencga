@@ -1,19 +1,27 @@
 package org.opencb.opencga.server;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.db.CatalogManagerException;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +52,7 @@ public class OpenCGAWSServer {
 
     // Common input arguments
     protected MultivaluedMap<String, String> params;
-    protected QueryOptions queryOptions;
+    private QueryOptions queryOptions;
     protected QueryResponse queryResponse;
 
     // Common output members
@@ -84,26 +92,46 @@ public class OpenCGAWSServer {
         try {
             properties.load(is);
             System.out.println("catalog.properties");
-            System.out.println(properties.getProperty("CATALOG.HOST"));
-            System.out.println(properties.getProperty("CATALOG.PORT"));
-            System.out.println(properties.getProperty("CATALOG.DATABASE"));
-            System.out.println(properties.getProperty("CATALOG.USER"));
-            System.out.println(properties.getProperty("CATALOG.PASSWORD"));
-            System.out.println(properties.getProperty("ROOTDIR"));
+            System.out.println(CatalogManager.CATALOG_DB_HOST + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOST));
+            System.out.println(CatalogManager.CATALOG_DB_PORT + " " + properties.getProperty(CatalogManager.CATALOG_DB_PORT));
+            System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+            System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
+            System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));
+            System.out.println(CatalogManager.CATALOG_MAIN_ROOTDIR + " " + properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+
         } catch (IOException e) {
             System.out.println("Error loading properties");
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+//        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
+//        properties = new Properties();
+//        try {
+//            properties.load(is);
+//        } catch (IOException e) {
+//            System.out.println("Error loading properties");
+//            System.out.println(e.getMessage());
+//            e.printStackTrace();
+//        }
+//        Config.setGcsaHome(properties.getProperty("OPENCGA.INSTALLATION.DIR"));    //TODO: Check instalation dir.
+//        properties = Config.getCatalogProperties();
 
         try {
             catalogManager = new CatalogManager(properties);
-        } catch (IOException | CatalogIOManagerException | CatalogManagerException | IllegalOpenCGACredentialsException e) {
+        } catch (IOException | CatalogIOManagerException | CatalogDBException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
 
         jsonObjectMapper = new ObjectMapper();
+
+        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         jsonObjectWriter = jsonObjectMapper.writer();
 
     }
@@ -112,16 +140,25 @@ public class OpenCGAWSServer {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
+        this.params = uriInfo.getQueryParameters();
         logger.debug(uriInfo.getRequestUri().toString());
-
-        this.queryOptions = new QueryOptions();
-        queryOptions.put("exclude", exclude);
-        queryOptions.put("include", include);
-        queryOptions.put("metadata", metadata);
-
+        this.queryOptions = null;
         this.sessionIp = httpServletRequest.getRemoteAddr();
     }
 
+    protected QueryOptions getQueryOptions() {
+        if(queryOptions == null) {
+            this.queryOptions = new QueryOptions();
+            if(!exclude.isEmpty()) {
+                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
+            }
+            if(!include.isEmpty()) {
+                queryOptions.put("include", Arrays.asList(include.split(",")));
+            }
+            queryOptions.put("metadata", metadata);
+        }
+        return queryOptions;
+    }
 
     protected Response createErrorResponse(Object o) {
         QueryResult<ObjectMap> result = new QueryResult();
@@ -134,7 +171,7 @@ public class OpenCGAWSServer {
         endTime = System.currentTimeMillis() - startTime;
         queryResponse.setTime(new Long(endTime - startTime).intValue());
         queryResponse.setApiVersion(version);
-        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setQueryOptions(getQueryOptions());
 
         // Guarantee that the QueryResponse object contains a coll of results
         Collection coll;
@@ -162,6 +199,11 @@ public class OpenCGAWSServer {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(object), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
+            System.out.println("object = " + object);
+            System.out.println("((QueryResponse)object).getResponse() = " + ((QueryResponse) object).getResponse());
+
+            System.out.println("e = " + e);
+            System.out.println("e.getMessage() = " + e.getMessage());
             return createErrorResponse("Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }

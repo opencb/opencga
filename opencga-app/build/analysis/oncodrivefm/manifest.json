@@ -1,0 +1,57 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "oncodrivefm",
+    "name": "oncodrivefm",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "custom_oncodrivefm.sh ",
+            "inputParams": [
+                {
+                    "name": "vcf",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "vcf",
+                    "description": "Input variants",
+                    "required": "true"
+                },
+                {
+                    "name": "gver",
+                    "description": "Human genome release",
+                    "required": "false"
+                },
+                {
+                    "name": "estimator",
+                    "description": "Global score estimator",
+                    "required": "false"
+                },
+		{
+                    "name": "gt",
+                    "description": "",
+                    "required": "false"
+                }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}

@@ -1,0 +1,52 @@
+{
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "version": "1.0",
+    "id": "oncodriveclust",
+    "name": "oncodriveclust",
+    "description": "",
+    "icon": {
+        "size": "",
+        "data": ""
+    },
+    "website": "http://",
+    "publication": "",
+    "globalParams": [],
+    "executions": [
+        {
+            "id": "default",
+            "name": "default",
+            "executable": "custom_oncodriveclust.sh ",
+            "inputParams": [
+                {
+                    "name": "vcf",
+                    "dataType": "txt"
+                }
+            ],
+            "outputParam": "outdir",
+            "validParams": [
+                {
+                    "name": "vcf",
+                    "description": "Input variants",
+                    "required": "true"
+                },
+                {
+                    "name": "gver",
+                    "description": "Human genome release",
+                    "required": "false"
+                },
+		{
+	            "name": "gt",
+	            "description": "",
+	            "required": "false"
+	        }
+            ],
+            "configAttr": [],
+            "testCmd": ""
+        }
+    ],
+    "examples": [],
+    "acl": []
+}
