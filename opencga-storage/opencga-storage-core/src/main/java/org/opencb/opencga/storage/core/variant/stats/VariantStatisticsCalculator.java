@@ -5,8 +5,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by jmmut on 28/01/15.
@@ -26,7 +25,32 @@ public class VariantStatisticsCalculator {
         this.skippedFiles = skippedFiles;
     }
 
-    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, VariantSource variantSource) {
+    /**
+     * Creates another map with the intersection of the parameters.
+     * @param allSamples Map that contains the values we want a subset of
+     * @param samplesToKeep set of names of samples
+     * @return variant with just the samples in 'samplesToKeep'
+     */
+    public <T> Map<String, T> filterSamples(Map<String, T> allSamples, Set<String> samplesToKeep) {
+        Map<String, T> filtered = new HashMap<>();
+        if (samplesToKeep != null) {
+            for (String sampleName : allSamples.keySet()) {
+                if (samplesToKeep.contains(sampleName)) {
+                    filtered.put(sampleName, allSamples.get(sampleName));
+                }
+            }
+        }
+        return filtered;
+    }
+
+    /**
+     * computes the VariantStats for each subset of samples.
+     * @param variants
+     * @param variantSource needed to choose the VariantSourceEntry in the variants
+     * @param samples keys are cohort names, values are sets of samples names. groups of samples (cohorts) for each to compute VariantStats.
+     * @return list of VariantStatsWrapper. may be shorter than the list of variants if there is no source for some variant
+     */
+    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, VariantSource variantSource, Map<String, Set<String>> samples) {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
 
         for (Variant variant : variants) {
@@ -35,9 +59,13 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
-            VariantStats variantStats = new VariantStats(variant);
-            file.setStats(variantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
-            variantStatsWrappers.add(new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), variantStats));
+            for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
+                VariantStats variantStats = new VariantStats(variant);
+
+                Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
+                file.getCohortStats().put(cohort.getKey(), variantStats.calculate(samplesData, file.getAttributes(), null));
+            }
+            variantStatsWrappers.add(new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
         }
         return variantStatsWrappers;
     }

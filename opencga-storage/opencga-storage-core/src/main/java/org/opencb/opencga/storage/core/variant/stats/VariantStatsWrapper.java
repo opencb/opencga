@@ -2,24 +2,26 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
+import java.util.Map;
+
 /**
  * Class to link a VariantStats with its variant, using just the chromosome and the position.
  */
 public class VariantStatsWrapper {
     private String chromosome;
     private int position;
-    private VariantStats variantStats;
+    private Map<String, VariantStats> cohortStats;
 
     public VariantStatsWrapper() {
         this.chromosome = null;
         this.position = -1;
-        this.variantStats = null;
+        this.cohortStats = null;
     }
 
-    public VariantStatsWrapper(String chromosome, int position, VariantStats variantStats) {
+    public VariantStatsWrapper(String chromosome, int position, Map<String, VariantStats> cohortStats) {
         this.chromosome = chromosome;
         this.position = position;
-        this.variantStats = variantStats;
+        this.cohortStats = cohortStats;
     }
 
     public String getChromosome() {
@@ -38,11 +40,11 @@ public class VariantStatsWrapper {
         this.position = position;
     }
 
-    public VariantStats getVariantStats() {
-        return variantStats;
+    public Map<String, VariantStats> getCohortStats() {
+        return cohortStats;
     }
 
-    public void setVariantStats(VariantStats variantStats) {
-        this.variantStats = variantStats;
+    public void setCohortStats(Map<String, VariantStats> cohortStats) {
+        this.cohortStats = cohortStats;
     }
 }

@@ -11,7 +11,6 @@ import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
-import org.opencb.biodata.tools.variant.tasks.VariantStatsTask;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
@@ -24,8 +23,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatsManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,9 +236,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             // TODO add filters
             logger.debug("about to calculate stats");
             String dbName = params.getString(DB_NAME, "defaultDatabase");
-            VariantStatsManager variantStatsManager = new VariantStatsManager();
-            URI statsUri = variantStatsManager.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), null, new QueryOptions(params));
-            variantStatsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
+            VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+            URI statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), null, new QueryOptions(params));
+            variantStatisticsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
         return input;

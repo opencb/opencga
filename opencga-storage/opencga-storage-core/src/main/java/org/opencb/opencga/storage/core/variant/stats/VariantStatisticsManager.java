@@ -28,16 +28,16 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Created by jmmut on 12/02/15.
  */
-public class VariantStatsManager {
+public class VariantStatisticsManager {
 
-    private static final String BATCH_SIZE = "batchSize";
+    public static final String BATCH_SIZE = "batchSize";
     private String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
     private String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
     private final JsonFactory jsonFactory;
     private ObjectMapper jsonObjectMapper;
     protected static Logger logger = LoggerFactory.getLogger(VariantStatisticsCalculator.class);
 
-    public VariantStatsManager() {
+    public VariantStatisticsManager() {
         jsonFactory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(jsonFactory);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
@@ -45,14 +45,16 @@ public class VariantStatsManager {
 
     /**
      * retrieves batches of Variants, delegates to obtain VariantStatsWrappers from those Variants, and writes them to the output URI.
+     *
      * @param variantDBAdaptor to obtain the Variants
      * @param output where to write the VariantStats
+     * @param samples cohorts (subsets) of the samples. key: cohort name, value: list of sample names.
      * @param options filters to the query, batch size, number of threads to use...
      *
-     * @return outputUri prefix for the filename (without the "._type_.stats.json.gz")
+     * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
      * @throws IOException
      */
-    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Set<String> samples, QueryOptions options) throws IOException {
+    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> samples, QueryOptions options) throws IOException {
 
         /** Open output streams **/
         Path fileVariantsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
@@ -75,7 +77,7 @@ public class VariantStatsManager {
         VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(variantSource.getFileId(), variantSource.getStudyId());
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
-
+        boolean subsetStats = (samples != null && !samples.isEmpty());
 
         logger.info("starting stats calculation");
         long start = System.currentTimeMillis();
@@ -83,28 +85,34 @@ public class VariantStatsManager {
         Iterator<Variant> iterator = obtainIterator(variantDBAdaptor, options);
         while(iterator.hasNext()) {
             Variant variant = iterator.next();
-            variantBatch.add(filterSample(variant, samples));
+            variantBatch.add(variant);
+//            variantBatch.add(filterSample(variant, samples));
 
             if (variantBatch.size() == batchSize) {
-                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource);
+                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
 
                 for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                     outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
                 }
 
-                variantSourceStats.updateFileStats(variantBatch);
-                variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
+                if (subsetStats) {  // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
+                    variantSourceStats.updateFileStats(variantBatch);
+                    variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
+                }
             }
         }
         if (variantBatch.size() != 0) {
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
 
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
             }
 
-            variantSourceStats.updateFileStats(variantBatch);
-            variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
+
+            if (subsetStats) {
+                variantSourceStats.updateFileStats(variantBatch);
+                variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
+            }
         }
         logger.info("finishing stats calculation, time: {}ms", System.currentTimeMillis() - start);
         if (variantStatisticsCalculator.getSkippedFiles() != 0) {

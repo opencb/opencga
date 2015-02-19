@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
@@ -453,7 +452,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
-            variantStats = wrapper.getVariantStats();
+            Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
+            variantStats = cohortStats.get("all");
             String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                     variantStats.getRefAllele(), variantStats.getAltAllele());
             variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
@@ -468,7 +468,31 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             builder.find(find).updateOne(update);
         }
+        /*
 
+        DBObject find = new BasicDBObject("_id", id)
+                .append(
+                        DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
+                        , variantSource.getStudyId());
+
+//            DBObject pull = new BasicDBObject("$pull", new BasicDBObject(
+//                    DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
+//                    , new BasicDBObject("all", statsConverter.convertToStorageType(variantStats))));
+
+
+        BasicDBList cohorts = new BasicDBList();
+        for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
+            DBObject variantStatsDBObject = statsConverter.convertToStorageType(variantStats).;
+            variantStatsDBObject.
+                    cohorts.add(new BasicDBObject())
+        }
+        DBObject update = new BasicDBObject("$set", new BasicDBObject(
+                DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
+                , new BasicDBObject(new BasicDBObject(DBObjectToVariantStatsConverter.COHORT_ID, cohortName), )));
+
+        builder.find(find).updateOne(update);
+    }
+*/
         // TODO handle if the variant didn't had that studyId in the files array
         // TODO check the substitution is done right if the stats are already present
         BulkWriteResult writeResult = builder.execute();

@@ -3,11 +3,13 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
@@ -151,7 +153,16 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Statistics
         if (statsConverter != null && object.containsField(STATS_FIELD)) {
-            file.setStats(statsConverter.convertToDataModelType((DBObject) object.get(STATS_FIELD)));
+            Map<String, VariantStats> cohortStats = new LinkedHashMap<>();
+            DBObject stats = (DBObject) object.get(STATS_FIELD);
+            if (stats instanceof List) {
+                List<DBObject> cohortStatsList = ((List) stats);
+                for (DBObject vs : cohortStatsList) {
+                    VariantStats variantStats = statsConverter.convertToDataModelType(vs);
+                    cohortStats.put((String) vs.get(DBObjectToVariantStatsConverter.COHORT_ID), variantStats);
+                    file.setCohortStats(cohortStats);
+                }
+            }
         }
         return file;
     }
@@ -200,8 +211,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
         
         // Statistics
-        if (statsConverter != null && object.getStats() != null) {
-            mongoFile.put(STATS_FIELD, statsConverter.convertToStorageType(object.getStats()));
+        if (statsConverter != null && object.getCohortStats() != null) {
+            mongoFile.put(STATS_FIELD, statsConverter.convertToStorageType(object.getCohortStats()));
         }
         
         return mongoFile;

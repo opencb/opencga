@@ -28,11 +28,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatsManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.SimpleLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -800,11 +798,12 @@ public class OpenCGAStorageMain {
         queryOptions.put(VariantStorageManager.VARIANT_SOURCE, new VariantSource(null, c.fileId, c.studyId, null));
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
 
-        List<String> sampleNames = new LinkedList<>();
+        Set<String> sampleNames = new LinkedHashSet<>(5);   // FIXME replace with actual catalog values!
         sampleNames.add("C973");
         sampleNames.add("C974");
-        Set<String> samples = new HashSet<>(sampleNames); // currently, do not filter samples. in the future: new HashSet<>();
-//        Set<String> samples = null; // currently, do not filter samples. in the future: new HashSet<>();
+        Map<String, Set<String>> samples = new LinkedHashMap<>(sampleNames.size());
+        samples.put("cohort1", sampleNames);
+
         /**
          * Create DBAdaptor
          */
@@ -827,17 +826,17 @@ public class OpenCGAStorageMain {
 
         URI outputUri = new URI(null, c.outdir + (!c.outdir.isEmpty() && !c.outdir.endsWith("/")? "/": ""), null);
         assertDirectoryExists(outputUri);
-        VariantStatsManager variantStatsManager = new VariantStatsManager();
+        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
         try {
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
             }
 
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
-                variantStatsManager.loadStats(dbAdaptor, outputUri, queryOptions);
+                variantStatisticsManager.loadStats(dbAdaptor, outputUri, queryOptions);
             }
         } catch (IOException e) {   // file not found?
             logger.error(e.getMessage());
