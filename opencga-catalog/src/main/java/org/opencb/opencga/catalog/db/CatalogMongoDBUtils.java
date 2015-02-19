@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -18,15 +19,16 @@ class CatalogMongoDBUtils {
     }
 
     static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection){
-        QueryResult<DBObject> result = metaCollection.findAndModify(
+        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
                 new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
                 new BasicDBObject(field, true),  //Fields
                 null,
                 new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
                 new QueryOptions("returnNew", true),
-                null
+                BasicDBObject.class
         );
-        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
+//        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
+        return result.getResult().get(0).getInt(field);
     }
 
     static void checkUserExist(String userId, boolean exists, MongoDBCollection UserMongoDBCollection) throws CatalogDBException {

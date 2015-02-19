@@ -127,7 +127,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         if (object.containsField(ATTRIBUTES_FIELD)) {
             file.setAttributes(((DBObject) object.get(ATTRIBUTES_FIELD)).toMap());
             // Unzip the "src" field, if available
-            if (includeSrc && ((DBObject) object.get(ATTRIBUTES_FIELD)).containsField("src")) {
+            if (((DBObject) object.get(ATTRIBUTES_FIELD)).containsField("src")) {
                 byte[] o = (byte[]) ((DBObject) object.get(ATTRIBUTES_FIELD)).get("src");
                 try {
                     file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));

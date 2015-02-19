@@ -77,7 +77,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject projection = parseProjectionQueryOptions(options);
         logger.debug("Query to be executed {}", qb.get().toString());
 
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
 
@@ -102,7 +102,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("Query to be executed {}", qb.get().toString());
 
 //        return coll.find(query, options, variantConverter);
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         options.add("sort", new BasicDBObject("chr", 1).append("start", 1));
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             getRegionFilter(regionList, qb);
             parseQueryOptions(options, qb);
             DBObject projection = parseProjectionQueryOptions(options);
-            allResults.add(coll.find(qb.get(), options, variantConverter, projection));
+            allResults.add(coll.find(qb.get(), projection, variantConverter, options));
         } else {
             for (Region r : regionList) {
                 QueryResult queryResult = getAllVariantsByRegion(r, options);
@@ -170,7 +170,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.debug("Query to be executed {}", qb.get().toString());
 
-        return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
+        return coll.aggregate(/*"$variantsRegionStudies", */Arrays.asList(match, unwind, match2), options);
     }
 
     @Override
@@ -243,7 +243,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        System.out.println(sort.toString());
 
         long dbTimeStart = System.currentTimeMillis();
-        QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
+        QueryResult output = coll.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
         long dbTimeEnd = System.currentTimeMillis();
 
         Map<Long, DBObject> ids = new HashMap<>();
@@ -297,7 +297,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryBuilder qb = QueryBuilder.start("_at.gn").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
 
@@ -331,7 +331,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", (options != null) ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", (options != null) ? options.getInt("limit", 10) : 10);
 
-        return coll.aggregate("$field", Arrays.asList(match, project, unwind, group, sort, limit), options);
+        return coll.aggregate(/*"$field", */Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
     @Override
@@ -362,7 +362,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", numGenes);
 
-        return coll.aggregate("$effects.geneName", Arrays.asList(match, project, unwind, group, sort, limit), options);
+        return coll.aggregate(/*"$effects.geneName", */Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
 
@@ -389,7 +389,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", numConsequenceTypes);
 
-        return coll.aggregate("$effects.so", Arrays.asList(match, project, unwind, group, sort, limit), options);
+        return coll.aggregate(/*"$effects.so", */Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
     @Override
