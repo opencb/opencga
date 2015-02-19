@@ -6,12 +6,15 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Executors;
 
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -39,12 +42,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_THREADS             = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.THREADS";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
     //StorageEngine specific params
     public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
+    public static final String LOAD_THREADS = "loadThreads";
     public static final String BULK_SIZE = "bulkSize";
     public static final String INCLUDE_SRC = "includeSrc";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
@@ -121,7 +126,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100")));
         int bulkSize = params.getInt(BULK_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE, "" + batchSize)));
-        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
+        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "1")));
+        int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_THREADS, "1")));
+
+        if (loadThreads == 1) {
+            numWriters = 1;     //Only 1 writer for the single thread execution
+        }
 
         //Reader
         VariantReader variantJsonReader;
@@ -132,6 +142,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
 
         //Writers
+        List<VariantWriter> writers = new LinkedList<>();
         List<DataWriter<Variant>> writerList = new LinkedList<>();
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
@@ -142,21 +153,29 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.setCompressSamples(compressSamples);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
             writerList.add(variantDBWriter);
+            writers.add(variantDBWriter);
         }
 
-        //Runner
-//        VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
-        Runner<Variant> r = new ThreadRunner<>(
-                variantJsonReader,
-                Collections.<List<DataWriter<Variant>>>singleton(writerList),
-                Collections.<List<Task<Variant>>>emptyList(),
-                batchSize,
-                new Variant());
+
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
-//        vr.run();
-        r.run();
+
+        //Runner
+        if (loadThreads == 1) {
+            logger.info("Single thread load...");
+            VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
+            vr.run();
+        } else {
+            logger.info("Multi thread load...");
+            ThreadRunner runner = new ThreadRunner(Executors.newFixedThreadPool(loadThreads), batchSize);
+            ThreadRunner.ReadNode<Variant> variantReadNode = runner.newReaderNode(variantJsonReader, 1);
+            ThreadRunner.WriterNode<Variant> variantWriterNode = runner.newWriterNode(writerList);
+
+            variantReadNode.append(variantWriterNode);
+            runner.run();
+        }
+
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants loaded!");

@@ -369,10 +369,10 @@ public class OptionsParser {
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
-        @Parameter(names = {"--transform"}, description = "Do only the transform phase")
+        @Parameter(names = {"--transform"}, description = "Run only the transform phase")
         boolean transform = false; // stop before load
 
-        @Parameter(names = {"--load"}, description = "Do only the load phase")
+        @Parameter(names = {"--load"}, description = "Run only the load phase")
         boolean load = false; // skip transform
 
         @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
@@ -399,10 +399,10 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     class CommandIndexAlignments extends CommandIndex {
 
-        @Parameter(names = "--transform", description = "Do only the transform phase")
+        @Parameter(names = "--transform", description = "Run only the transform phase")
         boolean transform = false;
 
-        @Parameter(names = "--load", description = "Do only the load phase")
+        @Parameter(names = "--load", description = "Run only the load phase")
         boolean load = false;
 
         @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
@@ -527,7 +527,7 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-f", "--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
         String fileName = "";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
@@ -539,9 +539,9 @@ public class OptionsParser {
         @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
         String assembly = "GRc37";
 
-        @Parameter(names = {"--create"}, description = "Do only the creation of the annotations to a file (specified by --output-filename)")
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         boolean create = false;
-        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
+        @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         String load = null;
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
@@ -628,7 +628,7 @@ public class OptionsParser {
 
     }
 
-    @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load annotations into a database.")
+    @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
     class CommandStatsVariants extends Command {
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
@@ -637,7 +637,7 @@ public class OptionsParser {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         String studyId;
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         String fileId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
@@ -646,14 +646,14 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-f", "--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
         String fileName = "";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
         String outdir = ".";
-        @Parameter(names = {"--create"}, description = "Do only the creation of the annotations to a file (specified by --output-filename)")
+        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
         boolean create = false;
-        @Parameter(names = {"--load"}, description = "Do only the load of the annotations into the DB from FILE")
+        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
         String load = null;
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)

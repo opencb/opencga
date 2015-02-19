@@ -1,340 +1,419 @@
 package org.opencb.opencga.storage.core;
 
-import org.opencb.commons.io.DataReader;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.Runner;
-import org.opencb.commons.run.Task;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+        import com.fasterxml.jackson.core.JsonParseException;
+        import org.opencb.commons.io.DataReader;
+        import org.opencb.commons.io.DataWriter;
+        import org.opencb.commons.run.Task;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+        import java.io.IOException;
+        import java.util.*;
+        import java.util.concurrent.*;
 
 /**
  * Created by jacobo on 5/02/15.
  */
-public class ThreadRunner<T> extends Runner<T> {
-    private ExecutorService executor;
-    private T lastElement;
-    private Logger logger = LoggerFactory.getLogger(ThreadRunner.class);
-    private final int numWriters;
-    private final int numReaders;
-    private final int numTasks;
-    private List<BlockingQueue<T>> writersQueues;
-//    private List<DataWriter<T>> writers;
-    private final List<List<Task<T>>> tasksList;
-    private final Set<List<DataWriter<T>>> writersSet;
-    private List<BlockingQueue<T>> taskQueues;
-    private final List<Future<?>> futures;
+public class ThreadRunner {
+    private ExecutorService executorService;
 
-    public ThreadRunner(DataReader<T> reader,
-                                              Set<List<DataWriter<T>>> writersSet,
-                                              List<List<Task<T>>> taskList,
-                                              int batchSize, T lastElement) {
-        super(reader, null, null, batchSize);
-        this.writersSet = writersSet;
-        this.tasksList = taskList;
-        this.writers = new LinkedList<>();
-        this.futures = new LinkedList<>();
+    private List<ReadNode> readNodes = new LinkedList<>();
+    private List<Node> taskNodes = new LinkedList<>();
+    private List<WriterNode> writerNodes = new LinkedList<>();
+    private List<Node> nodes = new LinkedList<>();
+    private final int batchSize;
 
-        int w = 0;
-        for (List<? extends DataWriter<T>> dataWriters : this.writersSet) {
-            w+=dataWriters.size();
-        }
-        int t = 0;
-        for (List<? extends Task<T>> tasks : taskList) {
-            t += tasks.size();
-        }
+    private final Object syncObject = new Object();
+    private static final List<Object> SINGLETON_LIST = Collections.singletonList(new Object());
+    private static final List LAST_BATCH = new LinkedList();
 
-        numTasks = t;
-        numWriters = w;
-        numReaders = 1;
-        this.lastElement = lastElement;
-
+    public ThreadRunner(ExecutorService executorService, int batchSize) {
+        this.executorService = executorService;
+        this.batchSize = batchSize;
     }
 
-    private void setQueues() throws IOException {
-        executor = Executors.newFixedThreadPool(numReaders + numWriters + numTasks);
-
-        List<BlockingQueue<T>> lastQueues;
-
-        writersQueues = new ArrayList<BlockingQueue<T>>(writersSet.size());
-        for (List<? extends DataWriter<T>> dataWriters : writersSet) {
-            BlockingQueue queue = new ArrayBlockingQueue(batchSize * dataWriters.size() * 2);
-            writersQueues.add(queue);
-            for (DataWriter<T> dataWriter : dataWriters) {
-                futures.add(executor.submit(new Writer(queue, dataWriter)));
-            }
-        }
-        lastQueues = writersQueues;
-
-        taskQueues = new ArrayList<>(tasksList.size());
-        for (int i = tasksList.size() - 1; i >= 0; i--) {
-            List<? extends Task<T>> tasks = tasksList.get(i);
-
-            BlockingQueue<T> queue = new ArrayBlockingQueue(batchSize * tasks.size() * 2);
-            taskQueues.add(queue);
-            ThreadConfig config = new ThreadConfig(lastQueues, queue, tasks.size());
-            for (Task<T> task : tasks) {
-//                executor.execute(new TaskRunner(queue, task, lastQueues));
-                futures.add(executor.submit(new TaskRunner(task, config)));
-            }
-            lastQueues = Collections.singletonList(queue);
-        }
-
-        for (int i = 0; i < numReaders; i++) {
-            executor.execute(new Reader(lastQueues, reader));
-        }
+    public <I,O> TaskNode<I,O> newTaskNode(List<Task<I,O>> tasks) {
+        TaskNode<I, O> taskNode = new TaskNode<>(tasks, "task-node-" + taskNodes.size());
+        taskNodes.add(taskNode);
+        return taskNode;
     }
 
-    @Override
-    public void run() throws IOException {
-
-        this.readerInit();
-        this.writerInit();
-        this.launchPre();
-
-        setQueues();
-//
-//        for (Future<?> future : futures) {
-//            Object o = future.get();
-//        }
-        setQueues();
-        executor.shutdown();
-        try {
-            executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            logger.error("ThreadRunner interrupted");
-            e.printStackTrace();
+    public <T> SimpleTaskNode<T> newSimpleTaskNode(org.opencb.commons.run.Task<T> task, int n) {
+        List<org.opencb.commons.run.Task<T>> tasks = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            tasks.add(task);
         }
-//        executor.shutdown();
-
-        this.launchPost();
-
-        this.readerClose();
-        this.writerClose();
+        SimpleTaskNode<T> taskNode = new SimpleTaskNode<>(tasks, "task-node-" + taskNodes.size());
+        taskNodes.add(taskNode);
+        return taskNode;
     }
 
-    @Override
-    public void writerInit() {
-        for (List<? extends DataWriter<T>> writers : writersSet) {
-            for (DataWriter<T> dw : writers) {
-                dw.open();
-                dw.pre();
-            }
+    public <T> SimpleTaskNode<T> newSimpleTaskNode(List<org.opencb.commons.run.Task<T>> tasks) {
+        SimpleTaskNode<T> taskNode = new SimpleTaskNode<>(tasks, "task-node-" + taskNodes.size());
+        taskNodes.add(taskNode);
+        return taskNode;
+    }
+
+    public <I,O> TaskNode<I,O> newTaskNode(Task<I,O> task, int n) {
+        List<Task<I,O>> tasks = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            tasks.add(task);
+        }
+        TaskNode<I, O> taskNode = new TaskNode<>(tasks, "task-node-" + taskNodes.size());
+        taskNodes.add(taskNode);
+        return taskNode;
+    }
+
+    public <O> ReadNode<O> newReaderNode(List<DataReader<O>> readers) {
+        ReadNode<O> readNode = new ReadNode<>(readers, "reader-node-" + readNodes.size());
+        readNodes.add(readNode);
+        return readNode;
+    }
+
+    public <O> ReadNode<O> newReaderNode(DataReader<O> reader, int n) {
+        List<DataReader<O>> readers = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            readers.add(reader);
+        }
+        ReadNode<O> readNode = new ReadNode<>(readers, "reader-node-" + readNodes.size());
+        readNodes.add(readNode);
+        return readNode;
+    }
+
+    public <I> WriterNode<I> newWriterNode(List<DataWriter<I>> writers) {
+        WriterNode<I> writerNode = new WriterNode<>(writers, "writer-node-" + writerNodes.size());
+        writerNodes.add(writerNode);
+        return writerNode;
+    }
+
+    public <I> WriterNode<I> newWriterNode(DataWriter<I> writer, int n) {
+        List<DataWriter<I>> writers = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            writers.add(writer);
+        }
+        WriterNode<I> writerNode = new WriterNode<>(writers, "writer-node-" + writerNodes.size());
+        writerNodes.add(writerNode);
+        return writerNode;
+    }
+
+    public void run() {
+        start();
+        join();
+    }
+
+    public void start() {
+        nodes.addAll(readNodes);
+        nodes.addAll(taskNodes);
+        nodes.addAll(writerNodes);
+
+        for (Node node : nodes) {
+            node.init();
+            node.pre();
+        }
+
+        for (ReadNode readNode : readNodes) {
+            readNode.start();
         }
     }
 
-    @Override
-    public void writerClose() {
-        for (List<? extends DataWriter<T>> writers : writersSet) {
-            for (DataWriter<T> dw : writers) {
-                dw.post();
-                dw.close();
-            }
+    public void join() {
+        boolean allFinalized;
+        synchronized (syncObject) {
+            do {
+                allFinalized = true;
+                for (Node node : nodes) {
+                    if (!node.isFinished()) {
+                        System.out.println("Node " + node.name + " is not finished pending:" + node.pendingJobs + " lastBatch:" + node.lastBatch);
+                        allFinalized = false;
+                        break;
+                    } /*else {
+                        System.out.println("Node " + node.name + " is finished");
+                    }*/
+                }
+                if (!allFinalized) {
+                    try {
+                        System.out.println("WAIT");
+                        syncObject.wait();
+                        System.out.println("NOTIFY");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } while (!allFinalized);
         }
+
+        for (Node node : nodes) {
+            node.post();
+        }
+
+        executorService.shutdown();
     }
 
-    @Override
-    public void launchPre() throws IOException {
-        for (List<? extends Task<T>> tasks : tasksList) {
-            for (Task<T> t : tasks) {
-                t.pre();
-            }
-        }
+    public static abstract class Task<I, O> {
+        public boolean pre() {return true;}
+        public abstract List<O> apply(List<I> batch) throws IOException;
+        public boolean post() {return true;}
     }
 
-    @Override
-    public void launchPost() throws IOException {
-        for (List<? extends Task<T>> tasks : tasksList) {
-            for (Task<T> t : tasks) {
-                t.post();
-            }
+    public class ReadNode<O> extends Node<Object, O, DataReader<O>> {
+        private ReadNode(List<DataReader<O>> tasks, String name) {
+            super(tasks, name);
         }
-    }
 
-    class Writer implements Runnable {
-        private BlockingQueue<T> inputQueue;
-        private DataWriter<T> writer;
-
-        public Writer(BlockingQueue inputQueue, DataWriter<T> writer) {
-            this.inputQueue = inputQueue;
-            this.writer = writer;
+        public void start() {
+            submit(SINGLETON_LIST);
         }
 
         @Override
-        public void run() {
-            try {
-                List<T> batch = new ArrayList<>(batchSize);
-                T elem = inputQueue.take();
-                while (elem != lastElement) {
-                    batch.add(elem);
-                    if (batch.size() == batchSize) {
-                        writer.write(batch);
-                        batch.clear();
+        List<O> doJob(List<Object> b) {
+//            System.out.println(name + " - read start - " );
+            List<O> reddenBatch = super.doJob(b);
+            if (reddenBatch != null) {
+//                System.out.println(name + " - read end - " + reddenBatch.size());
+                if (!reddenBatch.isEmpty()) {
+//                    System.out.println(name + " - non empty list! - " + reddenBatch.size());
+                    start();
+                } else {
+//                    System.out.println("Empty list! Lets submit the last batch " + !isLastBatchSent());
+                    if (!isLastBatchSent()) {
+                        submit(LAST_BATCH);
                     }
-                    elem = inputQueue.take();
                 }
-                inputQueue.put(lastElement);
-                if (!batch.isEmpty()) { //Upload remaining elements
-                    writer.write(batch);
-                }
-                logger.debug("Thread finished writing");
-            } catch (InterruptedException e) {
+            } else {
+//                System.out.println(name + " - read end NULL taskQueue.size : " + taskQueue.size());
+            }
+            return reddenBatch;
+        }
+
+        @Override
+        protected List<O> execute(DataReader<O> reader, List<Object> ignored) {
+            List<O> read = reader.read(batchSize);
+            return read;
+        }
+
+        @Override
+        protected void pre() {
+            for (DataReader<O> reader : tasks) {
+                reader.open();
+                reader.pre();
+            }
+        }
+
+        @Override
+        protected void post() {
+            for (DataReader<O> reader : tasks) {
+                reader.post();
+                reader.close();
+            }
+        }
+    }
+
+    public class TaskNode<I, O> extends Node<I,O,Task<I,O>> {
+        private TaskNode(List<Task<I, O>> tasks, String name) {
+            super(tasks, name);
+        }
+
+        @Override
+        protected List<O> execute(Task<I, O> task, List<I> batch) {
+            try {
+                return task.apply(batch);
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    class ThreadConfig{
-        private final List<BlockingQueue<T>> outputQueues;
-        private final BlockingQueue<T> inputQueue;
-        private final Integer numTasks;
-        private Integer numFinishedTasks;
-
-        public ThreadConfig(List<BlockingQueue<T>> outputQueues, BlockingQueue<T> inputQueue, Integer numTasks) {
-            this.outputQueues = outputQueues;
-            this.inputQueue = inputQueue;
-            this.numTasks = numTasks;
-            numFinishedTasks = 0;
+            return Collections.emptyList();
         }
 
         @Override
-        public String toString() {
-            return super.toString() + "ThreadConfig {" +
-                    "numTasks=" + numTasks +
-                    ", numFinishedTasks=" + numFinishedTasks +
-                    '}';
-        }
-    }
-
-    class TaskRunner implements Runnable {
-        private final Task<T> task;
-        private final ThreadConfig config;
-        private List<T> batch;
-
-        public TaskRunner(Task<T> task, ThreadConfig config) {
-            this.task = task;
-            this.config = config;
-            this.batch = new ArrayList<>(batchSize);
-        }
-
-        @Override
-        public void run() {
-            try {
-                T elem = config.inputQueue.take();
-                while (elem != lastElement) {
-                    batch.add(elem);
-                    if (batch.size() == batchSize) {
-                        apply(batch);
-                    }
-                    elem = config.inputQueue.take();
-                }
-                if (!batch.isEmpty()) { //Upload remaining elements
-                    apply(batch);
-                }
-                config.inputQueue.put(lastElement);
-                synchronized (config) {
-                    config.numFinishedTasks++;
-                    logger.info(" " + config);
-                    if (config.numFinishedTasks == config.numTasks) {
-                        for (BlockingQueue<T> outputQueue : config.outputQueues) {
-                            outputQueue.put(lastElement);
-                        }
-                    }
-                }
-                logger.info("thread finished task");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        protected void pre() {
+            for (Task<I, O> task : tasks) {
+                task.pre();
             }
         }
 
-//        @Override
-//        public void run() {
-//            try {
-//                T elem = config.inputQueue.poll();
-//                if (elem == null) {
-//                    executor.submit(this);
-////                    executor.submit(this);
-//                    return;
-//                }
-//                if (elem != lastElement) {
-//                    batch.add(elem);
-//                    if (batch.size() == batchSize) {
-//                        apply(batch);
-//                    } else {
-//                        executor.submit(this);
-//                    }
-//                    return;
-////                    elem = config.inputQueue.take();
-//                }
-//                if (!batch.isEmpty()) { //Upload remaining elements
-//                    apply(batch);
-//                }
-//                config.inputQueue.put(lastElement);
-//                synchronized (config) {
-//                    config.numFinishedTasks++;
-//                    logger.info(" " + config);
-//                    if (config.numFinishedTasks == config.numTasks) {
-//                        for (BlockingQueue<T> outputQueue : config.outputQueues) {
-//                            outputQueue.put(lastElement);
-//                        }
-//                    }
-//                }
-//                logger.info("thread finished task");
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
+        @Override
+        protected void post() {
+            for (Task<I, O> task : tasks) {
+                task.post();
+            }
+        }
+    }
 
-        private void apply(List<T> batch) throws InterruptedException {
+    public class SimpleTaskNode<I> extends Node<I, I, org.opencb.commons.run.Task<I>> {
+        private SimpleTaskNode(List<org.opencb.commons.run.Task<I>> tasks, String name) {
+            super(tasks, name);
+        }
+
+        @Override
+        protected void pre() {
+            for (org.opencb.commons.run.Task<I> task : tasks) {
+                task.pre();
+            }
+        }
+
+        @Override
+        protected void post() {
+            for (org.opencb.commons.run.Task<I> task : tasks) {
+                task.post();
+            }
+        }
+
+        @Override
+        protected List<I> execute(org.opencb.commons.run.Task<I> task, List<I> batch) {
             try {
                 task.apply(batch);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            for (BlockingQueue<T> outputQueue : config.outputQueues) {
-                for (T t : batch) {
-                    outputQueue.put(t);
-                }
-            }
-            batch.clear();
+            return batch;
         }
     }
 
-    class Reader implements Runnable {
-        private List<BlockingQueue<T>> outputQueue;
-        private DataReader<T> reader;
-        public Reader(List<BlockingQueue<T>> outputQueue, DataReader<T> reader) {
-            this.outputQueue = outputQueue;
-            this.reader = reader;
+    public class WriterNode<I> extends Node<I,Object, DataWriter<I>> {
+        private WriterNode(List<DataWriter<I>> tasks, String name) {
+            super(tasks, name);
         }
 
         @Override
-        public void run() {
-            try {
-                List<T> read;
-                int readeBatchSize = batchSize / 10 + 1;
-                read = reader.read(readeBatchSize);
-
-                while(read != null && !read.isEmpty()) {
-                    for (BlockingQueue<T> queue : outputQueue) {
-                        for (T t : read) {
-                            queue.put(t);
-                        }
-                        read = reader.read(readeBatchSize);
-                    }
-                }
-                //Add a lastElement marker. Consumers will stop reading when read this element.
-                for (BlockingQueue<T> queue : outputQueue) {
-                    queue.put(lastElement);
-                }
-                logger.info("thread finished reading");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        protected void pre() {
+            for (DataWriter<I> writer : tasks) {
+                writer.open();
+                writer.pre();
             }
         }
+
+        @Override
+        protected void post() {
+            for (DataWriter<I> writer : tasks) {
+                writer.post();
+                writer.close();
+            }
+        }
+
+        @Override
+        protected List<Object> execute(DataWriter<I> writer, List<I> batch) {
+            writer.write(batch);
+            return SINGLETON_LIST;
+        }
+    }
+
+    abstract class Node<I, O, EXECUTOR> {
+        protected final List<EXECUTOR> tasks;
+        protected final String name;
+        private final BlockingQueue<EXECUTOR> taskQueue;
+        private List<Node<O, ?, ?>> nodes;
+        private int pendingJobs;
+        private boolean lastBatch;
+        private boolean lastBatchSent;
+
+        public Node(List<EXECUTOR> tasks, String name) {
+            this.tasks = tasks;
+            this.name = name;
+            taskQueue = new ArrayBlockingQueue<>(tasks.size(), false, tasks);
+            nodes = new LinkedList<>();
+        }
+
+        /* package */ void init()  {
+            pendingJobs = 0;
+            lastBatch = false;
+            lastBatchSent = false;
+        }
+
+        protected abstract void pre ();
+
+        protected abstract void post ();
+
+        /*package*/ List<O> doJob(List<I> batch) {
+            List<O> generatedBatch;
+            assert lastBatchSent == false;
+
+            if (batch == LAST_BATCH) {
+                lastBatch = true;
+                pendingJobs--;
+//                System.out.println(name + " - lastBatch");
+                generatedBatch = Collections.emptyList();
+            } else {
+
+                EXECUTOR task = taskQueue.poll();
+
+                boolean nextNodesAvailable = true;
+                for (Node<O, ?, ?> node : nodes) {
+                    nextNodesAvailable &= node.isAvailable();
+                }
+
+                if (task == null) { //No available task
+                    resubmit(batch);
+                    generatedBatch = null;
+                } else if (!nextNodesAvailable) {   //Next nodes have to many batches.
+                    try {
+                        taskQueue.put(task);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    resubmit(batch);
+                    generatedBatch = null;
+                } else {    //Execute
+
+                    generatedBatch = execute(task, batch);
+//                    System.out.println(name + " - end job - " + generatedBatch.size());
+                    for (Node<O, ?, ?> node : nodes) {
+                        node.submit(generatedBatch);
+                    }
+
+                    try {
+                        taskQueue.put(task);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    pendingJobs--;  //
+//                    System.out.println(name + " - pendingJobs " + pendingJobs);
+                }
+            }
+
+            if (isFinished()) {
+                if (!lastBatchSent) {
+                    for (Node<O, ?, ?> node : nodes) {
+                        node.submit(LAST_BATCH);
+                    }
+                    lastBatchSent = true;
+                }
+                System.out.println("Node '" + name + "' is finished");
+                synchronized (syncObject) {
+                    syncObject.notify();
+                }
+            }
+            return generatedBatch;
+        }
+
+        protected abstract List<O> execute(EXECUTOR task, List<I> batch);
+
+        private void resubmit(final List<I> batch) {
+            executorService.submit(new Runnable() {
+                public void run() {
+                    doJob(batch);
+                }
+            });
+        }
+
+        /*package*/ void submit(final List<I> batch) {
+//            System.out.println("Submitting batch: pendingJobs = " + pendingJobs + " - " + "[" + (isAvailable()? " " : "*") + "]" + name + " - " + Thread.currentThread().getName());
+            pendingJobs ++;
+            resubmit(batch);
+        }
+
+        public boolean isAvailable() {
+            return pendingJobs < tasks.size();
+        }
+
+        public boolean isFinished() {
+            return pendingJobs == 0 && lastBatch;
+        }
+
+        public boolean isLastBatchSent() {
+            return lastBatchSent;
+        }
+
+        public void append(Node<O, ?, ?> node) {
+            nodes.add(node);
+        }
+
     }
 
 }
