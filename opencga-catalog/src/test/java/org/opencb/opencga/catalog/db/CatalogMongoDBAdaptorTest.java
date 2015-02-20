@@ -202,6 +202,19 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalogDBAdaptor.changePassword(user2.getId(), "BAD_PASSWORD", "asdf");
     }
 
+    @Test
+    public void modifyUserTest() throws CatalogDBException {
+
+        ObjectMap genomeMapsConfig = new ObjectMap("lastPosition" , "4:1222222:1333333");
+        genomeMapsConfig.put("otherConf", Arrays.asList(1,2,3,4,5));
+        ObjectMap configs = new ObjectMap("genomemaps" , genomeMapsConfig);
+        ObjectMap objectMap = new ObjectMap("configs", configs.toJson());
+        catalogDBAdaptor.modifyUser(user1.getId(), objectMap);
+
+        User user = catalogDBAdaptor.getUser(user1.getId(), null, null).first();
+        System.out.println(user);
+    }
+
     /**
      * Project methods
      * ***************************
@@ -231,7 +244,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getProjectIdTest() throws CatalogDBException {
         assertTrue(catalogDBAdaptor.getProjectId(user3.getId(), user3.getProjects().get(0).getAlias()) != -1);
-        assertTrue(catalogDBAdaptor.getProjectId(user3.getId(), "nonExistingProject") == -1 );
+        assertTrue(catalogDBAdaptor.getProjectId(user3.getId(), "nonExistingProject") == -1);
     }
 
 
@@ -242,12 +255,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult<Project> project = catalogDBAdaptor.getProject(projectId, null);
         System.out.println(project);
         assertNotNull(project.getResult().get(0));
-        try {
-            System.out.println(catalogDBAdaptor.getProject(-100, null));
-            fail("Expected \"bad id\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println(e);
-        }
+
+        thrown.expect(CatalogDBException.class);    //"Expected \"bad id\" exception"
+        catalogDBAdaptor.getProject(-100, null);
     }
 
     @Test
@@ -260,12 +270,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         System.out.println(queryResult);
         assertTrue(queryResult.getResult().get(0) == 1);
-        try {
-            QueryResult<Integer> queryResult1 = catalogDBAdaptor.deleteProject(-1);
-            fail("error: Expected \"Project not found\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
+        thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
+        catalogDBAdaptor.deleteProject(-1);
     }
 
     @Test
@@ -434,13 +440,32 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId = user3.getProjects().get(0).getId();
         int studyId = catalogDBAdaptor.getStudyId(projectId, "ph1");
 
-        ObjectMap objectMap = new ObjectMap("name", "My new name");
-        HashMap<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put("Value", 1);
-        attributes.put("Value2", true);
-        attributes.put("Value3", new BasicDBObject("key", "ok"));
-        objectMap.put("attributes", attributes);
-        catalogDBAdaptor.modifyStudy(studyId, objectMap);
+        String newName = "My new name";
+        String unexpectedNewAlias = "myNewAlias";
+        ObjectMap objectMap = new ObjectMap("name", newName);
+        HashMap<String, Object> newAttributes = new HashMap<>();
+        newAttributes.put("Value", 1);
+        newAttributes.put("Value2", true);
+        newAttributes.put("Value3", new ObjectMap("key", "ok"));
+
+        objectMap.put("attributes", new ObjectMap(newAttributes).toJson());
+        objectMap.put("alias", unexpectedNewAlias);
+        ObjectMap modifiedParams = catalogDBAdaptor.modifyStudy(studyId, objectMap).first();
+
+        Study study = catalogDBAdaptor.getStudy(studyId, null).first();
+
+        assertTrue(modifiedParams.containsKey("attributes.Value"));
+        assertTrue(modifiedParams.containsKey("attributes.Value2"));
+        assertTrue(modifiedParams.containsKey("attributes.Value3"));
+        for (Map.Entry<String, Object> entry : newAttributes.entrySet()) {
+            assertEquals(study.getAttributes().get(entry.getKey()), entry.getValue());
+        }
+
+        assertEquals(newName, study.getName());
+        assertTrue(modifiedParams.containsKey("name"));
+
+        assertFalse("ModifyStudy must NO modify the alias ", unexpectedNewAlias.equals(study.getAlias()));
+        assertFalse(modifiedParams.containsKey("alias"));
     }
 
     @Test

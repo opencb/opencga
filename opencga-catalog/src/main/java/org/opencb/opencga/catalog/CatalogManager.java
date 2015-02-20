@@ -2378,6 +2378,42 @@ public class CatalogManager implements ICatalogManager {
     }
 
     /**
+     * Cohort methods
+     * ***************************
+     */
+
+    public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+
+        int studyId = catalogDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = getUserIdBySessionId(sessionId);
+
+        if (getStudyAcl(userId, studyId).isRead()) {
+            return catalogDBAdaptor.getCohort(cohortId);
+        } else {
+            throw new CatalogException("Permission denied. User " + userId + " can't read cohorts from study");
+        }
+    }
+
+    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> samples,
+                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
+        checkParameter(name, "name");
+        checkObj(samples, "Samples list");
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        for (Integer sampleId : samples) {
+            getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+        }
+
+        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, samples, attributes);
+
+        return catalogDBAdaptor.createCohort(studyId, cohort);
+    }
+
+
+
+    /**
      * Tools methods
      * ***************************
      */
