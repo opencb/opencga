@@ -6,6 +6,7 @@ import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.commons.io.DataWriter;
 
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -35,6 +36,7 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
 
     private final MongoDataStoreManager mongoManager;
     private final String fileId;
+    private final QueryOptions updateOptions;
     private MongoDataStore db;
     private final DBObjectToRegionCoverageConverter coverageConverter;
     private final DBObjectToMeanCoverageConverter meanCoverageConverter;
@@ -47,10 +49,12 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
     public CoverageMongoDBWriter(MongoCredentials credentials, String fileId) {
         this.collectionName = COVERAGE_COLLECTION_NAME;
         this.credentials = credentials;
+        this.fileId = fileId;
+
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         coverageConverter = new DBObjectToRegionCoverageConverter();
         meanCoverageConverter = new DBObjectToMeanCoverageConverter();
-        this.fileId = fileId;
+        updateOptions = new QueryOptions("upsert", true);
     }
 
     @Override
@@ -118,7 +122,7 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
                             .append(SIZE_FIELD, size)
                             .get();
                     document.putAll(query);             //{_id:<chunkId>, files:[]}
-                    collection.insert(document);        //Insert a document with empty files array.
+                    collection.insert(document, null);        //Insert a document with empty files array.
                     fileExists = false;
                 }
             } else {
@@ -152,14 +156,14 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
             DBObject update = new BasicDBObject("$set", fileObject);
 
             //db.<collectionName>.update({_id:<chunkId>  , "files.id":<fileId>}, {$set:{"files.$.<objKey>":<objValue>}})
-            collection.update(fileQuery, update, true, false);
+            collection.update(fileQuery, update, updateOptions);
         } else {
             BasicDBObject fileObject = new BasicDBObject(FILE_ID_FIELD, fileId);
             fileObject.putAll(object);
             DBObject update = new BasicDBObject("$addToSet", new BasicDBObject(FILES_FIELD, fileObject));
 
             //db.<collectionName>.update({_id:<chunkId>} , {$addToSet:{files:{id:<fileId>, <object>}}})
-            collection.update(query, update, true, false);
+            collection.update(query, update, updateOptions);
         }
     }
 

@@ -373,7 +373,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         System.out.println("db."+ CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME+".find("+query.toString()+", "+projection.toString()+")");
 
-        QueryResult queryResult = collection.find(query, null, complexTypeConverter, projection);
+        QueryResult queryResult = collection.find(query, projection, complexTypeConverter, null);
         queryResult.setId(region.toString());
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         return queryResult;

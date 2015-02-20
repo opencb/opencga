@@ -5,10 +5,12 @@ import java.util.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -142,6 +144,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public VariantDBIterator iterator(QueryOptions options);
 
     public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, QueryOptions queryOptions);
 
     public boolean close();
 

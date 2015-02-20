@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import java.util.List;
+
+import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 
@@ -27,7 +29,9 @@ public interface VariantSourceDBAdaptor {
     List<QueryResult> getSourceDownloadUrlByName(List<String> filenames);
     
     QueryResult getSourceDownloadUrlById(String fileId, String studyId);
+
+    QueryResult updateSourceStats(VariantSourceStats variantSourceStats, QueryOptions queryOptions);
     
     boolean close();
-    
+
 }

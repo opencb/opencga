@@ -127,7 +127,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         boolean createBai = params.getBoolean(CREATE_BAI, false);
         int regionSize = params.getInt(REGION_SIZE,
                 Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
-        List<String> meanCoverageSizeList = params.getListAs(MEAN_COVERAGE_SIZE_LIST, String.class, new LinkedList<String>());
+        List<String> meanCoverageSizeList = params.getAsStringList(MEAN_COVERAGE_SIZE_LIST);
         String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
         String fileAlias = params.getString(FILE_ALIAS, defaultFileAlias);
 

@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,11 +48,12 @@ import java.util.*;
 public abstract class VariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
 
 
-    public static final String INCLUDE_EFFECT = "includeEffect";
-    public static final String INCLUDE_STATS = "includeStats";
-    public static final String INCLUDE_SAMPLES = "includeSamples";
-    public static final String INCLUDE_SRC = "includeSrc";
-    public static final String VARIANT_SOURCE = "variantSource";
+    public static final String INCLUDE_STATS = "includeStats";              //Include existing stats on the original file.
+    public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)
+    public static final String INCLUDE_SRC = "includeSrc";                  //Include original source file on the transformed file and the final db
+    public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
+    public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
+    public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String DB_NAME = "dbName";
 
     public static final String SPECIES = "species";
@@ -61,8 +63,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String ANNOTATION_SOURCE = "annotationSource";
     public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
+    public static final String BATCH_SIZE = "batchSize";
 
-    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
+    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE   = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
+    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SRC            = "OPENCGA.STORAGE.VARIANT.INCLUDE_SRC";
+    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
+    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_STATS          = "OPENCGA.STORAGE.VARIANT.INCLUDE_STATS";
 
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
@@ -172,9 +178,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
-        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES);
-        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT);
-        boolean includeStats = params.getBoolean(INCLUDE_STATS);
+
+        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
+//        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
+        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
+        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
@@ -206,17 +215,21 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
-        if (includeStats) {
-            taskList.add(new VariantStatsTask(reader, source));
-        }
+
+//        todo remove:
+//        if (includeStats) {
+//            taskList.add(new VariantStatsTask(reader, source));
+//        }
 
         //Writers
         List<VariantWriter> writers = new ArrayList<>();
-        writers.add(new VariantJsonWriter(source, output));
+        VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
+        jsonWriter.includeSrc(includeSrc);
+        writers.add(jsonWriter);
 
         for (VariantWriter variantWriter : writers) {
             variantWriter.includeSamples(includeSamples);
-            variantWriter.includeEffect(includeEffect);
+//            variantWriter.includeEffect(includeEffect);   //Deprecated
             variantWriter.includeStats(includeStats);
         }
 
@@ -283,6 +296,15 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             variantAnnotationManager.annotate(annotationOptions);
 //            URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get(output.getPath()), dbName + "." + TimeUtils.getTime(), annotationOptions);
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
+        }
+
+        if (params.getBoolean(CALCULATE_STATS)) {
+            // TODO add filters
+            logger.debug("about to calculate stats");
+            String dbName = params.getString(DB_NAME, "defaultDatabase");
+            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
+            URI statsUri = variantStatisticsCalculator.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), new QueryOptions(params));
+            variantStatisticsCalculator.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
         return input;
