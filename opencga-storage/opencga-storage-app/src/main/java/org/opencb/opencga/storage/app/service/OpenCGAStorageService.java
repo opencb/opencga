@@ -5,10 +5,10 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+//import org.opencb.opencga.catalog.CatalogException;
+//import org.opencb.opencga.catalog.CatalogManager;
+//import org.opencb.opencga.catalog.db.CatalogDBException;
+//import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class OpenCGAStorageService implements Runnable {
     public static final String PASSWORD = "OPENCGA.STORAGE.APP.SERVICE.PASSWORD";
 
     private final Properties properties;
-    private CatalogManager catalogManager;
+//    private CatalogManager catalogManager;
     private static OpenCGAStorageService singleton;
 
     private Server server;
@@ -36,7 +36,7 @@ public class OpenCGAStorageService implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(OpenCGAStorageService.class);
 
-    public static OpenCGAStorageService newInstance(Properties properties) throws CatalogException {
+    public static OpenCGAStorageService newInstance(Properties properties) {
         return singleton = new OpenCGAStorageService(properties);
     }
 
@@ -44,9 +44,9 @@ public class OpenCGAStorageService implements Runnable {
         return singleton;
     }
 
-    private OpenCGAStorageService(Properties properties) throws CatalogException {
+    private OpenCGAStorageService(Properties properties)  {
         this.properties = properties;
-        this.catalogManager = new CatalogManager(Config.getCatalogProperties());
+//        this.catalogManager = new CatalogManager(Config.getCatalogProperties());
 
 
         int port = Integer.parseInt(properties.getProperty(OpenCGAStorageService.PORT, "8083"));
@@ -125,7 +125,7 @@ public class OpenCGAStorageService implements Runnable {
     public Properties getProperties() {
         return properties;
     }
-    public CatalogManager getCatalogManager() {
-        return catalogManager;
-    }
+//    public CatalogManager getCatalogManager() {
+//        return catalogManager;
+//    }
 }

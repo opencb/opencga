@@ -1,13 +1,9 @@
 package org.opencb.opencga.storage.app.service.rest;
 
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.app.service.OpenCGAStorageService;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.CatalogVariantDBAdaptor;
+//import org.opencb.opencga.storage.core.variant.adaptors.CatalogVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,11 +12,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by hpccoll1 on 13/02/15.
@@ -37,6 +31,7 @@ public class VariantsWSServer extends DaemonServlet {
     @Produces("application/json")
     public Response fetch(@PathParam("fileId") @DefaultValue("") String fileId,
                           @QueryParam("storageEngine") String storageEngine,
+                          @QueryParam("dbName") String dbName,
                           @QueryParam("region") @DefaultValue("") String regionsCVS,
                           @QueryParam("sessionId") String sessionId,
 
@@ -48,7 +43,8 @@ public class VariantsWSServer extends DaemonServlet {
     ) {
 
         try {
-            CatalogVariantDBAdaptor variants = new CatalogVariantDBAdaptor(OpenCGAStorageService.getInstance().getCatalogManager(), fileId, sessionId);
+//            CatalogVariantDBAdaptor variants = new CatalogVariantDBAdaptor(OpenCGAStorageService.getInstance().getCatalogManager(), fileId, sessionId);
+            VariantDBAdaptor variants = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, null);
 
             for (String acceptedValue : VariantDBAdaptor.QueryParams.acceptedValues) {
                 addQueryOption(acceptedValue);

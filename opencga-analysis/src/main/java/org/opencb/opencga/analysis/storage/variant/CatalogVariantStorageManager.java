@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant;
+package org.opencb.opencga.analysis.storage.variant;
 
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -13,6 +13,7 @@ import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.FileInputStream;

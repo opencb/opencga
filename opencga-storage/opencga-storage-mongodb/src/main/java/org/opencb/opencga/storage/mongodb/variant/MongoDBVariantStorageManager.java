@@ -21,6 +21,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -184,7 +185,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
         return super.postLoad(input, output, params);
     }
 

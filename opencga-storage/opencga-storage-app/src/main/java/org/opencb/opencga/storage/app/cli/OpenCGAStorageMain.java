@@ -21,6 +21,7 @@ import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -63,7 +64,7 @@ public class OpenCGAStorageMain {
 
     public static void main(String[] args)
             throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
-            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException {
+            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException, StorageManagerException {
 
         parser = new OptionsParser();
         OptionsParser.Command command = null;
@@ -487,7 +488,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void indexSequence(OptionsParser.CommandIndexSequence c) throws URISyntaxException, IOException, FileFormatException {
+    private static void indexSequence(OptionsParser.CommandIndexSequence c)
+            throws URISyntaxException, IOException, FileFormatException {
         if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
             Path input = Paths.get(new URI(c.input).getPath());
             Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(new URI(c.outdir).getPath());
@@ -512,7 +514,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void indexAlignments(OptionsParser.CommandIndexAlignments c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
+    private static void indexAlignments(OptionsParser.CommandIndexAlignments c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         AlignmentStorageManager alignmentStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         if (storageEngine == null || storageEngine.isEmpty()) {
@@ -587,7 +590,7 @@ public class OpenCGAStorageMain {
     }
 
     private static void indexVariants(OptionsParser.CommandIndexVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
@@ -705,7 +708,7 @@ public class OpenCGAStorageMain {
     }
 
     private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException, StorageManagerException {
         /**
          * Create DBAdaptor
          */
@@ -791,7 +794,7 @@ public class OpenCGAStorageMain {
     }
 
     private static void statsVariants(OptionsParser.CommandStatsVariants c)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException {
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException, StorageManagerException {
 
         /**
          * query options
