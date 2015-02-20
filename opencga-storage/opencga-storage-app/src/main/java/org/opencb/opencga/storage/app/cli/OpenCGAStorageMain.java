@@ -798,11 +798,18 @@ public class OpenCGAStorageMain {
         queryOptions.put(VariantStorageManager.VARIANT_SOURCE, new VariantSource(null, c.fileId, c.studyId, null));
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
 
-        Set<String> sampleNames = new LinkedHashSet<>(5);   // FIXME replace with actual catalog values!
-        sampleNames.add("C973");
-        sampleNames.add("C974");
-        Map<String, Set<String>> samples = new LinkedHashMap<>(sampleNames.size());
-        samples.put("cohort1", sampleNames);
+        Map<String, Set<String>> samples = new LinkedHashMap<>(5);
+        Set<String> sampleNames1 = new LinkedHashSet<>(5);   // FIXME replace with actual catalog values!
+        sampleNames1.add("C973");
+        sampleNames1.add("C974");
+        samples.put("cohort1", sampleNames1);
+        Set<String> sampleNames2 = new LinkedHashSet<>(5);   // FIXME replace with actual catalog values!
+        sampleNames2.add("C972");
+        sampleNames2.add("C973");
+        sampleNames2.add("C974");
+        sampleNames2.add("C975");
+        sampleNames2.add("C976");
+        samples.put("cohort2", sampleNames2);
 
         /**
          * Create DBAdaptor

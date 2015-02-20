@@ -59,6 +59,7 @@ public class VariantStatisticsManager {
         /** Open output streams **/
         Path fileVariantsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         OutputStream outputVariantsStream = getOutputStream(fileVariantsPath, options);
+//        PrintWriter printWriter = new PrintWriter(getOutputStream(fileVariantsPath, options));
 
         Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
         OutputStream outputSourceStream = getOutputStream(fileSourcePath, options);
@@ -66,7 +67,6 @@ public class VariantStatisticsManager {
         /** Initialize Json serializer **/
         ObjectWriter variantsWriter = jsonObjectMapper.writerWithType(VariantStatsWrapper.class);
         ObjectWriter sourceWriter = jsonObjectMapper.writerWithType(VariantSourceStats.class);
-
 
         /** Variables for statistics **/
         int batchSize = 100;  // future optimization, threads, etc
@@ -83,7 +83,7 @@ public class VariantStatisticsManager {
         long start = System.currentTimeMillis();
 
         Iterator<Variant> iterator = obtainIterator(variantDBAdaptor, options);
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             Variant variant = iterator.next();
             variantBatch.add(variant);
 //            variantBatch.add(filterSample(variant, samples));
@@ -95,21 +95,20 @@ public class VariantStatisticsManager {
                     outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
                 }
 
-                if (subsetStats) {  // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
+                if (!subsetStats) {  // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
                     variantSourceStats.updateFileStats(variantBatch);
                     variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
                 }
             }
         }
+
         if (variantBatch.size() != 0) {
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
-
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
             }
 
-
-            if (subsetStats) {
+            if (!subsetStats) {
                 variantSourceStats.updateFileStats(variantBatch);
                 variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
             }

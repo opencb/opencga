@@ -212,7 +212,12 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Statistics
         if (statsConverter != null && object.getCohortStats() != null) {
-            mongoFile.put(STATS_FIELD, statsConverter.convertToStorageType(object.getCohortStats()));
+            Map<String, VariantStats> cohortStats = object.getCohortStats();
+            DBObject cohortsObject = new BasicDBObject();
+            for (String cohortName : cohortStats.keySet()) {
+                cohortsObject.put(cohortName, statsConverter.convertToStorageType(cohortStats.get(cohortName)));
+            }
+            mongoFile.put(STATS_FIELD, cohortsObject);
         }
         
         return mongoFile;
