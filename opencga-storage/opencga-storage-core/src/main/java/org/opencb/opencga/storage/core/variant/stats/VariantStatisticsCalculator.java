@@ -65,6 +65,10 @@ public class VariantStatisticsCalculator {
                 Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
                 file.getCohortStats().put(cohort.getKey(), variantStats.calculate(samplesData, file.getAttributes(), null));
             }
+            VariantStats allVariantStats = new VariantStats(variant);
+            file.getCohortStats().put(VariantSourceEntry.DEFAULT_COHORT
+                    , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
+
             variantStatsWrappers.add(new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
         }
         return variantStatsWrappers;
