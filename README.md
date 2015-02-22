@@ -41,26 +41,25 @@ Stable releases are merged and tagged at **_master_** branch, you are encourage 
 * _cellbase_: https://github.com/opencb/cellbase (branch 'develop')
 
 ### Cloning
-OpenCGA is an open-source and free project, you can download **_develop_** branch by executing:
+OpenCGA is an open-source and free project, you can download default **_develop_** branch by executing:
 
-    imedina@ivory:~$ git clone https://github.com/opencb/cellbase.git
-    Cloning into 'cellbase'...
-    remote: Counting objects: 13804, done.
-    remote: Compressing objects: 100% (619/619), done.
-    remote: Total 13804 (delta 324), reused 240 (delta 77)
-    Receiving objects: 100% (13804/13804), 24.32 MiB | 723.00 KiB/s, done.
-    Resolving deltas: 100% (5049/5049), done.
-
+    imedina@ivory:~$ git clone https://github.com/opencb/opencga.git
+    Cloning into 'opencga'...
+    remote: Counting objects: 20267, done.
+    remote: Compressing objects: 100% (219/219), done.
+    remote: Total 20267 (delta 105), reused 229 (delta 35)
+    Receiving objects: 100% (20267/20267), 7.23 MiB | 944.00 KiB/s, done.
+    Resolving deltas: 100% (6363/6363), done.
 
 Latest stable release at **_master_** branch can be downloaded executing:
 
-    imedina@ivory:~$ git clone -b master https://github.com/opencb/cellbase.git
-    Cloning into 'cellbase'...
-    remote: Counting objects: 13804, done.
-    remote: Compressing objects: 100% (619/619), done.
-    remote: Total 13804 (delta 324), reused 240 (delta 77)
-    Receiving objects: 100% (13804/13804), 24.32 MiB | 939.00 KiB/s, done.
-    Resolving deltas: 100% (5049/5049), done.
+    imedina@ivory:~$ git clone -b develop https://github.com/opencb/opencga.git
+    Cloning into 'opencga'...
+    remote: Counting objects: 20267, done.
+    remote: Compressing objects: 100% (219/219), done.
+    remote: Total 20267 (delta 105), reused 229 (delta 35)
+    Receiving objects: 100% (20267/20267), 7.23 MiB | 812.00 KiB/s, done.
+    Resolving deltas: 100% (6363/6363), done.
 
 
 ### Build
@@ -70,11 +69,11 @@ You can build OpenCGA by executing the following command from the root of the cl
 
 Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_ and _cellbase_ repositories. After this you should have this file structure in **_opencga-app/build_**:
 
-    cellbase-app/build/
+    opencga-app/build/
+    ├── analysis
     ├── bin
-    ├── example
-    ├── libs
-    ├── mongodb-scripts
+    ├── conf
+    └── libs
 
 You can copy the content of the _build_ folder into any directory such as _/opt/opencga_.
 
@@ -89,12 +88,11 @@ If the build process has gone well you should get an integrated help by executin
 You can find more detailed documentation and tutorials at: https://github.com/opencb/opencga/wiki.
 
 ### Other Dependencies
-We try to improve the user experience by making the installation and build as simple as possible. Unfortunately, for some OpenCGA commands such as _build_ and _load_ other dependencies are required.
+We try to improve the user experience by making the installation and build as simple as possible. Unfortunately, for some OpenCGA components and functionalities other dependencies are required.
 
 ##### Loading data
-At this moment the only fully developed storage engine plugin is [MongoDB](https://www.mongodb.org/). MongoDB is free and open-source and can be downloaded from [here](https://www.mongodb.org/downloads).
+At this moment the only fully developed storage engine plugin is [MongoDB](https://www.mongodb.org/). MongoDB is free and open-source and can be downloaded from [here](https://www.mongodb.org/downloads). Currently Apache HBase plugin is under heavy development and will be ready soon.
 
 ##### AES encryption
-
 For AES encryption please download UnlimitedJCEPolicyJDK7.zip from http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html .
 Then unzip the file into $JAVA_HOME/jre/lib/security
