@@ -465,9 +465,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
                 DBObject find = new BasicDBObject("_id", id)
-                        .append(
-                                DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
-                                , variantSource.getStudyId());
+                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
+                                , variantSource.getStudyId())
+                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD
+                                , variantSource.getFileId());
 
                 DBObject update = new BasicDBObject("$set", new BasicDBObject(
                         DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD

@@ -59,11 +59,13 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
-            for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
-                VariantStats variantStats = new VariantStats(variant);
+            if (samples != null) {
+                for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
+                    VariantStats variantStats = new VariantStats(variant);
 
-                Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
-                file.getCohortStats().put(cohort.getKey(), variantStats.calculate(samplesData, file.getAttributes(), null));
+                    Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
+                    file.getCohortStats().put(cohort.getKey(), variantStats.calculate(samplesData, file.getAttributes(), null));
+                }
             }
             VariantStats allVariantStats = new VariantStats(variant);
             file.getCohortStats().put(VariantSourceEntry.DEFAULT_COHORT
