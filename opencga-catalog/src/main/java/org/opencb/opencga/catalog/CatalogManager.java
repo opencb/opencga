@@ -24,6 +24,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -847,7 +848,6 @@ public class CatalogManager {
 
         QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
         File file = result.getResult().get(0);
-
         //path is relative to user, get full path...
         URI studyURI = getStudyUri(studyId, sessionId);
         URI fileURI = getFileUri(studyURI, path);
@@ -858,7 +858,27 @@ public class CatalogManager {
 
         return result;
     }
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, Path completedFilePath, String description,
+                                        boolean parents, String sessionId)
+            throws CatalogException, IOException {
+        System.out.println("create file 1");
 
+        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
+        File file = result.getResult().get(0);
+        System.out.println("create file 2");
+        //path is relative to user, get full path...
+        URI studyURI = getStudyUri(studyId, sessionId);
+        System.out.println("create file 3");
+        URI fileURI = getFileUri(studyURI, path);
+        System.out.println("create file 4");
+        Files.move(completedFilePath,Paths.get(fileURI));
+        System.out.println("create file 5");
+
+        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
+        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
+
+        return result;
+    }
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
