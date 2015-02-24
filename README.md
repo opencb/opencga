@@ -53,7 +53,7 @@ OpenCGA is an open-source and free project, you can download default **_develop_
 
 Latest stable release at **_master_** branch can be downloaded executing:
 
-    imedina@ivory:~$ git clone -b develop https://github.com/opencb/opencga.git
+    imedina@ivory:~$ git clone -b master https://github.com/opencb/opencga.git
     Cloning into 'opencga'...
     remote: Counting objects: 20267, done.
     remote: Compressing objects: 100% (219/219), done.
