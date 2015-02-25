@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -683,7 +684,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     try {
                         AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName, new ObjectMap());
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }
                     QueryResult alignmentsByRegion;
@@ -726,7 +727,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     VariantDBAdaptor dbAdaptor;
                     try {
                         dbAdaptor = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }
                     QueryResult variantsByRegion;

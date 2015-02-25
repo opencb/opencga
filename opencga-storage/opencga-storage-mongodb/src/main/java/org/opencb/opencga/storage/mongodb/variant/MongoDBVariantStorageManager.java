@@ -14,9 +14,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
-import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
@@ -25,7 +23,6 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 /**
@@ -129,6 +126,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         int bulkSize = params.getInt(BULK_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE, "" + batchSize)));
         int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "1")));
         int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_THREADS, "1")));
+//        Map<String, Integer> samplesIds = (Map) params.getMap("sampleIds");
+        Map<String, Integer> samplesIds = new HashMap<>();
+        for (String sampleId : params.getString("sampleIds").split(",")) {
+            String[] split = sampleId.split(":");
+            if (split.length != 2) {
+
+            } else {
+                samplesIds.put(split[0], Integer.parseInt(split[1]));
+            }
+        }
 
         if (loadThreads == 1) {
             numWriters = 1;     //Only 1 writer for the single thread execution
@@ -151,8 +158,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.includeSrc(includeSrc);
             variantDBWriter.includeSamples(includeSamples);
             variantDBWriter.includeStats(includeStats);
-            variantDBWriter.setCompressSamples(compressSamples);
+            variantDBWriter.setCompressDefaultGenotype(compressSamples);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
+            variantDBWriter.setSamplesIds(samplesIds);
             writerList.add(variantDBWriter);
             writers.add(variantDBWriter);
         }
