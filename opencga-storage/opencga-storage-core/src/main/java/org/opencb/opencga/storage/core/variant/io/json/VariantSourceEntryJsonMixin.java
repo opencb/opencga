@@ -18,4 +18,6 @@ public abstract class VariantSourceEntryJsonMixin {
 
     @JsonIgnore public abstract VariantStats getStats();
 
+    @JsonIgnore public abstract VariantStats getCohortStats(String cohortName);
+
 }

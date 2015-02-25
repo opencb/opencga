@@ -12,8 +12,14 @@ import java.util.*;
  */
 public class VariantStatisticsCalculator {
     private int skippedFiles;
+    private boolean overwrite;
 
     public VariantStatisticsCalculator() {
+        this(false);
+    }
+
+    public VariantStatisticsCalculator(boolean overwrite) {
+        this.overwrite = overwrite;
         skippedFiles = 0;
     }
 
@@ -50,7 +56,8 @@ public class VariantStatisticsCalculator {
      * @param samples keys are cohort names, values are sets of samples names. groups of samples (cohorts) for each to compute VariantStats.
      * @return list of VariantStatsWrapper. may be shorter than the list of variants if there is no source for some variant
      */
-    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, VariantSource variantSource, Map<String, Set<String>> samples) {
+    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, VariantSource variantSource
+            , Map<String, Set<String>> samples) {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
 
         for (Variant variant : variants) {
@@ -61,17 +68,23 @@ public class VariantStatisticsCalculator {
             }
             if (samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
-                    VariantStats variantStats = new VariantStats(variant);
+                    if (overwrite || file.getCohortStats(cohort.getKey()) == null) {
+                        VariantStats variantStats = new VariantStats(variant);
 
-                    Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
-                    file.getCohortStats().put(cohort.getKey(), variantStats.calculate(samplesData, file.getAttributes(), null));
+                        Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
+                        file.getCohortStats().put(cohort.getKey()
+                                , variantStats.calculate(samplesData, file.getAttributes(), null));
+                    }
                 }
             }
-            VariantStats allVariantStats = new VariantStats(variant);
-            file.getCohortStats().put(VariantSourceEntry.DEFAULT_COHORT
-                    , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
+            if (overwrite || file.getStats() == null) {
+                VariantStats allVariantStats = new VariantStats(variant);
+                file.setCohortStats(VariantSourceEntry.DEFAULT_COHORT
+                        , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
 
-            variantStatsWrappers.add(new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
+            }
+                variantStatsWrappers.add(
+                        new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
         }
         return variantStatsWrappers;
     }

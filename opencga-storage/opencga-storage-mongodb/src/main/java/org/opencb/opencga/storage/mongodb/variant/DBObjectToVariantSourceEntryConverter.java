@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -36,6 +38,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     private DBObjectToSamplesConverter samplesConverter;
     private DBObjectToVariantStatsConverter statsConverter;
 
+    private Variant variant;
+
     /**
      * Create a converter between VariantSourceEntry and DBObject entities when 
      * there is no need to provide a list of samples or statistics.
@@ -46,6 +50,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         this.samples = null;
         this.samplesConverter = null;
         this.statsConverter = null;
+        this.variant = null;
     }
     
     /**
@@ -99,6 +104,24 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         this.includeSamples = includeSamples;
         this.samplesConverter = new DBObjectToSamplesConverter(credentials, collectionName);
         this.statsConverter = statsConverter;
+    }
+
+    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, boolean includeSrc, List<String> samples
+            , DBObjectToSamplesConverter samplesConverter, DBObjectToVariantStatsConverter statsConverter, Variant variant) {
+        this.includeSamples = includeSamples;
+        this.includeSrc = includeSrc;
+        this.samples = samples;
+        this.samplesConverter = samplesConverter;
+        this.statsConverter = statsConverter;
+        this.variant = variant;
+    }
+
+    public Variant getVariant() {
+        return variant;
+    }
+
+    public void setVariant(Variant variant) {
+        this.variant = variant;
     }
 
     public void setIncludeSrc(boolean includeSrc) {
@@ -159,6 +182,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                 List<DBObject> cohortStatsList = ((List) stats);
                 for (DBObject vs : cohortStatsList) {
                     VariantStats variantStats = statsConverter.convertToDataModelType(vs);
+                    if (variant != null) {
+                        variantStats.setRefAllele(variant.getReference());
+                        variantStats.setAltAllele(variant.getAlternate());
+                        variantStats.setVariantType(variant.getType());
+                    }
                     cohortStats.put((String) vs.get(DBObjectToVariantStatsConverter.COHORT_ID), variantStats);
                     file.setCohortStats(cohortStats);
                 }
@@ -222,5 +250,5 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         return mongoFile;
     }
-    
+
 }

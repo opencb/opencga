@@ -631,7 +631,7 @@ public class OptionsParser {
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
     class CommandStatsVariants extends Command {
 
-        @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
+        @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
         boolean overwriteStats = false;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
@@ -646,11 +646,13 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        @Parameter(names = {"-o", "--output-filename"}, description = "Output file name. Default: ./<study>_<file>.<timestamp>", required = false, arity = 1)
         String fileName = "";
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
-        String outdir = ".";
+        // this is confusing, lets try only with output-filename
+//        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+//        String outdir = ".";
+
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
         boolean create = false;
         @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")

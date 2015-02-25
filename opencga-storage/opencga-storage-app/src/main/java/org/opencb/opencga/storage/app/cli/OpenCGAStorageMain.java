@@ -795,26 +795,16 @@ public class OpenCGAStorageMain {
          * query options
          */
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, new VariantSource(null, c.fileId, c.studyId, null));
+        VariantSource variantSource = new VariantSource(null, c.fileId, c.studyId, null);
+        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
+        queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
 
         Map<String, Set<String>> samples = null;
         if (c.cohortName != null && c.cohortSamples != samples) {
             samples = new LinkedHashMap<>(5);
             samples.put(c.cohortName, new LinkedHashSet<>(c.cohortSamples));
         }
-
-//        Set<String> sampleNames1 = new LinkedHashSet<>(5);   // FIXME replace with actual catalog values!
-//        sampleNames1.add("C973");
-//        sampleNames1.add("C974");
-//        samples.put("cohort1", sampleNames1);
-//        Set<String> sampleNames2 = new LinkedHashSet<>(5);   // FIXME replace with actual catalog values!
-//        sampleNames2.add("C972");
-//        sampleNames2.add("C973");
-//        sampleNames2.add("C974");
-//        sampleNames2.add("C975");
-//        sampleNames2.add("C976");
-//        samples.put("cohort2", sampleNames2);
 
         /**
          * Create DBAdaptor
@@ -828,7 +818,13 @@ public class OpenCGAStorageMain {
         /**
          * Create and load stats
          */
-        String filename = c.fileName.isEmpty() ? c.dbName : c.fileName;
+        URI outputUri = new URI(c.fileName);
+        URI directoryUri = outputUri.resolve(".");
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(variantSource)
+                : Paths.get(outputUri.getPath()).getFileName().toString();
+        assertDirectoryExists(directoryUri);
+        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+
         boolean doCreate = c.create, doLoad = c.load != null;
         if (!c.create && c.load == null) {
             doCreate = doLoad = true;
@@ -836,9 +832,6 @@ public class OpenCGAStorageMain {
             filename = c.load;
         }
 
-        URI outputUri = new URI(null, c.outdir + (!c.outdir.isEmpty() && !c.outdir.endsWith("/")? "/": ""), null);
-        assertDirectoryExists(outputUri);
-        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
         try {
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
@@ -850,7 +843,7 @@ public class OpenCGAStorageMain {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, queryOptions);
             }
-        } catch (IOException e) {   // file not found?
+        } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?
             logger.error(e.getMessage());
             System.exit(1);
         }

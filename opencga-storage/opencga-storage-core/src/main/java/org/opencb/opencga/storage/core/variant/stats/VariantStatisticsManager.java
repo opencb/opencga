@@ -35,7 +35,7 @@ public class VariantStatisticsManager {
     private String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
     private final JsonFactory jsonFactory;
     private ObjectMapper jsonObjectMapper;
-    protected static Logger logger = LoggerFactory.getLogger(VariantStatisticsCalculator.class);
+    protected static Logger logger = LoggerFactory.getLogger(VariantStatisticsManager.class);
 
     public VariantStatisticsManager() {
         jsonFactory = new JsonFactory();
@@ -69,15 +69,18 @@ public class VariantStatisticsManager {
         ObjectWriter sourceWriter = jsonObjectMapper.writerWithType(VariantSourceStats.class);
 
         /** Variables for statistics **/
-        int batchSize = 100;  // future optimization, threads, etc
+        int batchSize = 1000;  // future optimization, threads, etc
+        boolean overwrite = false;
         if(options != null) { //Parse query options
             batchSize = options.getInt(BATCH_SIZE, batchSize);
+            overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
         }
         List<Variant> variantBatch = new ArrayList<>(batchSize);
+        int retrievedVariants = 0;
         VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(variantSource.getFileId(), variantSource.getStudyId());
-        VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
-        boolean subsetStats = (samples != null && !samples.isEmpty());
+        VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
+        boolean defaultCohortAbsent = false;
 
         logger.info("starting stats calculation");
         long start = System.currentTimeMillis();
@@ -85,6 +88,7 @@ public class VariantStatisticsManager {
         Iterator<Variant> iterator = obtainIterator(variantDBAdaptor, options);
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
+            retrievedVariants++;
             variantBatch.add(variant);
 //            variantBatch.add(filterSample(variant, samples));
 
@@ -93,12 +97,18 @@ public class VariantStatisticsManager {
 
                 for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                     outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
+                    if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
+                        defaultCohortAbsent = true;
+                    }
                 }
 
-                if (!subsetStats) {  // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
+                // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
+                if (!defaultCohortAbsent) {
                     variantSourceStats.updateFileStats(variantBatch);
                     variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
                 }
+                logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
+                variantBatch.clear();
             }
         }
 
@@ -106,17 +116,25 @@ public class VariantStatisticsManager {
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
+                    if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
+                        defaultCohortAbsent = true;
+                    }
             }
 
-            if (!subsetStats) {
+            if (!defaultCohortAbsent) {
                 variantSourceStats.updateFileStats(variantBatch);
                 variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
             }
+            logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
+            variantBatch.clear();
         }
         logger.info("finishing stats calculation, time: {}ms", System.currentTimeMillis() - start);
         if (variantStatisticsCalculator.getSkippedFiles() != 0) {
-            logger.warn("the sources in {} variants were not found, and therefore couldn't run its stats", variantStatisticsCalculator.getSkippedFiles());
+            logger.warn("the sources in {} (of {}) variants were not found, and therefore couldn't run its stats", variantStatisticsCalculator.getSkippedFiles(), retrievedVariants);
             logger.info("note: maybe the file-id and study-id were not correct?");
+        }
+        if (variantStatisticsCalculator.getSkippedFiles() == retrievedVariants) {
+            throw new IllegalArgumentException("given fileId and studyId were not found in any variant. Nothing to write.");
         }
         outputSourceStream.write(sourceWriter.writeValueAsString(variantSourceStats).getBytes());
         outputVariantsStream.close();
