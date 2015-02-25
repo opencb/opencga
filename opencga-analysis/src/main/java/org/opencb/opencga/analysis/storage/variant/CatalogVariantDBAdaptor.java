@@ -12,10 +12,12 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.*;
 
@@ -33,12 +35,12 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         this.dbAdaptor = dbAdaptor;
     }
 
-    public CatalogVariantDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    public CatalogVariantDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         this.catalogManager = catalogManager;
         this.dbAdaptor = buildBAdaptor(catalogManager, fileId, sessionId);
     }
 
-    private static VariantDBAdaptor buildBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private static VariantDBAdaptor buildBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageManagerException {
         int id = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
@@ -153,6 +155,11 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+        return null;
+    }
+
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, QueryOptions queryOptions) {
         return null;
     }
 
