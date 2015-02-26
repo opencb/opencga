@@ -19,7 +19,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 
-import org.opencb.opencga.storage.core.ThreadRunner;
+import org.opencb.opencga.storage.core.runner.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;

@@ -10,6 +10,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.storage.core.runner.ThreadRunner;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
