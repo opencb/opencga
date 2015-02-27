@@ -1,11 +1,11 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.commons.containers.list.SortedList;
-import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -184,7 +184,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
 
         Path outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
-        Path outputFileJsonFile = output.resolve(input.getFileName().toString() + ".files.json" + extension);
+        Path outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
 
         StringDataReader dataReader = new StringDataReader(input);
         StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
@@ -195,7 +195,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         long start = System.currentTimeMillis();
         SimpleThreadRunner runner = new SimpleThreadRunner(
                 dataReader,
-                Collections.<Task>singletonList(new TransformVariantTask(factory, source, outputFileJsonFile)),
+                Collections.<Task>singletonList(new VariantJsonTransformTask(factory, source, outputFileJsonFile)),
                 dataWriter,
                 batchSize,
                 capacity,
@@ -209,9 +209,10 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     private VariantSource readVariantSource(Path input, VariantSource source) {
-        DataReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+        VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
         reader.open();
         reader.pre();
+        source.addMetadata("variantFileHeader", reader.getHeader());
         reader.post();
         reader.close();
         return source;
@@ -224,7 +225,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
     protected VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
         VariantJsonReader variantJsonReader;
-        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
+        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz") || source.getFileName().endsWith(".json.snappy") || source.getFileName().endsWith(".json.snz")) {
             String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {

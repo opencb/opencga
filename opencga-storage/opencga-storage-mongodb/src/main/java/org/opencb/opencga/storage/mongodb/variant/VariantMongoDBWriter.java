@@ -447,6 +447,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (currentBulkSize != 0) {
             executeBulk();
         }
+        logger.info("POST");
         writeSourceSummary(source);
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
@@ -534,7 +535,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
 
     private void executeBulk() {
-        logger.debug("Current BulkSize : " + currentBulkSize);
+        logger.debug("Execute bulk. BulkSize : " + currentBulkSize);
         long startBulk = System.nanoTime();
         bulk.execute();
         resetBulk();

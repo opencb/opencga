@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -25,28 +26,40 @@ public class SimpleThreadRunner {
     final Integer numTasks;
     private final ExecutorService executorService;
     private final DataReader reader;
-    private final DataWriter writer;
+    private final List<DataWriter> writers;
     private final List<Task> tasks;
     protected static Logger logger = LoggerFactory.getLogger(SimpleThreadRunner.class);
 
     public SimpleThreadRunner(DataReader reader, List<Task> tasks, DataWriter writer, int batchSize, int capacity, Integer numTasks) {
+        this(reader, tasks, Collections.singletonList(writer), batchSize, capacity, numTasks);
+    }
+    public SimpleThreadRunner(DataReader reader, List<Task> tasks, List<DataWriter> writers, int batchSize, int capacity, Integer numTasks) {
         this.batchSize = batchSize;
         this.capacity = capacity;
-        this.numTasks = numTasks;
         this.reader = reader;
-        this.writer = writer;
+        this.writers = writers;
         this.tasks = tasks;
         readBlockingQueue = new ArrayBlockingQueue<>(capacity);
-        writeBlockingQueue = new ArrayBlockingQueue<>(capacity);
+        if (tasks.isEmpty()) {
+            this.numTasks = 0;
+            writeBlockingQueue = readBlockingQueue;
+        } else {
+            this.numTasks = numTasks;
+            writeBlockingQueue = new ArrayBlockingQueue<>(capacity);
+        }
 
-        executorService = Executors.newFixedThreadPool(numTasks + 2);
+        executorService = Executors.newFixedThreadPool(numTasks + 1 + writers.size());
     }
     public void run() {
         reader.open();
         reader.pre();
 
-        writer.open();
-        writer.pre();
+        for (DataWriter writer : writers) {
+            writer.open();
+        }
+        for (DataWriter writer : writers) {
+            writer.pre();
+        }
 
         for (Task task : tasks) {
             task.pre();
@@ -57,7 +70,9 @@ public class SimpleThreadRunner {
         for (Integer i = 0; i < numTasks; i++) {
             executorService.submit(taskRunnable);
         }
-        executorService.submit(new WriterRunnable(writer));
+        for (DataWriter writer : writers) {
+            executorService.submit(new WriterRunnable(writer));
+        }
 
         executorService.shutdown();
         try {
@@ -73,8 +88,12 @@ public class SimpleThreadRunner {
         reader.post();
         reader.close();
 
-        writer.post();
-        writer.close();
+        for (DataWriter writer : writers) {
+            writer.post();
+        }
+        for (DataWriter writer : writers) {
+            writer.close();
+        }
 
     }
     class ReaderRunnable implements Runnable {

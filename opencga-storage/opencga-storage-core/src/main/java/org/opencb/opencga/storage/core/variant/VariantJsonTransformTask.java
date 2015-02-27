@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Created by hpccoll1 on 26/02/15.
  */
-class TransformVariantTask extends Task<String> {
+class VariantJsonTransformTask extends Task<String> {
 
     final VariantFactory factory;
     final ObjectWriter objectWriter;
@@ -32,7 +32,7 @@ class TransformVariantTask extends Task<String> {
     private final ObjectMapper jsonObjectMapper;
     private final Path outputFileJsonFile;
 
-    public TransformVariantTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
+    public VariantJsonTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
         this.factory = factory;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;

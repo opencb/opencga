@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.runner;
 import org.opencb.commons.io.DataReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xerial.snappy.SnappyInputStream;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -35,7 +36,7 @@ public class StringDataReader implements DataReader<String> {
                 this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(path.toFile()))));
             } else if (fileName.endsWith(".snappy") || fileName.endsWith(".snz")) {
                 logger.info("Snappy input compress");
-                this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(path.toFile()))));
+                this.reader = new BufferedReader(new InputStreamReader(new SnappyInputStream(new FileInputStream(path.toFile()))));
             } else {
                 logger.info("Plain input compress");
                 this.reader = Files.newBufferedReader(path, Charset.defaultCharset());

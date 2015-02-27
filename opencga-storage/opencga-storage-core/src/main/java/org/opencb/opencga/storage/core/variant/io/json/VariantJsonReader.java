@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.xerial.snappy.SnappyInputStream;
 
 /**
  *
@@ -64,17 +65,24 @@ public class VariantJsonReader implements VariantReader {
             Files.exists(this.variantsPath);
             Files.exists(this.globalPath);
 
-            if (variantsPath.toFile().getName().endsWith(".gz")) {
+            String name = variantsPath.toFile().getName();
+            if (name.endsWith(".gz")) {
                 this.variantsStream = new GZIPInputStream(new FileInputStream(variantsPath.toFile()));
+            } else if (name.endsWith(".snz") || name.endsWith(".snappy")) {
+                this.variantsStream = new SnappyInputStream(new FileInputStream(variantsPath.toFile()));
             } else {
                 this.variantsStream = new FileInputStream(variantsPath.toFile());
             }
-            
-            if (globalPath.toFile().getName().endsWith(".gz")) {
+
+            String globalFileName = globalPath.toFile().getName();
+            if (globalFileName.endsWith(".gz")) {
                 this.globalStream = new GZIPInputStream(new FileInputStream(globalPath.toFile()));
+            } else if (globalFileName.endsWith(".snz") || name.endsWith(".snappy")) {
+                this.globalStream = new SnappyInputStream(new FileInputStream(globalPath.toFile()));
             } else {
                 this.globalStream = new FileInputStream(globalPath.toFile());
             }
+
             
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
