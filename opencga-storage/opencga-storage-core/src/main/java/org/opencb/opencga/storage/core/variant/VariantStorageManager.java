@@ -1,10 +1,13 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
+import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
@@ -125,13 +128,6 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         if (!extension.startsWith(".") && !extension.isEmpty()) {
             extension = "." + extension;
         }
-        //Reader
-//        VariantReader reader = null;
-//        PedigreeReader pedReader = null;
-//        if(pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
-//            pedReader = new PedigreePedReader(pedigree.toString());
-//        }
-
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory;
         if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
@@ -150,61 +146,77 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         } else {
             throw new IOException("Variants input file format not supported");
         }
-        source = readVariantSource(input, source);
+
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
-
 //        todo remove:
 //        if (includeStats) {
 //            taskList.add(new VariantStatsTask(reader, source));
 //        }
 
-        //Writers
-        List<VariantWriter> writers = new ArrayList<>();
-        VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-        jsonWriter.includeSrc(includeSrc);
-        writers.add(jsonWriter);
-
-        for (VariantWriter variantWriter : writers) {
-            variantWriter.includeSamples(includeSamples);
-//            variantWriter.includeEffect(includeEffect);   //Deprecated
-            variantWriter.includeStats(includeStats);
-        }
-
-        //Runner
-//        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, batchSize);
-//
-//        logger.info("Transforming variants...");
-//        long start = System.currentTimeMillis();
-//        vr.run();
-//        long end = System.currentTimeMillis();
-//        logger.info("end - start = " + (end - start) / 1000.0 + "s");
-//        logger.info("Variants transformed!");
-
-
-
         Path outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
         Path outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
 
-        StringDataReader dataReader = new StringDataReader(input);
-        StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
-
-
-
         logger.info("Transforming variants...");
-        long start = System.currentTimeMillis();
-        SimpleThreadRunner runner = new SimpleThreadRunner(
-                dataReader,
-                Collections.<Task>singletonList(new VariantJsonTransformTask(factory, source, outputFileJsonFile)),
-                dataWriter,
-                batchSize,
-                capacity,
-                numTasks);
-        runner.run();
-        long end = System.currentTimeMillis();
+        long start, end;
+        if (numTasks == 1) {
+            if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
+                logger.warn("Force using gzip compression");
+                extension = ".gz";
+                outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
+                outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
+            }
+
+            //Ped Reader
+            PedigreeReader pedReader = null;
+            if(pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
+                pedReader = new PedigreePedReader(pedigree.toString());
+            }
+
+            //Reader
+            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+
+            //Writers
+            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
+            jsonWriter.includeSrc(includeSrc);
+            jsonWriter.includeSamples(includeSamples);
+            jsonWriter.includeStats(includeStats);
+
+            List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
+
+            //Runner
+            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, batchSize);
+
+            logger.info("Single thread transform...");
+            start = System.currentTimeMillis();
+            vr.run();
+            end = System.currentTimeMillis();
+
+        } else {
+            //Read VariantSource
+            source = readVariantSource(input, source);
+
+            //Reader
+            StringDataReader dataReader = new StringDataReader(input);
+
+            //Writers
+            StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
+
+            SimpleThreadRunner runner = new SimpleThreadRunner(
+                    dataReader,
+                    Collections.<Task>singletonList(new VariantJsonTransformTask(factory, source, outputFileJsonFile)),
+                    dataWriter,
+                    batchSize,
+                    capacity,
+                    numTasks);
+
+            logger.info("Multi thread transform...");
+            start = System.currentTimeMillis();
+            runner.run();
+            end = System.currentTimeMillis();
+        }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
-
         return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
     }
 
