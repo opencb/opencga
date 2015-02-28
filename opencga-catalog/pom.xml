@@ -11,17 +11,17 @@
     </parent>
 
     <artifactId>opencga-catalog</artifactId>
-    <packaging>jar</packaging>
     <version>${opencga.version}</version>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-core</artifactId>
+            <artifactId>opencga-lib</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-lib</artifactId>
+            <artifactId>opencga-storage-core</artifactId>
         </dependency>
 
         <dependency>
@@ -35,6 +35,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
