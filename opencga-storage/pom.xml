@@ -6,13 +6,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.4.0</version>
+        <version>0.5-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>opencga-storage</artifactId>
     <packaging>pom</packaging>
-    <version>0.4.0</version>
+    <version>0.5-SNAPSHOT</version>
 
     <modules>
         <module>opencga-storage-app</module>
