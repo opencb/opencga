@@ -43,17 +43,6 @@
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
                     <encoding>UTF-8</encoding>
-                    <!--<excludes>-->
-                        <!--<exclude>**/VariantSqliteWriter.java</exclude>-->
-                        <!--<exclude>**/VariantSqliteDBAdaptor.java</exclude>-->
-                        <!--<exclude>**/VariantHbaseWriter.java</exclude>-->
-                        <!--<exclude>**/VariantHbaseDBAdaptor.java</exclude>-->
-                    <!--</excludes>-->
-                    <!--<testExcludes>-->
-                        <!--<exclude>**/VariantSqliteQueryBuilderTest.java</exclude>-->
-                        <!--<exclude>**/VariantHbaseWriterTest.java</exclude>-->
-                        <!--<exclude>**/VariantHbaseDBAdaptorTest.java</exclude>-->
-                    <!--</testExcludes>-->
                     <excludes>
                         <exclude>org/opencb/opencga/storage/variant/hbase/*.java</exclude>
                         <exclude>org/opencb/opencga/storage/variant/sqlite/*.java</exclude>

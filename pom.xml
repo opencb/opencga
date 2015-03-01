@@ -147,11 +147,11 @@
                 <artifactId>biodata-tools</artifactId>
                 <version>${biodata.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.opencb.commons</groupId>
-                <artifactId>bioformats</artifactId>
-                <version>2.0.0</version>
-            </dependency>
+            <!--<dependency>-->
+            <!--<groupId>org.opencb.commons</groupId>-->
+            <!--<artifactId>bioformats</artifactId>-->
+            <!--<version>2.0.0</version>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>
@@ -161,7 +161,6 @@
                 <groupId>org.opencb.cellbase</groupId>
                 <artifactId>cellbase-mongodb</artifactId>
                 <version>${cellbase.version}</version>
-                <scope>compile</scope>
             </dependency>
             <dependency>
                 <groupId>org.opencb.datastore</groupId>
@@ -203,7 +202,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.3.4</version>
+                <version>2.5.1</version>
             </dependency>
             <dependency>
                 <groupId>com.amazonaws</groupId>
@@ -239,6 +238,16 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>2.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>9.2.9.v20150224</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
+                <version>9.2.9.v20150224</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.hbase</groupId>
@@ -329,4 +338,39 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>deploy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.4</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
