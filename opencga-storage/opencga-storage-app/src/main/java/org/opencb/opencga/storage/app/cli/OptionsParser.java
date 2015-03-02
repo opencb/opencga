@@ -104,7 +104,7 @@ public class OptionsParser {
             }
             paramsString+="}";
             return "GeneralParameters{" +
-                    "propertiesPath='" + propertiesPath + '\'' +
+                    "configFile='" + propertiesPath + '\'' +
                     ", storageManagerName='" + storageManagerName + '\'' +
                     ", help=" + help +
                     ", params=" + paramsString +

@@ -34,7 +34,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
-    private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
+    private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
 
@@ -57,9 +57,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
-        archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(true, 
-                new DBObjectToVariantStatsConverter(), credentials, filesCollectionName);
-        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
+        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(credentials, filesCollectionName),
+                new DBObjectToVariantStatsConverter());
+        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter);
     }
 
 

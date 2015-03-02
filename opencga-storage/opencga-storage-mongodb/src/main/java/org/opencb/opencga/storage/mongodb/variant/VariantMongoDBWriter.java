@@ -32,42 +32,45 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    public static final Logger logger = Logger.getLogger(VariantMongoDBWriter.class.getName());
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(VariantDBWriter.class);
 
-    private VariantSource source;
-
-    private MongoClient mongoClient;
-    private DB db;
-
-    private String filesCollectionName;
-    private String variantsCollectionName;
-    private DBCollection filesCollection;
-    private DBCollection variantsCollection;
-
-    private Map<String, DBObject> mongoMap;
-    private Map<String, DBObject> mongoFileMap;
+    private final VariantSource source;
 
     private MongoCredentials credentials;
 
-    private boolean includeStats;
-    private boolean includeEffect;
-    private boolean includeSrc = true;
-    private boolean includeSamples;
-    private boolean compressSamples = true;
-    private String defaultGenotype = null;
-
-    private List<String> samples;
-
-    private Map<String, Integer> conseqTypes;
-    private DBObjectToVariantConverter variantConverter;
-    private DBObjectToVariantStatsConverter statsConverter;
-    private DBObjectToVariantSourceConverter sourceConverter;
-
-    private DBObjectToVariantSourceEntryConverter sourceEntryConverter;
-
-    private long numVariantsWritten;
     private MongoDataStore mongoDataStore;
     private MongoDataStoreManager mongoDataStoreManager;
     private MongoDBCollection variantMongoCollection;
     private MongoDBCollection filesMongoCollection;
+
+    private String filesCollectionName;
+    private String variantsCollectionName;
+
+    @Deprecated private MongoClient mongoClient;
+    @Deprecated private DB db;
+    @Deprecated private DBCollection filesCollection;
+    @Deprecated private DBCollection variantsCollection;
+
+    @Deprecated private Map<String, DBObject> mongoMap;
+    @Deprecated private Map<String, DBObject> mongoFileMap;
+
+
+    private boolean includeStats;
+    @Deprecated private boolean includeEffect;
+    private boolean includeSrc = true;
+    private boolean includeSamples;
+    private boolean compressDefaultGenotype = true;
+    private String defaultGenotype = null;
+
+    private Map<String, Integer> samplesIds;
+    @Deprecated private List<String> samples;
+    @Deprecated private Map<String, Integer> conseqTypes;
+
+    private DBObjectToVariantConverter variantConverter;
+    private DBObjectToVariantStatsConverter statsConverter;
+    private DBObjectToVariantSourceConverter sourceConverter;
+    private DBObjectToVariantSourceEntryConverter sourceEntryConverter;
+    private DBObjectToSamplesConverter sampleConverter;
+
+    private long numVariantsWritten;
 
     private BulkWriteOperation bulk;
     private int currentBulkSize = 0;
@@ -78,16 +81,16 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long bulkTime = 0;
 
 
-    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials) {
+    public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials) {
         this(source, credentials, "variants", "files");
     }
 
-    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
+    public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
         this(source, credentials, variantsCollection, filesCollection, false, false, false);
     }
 
-    public VariantMongoDBWriter(VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
-                                boolean includeSamples, boolean includeStats, boolean includeEffect) {
+    public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
+                                boolean includeSamples, boolean includeStats, @Deprecated boolean includeEffect) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
@@ -125,9 +128,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             return false;
         }
 
-//        return db != null;
-
-
         mongoDataStoreManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().init()
                 .add("username", credentials.getUsername())
@@ -164,7 +164,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return write_setOnInsert(data);
     }
 
-    public boolean write_old(List<Variant> data) {
+    @Deprecated public boolean write_old(List<Variant> data) {
         buildBatchRaw(data);
         if (this.includeEffect) {
             buildEffectRaw(data);
@@ -269,7 +269,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return true;
     }
 
-    @Override
+    @Override @Deprecated
     protected boolean buildBatchRaw(List<Variant> data) {
         for (Variant v : data) {
             // Check if this variant is already stored
@@ -307,7 +307,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return true;
     }
 
-    @Override
+    @Override @Deprecated
     protected boolean buildEffectRaw(List<Variant> variants) {
         for (Variant v : variants) {
             DBObject mongoVariant = mongoMap.get(variantConverter.buildStorageId(v));
@@ -357,6 +357,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return false;
     }
 
+    @Deprecated
     private BasicDBObject getVariantEffectDBObject(VariantEffect effect) {
         String[] consequenceTypes = new String[effect.getConsequenceTypes().length];
         for (int i = 0; i < effect.getConsequenceTypes().length; i++) {
@@ -370,7 +371,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return object;
     }
 
-    @Override
+    @Override @Deprecated
     protected boolean buildBatchIndex(List<Variant> data) {
         variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1));
         variantsCollection.createIndex(new BasicDBObject("_at.gn", 1));
@@ -382,7 +383,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return true;
     }
 
-    @Override
+    @Override @Deprecated
     protected boolean writeBatch(List<Variant> batch) {
         for (Variant v : batch) {
             String rowkey = variantConverter.buildStorageId(v);
@@ -437,9 +438,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private boolean writeSourceSummary(VariantSource source) {
         DBObject studyMongo = sourceConverter.convertToStorageType(source);
         DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
-//        WriteResult wr = filesCollection.update(query, studyMongo, true, false);
         filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
-//        return wr.getLastError().ok(); // TODO Is this a proper return statement?
         return true;
     }
 
@@ -448,6 +447,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (currentBulkSize != 0) {
             executeBulk();
         }
+        logger.info("POST");
         writeSourceSummary(source);
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
@@ -458,6 +458,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     @Override
     public boolean close() {
         mongoClient.close();
+        this.mongoDataStoreManager.close(this.mongoDataStore.getDb().getName());
         return true;
     }
 
@@ -475,51 +476,43 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         includeSamples = b;
     }
 
-    @Override
+    @Override @Deprecated
     public final void includeEffect(boolean b) {
         includeEffect = b;
     }
 
-    public void setCompressSamples(boolean compressSamples) {
-        this.compressSamples = compressSamples;
+    public void setCompressDefaultGenotype(boolean compressDefaultGenotype) {
+        this.compressDefaultGenotype = compressDefaultGenotype;
     }
 
     public void setDefaultGenotype(String defaultGenotype) {
         this.defaultGenotype = defaultGenotype;
     }
-    private void setConverters() {
-//        switch (source.getType()) {
-//            case FAMILY:
-//            case TRIO:
-//                compressSamples = true;
-//                defaultValue = false;
-//                break;
-//            case CONTROL:
-//            case CASE:
-//            case CASE_CONTROL:
-//            case COLLECTION:
-//            default:
-//                compressSamples = true;
-//                defaultValue = true;
-//        }
 
-        samples = source.getSamples();
+    private void setConverters() {
+
+        if (samplesIds == null || samplesIds.isEmpty()) {
+            logger.info("Using sample position as sample id");
+            samplesIds = source.getSamplesPosition();
+        }
 
         sourceConverter = new DBObjectToVariantSourceConverter();
-        statsConverter = new DBObjectToVariantStatsConverter();
+        statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
+        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(compressDefaultGenotype, samplesIds): null; //TODO: Add default genotype
 
-        boolean useDefaultGenotype = defaultGenotype != null && !defaultGenotype.isEmpty();
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                compressSamples, useDefaultGenotype,
-                includeSamples ? samples : null,
-                includeStats ? statsConverter : null);
+                includeSrc,
+                sampleConverter,
+                statsConverter);
         sourceEntryConverter.setIncludeSrc(includeSrc);
-        // TODO Not sure about commenting this, but otherwise it looks like the ArchiveVariantFile will be processed twice
-//        variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
+
+        // Do not create the VariantConverter with the sourceEntryConverter.
+        // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
+        // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
         variantConverter = new DBObjectToVariantConverter();
     }
 
-    private void addConsequenceType(VariantEffect effect) {
+    @Deprecated private void addConsequenceType(VariantEffect effect) {
         for (int so : effect.getConsequenceTypes()) {
             String ct = ConsequenceTypeMappings.accessionToTerm.get(so);
             int ctCount = conseqTypes.containsKey(ct) ? conseqTypes.get(ct)+1 : 1;
@@ -531,8 +524,18 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         this.bulkSize = bulkSize;
     }
 
+    /**
+     * This sample Ids will be used at conversion, to replace sample name for some numerical Id.
+     * If this param is not provided, the variantSource.samplesPosition will be used instead.
+     * @param samplesIds    Map between sampleName and sampleId
+     */
+    public void setSamplesIds(Map<String, Integer> samplesIds) {
+        this.samplesIds = samplesIds;
+    }
+
+
     private void executeBulk() {
-        logger.debug("Current BulkSize : " + currentBulkSize);
+        logger.debug("Execute bulk. BulkSize : " + currentBulkSize);
         long startBulk = System.nanoTime();
         bulk.execute();
         resetBulk();

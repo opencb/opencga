@@ -21,37 +21,57 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class DBObjectToVariantSourceEntryConverterTest {
-    
-    private BasicDBObject mongoFile;
+
     private VariantSourceEntry file;
-    
+    private BasicDBObject mongoFile;
+    private DBObject mongoFileWithIds;
+
+    private Map<String, Integer> sampleIds;
+    private List<String> sampleNames;
+
     @Before
     public void setUp() {
         // Java native class
         file = new VariantSourceEntry("f1", "s1");
         file.addAttribute("QUAL", "0.01");
         file.addAttribute("AN", "2");
-        file.setFormat("GT:DP");
+        file.setFormat("GT");
         
         Map<String, String> na001 = new HashMap<>();
         na001.put("GT", "0/0");
-        na001.put("DP", "4");
         file.addSampleData("NA001", na001);
         Map<String, String> na002 = new HashMap<>();
         na002.put("GT", "0/1");
-        na002.put("DP", "5");
         file.addSampleData("NA002", na002);
+        Map<String, String> na003 = new HashMap<>();
+        na003.put("GT", "1/1");
+        file.addSampleData("NA003", na003);
         
         // MongoDB object
         mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, file.getFileId())
                 .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, file.getStudyId());
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD, 
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
         BasicDBObject genotypeCodes = new BasicDBObject();
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
+        genotypeCodes.append("1/1", Arrays.asList(2));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
+
+        sampleIds = new HashMap<>();
+        sampleIds.put("NA001", 15);
+        sampleIds.put("NA002", 25);
+        sampleIds.put("NA003", 35);
+
+        sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
+
+
+        mongoFileWithIds = new BasicDBObject((this.mongoFile.toMap()));
+        mongoFileWithIds.put("samp", new BasicDBObject());
+        ((DBObject) mongoFileWithIds.get("samp")).put("def", "0/0");
+        ((DBObject) mongoFileWithIds.get("samp")).put("0/1", Arrays.asList(25));
+        ((DBObject) mongoFileWithIds.get("samp")).put("1/1", Arrays.asList(35));
     }
     
     @Test
@@ -78,7 +98,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         
         List<String> sampleNames = null;
         DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(
-                true, new DBObjectToVariantStatsConverter(), sampleNames);
+                true, new DBObjectToSamplesConverter(sampleNames), new DBObjectToVariantStatsConverter());
         VariantSourceEntry converted = converter.convertToDataModelType(mongoFile);
         assertEquals(file, converted);
     }
@@ -103,10 +123,9 @@ public class DBObjectToVariantSourceEntryConverterTest {
         genotypes.append("1/1", 10);
         mongoStats.append(DBObjectToVariantStatsConverter.NUMGT_FIELD, genotypes);
         mongoFile.append(DBObjectToVariantSourceEntryConverter.STATS_FIELD, mongoStats);
-        
-        List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
+
         DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(
-                true, true, sampleNames, new DBObjectToVariantStatsConverter());
+                true, new DBObjectToSamplesConverter(sampleNames), new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(file);
         
         assertEquals(mongoFile.get(DBObjectToVariantStatsConverter.MAF_FIELD), converted.get(DBObjectToVariantStatsConverter.MAF_FIELD));
@@ -124,28 +143,83 @@ public class DBObjectToVariantSourceEntryConverterTest {
         List<String> sampleNames = null;
         
         // Test with no stats converter provided
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, null, sampleNames);
+        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, new DBObjectToSamplesConverter(sampleNames), null);
         VariantSourceEntry converted = converter.convertToDataModelType(mongoFile);
         assertEquals(file, converted);
         
         // Test with a stats converter provided but no stats object
-        converter = new DBObjectToVariantSourceEntryConverter(true, null, sampleNames);
+        converter = new DBObjectToVariantSourceEntryConverter(true, new DBObjectToSamplesConverter(sampleNames), null);
         converted = converter.convertToDataModelType(mongoFile);
         assertEquals(file, converted);
     }
 
     @Test
     public void testConvertToStorageTypeWithoutStats() {
-        List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         // Test with no stats converter provided
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, true, sampleNames, null);
+        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, new DBObjectToSamplesConverter(sampleNames), null);
         DBObject converted = converter.convertToStorageType(file);
         assertEquals(mongoFile, converted);
         
         // Test with a stats converter provided but no stats object
-        converter = new DBObjectToVariantSourceEntryConverter(true, true, sampleNames, new DBObjectToVariantStatsConverter());
+        converter = new DBObjectToVariantSourceEntryConverter(true, new DBObjectToSamplesConverter(sampleNames), new DBObjectToVariantStatsConverter());
         converted = converter.convertToStorageType(file);
         assertEquals(mongoFile, converted);
     }
-    
+
+    @Test
+    public void testConvertToStorageTypeWithoutStatsWithSampleIds() {
+        DBObjectToVariantSourceEntryConverter converter;
+        DBObject convertedMongo;
+        VariantSourceEntry convertedFile;
+
+
+        // Test with no stats converter provided
+        converter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(true, sampleIds),
+                null);
+        convertedMongo = converter.convertToStorageType(file);
+        assertEquals(mongoFileWithIds, convertedMongo);
+        convertedFile = converter.convertToDataModelType(convertedMongo);
+        assertEquals(file, convertedFile);
+
+        // Test with a stats converter provided but no stats object
+        converter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(true, sampleIds),
+                new DBObjectToVariantStatsConverter());
+        convertedMongo = converter.convertToStorageType(file);
+        assertEquals(mongoFileWithIds, convertedMongo);
+        convertedFile = converter.convertToDataModelType(convertedMongo);
+        assertEquals(file, convertedFile);
+    }
+
+    @Test
+    public void testConvertToDataTypeWithoutStatsWithSampleIds() {
+        DBObjectToVariantSourceEntryConverter converter;
+        DBObject convertedMongo;
+        VariantSourceEntry convertedFile;
+
+
+        // Test with no stats converter provided
+        converter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(true, sampleIds),
+                null);
+        convertedFile = converter.convertToDataModelType(mongoFileWithIds);
+        assertEquals(file, convertedFile);
+        convertedMongo = converter.convertToStorageType(convertedFile);
+        assertEquals(mongoFileWithIds, convertedMongo);
+
+        // Test with a stats converter provided but no stats object
+        converter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(true, sampleIds),
+                new DBObjectToVariantStatsConverter());
+        convertedFile = converter.convertToDataModelType(mongoFileWithIds);
+        assertEquals(file, convertedFile);
+        convertedMongo = converter.convertToStorageType(convertedFile);
+        assertEquals(mongoFileWithIds, convertedMongo);
+    }
+
 }

@@ -6,13 +6,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.4.0</version>
+        <version>0.5-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>opencga-server</artifactId>
-    <packaging>war</packaging>
     <version>${opencga.version}</version>
+    <packaging>war</packaging>
 
     <dependencies>
         <dependency>
@@ -84,7 +84,6 @@
             <artifactId>jersey-media-json-jackson</artifactId>
             <version>2.12</version>
         </dependency>
-
         <dependency>
             <groupId>com.wordnik</groupId>
             <artifactId>swagger-jersey2-jaxrs_2.11</artifactId>
@@ -113,7 +112,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
+                <version>3.2</version>
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>

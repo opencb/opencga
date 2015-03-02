@@ -1,12 +1,8 @@
 package org.opencb.opencga.storage.mongodb.variant.annotator;
 
 import org.junit.Test;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
-import org.opencb.cellbase.core.lib.DBAdaptorFactory;
-import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
-import org.opencb.cellbase.lib.mongodb.db.MongoDBAdaptorFactory;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.lib.common.Config;
@@ -14,7 +10,6 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import java.net.URI;
 import java.nio.file.Paths;

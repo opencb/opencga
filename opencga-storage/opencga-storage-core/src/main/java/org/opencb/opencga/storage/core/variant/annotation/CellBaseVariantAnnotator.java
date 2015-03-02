@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +14,7 @@ import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
-import org.opencb.cellbase.lib.mongodb.db.MongoDBAdaptorFactory;
+import org.opencb.cellbase.mongodb.db.MongoDBAdaptorFactory;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
@@ -76,7 +75,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
          * Connecting to CellBase database
          */
         dbAdaptorFactory = new MongoDBAdaptorFactory(cellbaseConfiguration);
-        variantAnnotationDBAdaptor = dbAdaptorFactory.getGenomicVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
+        variantAnnotationDBAdaptor = dbAdaptorFactory.getVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
         variationDBAdaptor = dbAdaptorFactory.getVariationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
     }
 
@@ -287,7 +286,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     }
 
     private List<VariantAnnotation> getVariantAnnotationsDbAdaptor(List<GenomicVariant> genomicVariantList) throws IOException {
-        org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions = new org.opencb.cellbase.core.lib.dbquery.QueryOptions();
+        QueryOptions queryOptions = new QueryOptions();
 
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());
         Map<String, List<ConsequenceType>> consequenceTypes = getConsequenceTypes(genomicVariantList, queryOptions);
@@ -310,12 +309,11 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     }
 
     // FIXME To delete when available in cellbase
-    private Map<String, List<ConsequenceType>> getConsequenceTypes(List<GenomicVariant> genomicVariants, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
+    private Map<String, List<ConsequenceType>> getConsequenceTypes(List<GenomicVariant> genomicVariants,
+                                                                   QueryOptions queryOptions) throws IOException {
         Map<String, List<ConsequenceType>> map = new HashMap<>(genomicVariants.size());
-
-        List<org.opencb.cellbase.core.lib.dbquery.QueryResult> queryResultList =
-                variantAnnotationDBAdaptor.getAllConsequenceTypesByVariantList(genomicVariants, queryOptions);
-        for (org.opencb.cellbase.core.lib.dbquery.QueryResult queryResult : queryResultList) {
+        List<QueryResult> queryResultList = variantAnnotationDBAdaptor.getAllConsequenceTypesByVariantList(genomicVariants, queryOptions);
+        for (QueryResult queryResult : queryResultList) {
             Object result = queryResult.getResult();
             List list = result instanceof Collection ? new ArrayList((Collection) result) : Collections.singletonList(result);
 
@@ -329,11 +327,10 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     }
 
     // FIXME To delete when available in cellbase
-    private Map<String, String> getVariantId(List<GenomicVariant> genomicVariant, org.opencb.cellbase.core.lib.dbquery.QueryOptions queryOptions) throws IOException {
-        List<org.opencb.cellbase.core.lib.dbquery.QueryResult> variationQueryResultList =
-                variationDBAdaptor.getIdByVariantList(genomicVariant, queryOptions);
+    private Map<String, String> getVariantId(List<GenomicVariant> genomicVariant, QueryOptions queryOptions) throws IOException {
+        List<QueryResult> variationQueryResultList = variationDBAdaptor.getIdByVariantList(genomicVariant, queryOptions);
         Map<String, String> map = new HashMap<>(genomicVariant.size());
-        for (org.opencb.cellbase.core.lib.dbquery.QueryResult queryResult : variationQueryResultList) {
+        for (QueryResult queryResult : variationQueryResultList) {
             map.put(queryResult.getId(), queryResult.getResult().toString());
         }
         return map;

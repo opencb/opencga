@@ -10,6 +10,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.storage.core.runner.ThreadRunner;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -44,11 +45,11 @@ public class ThreadRunnerTest extends GenericTest {
         @Override
         public List<String> read(int batchSize) {
             ArrayList<String> batch = new ArrayList<String>(batchSize);
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(10);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
             for (int i = 0; i < batchSize && num < max; i++) {
                 num++;
 //                batch.add( String.format("%7d %s", num, StringUtils.randomString(10)));
@@ -56,7 +57,7 @@ public class ThreadRunnerTest extends GenericTest {
                 batch.add( String.format("{ \"id\": %d, \"string\": \"%s\", \"array\": [%d, %d, %d]}",
                         num, StringUtils.randomString(10), RandomUtils.nextInt()%1024, RandomUtils.nextInt()%1024, RandomUtils.nextInt()%1024));
             }
-            System.out.println("batchSize " + batch.size());
+//            System.out.println("batchSize " + batch.size());
             return batch;
         }
     }
@@ -207,19 +208,35 @@ public class ThreadRunnerTest extends GenericTest {
         FileOutputStream os = new FileOutputStream("/tmp/test.txt");
         FileOutputStream os2 = new FileOutputStream("/tmp/test2.txt");
 
-        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         ThreadRunner threadDGARunner = new ThreadRunner(executorService, 100);
 
         ThreadRunner.ReadNode<String> readerNode = threadDGARunner.newReaderNode(new StringReader(10000), 10);
         ThreadRunner.TaskNode<String, ObjectMap> parserNode = threadDGARunner.newTaskNode(new Parser(), 100);
+        ThreadRunner.TaskNode<ObjectMap, ObjectMap> sumNode = threadDGARunner.newTaskNode(new ThreadRunner.Task<ObjectMap, ObjectMap>() {
+            public List<ObjectMap> apply(List<ObjectMap> batch) throws IOException {
+                ArrayList<ObjectMap> objectMaps = new ArrayList<>(batch.size());
+                for (ObjectMap objectMap : batch) {
+                    ObjectMap om = new ObjectMap(objectMap);
+                    List<Integer> array = (List) objectMap.get("array");
+                    int sum = 0;
+                    for (Integer integer : array) {
+                        sum += integer;
+                    }
+                    om.put("sum", sum);
+                    objectMaps.add(om);
+                }
+                return objectMaps;
+            }
+        }, 10);
 //        ThreadRunner.SimpleTaskNode<ObjectMap> sumNode = threadDGARunner.newSimpleTaskNode(new Sum(), 10);
-//        ThreadRunner.WriterNode<ObjectMap> objectMapWriterNode = threadDGARunner.newWriterNode(new ObjectMapWriter(os), 10);
+        ThreadRunner.WriterNode<ObjectMap> objectMapWriterNode = threadDGARunner.newWriterNode(new ObjectMapWriter(os), 10);
         ThreadRunner.WriterNode<ObjectMap> objectMapWriterNode2 = threadDGARunner.newWriterNode(new ObjectMapWriter(os2), 10);
 
         readerNode.append(parserNode);
-//        parserNode.append(sumNode);
+        parserNode.append(sumNode);
         parserNode.append(objectMapWriterNode2);
-//        sumNode.append(objectMapWriterNode);
+        sumNode.append(objectMapWriterNode);
 
         threadDGARunner.run();
 
