@@ -222,6 +222,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
 
         //Get the inserted user.
+        user.setProjects(projects);
         List<User> result = getUser(user.getId(), options, "").getResult();
 
         return endQuery("insertUser", startTime, result, errorMsg, null);
@@ -396,32 +397,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         Map<String, Object> userParameters = new HashMap<>();
 
         String[] acceptedParams = {"name", "email", "organization", "lastActivity", "role", "status"};
-        for (String s : acceptedParams) {
-            if(parameters.containsKey(s)) {
-                userParameters.put(s, parameters.getString(s));
-            }
-        }
+        filterStringParams(parameters, userParameters, acceptedParams);
         String[] acceptedIntParams = {"diskQuota", "diskUsage"};
-        for (String s : acceptedIntParams) {
-            if(parameters.containsKey(s)) {
-                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
-                if(anInt != Integer.MIN_VALUE) {
-                    userParameters.put(s, anInt);
-                }
-            }
-        }
-        Map<String, Object> attributes = parameters.getMap("attributes");
-        if(attributes != null) {
-            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-                userParameters.put("attributes." + entry.getKey(), entry.getValue());
-            }
-        }
-        Map<String, Object> configs = parameters.getMap("configs");
-        if(configs != null) {
-            for (Map.Entry<String, Object> entry : configs.entrySet()) {
-                userParameters.put("configs." + entry.getKey(), entry.getValue());
-            }
-        }
+        filterIntParams(parameters, userParameters, acceptedIntParams);
+
+        String[] acceptedMapParams = {"attributes", "configs"};
+        filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if(!userParameters.isEmpty()) {
             QueryResult<WriteResult> update = userCollection.update(
@@ -950,31 +931,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         BasicDBObject studyParameters = new BasicDBObject();
 
         String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
-        for (String s : acceptedParams) {
-            if(parameters.containsKey(s)) {
-                studyParameters.put(s, parameters.getString(s));
-            }
-        }
+        filterStringParams(parameters, studyParameters, acceptedParams);
 
         String[] acceptedLongParams = {"diskUsage"};
-        for (String s : acceptedLongParams) {
-            if(parameters.containsKey(s)) {
-                long aLong = parameters.getLong(s, Long.MIN_VALUE);
-                if(aLong != Long.MIN_VALUE) {
-                    studyParameters.put(s, aLong);
-                }
-            }
-        }
+        filterLongParams(parameters, parameters, acceptedLongParams);
 
         String[] acceptedMapParams = {"attributes", "stats"};
-        for (String s : acceptedMapParams) {
-            Map<String, Object> map = parameters.getMap(s);
-            if(map != null) {
-                for (Map.Entry<String, Object> entry : map.entrySet()) {
-                    studyParameters.put(s + "." + entry.getKey(), entry.getValue());
-                }
-            }
-        }
+        filterMapParams(parameters, studyParameters, acceptedMapParams);
 
         if(parameters.containsKey("type")) {
             Study.Type type = parameters.get("type", Study.Type.class);
@@ -994,7 +957,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 throw CatalogDBException.idNotFound("Study", studyId);
             }
         }
-        return endQuery("Modify study", startTime);
+        return endQuery("Modify study", startTime, Collections.singletonList(new ObjectMap(studyParameters)));
     }
 
     /**
@@ -1112,6 +1075,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
         DBObject fileDBObject = getDbObject(file, "File");
         fileDBObject.put(_STUDY_ID, studyId);
+        fileDBObject.put(_ID, newFileId);
 
         try {
             fileCollection.insert(fileDBObject, null);
@@ -1208,35 +1172,17 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         Map<String, Object> fileParameters = new HashMap<>();
 
         String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status"};
-        for (String s : acceptedParams) {
-            if(parameters.containsKey(s)) {
-                fileParameters.put(s, parameters.getString(s));
-            }
-        }
+        filterStringParams(parameters, fileParameters, acceptedParams);
 
         String[] acceptedLongParams = {"diskUsage"};
-        for (String s : acceptedLongParams) {
-            if(parameters.containsKey(s)) {
-                fileParameters.put(s, parameters.getLong(s));
-            }
-        }
+        filterLongParams(parameters, fileParameters, acceptedLongParams);
 
         String[] acceptedIntParams = {"jobId"};
-        for (String s : acceptedIntParams) {
-            if(parameters.containsKey(s)) {
-                fileParameters.put(s, parameters.getInt(s));
-            }
-        }
+        filterIntParams(parameters, fileParameters, acceptedIntParams);
+
 
         String[] acceptedMapParams = {"attributes", "stats"};
-        for (String s : acceptedMapParams) {
-            Map<String, Object> map = parameters.getMap(s);
-            if(map != null) {
-                for (Map.Entry<String, Object> entry : map.entrySet()) {
-                    fileParameters.put(s + "." + entry.getKey(), entry.getValue());
-                }
-            }
-        }
+        filterMapParams(parameters, fileParameters, acceptedMapParams);
 
         if(!fileParameters.isEmpty()) {
             QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId),
@@ -1602,31 +1548,16 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         Map<String, Object> jobParameters = new HashMap<>();
 
         String[] acceptedParams = {"name", "userId", "toolName", "date", "description", "outputError", "commandLine", "status", "outdir"};
-        for (String s : acceptedParams) {
-            if(parameters.containsKey(s)) {
-                jobParameters.put(s, parameters.getString(s));
-            }
-        }
+        filterStringParams(parameters, jobParameters, acceptedParams);
+
         String[] acceptedIntParams = {"visits"};
-        for (String s : acceptedIntParams) {
-            if(parameters.containsKey(s)) {
-                jobParameters.put(s, parameters.getInt(s));
-            }
-        }
+        filterIntParams(parameters, jobParameters, acceptedIntParams);
 
         String[] acceptedLongParams = {"startTime", "endTime", "diskUsage"};
-        for (String s : acceptedLongParams) {
-            if(parameters.containsKey(s)) {
-                jobParameters.put(s, parameters.getLong(s));
-            }
-        }
+        filterLongParams(parameters, jobParameters, acceptedLongParams);
 
         String[] acceptedIntegerListParams = {"output"};
-        for (String s : acceptedIntegerListParams) {
-            if(parameters.containsKey(s)) {
-                jobParameters.put(s, parameters.getAsIntegerList(s));
-            }
-        }
+        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
 
         if(!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject("id", jobId);
@@ -1833,13 +1764,64 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        String warning = "";
+
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
         DBObject query = new BasicDBObject(_STUDY_ID, studyId);
 
+        // Sample Filters  //
+        if (options.containsKey( "id" )) {
+            query.put("id", options.get("id"));
+        }
+        if (options.containsKey( "source" )) {
+            query.put("source", options.get("source"));
+        }
+
+        // AnnotationSet Filters //
+        BasicDBObject annotationSetFilter = new BasicDBObject();
+        if (options.containsKey( "variableSetId" )) {
+            annotationSetFilter.put("variableSetId", options.get("variableSetId"));
+        }
+        if (options.containsKey( "annotationSetId" )) {
+            annotationSetFilter.put("id", options.get("annotationSetId"));
+        }
+
+        List<DBObject> annotationFilters = new LinkedList<>();
+        // Annotation Filters
+        if (options.containsKey("annotation")) {
+            String[] annotations = options.getString("annotation").split(",");
+            for (String annotation : annotations) {
+                String[] split = annotation.split(":", 2);
+                if (split.length != 2) {
+                    String w = "Malformed annotation query : " + annotation;
+                    warning += w + "\n";
+                    logger.warn(warning);
+                    continue;
+                }
+//                annotationFilters.add(
+//                        new BasicDBObject("annotations",
+//                                new BasicDBObject("$elemMatch", BasicDBObjectBuilder
+//                                        .start("id", split[0])
+//                                        .add("value", split[1]).get()
+//                                )
+//                        )
+//                );
+                annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], split[1] ));
+            }
+        }
+
+        if (!annotationFilters.isEmpty()) {
+            annotationSetFilter.put("$and", annotationFilters);
+        }
+        if (!annotationSetFilter.isEmpty()) {
+            query.put("annotationSets", new BasicDBObject("$elemMatch", annotationSetFilter));
+        }
         QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
         List<Sample> samples = parseSamples(queryResult);
 
-        return endQuery("getAllSamples", startTime, samples);
+        QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);
+        result.setNumTotalResults(queryResult.getNumTotalResults());
+        return result;
     }
 
     @Override
@@ -2006,6 +1988,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
 
         DBObject object = getDbObject(annotationSet, "AnnotationSet");
+        Map<String, String> annotationMap = new HashMap<>();
+        for (Annotation annotation : annotationSet.getAnnotations()) {
+            annotationMap.put(annotation.getId(), annotation.getValue().toString());
+        }
+        object.put("_annotMap", annotationMap);
+
         DBObject query = new BasicDBObject("id", sampleId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
 
@@ -2196,6 +2184,58 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             }
         }
         return filteredOptions;
+    }
+
+
+    /*  */
+
+    private void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
+        for (String s : acceptedParams) {
+            if(parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getString(s));
+            }
+        }
+    }
+
+    private void filterIntegerListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntegerListParams) {
+        for (String s : acceptedIntegerListParams) {
+            if(parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getAsIntegerList(s));
+            }
+        }
+    }
+
+    private void filterMapParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
+        for (String s : acceptedMapParams) {
+            if (parameters.containsKey(s)) {
+                ObjectMap map = new ObjectMap(parameters.getString(s));
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    filteredParams.put(s + "." + entry.getKey(), entry.getValue());
+                }
+            }
+        }
+    }
+
+    private void filterIntParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntParams) {
+        for (String s : acceptedIntParams) {
+            if(parameters.containsKey(s)) {
+                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
+                if(anInt != Integer.MIN_VALUE) {
+                    filteredParams.put(s, anInt);
+                }
+            }
+        }
+    }
+
+    private void filterLongParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedLongParams) {
+        for (String s : acceptedLongParams) {
+            if(parameters.containsKey(s)) {
+                long aLong = parameters.getLong(s, Long.MIN_VALUE);
+                if (aLong != Long.MIN_VALUE) {
+                    filteredParams.put(s, aLong);
+                }
+            }
+        }
     }
 
 }

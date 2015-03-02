@@ -140,7 +140,7 @@ public abstract class CatalogDBAdaptor {
 
     public abstract void updateStudyLastActivity(int studyId) throws CatalogDBException;
 
-    public abstract QueryResult modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
+    public abstract QueryResult<ObjectMap> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
     public abstract QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
 
