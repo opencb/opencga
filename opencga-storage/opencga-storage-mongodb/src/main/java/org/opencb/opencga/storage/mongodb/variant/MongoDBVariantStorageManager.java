@@ -24,6 +24,8 @@ import org.opencb.opencga.storage.core.runner.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by imedina on 13/08/14.
@@ -52,6 +54,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String INCLUDE_SRC = "includeSrc";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
 
+    protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
+
     @Override
     public VariantMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
@@ -62,6 +66,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String filesCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
 //        String variantsCollection = credentialsProperties.getProperty("collection_variants", "variants");
 //        String filesCollection = credentialsProperties.getProperty("collection_files", "files");
+        logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
         return new VariantMongoDBWriter(source, credentials, variantsCollection, filesCollection);
     }
 
@@ -78,6 +83,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             e.printStackTrace();
             return null;
         }
+
+        logger.debug("getting DBAdaptor to db: {}", credentials.getMongoDbName());
         return variantMongoDBAdaptor;
     }
 
