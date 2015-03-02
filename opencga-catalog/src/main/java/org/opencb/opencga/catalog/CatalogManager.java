@@ -143,10 +143,6 @@ public class CatalogManager implements ICatalogManager {
     private void configureDBAdaptor(Properties properties)
             throws CatalogDBException {
 
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            System.out.println("entry.getKey() = " + entry.getKey());
-            System.out.println("entry.getValue() = " + entry.getValue());
-        }
         MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
                 properties.getProperty(CATALOG_DB_USER, ""),
                 properties.getProperty(CATALOG_DB_DATABASE, ""),
@@ -2008,13 +2004,13 @@ public class CatalogManager implements ICatalogManager {
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
                                       Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(toolName, "toolName");
         checkParameter(commandLine, "commandLine");
-        description = description != null ? description : "";
+        description = defaultString(description, "");
 
         // FIXME check inputFiles? is a null conceptually valid?
 
@@ -2031,6 +2027,7 @@ public class CatalogManager implements ICatalogManager {
         }
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
+        job.setStatus(Job.Status.PREPARED);
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
         }

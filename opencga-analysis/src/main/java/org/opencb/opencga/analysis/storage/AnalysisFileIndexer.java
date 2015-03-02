@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 
 import java.io.FileInputStream;
@@ -45,6 +46,7 @@ public class AnalysisFileIndexer {
     public static final String INDEXED_FILE = "indexedFile";
     public static final String DB_NAME = "dbName";
     public static final String STORAGE_ENGINE = "storageEngine";
+    public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
 
     private final Properties properties;
     private final CatalogManager catalogManager;
@@ -68,6 +70,7 @@ public class AnalysisFileIndexer {
         QueryResult<File> outdirQueryResult = catalogManager.getFile(outDirId, sessionId);
         File file = fileQueryResult.getResult().get(0);
         File outdir = outdirQueryResult.getResult().get(0);
+        String dbName = userId + Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_");
 
         //TODO: Check if file can be indexed
 
@@ -89,7 +92,7 @@ public class AnalysisFileIndexer {
         //Create commandLine
         ObjectMap indexAttributes = new ObjectMap();
         String commandLine = createCommandLine(study, file, index, storageEngine,
-                temporalOutDirUri, indexAttributes);
+                temporalOutDirUri, indexAttributes, dbName);
 
         //Create job
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
@@ -120,24 +123,23 @@ public class AnalysisFileIndexer {
      * @param storageEngine     StorageEngine to be used
      * @param outDirUri         Index outdir
      * @param indexAttributes   This map will be filled with some index information
+     * @param dbName
      * @return                  CommandLine
      *
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
     private String createCommandLine(Study study, File file, File indexFile, String storageEngine,
-                                     URI outDirUri, ObjectMap indexAttributes)
+                                     URI outDirUri, ObjectMap indexAttributes, final String dbName)
             throws CatalogDBException, CatalogIOManagerException {
 
         //Create command line
         String userId = file.getOwnerId();
         String name = file.getName();
         String commandLine;
-        String dbName;
 
         if(file.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
-            dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-alignments ")
@@ -156,12 +158,11 @@ public class AnalysisFileIndexer {
             throw new UnsupportedOperationException();
         } else if (file.getBioformat() == File.Bioformat.VARIANT || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
 
-            dbName = userId;
             commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-variants ")
                     .append(" --file-id ").append(indexFile.getId())
-                    .append(" --study-name ").append(study.getName())
+                    .append(" --study-name \"").append(study.getName()).append("\"")
                     .append(" --study-id ").append(study.getId())
                     .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dbName)

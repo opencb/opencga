@@ -14,10 +14,13 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -38,11 +41,24 @@ public class OpenCGAMain {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
+        OptionsParser optionsParser = new OptionsParser();
+        try {
+            optionsParser.parse(args);
+        } catch (ParameterException e){
+
+            if(!optionsParser.getGeneralOptions().help && !optionsParser.getCommonOptions().help ) {
+                System.out.println(e.getMessage());
+            }
+
+            optionsParser.printUsage();
+            System.exit(1);
+        }
+
         // Interactive mode
-        if(args.length != 0 && args[0].equals("shell")){
+        if(optionsParser.getGeneralOptions().interactive){
             BufferedReader reader;//create BufferedReader object
 
-            reader=new BufferedReader(new InputStreamReader(System.in));
+            reader = new BufferedReader(new InputStreamReader(System.in));
 
             do {
                 if(shellUserId != null && !shellUserId.isEmpty()){
@@ -51,21 +67,22 @@ public class OpenCGAMain {
                     System.out.print("> ");
                 }
                 String line = reader.readLine();
-                args = line.split("[ \\t\\n]+");
-
-                if(args.length == 0 || args[0].isEmpty()) {
-                    continue;
-                }
-                if(args[0].equals("exit")){
+                if (line != null) {
+                    args = line.trim().split("[ \\t\\n]+");
+                } else {
                     break;
                 }
-                try {
-                    opencgaMain.runCommand(args);
-                } catch(Exception e){
-                    //e.printStackTrace();
-                    System.out.println(e.getMessage());
+
+                if (args.length != 0 && !args[0].isEmpty()) {
+                    try {
+                        opencgaMain.runCommand(args);
+                    } catch (Exception e) {
+                        //e.printStackTrace();
+                        System.out.println(e.getMessage());
+                    }
                 }
             } while(!args[0].equals("exit"));
+            System.out.println("bye");
         } else {
             System.exit(opencgaMain.runCommand(args));
         }
@@ -108,8 +125,24 @@ public class OpenCGAMain {
                         OptionsParser.UserCommands.InfoCommand c = optionsParser.getUserCommands().infoCommand;
                         login(c.up);
 
-                        QueryResult<User> user = catalogManager.getUser(c.up.user, null, sessionId);
+                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : userId, null, sessionId);
                         System.out.println(user);
+
+                        logout();
+                        break;
+                    }
+                    case "list": {
+                        OptionsParser.UserCommands.ListCommand c = optionsParser.getUserCommands().lsitCommand;
+                        login(c.up);
+
+                        String ident = "";
+                        User user = catalogManager.getUser(c.up.user != null ? c.up.user : userId, null,
+                                new QueryOptions("include", Arrays.asList("id", "name", "projects.id","projects.alias","projects.name")), sessionId).first();
+                        System.out.println(user.getId() + " - " + user.getName());
+                        ident+= "\t";
+                        boolean studies = c.studies;
+                        boolean files = c.files;
+                        listProjects(user.getProjects(), studies, files, ident);
 
                         logout();
                         break;
@@ -273,7 +306,8 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);
-                        File index = analysisFileIndexer.index(fileId, outdirId, c.backend, sessionId, new QueryOptions());
+                        String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
+                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions("launch", true));
                         System.out.println(index);
 
                         logout();
@@ -313,6 +347,10 @@ public class OpenCGAMain {
                 }
                 break;
             }
+            case "exit": {
+            }
+            break;
+            case "help":
             default:
                 optionsParser.printUsage();
 //                logger.info("Unknown command");
@@ -321,9 +359,43 @@ public class OpenCGAMain {
         return 0;
     }
 
+    private void listProjects(List<Project> projects, boolean studies, boolean files, String ident) throws CatalogException {
+        for (Project project : projects) {
+            System.out.printf("%s%d - %s (%s)\n", ident, project.getId(), project.getName(), project.getAlias());
+
+            if (studies || files) {
+                listStudies(project.getId(), files, ident + "\t");
+            }
+
+        }
+    }
+
+    private void listStudies(int projectId, boolean files, String ident) throws CatalogException {
+        List<Study> studies = catalogManager.getAllStudies(projectId,
+                new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
+                sessionId).getResult();
+
+        for (Study study : studies) {
+            System.out.printf("%s%d - %s (%s)\n", ident,  study.getId(), study.getName(), study.getAlias());
+            if (files) {
+                listFiles(study.getId(), ".", ident + "\t");
+            }
+        }
+    }
+
+    private void listFiles(int studyId, String path, String ident) throws CatalogException {
+        List<File> files = catalogManager.searchFile(studyId, new QueryOptions("directory", path), sessionId).getResult();
+        for (File file : files) {
+            System.out.printf("%s%d - %s \t\t[%s]\n", ident, file.getId(), file.getName(), file.getStatus());
+            if (file.getType() == File.Type.FOLDER) {
+                listFiles(studyId, file.getPath(), ident + "\t");
+            }
+        }
+    }
+
     private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogException, IOException {
         //String sessionId;
-        if(up.user != null) {
+        if(up.user != null && up.password != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
             sessionId = login.getResult().get(0).getString("sessionId");
             userId = up.user;

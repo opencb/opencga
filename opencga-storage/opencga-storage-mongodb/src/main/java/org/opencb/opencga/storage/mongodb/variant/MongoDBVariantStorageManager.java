@@ -125,8 +125,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100")));
         int bulkSize = params.getInt(BULK_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE, "" + batchSize)));
-        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "1")));
-        int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_THREADS, "1")));
+        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "6")));
+        int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_THREADS, "6")));
 //        Map<String, Integer> samplesIds = (Map) params.getMap("sampleIds");
         Map<String, Integer> samplesIds = new HashMap<>();
         for (String sampleId : params.getString("sampleIds").split(",")) {

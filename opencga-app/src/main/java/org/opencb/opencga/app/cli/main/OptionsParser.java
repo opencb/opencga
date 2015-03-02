@@ -2,6 +2,9 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by jacobo on 29/09/14.
  */
@@ -40,12 +43,16 @@ public class OptionsParser {
 
         commandShareResource = new CommandShareResource();
 
+//        jcommander.addCommand(new HelpCommands());
+        jcommander.addCommand(new ExitCommands());
+
         jcommander.addCommand(userCommands);
         JCommander users = jcommander.getCommands().get("users");
         users.addCommand(userCommands.createCommand);
         users.addCommand(userCommands.infoCommand);
-//        users.addCommand(commandUserLogin = new CommandUser.CommandUserLogin());
-//        users.addCommand(commandUserLogout = new CommandUser.CommandUserLogout());
+        users.addCommand(userCommands.loginCommand);
+        users.addCommand(userCommands.logoutCommand);
+        users.addCommand(userCommands.lsitCommand);
 
 
         jcommander.addCommand(projectCommands);
@@ -101,10 +108,21 @@ public class OptionsParser {
 //                usage(getCommand(), getSubcommand());
                 jcommander.getCommands().get(getCommand()).usage(getSubCommand());
             } else {
-                jcommander.usage(getCommand());
+//                jcommander.usage(getCommand());
+                new JCommander(jcommander.getCommands().get(getCommand()).getObjects().get(0)).usage();
+                System.out.println("Available commands");
+                printUsage(jcommander.getCommands().get(getCommand()));
             }
         } else {
-            jcommander.usage();
+            new JCommander(generalOptions).usage();
+            System.out.println("Available commands");
+            printUsage(jcommander);
+        }
+    }
+
+    private void printUsage(JCommander commander) {
+        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
+            System.out.printf("%10s    %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
         }
     }
 
@@ -146,6 +164,9 @@ public class OptionsParser {
 
         @Parameter(names = {"-V", "--version"})
         public boolean version;
+
+        @Parameter(names = {"-i", "--interactive"})
+        public boolean interactive;
     }
 
 
@@ -170,15 +191,26 @@ public class OptionsParser {
         @Parameter(names = {"-L", "--log-level"}, description = "This parameter set the level of the logging", required = false, arity = 1)
         public int logLevel;
 
+        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+        Map<String, String> dynamic = new HashMap<String, String>();
+
+    }
+
+    @Parameters(commandNames = {"help"}, hidden = true, commandDescription = "Description")
+    class HelpCommands {
     }
 
 
+    @Parameters(commandNames = {"exit"}, hidden = true, commandDescription = "Description")
+    class ExitCommands {
+    }
 
     @Parameters(commandNames = {"users"}, commandDescription = "Description")
     class UserCommands {
 
         CreateCommand createCommand = new CreateCommand();
         InfoCommand infoCommand = new InfoCommand();
+        ListCommand lsitCommand = new ListCommand();
         LoginCommand loginCommand = new LoginCommand();
         LogoutCommand logoutCommand = new LogoutCommand();
 
@@ -211,6 +243,23 @@ public class OptionsParser {
 
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
+
+        }
+
+
+        @Parameters(commandNames = {"list"}, commandDescription = "List all projects and studies from a selected user")
+        class ListCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--studies"}, description = "", arity = 0)
+            public boolean studies;
+
+            @Parameter(names = {"--files"}, description = "", arity = 0)
+            public boolean files;
 
         }
 
@@ -395,11 +444,14 @@ public class OptionsParser {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
             @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @Parameter(names = {"-b", "--backend"}, description = "", required = true, arity = 1)
-            String backend;
+            @Parameter(names = {"--storage-engine"}, description = "", required = false, arity = 1)
+            String storageEngine;
 
             @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
             String outdir = "";
