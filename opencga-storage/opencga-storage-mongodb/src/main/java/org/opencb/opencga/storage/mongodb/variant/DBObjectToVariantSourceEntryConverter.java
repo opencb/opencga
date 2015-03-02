@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -25,78 +26,41 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public final static String SAMPLES_FIELD = "samp";
     public final static String STATS_FIELD = "st";
     
-    
-    private boolean includeSamples;
-    
-    private List<String> samples;
-    
+    private boolean includeSrc;
+
     private DBObjectToSamplesConverter samplesConverter;
     private DBObjectToVariantStatsConverter statsConverter;
 
     /**
      * Create a converter between VariantSourceEntry and DBObject entities when 
- there is no need to provide a list of samples nor statistics.
+     * there is no need to provide a list of samples or statistics.
+     *
+     * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
      */
-    public DBObjectToVariantSourceEntryConverter() {
-        this.includeSamples = false;
-        this.samples = null;
+    public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
+        this.includeSrc = includeSrc;
         this.samplesConverter = null;
         this.statsConverter = null;
     }
-    
+
+
     /**
-     * Create a converter from VariantSourceEntry to DBObject entities. A 
-     * list of samples and a statistics converter may be provided in case those 
+     * Create a converter from VariantSourceEntry to DBObject entities. A
+     * samples converter and a statistics converter may be provided in case those
      * should be processed during the conversion.
-     * 
-     * @param compressSamples Whether to compress samples or not
-     * @param samples The list of samples, if any
-     * @param statsConverter The object used to convert the file statistics
+     *
+     * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
+     * @param samplesConverter The object used to convert the samples. If null, won't convert
+     * @param statsConverter   The object used to convert the file statistics. If null, won't convert
+     *
      */
-    public DBObjectToVariantSourceEntryConverter(boolean compressSamples, boolean defaultValue, List<String> samples,
-            DBObjectToVariantStatsConverter statsConverter) {
-        this.samples = samples;
-        this.samplesConverter = new DBObjectToSamplesConverter(compressSamples, defaultValue);
+    public DBObjectToVariantSourceEntryConverter(boolean includeSrc,
+                                                 DBObjectToSamplesConverter samplesConverter,
+                                                 DBObjectToVariantStatsConverter statsConverter) {
+        this(includeSrc);
+        this.samplesConverter = samplesConverter;
         this.statsConverter = statsConverter;
     }
-    
-    /**
-     * Create a converter from DBObject to VariantSourceEntry entities. A 
-     * list of samples and a statistics converter may be provided in case those 
-     * should be processed during the conversion.
-     * 
-     * @param includeSamples Whether to include samples or not
-     * @param statsConverter The object used to convert the file statistics
-     * @param samples The list of samples, if any
-     */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, 
-            DBObjectToVariantStatsConverter statsConverter, List<String> samples) {
-        this.includeSamples = includeSamples;
-        this.samples = samples;
-        this.samplesConverter = new DBObjectToSamplesConverter(samples);
-        this.statsConverter = statsConverter;
-    }
-    
-    /**
-     * Create a converter from DBObject to VariantSourceEntry entities. A 
-     * statistics converter may be provided in case those should be processed 
-     * during the conversion.
-     * 
-     * If samples are to be included, their names must have been previously 
-     * stored in the database and the connection parameters must be provided.
-     * 
-     * @param includeSamples Whether to include samples or not
-     * @param statsConverter The object used to convert the file statistics
-     * @param credentials Parameters for connecting to the database
-     * @param collectionName Collection that stores the variant sources
-     */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSamples, DBObjectToVariantStatsConverter statsConverter, 
-            MongoCredentials credentials, String collectionName) {
-        this.includeSamples = includeSamples;
-        this.samplesConverter = new DBObjectToSamplesConverter(credentials, collectionName);
-        this.statsConverter = statsConverter;
-    }
-    
     
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
@@ -134,7 +98,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
         
         // Samples
-        if (includeSamples && object.containsField(SAMPLES_FIELD)) {
+        if (samplesConverter != null && object.containsField(SAMPLES_FIELD)) {
             VariantSourceEntry fileWithSamplesData = samplesConverter.convertToDataModelType(object);
             
             // Add the samples to the Java object, combining the data structures
@@ -166,13 +130,17 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             for (Map.Entry<String, String> entry : object.getAttributes().entrySet()) {
                 Object value = entry.getValue();
                 if (entry.getKey().equals("src")) {
-                    try {
-                        value = org.opencb.commons.utils.StringUtils.gzip(entry.getValue());
-                    } catch (IOException ex) {
-                        Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                    if (includeSrc) {
+                        try {
+                            value = org.opencb.commons.utils.StringUtils.gzip(entry.getValue());
+                        } catch (IOException ex) {
+                            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } else {
+                        continue;
                     }
                 }
-                
+
                 if (attrs == null) {
                     attrs = new BasicDBObject(entry.getKey(), value);
                 } else {
@@ -185,7 +153,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             }
         }
 
-        if (samples != null && !samples.isEmpty()) {
+//        if (samples != null && !samples.isEmpty()) {
+        if (samplesConverter != null) {
             mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
             mongoFile.put(SAMPLES_FIELD, samplesConverter.convertToStorageType(object));
         }
@@ -197,5 +166,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         return mongoFile;
     }
-    
+
+
+    public void setIncludeSrc(boolean includeSrc) {
+        this.includeSrc = includeSrc;
+    }
 }

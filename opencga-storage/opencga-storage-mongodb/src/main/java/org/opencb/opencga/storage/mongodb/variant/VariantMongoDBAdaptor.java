@@ -6,8 +6,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -15,8 +16,10 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
@@ -31,7 +34,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantConverter variantConverter;
-    private final DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
+    private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
 
@@ -54,9 +57,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
-        archivedVariantFileConverter = new DBObjectToVariantSourceEntryConverter(true, 
-                new DBObjectToVariantStatsConverter(), credentials, filesCollectionName);
-        variantConverter = new DBObjectToVariantConverter(archivedVariantFileConverter);
+        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(credentials, filesCollectionName),
+                new DBObjectToVariantStatsConverter());
+        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter);
     }
 
 
@@ -74,7 +79,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject projection = parseProjectionQueryOptions(options);
         logger.debug("Query to be executed {}", qb.get().toString());
 
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
 
@@ -99,7 +104,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("Query to be executed {}", qb.get().toString());
 
 //        return coll.find(query, options, variantConverter);
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
     @Override
@@ -126,7 +131,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         options.add("sort", new BasicDBObject("chr", 1).append("start", 1));
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
     @Override
@@ -140,7 +145,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             getRegionFilter(regionList, qb);
             parseQueryOptions(options, qb);
             DBObject projection = parseProjectionQueryOptions(options);
-            allResults.add(coll.find(qb.get(), options, variantConverter, projection));
+            allResults.add(coll.find(qb.get(), projection, variantConverter, options));
         } else {
             for (Region r : regionList) {
                 QueryResult queryResult = getAllVariantsByRegion(r, options);
@@ -167,7 +172,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.debug("Query to be executed {}", qb.get().toString());
 
-        return coll.aggregate("$variantsRegionStudies", Arrays.asList(match, unwind, match2), options);
+        return coll.aggregate(/*"$variantsRegionStudies", */Arrays.asList(match, unwind, match2), options);
     }
 
     @Override
@@ -240,7 +245,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        System.out.println(sort.toString());
 
         long dbTimeStart = System.currentTimeMillis();
-        QueryResult output = coll.aggregate("$histogram", Arrays.asList(match, group, sort), options);
+        QueryResult output = coll.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
         long dbTimeEnd = System.currentTimeMillis();
 
         Map<Long, DBObject> ids = new HashMap<>();
@@ -294,7 +299,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryBuilder qb = QueryBuilder.start("_at.gn").all(Arrays.asList(geneName));
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
-        return coll.find(qb.get(), options, variantConverter, projection);
+        return coll.find(qb.get(), projection, variantConverter, options);
     }
 
 
@@ -328,7 +333,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", (options != null) ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", (options != null) ? options.getInt("limit", 10) : 10);
 
-        return coll.aggregate("$field", Arrays.asList(match, project, unwind, group, sort, limit), options);
+        return coll.aggregate(/*"$field", */Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
     @Override
@@ -359,7 +364,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", numGenes);
 
-        return coll.aggregate("$effects.geneName", Arrays.asList(match, project, unwind, group, sort, limit), options);
+        return coll.aggregate(/*"$effects.geneName", */Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
 
@@ -386,7 +391,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
         DBObject limit = new BasicDBObject("$limit", numConsequenceTypes);
 
-        return coll.aggregate("$effects.so", Arrays.asList(match, project, unwind, group, sort, limit), options);
+        return coll.aggregate(/*"$effects.so", */Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
     @Override
@@ -434,7 +439,42 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         BulkWriteResult writeResult = builder.execute();
 
-        return new QueryResult("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+        return new QueryResult<>("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+    }
+
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, QueryOptions queryOptions) {
+        DBCollection coll = db.getDb().getCollection(collectionName);
+        BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
+
+        long start = System.nanoTime();
+        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
+        VariantStats variantStats;
+        VariantSource variantSource;
+
+        for (VariantStatsWrapper wrapper : variantStatsWrappers) {
+            variantStats = wrapper.getVariantStats();
+            String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
+                    variantStats.getRefAllele(), variantStats.getAltAllele());
+            variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+
+            DBObject find = new BasicDBObject("_id", id)
+                    .append(
+                            DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
+                            , variantSource.getStudyId());
+            DBObject update = new BasicDBObject("$set", new BasicDBObject(
+                    DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
+                    , statsConverter.convertToStorageType(variantStats)));
+
+            builder.find(find).updateOne(update);
+        }
+
+        // TODO handle if the variant didn't had that studyId in the files array
+        // TODO check the substitution is done right if the stats are already present
+        BulkWriteResult writeResult = builder.execute();
+        int writes = writeResult.getModifiedCount();
+
+        return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
 
     @Override
@@ -675,10 +715,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.info("Find = " + builder.get());
+        logger.debug("Find = " + builder.get());
         return builder;
     }
 
+    /**
+     * when the tags "include" or "exclude" The names are the same as the members of Variant.
+     * @param options
+     * @return
+     */
     private DBObject parseProjectionQueryOptions(QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
@@ -732,7 +777,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
 
-        logger.info("Projection: {}", projection);
+        logger.debug("Projection: {}", projection);
         return projection;
     }
 
