@@ -156,6 +156,9 @@ public class CatalogManager implements ICatalogManager {
     private void configureManager(Properties properties) {
         creationUserPolicy = properties.getProperty(CATALOG_MANAGER_POLICY_CREATION_USER, "always");
         catalogClient = new CatalogDBClient(this);
+
+        //TODO: Check if is empty
+        //TODO: Setup catalog if it's empty.
     }
 
     /**

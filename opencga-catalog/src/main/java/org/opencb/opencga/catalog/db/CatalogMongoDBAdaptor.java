@@ -2208,7 +2208,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private void filterMapParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
-                ObjectMap map = new ObjectMap(parameters.getString(s));
+                ObjectMap map;
+                if (parameters.get(s) instanceof Map) {
+                    map = new ObjectMap(parameters.getMap(s));
+                } else {
+                    map = new ObjectMap(parameters.getString(s));
+                }
                 for (Map.Entry<String, Object> entry : map.entrySet()) {
                     filteredParams.put(s + "." + entry.getKey(), entry.getValue());
                 }
