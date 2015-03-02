@@ -488,7 +488,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void indexSequence(OptionsParser.CommandIndexSequence c) throws URISyntaxException, IOException, FileFormatException {
+    private static void indexSequence(OptionsParser.CommandIndexSequence c)
+            throws URISyntaxException, IOException, FileFormatException {
         if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
             Path input = Paths.get(new URI(c.input).getPath());
             Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(new URI(c.outdir).getPath());
@@ -513,7 +514,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void indexAlignments(OptionsParser.CommandIndexAlignments c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
+    private static void indexAlignments(OptionsParser.CommandIndexAlignments c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         AlignmentStorageManager alignmentStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         if (storageEngine == null || storageEngine.isEmpty()) {
@@ -813,23 +815,31 @@ public class OpenCGAStorageMain {
         /**
          * Create and load stats
          */
+        String filename = c.fileName.isEmpty() ? c.dbName : c.fileName;
         boolean doCreate = c.create, doLoad = c.load != null;
         if (!c.create && c.load == null) {
             doCreate = doLoad = true;
+        } else if (c.load != null) {
+            filename = c.load;
         }
 
-        URI outputUri = Paths.get(c.load == null? "": c.load).toUri();
+        URI outputUri = new URI(null, c.outdir + (!c.outdir.isEmpty() && !c.outdir.endsWith("/")? "/": ""), null);
+        assertDirectoryExists(outputUri);
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
-        if (doCreate) {
-            outputUri = new URI(null, c.outdir, null);
-            assertDirectoryExists(outputUri);
-            String filename = (c.fileName.isEmpty() ? c.dbName : c.fileName) + "." + TimeUtils.getTime();
-            outputUri = outputUri.resolve(filename);
-            outputUri = variantStatisticsCalculator.createStats(dbAdaptor, outputUri, queryOptions);
-        }
+        try {
+            if (doCreate) {
+                filename += "." + TimeUtils.getTime();
+                outputUri = outputUri.resolve(filename);
+                outputUri = variantStatisticsCalculator.createStats(dbAdaptor, outputUri, queryOptions);
+            }
 
-        if (doLoad) {
-            variantStatisticsCalculator.loadStats(dbAdaptor, outputUri, queryOptions);
+            if (doLoad) {
+                outputUri = outputUri.resolve(filename);
+                variantStatisticsCalculator.loadStats(dbAdaptor, outputUri, queryOptions);
+            }
+        } catch (IOException e) {   // file not found?
+            logger.error(e.getMessage());
+            System.exit(1);
         }
     }
 
@@ -870,7 +880,7 @@ public class OpenCGAStorageMain {
 
     private static void assertDirectoryExists(URI outdir){
         if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
-            logger.error("given output directory does not exist, please create it first.");
+            logger.error("given output directory {} does not exist, please create it first.", outdir);
             System.exit(1);
         }
     }

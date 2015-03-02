@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.adaptors;
+package org.opencb.opencga.analysis.storage.variant;
 
 
 import org.opencb.biodata.models.feature.Region;
@@ -14,6 +14,9 @@ import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.*;

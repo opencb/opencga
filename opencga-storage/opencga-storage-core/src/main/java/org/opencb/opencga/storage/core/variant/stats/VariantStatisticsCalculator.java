@@ -88,10 +88,15 @@ public class VariantStatisticsCalculator {
         long start = System.currentTimeMillis();
 
         Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
+        int skippedFiles = 0;
         while(iterator.hasNext()) {
             Variant variant = iterator.next();
             VariantSourceEntry file = variant.getSourceEntry(variantSource.getFileId(), variantSource.getStudyId());
 //            for (VariantSourceEntry file : variant.getSourceEntries().values()) {
+            if (file == null) {
+                skippedFiles++;
+                continue;
+            }
             VariantStats variantStats = new VariantStats(variant);
             file.setStats(variantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
             VariantStatsWrapper variantStatsWrapper = new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), variantStats);
@@ -105,23 +110,26 @@ public class VariantStatisticsCalculator {
 //            }
         }
         logger.info("finishing stats calculation, time: {}ms", System.currentTimeMillis() - start);
-
+        if (skippedFiles != 0) {
+            logger.warn("the sources in {} variants were not found, and therefore couldn't run its stats", skippedFiles);
+            logger.info("note: maybe the file-id and study-id were not correct?");
+        }
         outputSourceStream.write(sourceWriter.writeValueAsString(variantSourceStats).getBytes());
         outputVariantsStream.close();
         outputSourceStream.close();
-        return fileVariantsPath.toUri();
+        return output;
     }
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
 
-        logger.info("starting stats loading from {}", uri);
+        URI variantStatsUri = Paths.get(uri.getPath() + VARIANT_STATS_SUFFIX).toUri();
+        URI sourceStatsUri = Paths.get(uri.getPath() + SOURCE_STATS_SUFFIX).toUri();
+
+        logger.info("starting stats loading from {} and {}", variantStatsUri, sourceStatsUri);
         long start = System.currentTimeMillis();
 
-        loadVariantStats(variantDBAdaptor, uri, options);
-//        System.out.println("uri = " + uri);
-        URI sourceUri = uri.resolve(uri.getPath().replace(VARIANT_STATS_SUFFIX, SOURCE_STATS_SUFFIX));
-//        System.out.println("uri source = " + sourceUri);
-        loadSourceStats(variantDBAdaptor, sourceUri, options);
+        loadVariantStats(variantDBAdaptor, variantStatsUri, options);
+        loadSourceStats(variantDBAdaptor, sourceStatsUri, options);
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
     }
@@ -148,7 +156,7 @@ public class VariantStatisticsCalculator {
             if (statsBatch.size() == batchSize) {
                 QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, options);
                 writes += writeResult.getNumResults();
-                logger.info("stats loaded up to position {}", statsBatch.get(statsBatch.size()-1).getPosition());
+                logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size()-1).getChromosome(), statsBatch.get(statsBatch.size()-1).getPosition());
                 statsBatch.clear();
             }
         }
@@ -156,7 +164,7 @@ public class VariantStatisticsCalculator {
         if (!statsBatch.isEmpty()) {
             QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, options);
             writes += writeResult.getNumResults();
-            logger.info("stats loaded up to position {}", statsBatch.get(statsBatch.size()-1).getPosition());
+            logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size()-1).getChromosome(), statsBatch.get(statsBatch.size()-1).getPosition());
             statsBatch.clear();
         }
 

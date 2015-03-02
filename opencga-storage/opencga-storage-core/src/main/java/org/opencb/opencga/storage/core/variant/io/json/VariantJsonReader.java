@@ -164,7 +164,7 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public List<String> getSampleNames() {
-        return source.getSamples();
+        return new ArrayList<>(source.getSamplesPosition().keySet());
     }
 
     @Override

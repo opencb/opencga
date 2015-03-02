@@ -81,8 +81,11 @@ public class DBObjectToVariantConverterTest {
         mongoVariant.append("files", files);
         
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
-        DBObjectToVariantConverter converter = new DBObjectToVariantConverter(new DBObjectToVariantSourceEntryConverter(
-                true, true, sampleNames, new DBObjectToVariantStatsConverter()));
+        DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
+                new DBObjectToVariantSourceEntryConverter(
+                        true,
+                        new DBObjectToSamplesConverter(sampleNames),
+                        new DBObjectToVariantStatsConverter()));
         Variant converted = converter.convertToDataModelType(mongoVariant);
         assertEquals(variant, converted);
     }
@@ -120,7 +123,9 @@ public class DBObjectToVariantConverterTest {
         
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(new DBObjectToVariantSourceEntryConverter(
-                true, true, sampleNames, new DBObjectToVariantStatsConverter()));
+                true,
+                new DBObjectToSamplesConverter(sampleNames),
+                new DBObjectToVariantStatsConverter()));
         DBObject converted = converter.convertToStorageType(variant);
         assertEquals(mongoVariant, converted);
     }
