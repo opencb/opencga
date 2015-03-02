@@ -6,13 +6,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>0.4.0</version>
+        <version>0.5-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-app</artifactId>
-    <packaging>jar</packaging>
     <version>${opencga.version}</version>
+    <packaging>jar</packaging>
 
     <properties>
         <build.dir>build</build.dir>
@@ -24,41 +24,24 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
-            <exclusions>
-                <!--<exclusion>-->
-                    <!--<groupId>org.glassfish.jersey.core</groupId>-->
-                    <!--<artifactId>jersey-client</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.glassfish.jersey.media</groupId>-->
-                    <!--<artifactId>jersey-media-multipart</artifactId>-->
-                <!--</exclusion>-->
-                <!--<exclusion>-->
-                    <!--<groupId>org.opencb.commons</groupId>-->
-                    <!--<artifactId>bioformats</artifactId>-->
-                <!--</exclusion>-->
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
-            <version>9.0.0.M0</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
-            <version>9.0.0.M0</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
-            <version>2.13</version>
+            <version>2.16</version>
         </dependency>
     </dependencies>
 
@@ -76,29 +59,9 @@
 
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <showDeprecation>true</showDeprecation>
-                    <showWarnings>true</showWarnings>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
-                <version>1.5</version>
+                <version>1.9</version>
                 <executions>
                     <execution>
                         <phase>package</phase>

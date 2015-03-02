@@ -20,7 +20,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 
 import org.opencb.opencga.storage.core.StorageManagerException;
-import org.opencb.opencga.storage.core.ThreadRunner;
+import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
+import org.opencb.opencga.storage.core.runner.ThreadRunner;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
@@ -151,7 +152,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         //Writers
         List<VariantWriter> writers = new LinkedList<>();
-        List<DataWriter<Variant>> writerList = new LinkedList<>();
+        List<DataWriter> writerList = new LinkedList<>();
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
             variantDBWriter.setBulkSize(bulkSize);
@@ -177,12 +178,22 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             vr.run();
         } else {
             logger.info("Multi thread load...");
-            ThreadRunner runner = new ThreadRunner(Executors.newFixedThreadPool(loadThreads), batchSize);
-            ThreadRunner.ReadNode<Variant> variantReadNode = runner.newReaderNode(variantJsonReader, 1);
-            ThreadRunner.WriterNode<Variant> variantWriterNode = runner.newWriterNode(writerList);
+//            ThreadRunner runner = new ThreadRunner(Executors.newFixedThreadPool(loadThreads), batchSize);
+//            ThreadRunner.ReadNode<Variant> variantReadNode = runner.newReaderNode(variantJsonReader, 1);
+//            ThreadRunner.WriterNode<Variant> variantWriterNode = runner.newWriterNode(writerList);
+//
+//            variantReadNode.append(variantWriterNode);
+//            runner.run();
 
-            variantReadNode.append(variantWriterNode);
-            runner.run();
+            SimpleThreadRunner threadRunner = new SimpleThreadRunner(
+                    variantJsonReader,
+                    Collections.<Task>emptyList(),
+                    writerList,
+                    batchSize,
+                    loadThreads*2,
+                    0);
+            threadRunner.run();
+
         }
 
         long end = System.currentTimeMillis();

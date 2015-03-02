@@ -6,12 +6,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.4.0</version>
+        <version>0.5-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>opencga-lib</artifactId>
     <version>${opencga.version}</version>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
@@ -26,6 +27,7 @@
             <groupId>org.opencb.biodata</groupId>
             <artifactId>biodata-tools</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
@@ -45,38 +47,25 @@
             <artifactId>sqlite-jdbc</artifactId>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
-            <version>1.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
+
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <excludes>
-                        <exclude>**/MonbaseCredentials.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 
 </project>

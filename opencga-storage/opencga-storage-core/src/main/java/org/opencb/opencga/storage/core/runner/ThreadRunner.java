@@ -1,9 +1,7 @@
-package org.opencb.opencga.storage.core;
+package org.opencb.opencga.storage.core.runner;
 
-        import com.fasterxml.jackson.core.JsonParseException;
         import org.opencb.commons.io.DataReader;
         import org.opencb.commons.io.DataWriter;
-        import org.opencb.commons.run.Task;
 
         import java.io.IOException;
         import java.util.*;
@@ -23,7 +21,7 @@ public class ThreadRunner {
 
     private final Object syncObject = new Object();
     private static final List<Object> SINGLETON_LIST = Collections.singletonList(new Object());
-    private static final List LAST_BATCH = new LinkedList();
+    private static final List POISON_PILL = new LinkedList();
 
     public ThreadRunner(ExecutorService executorService, int batchSize) {
         this.executorService = executorService;
@@ -174,7 +172,7 @@ public class ThreadRunner {
                 } else {
 //                    System.out.println("Empty list! Lets submit the last batch " + !isLastBatchSent());
                     if (!isLastBatchSent()) {
-                        submit(LAST_BATCH);
+                        submit(POISON_PILL);
                     }
                 }
             } else {
@@ -324,9 +322,11 @@ public class ThreadRunner {
             List<O> generatedBatch;
             assert lastBatchSent == false;
 
-            if (batch == LAST_BATCH) {
+            if (batch == POISON_PILL) {
                 lastBatch = true;
-                pendingJobs--;
+                synchronized (name) {
+                    pendingJobs--;
+                }
 //                System.out.println(name + " - lastBatch");
                 generatedBatch = Collections.emptyList();
             } else {
@@ -362,7 +362,9 @@ public class ThreadRunner {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    pendingJobs--;  //
+                    synchronized (name) {
+                        pendingJobs--;
+                    }
 //                    System.out.println(name + " - pendingJobs " + pendingJobs);
                 }
             }
@@ -370,7 +372,7 @@ public class ThreadRunner {
             if (isFinished()) {
                 if (!lastBatchSent) {
                     for (Node<O, ?, ?> node : nodes) {
-                        node.submit(LAST_BATCH);
+                        node.submit(POISON_PILL);
                     }
                     lastBatchSent = true;
                 }
@@ -378,6 +380,8 @@ public class ThreadRunner {
                 synchronized (syncObject) {
                     syncObject.notify();
                 }
+            } else {
+                System.out.println("Node '" + name + "' pendingJobs " + pendingJobs);
             }
             return generatedBatch;
         }
@@ -410,8 +414,9 @@ public class ThreadRunner {
             return lastBatchSent;
         }
 
-        public void append(Node<O, ?, ?> node) {
+        public Node<I, O, EXECUTOR> append(Node<O, ?, ?> node) {
             nodes.add(node);
+            return this;
         }
 
     }

@@ -11,7 +11,7 @@ import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.dbquery.QueryResult;
-import org.opencb.cellbase.lib.mongodb.db.MongoDBAdaptorFactory;
+import org.opencb.cellbase.mongodb.db.MongoDBAdaptorFactory;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
@@ -52,7 +52,7 @@ public class VariantAnnotationManager {
 
         System.out.println(cellbaseSpecies + "-" + cellbaseAssembly);
         DBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(cellbaseConfiguration);
-        VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = dbAdaptorFactory.getGenomicVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
+        VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = dbAdaptorFactory.getVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
 
         /**
          * Connecting to OpenCGA Variant database
@@ -79,7 +79,7 @@ public class VariantAnnotationManager {
             GenomicVariant genomicVariant = new GenomicVariant(dbObject.get("chr").toString(), Integer.parseInt(dbObject.get("start").toString()),
                     dbObject.get("ref").toString(), dbObject.get("alt").toString());
             System.out.println("genomicVariant = " + genomicVariant);
-            QueryResult queryResult = variantAnnotationDBAdaptor.getAllConsequenceTypesByVariant(genomicVariant, new org.opencb.cellbase.core.lib.dbquery.QueryOptions());
+            org.opencb.datastore.core.QueryResult queryResult = variantAnnotationDBAdaptor.getAllConsequenceTypesByVariant(genomicVariant, new QueryOptions());
 //            List<ConsequenceType> consequenceTypeList = (List<ConsequenceType>) queryResult.getNumResults();
             if(queryResult.getNumResults() > 0) {
                 System.out.println("queryResult = " + queryResult.getNumResults());

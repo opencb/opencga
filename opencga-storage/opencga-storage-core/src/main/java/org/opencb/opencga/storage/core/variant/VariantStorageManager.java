@@ -6,27 +6,23 @@ import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.feature.Region;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantVcfEVSFactory;
+import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
-import org.opencb.biodata.tools.variant.tasks.VariantStatsTask;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
+import org.opencb.opencga.storage.core.runner.StringDataReader;
+import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.io.json.*;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,26 +120,27 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
-        int batchSize = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100"));
+        int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100")));
+        String extension = params.getString("compressExtension", "snappy");
+        int numTasks = params.getInt("transformThreads", 8);
+        int capacity = params.getInt("blockingQueueCapacity", numTasks*2);
 
-        //Reader
-        VariantReader reader = null;
-        PedigreeReader pedReader = null;
-        if(pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
-            pedReader = new PedigreePedReader(pedigree.toString());
+        if (!extension.startsWith(".") && !extension.isEmpty()) {
+            extension = "." + extension;
         }
-
         // TODO Create a utility to determine which extensions are variants files
+        final VariantVcfFactory factory;
         if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
             switch (source.getAggregation()) {
+                default:
                 case NONE:
-                    reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+                    factory = new VariantVcfFactory();
                     break;
                 case BASIC:
-                    reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantAggregatedVcfFactory());
+                    factory = new VariantAggregatedVcfFactory();
                     break;
                 case EVS:
-                    reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), new VariantVcfEVSFactory());
+                    factory = new VariantVcfEVSFactory();
                     break;
             }
         } else {
@@ -152,35 +149,85 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
-
 //        todo remove:
 //        if (includeStats) {
 //            taskList.add(new VariantStatsTask(reader, source));
 //        }
 
-        //Writers
-        List<VariantWriter> writers = new ArrayList<>();
-        VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-        jsonWriter.includeSrc(includeSrc);
-        writers.add(jsonWriter);
-
-        for (VariantWriter variantWriter : writers) {
-            variantWriter.includeSamples(includeSamples);
-//            variantWriter.includeEffect(includeEffect);   //Deprecated
-            variantWriter.includeStats(includeStats);
-        }
-
-        //Runner
-        VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, batchSize);
+        Path outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
+        Path outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
 
         logger.info("Transforming variants...");
-        long start = System.currentTimeMillis();
-        vr.run();
-        long end = System.currentTimeMillis();
+        long start, end;
+        if (numTasks == 1) {
+            if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
+                logger.warn("Force using gzip compression");
+                extension = ".gz";
+                outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
+                outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
+            }
+
+            //Ped Reader
+            PedigreeReader pedReader = null;
+            if(pedigree != null && pedigree.toFile().exists()) {    //FIXME Add "endsWith(".ped") ??
+                pedReader = new PedigreePedReader(pedigree.toString());
+            }
+
+            //Reader
+            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+
+            //Writers
+            VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
+            jsonWriter.includeSrc(includeSrc);
+            jsonWriter.includeSamples(includeSamples);
+            jsonWriter.includeStats(includeStats);
+
+            List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
+
+            //Runner
+            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, batchSize);
+
+            logger.info("Single thread transform...");
+            start = System.currentTimeMillis();
+            vr.run();
+            end = System.currentTimeMillis();
+
+        } else {
+            //Read VariantSource
+            source = readVariantSource(input, source);
+
+            //Reader
+            StringDataReader dataReader = new StringDataReader(input);
+
+            //Writers
+            StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
+
+            SimpleThreadRunner runner = new SimpleThreadRunner(
+                    dataReader,
+                    Collections.<Task>singletonList(new VariantJsonTransformTask(factory, source, outputFileJsonFile)),
+                    dataWriter,
+                    batchSize,
+                    capacity,
+                    numTasks);
+
+            logger.info("Multi thread transform...");
+            start = System.currentTimeMillis();
+            runner.run();
+            end = System.currentTimeMillis();
+        }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
+        return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
+    }
 
-        return outputUri.resolve(input.getFileName().toString()+".variants.json.gz");
+    private VariantSource readVariantSource(Path input, VariantSource source) {
+        VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+        reader.open();
+        reader.pre();
+        source.addMetadata("variantFileHeader", reader.getHeader());
+        reader.post();
+        reader.close();
+        return source;
     }
 
     @Override
@@ -190,7 +237,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
     protected VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
         VariantJsonReader variantJsonReader;
-        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz")) {
+        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz") || source.getFileName().endsWith(".json.snappy") || source.getFileName().endsWith(".json.snz")) {
             String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {

@@ -45,7 +45,11 @@ public class CatalogManager implements ICatalogManager {
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
     /* Manager policies properties */
     public static final String CATALOG_MANAGER_POLICY_CREATION_USER = "OPENCGA.CATALOG.MANAGER.POLICY.CREATION_USER";
-
+    /* Other properties */
+    public static final String CATALOG_MAIL_USER = "CATALOG.MAIL.USER";
+    public static final String CATALOG_MAIL_PASSWORD = "CATALOG.MAIL.PASSWORD";
+    public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
+    public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
 
     private CatalogDBAdaptor catalogDBAdaptor;
@@ -160,6 +164,9 @@ public class CatalogManager implements ICatalogManager {
     private void configureManager(Properties properties) {
         creationUserPolicy = properties.getProperty(CATALOG_MANAGER_POLICY_CREATION_USER, "always");
         catalogClient = new CatalogDBClient(this);
+
+        //TODO: Check if is empty
+        //TODO: Setup catalog if it's empty.
     }
 
     /**
@@ -465,10 +472,10 @@ public class CatalogManager implements ICatalogManager {
 
         QueryResult qr = catalogDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        String mailUser = properties.getProperty("CATALOG.MAIL.USER");
-        String mailPassword = properties.getProperty("CATALOG.MAIL.PASSWORD");
-        String mailHost = properties.getProperty("CATALOG.MAIL.HOST");
-        String mailPort = properties.getProperty("CATALOG.MAIL.PORT");
+        String mailUser = properties.getProperty(CATALOG_MAIL_USER);
+        String mailPassword = properties.getProperty(CATALOG_MAIL_PASSWORD);
+        String mailHost = properties.getProperty(CATALOG_MAIL_HOST);
+        String mailPort = properties.getProperty(CATALOG_MAIL_PORT);
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
@@ -2380,6 +2387,42 @@ public class CatalogManager implements ICatalogManager {
 
         return catalogDBAdaptor.annotateSample(sampleId, annotationSet);
     }
+
+    /**
+     * Cohort methods
+     * ***************************
+     */
+
+    public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+
+        int studyId = catalogDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = getUserIdBySessionId(sessionId);
+
+        if (getStudyAcl(userId, studyId).isRead()) {
+            return catalogDBAdaptor.getCohort(cohortId);
+        } else {
+            throw new CatalogException("Permission denied. User " + userId + " can't read cohorts from study");
+        }
+    }
+
+    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> samples,
+                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
+        checkParameter(name, "name");
+        checkObj(samples, "Samples list");
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        for (Integer sampleId : samples) {
+            getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+        }
+
+        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, samples, attributes);
+
+        return catalogDBAdaptor.createCohort(studyId, cohort);
+    }
+
+
 
     /**
      * Tools methods
