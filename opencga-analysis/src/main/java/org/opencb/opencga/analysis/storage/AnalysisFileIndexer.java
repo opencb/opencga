@@ -1,5 +1,9 @@
 package org.opencb.opencga.analysis.storage;
 
+import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -8,11 +12,15 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.beans.Sample;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,6 +58,7 @@ public class AnalysisFileIndexer {
 
     private final Properties properties;
     private final CatalogManager catalogManager;
+    protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
 
     public AnalysisFileIndexer(CatalogManager catalogManager, Properties properties) {
         this.properties = properties;
@@ -65,12 +74,16 @@ public class AnalysisFileIndexer {
     public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
             throws IOException, CatalogException, AnalysisExecutionException {
 
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
         QueryResult<File> outdirQueryResult = catalogManager.getFile(outDirId, sessionId);
         File file = fileQueryResult.getResult().get(0);
         File outdir = outdirQueryResult.getResult().get(0);
-        String dbName = userId + Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_");
+        String dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId;
 
         //TODO: Check if file can be indexed
 
@@ -92,7 +105,7 @@ public class AnalysisFileIndexer {
         //Create commandLine
         ObjectMap indexAttributes = new ObjectMap();
         String commandLine = createCommandLine(study, file, index, storageEngine,
-                temporalOutDirUri, indexAttributes, dbName);
+                temporalOutDirUri, indexAttributes, dbName, sessionId, options);
 
         //Create job
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
@@ -124,13 +137,14 @@ public class AnalysisFileIndexer {
      * @param outDirUri         Index outdir
      * @param indexAttributes   This map will be filled with some index information
      * @param dbName
+     * @param sessionId
      * @return                  CommandLine
      *
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
     private String createCommandLine(Study study, File file, File indexFile, String storageEngine,
-                                     URI outDirUri, ObjectMap indexAttributes, final String dbName)
+                                     URI outDirUri, final ObjectMap indexAttributes, final String dbName, String sessionId, QueryOptions options)
             throws CatalogDBException, CatalogIOManagerException {
 
         //Create command line
@@ -158,7 +172,29 @@ public class AnalysisFileIndexer {
             throw new UnsupportedOperationException();
         } else if (file.getBioformat() == File.Bioformat.VARIANT || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
 
-            commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
+            StringBuilder sampleIds = new StringBuilder();
+            try {
+                VariantSource variantSource = readVariantSource(catalogManager, study, file);
+                QueryOptions queryOptions = new QueryOptions("include", "projects.studies.samples.id,projects.studies.samples.name");
+                queryOptions.add("name", variantSource.getSamples());
+                List<Sample> sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
+                if (sampleList.size() != variantSource.getSamples().size()) {
+                    Set<String> set = new HashSet<>(variantSource.getSamples());
+                    for (Sample sample : sampleList) {
+                        set.remove(sample.getName());
+                    }
+                    logger.warn("Missing samples: {}", set);
+//                    throw new CatalogException("Can not find samples"); //TODO: Create missing samples
+                }
+                for (Sample sample : sampleList) {
+                    sampleIds.append(sample.getName()).append(":").append(sample.getId()).append(",");
+                }
+                indexAttributes.put("variantSource", variantSource);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+            }
+
+            StringBuilder sb = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-variants ")
                     .append(" --file-id ").append(indexFile.getId())
@@ -166,13 +202,19 @@ public class AnalysisFileIndexer {
                     .append(" --study-id ").append(study.getId())
                     .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dbName)
-                    .append(" --input ").append(catalogManager.getFileUri(file).getPath())  //TODO: Make URI-compatible
-                    .append(" --outdir ").append(outDirUri.getPath())                    //TODO: Make URI-compatible
+                    .append(" --input ").append(catalogManager.getFileUri(file))
+                    .append(" --outdir ").append(outDirUri)
                     .append(" --include-genotypes ")
                     .append(" --include-stats ")
-                    .append(" --annotate ")
+                    .append(" -DsampleIds=").append(sampleIds);
 //                    .append(" --credentials ")
-                    .toString();
+            if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {
+                sb.append(" --annotate ");
+            }
+            if (options.getBoolean(VariantStorageManager.INCLUDE_SRC, false)) {
+                sb.append(" --include-src ");
+            }
+            commandLine = sb.toString();
 
         } else {
             return null;
@@ -183,5 +225,23 @@ public class AnalysisFileIndexer {
 
         return commandLine;
     }
+
+
+
+
+    ////AUX METHODS
+
+
+    static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file) throws CatalogException{
+        //TODO: Fix aggregate and studyType
+        VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
+        URI fileUri = catalogManager.getFileUri(file);
+        return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+    }
+
+
+
+
+
 
 }

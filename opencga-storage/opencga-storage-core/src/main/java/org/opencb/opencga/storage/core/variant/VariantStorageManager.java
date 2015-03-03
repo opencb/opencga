@@ -220,7 +220,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
     }
 
-    private VariantSource readVariantSource(Path input, VariantSource source) {
+    static public VariantSource readVariantSource(Path input, VariantSource source) {
         VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
         reader.open();
         reader.pre();
