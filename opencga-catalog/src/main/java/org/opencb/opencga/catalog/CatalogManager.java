@@ -2390,6 +2390,10 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
+    public int getStudyIdByCohortId(int cohortId) throws CatalogException {
+        return catalogDBAdaptor.getStudyIdByCohortId(cohortId);
+    }
+
     public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 

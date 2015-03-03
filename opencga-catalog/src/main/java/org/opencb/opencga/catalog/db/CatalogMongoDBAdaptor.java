@@ -1259,7 +1259,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 //        return getStudyOwnerId(studyId);
     }
 
-    private int getDiskUsageByStudy(int studyId){
+    private long getDiskUsageByStudy(int studyId){
         List<DBObject> operations = Arrays.<DBObject>asList(
                 new BasicDBObject(
                         "$match",
@@ -1284,9 +1284,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if(aggregate.getNumResults() == 1){
             Object diskUsage = aggregate.getResult().get(0).get("diskUsage");
             if(diskUsage instanceof Integer){
-                return (Integer)diskUsage;
+                return ((Integer) diskUsage).longValue();
+            } else if (diskUsage instanceof Long) {
+                return ((Long) diskUsage);
             } else {
-                return Integer.parseInt(diskUsage.toString());
+                return Long.parseLong(diskUsage.toString());
             }
         } else {
             return 0;
@@ -1770,26 +1772,20 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         DBObject query = new BasicDBObject(_STUDY_ID, studyId);
 
         // Sample Filters  //
-        if (options.containsKey( "id" )) {
-            query.put("id", options.get("id"));
-        }
-        if (options.containsKey( "source" )) {
-            query.put("source", options.get("source"));
-        }
+        addQueryIntegerListFilter("id", query, options);
+        addQueryStringListFilter("name", query, options);
+        addQueryStringListFilter("source", query, options);
 
         // AnnotationSet Filters //
         BasicDBObject annotationSetFilter = new BasicDBObject();
-        if (options.containsKey( "variableSetId" )) {
-            annotationSetFilter.put("variableSetId", options.get("variableSetId"));
-        }
-        if (options.containsKey( "annotationSetId" )) {
-            annotationSetFilter.put("id", options.get("annotationSetId"));
-        }
+        addQueryIntegerListFilter("variableSetId", annotationSetFilter, options);
+        addQueryStringListFilter("annotationSetId", "id", annotationSetFilter, options);
+
 
         List<DBObject> annotationFilters = new LinkedList<>();
         // Annotation Filters
         if (options.containsKey("annotation")) {
-            String[] annotations = options.getString("annotation").split(",");
+            List<String> annotations = options.getAsStringList("annotation");
             for (String annotation : annotations) {
                 String[] split = annotation.split(":", 2);
                 if (split.length != 2) {
@@ -1826,6 +1822,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     @Override
     public QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException {
+        //TODO
         throw new UnsupportedOperationException("No implemented");
     }
 
@@ -1910,7 +1907,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
 
         List<Study> studies = parseStudies(queryResult);
-        if(studies == null || studies.get(0).getDatasets().isEmpty()) {
+        if(studies == null || studies.get(0).getCohorts().isEmpty()) {
             throw CatalogDBException.idNotFound("Cohort", cohortId);
         } else {
             return endQuery("getCohort", startTime, studies.get(0).getCohorts());
@@ -2130,7 +2127,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         DBObject dbObject;
         try {
             dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(object));
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             throw new CatalogDBException("Error while writing to Json : " + objectName);
         }
         return dbObject;
@@ -2189,6 +2186,37 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     /*  */
 
+    private void addQueryStringListFilter(String key, DBObject query, QueryOptions options) {
+        addQueryStringListFilter(key, key, query, options);
+    }
+    private void addQueryStringListFilter(String optionKey, String queryKey, DBObject query, QueryOptions options) {
+        if (options.containsKey(optionKey)) {
+            List<String> stringList = options.getAsStringList(optionKey);
+            if (stringList.size() > 1) {
+                query.put(queryKey, new BasicDBObject("$in", stringList));
+            } else if (stringList.size() == 1) {
+                query.put(queryKey, stringList.get(0));
+            }
+        }
+    }
+
+    private void addQueryIntegerListFilter(String key, DBObject query, QueryOptions options) {
+        addQueryIntegerListFilter(key, key, query, options);
+    }
+
+    private void addQueryIntegerListFilter(String optionKey, String queryKey, DBObject query, QueryOptions options) {
+        if (options.containsKey(optionKey)) {
+            List<Integer> integerList = options.getAsIntegerList(optionKey);
+            if (integerList.size() > 1) {
+                query.put(queryKey, new BasicDBObject("$in", integerList));
+            } else if (integerList.size() == 1) {
+                query.put(queryKey, integerList.get(0));
+            }
+        }
+    }
+
+    /*  */
+
     private void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
         for (String s : acceptedParams) {
             if(parameters.containsKey(s)) {
@@ -2214,8 +2242,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 } else {
                     map = new ObjectMap(parameters.getString(s));
                 }
-                for (Map.Entry<String, Object> entry : map.entrySet()) {
-                    filteredParams.put(s + "." + entry.getKey(), entry.getValue());
+                try {
+                    DBObject dbObject = getDbObject(map, s);
+                    for (Map.Entry<String, Object> entry : map.entrySet()) {
+                        filteredParams.put(s + "." + entry.getKey(), dbObject.get(entry.getKey()));
+                    }
+                } catch (CatalogDBException e) {
+                    e.printStackTrace();
                 }
             }
         }
