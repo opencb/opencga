@@ -13,6 +13,7 @@ import java.util.*;
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  */
+@Deprecated
 public class OptionsParser {
     private final JCommander jcommander;
 
