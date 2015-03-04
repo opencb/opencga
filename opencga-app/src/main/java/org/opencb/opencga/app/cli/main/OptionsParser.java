@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
+import org.opencb.opencga.catalog.beans.File;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,70 +18,35 @@ public class OptionsParser {
 
     private final UserAndPasswordOptions userAndPasswordOptions;
 
-    private UserCommands userCommands;
-    private ProjectCommands projectCommands;
-    private StudyCommands studyCommands;
-    private FileCommands fileCommands;
-    private ToolCommands toolCommands;
+    private final UserCommands userCommands;
+    private final ProjectCommands projectCommands;
+    private final StudyCommands studyCommands;
+    private final FileCommands fileCommands;
+    private final ToolCommands toolCommands;
 
     public final CommandShareResource commandShareResource;
 
 
-
-    public OptionsParser() {
+    public OptionsParser(boolean interactive) {
         generalOptions = new GeneralOptions();
 
         jcommander = new JCommander(generalOptions);
 
         commonOptions = new CommonOptions();
         userAndPasswordOptions = new UserAndPasswordOptions();
-
-        userCommands = new UserCommands();
-        projectCommands = new ProjectCommands();
-        studyCommands = new StudyCommands();
-        fileCommands = new FileCommands();
-        toolCommands = new ToolCommands();
-
         commandShareResource = new CommandShareResource();
 
-//        jcommander.addCommand(new HelpCommands());
-        jcommander.addCommand(new ExitCommands());
-
-        jcommander.addCommand(userCommands);
-        JCommander users = jcommander.getCommands().get("users");
-        users.addCommand(userCommands.createCommand);
-        users.addCommand(userCommands.infoCommand);
-        users.addCommand(userCommands.loginCommand);
-        users.addCommand(userCommands.logoutCommand);
-        users.addCommand(userCommands.lsitCommand);
+        userCommands = new UserCommands(jcommander);
+        projectCommands = new ProjectCommands(jcommander);
+        studyCommands = new StudyCommands(jcommander);
+        fileCommands = new FileCommands(jcommander);
+        toolCommands = new ToolCommands(jcommander);
 
 
-        jcommander.addCommand(projectCommands);
-        JCommander projects = jcommander.getCommands().get("projects");
-        projects.addCommand(projectCommands.createCommand);
-        projects.addCommand(projectCommands.infoCommand);
-//        projects.addCommand(commandShareResource);
-
-        jcommander.addCommand(studyCommands);
-        JCommander studies = jcommander.getCommands().get("studies");
-        studies.addCommand(studyCommands.createCommand);
-        studies.addCommand(studyCommands.infoCommand);
-        studies.addCommand(commandShareResource);
-
-
-        jcommander.addCommand(fileCommands);
-        JCommander files = jcommander.getCommands().get("files");
-        files.addCommand(fileCommands.createCommand);
-        files.addCommand(fileCommands.infoCommand);
-        files.addCommand(fileCommands.listCommand);
-        files.addCommand(fileCommands.indexCommand);
-//        files.addCommand(commandShareResource);
-
-        jcommander.addCommand(toolCommands);
-        JCommander tools = jcommander.getCommands().get("tools");
-        tools.addCommand(toolCommands.createCommand);
-        tools.addCommand(toolCommands.infoCommand);
-
+        if (interactive) { //Add interactive commands
+//            jcommander.addCommand(new HelpCommands());
+            jcommander.addCommand(new ExitCommands());
+        }
     }
 
     public void parse(String[] args) throws ParameterException{
@@ -121,8 +87,15 @@ public class OptionsParser {
     }
 
     private void printUsage(JCommander commander) {
+        int gap = 10;
+        int leftGap = 1;
+        for (String s : commander.getCommands().keySet()) {
+            if (gap < s.length() + leftGap) {
+                gap = s.length() + leftGap;
+            }
+        }
         for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.out.printf("%10s    %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
+            System.out.printf("%" + gap + "s    %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
         }
     }
 
@@ -208,11 +181,21 @@ public class OptionsParser {
     @Parameters(commandNames = {"users"}, commandDescription = "Description")
     class UserCommands {
 
-        CreateCommand createCommand = new CreateCommand();
-        InfoCommand infoCommand = new InfoCommand();
-        ListCommand lsitCommand = new ListCommand();
-        LoginCommand loginCommand = new LoginCommand();
-        LogoutCommand logoutCommand = new LogoutCommand();
+        final CreateCommand createCommand;
+        final InfoCommand infoCommand;
+        final ListCommand lsitCommand;
+        final LoginCommand loginCommand;
+        final LogoutCommand logoutCommand;
+
+        public UserCommands(JCommander jcommander) {
+            jcommander.addCommand(this);
+            JCommander users = jcommander.getCommands().get("users");
+            users.addCommand(createCommand = new CreateCommand());
+            users.addCommand(infoCommand = new InfoCommand());
+            users.addCommand(lsitCommand = new ListCommand());
+            users.addCommand(loginCommand = new LoginCommand());
+            users.addCommand(logoutCommand = new LogoutCommand());
+        }
 
         @ParametersDelegate
         CommonOptions cOpt = commonOptions;
@@ -288,11 +271,19 @@ public class OptionsParser {
     @Parameters(commandNames = {"projects"}, commandDescription = "Project commands")
     class ProjectCommands {
 
-        CreateCommand createCommand = new CreateCommand();
-        InfoCommand infoCommand = new InfoCommand();
+        final CreateCommand createCommand;
+        final InfoCommand infoCommand;
 
         @ParametersDelegate
         CommonOptions cOpt = commonOptions;
+
+        public ProjectCommands(JCommander jcommander) {
+            jcommander.addCommand(this);
+            JCommander projects = jcommander.getCommands().get("projects");
+            projects.addCommand(this.createCommand = new CreateCommand());
+            projects.addCommand(this.infoCommand = new InfoCommand());
+//        projects.addCommand(commandShareResource);
+        }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create new project")
         class CreateCommand {
@@ -333,8 +324,17 @@ public class OptionsParser {
     @Parameters(commandNames = {"studies"}, commandDescription = "Description")
     class StudyCommands {
 
-        CreateCommand createCommand = new CreateCommand();
-        InfoCommand infoCommand = new InfoCommand();
+        final CreateCommand createCommand;
+        final InfoCommand infoCommand;
+
+        public StudyCommands(JCommander jcommander) {
+            jcommander.addCommand(this);
+            JCommander studies = jcommander.getCommands().get("studies");
+            studies.addCommand(createCommand = new CreateCommand());
+            studies.addCommand(infoCommand = new InfoCommand());
+            studies.addCommand(commandShareResource);
+
+        }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Description")
         class CreateCommand {
@@ -379,10 +379,22 @@ public class OptionsParser {
     @Parameters(commandNames = {"files"}, commandDescription = "File methods")
     class FileCommands {
 
-        CreateCommand createCommand = new CreateCommand();
-        InfoCommand infoCommand = new InfoCommand();
-        ListCommand listCommand = new ListCommand();
-        IndexCommand indexCommand = new IndexCommand();
+        final CreateCommand createCommand;
+        final CreateFolderCommand createFolderCommand;
+        final InfoCommand infoCommand;
+        final ListCommand listCommand;
+        final IndexCommand indexCommand;
+
+        public FileCommands(JCommander jcommander) {
+            jcommander.addCommand(this);
+            JCommander files = jcommander.getCommands().get("files");
+            files.addCommand(this.createCommand = new CreateCommand());
+            files.addCommand(this.createFolderCommand = new CreateFolderCommand());
+            files.addCommand(this.infoCommand = new InfoCommand());
+            files.addCommand(this.listCommand = new ListCommand());
+            files.addCommand(this.indexCommand = new IndexCommand());
+//        files.addCommand(commandShareResource);
+        }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create file")
         class CreateCommand {
@@ -396,20 +408,42 @@ public class OptionsParser {
             @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
             String file;
 
-            @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
-            String path  = "";
-
-            @Parameter(names = {"-d", "--description"}, description = "Organization", required = true, arity = 1)
-            String description;
-
             @Parameter(names = {"-s", "--studyId"}, description = "studyId", required = true, arity = 1)
             String studyId;
 
-            @Parameter(names = {"-f", "--format"}, description = "format", required = true, arity = 1)
-            String format;
+            @Parameter(names = {"-o", "--outdir"}, description = "Directory where to create the file", required = false, arity = 1)
+            String path  = "";
 
-            @Parameter(names = {"-b", "--bioformat"}, description = "bioformat", required = true, arity = 1)
-            String bioformat;
+            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+            String description;
+
+            @Parameter(names = {"-f", "--format"}, description = "format", required = false, arity = 1)
+            File.Format format = File.Format.PLAIN;
+
+            @Parameter(names = {"-b", "--bioformat"}, description = "bioformat", required = false, arity = 1)
+            File.Bioformat bioformat = File.Bioformat.NONE;
+
+            @Parameter(names = {"-P", "--parents"}, description = "parents", required = false)
+            boolean parents;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
+        }
+
+        @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
+        class CreateFolderCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
+            String path  = "";
+
+            @Parameter(names = {"-s", "--studyId"}, description = "studyId", required = true, arity = 1)
+            String studyId;
 
             @Parameter(names = {"-P", "--parents"}, description = "parents", required = false)
             boolean parents;
@@ -464,8 +498,15 @@ public class OptionsParser {
     @Parameters(commandNames = {"tools"}, commandDescription = "Tools methods")
     class ToolCommands {
 
-        CreateCommand createCommand = new CreateCommand();
-        InfoCommand infoCommand = new InfoCommand();
+        final CreateCommand createCommand;
+        final InfoCommand infoCommand;
+
+        public ToolCommands(JCommander jcommander) {
+            jcommander.addCommand(this);
+            JCommander tools = jcommander.getCommands().get("tools");
+            tools.addCommand(this.createCommand = new CreateCommand());
+            tools.addCommand(this.infoCommand = new InfoCommand());
+        }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Regist existint tool in catalog")
         class CreateCommand {

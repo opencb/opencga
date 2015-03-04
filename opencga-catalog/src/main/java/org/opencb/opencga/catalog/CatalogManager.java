@@ -1270,13 +1270,13 @@ public class CatalogManager implements ICatalogManager {
 
         switch (file.getType()) {
             case FOLDER:
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
-                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
-
                 QueryResult<File> allFilesInFolder = catalogDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
                 for (File subfile : allFilesInFolder.getResult()) {
                     deleteFile(subfile.getId(), sessionId);
                 }
+
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
                 return queryResult;
             case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
@@ -1394,7 +1394,7 @@ public class CatalogManager implements ICatalogManager {
                 break;
             default:
                 if (!getFileAcl(userId, fileId).isWrite()) {
-                    throw new CatalogDBException("User " + userId + " can't modify the file " + fileId);
+                    throw new CatalogException("User " + userId + " can't modify the file " + fileId);
                 }
                 for (String s : parameters.keySet()) {
                     switch (s) { //Special cases
@@ -1405,11 +1405,12 @@ public class CatalogManager implements ICatalogManager {
                         case "status":
                         case "attributes":
                         case "stats":
+                        case "sampleIds":
                             break;
                         //Can only be modified when file.status == INDEXING
                         case "jobId":
                             if (!file.getStatus().equals(File.Status.INDEXING)) {
-                                throw new CatalogDBException("Parameter '" + s + "' can't be changed when " +
+                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
                                         "status == " + file.getStatus().name() + ". " +
                                         "Required status INDEXING or admin account");
                             }
@@ -1419,22 +1420,21 @@ public class CatalogManager implements ICatalogManager {
                         case "creationDate":
                         case "diskUsage":
                             if (!file.getStatus().equals(File.Status.UPLOADING)) {
-                                throw new CatalogDBException("Parameter '" + s + "' can't be changed when " +
+                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
                                         "status == " + file.getStatus().name() + ". " +
                                         "Required status UPLOADING or admin account");
                             }
                             break;
-                        case "type":
-                        case "path":    //Path and Name must be changed with "raname" and/or "move" methods.
+                        //Path and Name must be changed with "raname" and/or "move" methods.
+                        case "path":
                         case "name":
+                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
+                                    "Use \"renameFile\" instead");
+                        case "type":
                         default:
-                            throw new CatalogDBException("Parameter '" + s + "' can't be changed. " +
+                            throw new CatalogException("Parameter '" + s + "' can't be changed. " +
                                     "Requires admin account");
                     }
-//                    if (!s.matches("name|type|format|bioformat|description|status|attributes|stats|jobId")) {
-//
-//                        throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-//                    }
                 }
                 break;
         }

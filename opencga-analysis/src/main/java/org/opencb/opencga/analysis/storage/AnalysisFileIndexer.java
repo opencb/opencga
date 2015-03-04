@@ -32,13 +32,13 @@ import java.util.*;
  * Created by jacobo on 16/10/14.
  *
  * IndexFile (fileId, backend, outDir)
- * - check if indexed in the selected backend
+ * - get Samples data
  * - create temporal outDir (must be a new folder)
- * - create command line
  * - create index file
+ * - create command line
  * - create job
- * - update file with job info
- * - execute
+ * - update index file
+ *
  * ...
  * - find files in outDir
  * - update file and job index info
@@ -54,21 +54,18 @@ public class AnalysisFileIndexer {
     public static final String INDEXED_FILE = "indexedFile";
     public static final String DB_NAME = "dbName";
     public static final String STORAGE_ENGINE = "storageEngine";
+
     public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
 
-    private final Properties properties;
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
 
-    public AnalysisFileIndexer(CatalogManager catalogManager, Properties properties) {
-        this.properties = properties;
+    public AnalysisFileIndexer(CatalogManager catalogManager, @Deprecated Properties properties) {
         this.catalogManager = catalogManager;
     }
 
-    public AnalysisFileIndexer(java.io.File properties) throws IOException, CatalogDBException, CatalogIOManagerException {
-        this.properties = new Properties();
-        this.properties.load(new FileInputStream(properties));
-        this.catalogManager = new CatalogManager(this.properties);
+    public AnalysisFileIndexer(CatalogManager catalogManager) {
+        this.catalogManager = catalogManager;
     }
 
     public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
@@ -78,83 +75,88 @@ public class AnalysisFileIndexer {
             options = new QueryOptions();
         }
 
+        /** Query catalog for user data. **/
         String userId = catalogManager.getUserIdBySessionId(sessionId);
-        QueryResult<File> fileQueryResult = catalogManager.getFile(fileId, sessionId);
-        QueryResult<File> outdirQueryResult = catalogManager.getFile(outDirId, sessionId);
-        File file = fileQueryResult.getResult().get(0);
-        File outdir = outdirQueryResult.getResult().get(0);
+        File file = catalogManager.getFile(fileId, sessionId).first();
+        File outdir = catalogManager.getFile(outDirId, sessionId).first();
+        int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
+        Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
+
         String dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId;
 
         //TODO: Check if file can be indexed
 
-        // Create temporal Outdir
-        //int studyId = catalogManager.getStudyIdByFileId(fileId);
-        int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
-        Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
+        // ObjectMap to fill with modifications over the indexed file (like new attributes or jobId)
+        ObjectMap indexFileModifyParams = new ObjectMap("attributes", new ObjectMap());
+
+        /** Get file samples **/
+        List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, sessionId);
+
+        /** Create temporal Job Outdir **/
         String randomString = "I_" + StringUtils.randomString(10);
         URI temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
 
+        /** Create index file**/
+        String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
+        String indexedFilePath = Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine;
 
-        //Create index file
-        QueryResult<File> indexQueryResult = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
-                file.getBioformat(), Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine, null, null,
-                "Indexation of " + file.getName() + " (" + fileId + ")", File.Status.INDEXING, 0, -1, null, -1, null,
-                null, false, null, sessionId);
-        File index = indexQueryResult.getResult().get(0);
+        File index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
+                file.getBioformat(), indexedFilePath, null, null,
+                indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
+                null, false, null, sessionId).first();
 
-        //Create commandLine
-        ObjectMap indexAttributes = new ObjectMap();
-        String commandLine = createCommandLine(study, file, index, storageEngine,
-                temporalOutDirUri, indexAttributes, dbName, sessionId, options);
+        /** Create commandLine **/
+        String commandLine = createCommandLine(study, file, index, sampleList, storageEngine,
+                temporalOutDirUri, indexFileModifyParams, dbName, options);
 
-        //Create job
+
+        /** Create job **/
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
         jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
         jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
 
-        QueryResult<Job> jobQueryResult = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
+        Job job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
                 "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                jobResourceManagerAttributes, null, sessionId);
-        Job job = jobQueryResult.getResult().get(0);
+                jobResourceManagerAttributes, null, sessionId).first();
 
-        //Set JobId to IndexFile
-        ObjectMap objectMap = new ObjectMap("jobId", job.getId());
-        objectMap.put("attributes", indexAttributes);
-        catalogManager.modifyFile(index.getId(), objectMap, sessionId).getResult();
-        index.setJobId(job.getId());
-        index.setAttributes(indexAttributes);
+        /** Update IndexFile to add extra information (jobId, sampleIds, attributes, ...) **/
+        indexFileModifyParams.put("jobId", job.getId());
+        catalogManager.modifyFile(index.getId(), indexFileModifyParams, sessionId).getResult();
 
-        return index;
+        return catalogManager.getFile(index.getId(), sessionId).first();
     }
 
     /**
      *
-     * @param study             Study where file is located
-     * @param file              File to be indexed
-     * @param indexFile         Generated index file
-     * @param storageEngine     StorageEngine to be used
-     * @param outDirUri         Index outdir
-     * @param indexAttributes   This map will be filled with some index information
+     * @param study                     Study where file is located
+     * @param file                      File to be indexed
+     * @param indexFile                 Generated index file
+     * @param sampleList
+     * @param storageEngine             StorageEngine to be used
+     * @param outDirUri                 Index outdir
+     * @param indexFileModifyParams     This map will be used to modify the indexFile
      * @param dbName
-     * @param sessionId
      * @return                  CommandLine
      *
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
-    private String createCommandLine(Study study, File file, File indexFile, String storageEngine,
-                                     URI outDirUri, final ObjectMap indexAttributes, final String dbName, String sessionId, QueryOptions options)
+    private String createCommandLine(Study study, File file, File indexFile, List<Sample> sampleList, String storageEngine,
+                                     URI outDirUri, final ObjectMap indexFileModifyParams, final String dbName, QueryOptions options)
             throws CatalogDBException, CatalogIOManagerException {
 
         //Create command line
         String userId = file.getOwnerId();
         String name = file.getName();
         String commandLine;
+        ObjectMap indexAttributes = indexFileModifyParams.get("attributes", ObjectMap.class);
+
+        String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", "opencga-storage.sh").toString();
 
         if(file.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
-            commandLine = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
+            commandLine = new StringBuilder(opencgaStorageBin)
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-alignments ")
                     .append(" --file-id ").append(indexFile.getId())
@@ -172,29 +174,12 @@ public class AnalysisFileIndexer {
             throw new UnsupportedOperationException();
         } else if (file.getBioformat() == File.Bioformat.VARIANT || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
 
-            StringBuilder sampleIds = new StringBuilder();
-            try {
-                VariantSource variantSource = readVariantSource(catalogManager, study, file);
-                QueryOptions queryOptions = new QueryOptions("include", "projects.studies.samples.id,projects.studies.samples.name");
-                queryOptions.add("name", variantSource.getSamples());
-                List<Sample> sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
-                if (sampleList.size() != variantSource.getSamples().size()) {
-                    Set<String> set = new HashSet<>(variantSource.getSamples());
-                    for (Sample sample : sampleList) {
-                        set.remove(sample.getName());
-                    }
-                    logger.warn("Missing samples: {}", set);
-//                    throw new CatalogException("Can not find samples"); //TODO: Create missing samples
-                }
-                for (Sample sample : sampleList) {
-                    sampleIds.append(sample.getName()).append(":").append(sample.getId()).append(",");
-                }
-                indexAttributes.put("variantSource", variantSource);
-            } catch (CatalogException e) {
-                e.printStackTrace();
+            StringBuilder sampleIdsString = new StringBuilder();
+            for (Sample sample : sampleList) {
+                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
             }
 
-            StringBuilder sb = new StringBuilder("/opt/opencga/bin/opencga-storage.sh ")
+            StringBuilder sb = new StringBuilder(opencgaStorageBin)
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-variants ")
                     .append(" --file-id ").append(indexFile.getId())
@@ -206,7 +191,7 @@ public class AnalysisFileIndexer {
                     .append(" --outdir ").append(outDirUri)
                     .append(" --include-genotypes ")
                     .append(" --include-stats ")
-                    .append(" -DsampleIds=").append(sampleIds);
+                    .append(" -DsampleIds=").append(sampleIdsString);
 //                    .append(" --credentials ")
             if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {
                 sb.append(" --annotate ");
@@ -231,6 +216,64 @@ public class AnalysisFileIndexer {
 
     ////AUX METHODS
 
+    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, String sessionId) throws CatalogException {
+        List<Sample> sampleList;
+        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
+
+        if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
+            //Read samples from file
+            List<String> sampleNames = null;
+            switch (file.getBioformat()) {
+                case VARIANT: {
+                    if (file.getAttributes().containsKey("variantSource")) {
+                        Object variantSource = file.getAttributes().get("variantSource");
+                        if (variantSource instanceof VariantSource) {
+                            sampleNames = ((VariantSource) variantSource).getSamples();
+                        } else if (variantSource instanceof Map) {
+                            sampleNames = new ObjectMap((Map) variantSource).getAsStringList("samples");
+                        } else {
+                            logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}", variantSource.getClass(), VariantSource.class, Map.class);
+                        }
+                    }
+                    if (sampleNames == null) {
+                        VariantSource variantSource = readVariantSource(catalogManager, study, file);
+                        indexFileModifyParams.get("attributes", ObjectMap.class).put("variantSource", variantSource);
+                        sampleNames = variantSource.getSamples();
+                    }
+                }
+                break;
+                default:
+                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
+            }
+
+            //Find matching samples in catalog with the sampleName from the VariantSource.
+            queryOptions.add("name", sampleNames);
+            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
+
+            //check if all file samples exists on Catalog
+            if (sampleList.size() != sampleNames.size()) {   //Size does not match. Find the missing samples.
+                Set<String> set = new HashSet<>(sampleNames);
+                for (Sample sample : sampleList) {
+                    set.remove(sample.getName());
+                }
+                logger.warn("Missing samples: m{}", set);
+                throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
+            }
+        } else {
+            //Get samples from file.sampleIds
+            queryOptions.add("id", file.getSampleIds());
+            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
+        }
+
+        List<Integer> sampleIdsList = new ArrayList<>(sampleList.size());
+        for (Sample sample : sampleList) {
+            sampleIdsList.add(sample.getId());
+//                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
+        }
+        indexFileModifyParams.put("sampleIds", sampleIdsList);
+
+        return sampleList;
+    }
 
     static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file) throws CatalogException{
         //TODO: Fix aggregate and studyType
@@ -238,10 +281,4 @@ public class AnalysisFileIndexer {
         URI fileUri = catalogManager.getFileUri(file);
         return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
     }
-
-
-
-
-
-
 }

@@ -7,6 +7,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
@@ -17,6 +18,8 @@ import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -33,15 +36,16 @@ public class OpenCGAMain {
     private static String shellSessionId;
     private CatalogManager catalogManager;
     public String sessionId;
+    private static boolean interactive;
 
     //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args)
-            throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
+            throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException, URISyntaxException {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
-        OptionsParser optionsParser = new OptionsParser();
+        OptionsParser optionsParser = new OptionsParser(false);
         try {
             optionsParser.parse(args);
         } catch (ParameterException e){
@@ -55,7 +59,8 @@ public class OpenCGAMain {
         }
 
         // Interactive mode
-        if(optionsParser.getGeneralOptions().interactive){
+        interactive = optionsParser.getGeneralOptions().interactive;
+        if(interactive){
             BufferedReader reader;//create BufferedReader object
 
             reader = new BufferedReader(new InputStreamReader(System.in));
@@ -88,8 +93,8 @@ public class OpenCGAMain {
         }
     }
 
-    private int runCommand(String[] args) throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException {
-        OptionsParser optionsParser = new OptionsParser();
+    private int runCommand(String[] args) throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException, URISyntaxException {
+        OptionsParser optionsParser = new OptionsParser(interactive);
         try {
             optionsParser.parse(args);
         } catch (ParameterException e){
@@ -266,12 +271,27 @@ public class OpenCGAMain {
 
                         int studyId = catalogManager.getStudyId(c.studyId);
                         Path inputFile = Paths.get(c.file);
-                        InputStream is = new FileInputStream(inputFile.toFile());
+                        URI sourceUri = new URI(null, c.file, null);
                         //String outPath = Paths.get(c.outdir , inputFile.getFileName().toString()).toString();
-                        QueryResult<File> file = catalogManager.uploadFile(studyId, File.Format.valueOf(c.format), File.Bioformat.valueOf(c.bioformat),
+//                        QueryResult<File> file = catalogManager.uploadFile(studyId, File.Format.valueOf(c.format), File.Bioformat.valueOf(c.bioformat),
+//                                Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
+//                                c.parents, is, sessionId);
+                        QueryResult<File> file = catalogManager.createFile(studyId, c.format, c.bioformat,
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
-                                c.parents, is, sessionId);
+                                c.parents, -1, sessionId);
+                        new CatalogFileManager(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, false, c.calculateChecksum);
                         System.out.println(file);
+
+                        logout();
+                        break;
+                    }
+                    case "create-folder": {
+                        OptionsParser.FileCommands.CreateFolderCommand c = optionsParser.getFileCommands().createFolderCommand;
+                        login(c.up);
+
+                        int studyId = catalogManager.getStudyId(c.studyId);
+                        QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, null, sessionId);
+                        System.out.println(folder);
 
                         logout();
                         break;
@@ -302,7 +322,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.IndexCommand c = optionsParser.getFileCommands().indexCommand;
                         login(c.up);
 
-                        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, Config.getAnalysisProperties());
+                        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
                         int fileId = catalogManager.getFileId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);

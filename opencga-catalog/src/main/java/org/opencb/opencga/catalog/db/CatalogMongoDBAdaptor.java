@@ -1180,6 +1180,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String[] acceptedIntParams = {"jobId"};
         filterIntParams(parameters, fileParameters, acceptedIntParams);
 
+        String[] acceptedIntegerListParams = {"sampleIds"};
+        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
 
         String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, fileParameters, acceptedMapParams);
