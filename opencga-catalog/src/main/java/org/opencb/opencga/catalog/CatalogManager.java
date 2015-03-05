@@ -6,6 +6,9 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.core.CatalogDBClient;
+import org.opencb.opencga.catalog.core.CatalogClient;
+import org.opencb.opencga.catalog.core.ICatalogManager;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
@@ -30,28 +33,41 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public class CatalogManager {
+public class CatalogManager implements ICatalogManager {
 
+    /* DBAdaptor properties */
     public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
     public static final String CATALOG_DB_DATABASE = "OPENCGA.CATALOG.DB.DATABASE";
     public static final String CATALOG_DB_PASSWORD = "OPENCGA.CATALOG.DB.PASSWORD";
     public static final String CATALOG_DB_HOST = "OPENCGA.CATALOG.DB.HOST";
     public static final String CATALOG_DB_PORT = "OPENCGA.CATALOG.DB.PORT";
+    /* IOManager properties */
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
+    /* Manager policies properties */
+    public static final String CATALOG_MANAGER_POLICY_CREATION_USER = "OPENCGA.CATALOG.MANAGER.POLICY.CREATION_USER";
+    /* Other properties */
+    public static final String CATALOG_MAIL_USER = "CATALOG.MAIL.USER";
+    public static final String CATALOG_MAIL_PASSWORD = "CATALOG.MAIL.PASSWORD";
+    public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
+    public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
+
 
     private CatalogDBAdaptor catalogDBAdaptor;
     private CatalogIOManager ioManager;
     private CatalogIOManagerFactory catalogIOManagerFactory;
+    private CatalogClient catalogClient;
 
 //    private PosixCatalogIOManager ioManager;
 
 
     private Properties properties;
+    private String creationUserPolicy;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
+
 
 
     /*public CatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
@@ -62,6 +78,7 @@ public class CatalogManager {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
+        configureManager(properties);
         configureIOManager(properties);
     }
 
@@ -79,24 +96,38 @@ public class CatalogManager {
             throw e;
         }
 
+        configureManager(properties);
         configureDBAdaptor(properties);
         configureIOManager(properties);
     }
 
     public CatalogManager(Properties properties)
-            throws IOException, CatalogIOManagerException, CatalogDBException {
+            throws CatalogIOManagerException, CatalogDBException {
         this.properties = properties;
 
+        configureManager(properties);
         configureDBAdaptor(properties);
         configureIOManager(properties);
     }
 
+    @Override
+    public CatalogClient client() {
+        return client("");
+    }
+
+    @Override
+    public CatalogClient client(String sessionId) {
+        catalogClient.setSessionId(sessionId);
+        return catalogClient;
+    }
+
+    @Override
     public CatalogIOManagerFactory getCatalogIOManagerFactory() {
         return catalogIOManagerFactory;
     }
 
     private void configureIOManager(Properties properties)
-            throws IOException, CatalogIOManagerException {
+            throws CatalogIOManagerException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
 //        ioManager = this.catalogIOManagerFactory.get(properties.getProperty("CATALOG.MODE", DEFAULT_CATALOG_SCHEME));
         String scheme = URI.create(properties.getProperty(CATALOG_MAIN_ROOTDIR)).getScheme();
@@ -122,46 +153,62 @@ public class CatalogManager {
 
     }
 
+    private void configureManager(Properties properties) {
+        creationUserPolicy = properties.getProperty(CATALOG_MANAGER_POLICY_CREATION_USER, "always");
+        catalogClient = new CatalogDBClient(this);
+
+        //TODO: Check if is empty
+        //TODO: Setup catalog if it's empty.
+    }
+
     /**
      * Getter path methods
      * ***************************
      */
 
+    @Override
     public URI getUserUri(String userId) throws CatalogIOManagerException {
         return ioManager.getUserUri(userId);
     }
 
+    @Override
     public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
         return ioManager.getProjectUri(userId, projectId);
     }
 
+    @Override
     @Deprecated
     public URI getStudyUri(String scheme, String userId, String projectId, String studyId)
             throws CatalogIOManagerException, IOException {
         return catalogIOManagerFactory.get(scheme).getStudyUri(userId, projectId, studyId);
     }
 
+    @Override
     @Deprecated
     public URI getStudyUri(String userId, String projectId, String studyId)
             throws CatalogIOManagerException, IOException {
         return ioManager.getStudyUri(userId, projectId, studyId);
     }
 
+    @Override
     public URI getStudyUri(int studyId, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogException {
         return getStudy(studyId, sessionId, new QueryOptions("include", Arrays.asList("id", "uri"))).getResult().get(0).getUri();
     }
 
+    @Override
     public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
             throws CatalogIOManagerException {
         return ioManager.getFileUri(userId, projectId, studyId, relativeFilePath);
     }
 
+    @Override
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogIOManagerException, IOException {
         return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
+    @Override
     public URI getFileUri(File file) throws CatalogDBException, CatalogIOManagerException {
         int studyId = catalogDBAdaptor.getStudyIdByFileId(file.getId());
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
@@ -169,6 +216,7 @@ public class CatalogManager {
         return getFileUri(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
     }
 
+    @Override
     public int getProjectIdByStudyId(int studyId) throws CatalogException {
         return catalogDBAdaptor.getProjectIdByStudyId(studyId);
     }
@@ -198,6 +246,7 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Override
     public int getProjectId(String id) throws CatalogDBException {
         try {
             return Integer.parseInt(id);
@@ -211,6 +260,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getProjectId(split[0], split[1]);
     }
 
+    @Override
     public int getStudyId(String id) throws CatalogDBException {
         try {
             return Integer.parseInt(id);
@@ -229,6 +279,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getStudyId(projectId, projectStudy[1]);
     }
 
+    @Override
     public int getFileId(String id) throws CatalogDBException {
         try {
             return Integer.parseInt(id);
@@ -248,6 +299,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getFileId(studyId, projectStudyPath[2]);
     }
 
+    @Override
     public int getToolId(String id) throws CatalogDBException {
         try {
             return Integer.parseInt(id);
@@ -266,7 +318,14 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Override
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options)
+            throws CatalogException {
+        return createUser(id, name, email, password, organization, options, null);
+    }
+
+    @Override
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(id, "id");
         checkParameter(password, "password");
@@ -275,6 +334,30 @@ public class CatalogManager {
         organization = organization != null ? organization : "";
 
         User user = new User(id, name, email, password, organization, User.Role.USER, "");
+
+        String userId = null;
+        switch (creationUserPolicy) {
+            case "onlyAdmin":
+                userId = getUserIdBySessionId(sessionId);
+                if (!userId.isEmpty() && getUserRole(userId).equals(User.Role.ADMIN)) {
+                    user.getAttributes().put("creatorUserId", userId);
+                } else {
+                    throw new CatalogException("CreateUser Fail. Required Admin role");
+                }
+                break;
+            case "anyLoggedUser":
+                checkParameter(sessionId, "sessionId");
+                userId = getUserIdBySessionId(sessionId);
+                if (userId.isEmpty()) {
+                    throw new CatalogException("CreateUser Fail. Required existing account");
+                }
+                user.getAttributes().put("creatorUserId", userId);
+                break;
+            case "always":
+            default:
+                break;
+        }
+
 
         try {
             ioManager.createUser(user.getId());
@@ -285,6 +368,7 @@ public class CatalogManager {
         }
     }
 
+    @Override
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
         checkParameter(sessionIp, "sessionIp");
@@ -305,6 +389,7 @@ public class CatalogManager {
 
     }
 
+    @Override
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
             throws CatalogException, IOException {
         checkParameter(userId, "userId");
@@ -315,36 +400,45 @@ public class CatalogManager {
         return catalogDBAdaptor.login(userId, password, session);
     }
 
+    @Override
     public QueryResult logout(String userId, String sessionId) throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        return catalogDBAdaptor.logout(userId, sessionId);
+        switch (getUserRole(userId)) {
+            default:
+                return catalogDBAdaptor.logout(userId, sessionId);
+            case ANONYMOUS:
+                return logoutAnonymous(sessionId);
+        }
     }
 
-    public QueryResult logoutAnonymous(String sessionId) throws CatalogException, CatalogIOManagerException {
+    @Override
+    public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
-        String userId = "anonymous_" + sessionId;
+        String userId = getUserIdBySessionId(sessionId);
         checkParameter(userId, "userId");
         checkSessionId(userId, sessionId);
 
-        logger.info("new anonymous user. userId: " + userId + " sesionId: " + sessionId);
+        logger.info("logout anonymous user. userId: " + userId + " sesionId: " + sessionId);
 
         ioManager.deleteAnonymousUser(userId);
         return catalogDBAdaptor.logoutAnonymous(sessionId);
     }
 
-    public QueryResult changePassword(String userId, String password, String nPassword1, String sessionId)
+    @Override
+    public QueryResult changePassword(String userId, String oldPassword, String newPassword, String sessionId)
             throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
-        checkParameter(password, "password");
-        checkParameter(nPassword1, "nPassword1");
+        checkParameter(oldPassword, "oldPassword");
+        checkParameter(newPassword, "newPassword");
         checkSessionId(userId, sessionId);  //Only the user can change his own password
         catalogDBAdaptor.updateUserLastActivity(userId);
-        return catalogDBAdaptor.changePassword(userId, password, nPassword1);
+        return catalogDBAdaptor.changePassword(userId, oldPassword, newPassword);
     }
 
+    @Override
     public QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
@@ -354,6 +448,7 @@ public class CatalogManager {
         return catalogDBAdaptor.changeEmail(userId, nEmail);
     }
 
+    @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogException {
         checkParameter(userId, "userId");
         checkEmail(email);
@@ -369,10 +464,10 @@ public class CatalogManager {
 
         QueryResult qr = catalogDBAdaptor.resetPassword(userId, email, newCryptPass);
 
-        String mailUser = properties.getProperty("CATALOG.MAIL.USER");
-        String mailPassword = properties.getProperty("CATALOG.MAIL.PASSWORD");
-        String mailHost = properties.getProperty("CATALOG.MAIL.HOST");
-        String mailPort = properties.getProperty("CATALOG.MAIL.PORT");
+        String mailUser = properties.getProperty(CATALOG_MAIL_USER);
+        String mailPassword = properties.getProperty(CATALOG_MAIL_PASSWORD);
+        String mailHost = properties.getProperty(CATALOG_MAIL_HOST);
+        String mailPort = properties.getProperty(CATALOG_MAIL_PORT);
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
@@ -380,16 +475,20 @@ public class CatalogManager {
     }
 
 
+    @Override
     public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogException {
         return getUser(userId, lastActivity, new QueryOptions(), sessionId);
     }
 
+    @Override
     public QueryResult<User> getUser(String userId, String lastActivity, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        if (options == null || !options.containsKey("include") && !options.containsKey("exclude")) {
+        options = defaultObject(options, new QueryOptions());
+
+        if (!options.containsKey("include") && !options.containsKey("exclude")) {
             options.put("exclude", Arrays.asList("password", "sessions"));
         }
 //        if(options.containsKey("exclude")) {
@@ -401,6 +500,7 @@ public class CatalogManager {
         return user;
     }
 
+    @Override
     public String getUserIdBySessionId(String sessionId) {
         return catalogDBAdaptor.getUserIdBySessionId(sessionId);
     }
@@ -421,6 +521,7 @@ public class CatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
+    @Override
     public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         checkParameter(userId, "userId");
@@ -439,6 +540,7 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyUser(userId, parameters);
     }
 
+    @Override
     public void deleteUser(String userId, String sessionId) throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
@@ -458,6 +560,7 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Override
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, QueryOptions options, String sessionId)
             throws CatalogException,
@@ -491,6 +594,7 @@ public class CatalogManager {
         return result;
     }
 
+    @Override
     public QueryResult<Project> getProject(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -508,6 +612,7 @@ public class CatalogManager {
         }
     }
 
+    @Override
     public QueryResult<Project> getAllProjects(String ownerId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(ownerId, "ownerId");
@@ -524,6 +629,7 @@ public class CatalogManager {
         return allProjects;
     }
 
+    @Override
     public QueryResult renameProject(int projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
         checkAlias(newProjectAlias, "newProjectAlias");
@@ -555,6 +661,7 @@ public class CatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
+    @Override
     public QueryResult modifyProject(int projectId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         checkObj(parameters, "Parameters");
@@ -573,6 +680,7 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyProject(projectId, parameters);
     }
 
+    @Override
     public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogException {
         checkObj(acl, "acl");
         checkParameter(sessionId, "sessionId");
@@ -590,12 +698,14 @@ public class CatalogManager {
      * Study methods
      * ***************************
      */
+    @Override
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException, IOException {
         return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, sessionId);
     }
 
+    @Override
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                           String creatorId, String creationDate, String description, String status,
                                           String cipher, String uriScheme, Map<String, Object> stats,
@@ -690,11 +800,13 @@ public class CatalogManager {
         return result;
     }
 
+    @Override
     public QueryResult<Study> getStudy(int studyId, String sessionId)
             throws CatalogException {
         return getStudy(studyId, sessionId, null);
     }
 
+    @Override
     public QueryResult<Study> getStudy(int studyId, String sessionId, QueryOptions options)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -711,6 +823,7 @@ public class CatalogManager {
         }
     }
 
+    @Override
     public QueryResult<Study> getAllStudies(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -731,6 +844,7 @@ public class CatalogManager {
 
     }
 
+    @Override
     public QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         checkAlias(newStudyAlias, "newStudyAlias");
@@ -768,6 +882,7 @@ public class CatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
+    @Override
     public QueryResult modifyStudy(int studyId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         checkObj(parameters, "Parameters");
@@ -787,6 +902,7 @@ public class CatalogManager {
         return catalogDBAdaptor.modifyStudy(studyId, parameters);
     }
 
+    @Override
     public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
         checkObj(acl, "acl");
         checkParameter(sessionId, "sessionId");
@@ -805,10 +921,12 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Override
     public String getFileOwner(int fileId) throws CatalogDBException {
         return catalogDBAdaptor.getFileOwnerId(fileId);
     }
 
+    @Override
     public int getStudyIdByFileId(int fileId) throws CatalogDBException {
         return catalogDBAdaptor.getStudyIdByFileId(fileId);
     }
@@ -817,6 +935,7 @@ public class CatalogManager {
 //        return catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
 //    }
 
+    @Override
     @Deprecated
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, String sessionId)
@@ -840,6 +959,7 @@ public class CatalogManager {
 //    }
 
     //create file with byte[]
+    @Override
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
@@ -858,6 +978,7 @@ public class CatalogManager {
         return result;
     }
 
+    @Override
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
@@ -866,6 +987,7 @@ public class CatalogManager {
     }
 
 
+    @Override
     public QueryResult<File> createFile(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                         String ownerId, String creationDate, String description, File.Status status,
                                         long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
@@ -969,6 +1091,7 @@ public class CatalogManager {
         return object;
     }
 
+    @Override
     @Deprecated
     public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, InputStream fileIs, String sessionId)
@@ -985,6 +1108,7 @@ public class CatalogManager {
     }
 
 
+    @Override
     @Deprecated
     public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogException,
             CatalogIOManagerException, IOException, InterruptedException {
@@ -1016,6 +1140,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getFile(fileId);
     }
 
+    @Override
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         checkPath(folderPath, "folderPath");
@@ -1087,11 +1212,13 @@ public class CatalogManager {
     }
 
 
+    @Override
     public QueryResult deleteFolder(int folderId, String sessionId)
             throws CatalogException, IOException {
         return deleteFile(folderId, sessionId);
     }
 
+    @Override
     public QueryResult deleteFile(int fileId, String sessionId)
             throws CatalogException, IOException {
         //Safe delete: Don't delete. Just rename file and set {deleting:true}
@@ -1158,6 +1285,7 @@ public class CatalogManager {
         return null;
     }
 
+    @Override
     public QueryResult moveFile(int fileId, int folderId, String sessionId) throws CatalogException {
 //        checkParameter(sessionId, "sessionId");
 //        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1176,6 +1304,7 @@ public class CatalogManager {
         throw new UnsupportedClassVersionError("move File unsupported");
     }
 
+    @Override
     public QueryResult renameFile(int fileId, String newName, String sessionId)
             throws CatalogException, IOException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1248,6 +1377,7 @@ public class CatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
+    @Override
     public QueryResult modifyFile(int fileId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         checkObj(parameters, "Parameters");
@@ -1320,6 +1450,7 @@ public class CatalogManager {
 //        return catalogDBAdaptor.setIndexFile(fileId, backend, index);
 //    }
 
+    @Override
     public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
         QueryResult<File> queryResult = getFile(fileId, null, sessionId);
@@ -1336,11 +1467,13 @@ public class CatalogManager {
         return searchFile(studyId, new QueryOptions("path" , parentPath), sessionId);
     }
 
+    @Override
     public QueryResult<File> getFile(int fileId, String sessionId)
             throws CatalogException {
         return getFile(fileId, null, sessionId);
     }
 
+    @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1353,6 +1486,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getFile(fileId, options);
     }
 
+    @Override
     public QueryResult<File> getAllFiles(int studyId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -1368,6 +1502,7 @@ public class CatalogManager {
         return allFilesResult;
     }
 
+    @Override
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkId(folderId, "folderId");
@@ -1385,11 +1520,13 @@ public class CatalogManager {
         return allFilesResult;
     }
 
+    @Override
     public DataInputStream downloadFile(int fileId, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogException {
         return downloadFile(fileId, -1, -1, sessionId);
     }
 
+    @Override
     public DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
             throws CatalogIOManagerException, IOException, CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1413,6 +1550,7 @@ public class CatalogManager {
                 file.getPath(), start, limit);
     }
 
+    @Override
     public DataInputStream grepFile(int fileId, String pattern, boolean ignoreCase, boolean multi, String sessionId)
             throws CatalogIOManagerException, IOException, CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1454,14 +1592,17 @@ public class CatalogManager {
     }
 
     /*Require role admin*/
+    @Override
     public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         return searchFile(-1, query, options, sessionId);
     }
 
+    @Override
     public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId) throws CatalogException {
         return searchFile(studyId, query, null, sessionId);
     }
 
+    @Override
     public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1480,6 +1621,7 @@ public class CatalogManager {
         return catalogDBAdaptor.searchFile(query, options);
     }
 
+    @Override
     public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
                                               Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1507,6 +1649,7 @@ public class CatalogManager {
         return catalogDBAdaptor.createDataset(studyId, dataset, options);
     }
 
+    @Override
     public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1678,6 +1821,7 @@ public class CatalogManager {
 //    }
 //
 
+    @Override
     public QueryResult refreshFolder(final int folderId, final String sessionId)
             throws CatalogDBException, IOException {
 
@@ -1834,6 +1978,7 @@ public class CatalogManager {
 //        catalogDBAdaptor.updateUserLastActivity(ownerId);
 //        return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
 //    }
+    @Override
     public int getStudyIdByJobId(int jobId) throws CatalogDBException {
         return catalogDBAdaptor.getStudyIdByJobId(jobId);
     }
@@ -1851,6 +1996,7 @@ public class CatalogManager {
 //        File tmpOutDir = catalogDBAdaptor.getFile(tmpOutDirId, options).getResult().get(0);     //TODO: Create tmpOutDir outside
 //        return createJob(studyId, name, toolName, description, commandLine, outDirId, getFileUri(tmpOutDir), inputFiles, sessionId);
 //    }
+    @Override
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
                                       Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId)
@@ -1884,6 +2030,7 @@ public class CatalogManager {
         return catalogDBAdaptor.createJob(studyId, job, options);
     }
 
+    @Override
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
             throws CatalogException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1909,6 +2056,7 @@ public class CatalogManager {
 //        return catalogDBAdaptor.getJobStatus(userId, jobId, sessionId);
 //    }
 
+    @Override
     public QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1921,6 +2069,7 @@ public class CatalogManager {
         return catalogDBAdaptor.incJobVisits(jobId);
     }
 
+    @Override
     public QueryResult deleteJob(int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1936,6 +2085,7 @@ public class CatalogManager {
     }
 
 
+    @Override
     public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws IOException, CatalogIOManagerException, CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1949,6 +2099,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getJob(jobId, options);
     }
 
+    @Override
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         User.Role role = getUserRole(userId);
@@ -1961,6 +2112,7 @@ public class CatalogManager {
     }
 
 
+    @Override
     public QueryResult<Job> getAllJobs(int studyId, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         if (!getStudyAcl(userId, studyId).isRead()) {
@@ -1980,6 +2132,7 @@ public class CatalogManager {
 //        }
 //    }
 
+    @Override
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
 
@@ -2071,6 +2224,7 @@ public class CatalogManager {
      * ***************************
      */
 
+    @Override
     public QueryResult<Sample> createSample(int studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -2090,6 +2244,7 @@ public class CatalogManager {
         return catalogDBAdaptor.createSample(studyId, sample, options);
     }
 
+    @Override
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -2103,6 +2258,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getSample(sampleId, options);
     }
 
+    @Override
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -2115,6 +2271,7 @@ public class CatalogManager {
         return catalogDBAdaptor.getAllSamples(studyId, options);
     }
 
+    @Override
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
@@ -2128,6 +2285,7 @@ public class CatalogManager {
         return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
     }
 
+    @Override
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
@@ -2161,6 +2319,7 @@ public class CatalogManager {
         return catalogDBAdaptor.createVariableSet(studyId, variableSet);
     }
 
+    @Override
     public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
             throws CatalogException {
 
@@ -2174,6 +2333,7 @@ public class CatalogManager {
     }
 
 
+    @Override
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
@@ -2221,10 +2381,47 @@ public class CatalogManager {
     }
 
     /**
+     * Cohort methods
+     * ***************************
+     */
+
+    public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+
+        int studyId = catalogDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = getUserIdBySessionId(sessionId);
+
+        if (getStudyAcl(userId, studyId).isRead()) {
+            return catalogDBAdaptor.getCohort(cohortId);
+        } else {
+            throw new CatalogException("Permission denied. User " + userId + " can't read cohorts from study");
+        }
+    }
+
+    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> samples,
+                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
+        checkParameter(name, "name");
+        checkObj(samples, "Samples list");
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        for (Integer sampleId : samples) {
+            getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+        }
+
+        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, samples, attributes);
+
+        return catalogDBAdaptor.createCohort(studyId, cohort);
+    }
+
+
+
+    /**
      * Tools methods
      * ***************************
      */
 
+    @Override
     public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
                                         String path, boolean openTool, String sessionId) throws CatalogException {
         checkParameter(alias, "alias");
@@ -2247,6 +2444,7 @@ public class CatalogManager {
         return catalogDBAdaptor.createTool(userId, tool);
     }
 
+    @Override
     public QueryResult<Tool> getTool(int id, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         checkParameter(sessionId, "sessionId");

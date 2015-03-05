@@ -57,7 +57,7 @@ public class CatalogFileManager {
             targetUri = catalogManager.getFileUri(file);
             sourceIOManager = catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme());
             targetIOManager = catalogManager.getCatalogIOManagerFactory().get(targetUri.getScheme());
-        } catch (CatalogDBException | CatalogIOManagerException | IOException e) {
+        } catch (CatalogDBException | CatalogIOManagerException e) {
             throw new CatalogIOManagerException("Can't upload file.", e);
         }
 

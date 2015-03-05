@@ -20,6 +20,11 @@ public class Cohort {
     public Cohort() {
     }
 
+    public Cohort(String name, String creationDate, String description, List<Integer> samples,
+                  Map<String, Object> attributes) {
+        this(-1, name, creationDate, description, samples, attributes);
+    }
+
     public Cohort(int id, String name, String creationDate, String description, List<Integer> samples,
                   Map<String, Object> attributes) {
         this.id = id;

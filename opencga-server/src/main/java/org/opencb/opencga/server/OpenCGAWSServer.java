@@ -118,7 +118,7 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(properties);
-        } catch (IOException | CatalogIOManagerException | CatalogDBException e) {
+        } catch (CatalogIOManagerException | CatalogDBException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }

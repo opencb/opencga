@@ -44,14 +44,18 @@ public abstract class CatalogIOManager {
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public CatalogIOManager(String propertiesFile) throws IOException, CatalogIOManagerException {
+    public CatalogIOManager(String propertiesFile) throws CatalogIOManagerException {
         this();
         this.properties = new Properties();
-        this.properties.load(new FileInputStream(propertiesFile));
+        try {
+            this.properties.load(new FileInputStream(propertiesFile));
+        } catch (IOException e) {
+            throw new CatalogIOManagerException("Error loading properties file", e);
+        }
         setup();
     }
 
-    public CatalogIOManager(Properties properties) throws IOException, CatalogIOManagerException {
+    public CatalogIOManager(Properties properties) throws CatalogIOManagerException {
         this();
         this.properties = properties;
         setup();
@@ -63,7 +67,7 @@ public abstract class CatalogIOManager {
      * This method creates the folders and workspace structure for storing the OpenCGA data. I
      * @throws IOException
      */
-    public void setup() throws CatalogIOManagerException, IOException {
+    public void setup() throws CatalogIOManagerException {
         setProperties(properties);
         checkDirectoryUri(rootDir, true);
 
@@ -96,9 +100,9 @@ public abstract class CatalogIOManager {
 
     public abstract boolean exists(URI uri);
 
-    public abstract URI createDirectory(URI uri, boolean parents) throws IOException;
+    public abstract URI createDirectory(URI uri, boolean parents) throws CatalogIOManagerException;
 
-    public URI createDirectory(URI uri) throws IOException {
+    public URI createDirectory(URI uri) throws CatalogIOManagerException {
         return createDirectory(uri, false);
     }
 
@@ -222,8 +226,8 @@ public abstract class CatalogIOManager {
 
                 return userPath;
             }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("IOException" + e.toString());
+        } catch (CatalogIOManagerException e) {
+            throw e;
         }
         return null;
     }
@@ -253,8 +257,8 @@ public abstract class CatalogIOManager {
 
                 return userUri;
             }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("IOException" + e.toString());
+        } catch (CatalogIOManagerException e) {
+            throw e;
         }
         return null;
     }
@@ -283,7 +287,7 @@ public abstract class CatalogIOManager {
                 projectUri = createDirectory(projectUri, true);
                 //createDirectory(projectUri.resolve(SHARED_DATA_FOLDER));
             }
-        } catch (IOException e) {
+        } catch (CatalogIOManagerException e) {
             throw new CatalogIOManagerException("createProject(): could not create the project folder: " + e.toString());
         }
 
@@ -329,8 +333,8 @@ public abstract class CatalogIOManager {
             if(!exists(studyUri)) {
                 studyUri = createDirectory(studyUri);
             }
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString());
+        } catch (CatalogIOManagerException e) {
+            throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString(), e);
         }
 
         return studyUri;
@@ -375,9 +379,9 @@ public abstract class CatalogIOManager {
         if(!exists(jobUri)) {
             try {
                 jobUri = createDirectory(jobUri, true);
-            } catch (IOException e) {
+            } catch (CatalogIOManagerException e) {
                 e.printStackTrace();
-                throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString());
+                throw new CatalogIOManagerException("createStudy method: could not create the study folder: " + e.toString(), e);
             }
         } else {
             throw new CatalogIOManagerException("createJobOutDir method: Job folder " + folderName + "already exists.");
@@ -410,7 +414,7 @@ public abstract class CatalogIOManager {
                     createDirectory(folderUri);
                 }
             }
-        } catch (IOException e) {
+        } catch (CatalogIOManagerException e) {
             throw new CatalogIOManagerException("createFolder(): could not create the directory " + e.toString());
         }
 

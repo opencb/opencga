@@ -24,11 +24,11 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     protected static ObjectWriter jsonObjectWriter;
 
 
-    public PosixCatalogIOManager(String propertiesFile) throws IOException, CatalogIOManagerException {
+    public PosixCatalogIOManager(String propertiesFile) throws CatalogIOManagerException {
         super(propertiesFile);
     }
 
-    public PosixCatalogIOManager(Properties properties) throws IOException, CatalogIOManagerException {
+    public PosixCatalogIOManager(Properties properties) throws CatalogIOManagerException {
         super(properties);
     }
 
@@ -80,11 +80,15 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public URI createDirectory(URI uri, boolean parents) throws IOException {
-        if (parents) {
-            return Files.createDirectories(Paths.get(uri)).toUri();
-        } else {
-            return Files.createDirectory(Paths.get(uri)).toUri();
+    public URI createDirectory(URI uri, boolean parents) throws CatalogIOManagerException {
+        try {
+            if (parents) {
+                return Files.createDirectories(Paths.get(uri)).toUri();
+            } else {
+                return Files.createDirectory(Paths.get(uri)).toUri();
+            }
+        } catch (IOException e) {
+            throw new CatalogIOManagerException("Error creating directory", e);
         }
     }
 
