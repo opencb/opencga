@@ -3,12 +3,15 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
@@ -31,6 +34,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     private DBObjectToSamplesConverter samplesConverter;
     private DBObjectToVariantStatsConverter statsConverter;
 
+    private Variant variant;
+
     /**
      * Create a converter between VariantSourceEntry and DBObject entities when 
      * there is no need to provide a list of samples or statistics.
@@ -41,6 +46,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
         this.statsConverter = null;
+        this.variant = null;
     }
 
 
@@ -61,7 +67,14 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         this.samplesConverter = samplesConverter;
         this.statsConverter = statsConverter;
     }
-    
+
+    public Variant getVariant() {
+        return variant;
+    }
+
+    public void setVariant(Variant variant) {
+        this.variant = variant;
+    }
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         String fileId = (String) object.get(FILEID_FIELD);
@@ -110,7 +123,21 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Statistics
         if (statsConverter != null && object.containsField(STATS_FIELD)) {
-            file.setStats(statsConverter.convertToDataModelType((DBObject) object.get(STATS_FIELD)));
+            Map<String, VariantStats> cohortStats = new LinkedHashMap<>();
+            DBObject stats = (DBObject) object.get(STATS_FIELD);
+            if (stats instanceof List) {
+                List<DBObject> cohortStatsList = ((List) stats);
+                for (DBObject vs : cohortStatsList) {
+                    VariantStats variantStats = statsConverter.convertToDataModelType(vs);
+                    if (variant != null) {
+                        variantStats.setRefAllele(variant.getReference());
+                        variantStats.setAltAllele(variant.getAlternate());
+                        variantStats.setVariantType(variant.getType());
+                    }
+                    cohortStats.put((String) vs.get(DBObjectToVariantStatsConverter.COHORT_ID), variantStats);
+                    file.setCohortStats(cohortStats);
+                }
+            }
         }
         return file;
     }
@@ -160,13 +187,17 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
         
         // Statistics
-        if (statsConverter != null && object.getStats() != null) {
-            mongoFile.put(STATS_FIELD, statsConverter.convertToStorageType(object.getStats()));
+        if (statsConverter != null && object.getCohortStats() != null) {
+            Map<String, VariantStats> cohortStats = object.getCohortStats();
+            DBObject cohortsObject = new BasicDBObject();
+            for (String cohortName : cohortStats.keySet()) {
+                cohortsObject.put(cohortName, statsConverter.convertToStorageType(cohortStats.get(cohortName)));
+            }
+            mongoFile.put(STATS_FIELD, cohortsObject);
         }
         
         return mongoFile;
     }
-
 
     public void setIncludeSrc(boolean includeSrc) {
         this.includeSrc = includeSrc;
