@@ -10,6 +10,7 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
@@ -727,6 +728,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     VariantDBAdaptor dbAdaptor;
                     try {
                         dbAdaptor = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
+                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }
@@ -734,9 +736,9 @@ public class FileWSServer extends OpenCGAWSServer {
                     if (histogram) {
                         queryOptions.put("interval", interval);
                         variantsByRegion = dbAdaptor.getAllVariants(queryOptions);
-                    } else if (variantSource) {
-                        queryOptions.put("fileId", Integer.toString(fileIdNum));
-                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
+//                    } else if (variantSource) {
+//                        queryOptions.put("fileId", Integer.toString(fileIdNum));
+//                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else {
                         //With merge = true, will return only one result.
                         queryOptions.put("merge", true);

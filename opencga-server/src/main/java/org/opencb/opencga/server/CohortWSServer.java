@@ -70,28 +70,89 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a cohort")
     public Response createCohort(
             @ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
-            @ApiParam(value = "cohortName", required = true) @QueryParam("cohortName") String cohortName,
-            @ApiParam(value = "cohortDescription", required = false) @QueryParam("cohortDescription") String cohortDescription) {
+            @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
+            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+            @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
+            @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
+            @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
         try {
-            QueryOptions queryOptions = getAllQueryOptions();
-//            Object cohortInclude = queryOptions.remove("include");
-//            Object cohortExclude = queryOptions.remove("exclude");
-            queryOptions.add("include", "projects.studies.samples.id");
-            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
-            queryOptions.remove("include");
-            List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
-            for (Sample sample : queryResult.getResult()) {
-                sampleIds.add(sample.getId());
+            //QueryOptions queryOptions = getAllQueryOptions();
+            List<Cohort> cohorts = new LinkedList<>();
+            if (variableName != null && !variableName.isEmpty() && sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
+                return createErrorResponse("Can only create a cohort given list of sampleIds or a categorical variable name");
             }
-            QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
 
-            return createOkResponse(cohort);
+            if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
+                QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
+                samplesQuery.add("id", sampleIdsStr);
+                cohorts.add(createCohort(studyId, cohortName, cohortDescription, samplesQuery).first());
+            } else {
+                VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
+                Variable variable = null;
+                for (Variable v : variableSet.getVariables()) {
+                    if (v.getId().equals(variableName)) {
+                        variable = v;
+                        break;
+                    }
+                }
+                if (variable == null) {
+                    return createErrorResponse("Variable " + variable  + " does not exist. ");
+                }
+                if (variable.getType() != Variable.VariableType.CATEGORICAL) {
+                    return createErrorResponse("Can only create cohorts by variable, when is a categorical variable");
+                }
+                for (String s : variable.getAllowedValues()) {
+                    QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
+                    samplesQuery.add("annotation", variableName + ":" + s);
+                    samplesQuery.add("variableSetId", variableSetId);
+                    cohorts.add(createCohort(studyId, s, cohortDescription, samplesQuery).first());
+                }
+            }
+            return createOkResponse(cohorts);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
     }
 
+    private QueryResult<Cohort> createCohort(int studyId, String cohortName, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
+        QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+        List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
+        for (Sample sample : queryResult.getResult()) {
+            sampleIds.add(sample.getId());
+        }
+        return catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
+    }
+
+//
+//    @GET
+//    @Path("/create")
+//    @Produces("application/json")
+//    @ApiOperation(value = "Create a cohort")
+//    public Response createCohort(
+//            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
+//            @ApiParam(value = "cohortName", required = true) @QueryParam("cohortName") String cohortName,
+//            @ApiParam(value = "cohortDescription", required = false) @QueryParam("cohortDescription") String cohortDescription) {
+//        try {
+//            QueryOptions queryOptions = getAllQueryOptions();
+////            Object cohortInclude = queryOptions.remove("include");
+////            Object cohortExclude = queryOptions.remove("exclude");
+//            queryOptions.add("include", "projects.studies.samples.id");
+//            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+//            queryOptions.remove("include");
+//            List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
+//            for (Sample sample : queryResult.getResult()) {
+//                sampleIds.add(sample.getId());
+//            }
+//            QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
+//
+//            return createOkResponse(cohort);
+//        } catch (CatalogException e) {
+//            e.printStackTrace();
+//            return createErrorResponse(e.getMessage());
+//        }
+//    }
+//
 
     @DELETE
     @Path("/{cohortId}/delete")
