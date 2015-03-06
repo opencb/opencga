@@ -49,7 +49,12 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void checkUri(URI param) throws CatalogIOManagerException {
+    protected void checkUriExists(URI param) throws CatalogIOManagerException {
+
+    }
+
+    @Override
+    protected void checkUriScheme(URI param) throws CatalogIOManagerException {
 
     }
 

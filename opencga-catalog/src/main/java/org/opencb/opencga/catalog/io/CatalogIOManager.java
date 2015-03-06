@@ -94,9 +94,11 @@ public abstract class CatalogIOManager {
         }
     }
 
-    protected abstract void checkUri(URI param) throws CatalogIOManagerException;
+    protected abstract void checkUriExists(URI uri) throws CatalogIOManagerException;
 
-    protected abstract void checkDirectoryUri(URI param, boolean writable) throws CatalogIOManagerException;
+    protected abstract void checkUriScheme(URI uri) throws CatalogIOManagerException;
+
+    protected abstract void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOManagerException;
 
     public abstract boolean exists(URI uri);
 
@@ -173,7 +175,7 @@ public abstract class CatalogIOManager {
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogIOManagerException {
-        checkUri(studyUri);
+        checkUriExists(studyUri);
         checkParam(relativeFilePath);
         try {
             return studyUri.resolve(new URI(null, relativeFilePath, null));
@@ -234,7 +236,7 @@ public abstract class CatalogIOManager {
 
     public void deleteUser(String userId) throws CatalogIOManagerException {
         URI userUri = getUserUri(userId);
-        checkUri(userUri);
+        checkUriExists(userUri);
         try {
             deleteDirectory(userUri);
         } catch (IOException e) {
@@ -265,7 +267,7 @@ public abstract class CatalogIOManager {
 
     public  void deleteAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
         URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
-        checkUri(anonymousUserUri);
+        checkUriExists(anonymousUserUri);
 
         try {
             deleteDirectory(anonymousUserUri);
@@ -296,7 +298,7 @@ public abstract class CatalogIOManager {
 
     public void deleteProject(String userId, String projectId) throws CatalogIOManagerException {
         URI projectUri = getProjectUri(userId, projectId);
-        checkUri(projectUri);
+        checkUriExists(projectUri);
 
         try {
             deleteDirectory(projectUri);
@@ -342,7 +344,7 @@ public abstract class CatalogIOManager {
 
     public void deleteStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         URI studyUri = getStudyUri(userId, projectId, studyId);
-        checkUri(studyUri);
+        checkUriExists(studyUri);
 
         try {
             deleteDirectory(studyUri);
@@ -433,7 +435,7 @@ public abstract class CatalogIOManager {
     public void deleteFile(String userId, String projectId, String studyId, String filePath)
             throws CatalogIOManagerException {
         URI fileUri = getFileUri(userId, projectId, studyId, filePath);
-        checkUri(fileUri);
+        checkUriExists(fileUri);
 
         logger.debug("Deleting {}", fileUri.toString());
         try {

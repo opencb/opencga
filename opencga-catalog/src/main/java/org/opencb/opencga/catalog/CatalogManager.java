@@ -87,7 +87,7 @@ public class CatalogManager implements ICatalogManager {
             throws IOException, CatalogIOManagerException, CatalogDBException {
 //        properties = Config.getAccountProperties();
 
-        System.out.println("CatalogManager rootdir");
+        logger.info("CatalogManager rootdir");
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
         properties = new Properties();
         try {
@@ -105,11 +105,11 @@ public class CatalogManager implements ICatalogManager {
     public CatalogManager(Properties properties)
             throws CatalogIOManagerException, CatalogDBException {
         this.properties = properties;
-        System.out.println("CatalogManager configureManager");
+        logger.info("CatalogManager configureManager");
         configureManager(properties);
-        System.out.println("CatalogManager configureDBAdaptor");
+        logger.info("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
-        System.out.println("CatalogManager configureIOManager");
+        logger.info("CatalogManager configureIOManager");
         configureIOManager(properties);
     }
 
@@ -153,8 +153,6 @@ public class CatalogManager implements ICatalogManager {
                 Integer.parseInt(properties.getProperty(CATALOG_DB_PORT, "0")));
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
-
-        System.out.println("catalogDBAdaptor = " + catalogDBAdaptor);
     }
 
     private void configureManager(Properties properties) {
@@ -1619,7 +1617,9 @@ public class CatalogManager implements ICatalogManager {
                     throw new CatalogDBException("Permission denied. StudyId or Admin role required");
             }
         } else {
-            getStudyAcl(userId, studyId);
+            if (!getStudyAcl(userId, studyId).isRead()) {
+                throw new CatalogException("Permission denied. User " + userId + " can't read data from the study " + studyId);
+            }
             query.put("studyId", studyId);
         }
         return catalogDBAdaptor.searchFile(query, options);

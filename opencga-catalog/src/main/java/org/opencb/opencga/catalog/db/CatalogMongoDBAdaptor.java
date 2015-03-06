@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.db;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -1347,55 +1346,56 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBList filters = new BasicDBList();
+//        BasicDBList filters = new BasicDBList();
+        DBObject mongoQuery = new BasicDBObject();
 
-        if(query.containsKey("name")){
-            filters.add(new BasicDBObject("name", query.getString("name")));
-        }
-        if(query.containsKey("type")){
-            filters.add(new BasicDBObject("type", query.getString("type")));
-        }
-        if(query.containsKey("path")){
-            filters.add(new BasicDBObject("path", query.getString("path")));
-        }
-        if(query.containsKey("bioformat")){
-            filters.add(new BasicDBObject("bioformat", query.getString("bioformat")));
-        }
-        if(query.containsKey("maxSize")){
-            filters.add(new BasicDBObject("size", new BasicDBObject("$lt", query.getInt("maxSize"))));
-        }
-        if(query.containsKey("minSize")){
-            filters.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
-        }
-        if(query.containsKey("startDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$lt", query.getString("startDate"))));
-        }
-        if(query.containsKey("endDate")){
-            filters.add(new BasicDBObject("creationDate", new BasicDBObject("$gt", query.getString("endDate"))));
-        }
-        if(query.containsKey("like")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", query.getString("like"))));
-        }
-        if(query.containsKey("startsWith")){
-            filters.add(new BasicDBObject("name", new BasicDBObject("$regex", "^"+query.getString("startsWith"))));
-        }
-        if(query.containsKey("directory")){
-            filters.add(new BasicDBObject("path", new BasicDBObject("$regex", "^"+query.getString("directory")+"[^/]+/?$")));
+        if(query.containsKey("id")){
+            addQueryIntegerListFilter("id", query, "_id", mongoQuery);
         }
         if(query.containsKey("studyId")){
-            filters.add(new BasicDBObject(_STUDY_ID, query.getInt("studyId")));
+            addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
+        }
+        if(query.containsKey("name")){
+            addQueryStringListFilter("name", query, mongoQuery);
+        }
+        if(query.containsKey("type")){
+            addQueryStringListFilter("type", query, mongoQuery);
+        }
+        if(query.containsKey("path")){
+            addQueryStringListFilter("path", query, mongoQuery);
+        }
+        if(query.containsKey("bioformat")){
+            addQueryStringListFilter("bioformat", query, mongoQuery);
         }
         if(query.containsKey("status")){
-            filters.add(new BasicDBObject("status", query.getString("status")));
+            addQueryStringListFilter("status", query, mongoQuery);
+        }
+        if(query.containsKey("maxSize")){
+            mongoQuery.put("size", new BasicDBObject("$lt", query.getInt("maxSize")));
+        }
+        if(query.containsKey("minSize")){
+            mongoQuery.put("size", new BasicDBObject("$gt", query.getInt("minSize")));
+        }
+        if(query.containsKey("startDate")){
+            mongoQuery.put("creationDate", new BasicDBObject("$lt", query.getString("startDate")));
+        }
+        if(query.containsKey("endDate")){
+            mongoQuery.put("creationDate", new BasicDBObject("$gt", query.getString("endDate")));
+        }
+        if(query.containsKey("like")){
+            mongoQuery.put("name", new BasicDBObject("$regex", query.getString("like")));
+        }
+        if (query.containsKey("startsWith")){
+            mongoQuery.put("name", new BasicDBObject("$regex", "^" + query.getString("startsWith")));
+        }
+        if (query.containsKey("directory")){
+            mongoQuery.put("path", new BasicDBObject("$regex", "^" + query.getString("directory") + "[^/]+/?$"));
         }
 
-//<<<<<<< HEAD
 //        DBObject query = new BasicDBObject("$and", filters);
-//
 //        QueryResult<DBObject> queryResult = fileCollection.find(query, null);
-//=======
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", filters), options);
-//>>>>>>> bba62bea67b13e466ff74c6c0befb010e6fd05db
+
+        QueryResult<DBObject> queryResult = fileCollection.find(mongoQuery, options);
 
         List<File> files = parseFiles(queryResult);
 
@@ -1774,14 +1774,14 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         DBObject query = new BasicDBObject(_STUDY_ID, studyId);
 
         // Sample Filters  //
-        addQueryIntegerListFilter("id", query, options);
-        addQueryStringListFilter("name", query, options);
-        addQueryStringListFilter("source", query, options);
+        addQueryIntegerListFilter("id", options, "_id", query);
+        addQueryStringListFilter("name", options, query);
+        addQueryStringListFilter("source", options, query);
 
         // AnnotationSet Filters //
         BasicDBObject annotationSetFilter = new BasicDBObject();
-        addQueryIntegerListFilter("variableSetId", annotationSetFilter, options);
-        addQueryStringListFilter("annotationSetId", "id", annotationSetFilter, options);
+        addQueryIntegerListFilter("variableSetId", options, annotationSetFilter);
+        addQueryStringListFilter("annotationSetId", options, "id", annotationSetFilter);
 
 
         List<DBObject> annotationFilters = new LinkedList<>();
@@ -2188,10 +2188,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     /*  */
 
-    private void addQueryStringListFilter(String key, DBObject query, QueryOptions options) {
-        addQueryStringListFilter(key, key, query, options);
+    private void addQueryStringListFilter(String key, QueryOptions options, DBObject query) {
+        addQueryStringListFilter(key, options, key, query);
     }
-    private void addQueryStringListFilter(String optionKey, String queryKey, DBObject query, QueryOptions options) {
+    private void addQueryStringListFilter(String optionKey, QueryOptions options, String queryKey, DBObject query) {
         if (options.containsKey(optionKey)) {
             List<String> stringList = options.getAsStringList(optionKey);
             if (stringList.size() > 1) {
@@ -2202,11 +2202,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
     }
 
-    private void addQueryIntegerListFilter(String key, DBObject query, QueryOptions options) {
-        addQueryIntegerListFilter(key, key, query, options);
+    private void addQueryIntegerListFilter(String key, QueryOptions options, DBObject query) {
+        addQueryIntegerListFilter(key, options, key, query);
     }
 
-    private void addQueryIntegerListFilter(String optionKey, String queryKey, DBObject query, QueryOptions options) {
+    private void addQueryIntegerListFilter(String optionKey, QueryOptions options, String queryKey, DBObject query) {
         if (options.containsKey(optionKey)) {
             List<Integer> integerList = options.getAsIntegerList(optionKey);
             if (integerList.size() > 1) {
