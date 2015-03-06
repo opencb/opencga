@@ -22,8 +22,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.io.json.*;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
+import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_SRC = "includeSrc";                  //Include original source file on the transformed file and the final db
     public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
     public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
+    public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
     public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String DB_NAME = "dbName";
 
@@ -252,11 +254,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         VariantAnnotationManager.AnnotationSource annotationSource = params.get(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.class);
         Properties annotatorProperties = params.get(ANNOTATOR_PROPERTIES, Properties.class);
 
+        String dbName = params.getString(DB_NAME, null);
+        String species = params.getString(SPECIES, "hsapiens");
+        String assembly = params.getString(ASSEMBLY, "");
+        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
+
         if (annotate) {
-            String dbName = params.getString(DB_NAME, null);
-            String species = params.getString(SPECIES, "hsapiens");
-            String assembly = params.getString(ASSEMBLY, "");
-            VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
             VariantAnnotator annotator;
             try {
@@ -285,13 +288,16 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         if (params.getBoolean(CALCULATE_STATS)) {
             // TODO add filters
             logger.debug("about to calculate stats");
-            String dbName = params.getString(DB_NAME, "defaultDatabase");
-            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
-            URI statsUri = variantStatisticsCalculator.createStats(getDBAdaptor(dbName, params), output.resolve(dbName + "." + TimeUtils.getTime()), new QueryOptions(params));
-            variantStatisticsCalculator.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
+            VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+            URI statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(buildFilename(variantSource) + "." + TimeUtils.getTime()), null, new QueryOptions(params));
+            variantStatisticsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
         return input;
+    }
+
+    public static String buildFilename(VariantSource variantSource) {
+        return variantSource.getStudyId() + "_" + variantSource.getFileId();
     }
 
 //    @Override

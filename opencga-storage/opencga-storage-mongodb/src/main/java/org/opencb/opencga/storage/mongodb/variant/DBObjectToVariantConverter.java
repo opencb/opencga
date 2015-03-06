@@ -102,6 +102,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         
         // Files
         if (archivedVariantFileConverter != null) {
+            archivedVariantFileConverter.setVariant(variant);
             BasicDBList mongoFiles = (BasicDBList) object.get(FILES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {

@@ -84,6 +84,13 @@
                             </platforms>
                         </program>
                         <program>
+                            <mainClass>org.opencb.opencga.storage.app.cli.StorageMain</mainClass>
+                            <name>opencga-storage2.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
                             <mainClass>org.opencb.opencga.storage.app.service.OpenCGAStorageServiceMain</mainClass>
                             <name>${service.name}.sh</name>
                             <platforms>

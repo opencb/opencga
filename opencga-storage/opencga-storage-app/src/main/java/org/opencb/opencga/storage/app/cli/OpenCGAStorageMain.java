@@ -30,10 +30,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.SimpleLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,6 +47,7 @@ import java.util.*;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
  */
+@Deprecated
 public class OpenCGAStorageMain {
 
     //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
@@ -800,8 +800,16 @@ public class OpenCGAStorageMain {
          * query options
          */
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, new VariantSource(null, c.fileId, c.studyId, null));
+        VariantSource variantSource = new VariantSource(null, c.fileId, c.studyId, null);
+        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
+        queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
+
+        Map<String, Set<String>> samples = null;
+        if (c.cohortName != null && c.cohortSamples != samples) {
+            samples = new LinkedHashMap<>(5);
+            samples.put(c.cohortName, new LinkedHashSet<>(c.cohortSamples));
+        }
 
         /**
          * Create DBAdaptor
@@ -815,7 +823,13 @@ public class OpenCGAStorageMain {
         /**
          * Create and load stats
          */
-        String filename = c.fileName.isEmpty() ? c.dbName : c.fileName;
+        URI outputUri = new URI(c.fileName);
+        URI directoryUri = outputUri.resolve(".");
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(variantSource)
+                : Paths.get(outputUri.getPath()).getFileName().toString();
+        assertDirectoryExists(directoryUri);
+        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+
         boolean doCreate = c.create, doLoad = c.load != null;
         if (!c.create && c.load == null) {
             doCreate = doLoad = true;
@@ -823,21 +837,18 @@ public class OpenCGAStorageMain {
             filename = c.load;
         }
 
-        URI outputUri = new URI(null, c.outdir + (!c.outdir.isEmpty() && !c.outdir.endsWith("/")? "/": ""), null);
-        assertDirectoryExists(outputUri);
-        VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator();
         try {
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsCalculator.createStats(dbAdaptor, outputUri, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
             }
 
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
-                variantStatisticsCalculator.loadStats(dbAdaptor, outputUri, queryOptions);
+                variantStatisticsManager.loadStats(dbAdaptor, outputUri, queryOptions);
             }
-        } catch (IOException e) {   // file not found?
+        } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?
             logger.error(e.getMessage());
             System.exit(1);
         }
