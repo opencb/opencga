@@ -394,8 +394,8 @@ public class FileWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-
-        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+        return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
+//        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
     }
 
     @GET
