@@ -144,6 +144,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             if (lastChunk) {
                 logger.info("lastChunk is true...");
+                Files.deleteIfExists(completedFilePath);
                 Files.createFile(completedFilePath);
                 List<java.nio.file.Path> chunks = getSortedChunkList(folderPath);
                 logger.info("----ordered chunks length: " + chunks.size());
@@ -159,14 +160,15 @@ public class FileWSServer extends OpenCGAWSServer {
 //                    QueryResult queryResult = catalogManager.uploadFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
 //                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, description, parents, sessionId);
 
+//                    QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+//                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, Files.readAllBytes(completedFilePath),
+//                            description, parents, sessionId
+//                    );
                     QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, Files.readAllBytes(completedFilePath),
+                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath,
                             description, parents, sessionId
                     );
-
-
-                    IOUtils.deleteDirectory(completedFilePath);
-
+//                    IOUtils.deleteDirectory(completedFilePath);
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
                     logger.error(e.toString());
@@ -175,7 +177,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
         } catch (IOException e) {
-
+            System.out.println("e = " + e);
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -392,8 +394,8 @@ public class FileWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-
-        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+        return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
+//        return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
     }
 
     @GET
