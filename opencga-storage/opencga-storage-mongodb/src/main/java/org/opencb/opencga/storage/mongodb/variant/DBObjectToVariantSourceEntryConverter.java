@@ -147,7 +147,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         BasicDBObject mongoFile = new BasicDBObject(FILEID_FIELD, object.getFileId()).append(STUDYID_FIELD, object.getStudyId());
 
         // Alternate alleles
-        if (object.getSecondaryAlternates().length > 1) {
+        if (object.getSecondaryAlternates().length > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
             mongoFile.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
         }
         
