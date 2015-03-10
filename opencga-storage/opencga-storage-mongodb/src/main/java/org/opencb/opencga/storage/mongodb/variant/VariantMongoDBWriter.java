@@ -255,10 +255,26 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                     if (!variantSourceEntry.getFileId().equals(source.getFileId())) {
                         continue;
                     }
-                bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(new BasicDBObject().append("$push",
-                        new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, sourceEntryConverter.convertToStorageType(variantSourceEntry)))
-                        .append("$setOnInsert", variantConverter.convertToStorageType(variant))
-                );
+                BasicDBObject update = new BasicDBObject()
+                        .append("$push",
+                                new BasicDBObject(
+                                        DBObjectToVariantConverter.FILES_FIELD,
+                                        sourceEntryConverter.convertToStorageType(variantSourceEntry)))
+                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));
+                if (variant.getId() != null) {
+                    update.append("$addToSet",
+                            new BasicDBObject(
+                                    DBObjectToVariantConverter.IDS_FIELD,
+                                    new BasicDBObject(
+                                            "$each",
+                                            Arrays.asList(variant.getId().split(";")))));
+//                    update.append("$addToSet",
+//                            new BasicDBObject(
+//                                    DBObjectToVariantConverter.IDS_FIELD,
+//                                    Arrays.asList(variant.getId().split(";"))));
+                }
+                System.out.println("update = " + update);
+                bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
                 currentBulkSize++;
             }
 

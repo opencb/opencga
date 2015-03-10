@@ -27,6 +27,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String REFERENCE_FIELD = "ref";
     public final static String ALTERNATE_FIELD = "alt";
     public final static String ID_FIELD = "id";
+    public final static String IDS_FIELD = "ids";
     
     public final static String HGVS_FIELD = "hgvs";
     public final static String TYPE_FIELD = "type";
