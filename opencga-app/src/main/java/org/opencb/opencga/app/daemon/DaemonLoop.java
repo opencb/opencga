@@ -103,43 +103,50 @@ public class DaemonLoop implements Runnable {
             try {
                 QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
                 for (Job job : unfinishedJobs.getResult()) {
-                    String status = SgeManager.status(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString());
+                    String status = null;
+                    try {
+                        status = SgeManager.status(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString());
+                    } catch (Exception e) {
+                        logger.warn(e.getMessage());
+                    }
                     Job.Status jobStatus = job.getStatus();
 //                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
                     logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
 
                     //Track SGEManager
-                    switch(status) {
-                        case SgeManager.FINISHED:
-                            if(!Job.Status.DONE.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
-                                jobStatus = Job.Status.DONE;
-                            }
-                            break;
-                        case SgeManager.ERROR:
-                        case SgeManager.EXECUTION_ERROR:
-                            if(!Job.Status.ERROR.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
-                                jobStatus = Job.Status.ERROR;
-                            }
-                            break;
-                        case SgeManager.QUEUED:
-                            if(!Job.Status.QUEUED.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
-                                jobStatus = Job.Status.QUEUED;
-                            }
-                            break;
-                        case SgeManager.RUNNING:
-                            if(!Job.Status.RUNNING.equals(job.getStatus())) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.RUNNING), sessionId);
-                                jobStatus = Job.Status.RUNNING;
-                            }
-                            break;
-                        case SgeManager.TRANSFERRED:
-                            break;
-                        case SgeManager.UNKNOWN:
-                            break;
+                    if (status != null) {
+                        switch(status) {
+                            case SgeManager.FINISHED:
+                                if(!Job.Status.DONE.equals(job.getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
+                                    jobStatus = Job.Status.DONE;
+                                }
+                                break;
+                            case SgeManager.ERROR:
+                            case SgeManager.EXECUTION_ERROR:
+                                if(!Job.Status.ERROR.equals(job.getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
+                                    jobStatus = Job.Status.ERROR;
+                                }
+                                break;
+                            case SgeManager.QUEUED:
+                                if(!Job.Status.QUEUED.equals(job.getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
+                                    jobStatus = Job.Status.QUEUED;
+                                }
+                                break;
+                            case SgeManager.RUNNING:
+                                if(!Job.Status.RUNNING.equals(job.getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.RUNNING), sessionId);
+                                    jobStatus = Job.Status.RUNNING;
+                                }
+                                break;
+                            case SgeManager.TRANSFERRED:
+                                break;
+                            case SgeManager.UNKNOWN:
+                                break;
+                        }
                     }
 
                     //Track Catalog Job status

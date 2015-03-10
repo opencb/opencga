@@ -1,44 +1,51 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by jacobo on 29/09/14.
  */
 public class OpenCGAMain {
 
-    private String userId;
     private static String shellUserId;
     private static String shellSessionId;
-    private CatalogManager catalogManager;
-    public String sessionId;
     private static boolean interactive;
+    private CatalogManager catalogManager;
+//    private String userId;
+//    private String sessionId;
+    private boolean logoutAtExit = false;
 
-    //    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static Logger logger;
 
     public static void main(String[] args)
             throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException, URISyntaxException {
@@ -48,6 +55,15 @@ public class OpenCGAMain {
         OptionsParser optionsParser = new OptionsParser(false);
         try {
             optionsParser.parse(args);
+            String logLevel = "info";
+            if (optionsParser.getCommonOptions().verbose) {
+                logLevel = "debug";
+            }
+            if (optionsParser.getCommonOptions().logLevel != null) {
+                logLevel = optionsParser.getCommonOptions().logLevel;
+            }
+            setLogLevel(logLevel);
+            Config.setOpenCGAHome();
         } catch (ParameterException e){
 
             if(!optionsParser.getGeneralOptions().help && !optionsParser.getCommonOptions().help ) {
@@ -95,6 +111,7 @@ public class OpenCGAMain {
 
     private int runCommand(String[] args) throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException, URISyntaxException {
         OptionsParser optionsParser = new OptionsParser(interactive);
+        int returnValue = 0;
         try {
             optionsParser.parse(args);
         } catch (ParameterException e){
@@ -112,9 +129,10 @@ public class OpenCGAMain {
         }
 
         if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
-            catalogManager = getCatalogManager();
+            catalogManager = new CatalogManager(Config.getCatalogProperties());
         }
 
+        String sessionId = login(optionsParser.getUserAndPasswordOptions());
 
         switch (optionsParser.getCommand()) {
             case "users":
@@ -122,41 +140,36 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
                         //QueryResult<User> user = catalogManager.insertUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.Role.USER, ""));
-                        QueryResult<User> user = catalogManager.createUser(c.up.user, c.name, c.email, c.up.password, c.organization, null);
-                        System.out.println(user);
+                        QueryResult<User> user = catalogManager.createUser(c.user, c.name, c.email, c.password, c.organization, null);
+                        System.out.println(createOutput(c.cOpt, user, null));
                         break;
                     }
                     case "info": {
                         OptionsParser.UserCommands.InfoCommand c = optionsParser.getUserCommands().infoCommand;
-                        login(c.up);
 
-                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : userId, null, sessionId);
-                        System.out.println(user);
+                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null, sessionId);
+                        System.out.println(createOutput(c.cOpt, user, null));
 
-                        logout();
                         break;
                     }
                     case "list": {
-                        OptionsParser.UserCommands.ListCommand c = optionsParser.getUserCommands().lsitCommand;
-                        login(c.up);
+                        OptionsParser.UserCommands.ListCommand c = optionsParser.getUserCommands().listCommand;
 
                         String ident = "";
-                        User user = catalogManager.getUser(c.up.user != null ? c.up.user : userId, null,
+                        User user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null,
                                 new QueryOptions("include", Arrays.asList("id", "name", "projects.id","projects.alias","projects.name")), sessionId).first();
                         System.out.println(user.getId() + " - " + user.getName());
                         ident+= "\t";
-                        boolean studies = c.studies;
-                        boolean files = c.files;
-                        listProjects(user.getProjects(), studies, files, ident);
+                        listProjects(user.getProjects(), c.level, ident, sessionId);
 
-                        logout();
                         break;
                     }
                     case "login": {
                         OptionsParser.UserCommands.LoginCommand c = optionsParser.getUserCommands().loginCommand;
 
                         if (shellSessionId == null || shellUserId == null || !shellUserId.equals(c.up.user)) {
-                            shellSessionId = login(c.up);
+                            shellSessionId = sessionId;
+                            logoutAtExit = false;
                             if (shellSessionId != null) {
                                 shellUserId = c.up.user;
                             }
@@ -168,12 +181,13 @@ public class OpenCGAMain {
                         OptionsParser.UserCommands.LogoutCommand c = optionsParser.getUserCommands().logoutCommand;
 
                         QueryResult logout;
-                        if (c.user == null && c.sessionId == null) {
+                        if (c.sessionId == null) {  //Logout from interactive shell
                             logout = catalogManager.logout(shellUserId, shellSessionId);
                             shellUserId = null;
                             shellSessionId = null;
                         } else {
-                            logout = catalogManager.logout(c.user, c.sessionId);
+                            String userId = catalogManager.getUserIdBySessionId(c.sessionId);
+                            logout = catalogManager.logout(userId, c.sessionId);
                         }
                         System.out.println(logout);
 
@@ -188,34 +202,29 @@ public class OpenCGAMain {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
-                        login(c.up);
 
-                        QueryResult<Project> project = catalogManager.createProject(userId, c.name, c.alias, c.description, c.organization, null, sessionId);
-                        System.out.println(project);
+                        QueryResult<Project> project = catalogManager.createProject(catalogManager.getUserIdBySessionId(sessionId)
+                                , c.name, c.alias, c.description, c.organization, null, sessionId);
+                        System.out.println(createOutput(c.cOpt, project, null));
 
-                        logout();
                         break;
                     }
                     case "info": {
                         OptionsParser.ProjectCommands.InfoCommand c = optionsParser.getProjectCommands().infoCommand;
-                        login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.id);
                         QueryResult<Project> project = catalogManager.getProject(projectId, null, sessionId);
-                        System.out.println(project);
+                        System.out.println(createOutput(c.cOpt, project, null));
 
-                        logout();
                         break;
                     }
                     case "share": {
                         OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
-                        login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.id);
                         QueryResult result = catalogManager.shareProject(projectId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
                         System.out.println(result);
 
-                        logout();
                         break;
                     }
                     default:
@@ -227,35 +236,29 @@ public class OpenCGAMain {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
-                        login(c.up);
 
                         int projectId = catalogManager.getProjectId(c.projectId);
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, Study.Type.valueOf(c.type), c.description, sessionId);
-                        System.out.println(study);
+                        System.out.println(createOutput(c.cOpt, study, null));
 
-                        logout();
                         break;
                     }
                     case "info": {
                         OptionsParser.StudyCommands.InfoCommand c = optionsParser.getStudyCommands().infoCommand;
-                        login(c.up);
 
                         int studyId = catalogManager.getStudyId(c.id);
-                        QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId);
-                        System.out.println(study);
+                        QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId, c.cOpt.getQueryOptions());
+                        System.out.println(createOutput(c.cOpt, study, null));
 
-                        logout();
                         break;
                     }
                     case "share": {
                         OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
-                        login(c.up);
 
                         int studyId = catalogManager.getStudyId(c.id);
                         QueryResult result = catalogManager.shareProject(studyId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
                         System.out.println(result);
 
-                        logout();
                         break;
                     }
                     default:
@@ -267,70 +270,80 @@ public class OpenCGAMain {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
-                        login(c.up);
 
                         int studyId = catalogManager.getStudyId(c.studyId);
-                        Path inputFile = Paths.get(c.file);
-                        URI sourceUri = new URI(null, c.file, null);
-                        //String outPath = Paths.get(c.outdir , inputFile.getFileName().toString()).toString();
-//                        QueryResult<File> file = catalogManager.uploadFile(studyId, File.Format.valueOf(c.format), File.Bioformat.valueOf(c.bioformat),
-//                                Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
-//                                c.parents, is, sessionId);
+                        Path inputFile = Paths.get(c.inputFile);
+                        URI sourceUri = new URI(null, c.inputFile, null);
+                        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
+                            sourceUri = inputFile.toUri();
+                        }
+
                         QueryResult<File> file = catalogManager.createFile(studyId, c.format, c.bioformat,
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
                                 c.parents, -1, sessionId);
-                        new CatalogFileManager(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, false, c.calculateChecksum);
-                        System.out.println(file);
+                        new CatalogFileManager(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, c.move, c.calculateChecksum);
+                        System.out.println(createOutput(c.cOpt, file, null));
 
-                        logout();
                         break;
                     }
                     case "create-folder": {
                         OptionsParser.FileCommands.CreateFolderCommand c = optionsParser.getFileCommands().createFolderCommand;
-                        login(c.up);
 
                         int studyId = catalogManager.getStudyId(c.studyId);
                         QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, null, sessionId);
-                        System.out.println(folder);
+                        System.out.println(createOutput(c.cOpt, folder, null));
 
-                        logout();
                         break;
                     }
                     case "info": {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
-                        login(c.up);
 
                         int fileId = catalogManager.getFileId(c.id);
                         QueryResult<File> file = catalogManager.getFile(fileId, sessionId);
-                        System.out.println(file);
+                        System.out.println(createOutput(optionsParser.getCommonOptions(), file, null));
 
-                        logout();
                         break;
                     }
                     case "list": {
                         OptionsParser.FileCommands.ListCommand c = optionsParser.getFileCommands().listCommand;
-                        login(c.up);
 
                         int fileId = catalogManager.getFileId(c.id);
-                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, null, sessionId);
-                        System.out.println(file);
+                        String path = catalogManager.getFile(fileId, sessionId).first().getPath();
+                        int studyId = catalogManager.getStudyIdByFileId(fileId);
+                        listFiles(studyId, path, c.level, "", sessionId);
+//                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, null, sessionId);
+//                        System.out.println(file);
 
-                        logout();
                         break;
                     }
                     case "index": {
                         OptionsParser.FileCommands.IndexCommand c = optionsParser.getFileCommands().indexCommand;
-                        login(c.up);
 
                         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
                         int fileId = catalogManager.getFileId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);
+                        if (outdirId < 0) {
+                            outdirId  = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
+                        }
                         String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
-                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions("launch", true));
-                        System.out.println(index);
+                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
+                        System.out.println(createOutput(c.cOpt, index, null));
 
-                        logout();
+                        break;
+                    }
+                    case "stats": {
+                        OptionsParser.FileCommands.StatsCommand c = optionsParser.getFileCommands().statsCommand;
+
+                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                        int fileId = catalogManager.getFileId(c.id);
+//                        int outdirId = catalogManager.getFileId(c.outdir);
+//                        String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
+//                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
+                        variantStorage.calculateStats(fileId, c.cohortId, sessionId, c.cOpt.getQueryOptions());
+//                        System.out.println(index);
+
                         break;
                     }
                     default:
@@ -339,11 +352,146 @@ public class OpenCGAMain {
                 }
                 break;
             }
+            case "samples" : {
+                switch (optionsParser.getSubCommand()) {
+                    case "info": {
+                        OptionsParser.SampleCommands.InfoCommand c = optionsParser.sampleCommands.infoCommand;
+
+                        QueryResult<Sample> sampleQueryResult = catalogManager.getSample(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
+
+                        break;
+                    }
+                    case "search": {
+                        OptionsParser.SampleCommands.SearchCommand c = optionsParser.sampleCommands.searchCommand;
+
+                        int studyId = catalogManager.getStudyId(c.studyId);
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        queryOptions.put("id", c.sampleIds);
+                        queryOptions.put("name", c.sampleNames);
+                        queryOptions.put("annotation", c.annotation);
+                        queryOptions.put("variableSetId", c.variableSetId);
+                        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+                        System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
+
+                        break;
+                    }
+                    case "load": {
+                        OptionsParser.SampleCommands.LoadCommand c = optionsParser.sampleCommands.loadCommand;
+
+                        CatalogSampleAnnotationsLoader catalogSampleAnnotationsLoader = new CatalogSampleAnnotationsLoader(catalogManager);
+//                        if (c.pedigreeFileId == null || c.pedigreeFileId.isEmpty()) {
+//                            catalogManager.
+//                        }
+                        int fileId = catalogManager.getFileId(c.pedigreeFileId);
+                        File pedigreeFile = catalogManager.getFile(fileId, sessionId).first();
+
+                        QueryResult<Sample> sampleQueryResult = catalogSampleAnnotationsLoader.loadSampleAnnotations(pedigreeFile, c.variableSetId == 0 ? null : c.variableSetId, sessionId);
+                        System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
+
+                        break;
+                    }
+                    default: {
+                        optionsParser.printUsage();
+                        break;
+                    }
+
+                }
+                break;
+            }
+            case "cohorts" : {
+                switch (optionsParser.getSubCommand()) {
+                    case "info": {
+                        OptionsParser.CohortCommands.InfoCommand c = optionsParser.cohortCommands.infoCommand;
+
+                        QueryResult<Cohort> cohortQueryResult = catalogManager.getCohort(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, cohortQueryResult, null));
+
+                        break;
+                    }
+                    case "samples": {
+                        OptionsParser.CohortCommands.SamplesCommand c = optionsParser.cohortCommands.samplesCommand;
+
+                        Cohort cohort = catalogManager.getCohort(c.id, null, sessionId).first();
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        queryOptions.add("id", cohort.getSamples());
+                        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(catalogManager.getStudyIdByCohortId(cohort.getId()), queryOptions, sessionId);
+                        OptionsParser.CommonOptions cOpt = c.cOpt;
+                        StringBuilder sb = createOutput(cOpt, sampleQueryResult, null);
+                        System.out.println(sb.toString());
+
+                        break;
+                    }
+                    case "create": {
+                        OptionsParser.CohortCommands.CreateCommand c = optionsParser.cohortCommands.createCommand;
+
+                        Map<String, List<Sample>> cohorts = new HashMap<>();
+                        int studyId = catalogManager.getStudyId(c.studyId);
+
+                        if (c.sampleIds != null && !c.sampleIds.isEmpty()) {
+                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                            queryOptions.put("id", c.sampleIds);
+                            queryOptions.put("variableSetId", c.variableSetId);
+                            QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+                            cohorts.put(c.name, sampleQueryResult.getResult());
+                        } else {
+//                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
+//                            queryOptions.put("annotation", c.annotation);
+                            if (c.variableSetId == 0) {
+                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.variableSets")).first().getVariableSets();
+                                if (variableSets.isEmpty()) {
+                                    logger.error("Expected variableSetId");
+                                } else {
+                                    c.variableSetId = variableSets.get(0).getId(); //Get the first VariableSetId
+                                }
+                            }
+                            VariableSet variableSet = catalogManager.getVariableSet(c.variableSetId, null, sessionId).first();
+                            c.name = c.name == null || c.name.isEmpty() ? "" : c.name + ".";
+                            for (Variable variable : variableSet.getVariables()) {
+                                if (variable.getId().equals(c.variable)) {
+                                    for (String value : variable.getAllowedValues()) {
+                                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                                        queryOptions.put("annotation", c.variable + ":" + value);
+                                        queryOptions.put("variableSetId", c.variableSetId);
+                                        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+                                        cohorts.put(c.name + value, sampleQueryResult.getResult());
+                                    }
+                                }
+                            }
+                            if (cohorts.isEmpty()) {
+                                logger.error("VariableSetId {} does not contain any variable with id = {}.", c.variableSetId, c.variable);
+                                returnValue = 2;
+                            }
+                        }
+
+                        if (cohorts.isEmpty()) {
+
+                        } else {
+                            for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
+                                List<Integer> sampleIds = new LinkedList<>();
+                                for (Sample sample : entry.getValue()) {
+                                    sampleIds.add(sample.getId());
+                                }
+                                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, entry.getKey(), c.description, sampleIds, c.cOpt.getQueryOptions(), sessionId);
+                                System.out.println(createOutput(c.cOpt, cohort, null));
+                            }
+                        }
+//                        System.out.println(createSamplesOutput(c.cOpt, sampleQueryResult));
+
+
+                        break;
+                    }
+                    default: {
+                        optionsParser.printUsage();
+                        break;
+                    }
+                }
+                break;
+            }
             case "tools" : {
                 switch (optionsParser.getSubCommand()) {
                     case "create": {
                         OptionsParser.ToolCommands.CreateCommand c = optionsParser.getToolCommands().createCommand;
-                        login(c.up);
 
                         QueryResult<Tool> tool = catalogManager.createTool(c.alias, c.description, null, null,
                                 c.path, c.openTool, sessionId);
@@ -353,7 +501,6 @@ public class OpenCGAMain {
                     }
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
-                        login(c.up);
 
                         QueryResult<Tool> tool = catalogManager.getTool(c.id, sessionId);
                         System.out.println(tool);
@@ -376,101 +523,173 @@ public class OpenCGAMain {
 //                logger.info("Unknown command");
                 break;
         }
-        return 0;
+
+        logout(sessionId);
+
+        return returnValue;
     }
 
-    private void listProjects(List<Project> projects, boolean studies, boolean files, String ident) throws CatalogException {
-        for (Project project : projects) {
-            System.out.printf("%s%d - %s (%s)\n", ident, project.getId(), project.getName(), project.getAlias());
+    /* Output Formats */
 
-            if (studies || files) {
-                listStudies(project.getId(), files, ident + "\t");
-            }
 
+    private StringBuilder createOutput(OptionsParser.CommonOptions commonOptions, QueryResult qr, StringBuilder sb) throws JsonProcessingException {
+        if (commonOptions.metadata) {
+            return createOutput(commonOptions, Collections.singletonList(qr), sb);
+        } else {
+            return createOutput(commonOptions, qr.getResult(), sb);
         }
     }
 
-    private void listStudies(int projectId, boolean files, String ident) throws CatalogException {
-        List<Study> studies = catalogManager.getAllStudies(projectId,
-                new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
-                sessionId).getResult();
+    private StringBuilder createOutput(OptionsParser.CommonOptions commonOptions, Object obj, StringBuilder sb) throws JsonProcessingException {
+        return createOutput(commonOptions, Collections.singletonList(obj), sb);
+    }
 
-        for (Study study : studies) {
-            System.out.printf("%s%d - %s (%s)\n", ident,  study.getId(), study.getName(), study.getAlias());
-            if (files) {
-                listFiles(study.getId(), ".", ident + "\t");
+    private StringBuilder createOutput(OptionsParser.CommonOptions commonOptions, List list, StringBuilder sb) throws JsonProcessingException {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+        String idSeparator = null;
+        switch (commonOptions.outputFormat) {
+            case IDS:
+                idSeparator = idSeparator == null? "\n" : idSeparator;
+            case ID_CSV:
+                idSeparator = idSeparator == null? "," : idSeparator;
+            case ID_LIST:
+                idSeparator = idSeparator == null? "," : idSeparator;
+            {
+                if (!list.isEmpty()) {
+                    try {
+                        Iterator iterator = list.iterator();
+                        sb.append(getId(iterator.next()));
+                        while (iterator.hasNext()) {
+                            sb.append(idSeparator).append(getId(iterator.next()));
+                        }
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            }
+            case NAME_ID_MAP: {
+                if (!list.isEmpty()) {
+                    try {
+                        Iterator iterator = list.iterator();
+                        Object object = iterator.next();
+                        sb.append(getName(object)).append(":").append(getId(object));
+                        while (iterator.hasNext()) {
+                            object = iterator.next();
+                            sb.append(",").append(getName(object)).append(":").append(getId(object));
+                        }
+                    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            }
+            case RAW:
+                if (list != null) {
+                    for (Object o : list) {
+                        sb.append(String.valueOf(o));
+                    }
+                }
+                break;
+            default:
+                logger.warn("Unsupported output format \"{}\" for that query", commonOptions.outputFormat);
+            case PRETTY_JSON:
+            case PLAIN_JSON:
+                JsonFactory factory = new JsonFactory();
+                ObjectMapper objectMapper = new ObjectMapper(factory);
+                objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//                objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+                objectMapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
+                ObjectWriter objectWriter = commonOptions.outputFormat == OptionsParser.OutputFormat.PRETTY_JSON ? objectMapper.writerWithDefaultPrettyPrinter(): objectMapper.writer();
+
+                if (list != null && !list.isEmpty()) {
+                    Iterator iterator = list.iterator();
+                    sb.append(objectWriter.writeValueAsString(iterator.next()));
+                    while (iterator.hasNext()) {
+                        sb.append("\n").append(objectWriter.writeValueAsString(iterator.next()));
+                    }
+                }
+                break;
+        }
+        return sb;
+    }
+
+    private Object getId(Object object) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        return object.getClass().getMethod("getId").invoke(object);
+    }
+
+    private Object getName(Object object) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        return object.getClass().getMethod("getName").invoke(object);
+    }
+
+    private void listProjects(List<Project> projects, int level, String ident, String sessionId) throws CatalogException {
+        if (level > 0) {
+            for (Project project : projects) {
+                System.out.printf("%s%d - %s (%s)\n", ident, project.getId(), project.getName(), project.getAlias());
+                listStudies(project.getId(), level - 1, ident + "\t", sessionId);
             }
         }
     }
 
-    private void listFiles(int studyId, String path, String ident) throws CatalogException {
-        List<File> files = catalogManager.searchFile(studyId, new QueryOptions("directory", path), sessionId).getResult();
-        for (File file : files) {
-            System.out.printf("%s%d - %s \t\t[%s]\n", ident, file.getId(), file.getName(), file.getStatus());
-            if (file.getType() == File.Type.FOLDER) {
-                listFiles(studyId, file.getPath(), ident + "\t");
+    private void listStudies(int projectId, int level, String ident, String sessionId) throws CatalogException {
+        if (level > 0) {
+            List<Study> studies = catalogManager.getAllStudies(projectId,
+                    new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
+                    sessionId).getResult();
+
+            for (Study study : studies) {
+                System.out.printf("%s%d - %s (%s)\n", ident,  study.getId(), study.getName(), study.getAlias());
+                listFiles(study.getId(), ".", level-1, ident + "\t", sessionId);
+            }
+        }
+    }
+
+    private void listFiles(int studyId, String path, int level, String ident, String sessionId) throws CatalogException {
+        if (level > 0) {
+            List<File> files = catalogManager.searchFile(studyId, new QueryOptions("directory", path), sessionId).getResult();
+            for (File file : files) {
+                System.out.printf("%s%d - %s \t\t[%s]\n", ident, file.getId(), file.getName(), file.getStatus());
+                if (file.getType() == File.Type.FOLDER) {
+                    listFiles(studyId, file.getPath(), level - 1, ident + "\t", sessionId);
+                }
             }
         }
     }
 
     private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogException, IOException {
-        //String sessionId;
+        String sessionId;
         if(up.user != null && up.password != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
             sessionId = login.getResult().get(0).getString("sessionId");
-            userId = up.user;
+//            userId = up.user;
+            logoutAtExit = true;
+        } else if (up.sessionId != null) {
+            sessionId = up.sessionId;
+//            userId = up.user;
+            logoutAtExit = false;
         } else {
             sessionId = shellSessionId;
+            logoutAtExit = false;
         }
         return sessionId;
 
     }
 
-    private void logout() throws CatalogException, IOException {
-        if(sessionId != null && !sessionId.equals(shellSessionId)){
-            catalogManager.logout(userId, sessionId);
+    private void logout(String sessionId) throws CatalogException, IOException {
+//        if(sessionId != null && !sessionId.equals(shellSessionId)){
+        if(logoutAtExit){
+            catalogManager.logout(catalogManager.getUserIdBySessionId(sessionId), sessionId);
         }
     }
 
-    private static CatalogManager getCatalogManager()
-            throws IOException, CatalogIOManagerException, CatalogDBException, IllegalOpenCGACredentialsException {
-        CatalogManager catalogManager;
-        String appHome = System.getProperty("app.home");
-        Config.setGcsaHome(appHome);
-        Properties catalogProperties = Config.getCatalogProperties();
-        catalogManager = new CatalogManager(catalogProperties);
-
-////        InputStream is = OpenCGAMain.class.getClassLoader().getResourceAsStream("catalog.properties");
-//        Properties properties = new Properties();
-//        //try {
-////            properties.load(is);
-//            properties.load(new FileInputStream(Paths.get(System.getProperty("app.home"), "conf", "catalog.properties").toFile()));
-////            System.out.println("catalog.properties");
-////            System.out.println("HOST "+properties.getProperty("HOST"));
-////            System.out.println("PORT "+properties.getProperty("PORT"));
-////            System.out.println("DATABASE "+properties.getProperty("DATABASE"));
-////            System.out.println("USER "+properties.getProperty("USER"));
-////            System.out.println("PASS "+properties.getProperty("PASSWORD"));
-////            System.out.println("ROOTDIR "+properties.getProperty("ROOTDIR"));
-////        } catch (IOException e) {
-////            System.out.println("Error loading properties");
-////            System.out.println(e.getMessage());
-////            e.printStackTrace();
-////        }
-//
-//        catalogManager = new CatalogManager(properties);
-////        try {
-////            catalogManager = new CatalogManager(properties);
-////        } catch (IOException e) {
-////            System.out.println(e.getMessage());
-////            e.printStackTrace();
-////        } catch (CatalogIOManagerException e) {
-////            System.out.println(e.getMessage());
-////            e.printStackTrace();
-////        } catch (CatalogManagerException e) {
-////            e.printStackTrace();
-////        }
-        return catalogManager;
+    private static void setLogLevel(String logLevel) {
+// This small hack allow to configure the appropriate Logger level from the command line, this is done
+// by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
+
 
 }
