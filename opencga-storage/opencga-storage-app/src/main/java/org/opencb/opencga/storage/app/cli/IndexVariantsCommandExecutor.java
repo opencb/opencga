@@ -4,6 +4,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.*;
@@ -139,6 +140,8 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
         } catch (FileFormatException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (StorageManagerException e) {
             e.printStackTrace();
         }
     }

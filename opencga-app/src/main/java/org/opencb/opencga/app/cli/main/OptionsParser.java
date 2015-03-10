@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.beans.File;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -549,8 +550,8 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @Parameter(names = {"--cohort-id"}, description = "", required = false, arity = 1)
-            int cohortId;
+            @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = false, arity = 1)
+            List<Integer> cohortIds;
         }
     }
 

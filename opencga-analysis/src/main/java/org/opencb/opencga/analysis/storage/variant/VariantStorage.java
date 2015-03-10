@@ -18,8 +18,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * Created by hpccoll1 on 06/03/15.
@@ -33,19 +32,29 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(int indexFileId, int cohortId, String sessionId, QueryOptions options) throws CatalogException {
+    public QueryResult<Job> calculateStats(int indexFileId, List<Integer> cohortIds, String sessionId, QueryOptions options) throws CatalogException {
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
-        Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
-
+        int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
         if (indexFile.getType() != File.Type.INDEX || indexFile.getBioformat() != File.Bioformat.VARIANT) {
             throw new CatalogException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
                     "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
         }
-        int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("id", cohort.getSamples()), sessionId);
+        StringBuilder outputFileName = new StringBuilder();
+        Map<Cohort, List<Sample>> cohorts = new HashMap<>(cohortIds.size());
+        for (Integer cohortId : cohortIds) {
+            Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
+            QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("id", cohort.getSamples()), sessionId);
+            cohorts.put(cohort, sampleQueryResult.getResult());
+            if (outputFileName.length() > 0) {
+                outputFileName.append('.');
+            }
+            outputFileName.append(cohort.getName());
+        }
+
         int outDirId = catalogManager.getFileParent(indexFileId, null, sessionId).first().getId();
+
 
         /** Create temporal Job Outdir **/
         String randomString = "I_" + StringUtils.randomString(10);
@@ -61,20 +70,23 @@ public class VariantStorage {
                 .append(" --storage-engine ").append(indexFile.getAttributes().get(AnalysisFileIndexer.STORAGE_ENGINE))
                 .append(" stats-variants ")
                 .append(" --file-id ").append(indexFile.getId())
-                .append(" --output-filename ").append(temporalOutDirUri.resolve("stats." + cohort.getName()).toString())
+                .append(" --output-filename ").append(temporalOutDirUri.resolve("stats." + outputFileName).toString())
                 .append(" --study-id ").append(studyId)
                 .append(" --database ").append(indexFile.getAttributes().get(AnalysisFileIndexer.DB_NAME))
-                .append(" --cohort-name ").append(cohort.getId())
-                .append(" --cohort-samples ")
+//                .append(" --cohort-name ").append(cohort.getId())
+//                .append(" --cohort-samples ")
                 ;
-        for (Sample sample : sampleQueryResult.getResult()) {
-            sb.append(sample.getName()).append(",");
+        for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
+            sb.append(" -C ").append(entry.getKey().getName()).append(":");
+            for (Sample sample : entry.getValue()) {
+                sb.append(sample.getName()).append(",");
+            }
         }
 
         String commandLine = sb.toString();
         System.out.println("commandLine = " + commandLine);
 
-        String jobDescription = "Stats calculation for cohort " + cohortId;
+        String jobDescription = "Stats calculation for cohort " + cohortIds;
         String jobName = "calculate-stats";
         QueryResult<Job> jobQueryResult;
         if (options.getBoolean("execute")) {
