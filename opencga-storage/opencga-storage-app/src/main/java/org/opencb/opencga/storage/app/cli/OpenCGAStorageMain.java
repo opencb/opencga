@@ -802,10 +802,13 @@ public class OpenCGAStorageMain {
         queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
 
         Map<String, Set<String>> samples = null;
-        if (c.cohortName != null && c.cohortSamples != samples) {
-            samples = new LinkedHashMap<>(5);
-            samples.put(c.cohortName, new LinkedHashSet<>(c.cohortSamples));
+        if (c.cohort != null && !c.cohort.isEmpty()) {
+            samples = new LinkedHashMap<>(c.cohort.size());
+            for (Map.Entry<String, String> entry : c.cohort.entrySet()) {
+                samples.put(entry.getKey(), new HashSet<>(Arrays.asList(entry.getValue().split(","))));
+            }
         }
+
 
         /**
          * Create DBAdaptor
