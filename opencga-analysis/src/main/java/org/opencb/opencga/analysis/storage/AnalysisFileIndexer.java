@@ -18,6 +18,8 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.exec.Command;
+import org.opencb.opencga.lib.exec.SingleProcess;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,9 +118,22 @@ public class AnalysisFileIndexer {
         jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
 
-        Job job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
-                "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                jobResourceManagerAttributes, null, sessionId).first();
+        Job job;
+        if (options.getBoolean("execute")) { //Execute and create
+            Command com = new Command(commandLine);
+            SingleProcess sp = new SingleProcess(com);
+            sp.getRunnableProcess().run();
+
+            job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
+                    "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
+                    jobResourceManagerAttributes, Job.Status.DONE, null, sessionId).first();
+
+        } else {
+            job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
+                    "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
+                    jobResourceManagerAttributes, null, sessionId).first();
+
+        }
 
         /** Update IndexFile to add extra information (jobId, sampleIds, attributes, ...) **/
         indexFileModifyParams.put("jobId", job.getId());
@@ -185,14 +200,16 @@ public class AnalysisFileIndexer {
                     .append(" --file-id ").append(indexFile.getId())
                     .append(" --study-name \"").append(study.getName()).append("\"")
                     .append(" --study-id ").append(study.getId())
-                    .append(" --study-type ").append(study.getType())
+//                    .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --outdir ").append(outDirUri)
                     .append(" --include-genotypes ")
+                    .append(" --compress-genotypes ")
                     .append(" --include-stats ")
-                    .append(" -DsampleIds=").append(sampleIdsString);
+//                    .append(" -DsampleIds=").append(sampleIdsString)
 //                    .append(" --credentials ")
+                    ;
             if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {
                 sb.append(" --annotate ");
             }

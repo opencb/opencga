@@ -2003,7 +2003,13 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                                      Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId)
+                                      Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId) throws CatalogException {
+        return createJob(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles, resourceManagerAttributes, null, options, sessionId);
+    }
+
+    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
+                                      Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
@@ -2011,6 +2017,7 @@ public class CatalogManager implements ICatalogManager {
         checkParameter(toolName, "toolName");
         checkParameter(commandLine, "commandLine");
         description = defaultString(description, "");
+        status = defaultObject(status, Job.Status.PREPARED);
 
         // FIXME check inputFiles? is a null conceptually valid?
 
@@ -2027,7 +2034,7 @@ public class CatalogManager implements ICatalogManager {
         }
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
-        job.setStatus(Job.Status.PREPARED);
+        job.setStatus(status);
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
         }
