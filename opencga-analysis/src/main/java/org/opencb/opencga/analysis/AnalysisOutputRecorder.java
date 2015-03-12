@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.beans.AnalysisBioformatDetect;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -56,14 +57,14 @@ public class AnalysisOutputRecorder {
 //            int studyId = catalogManager.getAnalysisIdByJobId(job.getId());
             int studyId = catalogManager.getStudyIdByJobId(job.getId());
 
-            List<ResultXMLElem> resultXMLElems = new ArrayList<>();
-
-            for (URI uri : uris) {
-                String filename = Paths.get(uri).getFileName().toString();
-                if (filename.equals("result.xml")) {
-                    resultXMLElems = parseResultXML(Paths.get(uri).toFile());
-                }
-            }
+//            List<ResultXMLElem> resultXMLElems = new ArrayList<>();
+//
+//            for (URI uri : uris) {
+//                String filename = Paths.get(uri).getFileName().toString();
+//                if (filename.equals("result.xml")) {
+//                    resultXMLElems = parseResultXML(Paths.get(uri).toFile());
+//                }
+//            }
 
             for (URI uri : uris) {
 
@@ -89,11 +90,12 @@ public class AnalysisOutputRecorder {
 
                 File.Bioformat bioformat = File.Bioformat.NONE;
 
-                ResultXMLElem resultElem;
-                if ((resultElem = getResultElem(resultXMLElems, fileName)) != null) {
-                    bioformat = resultElem.getTag();
-                }
+//                ResultXMLElem resultElem;
+//                if ((resultElem = getResultElem(resultXMLElems, fileName)) != null) {
+//                    bioformat = resultElem.getTag();
+//                }
 
+                bioformat = AnalysisBioformatDetect.detect(Paths.get(uri).toString());
 
                 fileQueryResult = catalogManager.createFile(
                         studyId, File.Format.PLAIN, bioformat, filePath, "Generated from job " + job.getId(),
