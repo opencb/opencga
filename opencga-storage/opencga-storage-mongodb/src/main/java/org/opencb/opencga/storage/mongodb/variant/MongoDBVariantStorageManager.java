@@ -167,7 +167,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.includeStats(includeStats);
             variantDBWriter.setCompressDefaultGenotype(compressSamples);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
-            variantDBWriter.setSamplesIds(samplesIds);
+//            variantDBWriter.setSamplesIds(samplesIds);
             writerList.add(variantDBWriter);
             writers.add(variantDBWriter);
         }
