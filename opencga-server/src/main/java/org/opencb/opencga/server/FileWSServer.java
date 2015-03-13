@@ -279,7 +279,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/download")
-    @Produces("application/json")
+//    @Produces("application/json")
     @ApiOperation(value = "File download")
     public Response download(
             @PathParam(value = "fileId") @FormDataParam("fileId") int fileId) {
@@ -396,6 +396,27 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
     }
 
+    @GET
+    @Path("/download-example")
+//    @Produces("application/json")
+    @ApiOperation(value = "File download")
+    public Response downloadExampleFile(
+            @ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
+            @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName
+    ) {
+        DataInputStream stream;
+        try {
+
+            String analysisPath = Config.getGcsaHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
+            String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
+            InputStream istream = new FileInputStream(fileExamplesToolPath);
+            stream = new DataInputStream(istream);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+        return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
+    }
     @GET
     @Path("/{fileId}/set-header")
     @Produces("application/json")
