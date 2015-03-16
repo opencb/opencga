@@ -1,5 +1,6 @@
 package org.opencb.opencga.app.cli.main;
 
+import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -20,6 +21,7 @@ import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.lib.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +162,7 @@ public class OpenCGAMain {
                                 new QueryOptions("include", Arrays.asList("id", "name", "projects.id","projects.alias","projects.name")), sessionId).first();
                         System.out.println(user.getId() + " - " + user.getName());
                         ident+= "\t";
-                        listProjects(user.getProjects(), c.level, ident, sessionId);
+                        System.out.println(listProjects(user.getProjects(), c.recursive? c.level : 1, ident, new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -310,7 +312,7 @@ public class OpenCGAMain {
                         int fileId = catalogManager.getFileId(c.id);
                         String path = catalogManager.getFile(fileId, sessionId).first().getPath();
                         int studyId = catalogManager.getStudyIdByFileId(fileId);
-                        listFiles(studyId, path, c.level, "", sessionId);
+                        System.out.println(listFiles(studyId, path, c.recursive? c.level : 1, "", new StringBuilder(), sessionId));
 //                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, null, sessionId);
 //                        System.out.println(file);
 
@@ -332,7 +334,7 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "stats": {
+                    case "stats-variants": {
                         OptionsParser.FileCommands.StatsCommand c = optionsParser.getFileCommands().statsCommand;
 
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
@@ -343,6 +345,17 @@ public class OpenCGAMain {
 //                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
                         variantStorage.calculateStats(fileId, c.cohortIds, sessionId, c.cOpt.getQueryOptions());
 //                        System.out.println(index);
+
+                        break;
+                    }
+                    case "annotate-variants": {
+                        OptionsParser.FileCommands.AnnotationCommand c = optionsParser.getFileCommands().annotationCommand;
+                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        queryOptions.add("parameters", c.parameters);
+                        variantStorage.annotateVariants(fileId, sessionId, queryOptions);
 
                         break;
                     }
@@ -467,14 +480,16 @@ public class OpenCGAMain {
                         if (cohorts.isEmpty()) {
 
                         } else {
+                            List<QueryResult<Cohort>> queryResults = new ArrayList<>(cohorts.size());
                             for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
                                 List<Integer> sampleIds = new LinkedList<>();
                                 for (Sample sample : entry.getValue()) {
                                     sampleIds.add(sample.getId());
                                 }
                                 QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, entry.getKey(), c.description, sampleIds, c.cOpt.getQueryOptions(), sessionId);
-                                System.out.println(createOutput(c.cOpt, cohort, null));
+                                queryResults.add(cohort);
                             }
+                            System.out.println(createOutput(c.cOpt, queryResults, null));
                         }
 //                        System.out.println(createSamplesOutput(c.cOpt, sampleQueryResult));
 
@@ -624,38 +639,54 @@ public class OpenCGAMain {
         return object.getClass().getMethod("getName").invoke(object);
     }
 
-    private void listProjects(List<Project> projects, int level, String ident, String sessionId) throws CatalogException {
+    private StringBuilder listProjects(List<Project> projects, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
-            for (Project project : projects) {
-                System.out.printf("%s%d - %s (%s)\n", ident, project.getId(), project.getName(), project.getAlias());
-                listStudies(project.getId(), level - 1, ident + "\t", sessionId);
+            for (Iterator<Project> iterator = projects.iterator(); iterator.hasNext(); ) {
+                Project project = iterator.next();
+                sb.append(String.format("%s (%d) - %s : %s\n", indent + (iterator.hasNext() ? "├──" : "└──"), project.getId(), project.getName(), project.getAlias()));
+                listStudies(project.getId(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
             }
         }
+        return sb;
     }
 
-    private void listStudies(int projectId, int level, String ident, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(int projectId, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<Study> studies = catalogManager.getAllStudies(projectId,
                     new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
                     sessionId).getResult();
 
-            for (Study study : studies) {
-                System.out.printf("%s%d - %s (%s)\n", ident,  study.getId(), study.getName(), study.getAlias());
-                listFiles(study.getId(), ".", level-1, ident + "\t", sessionId);
+            for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
+                Study study = iterator.next();
+                sb.append(String.format("%s (%d) - %s : %s\n", indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
+                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
             }
         }
+        return sb;
     }
 
-    private void listFiles(int studyId, String path, int level, String ident, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(int studyId, String path, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new QueryOptions("directory", path), sessionId).getResult();
-            for (File file : files) {
-                System.out.printf("%s%d - %s \t\t[%s]\n", ident, file.getId(), file.getName(), file.getStatus());
+            for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
+                File file = iterator.next();
+//                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
+                sb.append(String.format("%s (%d) - %s   [%s, %s]\n", indent + (iterator.hasNext() ? "├──" : "└──"), file.getId(), file.getName(), file.getStatus(), humanReadableByteCount(file.getDiskUsage(), false)));
                 if (file.getType() == File.Type.FOLDER) {
-                    listFiles(studyId, file.getPath(), level - 1, ident + "\t", sessionId);
+                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
+//                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "| " : "  "), sessionId);
                 }
             }
         }
+        return sb;
+    }
+
+    public static String humanReadableByteCount(long bytes, boolean si) {
+        int unit = si ? 1000 : 1024;
+        if (bytes < unit) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(unit));
+        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp-1) + (si ? "" : "i");
+        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
     }
 
     private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogException, IOException {

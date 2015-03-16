@@ -280,6 +280,9 @@ public class OptionsParser {
             @Parameter(names = {"-L", "--level"}, description = "Descend only level directories deep.", arity = 1)
             public int level = Integer.MAX_VALUE;
 
+            @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
+            public boolean recursive = false;
+
         }
 
         @Parameters(commandNames = {"login"}, commandDescription = "Login a user and return it's sessionId")
@@ -423,6 +426,7 @@ public class OptionsParser {
         final ListCommand listCommand;
         final IndexCommand indexCommand;
         final StatsCommand statsCommand;
+        final AnnotationCommand annotationCommand;
 
         public FileCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -433,6 +437,7 @@ public class OptionsParser {
             files.addCommand(this.listCommand = new ListCommand());
             files.addCommand(this.indexCommand = new IndexCommand());
             files.addCommand(this.statsCommand = new StatsCommand());
+            files.addCommand(this.annotationCommand = new AnnotationCommand());
 //        files.addCommand(commandShareResource);
         }
 
@@ -505,7 +510,7 @@ public class OptionsParser {
             String id;
         }
 
-        @Parameters(commandNames = {"list"}, commandDescription = "List files")
+        @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
         class ListCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -518,9 +523,12 @@ public class OptionsParser {
 
             @Parameter(names = {"-L", "--level"}, description = "Descend only level directories deep.", arity = 1)
             public int level = Integer.MAX_VALUE;
+
+            @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
+            public boolean recursive = false;
         }
 
-        @Parameters(commandNames = {"index"}, commandDescription = "Index files")
+        @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
         class IndexCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -539,7 +547,7 @@ public class OptionsParser {
 
         }
 
-        @Parameters(commandNames = {"stats"}, commandDescription = "Index files")
+        @Parameters(commandNames = {"stats-variants"}, commandDescription = "Calculate variant stats for a set of cohorts.")
         class StatsCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -552,6 +560,21 @@ public class OptionsParser {
 
             @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = false, arity = 1)
             List<Integer> cohortIds;
+        }
+
+        @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
+        class AnnotationCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
+            String id;
+
+            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter")
+            Map<String, String> parameters;
         }
     }
 

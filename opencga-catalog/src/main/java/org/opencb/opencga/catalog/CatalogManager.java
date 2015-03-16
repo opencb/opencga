@@ -87,7 +87,7 @@ public class CatalogManager implements ICatalogManager {
             throws IOException, CatalogIOManagerException, CatalogDBException {
 //        properties = Config.getAccountProperties();
 
-        logger.info("CatalogManager rootdir");
+        logger.debug("CatalogManager rootdir");
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
         properties = new Properties();
         try {
@@ -105,11 +105,11 @@ public class CatalogManager implements ICatalogManager {
     public CatalogManager(Properties properties)
             throws CatalogIOManagerException, CatalogDBException {
         this.properties = properties;
-        logger.info("CatalogManager configureManager");
+        logger.debug("CatalogManager configureManager");
         configureManager(properties);
-        logger.info("CatalogManager configureDBAdaptor");
+        logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
-        logger.info("CatalogManager configureIOManager");
+        logger.debug("CatalogManager configureIOManager");
         configureIOManager(properties);
     }
 
