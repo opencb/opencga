@@ -1,9 +1,12 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
+import com.beust.jcommander.converters.CommaParameterSplitter;
+import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.beans.File;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -643,7 +646,20 @@ public class OptionsParser {
             int id;
         }
     }
+    public static class SemiColonParameterSplitter implements IParameterSplitter {
 
+        public List<String> split(String value) {
+            return Arrays.asList(value.split(";"));
+        }
+
+    }
+    public static class NoSplitter implements IParameterSplitter {
+
+        public List<String> split(String value) {
+            return Arrays.asList(value.split(";"));
+        }
+
+    }
     @Parameters(commandNames = {"samples"}, commandDescription = "Samples methods")
     public class SampleCommands {
 
@@ -692,8 +708,8 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--sample-id"}, description = "Sample ids (CSV)", required = false, arity = 1)
             String sampleIds;
 
-            @Parameter(names = {"--annotation"}, description = "SampleAnnotations values. <variableName>:<annotation>", required = false, arity = 1)
-            String annotation;
+            @Parameter(names = {"-a", "--annotation"}, description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*", required = false, arity = 1, splitter = SemiColonParameterSplitter.class)
+            List<String> annotation;
         }
 
         @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")

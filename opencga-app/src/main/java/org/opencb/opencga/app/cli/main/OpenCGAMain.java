@@ -162,7 +162,7 @@ public class OpenCGAMain {
                                 new QueryOptions("include", Arrays.asList("id", "name", "projects.id","projects.alias","projects.name")), sessionId).first();
                         System.out.println(user.getId() + " - " + user.getName());
                         ident+= "\t";
-                        System.out.println(listProjects(user.getProjects(), c.recursive? c.level : 1, ident, new StringBuilder(), sessionId));
+                        System.out.println(listProjects(user.getProjects(), c.recursive ? c.level : 1, ident, new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -383,6 +383,9 @@ public class OpenCGAMain {
                         queryOptions.put("id", c.sampleIds);
                         queryOptions.put("name", c.sampleNames);
                         queryOptions.put("annotation", c.annotation);
+                        for (String s : c.annotation) {
+                            System.out.println(s);
+                        }
                         queryOptions.put("variableSetId", c.variableSetId);
                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
                         System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
@@ -442,9 +445,9 @@ public class OpenCGAMain {
                         int studyId = catalogManager.getStudyId(c.studyId);
 
                         if (c.sampleIds != null && !c.sampleIds.isEmpty()) {
-                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                            QueryOptions queryOptions = new QueryOptions("include", "projects.studies.samples.id");
                             queryOptions.put("id", c.sampleIds);
-                            queryOptions.put("variableSetId", c.variableSetId);
+//                            queryOptions.put("variableSetId", c.variableSetId);
                             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
                             cohorts.put(c.name, sampleQueryResult.getResult());
                         } else {

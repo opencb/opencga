@@ -1804,7 +1804,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 //                                )
 //                        )
 //                );
-                annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], split[1] ));
+                String[] values = split[1].split(",");
+                if (values.length > 1) {
+                    annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], new BasicDBObject("$in", Arrays.asList(values)) ));
+                } else {
+                    annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], split[1] ));
+                }
             }
         }
 

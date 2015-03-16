@@ -2414,18 +2414,21 @@ public class CatalogManager implements ICatalogManager {
         }
     }
 
-    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> samples,
+    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         checkParameter(name, "name");
-        checkObj(samples, "Samples list");
+        checkObj(sampleIds, "Samples list");
         description = defaultString(description, "");
         attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
 
-        for (Integer sampleId : samples) {
-            getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+        if (getAllSamples(studyId, new QueryOptions("id", sampleIds), sessionId).getResult().size() != sampleIds.size()) {
+//            for (Integer sampleId : samples) {
+//                getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+//            }
+            throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
 
-        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, samples, attributes);
+        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, sampleIds, attributes);
 
         return catalogDBAdaptor.createCohort(studyId, cohort);
     }
