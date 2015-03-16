@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog;
 
+import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.Annotation;
 import org.opencb.opencga.catalog.beans.AnnotationSet;
 import org.opencb.opencga.catalog.beans.Variable;

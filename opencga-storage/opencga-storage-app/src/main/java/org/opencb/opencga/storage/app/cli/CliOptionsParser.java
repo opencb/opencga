@@ -19,9 +19,9 @@ public class CliOptionsParser {
 
     private final CommandCreateAccessions accessions;
 
-    private final IndexVariantsOptionsCommandOptions indexVariantsCommandOptions;
+    private final IndexVariantsCommandOptions indexVariantsCommandOptions;
     private final IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
-    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
+//    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
 
     private final QueryVariantsCommandOptions queryVariantsCommandOptions;
     private final QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
@@ -29,27 +29,20 @@ public class CliOptionsParser {
     private final AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
     private final StatsVariantsCommandOptions statsVariantsCommandOptions;
 
-//    private final CommandLoadAnnotations commandLoadAnnotations;
-//    private final CommandCreateAnnotations commandCreateAnnotations;
-//    private final CommandTransformVariants transform;
-//    private final CommandLoadVariants load;
-//    private final CommandTransformAlignments transformAlignments;
-//    private final CommandLoadAlignments loadAlignments;
-//    private CommandDownloadAlignments downloadAlignments;
 
     public CliOptionsParser() {
 
         generalOptions = new GeneralOptions();
 
         jcommander = new JCommander(generalOptions);
-        jcommander.setProgramName("opencga-storage.sh");
+        jcommander.setProgramName("opencga-storage2.sh");
 
         commonCommandOptions = new CommonCommandOptions();
         jcommander.addCommand(accessions = new CommandCreateAccessions());
 
-        indexVariantsCommandOptions = new IndexVariantsOptionsCommandOptions();
+        indexVariantsCommandOptions = new IndexVariantsCommandOptions();
         indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
-        indexSequenceCommandOptions = new IndexSequenceCommandOptions();
+//        indexSequenceCommandOptions = new IndexSequenceCommandOptions();
         queryVariantsCommandOptions = new QueryVariantsCommandOptions();
         queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
         annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
@@ -57,19 +50,11 @@ public class CliOptionsParser {
 
         jcommander.addCommand("index-variants", indexVariantsCommandOptions);
         jcommander.addCommand("index-alignments", indexAlignmentsCommandOptions);
-        jcommander.addCommand("index-sequence", indexSequenceCommandOptions);
+//        jcommander.addCommand("index-sequence", indexSequenceCommandOptions);
         jcommander.addCommand("fetch-variants", queryVariantsCommandOptions);
         jcommander.addCommand("fetch-alignments", queryAlignmentsCommandOptions);
         jcommander.addCommand("annotate-variants", annotateVariantsCommandOptions);
         jcommander.addCommand("stats-variants", statsVariantsCommandOptions);
-
-//        jcommander.addCommand(transform = new CommandTransformVariants());
-//        jcommander.addCommand(load = new CommandLoadVariants());
-//        jcommander.addCommand(transformAlignments = new CommandTransformAlignments());
-//        jcommander.addCommand(loadAlignments = new CommandLoadAlignments());
-//        jcommander.addCommand(commandCreateAnnotations = new CommandCreateAnnotations());
-//        jcommander.addCommand(commandLoadAnnotations = new CommandLoadAnnotations());
-//        jcommander.addCommand(downloadAlignments = new CommandDownloadAlignments());
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -124,6 +109,12 @@ public class CliOptionsParser {
 
     }
 
+//    class Command {
+//
+//        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+//        Map<String, String> params = new HashMap<>();
+//    }
+
     class CommonCommandOptions {
 
         @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
@@ -148,7 +139,7 @@ public class CliOptionsParser {
         String storageEngineConfigFile = null;
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
 
         @Override
         public String toString() {
@@ -167,15 +158,10 @@ public class CliOptionsParser {
 
     }
 
-    class Command {
-
-        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> params = new HashMap<>();
-    }
 
 
     @Parameters(commandNames = {"create-accessions"}, commandDescription = "Creates accession IDs for an input file")
-    class CommandCreateAccessions extends Command {
+    class CommandCreateAccessions extends CommonCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to annotation with accession IDs", required = true, arity = 1)
         String input;
@@ -204,43 +190,7 @@ public class CliOptionsParser {
     }
 
 
-    @Parameters(commandNames = {"download-alignments"}, commandDescription = "Downloads a data model from the backend")
-    class CommandDownloadAlignments extends Command {
-
-        @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be extracted", required = true, arity = 1)
-        String alias;
-
-        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
-        String study;
-
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = true, arity = 1)
-        String credentials;
-
-//        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-//        String studyId;
-
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required = false, arity = 1)
-        String backend = "hbase";
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
-        String outdir;
-
-        @Parameter(names = {"--region"}, description = "Limits the Alignments to a region <chromosome>[:<start>-<end>] (optional)", arity = 1)
-        String region;
-
-        @Parameter(names = {"-f", "--format"}, description = "Outfile format: sam (default), bam, json, json.gz ", arity = 1)
-        String format = "json.gz";
-
-        @Parameter(names = {"--coverage"}, description = "Get the region coverage instead the alignments.", arity = 0)
-        boolean coverage = false;
-
-        @Parameter(names = {"--remove"}, description = "Remove file from system (pending)", hidden = true)
-        boolean remove;
-
-    }
-
-
-    class IndexCommandOptions extends Command {
+    class IndexCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
@@ -266,7 +216,7 @@ public class CliOptionsParser {
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
-    class IndexVariantsOptionsCommandOptions extends IndexCommandOptions {
+    class IndexVariantsCommandOptions extends IndexCommandOptions {
 
         @Parameter(names = {"--transform"}, description = "Run only the transform phase")
         boolean transform = false; // stop before load
@@ -341,13 +291,9 @@ public class CliOptionsParser {
         List<String> meanCoverage = Collections.singletonList("200");
     }
 
-    @Parameters(commandNames = {"index-sequence"}, commandDescription = "Index sequence file")
-    class IndexSequenceCommandOptions extends IndexCommandOptions {
-
-    }
 
 
-    class QueryCommandOptions extends Command {
+    class QueryCommandOptions extends CommonCommandOptions {
         //File location parameters
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
         String backend = "mongodb";
@@ -416,7 +362,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
         String filePath;
 
-        @Parameter(names = {"-C", "--include-coverage"}, description = " [CSV]", required = false)
+        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
         boolean coverage;
 
         @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
@@ -434,8 +380,9 @@ public class CliOptionsParser {
     }
 
 
+
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
-    class AnnotateVariantsCommandOptions extends Command {
+    class AnnotateVariantsCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         boolean create = false;
@@ -487,7 +434,7 @@ public class CliOptionsParser {
 
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
-    class StatsVariantsCommandOptions extends Command {
+    class StatsVariantsCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         boolean overwriteStats = false;
@@ -528,7 +475,12 @@ public class CliOptionsParser {
         */
     }
 
-    IndexVariantsOptionsCommandOptions getIndexVariantsCommandOptions() {
+
+    GeneralOptions getGeneralOptions() {
+        return generalOptions;
+    }
+
+    IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
         return indexVariantsCommandOptions;
     }
 
@@ -536,9 +488,9 @@ public class CliOptionsParser {
         return indexAlignmentsCommandOptions;
     }
 
-    IndexSequenceCommandOptions getIndexSequenceCommandOptions() {
-        return indexSequenceCommandOptions;
-    }
+//    IndexSequenceCommandOptions getIndexSequenceCommandOptions() {
+//        return indexSequenceCommandOptions;
+//    }
 
     CommandCreateAccessions getAccessionsCommand() {
         return accessions;

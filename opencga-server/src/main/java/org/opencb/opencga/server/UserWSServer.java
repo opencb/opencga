@@ -1,6 +1,7 @@
 package org.opencb.opencga.server;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -11,9 +12,12 @@ import org.opencb.opencga.catalog.CatalogException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @Path("/users")
 @Api(value = "users", description = "Users web service", position = 1)
@@ -155,11 +159,21 @@ public class UserWSServer extends OpenCGAWSServer {
             throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
-            objectMap.put("name", name);
-            objectMap.put("email", email);
-            objectMap.put("organization", organization);
-            objectMap.put("attributes", attributes);
-            objectMap.put("configs", configs);
+            if (name != null) {
+                objectMap.put("name", name);
+            }
+            if (email != null) {
+                objectMap.put("email", email);
+            }
+            if (organization != null) {
+                objectMap.put("organization", organization);
+            }
+            if (attributes != null) {
+                objectMap.put("attributes", attributes);
+            }
+            if (configs != null) {
+                objectMap.put("configs", configs);
+            }
 
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
@@ -167,6 +181,27 @@ public class UserWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+    }
+
+    @POST
+    @Path("/{userId}/modify")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "User modify")
+    public Response modifyUserPOST(
+            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+            @ApiParam(value="params", required = true) Map<String, Object> params) {
+        try {
+            ObjectMap objectMap = new ObjectMap(params);
+
+            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+
+
     }
 
     @GET

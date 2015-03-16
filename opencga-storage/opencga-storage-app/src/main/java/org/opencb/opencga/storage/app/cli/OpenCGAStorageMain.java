@@ -46,6 +46,7 @@ import java.util.*;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
  */
+@Deprecated
 public class OpenCGAStorageMain {
 
     //    private static final String OPENCGA_HOME = System.getenv("OPENCGA_HOME");
