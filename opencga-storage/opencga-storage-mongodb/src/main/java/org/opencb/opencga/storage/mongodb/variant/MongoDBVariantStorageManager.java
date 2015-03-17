@@ -41,12 +41,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
+//    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
     //StorageEngine specific params
-    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
+//    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
     public static final String BULK_SIZE = "bulkSize";
     public static final String INCLUDE_SRC = "includeSrc";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
@@ -133,8 +133,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100")));
         int bulkSize = params.getInt(BULK_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE, "" + batchSize)));
-        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_LOAD_THREADS, "8")));
+//        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
+        int numWriters = loadThreads;
 //        Map<String, Integer> samplesIds = (Map) params.getMap("sampleIds");
         Map<String, Integer> samplesIds = new HashMap<>();
         for (String sampleId : params.getString("sampleIds").split(",")) {
@@ -185,7 +186,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
             vr.run();
         } else {
-            logger.info("Multi thread load...");
+            logger.info("Multi thread load... [1 readerThreads, {} writerThreads]", loadThreads);
 //            ThreadRunner runner = new ThreadRunner(Executors.newFixedThreadPool(loadThreads), batchSize);
 //            ThreadRunner.ReadNode<Variant> variantReadNode = runner.newReaderNode(variantJsonReader, 1);
 //            ThreadRunner.WriterNode<Variant> variantWriterNode = runner.newWriterNode(writerList);

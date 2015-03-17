@@ -213,9 +213,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             String id = variantConverter.buildStorageId(variant);
 
             for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                    if (!variantSourceEntry.getFileId().equals(fileId)) {
-                        continue;
-                    }
+                if (!variantSourceEntry.getFileId().equals(fileId)) {
+                    continue;
+                }
                 BasicDBObject update = new BasicDBObject()
                         .append("$push",
                                 new BasicDBObject(
