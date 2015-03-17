@@ -45,7 +45,7 @@ public class VariantMongoDBAdaptorTest {
         // Initialize dataset to query
 //        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFileName());
         VariantVcfReader reader = new VariantVcfReader(study, inputFile);
-        VariantMongoDBWriter vdw = new VariantMongoDBWriter(study, (MongoCredentials) credentials);
+        VariantMongoDBWriter vdw = null;// = new VariantMongoDBWriter(study, (MongoCredentials) credentials);
         vdw.includeSamples(true);
         vdw.includeEffect(true);
         vdw.includeStats(true);
