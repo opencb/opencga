@@ -63,7 +63,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
             params.put(VariantStorageManager.INCLUDE_SAMPLES, indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
             params.put(VariantStorageManager.INCLUDE_SRC, indexVariantsCommandOptions.includeSrc);
             params.put(VariantStorageManager.COMPRESS_GENOTYPES, indexVariantsCommandOptions.compressGenotypes);
-            params.put(VariantStorageManager.VARIANT_SOURCE, source);
+//            params.put(VariantStorageManager.VARIANT_SOURCE, source);
             params.put(VariantStorageManager.DB_NAME, indexVariantsCommandOptions.dbName);
             params.put(VariantStorageManager.ANNOTATE, indexVariantsCommandOptions.annotate);
             params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);

@@ -16,6 +16,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -449,7 +450,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
-        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+//        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+        StudyConfiguration studyConfiguration = queryOptions.get(VariantStorageManager.STUDY_CONFIGURATION, StudyConfiguration.class);
+        String fileId = queryOptions.getString(VariantStorageManager.FILE_ID);  //TODO: Change to int value
+        String studyId = ""+studyConfiguration.getStudyId();                    //TODO: Change to int value
+
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
             VariantStats variantStats = null;
@@ -468,9 +473,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
                 DBObject find = new BasicDBObject("_id", id)
                         .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
-                                , variantSource.getStudyId())
+                                , studyId)
                         .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD
-                                , variantSource.getFileId());
+                                , fileId);
 
                 DBObject update = new BasicDBObject("$set", new BasicDBObject(
                         DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD

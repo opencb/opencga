@@ -327,8 +327,8 @@ public class OptionsParser {
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
         int fileId;
 
-        @Parameter(names = {"--study-information-file"}, description = "File with the study information", required = false, arity = 1)
-        String studyInformationFile;
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        String studyConfigurationFile;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
@@ -659,11 +659,15 @@ public class OptionsParser {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
         boolean create = false;
+
         @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
         String load = null;
 
         @DynamicParameter(names = {"-C", "--cohort"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
         Map<String, String> cohort = new HashMap<>();
+
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        String studyConfigurationFile;
 
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)

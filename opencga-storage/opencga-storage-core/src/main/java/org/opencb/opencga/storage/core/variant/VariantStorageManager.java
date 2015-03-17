@@ -44,7 +44,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)
     public static final String INCLUDE_SRC = "includeSrc";                  //Include original source file on the transformed file and the final db
     public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
-    @Deprecated public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
+//    @Deprecated public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
     public static final String AGGREGATED_TYPE = "aggregatedType";
     public static final String FILE_ID = "fileId";

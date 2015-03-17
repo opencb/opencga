@@ -609,8 +609,8 @@ public class OpenCGAStorageMain {
         String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
         StudyConfiguration studyConfiguration;
         Path studyConfigurationPath;
-        if (c.studyInformationFile == null || c.studyInformationFile.isEmpty()) {
-            //Create a new StudyInformationFile
+        if (c.studyConfigurationFile == null || c.studyConfigurationFile.isEmpty()) {
+            //Create a new StudyConfiguration File
             checkNull(c.studyId, "--study-id");
             checkNull(c.studyName, "--study-name");
             checkNull(c.fileId, "--file-id");
@@ -618,7 +618,7 @@ public class OpenCGAStorageMain {
             studyConfigurationPath = Paths.get(outdirUri.getPath(), studyConfiguration.getStudyName() + ".study.json");
             logger.info("Creating a new StudyConfiguration file: " + studyConfigurationPath);
         } else {
-            studyConfigurationPath = Paths.get(c.studyInformationFile);
+            studyConfigurationPath = Paths.get(c.studyConfigurationFile);
             studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
         }
 
@@ -822,6 +822,7 @@ public class OpenCGAStorageMain {
 //        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
         queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
+        queryOptions.put(VariantStorageManager.FILE_ID, c.fileId);
 
         Map<String, Set<String>> samples = null;
         if (c.cohort != null && !c.cohort.isEmpty()) {
@@ -831,6 +832,11 @@ public class OpenCGAStorageMain {
             }
         }
 
+        //TODO: Read cohorts from StudyConfiguration file
+//        Path studyConfigurationPath = Paths.get(c.studyConfigurationFile);
+//        StudyConfiguration studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
+//        samples.put()
+//        >>>>>>> CONTINUE HERE! ****
 
         /**
          * Create DBAdaptor

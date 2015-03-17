@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -69,16 +70,15 @@ public class VariantStatisticsManager {
         ObjectWriter sourceWriter = jsonObjectMapper.writerWithType(VariantSourceStats.class);
 
         /** Variables for statistics **/
-        int batchSize = 1000;  // future optimization, threads, etc
-        boolean overwrite = false;
-        if(options != null) { //Parse query options
-            batchSize = options.getInt(BATCH_SIZE, batchSize);
-            overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
-        }
+        int batchSize = options.getInt(BATCH_SIZE, 1000); // future optimization, threads, etc
+        boolean overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, false);
         List<Variant> variantBatch = new ArrayList<>(batchSize);
         int retrievedVariants = 0;
-        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
-        VariantSourceStats variantSourceStats = new VariantSourceStats(variantSource.getFileId(), variantSource.getStudyId());
+        StudyConfiguration studyConfiguration = options.get(VariantStorageManager.STUDY_CONFIGURATION, StudyConfiguration.class);
+        String fileId = options.getString(VariantStorageManager.FILE_ID);   //TODO: Change to int value
+        String studyId = studyConfiguration.getStudyId()+"";                //TODO: Change to int value
+//        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
+        VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyId);
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
         boolean defaultCohortAbsent = false;
 
@@ -93,7 +93,7 @@ public class VariantStatisticsManager {
 //            variantBatch.add(filterSample(variant, samples));
 
             if (variantBatch.size() == batchSize) {
-                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
+                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyId, fileId, samples);
 
                 for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                     outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
@@ -105,7 +105,7 @@ public class VariantStatisticsManager {
                 // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
                 if (!defaultCohortAbsent) {
                     variantSourceStats.updateFileStats(variantBatch);
-                    variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
+                    variantSourceStats.updateSampleStats(variantBatch, null);  // TODO test
                 }
                 logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
                 variantBatch.clear();
@@ -113,7 +113,7 @@ public class VariantStatisticsManager {
         }
 
         if (variantBatch.size() != 0) {
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyId, fileId, samples);
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
                     if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
@@ -123,7 +123,7 @@ public class VariantStatisticsManager {
 
             if (!defaultCohortAbsent) {
                 variantSourceStats.updateFileStats(variantBatch);
-                variantSourceStats.updateSampleStats(variantBatch, variantSource.getPedigree());  // TODO test
+                variantSourceStats.updateSampleStats(variantBatch, null);  // TODO test
             }
             logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
             variantBatch.clear();
@@ -260,7 +260,6 @@ public class VariantStatisticsManager {
 //        if (sourceParser.nextToken() != null) {
         variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
 //        }
-        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // needed?
 
         // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource.getFileId()
         variantDBAdaptor.getVariantSourceDBAdaptor().updateSourceStats(variantSourceStats, options);
