@@ -16,6 +16,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 
@@ -26,13 +27,16 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     private static final Map<String, List> samplesInSources = new HashMap<>();
-    
+
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final DBObjectToVariantSourceConverter variantSourceConverter;
     private final String collectionName;
 
-    
+    private final Map<Integer, StudyConfiguration> studyConfigurationMap = new HashMap();
+    private final DBObjectToStudyConfigurationConverter studyConfigurationConverter = new DBObjectToStudyConfigurationConverter();
+
+
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
@@ -42,6 +46,31 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         this.collectionName = collectionName;
         variantSourceConverter = new DBObjectToVariantSourceConverter();
+    }
+
+    @Override
+    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
+        long start = System.currentTimeMillis();
+        StudyConfiguration studyConfiguration;
+        if (!studyConfigurationMap.containsKey(studyId)) {
+            MongoDBCollection coll = db.getCollection(collectionName);
+
+            BasicDBObject query = new BasicDBObject("studyId", studyId);
+            if (options.containsKey("fileId")) {
+                query.put(DBObjectToStudyConfigurationConverter.FIELD_FILE_IDS, options.getInt("fileId"));
+            }
+            QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, options);
+            if (queryResult.getResult().isEmpty()) {
+                studyConfiguration = null;
+            } else {
+                studyConfiguration = queryResult.first();
+            }
+            studyConfigurationMap.put(studyId, studyConfiguration);
+        } else {
+            studyConfiguration = studyConfigurationMap.get(studyId);
+        }
+
+        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, null, null, Collections.singletonList(studyConfiguration));
     }
 
     @Override
@@ -55,7 +84,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
-        
+
         return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
@@ -65,7 +94,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         QueryBuilder qb = QueryBuilder.start();
         options.put("studyId", studyId);
         parseQueryOptions(options, qb);
-        
+
         return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
@@ -76,7 +105,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 //        getStudyIdFilter(studyIds, qb);
         options.put("studyId", studyIds);
         parseQueryOptions(options, qb);
-        
+
         return coll.find(qb.get(), null, variantSourceConverter, options);
     }
 
@@ -90,13 +119,13 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
                     return queryResult;
                 }
             }
-        } 
-        
+        }
+
         QueryResult queryResult = new QueryResult();
         populateSamplesQueryResult(fileId, queryResult);
         return queryResult;
     }
-    
+
     @Override
     public QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options) {
         if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
@@ -107,13 +136,13 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
                     return queryResult;
                 }
             }
-        } 
-        
+        }
+
         QueryResult queryResult = new QueryResult();
         populateSamplesQueryResult(fileIds, queryResult);
         return queryResult;
     }
-    
+
     @Override
     public QueryResult getSourceDownloadUrlByName(String filename) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -128,7 +157,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     public QueryResult getSourceDownloadUrlById(String fileId, String studyId) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public boolean close() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -169,10 +198,10 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 //    private QueryBuilder getStudyIdFilter(List<String> ids, QueryBuilder builder) {
 //        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).in(ids);
 //    }
-    
+
     /**
-     * Populates the dictionary relating sources and samples. 
-     * 
+     * Populates the dictionary relating sources and samples.
+     *
      * @return The QueryResult with information of how long the query took
      */
     private QueryResult populateSamplesInSources() {
@@ -180,17 +209,17 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
         QueryResult queryResult = coll.find((DBObject)null, projection, null);
-        
+
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
             String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
             DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
             samplesInSources.put(key, new ArrayList(value.toMap().keySet()));
         }
-        
+
         return queryResult;
     }
-    
+
     private void populateSamplesQueryResult(String fileId, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(1);
         List<String> samplesInSource = samplesInSources.get(fileId);
@@ -207,7 +236,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     private void populateSamplesQueryResult(List<String> fileIds, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(fileIds.size());
-        
+
         for (String fileId : fileIds) {
             List<String> samplesInSource = samplesInSources.get(fileId);
 
@@ -226,7 +255,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 //                queryResult.setNumTotalResults(1);
             }
         }
-        
+
         queryResult.setResult(samples);
         queryResult.setNumTotalResults(fileIds.size());
     }
