@@ -324,8 +324,11 @@ public class OptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         String outdir = "";
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        String fileId;
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
+        int fileId;
+
+        @Parameter(names = {"--study-information-file"}, description = "File with the study information", required = false, arity = 1)
+        String studyInformationFile;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials = "";
@@ -341,10 +344,10 @@ public class OptionsParser {
     class CommandIndexVariants extends CommandIndex {
 
         @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
-        String study;
+        String studyName;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        String studyId;
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
+        int studyId;
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         String pedigree;
@@ -636,10 +639,10 @@ public class OptionsParser {
         boolean overwriteStats = false;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        String studyId;
+        int studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        String fileId;
+        int fileId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;

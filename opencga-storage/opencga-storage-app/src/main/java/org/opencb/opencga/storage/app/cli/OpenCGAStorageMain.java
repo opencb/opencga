@@ -21,6 +21,7 @@ import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
@@ -536,7 +537,7 @@ public class OpenCGAStorageMain {
         ObjectMap params = new ObjectMap();
         params.putAll(parser.getGeneralParameters().params);
 
-        if (c.fileId != null) {
+        if (c.fileId != 0) {
             params.put(AlignmentStorageManager.FILE_ID, c.fileId);
         }
         params.put(AlignmentStorageManager.PLAIN, false);
@@ -604,8 +605,22 @@ public class OpenCGAStorageMain {
         }
         assertDirectoryExists(outdirUri);
 
+//        VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
         String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
-        VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
+        StudyConfiguration studyConfiguration;
+        Path studyConfigurationPath;
+        if (c.studyInformationFile == null || c.studyInformationFile.isEmpty()) {
+            //Create a new StudyInformationFile
+            checkNull(c.studyId, "--study-id");
+            checkNull(c.studyName, "--study-name");
+            checkNull(c.fileId, "--file-id");
+            studyConfiguration = new StudyConfiguration(c.studyId, c.studyName, c.fileId, fileName);
+            studyConfigurationPath = Paths.get(outdirUri.getPath(), studyConfiguration.getStudyName() + ".study.json");
+            logger.info("Creating a new StudyConfiguration file: " + studyConfigurationPath);
+        } else {
+            studyConfigurationPath = Paths.get(c.studyInformationFile);
+            studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
+        }
 
         ObjectMap params = new ObjectMap();
 //        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
@@ -614,7 +629,9 @@ public class OpenCGAStorageMain {
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.INCLUDE_SRC, c.includeSrc);
         params.put(VariantStorageManager.COMPRESS_GENOTYPES, c.compressGenotypes);
-        params.put(VariantStorageManager.VARIANT_SOURCE, source);
+//        params.put(VariantStorageManager.VARIANT_SOURCE, source);
+        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        params.put(VariantStorageManager.AGGREGATED_TYPE, c.aggregated);
         params.put(VariantStorageManager.DB_NAME, c.dbName);
         params.put(VariantStorageManager.ANNOTATE, c.annotate);
         params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
@@ -671,6 +688,8 @@ public class OpenCGAStorageMain {
             nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
         }
 
+        studyConfiguration.write(studyConfigurationPath);
+
         if (load) {
             logger.info("-- PreLoad variants -- {}", nextFileUri);
             nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
@@ -679,6 +698,9 @@ public class OpenCGAStorageMain {
             logger.info("-- PostLoad variants -- {}", nextFileUri);
             nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
         }
+
+        studyConfiguration.write(studyConfigurationPath);
+
     }
 
     private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, String fromAccession, Path outdir) throws IOException {
@@ -796,8 +818,8 @@ public class OpenCGAStorageMain {
          * query options
          */
         QueryOptions queryOptions = new QueryOptions();
-        VariantSource variantSource = new VariantSource(null, c.fileId, c.studyId, null);
-        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
+//        VariantSource variantSource = new VariantSource(null, c.fileId, c.studyId, null);
+//        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
         queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
 
@@ -824,7 +846,7 @@ public class OpenCGAStorageMain {
          */
         URI outputUri = new URI(c.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(variantSource)
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(c.studyId, c.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
         assertDirectoryExists(directoryUri);
         VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();

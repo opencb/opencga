@@ -8,7 +8,6 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
-import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -45,20 +44,29 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)
     public static final String INCLUDE_SRC = "includeSrc";                  //Include original source file on the transformed file and the final db
     public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
+    @Deprecated public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
+    public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
+    public static final String AGGREGATED_TYPE = "aggregatedType";
+    public static final String FILE_ID = "fileId";
+    public static final String COMPRESS_METHOD = "compressMethod";
+
     public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
     public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
-    public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
+
     public static final String DB_NAME = "dbName";
-
     public static final String SPECIES = "species";
-    public static final String ASSEMBLY = "assembly";
 
+    public static final String ASSEMBLY = "assembly";
     public static final String ANNOTATE = "annotate";
     public static final String ANNOTATION_SOURCE = "annotationSource";
     public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
-    public static final String BATCH_SIZE = "batchSize";
 
+    public static final String BATCH_SIZE = "batchSize";
+    public static final String TRANSFORM_THREADS = "transformThreads";
+    public static final String LOAD_THREADS = "loadThreads";
+    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_THREADS      = "OPENCGA.STORAGE.VARIANT.TRANSFORM.THREADS";
+    public static final String OPENCGA_STORAGE_VARIANT_LOAD_THREADS           = "OPENCGA.STORAGE.VARIANT.LOAD.THREADS";
     public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE   = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
     public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SRC            = "OPENCGA.STORAGE.VARIANT.INCLUDE_SRC";
     public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
@@ -115,25 +123,37 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
 
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
-//        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
         boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
         boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
 
-        VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
-        //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
+        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+//        VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
+        VariantSource.Aggregation aggregation = params.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
+        String fileName = input.getFileName().toString();
+        VariantSource source = new VariantSource(
+                fileName,
+                studyConfiguration.getFileIds().get(fileName).toString(),
+                Integer.toString(studyConfiguration.getStudyId()),
+                studyConfiguration.getStudyName(), null, aggregation);
 
         int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100")));
-        String extension = params.getString("compressExtension", "snappy");
-        int numTasks = params.getInt("transformThreads", 8);
-        int capacity = params.getInt("blockingQueueCapacity", numTasks*2);
+        String compression = params.getString(COMPRESS_METHOD, "snappy");
+        String extension = "";
+        int numThreads = params.getInt(VariantStorageManager.TRANSFORM_THREADS, 8);
+        int capacity = params.getInt("blockingQueueCapacity", numThreads*2);
 
-        if (!extension.startsWith(".") && !extension.isEmpty()) {
-            extension = "." + extension;
+        if (compression.equalsIgnoreCase("gzip") || compression.equalsIgnoreCase("gz")) {
+            extension = ".gz";
+        } else if (compression.equalsIgnoreCase("snappy") || compression.equalsIgnoreCase("snz")) {
+            extension = ".snappy";
+        } else if (!compression.isEmpty()) {
+            throw new IllegalArgumentException("Unknown compression method " + compression);
         }
+
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory;
-        if (source.getFileName().endsWith(".vcf") || source.getFileName().endsWith(".vcf.gz")) {
-            switch (source.getAggregation()) {
+        if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
+            switch (aggregation) {
                 default:
                 case NONE:
                     factory = new VariantVcfFactory();
@@ -149,24 +169,18 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             throw new IOException("Variants input file format not supported");
         }
 
-        //Tasks
-        List<Task<Variant>> taskList = new SortedList<>();
-//        todo remove:
-//        if (includeStats) {
-//            taskList.add(new VariantStatsTask(reader, source));
-//        }
 
-        Path outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
-        Path outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
+        Path outputVariantJsonFile = output.resolve(fileName + ".variants.json" + extension);
+        Path outputFileJsonFile = output.resolve(fileName + ".file.json" + extension);
 
         logger.info("Transforming variants...");
         long start, end;
-        if (numTasks == 1) {
+        if (numThreads == 1) { //Run transformation with a SingleThread runner. The legacy way
             if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
-                outputVariantJsonFile = output.resolve(input.getFileName().toString() + ".variants.json" + extension);
-                outputFileJsonFile = output.resolve(input.getFileName().toString() + ".file.json" + extension);
+                outputVariantJsonFile = output.resolve(fileName + ".variants.json" + extension);
+                outputFileJsonFile = output.resolve(fileName + ".file.json" + extension);
             }
 
             //Ped Reader
@@ -187,7 +201,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
 
             //Runner
-            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, taskList, batchSize);
+            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, Collections.<Task<Variant>>emptyList(), batchSize);
 
             logger.info("Single thread transform...");
             start = System.currentTimeMillis();
@@ -210,7 +224,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                     dataWriter,
                     batchSize,
                     capacity,
-                    numTasks);
+                    numThreads);
 
             logger.info("Multi thread transform...");
             start = System.currentTimeMillis();
@@ -219,10 +233,49 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
+
+        /*
+         * Once the file has been transformed, the StudyConfiguration has to be updated with the new sample names.
+         */
+
+        //Find the grader sample Id in the studyConfiguration, in order to add more sampleIds if necessary.
+        int maxId = 0;
+        for (Integer i : studyConfiguration.getSampleIds().values()) {
+            if ( i > maxId ) {
+                maxId = i;
+            }
+        }
+        for (String sample : source.getSamples()) {
+            if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+                //If the sample was not in the original studyId, a new SampleId is assigned.
+
+                int sampleId;
+                int samplesSize = studyConfiguration.getSampleIds().size();
+                Integer samplePosition = source.getSamplesPosition().get(sample);
+                if (!studyConfiguration.getSampleIds().containsValue(samplePosition)) {
+                    //1- Use with the SamplePosition
+                    sampleId = samplePosition;
+                } else if (!studyConfiguration.getSampleIds().containsValue(samplesSize)) {
+                    //2- Use the number of samples in the StudyConfiguration.
+                    sampleId = samplesSize;
+                } else {
+                    //3- Use the maxId
+                    sampleId = maxId + 1;
+                }
+                studyConfiguration.getSampleIds().put(sample, sampleId);
+                if (sampleId > maxId) {
+                    maxId = sampleId;
+                }
+            }
+        }
+
         return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
     }
 
-    private VariantSource readVariantSource(Path input, VariantSource source) {
+    public static VariantSource readVariantSource(Path input, VariantSource source) {
+        if (source == null) {
+            source = new VariantSource("", "", "", "");
+        }
         VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
         reader.open();
         reader.pre();
@@ -257,7 +310,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         String dbName = params.getString(DB_NAME, null);
         String species = params.getString(SPECIES, "hsapiens");
         String assembly = params.getString(ASSEMBLY, "");
-        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
+        int fileId = params.getInt(FILE_ID);
+        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+//        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
         if (annotate) {
 
@@ -276,7 +331,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             if (!params.getBoolean(OVERWRITE_ANNOTATIONS, false)) {
                 annotationOptions.put(VariantDBAdaptor.ANNOTATION_EXISTS, false);
             }
-            annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(variantSource.getFileId()));    // annotate just the indexed variants
+            annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(fileId));    // annotate just the indexed variants
 
             annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
             annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
@@ -289,15 +344,15 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             // TODO add filters
             logger.debug("about to calculate stats");
             VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
-            URI statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(buildFilename(variantSource) + "." + TimeUtils.getTime()), null, new QueryOptions(params));
+            URI statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime()), null, new QueryOptions(params));
             variantStatisticsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
         return input;
     }
 
-    public static String buildFilename(VariantSource variantSource) {
-        return variantSource.getStudyId() + "_" + variantSource.getFileId();
+    public static String buildFilename(int studyId, int fileId) {
+        return studyId + "_" + fileId;
     }
 
 //    @Override

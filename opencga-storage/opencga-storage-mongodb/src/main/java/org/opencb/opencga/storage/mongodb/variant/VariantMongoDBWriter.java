@@ -1,13 +1,12 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.*;
 
-import java.net.UnknownHostException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.mortbay.util.ajax.JSON;
+import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -17,7 +16,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.storage.core.StudyInformation;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.slf4j.LoggerFactory;
@@ -60,6 +59,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private DBObjectToSamplesConverter sampleConverter;
 
     private long numVariantsWritten;
+    private static long staticNumVariantsWritten;
 
     private BulkWriteOperation bulk;
     private int currentBulkSize = 0;
@@ -68,44 +68,32 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long checkExistsTime = 0;
     private long checkExistsDBTime = 0;
     private long bulkTime = 0;
-    private StudyInformation study;
-    private Integer fileId;
+    private StudyConfiguration study;
+//    private Integer fileId;
+    private String fileId;
+    private boolean writeStudyInformation = true;
 
 
-    public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials) {
-        this(source, credentials, "variants", "files");
-    }
-
-    public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection) {
-        this(source, credentials, variantsCollection, filesCollection, false, false, false);
-    }
-
-    public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials, String variantsCollection, String filesCollection,
-                                boolean includeSamples, boolean includeStats, @Deprecated boolean includeEffect) {
-        this(source, null, credentials, variantsCollection, filesCollection, includeSamples, includeStats, includeEffect);
-    }
-
-    public VariantMongoDBWriter(final VariantSource source, StudyInformation study, MongoCredentials credentials, String variantsCollection, String filesCollection,
-                                boolean includeSamples, boolean includeStats, @Deprecated boolean includeEffect) {
+    public VariantMongoDBWriter(Integer fileId, StudyConfiguration study, MongoCredentials credentials, String variantsCollection, String filesCollection,
+                                boolean includeSamples, boolean includeStats) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
         this.study = study;
 //        this.source = source;
-        this.fileId = Integer.parseInt(source.getFileId());
+        this.fileId = String.valueOf(fileId);
         this.credentials = credentials;
         this.filesCollectionName = filesCollection;
         this.variantsCollectionName = variantsCollection;
 
         this.includeSamples = includeSamples;
         this.includeStats = includeStats;
-
-        numVariantsWritten = 0;
     }
 
     @Override
     public boolean open() {
-
+        staticNumVariantsWritten = 0;
+        numVariantsWritten = 0;
         mongoDataStoreManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().init()
                 .add("username", credentials.getUsername())
@@ -207,10 +195,17 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
     public boolean write_setOnInsert(List<Variant> data) {
-            numVariantsWritten += data.size();
-            if(numVariantsWritten % 1000 == 0) {
-                logger.info("Num variants written " + numVariantsWritten);
+//        numVariantsWritten += data.size();
+//        if(numVariantsWritten % 1000 == 0) {
+//            logger.info("Num variants written " + numVariantsWritten);
+//        }
+        synchronized (this) {
+            long l = staticNumVariantsWritten/1000;
+            staticNumVariantsWritten += data.size();
+            if (staticNumVariantsWritten/1000 != l) {
+                logger.info("Num variants written " + staticNumVariantsWritten);
             }
+        }
 
 
         for (Variant variant : data) {
@@ -235,7 +230,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                                             "$each",
                                             variant.getIds())));
                 }
-                System.out.println("update = " + update);
+//                System.out.println("update = " + update);
                 bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
                 currentBulkSize++;
             }
@@ -275,7 +270,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
     private boolean writeStudyInformation() {
-        DBObject studyMongo = (DBObject) JSON.parse(JSON.getDefault().toJSON(study));
+        DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(study);
+        //(DBObject) JSON.parse(new ObjectMapper().writeValueAsString(study).replace(".", "&#46;"));
 
         DBObject query = new BasicDBObject("studyId", study.getStudyId());
         filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
@@ -288,8 +284,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             executeBulk();
         }
         logger.info("POST");
-        writeStudyInformation();
-//        writeSourceSummary(source);
+        if (writeStudyInformation) {
+            writeStudyInformation();
+        }
+//        if (writeVariantSource) {
+//            writeSourceSummary(source);
+//        }
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
         logger.debug("bulkTime " + bulkTime / 1000000.0 + "ms ");
@@ -332,7 +332,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
-        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(compressDefaultGenotype, study.getSampleIds().inverse()): null; //TODO: Add default genotype
+        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(compressDefaultGenotype, study.getSampleIds()): null; //TODO: Add default genotype
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 includeSrc,
@@ -373,4 +373,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         currentBulkSize = 0;
     }
 
+    public void setWriteStudyInformation(boolean writeStudyInformation) {
+        this.writeStudyInformation = writeStudyInformation;
+    }
 }
