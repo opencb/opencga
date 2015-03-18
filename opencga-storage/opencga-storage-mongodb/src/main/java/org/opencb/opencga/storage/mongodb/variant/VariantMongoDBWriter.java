@@ -269,7 +269,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                                             "$each",
                                             variant.getIds())));
                 }
-                System.out.println("update = " + update);
+//                System.out.println("update = " + update);
                 bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
                 currentBulkSize++;
             }

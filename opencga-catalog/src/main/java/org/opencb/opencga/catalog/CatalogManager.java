@@ -2148,13 +2148,13 @@ public class CatalogManager implements ICatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
 
-        User.Role role = getUserRole(userId);
-        switch (role) {
-            case ADMIN:
+//        User.Role role = getUserRole(userId);
+//        switch (role) {
+//            case ADMIN:
                 return catalogDBAdaptor.modifyJob(jobId, parameters);
-            default:
-                throw new CatalogException("Permission denied. Admin role required");
-        }
+//            default:
+//                throw new CatalogException("Permission denied. Admin role required");
+//        }
     }
 
 //    public DataInputStream getGrepFileFromJob(String userId, String jobId, String filename, String pattern, boolean ignoreCase, boolean multi, String sessionId)

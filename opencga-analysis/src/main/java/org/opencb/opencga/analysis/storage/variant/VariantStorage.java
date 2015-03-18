@@ -1,8 +1,9 @@
 package org.opencb.opencga.analysis.storage.variant;
 
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -10,9 +11,6 @@ import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.lib.common.TimeUtils;
-import org.opencb.opencga.lib.exec.Command;
-import org.opencb.opencga.lib.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +24,6 @@ import java.util.*;
 public class VariantStorage {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantStorage.class);
-    public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
 
     final CatalogManager catalogManager;
 
@@ -35,18 +32,20 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(int indexFileId, List<Integer> cohortIds, String sessionId, QueryOptions options) throws CatalogException {
+    public QueryResult<Job> calculateStats(int indexFileId, List<Integer> cohortIds, String sessionId, QueryOptions options)
+            throws AnalysisExecutionException, CatalogException {
         if (options == null) {
             options = new QueryOptions();
         }
         final boolean execute = options.getBoolean("execute");
         final boolean simulate = options.getBoolean("simulate");
+        final boolean recordOutput = options.getBoolean("recordOutput");
         final long start = System.currentTimeMillis();
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
         int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
         if (indexFile.getType() != File.Type.INDEX || indexFile.getBioformat() != File.Bioformat.VARIANT) {
-            throw new CatalogException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
+            throw new AnalysisExecutionException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
                     "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
         }
 
@@ -62,8 +61,7 @@ public class VariantStorage {
             outputFileName.append(cohort.getName());
         }
 
-        int outDirId = catalogManager.getFileParent(indexFileId, null, sessionId).first().getId();
-
+        File outDir = catalogManager.getFileParent(indexFileId, null, sessionId).first();
 
         /** Create temporal Job Outdir **/
         final String randomString = "I_" + StringUtils.randomString(10);
@@ -75,7 +73,7 @@ public class VariantStorage {
         }
 
         /** create command line **/
-        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
+        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
 
         Object dbName = indexFile.getAttributes().get(AnalysisFileIndexer.DB_NAME);
         StringBuilder sb = new StringBuilder()
@@ -96,57 +94,45 @@ public class VariantStorage {
                 sb.append(sample.getName()).append(",");
             }
         }
+        if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
+            for (Map.Entry<String, Object> entry : options.getMap(AnalysisFileIndexer.PARAMETERS).entrySet()) {
+                sb.append(" ");
+                sb.append(entry.getKey());
+                if (entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
+                    sb.append(" ");
+                    sb.append(entry.getValue());
+                }
+            }
+        }
 
         String commandLine = sb.toString();
         logger.debug("CommandLine to calculate stats {}" + commandLine);
 
-        String jobDescription = "Stats calculation for cohort " + cohortIds;
+        /** create job **/
         String jobName = "calculate-stats";
-        final QueryResult<Job> jobQueryResult;
-        if (simulate) {
-            jobQueryResult = new QueryResult<Job>("simulatedStatsVariant", (int)(System.currentTimeMillis()-start), 1, 1, "", "", Collections.singletonList(
-                    new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), OPENCGA_STORAGE_BIN_NAME,
-                            TimeUtils.getTime(), jobDescription, start, System.currentTimeMillis(), "", commandLine, -1,
-                            Job.Status.DONE, -1, outDirId, temporalOutDirUri, Collections.<Integer>emptyList(), Collections.<Integer>emptyList(),
-                            null, null, null)));
-        } else {
-            if (execute) {
-
-//            URI out = temporalOutDirUri.resolve("job_out." + job.getId() + ".log");
-//            URI err = temporalOutDirUri.resolve("job_err." + job.getId() + ".log");
-
-                Command com = new Command(commandLine);
-                SingleProcess sp = new SingleProcess(com);
-                sp.getRunnableProcess().run();
-                jobQueryResult = catalogManager.createJob(studyId, jobName, OPENCGA_STORAGE_BIN_NAME, jobDescription, commandLine, temporalOutDirUri,
-                        outDirId, Collections.<Integer>emptyList(), null, Job.Status.DONE, null, sessionId);
-
-            } else {
-                ObjectMap jobResourceManagerAttributes = new ObjectMap(Job.JOB_SCHEDULER_NAME, randomString);
-                jobQueryResult = catalogManager.createJob(studyId, jobName, OPENCGA_STORAGE_BIN_NAME, jobDescription, commandLine, temporalOutDirUri,
-                        outDirId, Collections.<Integer>emptyList(), jobResourceManagerAttributes, options, sessionId);
-            }
-        }
-
-        return jobQueryResult;
+        String jobDescription = "Stats calculation for cohort " + cohortIds;
+        return AnalysisJobExecuter.createJob(catalogManager, studyId, jobName,
+                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, new HashMap<String, Object>());
     }
 
-    public QueryResult<Job> annotateVariants(int indexFileId, String sessionId, QueryOptions options) throws CatalogException {
+    public QueryResult<Job> annotateVariants(int indexFileId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
         }
         final boolean execute = options.getBoolean("execute");
         final boolean simulate = options.getBoolean("simulate");
+        final boolean recordOutput = options.getBoolean("recordOutput");
         final long start = System.currentTimeMillis();
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
         int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
         if (indexFile.getType() != File.Type.INDEX || indexFile.getBioformat() != File.Bioformat.VARIANT) {
-            throw new CatalogException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
+            throw new AnalysisExecutionException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
                     "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
         }
 
-        int outDirId = catalogManager.getFileParent(indexFileId, null, sessionId).first().getId();
+        File outDir = catalogManager.getFileParent(indexFileId, null, sessionId).first();
 
 
         /** Create temporal Job Outdir **/
@@ -159,7 +145,7 @@ public class VariantStorage {
         }
 
         /** create command line **/
-        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
+        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)
@@ -176,42 +162,25 @@ public class VariantStorage {
                         .append(entry.getValue());
             }
         }
-
-
+        if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
+            for (Map.Entry<String, Object> entry : options.getMap(AnalysisFileIndexer.PARAMETERS).entrySet()) {
+                sb.append(" ");
+                sb.append(entry.getKey());
+                if (entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
+                    sb.append(" ");
+                    sb.append(entry.getValue());
+                }
+            }
+        }
         String commandLine = sb.toString();
         logger.debug("CommandLine to annotate variants {}" + commandLine);
 
+        /** create job **/
         String jobDescription = "Variant annotation";
         String jobName = "annotate-stats";
-        QueryResult<Job> jobQueryResult;
-        if (simulate) {
-            logger.info("CommandLine to annotate variants {}" + commandLine);
-            return new QueryResult<>("simulateJob", (int)(System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), OPENCGA_STORAGE_BIN_NAME,
-                            jobDescription, commandLine, start, System.currentTimeMillis(), null, commandLine, -1,
-                            Job.Status.DONE, -1, outDirId, temporalOutDirUri, Collections.<Integer>emptyList(), Collections.<Integer>emptyList(),
-                            Collections.<String>emptyList(), null, null)));
-        } else {
-            Map<String, Object> resourceManagerAttributes = new HashMap<>();
-            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-            if (execute) {
-
-//              URI out = temporalOutDirUri.resolve("job_out." + job.getId() + ".log");
-//              URI err = temporalOutDirUri.resolve("job_err." + job.getId() + ".log");
-
-                Command com = new Command(commandLine);
-                SingleProcess sp = new SingleProcess(com);
-                sp.getRunnableProcess().run();
-                jobQueryResult = catalogManager.createJob(studyId, jobName, OPENCGA_STORAGE_BIN_NAME, jobDescription, commandLine, temporalOutDirUri,
-                        outDirId, Collections.<Integer>emptyList(), resourceManagerAttributes, Job.Status.DONE, null, sessionId);
-
-            } else {
-                jobQueryResult = catalogManager.createJob(studyId, jobName, OPENCGA_STORAGE_BIN_NAME, jobDescription, commandLine, temporalOutDirUri,
-                        outDirId, Collections.<Integer>emptyList(), null, options, sessionId);
-            }
-            return jobQueryResult;
-        }
-
+        return AnalysisJobExecuter.createJob(catalogManager, studyId, jobName,
+                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, new HashMap<String, Object>());
     }
 
 }

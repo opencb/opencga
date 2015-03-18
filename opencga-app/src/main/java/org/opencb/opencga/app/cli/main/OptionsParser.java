@@ -549,7 +549,7 @@ public class OptionsParser {
             String outdir = "";
 
             @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
-            Map<String, String> parameters;
+            Map<String, String> parameters = new HashMap<>();
 
         }
 
@@ -568,7 +568,7 @@ public class OptionsParser {
             List<Integer> cohortIds;
 
             @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
-            Map<String, String> parameters;
+            Map<String, String> parameters = new HashMap<>();
         }
 
         @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
@@ -583,7 +583,7 @@ public class OptionsParser {
             String id;
 
             @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
-            Map<String, String> parameters;
+            Map<String, String> parameters = new HashMap<>();
         }
     }
 

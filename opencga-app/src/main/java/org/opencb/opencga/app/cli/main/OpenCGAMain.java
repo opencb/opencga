@@ -329,7 +329,9 @@ public class OpenCGAMain {
                             outdirId  = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
                         }
                         String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
-                        QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
+                        QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
                         break;
@@ -343,7 +345,9 @@ public class OpenCGAMain {
 //                        int outdirId = catalogManager.getFileId(c.outdir);
 //                        String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
 //                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
-                        variantStorage.calculateStats(fileId, c.cohortIds, sessionId, c.cOpt.getQueryOptions());
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
+                        variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions);
 //                        System.out.println(index);
 
                         break;
@@ -354,7 +358,7 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add("parameters", c.parameters);
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
                         variantStorage.annotateVariants(fileId, sessionId, queryOptions);
 
                         break;
@@ -578,9 +582,21 @@ public class OpenCGAMain {
                 if (!list.isEmpty()) {
                     try {
                         Iterator iterator = list.iterator();
-                        sb.append(getId(iterator.next()));
+
+                        Object next = iterator.next();
+                        if (next instanceof QueryResult) {
+                            createOutput(commonOptions, (QueryResult) next, sb);
+                        } else {
+                            sb.append(getId(next));
+                        }
                         while (iterator.hasNext()) {
-                            sb.append(idSeparator).append(getId(iterator.next()));
+                            next = iterator.next();
+                            if (next instanceof QueryResult) {
+                                sb.append(idSeparator);
+                                createOutput(commonOptions, (QueryResult) next, sb);
+                            } else {
+                                sb.append(idSeparator).append(getId(next));
+                            }
                         }
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                         e.printStackTrace();
@@ -593,10 +609,19 @@ public class OpenCGAMain {
                     try {
                         Iterator iterator = list.iterator();
                         Object object = iterator.next();
-                        sb.append(getName(object)).append(":").append(getId(object));
+                        if (object instanceof QueryResult) {
+                            createOutput(commonOptions, (QueryResult) object, sb);
+                        } else {
+                            sb.append(getName(object)).append(":").append(getId(object));
+                        }
                         while (iterator.hasNext()) {
                             object = iterator.next();
-                            sb.append(",").append(getName(object)).append(":").append(getId(object));
+                            if (object instanceof QueryResult) {
+                                sb.append(",");
+                                createOutput(commonOptions, (QueryResult) object, sb);
+                            } else {
+                                sb.append(",").append(getName(object)).append(":").append(getId(object));
+                            }
                         }
                     } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
                         e.printStackTrace();

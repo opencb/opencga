@@ -1,13 +1,11 @@
 package org.opencb.opencga.analysis.storage;
 
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
@@ -25,7 +23,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
@@ -59,6 +56,8 @@ public class AnalysisFileIndexer {
     public static final String STORAGE_ENGINE = "storageEngine";
 
     public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
+    public static final String PARAMETERS = "parameters";
+    public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -79,13 +78,14 @@ public class AnalysisFileIndexer {
         }
         final boolean execute = options.getBoolean("execute");
         final boolean simulate = options.getBoolean("simulate");
+        final boolean recordOutput = options.getBoolean("recordOutput");
         final long start = System.currentTimeMillis();
 
 
         /** Query catalog for user data. **/
         String userId = catalogManager.getUserIdBySessionId(sessionId);
         File file = catalogManager.getFile(fileId, sessionId).first();
-        File outdir = catalogManager.getFile(outDirId, sessionId).first();
+        File outDir = catalogManager.getFile(outDirId, sessionId).first();
         int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
         Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
 
@@ -116,13 +116,13 @@ public class AnalysisFileIndexer {
         /** Create index file**/
         String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
         String indexedFileName = file.getName() + "." + storageEngine;
-        String indexedFilePath = Paths.get(outdir.getPath(), indexedFileName).toString();
+        String indexedFilePath = Paths.get(outDir.getPath(), indexedFileName).toString();
 
         final File index;
         if (simulate) {
             index = new File(-10, indexedFileName, File.Type.INDEX, file.getFormat(), file.getBioformat(),
                     indexedFilePath, userId, TimeUtils.getTime(), indexedFileDescription, File.Status.INDEXING, -1, -1,
-                    null, -1, null, null, null);
+                    null, -1, null, null, new HashMap<String, Object>());
         } else {
             index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
                     file.getBioformat(), indexedFilePath, null, null,
@@ -133,39 +133,44 @@ public class AnalysisFileIndexer {
         /** Create commandLine **/
         String commandLine = createCommandLine(study, file, index, sampleList, storageEngine,
                 temporalOutDirUri, indexFileModifyParams, dbName, options);
-
+        if (options.containsKey(PARAMETERS) && options.getMap(PARAMETERS) != null) {
+            for (Map.Entry<String, Object> entry : options.getMap(PARAMETERS).entrySet()) {
+                commandLine += " " + entry.getKey() + " " + entry.getValue();
+            }
+        }
 
         /** Create job **/
-        final Job job;
+        ObjectMap jobResourceManagerAttributes = new ObjectMap();
+        jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
+        jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
+
+        String jobName = "index";
+        String jobDescription = "Indexing file " + file.getName() + " (" + fileId + ")";
+        final Job job = AnalysisJobExecuter.createJob(catalogManager, studyIdByOutDirId, jobName,
+                OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, jobResourceManagerAttributes).first();
+
         if (simulate) {
-            logger.info("CommandLine to annotate variants {}" + commandLine);
-            return new QueryResult<>("simulatedIndexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(index));
+            index.getAttributes().put("job", job);
+//            index.getAttributes().putAll(indexFileModifyParams.getMap("attributes"));
+            index.setSampleIds(indexFileModifyParams.getAsIntegerList("sampleIds"));
+//            VariantSource variantSource = (VariantSource) index.getAttributes().get("variantSource");
+//            for (Map.Entry<String, Integer> entry : variantSource.getSamplesPosition().entrySet()) {
+//                System.out.println("entry.getKey() = " + entry.getKey());
+//                System.out.println("entry.getValue() = " + entry.getValue());
+//            }
+//            for (String s : variantSource.getSamples()) {
+//                System.out.println("sample = " + s);
+//            }
+//            variantSource.setSamplesPosition(new HashMap<String, Integer>());
+            return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(index));
         } else {
-            ObjectMap jobResourceManagerAttributes = new ObjectMap();
-            jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-            jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
-            jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
-            if (execute) { //Execute and create
-                Command com = new Command(commandLine);
-                SingleProcess sp = new SingleProcess(com);
-                sp.getRunnableProcess().run();
-
-                job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
-                        "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                        jobResourceManagerAttributes, Job.Status.DONE, null, sessionId).first();
-
-            } else {
-                job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
-                        "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                        jobResourceManagerAttributes, null, sessionId).first();
-
-            }
-
             /** Update IndexFile to add extra information (jobId, sampleIds, attributes, ...) **/
             indexFileModifyParams.put("jobId", job.getId());
             catalogManager.modifyFile(index.getId(), indexFileModifyParams, sessionId).getResult();
 
-            return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", catalogManager.getFile(index.getId(), sessionId).getResult());
+            return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "",
+                    catalogManager.getFile(index.getId(), sessionId).getResult());
         }
     }
 
@@ -194,7 +199,7 @@ public class AnalysisFileIndexer {
         String commandLine;
         ObjectMap indexAttributes = indexFileModifyParams.get("attributes", ObjectMap.class);
 
-        String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", "opencga-storage.sh").toString();
+        String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
 
         if(file.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
@@ -287,7 +292,8 @@ public class AnalysisFileIndexer {
                 }
                 break;
                 default:
-                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
+                    return new LinkedList<>();
+//                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
             }
 
             //Find matching samples in catalog with the sampleName from the VariantSource.
