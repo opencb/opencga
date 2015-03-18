@@ -508,7 +508,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
                         , ids, builder, QueryOperation.OR);
 
-                addQueryListFilter(DBObjectToVariantConverter.ID_FIELD
+                addQueryListFilter(DBObjectToVariantConverter.IDS_FIELD
                         , ids, builder, QueryOperation.OR);
             }
 

@@ -25,8 +25,8 @@ public class DBObjectToVariantSourceConverterTest {
     @BeforeClass
     public static void setUpClass() {
         source = new VariantSource("file.vcf", "f", "s1", "study1");
-        source.getSamplesPosition().put("NA000", 0);
-        source.getSamplesPosition().put("NA001", 1);
+        source.getSamplesPosition().put("NA000.A", 0);
+        source.getSamplesPosition().put("NA001.B", 1);
         source.getSamplesPosition().put("NA002", 2);
         source.getSamplesPosition().put("NA003", 3);
         source.addMetadata("header", "##fileformat=v4.1");
@@ -39,7 +39,12 @@ public class DBObjectToVariantSourceConverterTest {
                 .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, source.getStudyName())
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, source.getStudyId())
                 .append(DBObjectToVariantSourceConverter.DATE_FIELD, Calendar.getInstance().getTime())
-                .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, source.getSamplesPosition());
+                .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, new BasicDBObject()
+                        .append("NA000" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "A", 0)
+                        .append("NA001" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "B", 1)
+                        .append("NA002", 2)
+                        .append("NA003", 3)
+                );
         // TODO Pending how to manage the consequence type ranking (calculate during reading?)
         
         DBObject mongoStats = new BasicDBObject(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD, global.getSamplesCount())
