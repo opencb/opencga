@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.exec.Command;
 import org.opencb.opencga.lib.exec.SingleProcess;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -70,12 +71,16 @@ public class AnalysisFileIndexer {
         this.catalogManager = catalogManager;
     }
 
-    public File index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
+    public QueryResult<File> index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
             throws IOException, CatalogException, AnalysisExecutionException {
 
         if (options == null) {
             options = new QueryOptions();
         }
+        final boolean execute = options.getBoolean("execute");
+        final boolean simulate = options.getBoolean("simulate");
+        final long start = System.currentTimeMillis();
+
 
         /** Query catalog for user data. **/
         String userId = catalogManager.getUserIdBySessionId(sessionId);
@@ -84,7 +89,12 @@ public class AnalysisFileIndexer {
         int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
         Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
 
-        String dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId;
+        final String dbName;
+        if (options.containsKey(DB_NAME)) {
+            dbName = options.getString(DB_NAME);
+        } else {
+            dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId;
+        }
 
         //TODO: Check if file can be indexed
 
@@ -95,17 +105,30 @@ public class AnalysisFileIndexer {
         List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, sessionId);
 
         /** Create temporal Job Outdir **/
-        String randomString = "I_" + StringUtils.randomString(10);
-        URI temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
+        final URI temporalOutDirUri;
+        final String randomString = "I_" + StringUtils.randomString(10);
+        if (simulate) {
+            temporalOutDirUri = createSimulatedOutDirUri(randomString);
+        } else {
+            temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
+        }
 
         /** Create index file**/
         String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
-        String indexedFilePath = Paths.get(outdir.getPath(), file.getName()).toString() + "." + storageEngine;
+        String indexedFileName = file.getName() + "." + storageEngine;
+        String indexedFilePath = Paths.get(outdir.getPath(), indexedFileName).toString();
 
-        File index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
-                file.getBioformat(), indexedFilePath, null, null,
-                indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
-                null, false, null, sessionId).first();
+        final File index;
+        if (simulate) {
+            index = new File(-10, indexedFileName, File.Type.INDEX, file.getFormat(), file.getBioformat(),
+                    indexedFilePath, userId, TimeUtils.getTime(), indexedFileDescription, File.Status.INDEXING, -1, -1,
+                    null, -1, null, null, null);
+        } else {
+            index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
+                    file.getBioformat(), indexedFilePath, null, null,
+                    indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
+                    null, false, null, sessionId).first();
+        }
 
         /** Create commandLine **/
         String commandLine = createCommandLine(study, file, index, sampleList, storageEngine,
@@ -113,33 +136,37 @@ public class AnalysisFileIndexer {
 
 
         /** Create job **/
-        ObjectMap jobResourceManagerAttributes = new ObjectMap();
-        jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-        jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
-        jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
-
-        Job job;
-        if (options.getBoolean("execute")) { //Execute and create
-            Command com = new Command(commandLine);
-            SingleProcess sp = new SingleProcess(com);
-            sp.getRunnableProcess().run();
-
-            job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
-                    "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                    jobResourceManagerAttributes, Job.Status.DONE, null, sessionId).first();
-
+        final Job job;
+        if (simulate) {
+            logger.info("CommandLine to annotate variants {}" + commandLine);
+            return new QueryResult<>("simulatedIndexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(index));
         } else {
-            job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
-                    "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
-                    jobResourceManagerAttributes, null, sessionId).first();
+            ObjectMap jobResourceManagerAttributes = new ObjectMap();
+            jobResourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
+            jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
+            jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, index.getId());
+            if (execute) { //Execute and create
+                Command com = new Command(commandLine);
+                SingleProcess sp = new SingleProcess(com);
+                sp.getRunnableProcess().run();
 
+                job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
+                        "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
+                        jobResourceManagerAttributes, Job.Status.DONE, null, sessionId).first();
+
+            } else {
+                job = catalogManager.createJob(studyIdByOutDirId, "Indexing file " + file.getName() + " (" + fileId + ")",
+                        "opencga-storage.sh", "", commandLine, temporalOutDirUri, outDirId, Arrays.asList(fileId),
+                        jobResourceManagerAttributes, null, sessionId).first();
+
+            }
+
+            /** Update IndexFile to add extra information (jobId, sampleIds, attributes, ...) **/
+            indexFileModifyParams.put("jobId", job.getId());
+            catalogManager.modifyFile(index.getId(), indexFileModifyParams, sessionId).getResult();
+
+            return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", catalogManager.getFile(index.getId(), sessionId).getResult());
         }
-
-        /** Update IndexFile to add extra information (jobId, sampleIds, attributes, ...) **/
-        indexFileModifyParams.put("jobId", job.getId());
-        catalogManager.modifyFile(index.getId(), indexFileModifyParams, sessionId).getResult();
-
-        return catalogManager.getFile(index.getId(), sessionId).first();
     }
 
     /**
@@ -297,5 +324,13 @@ public class AnalysisFileIndexer {
         VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
         URI fileUri = catalogManager.getFileUri(file);
         return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+    }
+
+    public static URI createSimulatedOutDirUri() {
+        return createSimulatedOutDirUri("J_" + StringUtils.randomString(10));
+    }
+
+    public static URI createSimulatedOutDirUri(String randomString) {
+        return Paths.get("/tmp","simulatedJobOutdir" , randomString).toUri();
     }
 }

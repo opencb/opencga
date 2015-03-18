@@ -548,6 +548,9 @@ public class OptionsParser {
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
 
+            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
+            Map<String, String> parameters;
+
         }
 
         @Parameters(commandNames = {"stats-variants"}, commandDescription = "Calculate variant stats for a set of cohorts.")
@@ -563,6 +566,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = false, arity = 1)
             List<Integer> cohortIds;
+
+            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
+            Map<String, String> parameters;
         }
 
         @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
@@ -576,7 +582,7 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter")
+            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
             Map<String, String> parameters;
         }
     }

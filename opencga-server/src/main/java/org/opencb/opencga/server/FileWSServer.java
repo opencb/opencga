@@ -567,7 +567,7 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
 
-        File index;
+        QueryResult<File> queryResult;
         try {
             if (storageEngine.isEmpty()) {
                 storageEngine = StorageManagerFactory.getDefaultStorageManagerName();
@@ -576,16 +576,15 @@ public class FileWSServer extends OpenCGAWSServer {
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId = catalogManager.getFileId(fileIdStr);
             if(outDirId < 0) {
-                QueryResult<File> queryResult = catalogManager.getFileParent(fileId, null, sessionId);
-                outDirId = queryResult.getResult().get(0).getId();
+                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            index = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
+            queryResult = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
 
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-        return createOkResponse(index);
+        return createOkResponse(queryResult);
     }
 
 //    @GET

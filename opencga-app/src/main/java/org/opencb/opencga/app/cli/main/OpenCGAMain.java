@@ -329,8 +329,8 @@ public class OpenCGAMain {
                             outdirId  = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
                         }
                         String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
-                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
-                        System.out.println(createOutput(c.cOpt, index, null));
+                        QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
+                        System.out.println(createOutput(c.cOpt, queryResult, null));
 
                         break;
                     }
