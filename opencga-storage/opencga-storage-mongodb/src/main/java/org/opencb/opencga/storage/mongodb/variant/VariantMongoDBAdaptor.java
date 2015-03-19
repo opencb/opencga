@@ -452,20 +452,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
-            VariantStats variantStats = null;
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
-            List<DBObject> cohortsStats = new LinkedList<>();
-            for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
-                variantStats = variantStatsEntry.getValue();
-                DBObject variantStatsDBObject = statsConverter.convertToStorageType(variantStats);
-                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, variantStatsEntry.getKey());
-                cohortsStats.add(variantStatsDBObject);
-            }
-            if (variantStats != null) {
+            Iterator<VariantStats> iterator = cohortStats.values().iterator();
+            VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
+            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats);
+            
+            if (!cohorts.isEmpty()) {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
-
-
+                
                 DBObject find = new BasicDBObject("_id", id)
                         .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
                                 , variantSource.getStudyId())
@@ -474,7 +469,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
                 DBObject update = new BasicDBObject("$set", new BasicDBObject(
                         DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
-                        , cohortsStats));
+                        , cohorts));
 
                 builder.find(find).updateOne(update);
             }
