@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -642,6 +643,16 @@ public class OpenCGAStorageMain {
                 );
             }
             params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
+        }
+        
+        if (c.aggregationMappingFile != null) {
+            Properties aggregationMappingProperties = new Properties();
+            try {
+                aggregationMappingProperties.load(new FileInputStream(c.aggregationMappingFile));
+                params.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+            } catch (FileNotFoundException e) {
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", c.aggregationMappingFile);
+            }
         }
 
         params.putAll(c.params);

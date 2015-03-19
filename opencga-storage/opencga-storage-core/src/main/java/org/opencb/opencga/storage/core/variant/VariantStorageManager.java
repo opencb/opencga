@@ -49,6 +49,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
     public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
     public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
+    public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
     public static final String DB_NAME = "dbName";
 
     public static final String SPECIES = "species";
@@ -142,7 +143,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                     factory = new VariantAggregatedVcfFactory();
                     break;
                 case EVS:
-                    factory = new VariantVcfEVSFactory();
+                    factory = new VariantVcfEVSFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
                     break;
             }
         } else {
