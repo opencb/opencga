@@ -39,11 +39,12 @@ public class Job {
     private Map<String, Object> resourceManagerAttributes;
 
     public enum Status {
-       PREPARED, //= "prepared";
+       PREPARED, //= "prepared"; //Job is ready to be executed. Daemon will enqueue it.
        ERROR, //= "error";     //Job finished with errors
        QUEUED, //= "queued";
        RUNNING, //= "running";
-       DONE, //= "done";       //Job finished, but output not ready
+       DONE, //= "done";       //Job finished, but output not ready. Daemon will process the output.
+       PROCESSING_OUTPUT,       //Job finished, but output not ready. Daemon will process the output.
        READY, //= "ready";     //Job finished and ready
     }
 
@@ -101,10 +102,16 @@ public class Job {
         this.tags = tags;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
-
+        if (this.resourceManagerAttributes == null) {
+            this.resourceManagerAttributes = new HashMap<>();
+        }
         //Initializing attributes maps.
-        this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
-        this.resourceManagerAttributes.put(Job.TYPE, Type.ANALYSIS);
+        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
+            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
+        }
+        if (!this.resourceManagerAttributes.containsKey(Job.TYPE)) {
+            this.resourceManagerAttributes.put(Job.TYPE, Type.ANALYSIS);
+        }
     }
 
     @Override

@@ -1,10 +1,14 @@
 package org.opencb.opencga.storage.app.service.rest;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+import java.io.IOException;
 
 /**
  * Created by jacobo on 23/10/14.
@@ -13,8 +17,8 @@ import javax.ws.rs.core.Response;
 @Path("/test")
 public class TestServlet extends DaemonServlet {
 
-    public TestServlet() {
-        super();
+    public TestServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+        super(version, uriInfo, httpServletRequest);
         System.out.println("Build TestServlet");
     }
 

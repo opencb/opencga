@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
@@ -192,7 +193,7 @@ public abstract class VariantStorageManagerTest {
     }
 
     protected static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap params)
-            throws IOException, FileFormatException {
+            throws IOException, FileFormatException, StorageManagerException {
         return runETL(variantStorageManager, params, true, true, true);
     }
 
@@ -200,12 +201,12 @@ public abstract class VariantStorageManagerTest {
                                     boolean doExtract,
                                     boolean doTransform,
                                     boolean doLoad)
-            throws IOException, FileFormatException {
+            throws IOException, FileFormatException, StorageManagerException {
         return runETL(variantStorageManager, inputUri, outputUri, params, params, params, params, params, params, params, doExtract, doTransform, doLoad);
     }
 
     public static ETLResult runDefaultETL(VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
-            throws URISyntaxException, IOException, FileFormatException {
+            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
         ObjectMap extractParams = new ObjectMap();
 
@@ -232,7 +233,7 @@ public abstract class VariantStorageManagerTest {
                                       boolean doExtract,
                                       boolean doTransform,
                                       boolean doLoad)
-            throws IOException, FileFormatException {
+            throws IOException, FileFormatException, StorageManagerException {
         ETLResult etlResult = new ETLResult();
 
         if (doExtract) {

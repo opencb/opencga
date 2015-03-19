@@ -8,10 +8,12 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,12 +24,20 @@ import java.util.Collection;
 //@Path("/")
 public class DaemonServlet {
 
-    private final ObjectMapper jsonObjectMapper;
-    private final ObjectWriter jsonObjectWriter;
-    private long startTime;
-    private String version;
-    private QueryOptions queryOptions;
+    private static final ObjectMapper jsonObjectMapper;
+    private static final ObjectWriter jsonObjectWriter;
 
+    protected final String sessionIp;
+    protected final UriInfo uriInfo;
+    private final long startTime;
+    private final String version;
+    protected QueryOptions queryOptions;
+    protected MultivaluedMap<String, String> params;
+
+    static {
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectWriter = jsonObjectMapper.writer();
+    }
 
     //Common query params
     @DefaultValue("json")
@@ -38,10 +48,16 @@ public class DaemonServlet {
     @QueryParam("metadata")
     protected Boolean metadata;
 
-    public DaemonServlet() {
-        jsonObjectMapper = new ObjectMapper();
-        jsonObjectWriter = jsonObjectMapper.writer();
+    public DaemonServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+        this.startTime = System.currentTimeMillis();
+        this.version = version;
+        this.uriInfo = uriInfo;
+        this.params = uriInfo.getQueryParameters();
+//        logger.debug(uriInfo.getRequestUri().toString());
+        this.queryOptions = new QueryOptions();
+        this.sessionIp = httpServletRequest.getRemoteAddr();
     }
+
 
     protected Response createJsonResponse(Object object) {
         try {
@@ -54,6 +70,7 @@ public class DaemonServlet {
     protected Response createErrorResponse(Object o) {
         QueryResult<ObjectMap> result = new QueryResult<>();
         result.setErrorMsg(o.toString());
+        System.out.println("ERROR" + o.toString());
         return createOkResponse(result);
     }
 

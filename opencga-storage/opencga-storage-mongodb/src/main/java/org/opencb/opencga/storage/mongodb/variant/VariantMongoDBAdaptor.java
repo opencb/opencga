@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -72,7 +73,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult getAllVariants(QueryOptions options) {
+    public QueryResult<Variant> getAllVariants(QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         QueryBuilder qb = QueryBuilder.start();
@@ -85,7 +86,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public QueryResult getVariantById(String id, QueryOptions options) {
+    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
 //        BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
@@ -109,10 +110,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public List<QueryResult> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
-        List<QueryResult> allResults = new ArrayList<>(idList.size());
+    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
+        List<QueryResult<Variant>> allResults = new ArrayList<>(idList.size());
         for (String r : idList) {
-            QueryResult queryResult = getVariantById(r, options);
+            QueryResult<Variant> queryResult = getVariantById(r, options);
             allResults.add(queryResult);
         }
         return allResults;
@@ -120,7 +121,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public QueryResult getAllVariantsByRegion(Region region, QueryOptions options) {
+    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         QueryBuilder qb = QueryBuilder.start();
@@ -136,8 +137,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public List<QueryResult> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        List<QueryResult> allResults = new ArrayList<>(regionList.size());
+    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
+        List<QueryResult<Variant>> allResults = new ArrayList<>(regionList.size());
         // If the user asks to merge the results, run only one query,
         // otherwise delegate in the method to query regions one by one
         if (options.getBoolean(MERGE, false)) {
@@ -457,20 +458,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
-            VariantStats variantStats = null;
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
-            List<DBObject> cohortsStats = new LinkedList<>();
-            for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
-                variantStats = variantStatsEntry.getValue();
-                DBObject variantStatsDBObject = statsConverter.convertToStorageType(variantStats);
-                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, variantStatsEntry.getKey());
-                cohortsStats.add(variantStatsDBObject);
-            }
-            if (variantStats != null) {
+            Iterator<VariantStats> iterator = cohortStats.values().iterator();
+            VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
+            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats);
+            
+            if (!cohorts.isEmpty()) {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
-
-
+                
                 DBObject find = new BasicDBObject("_id", id)
                         .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
                                 , studyId)
@@ -479,7 +475,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
                 DBObject update = new BasicDBObject("$set", new BasicDBObject(
                         DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
-                        , cohortsStats));
+                        , cohorts));
 
                 builder.find(find).updateOne(update);
             }

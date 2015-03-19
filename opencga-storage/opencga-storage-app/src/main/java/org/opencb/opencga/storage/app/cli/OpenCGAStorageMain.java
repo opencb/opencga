@@ -9,6 +9,7 @@ import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -20,6 +21,7 @@ import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -63,7 +66,7 @@ public class OpenCGAStorageMain {
 
     public static void main(String[] args)
             throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
-            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException {
+            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException, StorageManagerException {
 
         parser = new OptionsParser();
         OptionsParser.Command command = null;
@@ -335,7 +338,7 @@ public class OpenCGAStorageMain {
                             Math.min((i + 1) * subListSize, regions.size()));
 
                     logger.info("subRegions = " + subRegions);
-                    List<QueryResult> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
                     logger.info("{}", queryResults);
                 }
             } else if(gffReader != null) {
@@ -348,7 +351,7 @@ public class OpenCGAStorageMain {
                     }
 
                     logger.info("subRegions = " + subRegions);
-                    List<QueryResult> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
                     logger.info("{}", queryResults);
                 }
             } else {
@@ -487,7 +490,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void indexSequence(OptionsParser.CommandIndexSequence c) throws URISyntaxException, IOException, FileFormatException {
+    private static void indexSequence(OptionsParser.CommandIndexSequence c)
+            throws URISyntaxException, IOException, FileFormatException {
         if (c.input.endsWith(".fasta") || c.input.endsWith(".fasta.gz")) {
             Path input = Paths.get(new URI(c.input).getPath());
             Path outdir = c.outdir.isEmpty() ? input.getParent() : Paths.get(new URI(c.outdir).getPath());
@@ -512,7 +516,8 @@ public class OpenCGAStorageMain {
         }
     }
 
-    private static void indexAlignments(OptionsParser.CommandIndexAlignments c) throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
+    private static void indexAlignments(OptionsParser.CommandIndexAlignments c)
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         AlignmentStorageManager alignmentStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         if (storageEngine == null || storageEngine.isEmpty()) {
@@ -587,7 +592,7 @@ public class OpenCGAStorageMain {
     }
 
     private static void indexVariants(OptionsParser.CommandIndexVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
@@ -660,6 +665,16 @@ public class OpenCGAStorageMain {
             }
             params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
         }
+        
+        if (c.aggregationMappingFile != null) {
+            Properties aggregationMappingProperties = new Properties();
+            try {
+                aggregationMappingProperties.load(new FileInputStream(c.aggregationMappingFile));
+                params.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+            } catch (FileNotFoundException e) {
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", c.aggregationMappingFile);
+            }
+        }
 
         params.putAll(c.params);
 
@@ -730,7 +745,7 @@ public class OpenCGAStorageMain {
     }
 
     private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException, StorageManagerException {
         /**
          * Create DBAdaptor
          */
@@ -816,7 +831,7 @@ public class OpenCGAStorageMain {
     }
 
     private static void statsVariants(OptionsParser.CommandStatsVariants c)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException {
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException, StorageManagerException {
 
         /**
          * query options
