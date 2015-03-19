@@ -616,6 +616,9 @@ public class OpenCGAStorageMain {
             studyConfiguration = new StudyConfiguration(c.studyId, c.studyName);
             studyConfigurationPath = Paths.get(outdirUri.getPath(), studyConfiguration.getStudyName() + ".study.json");
             logger.info("Creating a new StudyConfiguration file: " + studyConfigurationPath);
+            if (studyConfigurationPath.toFile().exists()) {
+                throw new IOException("Found a StudyConfiguration file in " + studyConfigurationPath + " . Did you want to use it?");
+            }
             studyConfiguration.write(studyConfigurationPath);
         } else {
             studyConfigurationPath = Paths.get(c.studyConfigurationFile);
@@ -624,14 +627,13 @@ public class OpenCGAStorageMain {
 
         ObjectMap params = new ObjectMap();
 //        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
-//        params.put(VariantStorageManager.FILE_ID, studyConfiguration.getFileIds().get(fileName));
         params.put(VariantStorageManager.FILE_ID, c.fileId);
+        params.put(VariantStorageManager.SAMPLE_IDS, c.sampleIds);
         params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
         params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.INCLUDE_SRC, c.includeSrc);
         params.put(VariantStorageManager.COMPRESS_GENOTYPES, c.compressGenotypes);
-//        params.put(VariantStorageManager.VARIANT_SOURCE, source);
         params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         params.put(VariantStorageManager.AGGREGATED_TYPE, c.aggregated);
         params.put(VariantStorageManager.DB_NAME, c.dbName);

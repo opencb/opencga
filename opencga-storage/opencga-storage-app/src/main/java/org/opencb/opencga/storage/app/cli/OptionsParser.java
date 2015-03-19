@@ -398,6 +398,9 @@ public class OptionsParser {
 
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         String annotatorConfig = null;
+
+        @Parameter(names = {"--sample-ids"}, description = "List of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
+        public List<String> sampleIds;
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")

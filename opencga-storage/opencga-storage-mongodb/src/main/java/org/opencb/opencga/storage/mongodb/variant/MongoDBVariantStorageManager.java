@@ -106,7 +106,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
-        return input;
+        return super.preLoad(input, output, params);
     }
 
     @Override

@@ -262,15 +262,15 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         try {
             fileId = Integer.parseInt(source.getFileId());
         } catch (NumberFormatException e) {
-            throw new IOException("fileId " + source.getFileId() + " is not an integer", e);
+            throw new IOException("FileId " + source.getFileId() + " is not an integer", e);
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
-            throw new IOException("fileName " + fileName + " was already in the StudyConfiguration " +
+            throw new IOException("FileName " + fileName + " was already in the StudyConfiguration " +
                     "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
         }
         if (studyConfiguration.getFileIds().containsKey(fileId)) {
-            throw new IOException("fileId " + fileId + " was already in the StudyConfiguration" +
+            throw new IOException("FileId " + fileId + " was already in the StudyConfiguration" +
                     "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
         }
         studyConfiguration.getFileIds().put(fileName, fileId);
@@ -292,19 +292,19 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             for (String sampleEntry : params.getAsStringList(SAMPLE_IDS)) {
                 String[] split = sampleEntry.split(":");
                 if (split.length != 2) {
-                    throw new IOException("param " + sampleEntry + " is malformed");
+                    throw new IOException("Param " + sampleEntry + " is malformed");
                 }
                 String sampleName = split[0];
                 int sampleId;
                 try {
                     sampleId = Integer.getInteger(split[1]);
                 } catch (NumberFormatException e) {
-                    throw new IOException("sampleId " + split[1] + " is not an integer", e);
+                    throw new IOException("SampleId " + split[1] + " is not an integer", e);
                 }
 
                 if (!source.getSamplesPosition().containsKey(sampleName)) {
                     //ERROR
-                    throw new IOException("given sampleName is not in the input file");
+                    throw new IOException("Given sampleName is not in the input file");
                 } else {
                     if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
                         //Add sample to StudyConfiguration
@@ -444,11 +444,14 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
     protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
         VariantJsonReader variantJsonReader;
-        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz") || source.getFileName().endsWith(".json.snappy") || source.getFileName().endsWith(".json.snz")) {
+        if (    input.toString().endsWith(".json") ||
+                input.toString().endsWith(".json.gz") ||
+                input.toString().endsWith(".json.snappy") ||
+                input.toString().endsWith(".json.snz")) {
             String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {
-            throw new IOException("Variants input file format not supported");
+            throw new IOException("Variants input file format not supported for file: " + input);
         }
         return variantJsonReader;
     }
