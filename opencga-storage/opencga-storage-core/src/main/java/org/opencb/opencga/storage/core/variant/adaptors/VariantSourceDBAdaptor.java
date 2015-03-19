@@ -15,6 +15,8 @@ public interface VariantSourceDBAdaptor {
 
     QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options);
 
+    QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+
     QueryResult countSources();
 
     QueryResult getAllSources(QueryOptions options);
@@ -33,7 +35,7 @@ public interface VariantSourceDBAdaptor {
 
     QueryResult getSourceDownloadUrlById(String fileId, String studyId);
 
-    QueryResult updateSourceStats(VariantSourceStats variantSourceStats, QueryOptions queryOptions);
+    QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
     
     boolean close();
 

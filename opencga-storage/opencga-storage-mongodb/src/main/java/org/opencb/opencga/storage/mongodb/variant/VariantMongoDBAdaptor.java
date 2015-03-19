@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
@@ -445,16 +444,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, QueryOptions queryOptions) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
         DBCollection coll = db.getDb().getCollection(collectionName);
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        StudyConfiguration studyConfiguration = queryOptions.get(VariantStorageManager.STUDY_CONFIGURATION, StudyConfiguration.class);
         String fileId = queryOptions.getString(VariantStorageManager.FILE_ID);  //TODO: Change to int value
-        String studyId = ""+studyConfiguration.getStudyId();                    //TODO: Change to int value
+        String studyId = ""+ studyConfiguration.getStudyId();                    //TODO: Change to int value
+        //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {

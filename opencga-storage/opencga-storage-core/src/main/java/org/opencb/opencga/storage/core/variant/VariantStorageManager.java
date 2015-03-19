@@ -251,7 +251,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
 
         /*
-         * Before load file, add to the StudyConfiguration.
+         * Before load file, check and add fileName to the StudyConfiguration.
          * FileID and FileName is read from the VariantSource
          * Will fail if:
          *     fileId is not an integer
@@ -275,7 +275,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             throw new IOException("FileId " + fileId + " was already in the StudyConfiguration" +
                     "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
         }
-        studyConfiguration.getFileIds().put(fileName, fileId);
+        studyConfiguration.getFileIds().put(source.getFileName(), fileId);
 
 
         /*
@@ -412,8 +412,10 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             // TODO add filters
             logger.debug("about to calculate stats");
             VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
-            URI statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime()), null, new QueryOptions(params));
-            variantStatisticsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
+            VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, params);
+            URI outputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
+            URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(params));
+            variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(params));
         }
 
         return input;

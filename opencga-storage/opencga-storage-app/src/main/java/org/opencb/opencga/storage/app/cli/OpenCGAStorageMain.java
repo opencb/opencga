@@ -17,7 +17,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.tools.accession.CreateAccessionTask;
@@ -64,9 +63,7 @@ public class OpenCGAStorageMain {
 
     }
 
-    public static void main(String[] args)
-            throws IOException, InterruptedException, IllegalOpenCGACredentialsException, FileFormatException,
-            IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, VariantAnnotatorException, StorageManagerException {
+    public static void main(String[] args) {
 
         parser = new OptionsParser();
         OptionsParser.Command command = null;
@@ -103,390 +100,286 @@ public class OpenCGAStorageMain {
         }
 
 
-        if (command instanceof OptionsParser.CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
-            OptionsParser.CommandIndexAlignments c = (OptionsParser.CommandIndexAlignments) command;
-            indexAlignments(c);
+        try {
+            if (command instanceof OptionsParser.CommandIndexAlignments) {    //TODO: Create method AlignmentStorageManager.index() ??
+                OptionsParser.CommandIndexAlignments c = (OptionsParser.CommandIndexAlignments) command;
+                indexAlignments(c);
 
-        } else if (command instanceof OptionsParser.CommandIndexSequence) {
-            OptionsParser.CommandIndexSequence c = (OptionsParser.CommandIndexSequence) command;
-            indexSequence(c);
+            } else if (command instanceof OptionsParser.CommandIndexSequence) {
+                OptionsParser.CommandIndexSequence c = (OptionsParser.CommandIndexSequence) command;
+                indexSequence(c);
 
-        } else if (command instanceof OptionsParser.CommandIndexVariants) {
-            OptionsParser.CommandIndexVariants c = (OptionsParser.CommandIndexVariants) command;
-            indexVariants(c);
+            } else if (command instanceof OptionsParser.CommandIndexVariants) {
+                OptionsParser.CommandIndexVariants c = (OptionsParser.CommandIndexVariants) command;
+                indexVariants(c);
 
-        } else if (command instanceof OptionsParser.CommandCreateAccessions) {
-            OptionsParser.CommandCreateAccessions c = (OptionsParser.CommandCreateAccessions) command;
+            } else if (command instanceof OptionsParser.CommandCreateAccessions) {
+                OptionsParser.CommandCreateAccessions c = (OptionsParser.CommandCreateAccessions) command;
 
-            Path variantsPath = Paths.get(c.input);
-            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
+                Path variantsPath = Paths.get(c.input);
+                Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
 
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
-            createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
- /*
-        }else if (command instanceof OptionsParser.CommandTransformVariants) { //TODO: Add "preTransform and postTransform" call
-            OptionsParser.CommandTransformVariants c = (OptionsParser.CommandTransformVariants) command;
-            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
-            URI variantsUri = new URI(null, c.file, null);
-            URI pedigreeUri = c.pedigree != null ? new URI(null, c.pedigree, null) : null;
-            URI outdirUri = c.outdir != null ? new URI(null, c.outdir + "/", null).resolve(".") : variantsUri.resolve(".");
-            Path variantsPath = Paths.get(c.file);
-//            Path pedigreePath = c.pedigree != null ? Paths.get(c.pedigree) : null;
-//            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
+                VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, c.studyId, null);
+                createAccessionIds(variantsPath, source, c.prefix, c.resumeFromAccession, outdir);
 
-            ObjectMap params = new ObjectMap();
-            params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
-            params.put(VariantStorageManager.INCLUDE_STATS,   c.includeStats);
-            params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.VARIANT_SOURCE, source);
+            } else if (command instanceof OptionsParser.CommandFetchVariants) {
+                OptionsParser.CommandFetchVariants c = (OptionsParser.CommandFetchVariants) command;
 
-            variantStorageManager.transform(variantsUri, pedigreeUri, outdirUri, params);
-
-//            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), c.fileId, c.studyId, c.study);
-//            indexVariants("transform", source, variantsPath, pedigreePath, outdir, "json", null, c.includeEffect, c.includeStats, c.includeSamples, c.aggregated);
-
-        } else if (command instanceof OptionsParser.CommandLoadVariants) {    //TODO: Add "preLoad" call
-            OptionsParser.CommandLoadVariants c = (OptionsParser.CommandLoadVariants) command;
-            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-            if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-            }
-
-            //Path variantsPath = Paths.get(c.input + ".variants.json.gz");
-            Path variantsPath = Paths.get(c.input);
-            URI variantsUri = new URI(null, c.input, null);
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
-
-            ObjectMap params = new ObjectMap();
-            params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
-            params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
-            params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeSamples);
-            params.put(VariantStorageManager.VARIANT_SOURCE, source);
-            params.put(VariantStorageManager.DB_NAME, c.dbName);
-
-            // TODO Right now it doesn't matter if the file is aggregated or not to save it to the database
-            variantStorageManager.load(variantsUri, params);
-
-     /*       Path variantsPath = Paths.get(c.input + ".variants.json.gz");
-            Path filePath = Paths.get(c.input + ".file.json.gz");
-
-            VariantSource source = new VariantSource(variantsPath.getFileName().toString(), null, null, null);
-            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples, null);
-*/
-
-//            indexVariants("load", source, variantsPath, filePath, null, c.backend, Paths.get(c.credentials), c.includeEffect, c.includeStats, c.includeSamples);
-/*
-        } else if (command instanceof OptionsParser.CommandTransformAlignments) { //TODO: Add "preTransform and postTransform" call
-            OptionsParser.CommandTransformAlignments c = (OptionsParser.CommandTransformAlignments) command;
-            AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
-
-            URI inputUri = new URI(null, c.file, null);
-            URI outdirUri = c.outdir != null ? new URI(null, c.outdir + "/", null).resolve(".") : inputUri.resolve(".");
-
-
-            ObjectMap params = new ObjectMap();
-
-            if(c.fileId != null && !c.fileId.isEmpty()) {
-                params.put(AlignmentStorageManager.FILE_ID, c.fileId);
-            }
-            //params.put(AlignmentStorageManager.STUDY,   c.study);
-            params.put(AlignmentStorageManager.PLAIN,   c.plain);
-            params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
-            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.includeCoverage);
-
-
-            alignmentStorageManager.transform(inputUri, null, outdirUri, params);
-
-
-
-//            Path filePath = Paths.get(c.file);
-//            Path outdir = c.outdir != null ? Paths.get(c.outdir) : null;
-//            String backend = c.plain ? "json" : "json.gz";
-//
-//            if (!filePath.toFile().exists()) {
-//                throw new IOException("[Error] File not found : " + c.file);
-//            }
-//
-//            indexAlignments(
-//                    c.study, //c.studyId,
-//                    filePath,
-//                    c.fileId, outdir, null,
-//                    backend, null, null,     //Credentials not needed
-//                    true,
-//                    false,              //Can't be loaded
-//                    c.includeCoverage, c.meanCoverage);
-
-        } else if (command instanceof OptionsParser.CommandLoadAlignments){ //TODO: Add "preLoad" call
-            OptionsParser.CommandLoadAlignments c = (OptionsParser.CommandLoadAlignments) command;
-            AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
-            if(c.credentials != null && !c.credentials.isEmpty()) {
-                alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
-            }
-
-            ObjectMap params = new ObjectMap();
-
-//            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, true); //, c.includeCoverage);
-            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
-            params.put(AlignmentStorageManager.DB_NAME, c.dbName);
-
-            URI inputUri = new URI(null, c.input, null);
-
-            alignmentStorageManager.load(inputUri, params);
-
-*/
-        } else if(command instanceof OptionsParser.CommandFetchVariants){
-            OptionsParser.CommandFetchVariants c = (OptionsParser.CommandFetchVariants) command;
-
-            /**
-             * Open connection
-             */
-            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-            if(c.credentials != null && !c.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-            }
-
-            ObjectMap params = new ObjectMap();
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
-
-            /**
-             * Parse Regions
-             */
-            List<Region> regions = null;
-            GffReader gffReader = null;
-            if(c.regions != null && !c.regions.isEmpty()) {
-                regions = new LinkedList<>();
-                for (String csvRegion : c.regions) {
-                    for (String strRegion : csvRegion.split(",")) {
-                        Region region = new Region(strRegion);
-                        regions.add(region);
-                        logger.info("Parsed region: {}", region);
-                    }
+                /**
+                 * Open connection
+                 */
+                VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
+                if (c.credentials != null && !c.credentials.isEmpty()) {
+                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
                 }
-            } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
-                try {
-                    gffReader = new GffReader(c.gffFile);
-                } catch (NoSuchMethodException e) {
-                    e.printStackTrace();
-                }
-//                throw new UnsupportedOperationException("Unsuppoted GFF file");
-            }
 
-            /**
-             * Parse QueryOptions
-             */
-            QueryOptions options = new QueryOptions();
+                ObjectMap params = new ObjectMap();
+                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
 
-            if(c.studyAlias != null && !c.studyAlias.isEmpty()) {
-                options.add("studies", Arrays.asList(c.studyAlias.split(",")));
-            }
-            if(c.fileId != null && !c.fileId.isEmpty()) {
-                options.add("files", Arrays.asList(c.fileId.split(",")));
-            }
-            if(c.effect != null && !c.effect.isEmpty()) {
-                options.add("effect", Arrays.asList(c.effect.split(",")));
-            }
-
-            if(c.stats != null && !c.stats.isEmpty()) {
-                for (String csvStat : c.stats) {
-                    for (String stat : csvStat.split(",")) {
-                        int index = stat.indexOf("<");
-                        index = index >= 0 ? index : stat.indexOf("!");
-                        index = index >= 0 ? index : stat.indexOf("~");
-                        index = index >= 0 ? index : stat.indexOf("<");
-                        index = index >= 0 ? index : stat.indexOf(">");
-                        index = index >= 0 ? index : stat.indexOf("=");
-                        if(index < 0) {
-                            throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                /**
+                 * Parse Regions
+                 */
+                List<Region> regions = null;
+                GffReader gffReader = null;
+                if (c.regions != null && !c.regions.isEmpty()) {
+                    regions = new LinkedList<>();
+                    for (String csvRegion : c.regions) {
+                        for (String strRegion : csvRegion.split(",")) {
+                            Region region = new Region(strRegion);
+                            regions.add(region);
+                            logger.info("Parsed region: {}", region);
                         }
-                        String name = stat.substring(0, index);
-                        String cond = stat.substring(index);
+                    }
+                } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
+                    try {
+                        gffReader = new GffReader(c.gffFile);
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                    }
+//                throw new UnsupportedOperationException("Unsuppoted GFF file");
+                }
+
+                /**
+                 * Parse QueryOptions
+                 */
+                QueryOptions options = new QueryOptions();
+
+                if (c.studyAlias != null && !c.studyAlias.isEmpty()) {
+                    options.add("studies", Arrays.asList(c.studyAlias.split(",")));
+                }
+                if (c.fileId != null && !c.fileId.isEmpty()) {
+                    options.add("files", Arrays.asList(c.fileId.split(",")));
+                }
+                if (c.effect != null && !c.effect.isEmpty()) {
+                    options.add("effect", Arrays.asList(c.effect.split(",")));
+                }
+
+                if (c.stats != null && !c.stats.isEmpty()) {
+                    for (String csvStat : c.stats) {
+                        for (String stat : csvStat.split(",")) {
+                            int index = stat.indexOf("<");
+                            index = index >= 0 ? index : stat.indexOf("!");
+                            index = index >= 0 ? index : stat.indexOf("~");
+                            index = index >= 0 ? index : stat.indexOf("<");
+                            index = index >= 0 ? index : stat.indexOf(">");
+                            index = index >= 0 ? index : stat.indexOf("=");
+                            if (index < 0) {
+                                throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                            }
+                            String name = stat.substring(0, index);
+                            String cond = stat.substring(index);
 
 //                        if("maf".equals(name) || "mgf".equals(name) || "missingAlleles".equals(name) || "missingGenotypes".equals(name)) {
-                        if(name.matches("maf|mgf|missingAlleles|missingGenotypes")) {
-                            options.put(name, cond);
-                        } else {
-                            throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                            if (name.matches("maf|mgf|missingAlleles|missingGenotypes")) {
+                                options.put(name, cond);
+                            } else {
+                                throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                            }
+                            logger.info("Parsed stat filter: {} {}", name, cond);
                         }
-                        logger.info("Parsed stat filter: {} {}", name, cond);
                     }
                 }
-            }
-            if(c.id != null && !c.id.isEmpty()) {   //csv
-                options.add("id", c.id);
-            }
-            if(c.gene != null && !c.gene.isEmpty()) {   //csv
-                options.add("gene", c.gene);
-            }
-            if(c.type != null && !c.type.isEmpty()) {   //csv
-                options.add("type", c.type);
-            }
-            if(c.reference != null && !c.reference.isEmpty()) {   //csv
-                options.add("reference", c.reference);
-            }
-
-
-            /**
-             * Run query
-             */
-            int subListSize = 20;
-            logger.info("options = " + options.toJson());
-            if (regions != null && !regions.isEmpty()) {
-                for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
-                    List<Region> subRegions = regions.subList(
-                            i * subListSize,
-                            Math.min((i + 1) * subListSize, regions.size()));
-
-                    logger.info("subRegions = " + subRegions);
-                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-                    logger.info("{}", queryResults);
+                if (c.id != null && !c.id.isEmpty()) {   //csv
+                    options.add("id", c.id);
                 }
-            } else if(gffReader != null) {
-                List<Gff> gffList;
-                List<Region> subRegions;
-                while((gffList = gffReader.read(subListSize)) != null) {
-                    subRegions = new ArrayList<>(subListSize);
-                    for (Gff gff : gffList) {
-                        subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                if (c.gene != null && !c.gene.isEmpty()) {   //csv
+                    options.add("gene", c.gene);
+                }
+                if (c.type != null && !c.type.isEmpty()) {   //csv
+                    options.add("type", c.type);
+                }
+                if (c.reference != null && !c.reference.isEmpty()) {   //csv
+                    options.add("reference", c.reference);
+                }
+
+
+                /**
+                 * Run query
+                 */
+                int subListSize = 20;
+                logger.info("options = " + options.toJson());
+                if (regions != null && !regions.isEmpty()) {
+                    for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
+                        List<Region> subRegions = regions.subList(
+                                i * subListSize,
+                                Math.min((i + 1) * subListSize, regions.size()));
+
+                        logger.info("subRegions = " + subRegions);
+                        List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                        logger.info("{}", queryResults);
                     }
-
-                    logger.info("subRegions = " + subRegions);
-                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-                    logger.info("{}", queryResults);
-                }
-            } else {
-                System.out.println(dbAdaptor.getAllVariants(options));
-            }
-
-
-        } else if(command instanceof OptionsParser.CommandFetchAlignments){
-            OptionsParser.CommandFetchAlignments c = (OptionsParser.CommandFetchAlignments) command;
-
-            /**
-             * Open connection
-             */
-            AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
-            if(c.credentials != null && !c.credentials.isEmpty()) {
-                alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
-            }
-
-            ObjectMap params = new ObjectMap();
-            AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName, params);
-
-            /**
-             * Parse Regions
-             */
-            GffReader gffReader = null;
-            List<Region> regions = null;
-            if(c.regions != null && !c.regions.isEmpty()) {
-                regions = new LinkedList<>();
-                for (String csvRegion : c.regions) {
-                    for (String strRegion : csvRegion.split(",")) {
-                        Region region = new Region(strRegion);
-                        regions.add(region);
-                        logger.info("Parsed region: {}", region);
-                    }
-                }
-            } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
-                try {
-                    gffReader = new GffReader(c.gffFile);
-                } catch (NoSuchMethodException e) {
-                    e.printStackTrace();
-                }
-                //throw new UnsupportedOperationException("Unsuppoted GFF file");
-            }
-
-            /**
-             * Parse QueryOptions
-             */
-            QueryOptions options = new QueryOptions();
-
-            if(c.fileId != null && !c.fileId.isEmpty()) {
-                options.add(AlignmentDBAdaptor.QO_FILE_ID, c.fileId);
-            }
-            options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, c.coverage);
-            options.add(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, c.asPairs);
-            options.add(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, c.processDifferences);
-            if(c.histogram > 0) {
-                options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
-                options.add(AlignmentDBAdaptor.QO_HISTOGRAM, true);
-                options.add(AlignmentDBAdaptor.QO_INTERVAL_SIZE, c.histogram);
-            }
-            if(c.filePath != null && !c.filePath.isEmpty()) {
-                options.add(AlignmentDBAdaptor.QO_BAM_PATH, c.filePath);
-            }
-
-
-            if(c.stats != null && !c.stats.isEmpty()) {
-                for (String csvStat : c.stats) {
-                    for (String stat : csvStat.split(",")) {
-                        int index = stat.indexOf("<");
-                        index = index >= 0 ? index : stat.indexOf("!");
-                        index = index >= 0 ? index : stat.indexOf("~");
-                        index = index >= 0 ? index : stat.indexOf("<");
-                        index = index >= 0 ? index : stat.indexOf(">");
-                        index = index >= 0 ? index : stat.indexOf("=");
-                        if(index < 0) {
-                            throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                } else if (gffReader != null) {
+                    List<Gff> gffList;
+                    List<Region> subRegions;
+                    while ((gffList = gffReader.read(subListSize)) != null) {
+                        subRegions = new ArrayList<>(subListSize);
+                        for (Gff gff : gffList) {
+                            subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
                         }
-                        String name = stat.substring(0, index);
-                        String cond = stat.substring(index);
 
-                        if(name.matches("")) {
-                            options.put(name, cond);
-                        } else {
-                            throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+
+                        logger.info("subRegions = " + subRegions);
+                        List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                        logger.info("{}", queryResults);
+                    }
+                } else {
+                    System.out.println(dbAdaptor.getAllVariants(options));
+                }
+
+
+            } else if (command instanceof OptionsParser.CommandFetchAlignments) {
+                OptionsParser.CommandFetchAlignments c = (OptionsParser.CommandFetchAlignments) command;
+
+                /**
+                 * Open connection
+                 */
+                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
+                if (c.credentials != null && !c.credentials.isEmpty()) {
+                    alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
+                }
+
+                ObjectMap params = new ObjectMap();
+                AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName, params);
+
+                /**
+                 * Parse Regions
+                 */
+                GffReader gffReader = null;
+                List<Region> regions = null;
+                if (c.regions != null && !c.regions.isEmpty()) {
+                    regions = new LinkedList<>();
+                    for (String csvRegion : c.regions) {
+                        for (String strRegion : csvRegion.split(",")) {
+                            Region region = new Region(strRegion);
+                            regions.add(region);
+                            logger.info("Parsed region: {}", region);
                         }
-                        logger.info("Parsed stat filter: {} {}", name, cond);
+                    }
+                } else if (c.gffFile != null && !c.gffFile.isEmpty()) {
+                    try {
+                        gffReader = new GffReader(c.gffFile);
+                    } catch (NoSuchMethodException e) {
+                        e.printStackTrace();
+                    }
+                    //throw new UnsupportedOperationException("Unsuppoted GFF file");
+                }
+
+                /**
+                 * Parse QueryOptions
+                 */
+                QueryOptions options = new QueryOptions();
+
+                if (c.fileId != null && !c.fileId.isEmpty()) {
+                    options.add(AlignmentDBAdaptor.QO_FILE_ID, c.fileId);
+                }
+                options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, c.coverage);
+                options.add(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, c.asPairs);
+                options.add(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, c.processDifferences);
+                if (c.histogram > 0) {
+                    options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
+                    options.add(AlignmentDBAdaptor.QO_HISTOGRAM, true);
+                    options.add(AlignmentDBAdaptor.QO_INTERVAL_SIZE, c.histogram);
+                }
+                if (c.filePath != null && !c.filePath.isEmpty()) {
+                    options.add(AlignmentDBAdaptor.QO_BAM_PATH, c.filePath);
+                }
+
+
+                if (c.stats != null && !c.stats.isEmpty()) {
+                    for (String csvStat : c.stats) {
+                        for (String stat : csvStat.split(",")) {
+                            int index = stat.indexOf("<");
+                            index = index >= 0 ? index : stat.indexOf("!");
+                            index = index >= 0 ? index : stat.indexOf("~");
+                            index = index >= 0 ? index : stat.indexOf("<");
+                            index = index >= 0 ? index : stat.indexOf(">");
+                            index = index >= 0 ? index : stat.indexOf("=");
+                            if (index < 0) {
+                                throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                            }
+                            String name = stat.substring(0, index);
+                            String cond = stat.substring(index);
+
+                            if (name.matches("")) {
+                                options.put(name, cond);
+                            } else {
+                                throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                            }
+                            logger.info("Parsed stat filter: {} {}", name, cond);
+                        }
                     }
                 }
-            }
 
 
-            /**
-             * Run query
-             */
-            int subListSize = 20;
-            logger.info("options = {}", options.toJson());
-            if(c.histogram > 0) {
-                for (Region region : regions) {
-                    System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
-                }
-            } else if (regions != null && !regions.isEmpty()) {
-                for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
-                    List<Region> subRegions = regions.subList(
-                            i * subListSize,
-                            Math.min((i + 1) * subListSize, regions.size()));
-
-                    logger.info("subRegions = " + subRegions);
-                    QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
-                    logger.info("{}", queryResult);
-                    System.out.println(new ObjectMap("queryResult", queryResult).toJson());
-                }
-            } else if (gffReader != null) {
-                List<Gff> gffList;
-                List<Region> subRegions;
-                while((gffList = gffReader.read(subListSize)) != null) {
-                    subRegions = new ArrayList<>(subListSize);
-                    for (Gff gff : gffList) {
-                        subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                /**
+                 * Run query
+                 */
+                int subListSize = 20;
+                logger.info("options = {}", options.toJson());
+                if (c.histogram > 0) {
+                    for (Region region : regions) {
+                        System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
                     }
+                } else if (regions != null && !regions.isEmpty()) {
+                    for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
+                        List<Region> subRegions = regions.subList(
+                                i * subListSize,
+                                Math.min((i + 1) * subListSize, regions.size()));
 
-                    logger.info("subRegions = " + subRegions);
-                    QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
-                    logger.info("{}", queryResult);
-                    System.out.println(new ObjectMap("queryResult", queryResult).toJson());
-                }
-            } else {
-                throw new UnsupportedOperationException("Unable to fetch over all the genome");
+                        logger.info("subRegions = " + subRegions);
+                        QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                        logger.info("{}", queryResult);
+                        System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+                    }
+                } else if (gffReader != null) {
+                    List<Gff> gffList;
+                    List<Region> subRegions;
+                    while ((gffList = gffReader.read(subListSize)) != null) {
+                        subRegions = new ArrayList<>(subListSize);
+                        for (Gff gff : gffList) {
+                            subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                        }
+
+                        logger.info("subRegions = " + subRegions);
+                        QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                        logger.info("{}", queryResult);
+                        System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+                    }
+                } else {
+                    throw new UnsupportedOperationException("Unable to fetch over all the genome");
 //                System.out.println(dbAdaptor.getAllAlignments(options));
+                }
+            } else if (command instanceof OptionsParser.CommandAnnotateVariants) {
+                OptionsParser.CommandAnnotateVariants c = (OptionsParser.CommandAnnotateVariants) command;
+                annotateVariants(c);
+            } else if (command instanceof OptionsParser.CommandStatsVariants) {
+                OptionsParser.CommandStatsVariants c = (OptionsParser.CommandStatsVariants) command;
+                statsVariants(c);
             }
-        } else if(command instanceof OptionsParser.CommandAnnotateVariants) {
-            OptionsParser.CommandAnnotateVariants c = (OptionsParser.CommandAnnotateVariants) command;
-            annotateVariants(c);
-        } else if (command instanceof OptionsParser.CommandStatsVariants) {
-            OptionsParser.CommandStatsVariants c = (OptionsParser.CommandStatsVariants) command;
-            statsVariants(c);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            logger.debug("", e);
+            System.exit(1);
         }
     }
 
@@ -833,6 +726,9 @@ public class OpenCGAStorageMain {
     private static void statsVariants(OptionsParser.CommandStatsVariants c)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException, StorageManagerException {
 
+        Path studyConfigurationPath = Paths.get(c.studyConfigurationFile);
+        StudyConfiguration studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
+
         /**
          * query options
          */
@@ -842,20 +738,15 @@ public class OpenCGAStorageMain {
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
         queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
         queryOptions.put(VariantStorageManager.FILE_ID, c.fileId);
+        queryOptions.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
 
-        Map<String, Set<String>> samples = null;
+        Map<String, Set<String>> cohorts = null;
         if (c.cohort != null && !c.cohort.isEmpty()) {
-            samples = new LinkedHashMap<>(c.cohort.size());
+            cohorts = new LinkedHashMap<>(c.cohort.size());
             for (Map.Entry<String, String> entry : c.cohort.entrySet()) {
-                samples.put(entry.getKey(), new HashSet<>(Arrays.asList(entry.getValue().split(","))));
+                cohorts.put(entry.getKey(), new HashSet<>(Arrays.asList(entry.getValue().split(","))));
             }
         }
-
-        //TODO: Read cohorts from StudyConfiguration file
-//        Path studyConfigurationPath = Paths.get(c.studyConfigurationFile);
-//        StudyConfiguration studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
-//        samples.put()
-//        >>>>>>> CONTINUE HERE! ****
 
         /**
          * Create DBAdaptor
@@ -871,28 +762,36 @@ public class OpenCGAStorageMain {
          */
         URI outputUri = new URI(c.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(c.studyId, c.fileId)
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyId(), c.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
         assertDirectoryExists(directoryUri);
         VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
 
-        boolean doCreate = c.create, doLoad = c.load != null;
-        if (!c.create && c.load == null) {
-            doCreate = doLoad = true;
-        } else if (c.load != null) {
-            filename = c.load;
-        }
+        boolean doCreate = true;
+        boolean doLoad = true;
+//        doCreate = c.create;
+//        doLoad = c.load != null;
+//        if (!c.create && c.load == null) {
+//            doCreate = doLoad = true;
+//        } else if (c.load != null) {
+//            filename = c.load;
+//        }
 
         try {
+
+            /** Check and update StudyConfiguration **/
+            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, c.cohortIds);
+
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, samples, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, studyConfiguration, queryOptions);
             }
 
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
-                variantStatisticsManager.loadStats(dbAdaptor, outputUri, queryOptions);
+                variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
+                studyConfiguration.write(studyConfigurationPath);
             }
         } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?
             logger.error(e.getMessage());

@@ -137,16 +137,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_LOAD_THREADS, "8")));
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         int numWriters = loadThreads;
-//        Map<String, Integer> samplesIds = (Map) params.getMap("sampleIds");
-        Map<String, Integer> samplesIds = new HashMap<>();
-        for (String sampleId : params.getString("sampleIds").split(",")) {
-            String[] split = sampleId.split(":");
-            if (split.length != 2) {
-
-            } else {
-                samplesIds.put(split[0], Integer.parseInt(split[1]));
-            }
-        }
 
         if (loadThreads == 1) {
             numWriters = 1;     //Only 1 writer for the single thread execution

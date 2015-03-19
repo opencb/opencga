@@ -327,7 +327,7 @@ public class OptionsParser {
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         int fileId;
 
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
@@ -644,9 +644,6 @@ public class OptionsParser {
         @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
         boolean overwriteStats = false;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        int studyId;
-
         @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         int fileId;
 
@@ -663,16 +660,19 @@ public class OptionsParser {
 //        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
 //        String outdir = ".";
 
-        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
-        boolean create = false;
+//        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+//        boolean create = false;
+//
+//        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
+//        String load = null;
 
-        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
-        String load = null;
-
-        @DynamicParameter(names = {"-C", "--cohort"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        @DynamicParameter(names = {"--cohort"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
         Map<String, String> cohort = new HashMap<>();
 
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, cohortIds will be auto-generated.")
+        Map<String, Integer> cohortIds = new HashMap<>();
+
+        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = true, arity = 1)
         String studyConfigurationFile;
 
 /* TODO: filters?

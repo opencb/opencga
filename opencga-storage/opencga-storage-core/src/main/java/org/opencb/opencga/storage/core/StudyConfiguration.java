@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by hpccoll1 on 12/03/15.
@@ -24,7 +21,7 @@ public class StudyConfiguration {
 //    private Map<Integer, String> inverseFileIds;
 //    private Map<Integer, String> inverseSampleIds;
 //    private Map<Integer, String> inverseCohortIds;
-    private Map<Integer, List<Integer>> cohorts;
+    private Map<Integer, Set<Integer>> cohorts;
 
     public StudyConfiguration() {
     }
@@ -50,7 +47,7 @@ public class StudyConfiguration {
 
     public StudyConfiguration(int studyId, String studyName, Map<String, Integer> fileIds,
                               Map<String, Integer> sampleIds, Map<String, Integer> cohortIds,
-                              Map<Integer, List<Integer>> cohorts) {
+                              Map<Integer, Set<Integer>> cohorts) {
         this.studyId = studyId;
         this.studyName = studyName;
         this.fileIds = fileIds;
@@ -133,11 +130,11 @@ public class StudyConfiguration {
 //        inverseCohortIds = createInverseMap(cohortIds);
     }
 
-    public Map<Integer, List<Integer>> getCohorts() {
+    public Map<Integer, Set<Integer>> getCohorts() {
         return cohorts;
     }
 
-    public void setCohorts(Map<Integer, List<Integer>> cohorts) {
+    public void setCohorts(Map<Integer, Set<Integer>> cohorts) {
         this.cohorts = cohorts;
     }
 

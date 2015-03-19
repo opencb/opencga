@@ -70,8 +70,21 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
             studyConfiguration = studyConfigurationMap.get(studyId);
         }
 
-        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, null, null, Collections.singletonList(studyConfiguration));
+        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
     }
+
+    @Override
+    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+        DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
+
+        DBObject query = new BasicDBObject("studyId", studyConfiguration.getStudyId());
+        QueryResult<WriteResult> queryResult = coll.update(query, studyMongo, new QueryOptions("upsert", true));
+        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
+
+        return queryResult;
+    }
+
 
     @Override
     public QueryResult countSources() {
@@ -262,7 +275,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
 
     @Override
-    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, QueryOptions queryOptions) {
+    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         VariantGlobalStats global = variantSourceStats.getFileStats();
@@ -278,6 +291,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         DBObject find = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, variantSourceStats.getFileId())
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, variantSourceStats.getStudyId());
         DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats));
+
+        //Update StudyConfiguration.
+        updateStudyConfiguration(studyConfiguration, queryOptions);
 
         return coll.update(find, update, null);
     }
