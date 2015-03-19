@@ -30,6 +30,8 @@ public abstract class VariantStorageManagerTest {
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     public static final int NUM_VARIANTS = 9792;
+    public static final int STUDY_ID = 5;
+    public static final String STUDY_NAME = "1000g";
     protected static URI inputUri;
     protected static URI outputUri;
     protected VariantStorageManager variantStorageManager;
@@ -270,7 +272,7 @@ public abstract class VariantStorageManagerTest {
     }
 
     protected static StudyConfiguration newStudyConfiguration() {
-        return new StudyConfiguration(5, "1000g", 6, VCF_TEST_FILE_NAME);
+        return new StudyConfiguration(STUDY_ID, STUDY_NAME);
     }
 
 }

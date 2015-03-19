@@ -50,6 +50,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
     public static final String AGGREGATED_TYPE = "aggregatedType";
     public static final String FILE_ID = "fileId";
+    public static final String STUDY_TYPE = "studyType";
     public static final String SAMPLE_IDS = "sampleIds";
     public static final String COMPRESS_METHOD = "compressMethod";
 
@@ -133,11 +134,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         Integer fileId = params.getInt(FILE_ID);    //TODO: Transform into an optional field
         VariantSource.Aggregation aggregation = params.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
         String fileName = input.getFileName().toString();
+        VariantStudy.StudyType type = params.get(STUDY_TYPE, VariantStudy.StudyType.class, VariantStudy.StudyType.CASE_CONTROL);
         VariantSource source = new VariantSource(
                 fileName,
                 fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
-                studyConfiguration.getStudyName(), null, aggregation);
+                studyConfiguration.getStudyName(), type, aggregation);
 
         int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100")));
         String compression = params.getString(COMPRESS_METHOD, "snappy");

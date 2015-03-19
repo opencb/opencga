@@ -32,6 +32,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     private Map<String, Integer> sampleIds;
     private Map<Integer, String> idSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
+    private StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor;
     private boolean compressDefaultGenotype;
 
     public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
@@ -46,6 +47,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         this.sampleIds = null;
         this.sourceDbAdaptor = null;
         this.compressDefaultGenotype = compressDefaultGenotype;
+        this.studyConfigurationMongoDBAdaptor = null;
     }
 
     /**
@@ -77,6 +79,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      * @param credentials Parameters for connecting to the database
      * @param collectionName Collection that stores the variant sources
      */
+    @Deprecated
     public DBObjectToSamplesConverter(MongoCredentials credentials, String collectionName) {
         this(true);
         try {
@@ -97,13 +100,22 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         this.sourceDbAdaptor = variantSourceDBAdaptor;
     }
 
+    /**
+     *
+     */
+    public DBObjectToSamplesConverter(StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor, VariantSourceDBAdaptor variantSourceDBAdaptor) {
+        this(true);
+        this.sourceDbAdaptor = variantSourceDBAdaptor;
+        this.studyConfigurationMongoDBAdaptor = studyConfigurationMongoDBAdaptor;
+    }
+
 
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
             int studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
             int fileId = Integer.parseInt(object.get(FILEID_FIELD).toString());
-            QueryResult<StudyConfiguration> queryResult = sourceDbAdaptor.getStudyConfiguration(studyId, new QueryOptions("fileId", fileId));
+            QueryResult<StudyConfiguration> queryResult = studyConfigurationMongoDBAdaptor.getStudyConfiguration(studyId, new QueryOptions("fileId", fileId));
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}, fileId: {}} not found! Looking for VariantSource", studyId, fileId);
 

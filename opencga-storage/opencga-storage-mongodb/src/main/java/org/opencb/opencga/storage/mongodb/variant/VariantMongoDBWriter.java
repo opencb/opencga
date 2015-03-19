@@ -72,6 +72,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    private Integer fileId;
     private String fileId;
     private boolean writeStudyInformation = true;
+    private boolean writeVariantSource = true;
+    private VariantSource source;
 
 
     public VariantMongoDBWriter(Integer fileId, StudyConfiguration study, MongoCredentials credentials, String variantsCollection, String filesCollection,
@@ -264,7 +266,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     private boolean writeSourceSummary(VariantSource source) {
         DBObject studyMongo = sourceConverter.convertToStorageType(source);
-        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
+        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileId());
         filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
         return true;
     }
@@ -287,9 +289,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (writeStudyInformation) {
             writeStudyInformation();
         }
-//        if (writeVariantSource) {
-//            writeSourceSummary(source);
-//        }
+        if (writeVariantSource) {
+            writeSourceSummary(source);
+        }
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
         logger.debug("bulkTime " + bulkTime / 1000000.0 + "ms ");
@@ -309,6 +311,11 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     public final void includeSrc(boolean b) {
         includeSrc = b;
+    }
+
+    public void setVariantSource(VariantSource source) {
+        this.source = source;
+        writeVariantSource = source != null;
     }
 
     @Override

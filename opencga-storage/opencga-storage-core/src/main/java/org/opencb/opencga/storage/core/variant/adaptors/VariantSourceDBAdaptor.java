@@ -13,9 +13,9 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
  */
 public interface VariantSourceDBAdaptor {
 
-    QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options);
-
-    QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+//    QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options);
+//
+//    QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
     QueryResult countSources();
 

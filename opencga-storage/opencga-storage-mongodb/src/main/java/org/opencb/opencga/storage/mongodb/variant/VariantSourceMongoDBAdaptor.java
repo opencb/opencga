@@ -6,7 +6,6 @@ import com.mongodb.QueryBuilder;
 import java.net.UnknownHostException;
 import java.util.*;
 
-import com.mongodb.WriteResult;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -32,10 +31,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantSourceConverter variantSourceConverter;
     private final String collectionName;
-
-    private final Map<Integer, StudyConfiguration> studyConfigurationMap = new HashMap();
-    private final DBObjectToStudyConfigurationConverter studyConfigurationConverter = new DBObjectToStudyConfigurationConverter();
-
+    private final StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor;
 
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
@@ -46,45 +42,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         this.collectionName = collectionName;
         variantSourceConverter = new DBObjectToVariantSourceConverter();
+        studyConfigurationMongoDBAdaptor = new StudyConfigurationMongoDBAdaptor(credentials, collectionName);
     }
-
-    @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
-        long start = System.currentTimeMillis();
-        StudyConfiguration studyConfiguration;
-        if (!studyConfigurationMap.containsKey(studyId)) {
-            MongoDBCollection coll = db.getCollection(collectionName);
-
-            BasicDBObject query = new BasicDBObject("studyId", studyId);
-            if (options.containsKey("fileId")) {
-                query.put(DBObjectToStudyConfigurationConverter.FIELD_FILE_IDS, options.getInt("fileId"));
-            }
-            QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, options);
-            if (queryResult.getResult().isEmpty()) {
-                studyConfiguration = null;
-            } else {
-                studyConfiguration = queryResult.first();
-            }
-            studyConfigurationMap.put(studyId, studyConfiguration);
-        } else {
-            studyConfiguration = studyConfigurationMap.get(studyId);
-        }
-
-        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
-    }
-
-    @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-        DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
-
-        DBObject query = new BasicDBObject("studyId", studyConfiguration.getStudyId());
-        QueryResult<WriteResult> queryResult = coll.update(query, studyMongo, new QueryOptions("upsert", true));
-        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
-
-        return queryResult;
-    }
-
 
     @Override
     public QueryResult countSources() {
@@ -293,7 +252,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats));
 
         //Update StudyConfiguration.
-        updateStudyConfiguration(studyConfiguration, queryOptions);
+        studyConfigurationMongoDBAdaptor.updateStudyConfiguration(studyConfiguration, queryOptions);
 
         return coll.update(find, update, null);
     }
