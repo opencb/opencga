@@ -48,6 +48,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
     public static final String AGGREGATED_TYPE = "aggregatedType";
     public static final String FILE_ID = "fileId";
+    public static final String SAMPLE_IDS = "sampleIds";
     public static final String COMPRESS_METHOD = "compressMethod";
 
     public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
@@ -234,9 +235,60 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
 
+        return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
+    }
+
+    @Override
+    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+        return input;
+    }
+
+    @Override
+    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
         /*
-         * Once the file has been transformed, the StudyConfiguration has to be updated with the new sample names.
+         * Before load file, the StudyConfiguration has to be updated with the new sample names.
+         *  Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
+         *  Will fail if:
+         *      param SAMPLE_IDS is malformed
+         *      any given sampleId is not an integer
+         *      any given sampleName is not in the input file
+         *      any given sampleName was already in the StudyConfiguration (so, was already loaded)
+         *
          */
+
+        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+        VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
+
+        for (String sampleEntry : params.getString(SAMPLE_IDS).split(",")) {
+            String[] split = sampleEntry.split(":");
+            if (split.length != 2) {
+                throw new IOException("param " + sampleEntry + " is malformed");
+            }
+            String sampleName = split[0];
+            int sampleId;
+            try {
+                sampleId = Integer.getInteger(split[1]);
+            } catch (NumberFormatException e) {
+                throw new IOException("sampleId " + split[1] + "is not an integer", e);
+            }
+
+            if (!source.getSamplesPosition().containsKey(sampleName)) {
+                //ERROR
+                throw new IOException("given sampleName is not in the input file");
+            } else {
+                if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
+                    //Add sample to StudyConfiguration
+                    studyConfiguration.getSampleIds().put(sampleName, sampleId);
+                } else {
+                    if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
+                        throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration");
+                    } else {
+                        throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
+                    }
+                }
+            }
+        }
+
 
         //Find the grader sample Id in the studyConfiguration, in order to add more sampleIds if necessary.
         int maxId = 0;
@@ -245,6 +297,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                 maxId = i;
             }
         }
+        //Assign new sampleIds
         for (String sample : source.getSamples()) {
             if (!studyConfiguration.getSampleIds().containsKey(sample)) {
                 //If the sample was not in the original studyId, a new SampleId is assigned.
@@ -269,36 +322,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             }
         }
 
-        return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
-    }
-
-    public static VariantSource readVariantSource(Path input, VariantSource source) {
-        if (source == null) {
-            source = new VariantSource("", "", "", "");
-        }
-        VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
-        reader.open();
-        reader.pre();
-        source.addMetadata("variantFileHeader", reader.getHeader());
-        reader.post();
-        reader.close();
-        return source;
-    }
-
-    @Override
-    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
         return input;
-    }
-
-    protected VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
-        VariantJsonReader variantJsonReader;
-        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz") || source.getFileName().endsWith(".json.snappy") || source.getFileName().endsWith(".json.snz")) {
-            String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
-            variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
-        } else {
-            throw new IOException("Variants input file format not supported");
-        }
-        return variantJsonReader;
     }
 
     @Override
@@ -355,46 +379,37 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         return studyId + "_" + fileId;
     }
 
-//    @Override
-//    public void preLoad(URI inputUri, URI outputUri, ObjectMap params) throws IOException {
-//        // input: JsonVariatnReader
-//        // output: getDBSchemaWriter
-//
-//        Path input = Paths.get(inputUri);
-//        Path output = Paths.get(outputUri);
-//
-//        //Writers
-//        VariantWriter dbSchemaWriter = this.getDBSchemaWriter(outputUri);
-//        if(dbSchemaWriter == null){
-//            System.out.println("[ALERT] preLoad method not supported in this plugin");
-//            return;
-//        }
-//        List<VariantWriter> writers = Arrays.asList(dbSchemaWriter);
-//
-//        //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
-//        VariantSource source = (VariantSource) params.get("source");
-//
-//        //Reader
-//        String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
-//        VariantReader jsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString() , sourceFile);
-//
-//
-//        //Tasks
-//        List<Task<Variant>> taskList = new SortedList<>();
-//
-//
-//        //Runner
-//        VariantRunner vr = new VariantRunner(source, jsonReader, null, writers, taskList);
-//
-//        logger.info("Preloading variants...");
-//        long start = System.currentTimeMillis();
-//        vr.run();
-//        long end = System.currentTimeMillis();
-//        logger.info("end - start = " + (end - start) / 1000.0 + "s");
-//        logger.info("Variants preloaded!");
-//
-//    }
+    public static VariantSource readVariantSource(Path input, VariantSource source) throws IOException {
+        if (source == null) {
+            source = new VariantSource("", "", "", "");
+        }
+        if (input.toFile().getName().contains("json")) {
+            VariantJsonReader reader = getVariantJsonReader(input, source);
+            reader.open();
+            reader.pre();
+            reader.post();
+            reader.close();
+        } else {
+            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+            reader.open();
+            reader.pre();
+            source.addMetadata("variantFileHeader", reader.getHeader());
+            reader.post();
+            reader.close();
+        }
+        return source;
+    }
 
+    protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
+        VariantJsonReader variantJsonReader;
+        if (source.getFileName().endsWith(".json") || source.getFileName().endsWith(".json.gz") || source.getFileName().endsWith(".json.snappy") || source.getFileName().endsWith(".json.snz")) {
+            String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
+            variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
+        } else {
+            throw new IOException("Variants input file format not supported");
+        }
+        return variantJsonReader;
+    }
 
 
 }
