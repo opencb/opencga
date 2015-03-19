@@ -128,12 +128,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
 
         StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
-//        VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
+        Integer fileId = params.getInt(FILE_ID);    //TODO: Transform into an optional field
         VariantSource.Aggregation aggregation = params.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
         String fileName = input.getFileName().toString();
         VariantSource source = new VariantSource(
                 fileName,
-                studyConfiguration.getFileIds().get(fileName).toString(),
+                fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), null, aggregation);
 
@@ -245,79 +245,121 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
     @Override
     public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+        VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
+
+        /*
+         * Before load file, add to the StudyConfiguration.
+         * FileID and FileName is read from the VariantSource
+         * Will fail if:
+         *     fileId is not an integer
+         *     fileId was already in the studyConfiguration
+         *     fileName was already in the studyConfiguration
+         */
+
+        int fileId;
+        String fileName = source.getFileName();
+        try {
+            fileId = Integer.parseInt(source.getFileId());
+        } catch (NumberFormatException e) {
+            throw new IOException("fileId " + source.getFileId() + " is not an integer", e);
+        }
+
+        if (studyConfiguration.getFileIds().containsKey(fileName)) {
+            throw new IOException("fileName " + fileName + " was already in the StudyConfiguration " +
+                    "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
+        }
+        if (studyConfiguration.getFileIds().containsKey(fileId)) {
+            throw new IOException("fileId " + fileId + " was already in the StudyConfiguration" +
+                    "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
+        }
+        studyConfiguration.getFileIds().put(fileName, fileId);
+
+
         /*
          * Before load file, the StudyConfiguration has to be updated with the new sample names.
          *  Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
+         *  If SAMPLE_IDS is missing, will auto-generate sampleIds
          *  Will fail if:
          *      param SAMPLE_IDS is malformed
          *      any given sampleId is not an integer
          *      any given sampleName is not in the input file
          *      any given sampleName was already in the StudyConfiguration (so, was already loaded)
-         *
+         *      some sample was missing in the given SAMPLE_IDS param
          */
 
-        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
-        VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
+        if (params.containsKey(SAMPLE_IDS) && !params.getAsStringList(SAMPLE_IDS).isEmpty()) {
+            for (String sampleEntry : params.getAsStringList(SAMPLE_IDS)) {
+                String[] split = sampleEntry.split(":");
+                if (split.length != 2) {
+                    throw new IOException("param " + sampleEntry + " is malformed");
+                }
+                String sampleName = split[0];
+                int sampleId;
+                try {
+                    sampleId = Integer.getInteger(split[1]);
+                } catch (NumberFormatException e) {
+                    throw new IOException("sampleId " + split[1] + " is not an integer", e);
+                }
 
-        for (String sampleEntry : params.getString(SAMPLE_IDS).split(",")) {
-            String[] split = sampleEntry.split(":");
-            if (split.length != 2) {
-                throw new IOException("param " + sampleEntry + " is malformed");
-            }
-            String sampleName = split[0];
-            int sampleId;
-            try {
-                sampleId = Integer.getInteger(split[1]);
-            } catch (NumberFormatException e) {
-                throw new IOException("sampleId " + split[1] + "is not an integer", e);
-            }
-
-            if (!source.getSamplesPosition().containsKey(sampleName)) {
-                //ERROR
-                throw new IOException("given sampleName is not in the input file");
-            } else {
-                if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
-                    //Add sample to StudyConfiguration
-                    studyConfiguration.getSampleIds().put(sampleName, sampleId);
+                if (!source.getSamplesPosition().containsKey(sampleName)) {
+                    //ERROR
+                    throw new IOException("given sampleName is not in the input file");
                 } else {
-                    if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
-                        throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration");
+                    if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
+                        //Add sample to StudyConfiguration
+                        studyConfiguration.getSampleIds().put(sampleName, sampleId);
                     } else {
-                        throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
+                        if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
+                            throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration");
+                        } else {
+                            throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
+                        }
                     }
                 }
             }
-        }
 
-
-        //Find the grader sample Id in the studyConfiguration, in order to add more sampleIds if necessary.
-        int maxId = 0;
-        for (Integer i : studyConfiguration.getSampleIds().values()) {
-            if ( i > maxId ) {
-                maxId = i;
-            }
-        }
-        //Assign new sampleIds
-        for (String sample : source.getSamples()) {
-            if (!studyConfiguration.getSampleIds().containsKey(sample)) {
-                //If the sample was not in the original studyId, a new SampleId is assigned.
-
-                int sampleId;
-                int samplesSize = studyConfiguration.getSampleIds().size();
-                Integer samplePosition = source.getSamplesPosition().get(sample);
-                if (!studyConfiguration.getSampleIds().containsValue(samplePosition)) {
-                    //1- Use with the SamplePosition
-                    sampleId = samplePosition;
-                } else if (!studyConfiguration.getSampleIds().containsValue(samplesSize)) {
-                    //2- Use the number of samples in the StudyConfiguration.
-                    sampleId = samplesSize;
-                } else {
-                    //3- Use the maxId
-                    sampleId = maxId + 1;
+            //Check that all samples has a sampleId
+            List<String> missingSamples = new LinkedList<>();
+            for (String sampleName : source.getSamples()) {
+                if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
+                    missingSamples.add(sampleName);
                 }
-                studyConfiguration.getSampleIds().put(sample, sampleId);
-                if (sampleId > maxId) {
-                    maxId = sampleId;
+            }
+            if (!missingSamples.isEmpty()) {
+                throw new IOException("Samples " + missingSamples.toString() + " has not assigned sampleId");
+            }
+
+        } else {
+            //Find the grader sample Id in the studyConfiguration, in order to add more sampleIds if necessary.
+            int maxId = 0;
+            for (Integer i : studyConfiguration.getSampleIds().values()) {
+                if (i > maxId) {
+                    maxId = i;
+                }
+            }
+            //Assign new sampleIds
+            for (String sample : source.getSamples()) {
+                if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+                    //If the sample was not in the original studyId, a new SampleId is assigned.
+
+                    int sampleId;
+                    int samplesSize = studyConfiguration.getSampleIds().size();
+                    Integer samplePosition = source.getSamplesPosition().get(sample);
+                    if (!studyConfiguration.getSampleIds().containsValue(samplePosition)) {
+                        //1- Use with the SamplePosition
+                        sampleId = samplePosition;
+                    } else if (!studyConfiguration.getSampleIds().containsValue(samplesSize)) {
+                        //2- Use the number of samples in the StudyConfiguration.
+                        sampleId = samplesSize;
+                    } else {
+                        //3- Use the maxId
+                        sampleId = maxId + 1;
+                    }
+                    studyConfiguration.getSampleIds().put(sample, sampleId);
+                    if (sampleId > maxId) {
+                        maxId = sampleId;
+                    }
                 }
             }
         }

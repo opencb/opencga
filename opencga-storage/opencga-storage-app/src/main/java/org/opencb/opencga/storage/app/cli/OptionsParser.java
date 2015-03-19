@@ -324,7 +324,7 @@ public class OptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         String outdir = "";
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         int fileId;
 
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)

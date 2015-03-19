@@ -613,10 +613,10 @@ public class OpenCGAStorageMain {
             //Create a new StudyConfiguration File
             checkNull(c.studyId, "--study-id");
             checkNull(c.studyName, "--study-name");
-            checkNull(c.fileId, "--file-id");
-            studyConfiguration = new StudyConfiguration(c.studyId, c.studyName, c.fileId, fileName);
+            studyConfiguration = new StudyConfiguration(c.studyId, c.studyName);
             studyConfigurationPath = Paths.get(outdirUri.getPath(), studyConfiguration.getStudyName() + ".study.json");
             logger.info("Creating a new StudyConfiguration file: " + studyConfigurationPath);
+            studyConfiguration.write(studyConfigurationPath);
         } else {
             studyConfigurationPath = Paths.get(c.studyConfigurationFile);
             studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
@@ -624,7 +624,8 @@ public class OpenCGAStorageMain {
 
         ObjectMap params = new ObjectMap();
 //        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
-        params.put(VariantStorageManager.FILE_ID, studyConfiguration.getFileIds().get(fileName));
+//        params.put(VariantStorageManager.FILE_ID, studyConfiguration.getFileIds().get(fileName));
+        params.put(VariantStorageManager.FILE_ID, c.fileId);
         params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
         params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes

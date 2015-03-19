@@ -29,6 +29,15 @@ public class StudyConfiguration {
     public StudyConfiguration() {
     }
 
+    public StudyConfiguration(int studyId, String studyName) {
+        this.studyId = studyId;
+        this.studyName = studyName;
+        setFileIds(new HashMap<String, Integer>(1));
+        setSampleIds(new HashMap<String, Integer>());
+        setCohortIds(new HashMap<String, Integer>());
+        this.cohorts = new HashMap<>();
+    }
+
     public StudyConfiguration(int studyId, String studyName, int fileId, String fileName) {
         this.studyId = studyId;
         this.studyName = studyName;
@@ -134,7 +143,7 @@ public class StudyConfiguration {
 
 
 
-    static <T,R> Map<R,T> inverseMap(Map<T, R> map) {
+    public static <T,R> Map<R,T> inverseMap(Map<T, R> map) {
         Map<R,T> inverseMap = new HashMap<>(map.size());
         for (Map.Entry<T, R> entry : map.entrySet()) {
             inverseMap.put(entry.getValue(), entry.getKey());
