@@ -207,7 +207,7 @@ public class AnalysisJobExecuter {
                                              String randomString, URI temporalOutDirUri, String commandLine,
                                              boolean execute, boolean simulate, boolean recordOutput, Map<String, Object> resourceManagerAttributes)
             throws AnalysisExecutionException, CatalogException {
-
+        logger.debug("Creating job {}: simulate {}, execute {}, recordOutput {}", jobName, simulate, execute, recordOutput);
         long start = System.currentTimeMillis();
 
         QueryResult<Job> jobQueryResult;
@@ -216,7 +216,7 @@ public class AnalysisJobExecuter {
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            Job.Status.DONE, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
+                            Job.Status.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
                             null, null, resourceManagerAttributes)));
         } else {
             if (execute) {
@@ -226,11 +226,15 @@ public class AnalysisJobExecuter {
 
                 // Create a RUNNING job in CatalogManager
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), Collections.<Integer>emptyList(), null, Job.Status.RUNNING, null, sessionId);
+                        outDir.getId(), Collections.<Integer>emptyList(), resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
 
+                logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
+                logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());
                 Command com = new Command(commandLine);
-                SingleProcess sp = new SingleProcess(com);
-                sp.getRunnableProcess().run();
+//                SingleProcess sp = new SingleProcess(com);
+//                sp.getRunnableProcess().run();
+//                sp.runSync();
+                com.run();
 
                 if (recordOutput) {
                     // Record Output.

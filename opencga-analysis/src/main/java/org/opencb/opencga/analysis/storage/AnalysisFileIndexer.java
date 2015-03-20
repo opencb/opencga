@@ -58,6 +58,7 @@ public class AnalysisFileIndexer {
     public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
     public static final String PARAMETERS = "parameters";
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
+    public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -102,7 +103,7 @@ public class AnalysisFileIndexer {
         ObjectMap indexFileModifyParams = new ObjectMap("attributes", new ObjectMap());
 
         /** Get file samples **/
-        List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, sessionId);
+        List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, options, sessionId);
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
@@ -265,7 +266,8 @@ public class AnalysisFileIndexer {
 
     ////AUX METHODS
 
-    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, String sessionId) throws CatalogException {
+    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, QueryOptions options, String sessionId)
+            throws CatalogException {
         List<Sample> sampleList;
         QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
 
@@ -307,7 +309,13 @@ public class AnalysisFileIndexer {
                     set.remove(sample.getName());
                 }
                 logger.warn("Missing samples: m{}", set);
-                throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
+                if (options.getBoolean(CREATE_MISSING_SAMPLES, true)) {
+                    for (String sampleName : set) {
+                        sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                    }
+                } else {
+                    throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
+                }
             }
         } else {
             //Get samples from file.sampleIds
