@@ -286,56 +286,57 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     }
 
     private List<VariantAnnotation> getVariantAnnotationsDbAdaptor(List<GenomicVariant> genomicVariantList) throws IOException {
-        QueryOptions queryOptions = new QueryOptions();
-
-        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());
-        Map<String, List<ConsequenceType>> consequenceTypes = getConsequenceTypes(genomicVariantList, queryOptions);
-        Map<String, String> variantIds = getVariantId(genomicVariantList, queryOptions);
-        for (GenomicVariant genomicVariant : genomicVariantList) {
-            VariantAnnotation variantAnnotation = new VariantAnnotation(
-                    genomicVariant.getChromosome(),
-                    genomicVariant.getPosition(),
-                    genomicVariant.getPosition(),   //TODO: ¿?¿?
-                    genomicVariant.getReference(),
-                    genomicVariant.getAlternative());
-
-            String key = genomicVariant.toString();
-            variantAnnotation.setConsequenceTypes(consequenceTypes.get(key));
-            variantAnnotation.setId(variantIds.get(key));
-
-            variantAnnotationList.add(variantAnnotation);
-        }
-        return variantAnnotationList;
+//        QueryOptions queryOptions = new QueryOptions();
+//
+//        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());
+//        Map<String, List<ConsequenceType>> consequenceTypes = getConsequenceTypes(genomicVariantList, queryOptions);
+//        Map<String, String> variantIds = getVariantId(genomicVariantList, queryOptions);
+//        for (GenomicVariant genomicVariant : genomicVariantList) {
+//            VariantAnnotation variantAnnotation = new VariantAnnotation(
+//                    genomicVariant.getChromosome(),
+//                    genomicVariant.getPosition(),
+//                    genomicVariant.getPosition(),   //TODO: ¿?¿?
+//                    genomicVariant.getReference(),
+//                    genomicVariant.getAlternative());
+//
+//            String key = genomicVariant.toString();
+//            variantAnnotation.setConsequenceTypes(consequenceTypes.get(key));
+//            variantAnnotation.setId(variantIds.get(key));
+//
+//            variantAnnotationList.add(variantAnnotation);
+//        }
+//        return variantAnnotationList;
+        throw new UnsupportedOperationException("Unsupported operation. Try with REST annotation");
     }
-
-    // FIXME To delete when available in cellbase
-    private Map<String, List<ConsequenceType>> getConsequenceTypes(List<GenomicVariant> genomicVariants,
-                                                                   QueryOptions queryOptions) throws IOException {
-        Map<String, List<ConsequenceType>> map = new HashMap<>(genomicVariants.size());
-        List<QueryResult> queryResultList = variantAnnotationDBAdaptor.getAllConsequenceTypesByVariantList(genomicVariants, queryOptions);
-        for (QueryResult queryResult : queryResultList) {
-            Object result = queryResult.getResult();
-            List list = result instanceof Collection ? new ArrayList((Collection) result) : Collections.singletonList(result);
-
-            if(list.get(0) instanceof ConsequenceType) {
-                map.put(queryResult.getId(), list);
-            } else {
-                throw new IOException("queryResult result : " + queryResult + " is not a ConsequenceType");
-            }
-        }
-        return map;
-    }
-
-    // FIXME To delete when available in cellbase
-    private Map<String, String> getVariantId(List<GenomicVariant> genomicVariant, QueryOptions queryOptions) throws IOException {
-        List<QueryResult> variationQueryResultList = variationDBAdaptor.getIdByVariantList(genomicVariant, queryOptions);
-        Map<String, String> map = new HashMap<>(genomicVariant.size());
-        for (QueryResult queryResult : variationQueryResultList) {
-            map.put(queryResult.getId(), queryResult.getResult().toString());
-        }
-        return map;
-    }
-
+//
+//    // FIXME To delete when available in cellbase
+//    private Map<String, List<ConsequenceType>> getConsequenceTypes(List<GenomicVariant> genomicVariants,
+//                                                                   QueryOptions queryOptions) throws IOException {
+//        Map<String, List<ConsequenceType>> map = new HashMap<>(genomicVariants.size());
+//        List<QueryResult> queryResultList = variantAnnotationDBAdaptor.getAllConsequenceTypesByVariantList(genomicVariants, queryOptions);
+//        for (QueryResult queryResult : queryResultList) {
+//            Object result = queryResult.getResult();
+//            List list = result instanceof Collection ? new ArrayList((Collection) result) : Collections.singletonList(result);
+//
+//            if(list.get(0) instanceof ConsequenceType) {
+//                map.put(queryResult.getId(), list);
+//            } else {
+//                throw new IOException("queryResult result : " + queryResult + " is not a ConsequenceType");
+//            }
+//        }
+//        return map;
+//    }
+//
+//    // FIXME To delete when available in cellbase
+//    private Map<String, String> getVariantId(List<GenomicVariant> genomicVariant, QueryOptions queryOptions) throws IOException {
+//        List<QueryResult> variationQueryResultList = variationDBAdaptor.getIdByVariantList(genomicVariant, queryOptions);
+//        Map<String, String> map = new HashMap<>(genomicVariant.size());
+//        for (QueryResult queryResult : variationQueryResultList) {
+//            map.put(queryResult.getId(), queryResult.getResult().toString());
+//        }
+//        return map;
+//    }
+//
 
     /////// LOAD ANNOTATION
 

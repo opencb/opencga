@@ -119,6 +119,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                 DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
                 metadataObject.put("_id", METADATA_OBJECT_ID);
                 metaCollection.insert(metadataObject, null);
+                insertUser(new User("admin", "admin", "admin@email.com", "admin", "opencb", User.Role.ADMIN, "active"), new QueryOptions());
+
             } catch (DuplicateKeyException e){
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
             }
