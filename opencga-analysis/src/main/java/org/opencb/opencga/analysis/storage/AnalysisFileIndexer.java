@@ -17,8 +17,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
-import org.opencb.opencga.lib.exec.Command;
-import org.opencb.opencga.lib.exec.SingleProcess;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +56,7 @@ public class AnalysisFileIndexer {
     public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
     public static final String PARAMETERS = "parameters";
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
+    public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -76,9 +75,9 @@ public class AnalysisFileIndexer {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean("execute");
-        final boolean simulate = options.getBoolean("simulate");
-        final boolean recordOutput = options.getBoolean("recordOutput");
+        final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
+        final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
+        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
 
@@ -102,7 +101,7 @@ public class AnalysisFileIndexer {
         ObjectMap indexFileModifyParams = new ObjectMap("attributes", new ObjectMap());
 
         /** Get file samples **/
-        List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, sessionId);
+        List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, options, sessionId);
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
@@ -133,9 +132,10 @@ public class AnalysisFileIndexer {
         /** Create commandLine **/
         String commandLine = createCommandLine(study, file, index, sampleList, storageEngine,
                 temporalOutDirUri, indexFileModifyParams, dbName, options);
-        if (options.containsKey(PARAMETERS) && options.getMap(PARAMETERS) != null) {
-            for (Map.Entry<String, Object> entry : options.getMap(PARAMETERS).entrySet()) {
-                commandLine += " " + entry.getKey() + " " + entry.getValue();
+        if (options.containsKey(PARAMETERS)) {
+            List<String> extraParams = options.getAsStringList(PARAMETERS);
+            for (String extraParam : extraParams) {
+                commandLine += " " + extraParam;
             }
         }
 
@@ -265,7 +265,8 @@ public class AnalysisFileIndexer {
 
     ////AUX METHODS
 
-    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, String sessionId) throws CatalogException, IOException {
+    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
         List<Sample> sampleList;
         QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
 
@@ -307,7 +308,13 @@ public class AnalysisFileIndexer {
                     set.remove(sample.getName());
                 }
                 logger.warn("Missing samples: m{}", set);
-                throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
+                if (options.getBoolean(CREATE_MISSING_SAMPLES, true)) {
+                    for (String sampleName : set) {
+                        sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                    }
+                } else {
+                    throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
+                }
             }
         } else {
             //Get samples from file.sampleIds

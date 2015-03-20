@@ -50,12 +50,14 @@ public class Command extends RunnableProcess {
 
             InputStream is = proc.getInputStream();
             // Thread out = readOutputStream(is);
-            readOutputStream(is);
+            Thread readOutputStreamThread = readOutputStream(is);
             InputStream es = proc.getErrorStream();
             // Thread err = readErrorStream(es);
-            readErrorStream(es);
+            Thread readErrorStreamThread = readErrorStream(es);
 
             proc.waitFor();
+            readOutputStreamThread.join();
+            readErrorStreamThread.join();
             endTime();
 
             if (proc.exitValue() != 0) {
@@ -91,7 +93,7 @@ public class Command extends RunnableProcess {
         proc.destroy();
     }
 
-    private void readOutputStream(InputStream ins) throws IOException {
+    private Thread readOutputStream(InputStream ins) throws IOException {
         final InputStream in = ins;
 
         Thread T = new Thread("output_reader") {
@@ -125,10 +127,10 @@ public class Command extends RunnableProcess {
             }
         };
         T.start();
-        // return T;
+        return T;
     }
 
-    private void readErrorStream(InputStream ins) throws IOException {
+    private Thread readErrorStream(InputStream ins) throws IOException {
         final InputStream in = ins;
 
         Thread T = new Thread("errror_reader") {
@@ -164,7 +166,7 @@ public class Command extends RunnableProcess {
             }
         };
         T.start();
-        // return T;
+        return T;
     }
 
     /**

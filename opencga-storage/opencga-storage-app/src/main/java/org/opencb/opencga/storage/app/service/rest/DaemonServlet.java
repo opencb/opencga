@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by jacobo on 23/10/14.
@@ -83,9 +84,9 @@ public class DaemonServlet {
         queryResponse.setQueryOptions(queryOptions);
 
         // Guarantee that the QueryResponse object contains a coll of results
-        Collection coll;
-        if (obj instanceof Collection) {
-            coll = (Collection) obj;
+        List coll;
+        if (obj instanceof List) {
+            coll = (List) obj;
         } else {
             coll = new ArrayList();
             coll.add(obj);

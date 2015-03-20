@@ -6,10 +6,7 @@ import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.beans.File;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 29/09/14.
@@ -58,7 +55,7 @@ public class OptionsParser {
         }
     }
 
-    public void parse(String[] args) throws ParameterException{
+    public void parse(String[] args) throws ParameterException {
         jcommander.parse(args);
     }
 
@@ -548,9 +545,11 @@ public class OptionsParser {
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
 
-            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
-            Map<String, String> parameters = new HashMap<>();
-
+            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+            boolean enqueue;
+            
+            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+            public List<String> dashDashParameters;
         }
 
         @Parameters(commandNames = {"stats-variants"}, commandDescription = "Calculate variant stats for a set of cohorts.")
@@ -564,11 +563,14 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = false, arity = 1)
+            @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = true, arity = 1)
             List<Integer> cohortIds;
 
-            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
-            Map<String, String> parameters = new HashMap<>();
+            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+            boolean enqueue;
+
+            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+            public List<String> dashDashParameters;
         }
 
         @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
@@ -582,8 +584,11 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @DynamicParameter(names = {"-P"}, description = "opencga-storage internal parameter. Use your head")
-            Map<String, String> parameters = new HashMap<>();
+            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+            boolean enqueue;
+
+            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+            public List<String> dashDashParameters;
         }
     }
 

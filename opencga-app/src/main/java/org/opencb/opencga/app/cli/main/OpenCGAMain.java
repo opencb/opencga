@@ -11,6 +11,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.CatalogException;
@@ -107,7 +108,12 @@ public class OpenCGAMain {
             } while(!args[0].equals("exit"));
             System.out.println("bye");
         } else {
-            System.exit(opencgaMain.runCommand(args));
+            try {
+                System.exit(opencgaMain.runCommand(args));
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+                logger.debug(e.getMessage(), e);
+            }
         }
     }
 
@@ -330,7 +336,14 @@ public class OpenCGAMain {
                         }
                         String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
@@ -342,13 +355,16 @@ public class OpenCGAMain {
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
                         int fileId = catalogManager.getFileId(c.id);
-//                        int outdirId = catalogManager.getFileId(c.outdir);
-//                        String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
-//                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
-                        variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions);
-//                        System.out.println(index);
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
                     }
@@ -358,8 +374,15 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
-                        variantStorage.annotateVariants(fileId, sessionId, queryOptions);
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, sessionId, queryOptions), null));
 
                         break;
                     }
