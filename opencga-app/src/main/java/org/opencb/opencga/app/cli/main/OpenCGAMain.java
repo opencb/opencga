@@ -107,7 +107,12 @@ public class OpenCGAMain {
             } while(!args[0].equals("exit"));
             System.out.println("bye");
         } else {
-            System.exit(opencgaMain.runCommand(args));
+            try {
+                System.exit(opencgaMain.runCommand(args));
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+                logger.debug(e.getMessage(), e);
+            }
         }
     }
 
