@@ -34,10 +34,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Properties;
+import java.util.*;
 
 @Path("/")
 public class OpenCGAWSServer {
@@ -156,6 +153,33 @@ public class OpenCGAWSServer {
                 queryOptions.put("include", Arrays.asList(include.split(",")));
             }
             queryOptions.put("metadata", metadata);
+        }
+        return queryOptions;
+    }
+
+    protected QueryOptions getAllQueryOptions() {
+        return getAllQueryOptions(null);
+    }
+
+    protected QueryOptions getAllQueryOptions(Collection<String> acceptedQueryOptions) {
+        return getAllQueryOptions(new HashSet<String>(acceptedQueryOptions));
+    }
+
+    protected QueryOptions getAllQueryOptions(Set<String> acceptedQueryOptions) {
+        QueryOptions queryOptions = this.getQueryOptions();
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+            if (acceptedQueryOptions == null || acceptedQueryOptions.contains(entry.getKey())) {
+                if (!entry.getValue().isEmpty()) {
+                    Iterator<String> iterator = entry.getValue().iterator();
+                    StringBuilder sb = new StringBuilder(iterator.next());
+                    while (iterator.hasNext()) {
+                        sb.append(",").append(iterator.next());
+                    }
+                    queryOptions.add(entry.getKey(), sb.toString());
+                } else {
+                    queryOptions.add(entry.getKey(), null);
+                }
+            }
         }
         return queryOptions;
     }

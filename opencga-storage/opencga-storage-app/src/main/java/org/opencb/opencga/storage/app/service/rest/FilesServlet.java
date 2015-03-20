@@ -24,10 +24,8 @@ import java.util.Arrays;
 @Path("/files")
 public class FilesServlet extends DaemonServlet {
 
-    private final MultivaluedMap<String, String> params;
-
     public FilesServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-        super();
+        super(version, uriInfo, httpServletRequest);
         params = uriInfo.getQueryParameters();
     }
 

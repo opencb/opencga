@@ -6,6 +6,7 @@ import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -79,7 +80,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         return cellbaseConfiguration;
     }
 
-    private VariantDBAdaptor getDbAdaptor() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private VariantDBAdaptor getDbAdaptor() throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         Config.setGcsaHome("/opt/opencga/");
         VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
 

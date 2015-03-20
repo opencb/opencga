@@ -30,7 +30,7 @@ public class DBObjectToVariantConverterTest {
         variant.setId("rs666");
         
         mongoVariant = new BasicDBObject("_id", "1_1000_A_C")
-                .append(DBObjectToVariantConverter.ID_FIELD, variant.getId())
+                .append(DBObjectToVariantConverter.IDS_FIELD, variant.getIds())
                 .append(DBObjectToVariantConverter.TYPE_FIELD, variant.getType().name())
                 .append(DBObjectToVariantConverter.CHROMOSOME_FIELD, variant.getChromosome())
                 .append(DBObjectToVariantConverter.START_FIELD, variant.getStart())

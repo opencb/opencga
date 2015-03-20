@@ -3,8 +3,10 @@ package org.opencb.opencga.server;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.beans.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -46,12 +48,46 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/load")
+    @Produces("application/json")
+    @ApiOperation(value = "Load samples from a ped file")
+    public Response loadSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                                @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileId,
+                                @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Integer variableSetId) {
+        try {
+            CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
+            File pedigreeFile = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).first();
+            QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSetId, sessionId);
+            return createOkResponse(sampleQueryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/{sampleId}/info")
     @Produces("application/json")
     @ApiOperation(value = "Get sample information")
     public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
         try {
             QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, this.getQueryOptions(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/search")
+    @Produces("application/json")
+    @ApiOperation(value = "Get sample information")
+    public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId) {
+        try {
+
+            QueryOptions queryOptions = getAllQueryOptions();
+            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

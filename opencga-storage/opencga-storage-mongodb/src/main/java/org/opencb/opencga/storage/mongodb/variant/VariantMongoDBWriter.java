@@ -255,10 +255,22 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                     if (!variantSourceEntry.getFileId().equals(source.getFileId())) {
                         continue;
                     }
-                bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(new BasicDBObject().append("$push",
-                        new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, sourceEntryConverter.convertToStorageType(variantSourceEntry)))
-                        .append("$setOnInsert", variantConverter.convertToStorageType(variant))
-                );
+                BasicDBObject update = new BasicDBObject()
+                        .append("$push",
+                                new BasicDBObject(
+                                        DBObjectToVariantConverter.FILES_FIELD,
+                                        sourceEntryConverter.convertToStorageType(variantSourceEntry)))
+                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));
+                if (variant.getIds() != null && !variant.getIds().isEmpty()) {
+                    update.append("$addToSet",
+                            new BasicDBObject(
+                                    DBObjectToVariantConverter.IDS_FIELD,
+                                    new BasicDBObject(
+                                            "$each",
+                                            variant.getIds())));
+                }
+//                System.out.println("update = " + update);
+                bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
                 currentBulkSize++;
             }
 
@@ -373,13 +385,13 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     @Override @Deprecated
     protected boolean buildBatchIndex(List<Variant> data) {
-        variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1));
-        variantsCollection.createIndex(new BasicDBObject("_at.gn", 1));
-        variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1));
+//        variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1));
+//        variantsCollection.createIndex(new BasicDBObject("_at.gn", 1));
+//        variantsCollection.createIndex(new BasicDBObject("_at.ct", 1));
+//        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, 1));
+//        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1));
+//        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+//                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1));
         return true;
     }
 

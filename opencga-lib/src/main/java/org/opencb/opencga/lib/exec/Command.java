@@ -111,13 +111,13 @@ public class Command extends RunnableProcess {
                         buffer = new byte[bufferLength];
                         bytesRead = in.read(buffer, 0, bufferLength);
                         if (logger != null) {
-                            logger.info(new String(buffer));
+                            System.err.println(new String(buffer));
                         }
                         outputBuffer.append(new String(buffer));
                         Thread.sleep(500);
                         System.err.println("Output- Sleep (last bytesRead = " + bytesRead + ")");
                     }
-                    System.err.println("Output - Fuera while");
+                    logger.debug("ReadOutputStream - Exit while");
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     exception = ex.toString();
@@ -150,13 +150,13 @@ public class Command extends RunnableProcess {
                         buffer = new byte[bufferLength];
                         bytesRead = in.read(buffer, 0, bufferLength);
                         if (logger != null) {
-                            logger.info(new String(buffer));
+                            System.err.println(new String(buffer));
                         }
                         errorBuffer.append(new String(buffer));
                         Thread.sleep(500);
-                        System.err.println("Error- Sleep  (last bytesRead = " + bytesRead + ")");
+                        logger.debug("Error - Sleep  (last bytesRead = " + bytesRead + ")");
                     }
-                    System.err.println("Error - Fuera while");
+                    logger.debug("ReadErrorStream - Exit while");
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     exception = ex.toString();
