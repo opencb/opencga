@@ -325,6 +325,10 @@
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
                     <encoding>UTF-8</encoding>
+                    <excludes>
+                        <exclude>**/serverold/**</exclude>
+                    </excludes>
+
                 </configuration>
             </plugin>
             <plugin>
