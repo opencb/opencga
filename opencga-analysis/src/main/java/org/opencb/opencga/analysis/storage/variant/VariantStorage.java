@@ -95,13 +95,9 @@ public class VariantStorage {
             }
         }
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
-            for (Map.Entry<String, Object> entry : options.getMap(AnalysisFileIndexer.PARAMETERS).entrySet()) {
-                sb.append(" ");
-                sb.append(entry.getKey());
-                if (entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
-                    sb.append(" ");
-                    sb.append(entry.getValue());
-                }
+            List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);
+            for (String extraParam : extraParams) {
+                sb.append(" ").append(extraParam);
             }
         }
 
@@ -154,26 +150,14 @@ public class VariantStorage {
                 .append(" --outdir ").append(temporalOutDirUri.toString())
                 .append(" --database ").append(indexFile.getAttributes().get(AnalysisFileIndexer.DB_NAME))
                 ;
-        if (options.containsKey("parameters")) {
-            Map<String, Object> parameters = options.getMap("parameters");
-            for (Map.Entry<String, Object> entry : parameters.entrySet()) {
-                sb.append(entry.getKey())
-                        .append(" ")
-                        .append(entry.getValue());
-            }
-        }
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
-            for (Map.Entry<String, Object> entry : options.getMap(AnalysisFileIndexer.PARAMETERS).entrySet()) {
-                sb.append(" ");
-                sb.append(entry.getKey());
-                if (entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
-                    sb.append(" ");
-                    sb.append(entry.getValue());
-                }
+            List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);
+            for (String extraParam : extraParams) {
+                sb.append(" ").append(extraParam);
             }
         }
         String commandLine = sb.toString();
-        logger.debug("CommandLine to annotate variants {}" + commandLine);
+        logger.debug("CommandLine to annotate variants {}", commandLine);
 
         /** create job **/
         String jobDescription = "Variant annotation";

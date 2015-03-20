@@ -335,7 +335,7 @@ public class OpenCGAMain {
                         }
                         String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
@@ -347,13 +347,9 @@ public class OpenCGAMain {
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
                         int fileId = catalogManager.getFileId(c.id);
-//                        int outdirId = catalogManager.getFileId(c.outdir);
-//                        String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
-//                        File index = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, new QueryOptions(c.cOpt.dynamic, false));
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
-                        variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions);
-//                        System.out.println(index);
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
                     }
@@ -363,8 +359,8 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.parameters);
-                        variantStorage.annotateVariants(fileId, sessionId, queryOptions);
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, sessionId, queryOptions), null));
 
                         break;
                     }

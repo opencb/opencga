@@ -772,7 +772,11 @@ public class OpenCGAStorageMain {
         if (!c.overwriteAnnotations) {
             queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
         }
-        Path outDir = Paths.get(c.outdir);
+        URI outputUri = new URI(null , c.outdir, null);
+        if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {
+            outputUri = new URI("file", c.outdir, null);
+        }
+        Path outDir = Paths.get(outputUri);
 
         /**
          * Create and load annotations

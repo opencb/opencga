@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -245,6 +246,7 @@ public class AnalysisJobExecuter {
                     // Change status to DONE
                     catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
                 }
+                jobQueryResult = catalogManager.getJob(jobQueryResult.first().getId(), new QueryOptions(), sessionId);
 
             } else {
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);

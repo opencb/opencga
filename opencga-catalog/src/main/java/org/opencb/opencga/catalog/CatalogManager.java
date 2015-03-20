@@ -2098,7 +2098,7 @@ public class CatalogManager implements ICatalogManager {
 
 
     @Override
-    public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws IOException, CatalogIOManagerException, CatalogException {
+    public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 //        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);

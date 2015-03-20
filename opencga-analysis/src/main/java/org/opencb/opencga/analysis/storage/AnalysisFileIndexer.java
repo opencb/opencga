@@ -134,9 +134,10 @@ public class AnalysisFileIndexer {
         /** Create commandLine **/
         String commandLine = createCommandLine(study, file, index, sampleList, storageEngine,
                 temporalOutDirUri, indexFileModifyParams, dbName, options);
-        if (options.containsKey(PARAMETERS) && options.getMap(PARAMETERS) != null) {
-            for (Map.Entry<String, Object> entry : options.getMap(PARAMETERS).entrySet()) {
-                commandLine += " " + entry.getKey() + " " + entry.getValue();
+        if (options.containsKey(PARAMETERS)) {
+            List<String> extraParams = options.getAsStringList(PARAMETERS);
+            for (String extraParam : extraParams) {
+                commandLine += " " + extraParam;
             }
         }
 
