@@ -11,6 +11,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.CatalogException;
@@ -335,6 +336,13 @@ public class OpenCGAMain {
                         }
                         String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
@@ -348,6 +356,13 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions), null));
 
@@ -359,6 +374,13 @@ public class OpenCGAMain {
 
                         int fileId = catalogManager.getFileId(c.id);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, sessionId, queryOptions), null));
 

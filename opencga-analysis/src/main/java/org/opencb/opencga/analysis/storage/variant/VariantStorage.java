@@ -37,9 +37,9 @@ public class VariantStorage {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean("execute");
-        final boolean simulate = options.getBoolean("simulate");
-        final boolean recordOutput = options.getBoolean("recordOutput");
+        final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
+        final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
+        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
@@ -116,9 +116,9 @@ public class VariantStorage {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean("execute");
-        final boolean simulate = options.getBoolean("simulate");
-        final boolean recordOutput = options.getBoolean("recordOutput");
+        final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
+        final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
+        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();

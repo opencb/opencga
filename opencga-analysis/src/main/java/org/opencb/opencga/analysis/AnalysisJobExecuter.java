@@ -30,6 +30,9 @@ import java.util.*;
 
 public class AnalysisJobExecuter {
 
+    public static final String EXECUTE = "execute";
+    public static final String SIMULATE = "simulate";
+    public static final String RECORD_OUTPUT = "recordOutput";
     protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecuter.class);
     protected final Properties analysisProperties;
     protected final String home;

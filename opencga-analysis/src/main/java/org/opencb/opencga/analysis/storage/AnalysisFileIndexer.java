@@ -17,8 +17,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
-import org.opencb.opencga.lib.exec.Command;
-import org.opencb.opencga.lib.exec.SingleProcess;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,9 +75,9 @@ public class AnalysisFileIndexer {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean("execute");
-        final boolean simulate = options.getBoolean("simulate");
-        final boolean recordOutput = options.getBoolean("recordOutput");
+        final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
+        final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
+        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
 
