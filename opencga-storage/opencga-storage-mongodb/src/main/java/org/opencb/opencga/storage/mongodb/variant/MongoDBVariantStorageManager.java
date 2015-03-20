@@ -16,6 +16,7 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -106,7 +107,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+    public URI preLoad(URI input, URI output, ObjectMap params) throws StorageManagerException {
         return super.preLoad(input, output, params);
     }
 
@@ -209,4 +210,50 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         return super.postLoad(input, output, params);
     }
 
+    /* --------------------------------------- */
+    /*  StudyConfiguration util methods        */
+    /* --------------------------------------- */
+
+    @Override
+    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws StorageManagerException {
+        super.checkStudyConfiguration(studyConfiguration, dbAdaptor);
+        if (dbAdaptor == null) {
+            logger.debug("Do not check StudyConfiguration against the loaded in MongoDB");
+        } else {
+            if (dbAdaptor instanceof VariantMongoDBAdaptor) {
+                VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
+                StudyConfigurationMongoDBAdaptor studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationDBAdaptor();
+                StudyConfiguration studyConfigurationFromMongo = studyConfigurationDBAdaptor.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+
+                //Check that the provided StudyConfiguration has the same or more information that the stored in MongoDB.
+                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getFileIds().entrySet()) {
+                    if (!studyConfiguration.getFileIds().containsKey(entry.getKey())) {
+                        throw new StorageManagerException("StudyConfiguration do not have the file " + entry.getKey());
+                    }
+                    if (!studyConfiguration.getFileIds().get(entry.getKey()).equals(entry.getValue())) {
+                        throw new StorageManagerException("StudyConfiguration changes the fileId of '" + entry.getKey() + "' from " + entry.getValue() + " to " + studyConfiguration.getFileIds().get(entry.getKey()));
+                    }
+                }
+                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getCohortIds().entrySet()) {
+                    if (!studyConfiguration.getCohortIds().containsKey(entry.getKey())) {
+                        throw new StorageManagerException("StudyConfiguration do not have the cohort " + entry.getKey());
+                    }
+                    if (!studyConfiguration.getCohortIds().get(entry.getKey()).equals(entry.getValue())) {
+                        throw new StorageManagerException("StudyConfiguration changes the cohortId of '" + entry.getKey() + "' from " + entry.getValue() + " to " + studyConfiguration.getCohortIds().get(entry.getKey()));
+                    }
+                }
+                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getSampleIds().entrySet()) {
+                    if (!studyConfiguration.getSampleIds().containsKey(entry.getKey())) {
+                        throw new StorageManagerException("StudyConfiguration do not have the sample " + entry.getKey());
+                    }
+                    if (!studyConfiguration.getSampleIds().get(entry.getKey()).equals(entry.getValue())) {
+                        throw new StorageManagerException("StudyConfiguration changes the sampleId of '" + entry.getKey() + "' from " + entry.getValue() + " to " + studyConfiguration.getSampleIds().get(entry.getKey()));
+                    }
+                }
+                studyConfigurationDBAdaptor.updateStudyConfiguration(studyConfiguration, null);
+            } else {
+                throw new StorageManagerException("Unknown VariantDBAdaptor '" + dbAdaptor.getClass().toString() + "'. Expected '" + VariantMongoDBAdaptor.class + "'");
+            }
+        }
+    }
 }

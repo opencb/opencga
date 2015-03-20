@@ -103,7 +103,13 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     @Override
-    public URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+    public URI preTransform(URI input, ObjectMap params) throws StorageManagerException, IOException, FileFormatException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
+        String fileName = Paths.get(input.getPath()).getFileName().toString();
+        Integer fileId = params.getInt(FILE_ID);    //TODO: Transform into an optional field
+
+        checkNewFile(studyConfiguration, fileId, fileName);
+
         return input;
     }
 
@@ -117,7 +123,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
      * @throws IOException
      */
     @Override
-    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws IOException {
+    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws StorageManagerException {
         // input: VcfReader
         // output: JsonWriter
 
@@ -130,7 +136,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
         boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
 
-        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
         Integer fileId = params.getInt(FILE_ID);    //TODO: Transform into an optional field
         VariantSource.Aggregation aggregation = params.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
         String fileName = input.getFileName().toString();
@@ -171,7 +177,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                     break;
             }
         } else {
-            throw new IOException("Variants input file format not supported");
+            throw new StorageManagerException("Variants input file format not supported");
         }
 
 
@@ -210,7 +216,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
             logger.info("Single thread transform...");
             start = System.currentTimeMillis();
-            vr.run();
+            try {
+                vr.run();
+            } catch (IOException e) {
+                throw new StorageManagerException("Fail runner execution", e);
+            }
             end = System.currentTimeMillis();
 
         } else {
@@ -248,8 +258,8 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
-        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+    public URI preLoad(URI input, URI output, ObjectMap params) throws StorageManagerException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
         VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
 
         /*
@@ -266,17 +276,10 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         try {
             fileId = Integer.parseInt(source.getFileId());
         } catch (NumberFormatException e) {
-            throw new IOException("FileId " + source.getFileId() + " is not an integer", e);
+            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
         }
 
-        if (studyConfiguration.getFileIds().containsKey(fileName)) {
-            throw new IOException("FileName " + fileName + " was already in the StudyConfiguration " +
-                    "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
-        }
-        if (studyConfiguration.getFileIds().containsKey(fileId)) {
-            throw new IOException("FileId " + fileId + " was already in the StudyConfiguration" +
-                    "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
-        }
+        checkNewFile(studyConfiguration, fileId, fileName);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
 
 
@@ -296,28 +299,28 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             for (String sampleEntry : params.getAsStringList(SAMPLE_IDS)) {
                 String[] split = sampleEntry.split(":");
                 if (split.length != 2) {
-                    throw new IOException("Param " + sampleEntry + " is malformed");
+                    throw new StorageManagerException("Param " + sampleEntry + " is malformed");
                 }
                 String sampleName = split[0];
                 int sampleId;
                 try {
                     sampleId = Integer.getInteger(split[1]);
                 } catch (NumberFormatException e) {
-                    throw new IOException("SampleId " + split[1] + " is not an integer", e);
+                    throw new StorageManagerException("SampleId " + split[1] + " is not an integer", e);
                 }
 
                 if (!source.getSamplesPosition().containsKey(sampleName)) {
                     //ERROR
-                    throw new IOException("Given sampleName is not in the input file");
+                    throw new StorageManagerException("Given sampleName is not in the input file");
                 } else {
                     if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
                         //Add sample to StudyConfiguration
                         studyConfiguration.getSampleIds().put(sampleName, sampleId);
                     } else {
                         if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
-                            throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration");
+                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration");
                         } else {
-                            throw new IOException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
+                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
                         }
                     }
                 }
@@ -331,7 +334,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                 }
             }
             if (!missingSamples.isEmpty()) {
-                throw new IOException("Samples " + missingSamples.toString() + " has not assigned sampleId");
+                throw new StorageManagerException("Samples " + missingSamples.toString() + " has not assigned sampleId");
             }
 
         } else {
@@ -381,7 +384,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         String species = params.getString(SPECIES, "hsapiens");
         String assembly = params.getString(ASSEMBLY, "");
         int fileId = params.getInt(FILE_ID);
-        StudyConfiguration studyConfiguration = params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
 //        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
         if (annotate) {
@@ -427,16 +430,20 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         return studyId + "_" + fileId;
     }
 
-    public static VariantSource readVariantSource(Path input, VariantSource source) throws IOException {
+    public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
         if (source == null) {
             source = new VariantSource("", "", "", "");
         }
         if (input.toFile().getName().contains("json")) {
-            VariantJsonReader reader = getVariantJsonReader(input, source);
-            reader.open();
-            reader.pre();
-            reader.post();
-            reader.close();
+            try {
+                VariantJsonReader reader = getVariantJsonReader(input, source);
+                reader.open();
+                reader.pre();
+                reader.post();
+                reader.close();
+            } catch (IOException e) {
+                throw new StorageManagerException("Can not read VariantSource from " + input, e);
+            }
         } else {
             VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
             reader.open();
@@ -462,5 +469,46 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         return variantJsonReader;
     }
 
+    /* --------------------------------------- */
+    /*  StudyConfiguration util methods        */
+    /* --------------------------------------- */
+
+    protected StudyConfiguration getStudyConfiguration(ObjectMap params) {
+        return params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+    }
+
+    /**
+     * Check if the file(name,id) can be added to the StudyConfiguration.
+     * Will fail if:
+     *     fileId was already in the studyConfiguration
+     *     fileName was already in the studyConfiguration
+     */
+    protected void checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
+        if (studyConfiguration.getFileIds().containsKey(fileName)) {
+            throw new StorageManagerException("FileName " + fileName + " was already in the StudyConfiguration " +
+                    "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
+        }
+        if (studyConfiguration.getFileIds().containsKey(fileId)) {
+            throw new StorageManagerException("FileId " + fileId + " was already in the StudyConfiguration" +
+                    "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
+        }
+    }
+
+    /**
+     * Check if the StudyConfiguration is correct
+     * @param studyConfiguration    StudyConfiguration to check
+     * @param dbAdaptor             VariantDBAdaptor to the DB containing the indexed study
+     */
+    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws StorageManagerException {
+        if (studyConfiguration == null) {
+            throw new StorageManagerException("StudyConfiguration is null");
+        }
+        if (studyConfiguration.getFileIds().size() != StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).size() ) {
+            throw new StorageManagerException("StudyConfiguration has duplicated fileIds");
+        }
+        if (studyConfiguration.getCohortIds().size() != StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).size() ) {
+            throw new StorageManagerException("StudyConfiguration has duplicated cohortIds");
+        }
+    }
 
 }

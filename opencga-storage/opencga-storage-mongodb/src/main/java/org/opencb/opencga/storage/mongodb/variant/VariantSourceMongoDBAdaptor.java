@@ -31,7 +31,6 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private final MongoDataStore db;
     private final DBObjectToVariantSourceConverter variantSourceConverter;
     private final String collectionName;
-    private final StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor;
 
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
@@ -42,7 +41,6 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         this.collectionName = collectionName;
         variantSourceConverter = new DBObjectToVariantSourceConverter();
-        studyConfigurationMongoDBAdaptor = new StudyConfigurationMongoDBAdaptor(credentials, collectionName);
     }
 
     @Override
@@ -250,9 +248,6 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         DBObject find = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, variantSourceStats.getFileId())
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, variantSourceStats.getStudyId());
         DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats));
-
-        //Update StudyConfiguration.
-        studyConfigurationMongoDBAdaptor.updateStudyConfiguration(studyConfiguration, queryOptions);
 
         return coll.update(find, update, null);
     }

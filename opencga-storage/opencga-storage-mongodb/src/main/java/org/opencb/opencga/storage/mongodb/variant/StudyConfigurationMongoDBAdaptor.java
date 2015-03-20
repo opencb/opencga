@@ -47,9 +47,12 @@ public class StudyConfigurationMongoDBAdaptor {
             MongoDBCollection coll = db.getCollection(collectionName);
 
             BasicDBObject query = new BasicDBObject("studyId", studyId);
-            if (options.containsKey("fileId")) {
-                query.put(DBObjectToStudyConfigurationConverter.FIELD_FILE_IDS, options.getInt("fileId"));
+            if (options != null) {
+                if (options.containsKey("fileId")) {
+                    query.put(DBObjectToStudyConfigurationConverter.FIELD_FILE_IDS, options.getInt("fileId"));
+                }
             }
+
             QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, options);
             if (queryResult.getResult().isEmpty()) {
                 studyConfiguration = null;

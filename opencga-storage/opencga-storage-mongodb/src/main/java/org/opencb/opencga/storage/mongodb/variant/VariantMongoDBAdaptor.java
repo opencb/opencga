@@ -38,6 +38,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
+    private final StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor;
 
     private DataWriter dataWriter;
 
@@ -55,7 +56,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
 
         String studiesCollectionName = filesCollectionName;
-        StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor = new StudyConfigurationMongoDBAdaptor(credentials, studiesCollectionName);
+        studyConfigurationMongoDBAdaptor = new StudyConfigurationMongoDBAdaptor(credentials, studiesCollectionName);
 
         collectionName = variantsCollectionName;
         
@@ -401,6 +402,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
         return variantSourceMongoDBAdaptor;
+    }
+
+    public StudyConfigurationMongoDBAdaptor getStudyConfigurationDBAdaptor() {
+        return studyConfigurationMongoDBAdaptor;
     }
 
     @Override

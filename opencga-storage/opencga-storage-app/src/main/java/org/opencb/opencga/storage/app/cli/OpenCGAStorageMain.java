@@ -795,6 +795,7 @@ public class OpenCGAStorageMain {
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
+                variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
                 studyConfiguration.write(studyConfigurationPath);
             }
         } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?

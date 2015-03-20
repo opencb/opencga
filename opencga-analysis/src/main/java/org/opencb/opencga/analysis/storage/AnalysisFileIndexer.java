@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,7 +231,7 @@ public class AnalysisFileIndexer {
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-variants ")
                     .append(" --file-id ").append(indexFile.getId())
-                    .append(" --study-name \"").append(study.getName()).append("\"")
+                    .append(" --study-name ").append(study.getAlias()).append("")
                     .append(" --study-id ").append(study.getId())
 //                    .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dbName)
@@ -266,7 +267,7 @@ public class AnalysisFileIndexer {
     ////AUX METHODS
 
     private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
+            throws AnalysisExecutionException, CatalogException {
         List<Sample> sampleList;
         QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
 
@@ -332,11 +333,16 @@ public class AnalysisFileIndexer {
         return sampleList;
     }
 
-    static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file) throws CatalogException, IOException {
+    static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file)
+            throws AnalysisExecutionException {
         //TODO: Fix aggregate and studyType
         VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
-        URI fileUri = catalogManager.getFileUri(file);
-        return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        try {
+            URI fileUri = catalogManager.getFileUri(file);
+            return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        } catch (CatalogException | StorageManagerException e) {
+            throw new AnalysisExecutionException(e);
+        }
     }
 
     public static URI createSimulatedOutDirUri() {
