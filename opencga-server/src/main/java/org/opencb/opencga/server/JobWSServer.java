@@ -4,6 +4,7 @@ package org.opencb.opencga.server;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
@@ -159,7 +160,18 @@ public class JobWSServer extends OpenCGAWSServer {
             if (params.get(outputParam).isEmpty()) {
                 return createErrorResponse("Missing output param '" + outputParam + "'");
             }
-           int outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
+
+            int outDirId;
+            if(outputParam.equalsIgnoreCase("analysis")){
+                QueryOptions query = new QueryOptions();
+                query.put("name", name);
+                QueryResult<File> result = catalogManager.searchFile(studyId, query, this.getQueryOptions(), sessionId);
+                outDirId = result.getResult().get(0).getId();
+
+            }
+            else
+                outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
+
             File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
 
 
