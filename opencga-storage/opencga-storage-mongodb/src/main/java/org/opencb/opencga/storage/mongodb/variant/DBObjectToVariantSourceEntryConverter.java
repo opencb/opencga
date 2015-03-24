@@ -123,21 +123,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Statistics
         if (statsConverter != null && object.containsField(STATS_FIELD)) {
-            Map<String, VariantStats> cohortStats = new LinkedHashMap<>();
             DBObject stats = (DBObject) object.get(STATS_FIELD);
-            if (stats instanceof List) {
-                List<DBObject> cohortStatsList = ((List) stats);
-                for (DBObject vs : cohortStatsList) {
-                    VariantStats variantStats = statsConverter.convertToDataModelType(vs);
-                    if (variant != null) {
-                        variantStats.setRefAllele(variant.getReference());
-                        variantStats.setAltAllele(variant.getAlternate());
-                        variantStats.setVariantType(variant.getType());
-                    }
-                    cohortStats.put((String) vs.get(DBObjectToVariantStatsConverter.COHORT_ID), variantStats);
-                    file.setCohortStats(cohortStats);
-                }
-            }
+            Map<String, VariantStats> variantStatsMap = statsConverter.convertCohortsToDataModelType(stats, variant);
+            file.setCohortStats(variantStatsMap);
         }
         return file;
     }
@@ -189,11 +177,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         // Statistics
         if (statsConverter != null && object.getCohortStats() != null) {
             Map<String, VariantStats> cohortStats = object.getCohortStats();
-            DBObject cohortsObject = new BasicDBObject();
-            for (String cohortName : cohortStats.keySet()) {
-                cohortsObject.put(cohortName, statsConverter.convertToStorageType(cohortStats.get(cohortName)));
-            }
-            mongoFile.put(STATS_FIELD, cohortsObject);
+            List list = statsConverter.convertCohortsToStorageType(cohortStats);
+            mongoFile.put(STATS_FIELD, list);
         }
         
         return mongoFile;

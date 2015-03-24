@@ -9,33 +9,28 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.SgeManager;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.*;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.*;
 import java.net.URI;
-import java.nio.file.*;
 import java.util.*;
 
 @Path("/files")
@@ -574,7 +569,7 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
 
-        File index;
+        QueryResult<File> queryResult;
         try {
             if (storageEngine.isEmpty()) {
                 storageEngine = StorageManagerFactory.getDefaultStorageManagerName();
@@ -583,16 +578,15 @@ public class FileWSServer extends OpenCGAWSServer {
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId = catalogManager.getFileId(fileIdStr);
             if(outDirId < 0) {
-                QueryResult<File> queryResult = catalogManager.getFileParent(fileId, null, sessionId);
-                outDirId = queryResult.getResult().get(0).getId();
+                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            index = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
+            queryResult = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
 
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-        return createOkResponse(index);
+        return createOkResponse(queryResult);
     }
 
 //    @GET
@@ -692,7 +686,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     try {
                         AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName, new ObjectMap());
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }
                     QueryResult alignmentsByRegion;
@@ -735,16 +729,17 @@ public class FileWSServer extends OpenCGAWSServer {
                     VariantDBAdaptor dbAdaptor;
                     try {
                         dbAdaptor = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }
                     QueryResult variantsByRegion;
                     if (histogram) {
                         queryOptions.put("interval", interval);
                         variantsByRegion = dbAdaptor.getAllVariants(queryOptions);
-                    } else if (variantSource) {
-                        queryOptions.put("fileId", Integer.toString(fileIdNum));
-                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
+//                    } else if (variantSource) {
+//                        queryOptions.put("fileId", Integer.toString(fileIdNum));
+//                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else {
                         //With merge = true, will return only one result.
                         queryOptions.put("merge", true);

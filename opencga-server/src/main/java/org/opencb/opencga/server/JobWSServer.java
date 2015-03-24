@@ -54,7 +54,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, this.getQueryOptions(), sessionId));
-        } catch (CatalogException | IOException e) {
+        } catch (CatalogException e) {
             return createErrorResponse(e.getMessage());
         }
     }

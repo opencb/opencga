@@ -4,10 +4,8 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
@@ -26,7 +24,8 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String LENGTH_FIELD = "len";
     public final static String REFERENCE_FIELD = "ref";
     public final static String ALTERNATE_FIELD = "alt";
-    public final static String ID_FIELD = "id";
+//    public final static String ID_FIELD = "id";
+    public final static String IDS_FIELD = "ids";
     
     public final static String HGVS_FIELD = "hgvs";
     public final static String TYPE_FIELD = "type";
@@ -49,7 +48,8 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("length", LENGTH_FIELD);
         fieldsMap.put("reference", REFERENCE_FIELD);
         fieldsMap.put("alternative", ALTERNATE_FIELD);
-        fieldsMap.put("id", ID_FIELD);
+//        fieldsMap.put("id", ID_FIELD);
+        fieldsMap.put("ids", IDS_FIELD);
         fieldsMap.put("hgvs", HGVS_FIELD);
         fieldsMap.put("type", TYPE_FIELD);
 //        fields.put("name", NAME_FIELD);
@@ -89,8 +89,11 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         String reference = (String) object.get(REFERENCE_FIELD);
         String alternate = (String) object.get(ALTERNATE_FIELD);
         Variant variant = new Variant(chromosome, start, end, reference, alternate);
-        variant.setId((String) object.get(ID_FIELD));
-        
+        if (object.containsField(IDS_FIELD)) {
+            Object ids = object.get(IDS_FIELD);
+            variant.setIds(new HashSet<String>(((Collection<String>) ids)));
+        }
+
         // Transform HGVS: List of map entries -> Map of lists
         BasicDBList mongoHgvs = (BasicDBList) object.get(HGVS_FIELD);
         if (mongoHgvs != null) {
@@ -129,7 +132,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public DBObject convertToStorageType(Variant object) {
         // Attributes easily calculated
         BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object))
-                .append(ID_FIELD, object.getId())
+//                .append(IDS_FIELD, object.getIds())
                 .append(TYPE_FIELD, object.getType().name())
                 .append(CHROMOSOME_FIELD, object.getChromosome())
                 .append(START_FIELD, object.getStart())

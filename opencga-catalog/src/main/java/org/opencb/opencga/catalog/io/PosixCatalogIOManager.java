@@ -46,27 +46,39 @@ public class PosixCatalogIOManager extends CatalogIOManager {
      */
 
     @Override
-    protected void checkUri(URI uri) throws CatalogIOManagerException {
+    protected void checkUriExists(URI uri) throws CatalogIOManagerException {
         if(uri == null || !Files.exists(Paths.get(uri))) {
-            throw new CatalogIOManagerException("Path '" + uri.toString() + "' is null or it does not exist");
+            throw new CatalogIOManagerException("Path '" + String.valueOf(uri) + "' is null or it does not exist");
+        }
+    }
+
+    @Override
+    protected void checkUriScheme(URI uri) throws CatalogIOManagerException {
+        if (uri == null) {    //If scheme is missing, use "file" as scheme
+            throw new CatalogIOManagerException("URI is null");
+        } else if (uri.getScheme() != null && !uri.getScheme().equals("file")) {    //If scheme is missing, use "file" as scheme
+            throw new CatalogIOManagerException("Unknown URI.scheme for URI '" + String.valueOf(uri) + "'");
         }
     }
 
     @Override
     protected void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOManagerException {
-        Path path = Paths.get(uri);
-        if(uri == null || !Files.exists(path) || !Files.isDirectory(path)) {
-            throw new CatalogIOManagerException("Path '" + uri.toString() + "' is null, it does not exist or it's not a directory");
-        }
-
-        if(writable && !Files.isWritable(path)) {
-            throw new CatalogIOManagerException("Path '" + uri.toString() + "' is not writable");
+        if (uri == null) {
+            throw new CatalogIOManagerException("URI is null");
+        } else {
+            Path path = Paths.get(uri.getPath());
+            if (!Files.exists(path) || !Files.isDirectory(path)) {
+                throw new CatalogIOManagerException("Path '" + uri.toString() + "' is null, it does not exist or it's not a directory");
+            }
+            if(writable && !Files.isWritable(path)) {
+                throw new CatalogIOManagerException("Path '" + uri.toString() + "' is not writable");
+            }
         }
     }
 
     private void checkDirectoryPath(Path path, boolean writable) throws CatalogIOManagerException {
         if(path == null || !Files.exists(path) || !Files.isDirectory(path)) {
-            throw new CatalogIOManagerException("Path '" + path.toString() + "' is null, it does not exist or it's not a directory");
+            throw new CatalogIOManagerException("Path '" + String.valueOf(path) + "' is null, it does not exist or it's not a directory");
         }
 
         if(writable && !Files.isWritable(path)) {
@@ -110,7 +122,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         } else {
             parent = ".";
         }
-        checkUri(oldName);
+        checkUriExists(oldName);
         checkDirectoryUri(oldName.resolve(parent), true);
 
         if (!Files.exists(Paths.get(newName))) {
@@ -125,7 +137,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public void copyFile(URI source, URI target) throws IOException, CatalogIOManagerException {
-        checkUri(source);
+        checkUriExists(source);
         if("file".equals(source.getScheme()) && "file".equals(target.getScheme())) {
             Files.copy(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
         } else {
@@ -135,7 +147,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException {
-        checkUri(source);
+        checkUriExists(source);
         if (source.getScheme().equals("file") && target.getScheme().equals("file")) {
             Files.move(Paths.get(source), Paths.get(target));
         } else {
@@ -153,7 +165,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         checkParam(studyId);
 
         URI path = getUserUri(userId).resolve(USER_PROJECTS_FOLDER).resolve(projectId).resolve(studyId);
-        checkUri(path);
+        checkUriExists(path);
 
         return null;
     }*/
@@ -210,7 +222,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 /*
     public void deleteUser(String userId) throws CatalogIOManagerException {
         URI userUri = getUserUri(userId);
-        checkUri(userUri);
+        checkUriExists(userUri);
         try {
             IOUtils.deleteDirectory(Paths.get(userUri));
         } catch (IOException e) {
@@ -241,7 +253,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     public void deleteAnonymousUser(String anonymousUserId) throws CatalogIOManagerException {
         URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
-        checkUri(anonymousUserUri);
+        checkUriExists(anonymousUserUri);
 
         try {
             IOUtils.deleteDirectory(anonymousUserUri);
@@ -544,15 +556,13 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public long getFileSize(URI file) throws CatalogIOManagerException {
-        if (file.getScheme().equals("file")) {
-            try {
-                return Files.size(Paths.get(file));
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new CatalogIOManagerException("Can't get file size", e);
-            }
+        checkUriScheme(file);
+        try {
+            return Files.size(Paths.get(file));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogIOManagerException("Can't get file size", e);
         }
-        throw new CatalogIOManagerException("Unknown scheme: " + file.getScheme());
     }
 
 

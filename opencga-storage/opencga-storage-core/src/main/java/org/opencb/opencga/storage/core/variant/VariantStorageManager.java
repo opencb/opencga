@@ -13,7 +13,8 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.lib.common.TimeUtils;
-import org.opencb.opencga.storage.core.*;
+import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
@@ -48,6 +49,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
     public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
     public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
+    public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
     public static final String DB_NAME = "dbName";
 
     public static final String SPECIES = "species";
@@ -67,12 +69,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
 
-
     public VariantStorageManager() {
         this.properties = new Properties();
     }
 
-    //@Override
+    @Override
     public void addConfigUri(URI configUri){
         if(configUri != null
                 && Paths.get(configUri.getPath()).toFile().exists()
@@ -142,7 +143,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                     factory = new VariantAggregatedVcfFactory();
                     break;
                 case EVS:
-                    factory = new VariantVcfEVSFactory();
+                    factory = new VariantVcfEVSFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
                     break;
             }
         } else {
@@ -222,7 +223,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
     }
 
-    private VariantSource readVariantSource(Path input, VariantSource source) {
+    static public VariantSource readVariantSource(Path input, VariantSource source) {
         VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
         reader.open();
         reader.pre();
@@ -249,7 +250,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
         boolean annotate = params.getBoolean(ANNOTATE);
         VariantAnnotationManager.AnnotationSource annotationSource = params.get(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.class);
         Properties annotatorProperties = params.get(ANNOTATOR_PROPERTIES, Properties.class);
