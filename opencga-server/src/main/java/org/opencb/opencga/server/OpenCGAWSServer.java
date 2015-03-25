@@ -197,15 +197,15 @@ public class OpenCGAWSServer {
         queryResponse.setApiVersion(version);
         queryResponse.setQueryOptions(getQueryOptions());
 
-        // Guarantee that the QueryResponse object contains a coll of results
-        Collection coll;
-        if (obj instanceof Collection) {
-            coll = (Collection) obj;
+        // Guarantee that the QueryResponse object contains a list of results
+        List list;
+        if (obj instanceof List) {
+            list = (List) obj;
         } else {
-            coll = new ArrayList();
-            coll.add(obj);
+            list = new ArrayList();
+            list.add(obj);
         }
-        queryResponse.setResponse(coll);
+        queryResponse.setResponse(list);
 
         switch (outputFormat.toLowerCase()) {
             case "json":
