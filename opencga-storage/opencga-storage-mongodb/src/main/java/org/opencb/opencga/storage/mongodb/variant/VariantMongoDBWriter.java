@@ -68,7 +68,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long checkExistsTime = 0;
     private long checkExistsDBTime = 0;
     private long bulkTime = 0;
-    private StudyConfiguration study;
+    private StudyConfiguration studyConfiguration;
 //    private Integer fileId;
     private String fileId;
     private boolean writeStudyInformation = true;
@@ -76,12 +76,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private VariantSource source;
 
 
-    public VariantMongoDBWriter(Integer fileId, StudyConfiguration study, MongoCredentials credentials, String variantsCollection, String filesCollection,
+    public VariantMongoDBWriter(Integer fileId, StudyConfiguration studyConfiguration, MongoCredentials credentials, String variantsCollection, String filesCollection,
                                 boolean includeSamples, boolean includeStats) {
         if (credentials == null) {
             throw new IllegalArgumentException("Credentials for accessing the database must be specified");
         }
-        this.study = study;
+        this.studyConfiguration = studyConfiguration;
 //        this.source = source;
         this.fileId = String.valueOf(fileId);
         this.credentials = credentials;
@@ -272,10 +272,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
     private boolean writeStudyInformation() {
-        DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(study);
+        DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
         //(DBObject) JSON.parse(new ObjectMapper().writeValueAsString(study).replace(".", "&#46;"));
 
-        DBObject query = new BasicDBObject("studyId", study.getStudyId());
+        DBObject query = new BasicDBObject("studyId", studyConfiguration.getStudyId());
         filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
         return true;
     }
@@ -339,7 +339,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
-        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(compressDefaultGenotype, study.getSampleIds()): null; //TODO: Add default genotype
+        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(compressDefaultGenotype, studyConfiguration.getSampleIds()): null; //TODO: Add default genotype
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 includeSrc,

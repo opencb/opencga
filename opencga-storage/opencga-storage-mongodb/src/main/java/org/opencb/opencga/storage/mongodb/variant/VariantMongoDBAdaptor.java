@@ -17,6 +17,7 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -38,7 +39,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
-    private final StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor;
+    private final StudyConfigurationManager studyConfigurationManager;
 
     private DataWriter dataWriter;
 
@@ -56,7 +57,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
 
         String studiesCollectionName = filesCollectionName;
-        studyConfigurationMongoDBAdaptor = new StudyConfigurationMongoDBAdaptor(credentials, studiesCollectionName);
+        studyConfigurationManager = new MongoDBStudyConfigurationManager(credentials, studiesCollectionName);
 
         collectionName = variantsCollectionName;
         
@@ -64,7 +65,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // TODO Allow to configure depending on the type of study?
         variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 true,
-                new DBObjectToSamplesConverter(studyConfigurationMongoDBAdaptor, variantSourceMongoDBAdaptor),
+                new DBObjectToSamplesConverter(studyConfigurationManager, variantSourceMongoDBAdaptor),
                 new DBObjectToVariantStatsConverter());
         variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter);
     }
@@ -404,8 +405,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantSourceMongoDBAdaptor;
     }
 
-    public StudyConfigurationMongoDBAdaptor getStudyConfigurationDBAdaptor() {
-        return studyConfigurationMongoDBAdaptor;
+    public StudyConfigurationManager getStudyConfigurationDBAdaptor() {
+        return studyConfigurationManager;
     }
 
     @Override

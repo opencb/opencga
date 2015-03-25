@@ -13,6 +13,7 @@ import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     private Map<String, Integer> sampleIds;
     private Map<Integer, String> idSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
-    private StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor;
+    private StudyConfigurationManager studyConfigurationManager;
     private boolean compressDefaultGenotype;
 
     public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
@@ -47,7 +48,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         this.sampleIds = null;
         this.sourceDbAdaptor = null;
         this.compressDefaultGenotype = compressDefaultGenotype;
-        this.studyConfigurationMongoDBAdaptor = null;
+        this.studyConfigurationManager = null;
     }
 
     /**
@@ -103,10 +104,10 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     /**
      *
      */
-    public DBObjectToSamplesConverter(StudyConfigurationMongoDBAdaptor studyConfigurationMongoDBAdaptor, VariantSourceDBAdaptor variantSourceDBAdaptor) {
+    public DBObjectToSamplesConverter(StudyConfigurationManager studyConfigurationManager, VariantSourceDBAdaptor variantSourceDBAdaptor) {
         this(true);
         this.sourceDbAdaptor = variantSourceDBAdaptor;
-        this.studyConfigurationMongoDBAdaptor = studyConfigurationMongoDBAdaptor;
+        this.studyConfigurationManager = studyConfigurationManager;
     }
 
 
@@ -115,7 +116,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
             int studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
             int fileId = Integer.parseInt(object.get(FILEID_FIELD).toString());
-            QueryResult<StudyConfiguration> queryResult = studyConfigurationMongoDBAdaptor.getStudyConfiguration(studyId, new QueryOptions("fileId", fileId));
+            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions("fileId", fileId));
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}, fileId: {}} not found! Looking for VariantSource", studyId, fileId);
 

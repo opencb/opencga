@@ -3,13 +3,16 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import java.net.UnknownHostException;
@@ -20,7 +23,7 @@ import java.util.Map;
 /**
  * Created by hpccoll1 on 19/03/15.
  */
-public class StudyConfigurationMongoDBAdaptor {
+public class MongoDBStudyConfigurationManager extends StudyConfigurationManager {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
@@ -29,8 +32,19 @@ public class StudyConfigurationMongoDBAdaptor {
     private final Map<Integer, StudyConfiguration> studyConfigurationMap = new HashMap();
     private final DBObjectToStudyConfigurationConverter studyConfigurationConverter = new DBObjectToStudyConfigurationConverter();
 
+    public MongoDBStudyConfigurationManager(ObjectMap objectMap) throws IllegalOpenCGACredentialsException, UnknownHostException {
+        this(new MongoCredentials(
+                        objectMap.getString("mongoHost"),
+                        objectMap.getInt("mongoPort"),
+                        objectMap.getString("mongoDbName"),
+                        objectMap.getString("mongoUser"),
+                        objectMap.getString("mongoPassword", null)
+                ),
+                objectMap.getString("mongoStudyConfigurationCollectionName", "files"));
+    }
 
-    public StudyConfigurationMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
+    public MongoDBStudyConfigurationManager(MongoCredentials credentials, String collectionName) throws UnknownHostException {
+        super(null);
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
@@ -40,6 +54,7 @@ public class StudyConfigurationMongoDBAdaptor {
         this.collectionName = collectionName;
     }
 
+    @Override
     public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
@@ -67,6 +82,7 @@ public class StudyConfigurationMongoDBAdaptor {
         return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
     }
 
+    @Override
     public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
         DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
