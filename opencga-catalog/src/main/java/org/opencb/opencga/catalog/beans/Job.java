@@ -44,7 +44,7 @@ public class Job {
        QUEUED, //= "queued";
        RUNNING, //= "running";
        DONE, //= "done";       //Job finished, but output not ready. Daemon will process the output.
-       PROCESSING_OUTPUT,       //Job finished, but output not ready. Daemon will process the output.
+       PROCESSING_OUTPUT,       //Job finished, but output not ready. The output is being processed.
        READY, //= "ready";     //Job finished and ready
     }
 
