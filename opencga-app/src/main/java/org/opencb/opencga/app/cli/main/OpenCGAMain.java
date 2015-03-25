@@ -113,6 +113,7 @@ public class OpenCGAMain {
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
+                System.exit(1);
             }
         }
     }
@@ -342,6 +343,17 @@ public class OpenCGAMain {
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
                             queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
+                        if (c.dbName != null) {
+                            queryOptions.put(AnalysisFileIndexer.DB_NAME, c.dbName);
+                        }
+                        if (c.indexedFileId != null) {
+                            int indexedFileId = catalogManager.getFileId(c.indexedFileId);
+                            if (indexedFileId < 0) {
+                                logger.error("IndexedFileId " + c.indexedFileId + " does not exist");
+                                returnValue = 1;
+                            }
+                            queryOptions.put(AnalysisFileIndexer.INDEX_FILE_ID, indexedFileId);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);

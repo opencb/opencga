@@ -57,6 +57,7 @@ public class AnalysisFileIndexer {
     public static final String PARAMETERS = "parameters";
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
+    public static final String INDEX_FILE_ID = "indexFileId";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -92,7 +93,9 @@ public class AnalysisFileIndexer {
         if (options.containsKey(DB_NAME)) {
             dbName = options.getString(DB_NAME);
         } else {
-            dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId;
+            int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+            String alias = catalogManager.getProject(projectId, new QueryOptions("include", "alias"), sessionId).first().getAlias();
+            dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias;
         }
 
         //TODO: Check if file can be indexed
@@ -113,20 +116,34 @@ public class AnalysisFileIndexer {
         }
 
         /** Create index file**/
-        String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
-        String indexedFileName = file.getName() + "." + storageEngine;
-        String indexedFilePath = Paths.get(outDir.getPath(), indexedFileName).toString();
-
         final File index;
-        if (simulate) {
-            index = new File(-10, indexedFileName, File.Type.INDEX, file.getFormat(), file.getBioformat(),
-                    indexedFilePath, userId, TimeUtils.getTime(), indexedFileDescription, File.Status.INDEXING, -1, -1,
-                    null, -1, null, null, new HashMap<String, Object>());
+        if (options.containsKey(INDEX_FILE_ID)) {
+            logger.debug("Using an existing indexedFile.");
+            int indexFileId = options.getInt(INDEX_FILE_ID);
+            index = catalogManager.getFile(indexFileId, sessionId).first();
+            if (index.getType() != File.Type.INDEX) {
+                throw new CatalogException("Expected {type: INDEX} in IndexedFile " + indexFileId);
+            }
+            if (index.getStatus() != File.Status.READY) {
+                throw new CatalogException("Expected {status: READY} in IndexedFile " + indexFileId);
+            }
+            ObjectMap parameters = new ObjectMap("status", File.Status.INDEXING);
+            catalogManager.modifyFile(index.getId(), parameters, sessionId);
         } else {
-            index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
-                    file.getBioformat(), indexedFilePath, null, null,
-                    indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
-                    null, false, null, sessionId).first();
+            String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
+            String indexedFileName = file.getName() + "." + storageEngine;
+            String indexedFilePath = Paths.get(outDir.getPath(), indexedFileName).toString();
+
+            if (simulate) {
+                index = new File(-10, indexedFileName, File.Type.INDEX, file.getFormat(), file.getBioformat(),
+                        indexedFilePath, userId, TimeUtils.getTime(), indexedFileDescription, File.Status.INDEXING, -1, -1,
+                        null, -1, null, null, new HashMap<String, Object>());
+            } else {
+                index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
+                        file.getBioformat(), indexedFilePath, null, null,
+                        indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
+                        null, false, null, sessionId).first();
+            }
         }
 
         /** Create commandLine **/
@@ -219,7 +236,7 @@ public class AnalysisFileIndexer {
 
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
-        } else if (file.getBioformat() == File.Bioformat.VARIANT || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
+        } else if (file.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
 
             StringBuilder sampleIdsString = new StringBuilder();
             for (Sample sample : sampleList) {
