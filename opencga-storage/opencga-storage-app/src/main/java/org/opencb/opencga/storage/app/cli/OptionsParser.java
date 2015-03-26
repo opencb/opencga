@@ -346,8 +346,11 @@ public class OptionsParser {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         String studyId;
 
-        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+        @Parameter(names = {"-p", "--pedigree"}, description = "[UNUSED] File containing pedigree information (in PED format, optional)", arity = 1)
         String pedigree;
+
+        @Parameter(names = {"--sample-ids"}, description = "CSV List of SampleNames with SampleIds -> <sample-name>:<sample-id>", arity = 1)
+        List<String> sampleIds;
 //
 //        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
 //        boolean includeEffect = false;

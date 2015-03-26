@@ -136,10 +136,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_THREADS, "6")));
 //        Map<String, Integer> samplesIds = (Map) params.getMap("sampleIds");
         Map<String, Integer> samplesIds = new HashMap<>();
-        for (String sampleId : params.getString("sampleIds").split(",")) {
+        for (String sampleId : params.getAsStringList(SAMPLE_IDS)) {
             String[] split = sampleId.split(":");
             if (split.length != 2) {
-
+                throw new IOException("Malformed sampleId param. Expected ':' as separator: <sample_name>:<sample_id>, " + sampleId);
             } else {
                 samplesIds.put(split[0], Integer.parseInt(split[1]));
             }
