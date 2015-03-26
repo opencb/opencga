@@ -349,8 +349,11 @@ public class OptionsParser {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
         int studyId;
 
-        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+        @Parameter(names = {"-p", "--pedigree"}, description = "[UNUSED] File containing pedigree information (in PED format, optional)", arity = 1)
         String pedigree;
+
+        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
+        public List<String> sampleIds;
 //
 //        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
 //        boolean includeEffect = false;
@@ -402,8 +405,6 @@ public class OptionsParser {
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         String annotatorConfig = null;
 
-        @Parameter(names = {"--sample-ids"}, description = "List of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
-        public List<String> sampleIds;
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")

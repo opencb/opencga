@@ -547,7 +547,13 @@ public class OptionsParser {
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;
+
+            @Parameter(names = {"--indexed-file-id"}, description = "Use an existing indexed file instead of creating a new file in Catalog.")
+            String indexedFileId;
             
+            @Parameter(names = {"--database"}, description = "Specify the database name instead of using the default database.")
+            String dbName;
+
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;
         }

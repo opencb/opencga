@@ -22,6 +22,7 @@ import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
@@ -222,7 +223,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         } else {
             if (dbAdaptor instanceof VariantMongoDBAdaptor) {
                 VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-                StudyConfigurationMongoDBAdaptor studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationDBAdaptor();
+                StudyConfigurationManager studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationDBAdaptor();
                 StudyConfiguration studyConfigurationFromMongo = studyConfigurationDBAdaptor.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 
                 //Check that the provided StudyConfiguration has the same or more information that the stored in MongoDB.
