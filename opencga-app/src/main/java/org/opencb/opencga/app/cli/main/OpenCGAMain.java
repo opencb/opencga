@@ -308,7 +308,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
 
                         int fileId = catalogManager.getFileId(c.id);
-                        QueryResult<File> file = catalogManager.getFile(fileId, sessionId);
+                        QueryResult<File> file = catalogManager.getFile(fileId, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), file, null));
 
                         break;
