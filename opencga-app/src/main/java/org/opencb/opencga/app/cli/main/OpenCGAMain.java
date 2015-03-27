@@ -422,9 +422,6 @@ public class OpenCGAMain {
                         queryOptions.put("id", c.sampleIds);
                         queryOptions.put("name", c.sampleNames);
                         queryOptions.put("annotation", c.annotation);
-                        for (String s : c.annotation) {
-                            System.out.println(s);
-                        }
                         queryOptions.put("variableSetId", c.variableSetId);
                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
                         System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
