@@ -57,10 +57,12 @@ public class AnalysisFileIndexer {
     public static final String PARAMETERS = "parameters";
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
+    public static final String INDEX_FILE_ID = "indexFileId";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
 
+    @Deprecated
     public AnalysisFileIndexer(CatalogManager catalogManager, @Deprecated Properties properties) {
         this.catalogManager = catalogManager;
     }
@@ -88,20 +90,27 @@ public class AnalysisFileIndexer {
         int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
         Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
 
+        if (file.getType() != File.Type.FILE) {
+            throw new CatalogException("Expected file type = " + File.Type.FILE + " instead of " + file.getType());
+        }
+
         final String dbName;
         if (options.containsKey(DB_NAME)) {
             dbName = options.getString(DB_NAME);
         } else {
-            dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId;
+            if (study.getAttributes().containsKey(DB_NAME) && study.getAttributes().get(DB_NAME) != null) {
+                dbName = study.getAttributes().get(DB_NAME).toString();
+            } else {
+                int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+                String alias = catalogManager.getProject(projectId, new QueryOptions("include", "alias"), sessionId).first().getAlias();
+                dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias;
+            }
         }
 
         //TODO: Check if file can be indexed
 
         // ObjectMap to fill with modifications over the indexed file (like new attributes or jobId)
         ObjectMap indexFileModifyParams = new ObjectMap("attributes", new ObjectMap());
-
-        /** Get file samples **/
-        List<Sample> sampleList = getFileSamples(study, file, indexFileModifyParams, options, sessionId);
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
@@ -112,21 +121,49 @@ public class AnalysisFileIndexer {
             temporalOutDirUri = catalogManager.createJobOutDir(studyIdByOutDirId, randomString, sessionId);
         }
 
-        /** Create index file**/
-        String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
-        String indexedFileName = file.getName() + "." + storageEngine;
-        String indexedFilePath = Paths.get(outDir.getPath(), indexedFileName).toString();
+        List<Sample> sampleList;
 
+        /** Create index file**/
         final File index;
-        if (simulate) {
-            index = new File(-10, indexedFileName, File.Type.INDEX, file.getFormat(), file.getBioformat(),
-                    indexedFilePath, userId, TimeUtils.getTime(), indexedFileDescription, File.Status.INDEXING, -1, -1,
-                    null, -1, null, null, new HashMap<String, Object>());
+        if (options.containsKey(INDEX_FILE_ID)) {
+            logger.debug("Using an existing indexedFile.");
+            int indexFileId = options.getInt(INDEX_FILE_ID);
+            index = catalogManager.getFile(indexFileId, sessionId).first();
+            if (index.getType() != File.Type.INDEX) {
+                throw new CatalogException("Expected {type: INDEX} in IndexedFile " + indexFileId);
+            }
+            if (index.getStatus() != File.Status.READY) {
+                throw new CatalogException("Expected {status: READY} in IndexedFile " + indexFileId);
+            }
+            if (simulate) {
+                index.setStatus(File.Status.INDEXING);
+            } else {
+                ObjectMap parameters = new ObjectMap("status", File.Status.INDEXING);
+                catalogManager.modifyFile(index.getId(), parameters, sessionId);
+            }
+
+            /** Get file samples **/
+            sampleList = catalogManager.getAllSamples(study.getId(), new QueryOptions("id", index.getSampleIds()), sessionId).getResult();
+
         } else {
-            index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
-                    file.getBioformat(), indexedFilePath, null, null,
-                    indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
-                    null, false, null, sessionId).first();
+
+            /** Get file samples **/
+            sampleList = getFileSamples(study, file, indexFileModifyParams, simulate, options, sessionId);
+
+            String indexedFileDescription = "Indexation of " + file.getName() + " (" + fileId + ")";
+            String indexedFileName = file.getName() + "." + storageEngine;
+            String indexedFilePath = Paths.get(outDir.getPath(), indexedFileName).toString();
+
+            if (simulate) {
+                index = new File(-10, indexedFileName, File.Type.INDEX, file.getFormat(), file.getBioformat(),
+                        indexedFilePath, userId, TimeUtils.getTime(), indexedFileDescription, File.Status.INDEXING, -1, -1,
+                        null, -1, null, null, new HashMap<String, Object>());
+            } else {
+                index = catalogManager.createFile(studyIdByOutDirId, File.Type.INDEX, file.getFormat(),
+                        file.getBioformat(), indexedFilePath, null, null,
+                        indexedFileDescription, File.Status.INDEXING, 0, -1, null, -1, null,
+                        null, false, null, sessionId).first();
+            }
         }
 
         /** Create commandLine **/
@@ -167,6 +204,18 @@ public class AnalysisFileIndexer {
         } else {
             /** Update IndexFile to add extra information (jobId, sampleIds, attributes, ...) **/
             indexFileModifyParams.put("jobId", job.getId());
+            Set<Integer> jobIds;
+            try {
+                jobIds = new HashSet<>(new ObjectMap(index.getAttributes()).getAsIntegerList("jobIds"));
+            } catch (Exception ignore) {
+                jobIds = new HashSet<>(1);
+            }
+            if (index.getJobId() > 0) {
+                jobIds.add(index.getJobId());
+            }
+            jobIds.add(job.getId());
+            indexFileModifyParams.getMap("attributes").put("jobIds", jobIds);
+
             catalogManager.modifyFile(index.getId(), indexFileModifyParams, sessionId).getResult();
 
             return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "",
@@ -219,7 +268,7 @@ public class AnalysisFileIndexer {
 
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
-        } else if (file.getBioformat() == File.Bioformat.VARIANT || name.endsWith(".vcf") || name.endsWith(".vcf.gz")) {
+        } else if (file.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
 
             StringBuilder sampleIdsString = new StringBuilder();
             for (Sample sample : sampleList) {
@@ -239,7 +288,7 @@ public class AnalysisFileIndexer {
                     .append(" --include-genotypes ")
                     .append(" --compress-genotypes ")
                     .append(" --include-stats ")
-//                    .append(" -DsampleIds=").append(sampleIdsString)
+//                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
             if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {
@@ -265,7 +314,7 @@ public class AnalysisFileIndexer {
 
     ////AUX METHODS
 
-    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, QueryOptions options, String sessionId)
+    private List<Sample> getFileSamples(Study study, File file, ObjectMap indexFileModifyParams, boolean simulate, QueryOptions options, String sessionId)
             throws CatalogException {
         List<Sample> sampleList;
         QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
@@ -310,7 +359,11 @@ public class AnalysisFileIndexer {
                 logger.warn("Missing samples: m{}", set);
                 if (options.getBoolean(CREATE_MISSING_SAMPLES, true)) {
                     for (String sampleName : set) {
-                        sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                        if (simulate) {
+                            sampleList.add(new Sample(-1, sampleName, file.getName(), null, null));
+                        } else {
+                            sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                        }
                     }
                 } else {
                     throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??

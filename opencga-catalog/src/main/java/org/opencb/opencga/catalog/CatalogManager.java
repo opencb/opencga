@@ -1426,13 +1426,14 @@ public class CatalogManager implements ICatalogManager {
                         case "stats":
                         case "sampleIds":
                             break;
+
                         //Can only be modified when file.status == INDEXING
                         case "jobId":
-                            if (!file.getStatus().equals(File.Status.INDEXING)) {
-                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
-                                        "status == " + file.getStatus().name() + ". " +
-                                        "Required status INDEXING or admin account");
-                            }
+//                            if (!file.getStatus().equals(File.Status.INDEXING)) {
+//                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
+//                                        "status == " + file.getStatus().name() + ". " +
+//                                        "Required status INDEXING or admin account");
+//                            }
                             break;
 
                         //Can only be modified when file.status == UPLOADING

@@ -113,6 +113,7 @@ public class OpenCGAMain {
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
+                System.exit(1);
             }
         }
     }
@@ -307,7 +308,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
 
                         int fileId = catalogManager.getFileId(c.id);
-                        QueryResult<File> file = catalogManager.getFile(fileId, sessionId);
+                        QueryResult<File> file = catalogManager.getFile(fileId, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), file, null));
 
                         break;
@@ -342,6 +343,17 @@ public class OpenCGAMain {
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
                             queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
+                        if (c.dbName != null) {
+                            queryOptions.put(AnalysisFileIndexer.DB_NAME, c.dbName);
+                        }
+                        if (c.indexedFileId != null) {
+                            int indexedFileId = catalogManager.getFileId(c.indexedFileId);
+                            if (indexedFileId < 0) {
+                                logger.error("IndexedFileId " + c.indexedFileId + " does not exist");
+                                returnValue = 1;
+                            }
+                            queryOptions.put(AnalysisFileIndexer.INDEX_FILE_ID, indexedFileId);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
@@ -410,9 +422,6 @@ public class OpenCGAMain {
                         queryOptions.put("id", c.sampleIds);
                         queryOptions.put("name", c.sampleNames);
                         queryOptions.put("annotation", c.annotation);
-                        for (String s : c.annotation) {
-                            System.out.println(s);
-                        }
                         queryOptions.put("variableSetId", c.variableSetId);
                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
                         System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
