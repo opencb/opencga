@@ -26,6 +26,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class AnalysisJobExecuter {
@@ -232,13 +233,22 @@ public class AnalysisJobExecuter {
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
                         outDir.getId(), Collections.<Integer>emptyList(), resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
 
+                logger.info("==========================================");
                 logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
                 logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());
+                logger.info("==========================================");
+                System.err.println();
+
                 Command com = new Command(commandLine);
 //                SingleProcess sp = new SingleProcess(com);
 //                sp.getRunnableProcess().run();
 //                sp.runSync();
                 com.run();
+
+                System.err.println();
+                logger.info("==========================================");
+                logger.info("Finished job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
+                logger.info("==========================================");
 
                 if (recordOutput) {
                     // Record Output.

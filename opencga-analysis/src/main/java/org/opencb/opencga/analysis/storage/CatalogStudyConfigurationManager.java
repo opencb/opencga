@@ -68,6 +68,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     @Override
     public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         try {
+            logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
             return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, studyConfiguration)), options.getString("sessionId", sessionId));
         } catch (CatalogException e) {
             logger.error("Unable to update StudyConfiguration in Catalog", e);

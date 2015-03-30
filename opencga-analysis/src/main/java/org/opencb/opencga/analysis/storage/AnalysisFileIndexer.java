@@ -169,7 +169,7 @@ public class AnalysisFileIndexer {
 
         /** Create commandLine **/
         String commandLine = createCommandLine(study, file, index, sampleList, storageEngine,
-                temporalOutDirUri, indexFileModifyParams, dbName, options);
+                temporalOutDirUri, indexFileModifyParams, dbName, sessionId, options);
         if (options.containsKey(PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
@@ -240,7 +240,7 @@ public class AnalysisFileIndexer {
      * @throws CatalogIOManagerException
      */
     private String createCommandLine(Study study, File file, File indexFile, List<Sample> sampleList, String storageEngine,
-                                     URI outDirUri, final ObjectMap indexFileModifyParams, final String dbName, QueryOptions options)
+                                     URI outDirUri, final ObjectMap indexFileModifyParams, final String dbName, String sessionId, QueryOptions options)
             throws CatalogDBException, CatalogIOManagerException {
 
         //Create command line
@@ -289,7 +289,9 @@ public class AnalysisFileIndexer {
                     .append(" --include-genotypes ")
                     .append(" --compress-genotypes ")
                     .append(" --include-stats ")
-//                    .append(" --sample-ids ").append(sampleIdsString)
+                    .append(" -D").append(VariantStorageManager.STUDY_CONFIGURATION_MANAGER_CLASS_NAME).append("=").append(CatalogStudyConfigurationManager.class.getName())
+                    .append(" -D").append("sessionId").append("=").append(sessionId)
+                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
             if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {

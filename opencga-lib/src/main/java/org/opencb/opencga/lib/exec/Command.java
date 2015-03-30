@@ -96,7 +96,7 @@ public class Command extends RunnableProcess {
     private Thread readOutputStream(InputStream ins) throws IOException {
         final InputStream in = ins;
 
-        Thread T = new Thread("output_reader") {
+        Thread T = new Thread("stdout_reader") {
             public void run() {
                 try {
                     int bytesRead = 0;
@@ -113,11 +113,11 @@ public class Command extends RunnableProcess {
                         buffer = new byte[bufferLength];
                         bytesRead = in.read(buffer, 0, bufferLength);
                         if (logger != null) {
-                            System.err.println(new String(buffer));
+                            System.err.print(new String(buffer));
                         }
                         outputBuffer.append(new String(buffer));
                         Thread.sleep(500);
-                        System.err.println("Output- Sleep (last bytesRead = " + bytesRead + ")");
+                        logger.debug("stdout - Sleep (last bytesRead = " + bytesRead + ")");
                     }
                     logger.debug("ReadOutputStream - Exit while");
                 } catch (Exception ex) {
@@ -133,7 +133,7 @@ public class Command extends RunnableProcess {
     private Thread readErrorStream(InputStream ins) throws IOException {
         final InputStream in = ins;
 
-        Thread T = new Thread("errror_reader") {
+        Thread T = new Thread("stderr_reader") {
             public void run() {
 
                 try {
@@ -152,11 +152,11 @@ public class Command extends RunnableProcess {
                         buffer = new byte[bufferLength];
                         bytesRead = in.read(buffer, 0, bufferLength);
                         if (logger != null) {
-                            System.err.println(new String(buffer));
+                            System.err.print(new String(buffer));
                         }
                         errorBuffer.append(new String(buffer));
                         Thread.sleep(500);
-                        logger.debug("Error - Sleep  (last bytesRead = " + bytesRead + ")");
+                        logger.debug("stderr - Sleep  (last bytesRead = " + bytesRead + ")");
                     }
                     logger.debug("ReadErrorStream - Exit while");
                 } catch (Exception ex) {
