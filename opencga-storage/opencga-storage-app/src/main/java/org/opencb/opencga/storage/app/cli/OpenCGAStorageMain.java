@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.*;
@@ -503,28 +504,8 @@ public class OpenCGAStorageMain {
         }
         assertDirectoryExists(outdirUri);
 
-//        VariantSource source = new VariantSource(fileName, c.fileId, c.studyId, c.study, c.studyType, c.aggregated);
-        String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
-        StudyConfiguration studyConfiguration;
-        Path studyConfigurationPath;
-        if (c.studyConfigurationFile == null || c.studyConfigurationFile.isEmpty()) {
-            //Create a new StudyConfiguration File
-            checkNull(c.studyId, "--study-id");
-            checkNull(c.studyName, "--study-name");
-            studyConfiguration = new StudyConfiguration(c.studyId, c.studyName);
-            studyConfigurationPath = Paths.get(outdirUri.getPath(), studyConfiguration.getStudyName() + ".study.json");
-            logger.info("Creating a new StudyConfiguration file: " + studyConfigurationPath);
-            if (studyConfigurationPath.toFile().exists()) {
-                throw new IOException("Found a StudyConfiguration file in " + studyConfigurationPath + " . Did you want to use it?");
-            }
-            studyConfiguration.write(studyConfigurationPath);
-        } else {
-            studyConfigurationPath = Paths.get(c.studyConfigurationFile);
-            studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
-        }
-
         ObjectMap params = new ObjectMap();
-//        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
+        params.put(VariantStorageManager.STUDY_ID, c.studyId);
         params.put(VariantStorageManager.FILE_ID, c.fileId);
         params.put(VariantStorageManager.SAMPLE_IDS, c.sampleIds);
         params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
@@ -532,11 +513,11 @@ public class OpenCGAStorageMain {
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.INCLUDE_SRC, c.includeSrc);
         params.put(VariantStorageManager.COMPRESS_GENOTYPES, c.compressGenotypes);
-        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         params.put(VariantStorageManager.AGGREGATED_TYPE, c.aggregated);
         params.put(VariantStorageManager.DB_NAME, c.dbName);
         params.put(VariantStorageManager.ANNOTATE, c.annotate);
         params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
+        params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
 
         if(c.annotate) {
             //Get annotator config
@@ -600,8 +581,6 @@ public class OpenCGAStorageMain {
             nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
         }
 
-        studyConfiguration.write(studyConfigurationPath);
-
         if (load) {
             logger.info("-- PreLoad variants -- {}", nextFileUri);
             nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
@@ -611,11 +590,10 @@ public class OpenCGAStorageMain {
             nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
         }
 
-        studyConfiguration.write(studyConfigurationPath);
-
     }
 
-    private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, String fromAccession, Path outdir) throws IOException {
+    private static void createAccessionIds(Path variantsPath, VariantSource source, String globalPrefix, String fromAccession, Path outdir)
+            throws IOException {
         String studyId = source.getStudyId();
         String studyPrefix = studyId.substring(studyId.length() - 6);
         VcfRawReader reader = new VcfRawReader(variantsPath.toString());

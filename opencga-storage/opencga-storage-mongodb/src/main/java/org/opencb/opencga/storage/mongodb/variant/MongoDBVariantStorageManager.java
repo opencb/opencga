@@ -21,6 +21,7 @@ import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
+import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -214,7 +215,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap params) {
-        return getDBAdaptor(params.getString(DB_NAME), params).getStudyConfigurationDBAdaptor();
+        if (params != null && params.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+            return super.buildStudyConfigurationManager(params);
+        } else {
+            String string = params == null? null : params.getString(DB_NAME);
+            return getDBAdaptor(string, params).getStudyConfigurationDBAdaptor();
+        }
     }
 
     @Override
