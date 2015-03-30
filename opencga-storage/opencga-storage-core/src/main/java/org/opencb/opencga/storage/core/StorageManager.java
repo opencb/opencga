@@ -5,20 +5,15 @@ import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Properties;
 
 /**
  * @author imedina
  * @param <DBWRITER>
  * @param <DBADAPTOR>
  */
-public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
+public interface StorageManager<DBWRITER, DBADAPTOR> {
 
     public void addConfigUri(URI configUri);
-
-//    public DBWRITER getDBSchemaWriter(Path output);
-//    public READER getDBSchemaReader(Path input) throws IOException;
 
     /**
      * ETL cycle consists of the following execution steps:
@@ -38,21 +33,46 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
      * @param from Data source origin
      * @param to Final location of data
      */
-    public URI extract(URI from, URI to, ObjectMap params);
+    public URI extract(URI from, URI to, ObjectMap params) throws StorageManagerException;
 
 
-    public URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException;
+    public URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
 
-    public URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException;
+    public URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
 
-    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException;
+    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
 
 
-    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException;
+    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
 
-    public URI load(URI input, ObjectMap params) throws IOException;
+    public URI load(URI input, ObjectMap params) throws IOException, StorageManagerException;
 
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException;
+    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
+//
+//    public final URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+//        return getETL().preTransform(input, params);
+//    }
+//
+//    public final URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException {
+//        return getETL().transform(input, pedigree, output, params);
+//    }
+//
+//    public final URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+//        return getETL().postTransform(input, params);
+//    }
+//
+//
+//    public final URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+//        return getETL().preLoad(input, output, params);
+//    }
+//
+//    public final URI load(URI input, ObjectMap params) throws IOException {
+//        return getETL().load(input, params);
+//    }
+//
+//    public final URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+//        return getETL().postLoad(input, output, params);
+//    }
 
 
     /**
@@ -61,9 +81,9 @@ public interface StorageManager<DBWRITER, DBADAPTOR> { // READER,
         * getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
 
-    public DBWRITER getDBWriter(String dbName, ObjectMap params);
+    public DBWRITER getDBWriter(String dbName, ObjectMap params) throws StorageManagerException;
 
-    public DBADAPTOR getDBAdaptor(String dbName, ObjectMap params);
+    public DBADAPTOR getDBAdaptor(String dbName, ObjectMap params) throws StorageManagerException;
 
 
 }

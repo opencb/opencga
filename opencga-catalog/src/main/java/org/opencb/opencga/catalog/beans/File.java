@@ -112,6 +112,7 @@ public class File {
         VARIANT,
         ALIGNMENT,
         SEQUENCE,
+        PEDIGREE,
         VCF4,
         NONE
         }

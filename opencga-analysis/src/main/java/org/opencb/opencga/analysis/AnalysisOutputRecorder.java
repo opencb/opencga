@@ -24,10 +24,19 @@ import java.util.List;
 
 /**
  * Created by jacobo on 4/11/14.
+<<<<<<< HEAD
+ *
+ *  Modifies the job status to PROCESSING_OUTPUT
+ *  Scans the temporal output directory from a job to find all generated files.
+ *  Records the output in CatalogManager
+ *  Moves the file to the read output
+ *  Modifies the job status to READY and set the output and endTime.
+=======
  * <p/>
  * Scans the output directory from a job or index to find all files.
  * Records the output in CatalogManager
  * Moves the file to the read output
+>>>>>>> feature/babelomics5
  */
 
 public class AnalysisOutputRecorder {
@@ -50,13 +59,25 @@ public class AnalysisOutputRecorder {
         CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
 
         try {
+            /** Modify job status to PROCESSING_OUTPUT **/
+            logger.debug("Modify job {id: {}, status:{}} status to PROCESSING_OUTPUT", job.getId(), job.getStatus());
+            ObjectMap parameters = new ObjectMap("status", Job.Status.PROCESSING_OUTPUT);
+            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            /** Scans the output directory from a job or index to find all files. **/
             URI tmpOutDirUri = job.getTmpOutDirUri();
+            logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
             List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri).listFiles(tmpOutDirUri);
 
 //            int studyId = catalogManager.getAnalysisIdByJobId(job.getId());
             int studyId = catalogManager.getStudyIdByJobId(job.getId());
 
+            logger.debug("Record the output in CatalogManager.", tmpOutDirUri);
 //            List<ResultXMLElem> resultXMLElems = new ArrayList<>();
 //
 //            for (URI uri : uris) {
@@ -83,6 +104,9 @@ public class AnalysisOutputRecorder {
                             throw new UnsupportedOperationException("Unimplemented policy 'error'");
                     }
                 }
+                /** Records the output in CatalogManager **/
+//                QueryResult<File> fileQueryResult = catalogManager.createFile(
+//                        studyId, File.Format.PLAIN, File.Bioformat.NONE, filePath, "Generated from job " + job.getId(),
 
                 QueryResult<File> fileQueryResult;
 
@@ -97,13 +121,14 @@ public class AnalysisOutputRecorder {
 
                 bioformat = AnalysisBioformatDetect.detect(Paths.get(uri).toString());
 
-                fileQueryResult = catalogManager.createFile(
-                        studyId, File.Format.PLAIN, bioformat, filePath, "Generated from job " + job.getId(),
-                        true, job.getId(), sessionId);
+                fileQueryResult = catalogManager.createFile(studyId,
+                        File.Format.PLAIN, bioformat,
+                        filePath, "Generated from job " + job.getId(), true, job.getId(), sessionId);
 
 
                 File file = fileQueryResult.getResult().get(0);
                 fileIds.add(file.getId());
+                /** Moves the file to the read output **/
                 catalogFileManager.upload(uri, file, null, sessionId, false, false, true, calculateChecksum);
             }
         } catch (CatalogException | IOException e) {
@@ -112,6 +137,7 @@ public class AnalysisOutputRecorder {
             return;
         }
 
+        /** Modifies the job status to READY and set the output and endTime. **/
         try {
             switch (Job.Type.valueOf(job.getResourceManagerAttributes().get(Job.TYPE).toString())) {
                 case INDEX:

@@ -34,10 +34,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Properties;
+import java.util.*;
 
 @Path("/")
 public class OpenCGAWSServer {
@@ -160,6 +157,33 @@ public class OpenCGAWSServer {
         return queryOptions;
     }
 
+    protected QueryOptions getAllQueryOptions() {
+        return getAllQueryOptions(null);
+    }
+
+    protected QueryOptions getAllQueryOptions(Collection<String> acceptedQueryOptions) {
+        return getAllQueryOptions(new HashSet<String>(acceptedQueryOptions));
+    }
+
+    protected QueryOptions getAllQueryOptions(Set<String> acceptedQueryOptions) {
+        QueryOptions queryOptions = this.getQueryOptions();
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+            if (acceptedQueryOptions == null || acceptedQueryOptions.contains(entry.getKey())) {
+                if (!entry.getValue().isEmpty()) {
+                    Iterator<String> iterator = entry.getValue().iterator();
+                    StringBuilder sb = new StringBuilder(iterator.next());
+                    while (iterator.hasNext()) {
+                        sb.append(",").append(iterator.next());
+                    }
+                    queryOptions.add(entry.getKey(), sb.toString());
+                } else {
+                    queryOptions.add(entry.getKey(), null);
+                }
+            }
+        }
+        return queryOptions;
+    }
+
     protected Response createErrorResponse(Object o) {
         QueryResult<ObjectMap> result = new QueryResult();
         result.setErrorMsg(o.toString());
@@ -173,15 +197,15 @@ public class OpenCGAWSServer {
         queryResponse.setApiVersion(version);
         queryResponse.setQueryOptions(getQueryOptions());
 
-        // Guarantee that the QueryResponse object contains a coll of results
-        Collection coll;
-        if (obj instanceof Collection) {
-            coll = (Collection) obj;
+        // Guarantee that the QueryResponse object contains a list of results
+        List list;
+        if (obj instanceof List) {
+            list = (List) obj;
         } else {
-            coll = new ArrayList();
-            coll.add(obj);
+            list = new ArrayList();
+            list.add(obj);
         }
-        queryResponse.setResponse(coll);
+        queryResponse.setResponse(list);
 
         switch (outputFormat.toLowerCase()) {
             case "json":

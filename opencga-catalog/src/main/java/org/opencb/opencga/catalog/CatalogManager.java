@@ -88,6 +88,7 @@ public class CatalogManager implements ICatalogManager {
             throws IOException, CatalogIOManagerException, CatalogDBException {
 //        properties = Config.getAccountProperties();
 
+        logger.debug("CatalogManager rootdir");
         Path path = Paths.get(rootdir, "conf", "catalog.properties");
         properties = new Properties();
         try {
@@ -105,9 +106,11 @@ public class CatalogManager implements ICatalogManager {
     public CatalogManager(Properties properties)
             throws CatalogIOManagerException, CatalogDBException {
         this.properties = properties;
-
+        logger.debug("CatalogManager configureManager");
         configureManager(properties);
+        logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
+        logger.debug("CatalogManager configureIOManager");
         configureIOManager(properties);
     }
 
@@ -151,7 +154,6 @@ public class CatalogManager implements ICatalogManager {
                 Integer.parseInt(properties.getProperty(CATALOG_DB_PORT, "0")));
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
-
     }
 
     private void configureManager(Properties properties) {
@@ -1287,13 +1289,13 @@ public class CatalogManager implements ICatalogManager {
 
         switch (file.getType()) {
             case FOLDER:
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
-                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
-
                 QueryResult<File> allFilesInFolder = catalogDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
                 for (File subfile : allFilesInFolder.getResult()) {
                     deleteFile(subfile.getId(), sessionId);
                 }
+
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
                 return queryResult;
             case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
@@ -1411,7 +1413,7 @@ public class CatalogManager implements ICatalogManager {
                 break;
             default:
                 if (!getFileAcl(userId, fileId).isWrite()) {
-                    throw new CatalogDBException("User " + userId + " can't modify the file " + fileId);
+                    throw new CatalogException("User " + userId + " can't modify the file " + fileId);
                 }
                 for (String s : parameters.keySet()) {
                     switch (s) { //Special cases
@@ -1422,11 +1424,12 @@ public class CatalogManager implements ICatalogManager {
                         case "status":
                         case "attributes":
                         case "stats":
+                        case "sampleIds":
                             break;
                         //Can only be modified when file.status == INDEXING
                         case "jobId":
                             if (!file.getStatus().equals(File.Status.INDEXING)) {
-                                throw new CatalogDBException("Parameter '" + s + "' can't be changed when " +
+                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
                                         "status == " + file.getStatus().name() + ". " +
                                         "Required status INDEXING or admin account");
                             }
@@ -1436,22 +1439,21 @@ public class CatalogManager implements ICatalogManager {
                         case "creationDate":
                         case "diskUsage":
                             if (!file.getStatus().equals(File.Status.UPLOADING)) {
-                                throw new CatalogDBException("Parameter '" + s + "' can't be changed when " +
+                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
                                         "status == " + file.getStatus().name() + ". " +
                                         "Required status UPLOADING or admin account");
                             }
                             break;
-                        case "type":
-                        case "path":    //Path and Name must be changed with "raname" and/or "move" methods.
+                        //Path and Name must be changed with "raname" and/or "move" methods.
+                        case "path":
                         case "name":
+                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
+                                    "Use \"renameFile\" instead");
+                        case "type":
                         default:
-                            throw new CatalogDBException("Parameter '" + s + "' can't be changed. " +
+                            throw new CatalogException("Parameter '" + s + "' can't be changed. " +
                                     "Requires admin account");
                     }
-//                    if (!s.matches("name|type|format|bioformat|description|status|attributes|stats|jobId")) {
-//
-//                        throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-//                    }
                 }
                 break;
         }
@@ -1636,7 +1638,9 @@ public class CatalogManager implements ICatalogManager {
                     throw new CatalogDBException("Permission denied. StudyId or Admin role required");
             }
         } else {
-            getStudyAcl(userId, studyId);
+            if (!getStudyAcl(userId, studyId).isRead()) {
+                throw new CatalogException("Permission denied. User " + userId + " can't read data from the study " + studyId);
+            }
             query.put("studyId", studyId);
         }
         return catalogDBAdaptor.searchFile(query, options);
@@ -2020,14 +2024,21 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                                      Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
+                                      Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId) throws CatalogException {
+        return createJob(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles, resourceManagerAttributes, null, options, sessionId);
+    }
+
+    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
+                                      Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options, String sessionId)
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         checkParameter(toolName, "toolName");
         checkParameter(commandLine, "commandLine");
-        description = description != null ? description : "";
+        description = defaultString(description, "");
+        status = defaultObject(status, Job.Status.PREPARED);
 
         // FIXME check inputFiles? is a null conceptually valid?
 
@@ -2044,6 +2055,7 @@ public class CatalogManager implements ICatalogManager {
         }
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
+        job.setStatus(status);
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
         }
@@ -2107,7 +2119,7 @@ public class CatalogManager implements ICatalogManager {
 
 
     @Override
-    public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws IOException, CatalogIOManagerException, CatalogException {
+    public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 //        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
@@ -2157,13 +2169,13 @@ public class CatalogManager implements ICatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
 
-        User.Role role = getUserRole(userId);
-        switch (role) {
-            case ADMIN:
+//        User.Role role = getUserRole(userId);
+//        switch (role) {
+//            case ADMIN:
                 return catalogDBAdaptor.modifyJob(jobId, parameters);
-            default:
-                throw new CatalogException("Permission denied. Admin role required");
-        }
+//            default:
+//                throw new CatalogException("Permission denied. Admin role required");
+//        }
     }
 
 //    public DataInputStream getGrepFileFromJob(String userId, String jobId, String filename, String pattern, boolean ignoreCase, boolean multi, String sessionId)
@@ -2406,6 +2418,10 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
+    public int getStudyIdByCohortId(int cohortId) throws CatalogException {
+        return catalogDBAdaptor.getStudyIdByCohortId(cohortId);
+    }
+
     public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -2419,18 +2435,21 @@ public class CatalogManager implements ICatalogManager {
         }
     }
 
-    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> samples,
+    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         checkParameter(name, "name");
-        checkObj(samples, "Samples list");
+        checkObj(sampleIds, "Samples list");
         description = defaultString(description, "");
         attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
 
-        for (Integer sampleId : samples) {
-            getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+        if (getAllSamples(studyId, new QueryOptions("id", sampleIds), sessionId).getResult().size() != sampleIds.size()) {
+//            for (Integer sampleId : samples) {
+//                getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
+//            }
+            throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
 
-        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, samples, attributes);
+        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, sampleIds, attributes);
 
         return catalogDBAdaptor.createCohort(studyId, cohort);
     }

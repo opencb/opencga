@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -9,12 +8,10 @@ import com.mongodb.DBObject;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.mongodb.util.JSON;
-import org.bson.BSON;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
@@ -47,6 +44,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     
     public final static String METADATA_FIELD = "meta";
     public final static String HEADER_FIELD = "header";
+    static final char CHARACTER_TO_REPLACE_DOTS = (char) 163; // <-- £
     
     
     @Override
@@ -56,8 +54,14 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                 (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD), studyType, VariantSource.Aggregation.NONE);
         
         // Samples
-        source.setSamplesPosition((Map) object.get(SAMPLES_FIELD));
-        
+        if (object.containsField(SAMPLES_FIELD)) {
+            Map<String, Integer> samplesPosition = new HashMap<>();
+            for (Map.Entry<String, Integer> entry : ((Map<String, Integer>) object.get(SAMPLES_FIELD)).entrySet()) {
+                samplesPosition.put(entry.getKey().replace(CHARACTER_TO_REPLACE_DOTS, ','), entry.getValue());
+            }
+            source.setSamplesPosition(samplesPosition);
+        }
+
         // Statistics
         DBObject statsObject = (DBObject) object.get(STATS_FIELD);
         if (statsObject != null) {
@@ -96,8 +100,16 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                 .append(STUDYNAME_FIELD, object.getStudyName())
                 .append(STUDYID_FIELD, object.getStudyId())
                 .append(DATE_FIELD, Calendar.getInstance().getTime())
-                .append(SAMPLES_FIELD, object.getSamplesPosition())
                 .append(STUDYTYPE_FIELD, object.getType().toString());
+
+        Map<String, Integer> samplesPosition = object.getSamplesPosition();
+        if (samplesPosition != null) {
+            BasicDBObject samples = new BasicDBObject(samplesPosition.size());
+            for (Map.Entry<String, Integer> entry : samplesPosition.entrySet()) {
+                samples.append(entry.getKey().replace('.', CHARACTER_TO_REPLACE_DOTS), entry.getValue());
+            }
+            studyMongo.append(SAMPLES_FIELD, samples);
+        }
 
         // TODO Pending how to manage the consequence type ranking (calculate during reading?)
 //        BasicDBObject cts = new BasicDBObject();

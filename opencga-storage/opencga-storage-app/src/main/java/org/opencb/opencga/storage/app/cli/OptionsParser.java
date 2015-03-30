@@ -367,6 +367,9 @@ public class OptionsParser {
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        String aggregationMappingFile = null;
+        
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
@@ -659,11 +662,8 @@ public class OptionsParser {
         @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
         String load = null;
 
-        @Parameter(names = {"--cohort-name"}, description = "Run stats for a subset of all the samples as well, requires \"cohort-samples\"", arity = 1)
-        String cohortName = null;
-
-        @Parameter(names = {"--cohort-samples"}, description = "CSV of the samples within the cohort, requires \"cohort-name\"", arity = 1)
-        List<String> cohortSamples = null;
+        @DynamicParameter(names = {"-C", "--cohort"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        Map<String, String> cohort = new HashMap<>();
 
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)

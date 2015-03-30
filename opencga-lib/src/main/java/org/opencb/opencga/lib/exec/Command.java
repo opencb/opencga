@@ -50,12 +50,14 @@ public class Command extends RunnableProcess {
 
             InputStream is = proc.getInputStream();
             // Thread out = readOutputStream(is);
-            readOutputStream(is);
+            Thread readOutputStreamThread = readOutputStream(is);
             InputStream es = proc.getErrorStream();
             // Thread err = readErrorStream(es);
-            readErrorStream(es);
+            Thread readErrorStreamThread = readErrorStream(es);
 
             proc.waitFor();
+            readOutputStreamThread.join();
+            readErrorStreamThread.join();
             endTime();
 
             if (proc.exitValue() != 0) {
@@ -91,7 +93,7 @@ public class Command extends RunnableProcess {
         proc.destroy();
     }
 
-    private void readOutputStream(InputStream ins) throws IOException {
+    private Thread readOutputStream(InputStream ins) throws IOException {
         final InputStream in = ins;
 
         Thread T = new Thread("output_reader") {
@@ -111,13 +113,13 @@ public class Command extends RunnableProcess {
                         buffer = new byte[bufferLength];
                         bytesRead = in.read(buffer, 0, bufferLength);
                         if (logger != null) {
-                            logger.info(new String(buffer));
+                            System.err.println(new String(buffer));
                         }
                         outputBuffer.append(new String(buffer));
                         Thread.sleep(500);
                         System.err.println("Output- Sleep (last bytesRead = " + bytesRead + ")");
                     }
-                    System.err.println("Output - Fuera while");
+                    logger.debug("ReadOutputStream - Exit while");
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     exception = ex.toString();
@@ -125,10 +127,10 @@ public class Command extends RunnableProcess {
             }
         };
         T.start();
-        // return T;
+        return T;
     }
 
-    private void readErrorStream(InputStream ins) throws IOException {
+    private Thread readErrorStream(InputStream ins) throws IOException {
         final InputStream in = ins;
 
         Thread T = new Thread("errror_reader") {
@@ -150,13 +152,13 @@ public class Command extends RunnableProcess {
                         buffer = new byte[bufferLength];
                         bytesRead = in.read(buffer, 0, bufferLength);
                         if (logger != null) {
-                            logger.info(new String(buffer));
+                            System.err.println(new String(buffer));
                         }
                         errorBuffer.append(new String(buffer));
                         Thread.sleep(500);
-                        System.err.println("Error- Sleep  (last bytesRead = " + bytesRead + ")");
+                        logger.debug("Error - Sleep  (last bytesRead = " + bytesRead + ")");
                     }
-                    System.err.println("Error - Fuera while");
+                    logger.debug("ReadErrorStream - Exit while");
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     exception = ex.toString();
@@ -164,7 +166,7 @@ public class Command extends RunnableProcess {
             }
         };
         T.start();
-        // return T;
+        return T;
     }
 
     /**

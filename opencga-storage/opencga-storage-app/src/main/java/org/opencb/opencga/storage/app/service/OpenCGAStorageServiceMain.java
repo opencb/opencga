@@ -41,7 +41,7 @@ public class OpenCGAStorageServiceMain {
                 opencgaHome = Paths.get("opencga-storage-app", "build").toString(); //If it has not been run from the shell script (debug)
             }
         }
-        Config.setGcsaHome(opencgaHome);
+        Config.setOpenCGAHome(opencgaHome);
         File configFile;
         if(opts.conf.isEmpty()) {
             configFile = Paths.get(opencgaHome, "conf", "storage-service.properties").toFile();
