@@ -532,7 +532,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if(user == null || user.getProjects().isEmpty()) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
-        return endQuery("Get project", startTime, user.getProjects());
+        List<Project> projects = user.getProjects();
+        joinFields(projects.get(0), options);
+
+        return endQuery("Get project", startTime, projects);
     }
 
     /**
@@ -566,9 +569,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         QueryResult<DBObject> result = userCollection.find(query, projection, options);
 
         User user = parseUser(result);
+        List<Project> projects = user.getProjects();
+        for (Project project : projects) {
+            joinFields(project, options);
+        }
         return endQuery(
                 "User projects list", startTime,
-                user.getProjects());
+                projects);
     }
 
 
@@ -788,15 +795,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         return count.getResult().get(0) != 0;
     }
 
-//<<<<<<< HEAD
-//        QueryResult<DBObject> queryResult = fileCollection.find(query, null);
-//=======
     private void checkStudyId(int studyId) throws CatalogDBException {
         if(!studyExists(studyId)) {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
     }
-//>>>>>>> bba62bea67b13e466ff74c6c0befb010e6fd05db
 
     private boolean studyAliasExists(int projectId, String studyAlias) {
         // Check if study.alias already exists.
@@ -882,9 +885,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
-            study.setDiskUsage(getDiskUsageByStudy(study.getId()));
-            //TODO: append files
-            //TODO: append jobs
+            joinFields(study, options);
         }
         return endQuery("Get all studies", startTime, studies);
     }
@@ -892,7 +893,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        //TODO append files in the studies
         //TODO: Parse QueryOptions include/exclude
         DBObject query = new BasicDBObject("id", studyId);
         QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
@@ -903,7 +903,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
 
-        studies.get(0).setDiskUsage(getDiskUsageByStudy(studyId));
+        joinFields(studies.get(0), options);
 
         //queryResult.setResult(studies);
         return endQuery("Get Study", startTime, studies);
@@ -2027,6 +2027,27 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     /*
     * Helper methods
     ********************/
+
+    //Join fields from other collections
+    private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
+        if (options.getBoolean("includeStudies")) {
+            project.setStudies(getAllStudies(project.getId(), options).getResult());
+        }
+    }
+
+    private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
+        study.setDiskUsage(getDiskUsageByStudy(study.getId()));
+
+        if (options.getBoolean("includeFiles")) {
+            study.setFiles(getAllFiles(study.getId(), options).getResult());
+        }
+        if (options.getBoolean("includeJobs")) {
+            study.setJobs(getAllJobs(study.getId(), options).getResult());
+        }
+        if (options.getBoolean("includeSamples")) {
+            study.setSamples(getAllSamples(study.getId(), options).getResult());
+        }
+    }
 
     private User parseUser(QueryResult<DBObject> result) throws CatalogDBException {
         if(result.getResult().isEmpty()) {
