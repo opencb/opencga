@@ -1,12 +1,9 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.*;
 
 import java.util.*;
 
-import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -71,7 +68,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private StudyConfiguration studyConfiguration;
 //    private Integer fileId;
     private String fileId;
-    private boolean writeStudyInformation = true;
+    private boolean writeStudyConfiguration = true;
     private boolean writeVariantSource = true;
     private VariantSource source;
 
@@ -285,8 +282,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (currentBulkSize != 0) {
             executeBulk();
         }
-        logger.info("POST");
-        if (writeStudyInformation) {
+        logger.debug("POST");
+        if (writeStudyConfiguration) {
             writeStudyInformation();
         }
         if (writeVariantSource) {
@@ -380,7 +377,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         currentBulkSize = 0;
     }
 
-    public void setWriteStudyInformation(boolean writeStudyInformation) {
-        this.writeStudyInformation = writeStudyInformation;
+    public void setWriteStudyConfiguration(boolean writeStudyConfiguration) {
+        this.writeStudyConfiguration = writeStudyConfiguration;
     }
 }

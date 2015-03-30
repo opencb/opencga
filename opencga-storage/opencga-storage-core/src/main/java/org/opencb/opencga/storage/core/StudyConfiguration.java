@@ -56,21 +56,13 @@ public class StudyConfiguration {
         this.cohorts = cohorts;
     }
 
-//    public StudyConfiguration(int studyId, String studyName, Map<String, Integer> fileIds,
-//                              Map<String, Integer> sampleIds, Map<String, Integer> cohortIds,
-//                              Map<Integer, List<Integer>> cohorts) {
-//        this.studyId = studyId;
-//        this.studyName = studyName;
-//        this.fileIds = new HashMap(fileIds);
-//        this.sampleIds = new HashMap(sampleIds);
-//        this.cohortIds = new HashMap(cohortIds);
-//        this.cohorts = cohorts;
-//    }
 
+    @Deprecated
     static public StudyConfiguration read(Path path) throws IOException {
         return new ObjectMapper(new JsonFactory()).readValue(path.toFile(), StudyConfiguration.class);
     }
 
+    @Deprecated
     public void write(Path path) throws IOException {
         new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().withoutAttribute("inverseFileIds").writeValue(path.toFile(), this);
     }

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,7 +49,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
 //    @Deprecated public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
+    public static final String STUDY_CONFIGURATION_MANAGER_CLASS_NAME         = "studyConfigurationManagerClassName";
     public static final String AGGREGATED_TYPE = "aggregatedType";
+    public static final String STUDY_ID = "studyId";
     public static final String FILE_ID = "fileId";
     public static final String STUDY_TYPE = "studyType";
     public static final String SAMPLE_IDS = "sampleIds";
@@ -79,6 +82,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
+    protected StudyConfigurationManager studyConfigurationManager;
 
     public VariantStorageManager() {
         this.properties = new Properties();
@@ -260,6 +264,8 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     @Override
     public URI preLoad(URI input, URI output, ObjectMap params) throws StorageManagerException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(params);
+
+        //TODO: Expect JSON file
         VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
 
         /*
@@ -304,7 +310,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                 String sampleName = split[0];
                 int sampleId;
                 try {
-                    sampleId = Integer.getInteger(split[1]);
+                    sampleId = Integer.parseInt(split[1]);
                 } catch (NumberFormatException e) {
                     throw new StorageManagerException("SampleId " + split[1] + " is not an integer", e);
                 }
@@ -318,9 +324,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                         studyConfiguration.getSampleIds().put(sampleName, sampleId);
                     } else {
                         if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
-                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration");
+                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
                         } else {
-                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
+                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
                         }
                     }
                 }
@@ -370,6 +376,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                 }
             }
         }
+        params.put(STUDY_CONFIGURATION, studyConfiguration);
 
         return input;
     }
@@ -377,14 +384,18 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     @Override
     public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
         boolean annotate = params.getBoolean(ANNOTATE);
-        VariantAnnotationManager.AnnotationSource annotationSource = params.get(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.class);
-        Properties annotatorProperties = params.get(ANNOTATOR_PROPERTIES, Properties.class);
+        VariantAnnotationManager.AnnotationSource annotationSource = params.get(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.class, VariantAnnotationManager.AnnotationSource.CELLBASE_REST);
+        Properties annotatorProperties = params.get(ANNOTATOR_PROPERTIES, Properties.class, new Properties());
+
+        //Update StudyConfiguration
+        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
+        getStudyConfigurationManager(params).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
         String dbName = params.getString(DB_NAME, null);
         String species = params.getString(SPECIES, "hsapiens");
         String assembly = params.getString(ASSEMBLY, "");
         int fileId = params.getInt(FILE_ID);
-        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
+
 //        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
         if (annotate) {
@@ -473,8 +484,52 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     /*  StudyConfiguration util methods        */
     /* --------------------------------------- */
 
-    protected StudyConfiguration getStudyConfiguration(ObjectMap params) {
-        return params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+    final protected StudyConfiguration getStudyConfiguration(ObjectMap params) {
+        StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
+
+        if (params.containsKey(STUDY_CONFIGURATION)) {
+            return params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+        } else {
+            return studyConfigurationManager.getStudyConfiguration(params.getInt(STUDY_ID), new QueryOptions(params)).first();
+        }
+    }
+
+    /**
+     * Get the StudyConfigurationManager.
+     *
+     *  If there is no StudyConfigurationManager, try to build by dependency injection.
+     *  If can't build, call to the method "buildStudyConfigurationManager", witch could be override.
+     *
+     * @param params
+     * @return
+     */
+    final protected StudyConfigurationManager getStudyConfigurationManager(ObjectMap params) {
+        if (studyConfigurationManager == null) {
+            if (params.containsKey(STUDY_CONFIGURATION_MANAGER_CLASS_NAME)) {
+                String studyConfigurationManagerClassName = params.getString(STUDY_CONFIGURATION_MANAGER_CLASS_NAME);
+                try {
+                    studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, params);
+                } catch (ReflectiveOperationException e) {
+                    e.printStackTrace();
+                    logger.error("Error creating a StudyConfigurationManager. Creating default StudyConfigurationManager", e);
+                    throw new RuntimeException(e);
+                }
+            }
+            if (studyConfigurationManager == null) {
+                studyConfigurationManager = buildStudyConfigurationManager(params);
+            }
+        }
+        return studyConfigurationManager;
+    }
+
+    /**
+     * Build the default StudyConfigurationManager. This method could be override by children classes if they want to use other class.
+     *
+     * @param params
+     * @return
+     */
+    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap params) {
+        return new FileStudyConfigurationManager(params);
     }
 
     /**
@@ -485,11 +540,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
      */
     protected void checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
-            throw new StorageManagerException("FileName " + fileName + " was already in the StudyConfiguration " +
+            throw new StorageManagerException("FileName " + fileName + " was already loaded. It was in the StudyConfiguration " +
                     "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
         }
         if (studyConfiguration.getFileIds().containsKey(fileId)) {
-            throw new StorageManagerException("FileId " + fileId + " was already in the StudyConfiguration" +
+            throw new StorageManagerException("FileId " + fileId + " was already already loaded. It was in the StudyConfiguration" +
                     "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
         }
     }
