@@ -156,7 +156,7 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.UserCommands.InfoCommand c = optionsParser.getUserCommands().infoCommand;
 
-                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null, sessionId);
+                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, user, null));
 
                         break;
@@ -213,7 +213,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
 
                         QueryResult<Project> project = catalogManager.createProject(catalogManager.getUserIdBySessionId(sessionId)
-                                , c.name, c.alias, c.description, c.organization, null, sessionId);
+                                , c.name, c.alias, c.description, c.organization, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -222,7 +222,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.InfoCommand c = optionsParser.getProjectCommands().infoCommand;
 
                         int projectId = catalogManager.getProjectId(c.id);
-                        QueryResult<Project> project = catalogManager.getProject(projectId, null, sessionId);
+                        QueryResult<Project> project = catalogManager.getProject(projectId, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -232,7 +232,7 @@ public class OpenCGAMain {
 
                         int projectId = catalogManager.getProjectId(c.id);
                         QueryResult result = catalogManager.shareProject(projectId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(result);
+                        System.out.println(createOutput(c.cOpt, result, null));
 
                         break;
                     }
@@ -266,7 +266,7 @@ public class OpenCGAMain {
 
                         int studyId = catalogManager.getStudyId(c.id);
                         QueryResult result = catalogManager.shareProject(studyId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(result);
+                        System.out.println(createOutput(c.cOpt, result, null));
 
                         break;
                     }
@@ -299,7 +299,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.CreateFolderCommand c = optionsParser.getFileCommands().createFolderCommand;
 
                         int studyId = catalogManager.getStudyId(c.studyId);
-                        QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, null, sessionId);
+                        QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, folder, null));
 
                         break;
@@ -310,6 +310,22 @@ public class OpenCGAMain {
                         int fileId = catalogManager.getFileId(c.id);
                         QueryResult<File> file = catalogManager.getFile(fileId, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), file, null));
+
+                        break;
+                    }
+                    case "search": {
+                        OptionsParser.FileCommands.SearchCommand c = optionsParser.getFileCommands().searchCommand;
+
+                        int studyId = catalogManager.getStudyId(c.studyId);
+                        QueryOptions query = new QueryOptions();
+                        if (c.name != null) query.put("like", c.name);
+                        if (c.directory != null) query.put("directory", c.directory);
+                        if (c.bioformats != null) query.put("bioformat", c.bioformats);
+                        if (c.types != null) query.put("type", c.types);
+                        if (c.status != null) query.put("status", c.status);
+
+                        QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(optionsParser.getCommonOptions(), fileQueryResult, null));
 
                         break;
                     }

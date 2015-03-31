@@ -424,6 +424,7 @@ public class OptionsParser {
         final CreateCommand createCommand;
         final CreateFolderCommand createFolderCommand;
         final InfoCommand infoCommand;
+        final SearchCommand searchCommand;
         final ListCommand listCommand;
         final IndexCommand indexCommand;
         final StatsCommand statsCommand;
@@ -435,6 +436,7 @@ public class OptionsParser {
             files.addCommand(this.createCommand = new CreateCommand());
             files.addCommand(this.createFolderCommand = new CreateFolderCommand());
             files.addCommand(this.infoCommand = new InfoCommand());
+            files.addCommand(this.searchCommand = new SearchCommand());
             files.addCommand(this.listCommand = new ListCommand());
             files.addCommand(this.indexCommand = new IndexCommand());
             files.addCommand(this.statsCommand = new StatsCommand());
@@ -509,6 +511,37 @@ public class OptionsParser {
 
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
+        }
+
+        @Parameters(commandNames = {"search"}, commandDescription = "Search files")
+        class SearchCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+            String studyId;
+//            @Parameter(names = {"--name"}, description = "Exact file name", required = false, arity = 1)
+//            String name;
+//            @Parameter(names = {"--path"}, description = "Exact file path", required = false, arity = 1)
+//            String path;
+            @Parameter(names = {"--name"}, description = "File name. Use regex pattern", required = false, arity = 1)
+            String name;
+
+            @Parameter(names = {"--directory"}, description = "Directory path (study relative). Use regex pattern", required = false, arity = 1)
+            String directory;
+
+            @Parameter(names = {"--type"}, description = "File type. CSV", required = false, arity = 1)
+            List<File.Type> types;
+
+            @Parameter(names = {"--bioformat"}, description = "File bioformat. CSV", required = false, arity = 1)
+            List<File.Bioformat> bioformats;
+
+            @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
+            List<File.Status> status;
+
         }
 
         @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
@@ -808,6 +841,9 @@ public class OptionsParser {
     class CommandShareResource {
         @ParametersDelegate
         UserAndPasswordOptions up = userAndPasswordOptions;
+
+        @ParametersDelegate
+        CommonOptions cOpt = commonOptions;
 
         @Parameter(names = {"-id"}, description = "Unique identifier", required = true, arity = 1)
         public String id;
