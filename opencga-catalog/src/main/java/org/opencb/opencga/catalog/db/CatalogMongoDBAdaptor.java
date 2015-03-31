@@ -1560,6 +1560,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         String[] acceptedIntegerListParams = {"output"};
         filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
 
+        String[] acceptedMapParams = {"attributes", "resourceManagerAttributes"};
+        filterMapParams(parameters, jobParameters, acceptedMapParams);
+
         if(!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject("id", jobId);
             BasicDBObject updates = new BasicDBObject("$set", jobParameters);

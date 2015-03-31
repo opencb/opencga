@@ -240,6 +240,8 @@ public class AnalysisJobExecuter {
 //                sp.runSync();
                 com.run();
 
+                catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("resourceManagerAttributes", new ObjectMap("executionInfo", com)), sessionId);
+
                 if (recordOutput) {
                     // Record Output.
                     //   Internally, change status to PROCESSING_OUTPUT and then to READY
