@@ -247,7 +247,7 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
 
                         int projectId = catalogManager.getProjectId(c.projectId);
-                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, Study.Type.valueOf(c.type), c.description, sessionId);
+                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, c.description, sessionId);
                         System.out.println(createOutput(c.cOpt, study, null));
 
                         break;
@@ -741,6 +741,14 @@ public class OpenCGAMain {
         return sb;
     }
 
+    /**
+     * Get Bytes numbers in a human readable string
+     * See http://stackoverflow.com/a/3758880
+     *
+     * @param bytes     Quantity of bytes
+     * @param si        Use International System (power of 10) or Binary Units (power of 2)
+     * @return
+     */
     public static String humanReadableByteCount(long bytes, boolean si) {
         int unit = si ? 1000 : 1024;
         if (bytes < unit) return bytes + " B";

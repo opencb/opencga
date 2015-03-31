@@ -5,6 +5,7 @@ import com.beust.jcommander.converters.CommaParameterSplitter;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Study;
 
 import java.util.*;
 
@@ -396,7 +397,7 @@ public class OptionsParser {
             String alias;
 
             @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
-            String type;
+            Study.Type type = Study.Type.CASE_CONTROL;
 
             @Parameter(names = {"-d", "--description"}, description = "Organization", required = true, arity = 1)
             String description;
