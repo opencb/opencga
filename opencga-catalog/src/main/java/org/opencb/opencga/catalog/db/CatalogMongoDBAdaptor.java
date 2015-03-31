@@ -348,18 +348,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     public QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException {
         long startTime = startQuery();
         DBObject query = new BasicDBObject("id", userId);
-//<<<<<<< HEAD
-//        QueryResult result = userCollection.find(query, null);
-//
-//=======
-//        query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
+        query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
         QueryResult<DBObject> result = userCollection.find(query, options);
-//>>>>>>> bba62bea67b13e466ff74c6c0befb010e6fd05db
         User user = parseUser(result);
-
         if(user == null){
             throw CatalogDBException.idNotFound("User", userId);
         }
+        joinFields(user, options);
         if(user.getLastActivity() != null && user.getLastActivity().equals(lastActivity)) { // TODO explain
             return endQuery("Get user", startTime);
         } else {
@@ -2029,7 +2024,21 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     ********************/
 
     //Join fields from other collections
+    private void joinFields(User user, QueryOptions options) throws CatalogDBException {
+        if (options == null) {
+            return;
+        }
+        if (user.getProjects() != null) {
+            for (Project project : user.getProjects()) {
+                joinFields(project, options);
+            }
+        }
+    }
+
     private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
+        if (options == null) {
+            return;
+        }
         if (options.getBoolean("includeStudies")) {
             project.setStudies(getAllStudies(project.getId(), options).getResult());
         }
@@ -2038,6 +2047,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
         study.setDiskUsage(getDiskUsageByStudy(study.getId()));
 
+        if (options == null) {
+            return;
+        }
         if (options.getBoolean("includeFiles")) {
             study.setFiles(getAllFiles(study.getId(), options).getResult());
         }
