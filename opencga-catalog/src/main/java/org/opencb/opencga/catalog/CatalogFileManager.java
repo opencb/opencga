@@ -27,7 +27,7 @@ public class CatalogFileManager {
 
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum)
-            throws CatalogIOManagerException {
+            throws CatalogException {
         upload(sourceUri, file, sourceChecksum, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, 10000000);
     }
     /**
@@ -48,7 +48,7 @@ public class CatalogFileManager {
      */
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum, long moveThreshold)
-            throws CatalogIOManagerException {
+            throws CatalogException {
 
         URI targetUri;
         CatalogIOManager sourceIOManager;

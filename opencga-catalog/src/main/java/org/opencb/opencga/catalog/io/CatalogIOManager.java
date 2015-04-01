@@ -159,6 +159,7 @@ public abstract class CatalogIOManager {
         }
     }
 
+    @Deprecated
     public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOManagerException {
         checkParam(studyId);
         try {
@@ -166,11 +167,6 @@ public abstract class CatalogIOManager {
         } catch (URISyntaxException e) {
             throw CatalogIOManagerException.uriSyntaxException(studyId, e);
         }
-    }
-
-    public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
-            throws CatalogIOManagerException {
-        return getFileUri(getStudyUri(userId, projectId, studyId), relativeFilePath);
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
@@ -329,8 +325,13 @@ public abstract class CatalogIOManager {
         URI projectUri = getProjectUri(userId, projectId);
         checkDirectoryUri(projectUri, true);
 
-//        URI studyUri = projectUri.resolve(studyId);
         URI studyUri = getStudyUri(userId, projectId, studyId);
+
+        return createStudy(studyUri);
+    }
+
+    public URI createStudy(URI studyUri) throws CatalogIOManagerException {
+        checkUriScheme(studyUri);
         try {
             if(!exists(studyUri)) {
                 studyUri = createDirectory(studyUri);
@@ -342,8 +343,8 @@ public abstract class CatalogIOManager {
         return studyUri;
     }
 
-    public void deleteStudy(String userId, String projectId, String studyId) throws CatalogIOManagerException {
-        URI studyUri = getStudyUri(userId, projectId, studyId);
+    public void deleteStudy(URI studyUri) throws CatalogIOManagerException {
+        checkUriScheme(studyUri);
         checkUriExists(studyUri);
 
         try {
@@ -353,17 +354,17 @@ public abstract class CatalogIOManager {
         }
     }
 
-    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId)
-            throws CatalogIOManagerException {
-        URI oldFolder = getStudyUri(userId, projectId, oldStudyId);
-        URI newFolder = getStudyUri(userId, projectId, newStudyId);
-
-        try {
-            rename(oldFolder, newFolder);
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("renameStudy(): could not rename the study folder: " + e.toString());
-        }
-    }
+//    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId)
+//            throws CatalogIOManagerException {
+//        URI oldFolder = getStudyUri(userId, projectId, oldStudyId);
+//        URI newFolder = getStudyUri(userId, projectId, newStudyId);
+//
+//        try {
+//            rename(oldFolder, newFolder);
+//        } catch (IOException e) {
+//            throw new CatalogIOManagerException("renameStudy(): could not rename the study folder: " + e.toString());
+//        }
+//    }
 
     public URI createJobOutDir(String userId, String folderName)
             throws CatalogIOManagerException {
@@ -391,13 +392,12 @@ public abstract class CatalogIOManager {
         return jobUri;
     }
 
-    public URI createFolder(String userid, String projectId, String studyId, String folderName, boolean parent)
+    public URI createFolder(URI studyUri, String folderName, boolean parent)
             throws CatalogIOManagerException {
         checkParam(folderName);
         if(!folderName.endsWith("/")) {
             folderName += "/";
         }
-        URI studyUri = getStudyUri(userid, projectId, studyId);
         checkDirectoryUri(studyUri, true);
 
 //        Path fullFolderPath = getFileUri(userid, projectId, studyId, objectId);
@@ -423,18 +423,18 @@ public abstract class CatalogIOManager {
         return folderUri;
     }
 
-    public void createFile(String userId, String projectId, String studyId, String filePath, InputStream inputStream)
+    public void createFile(URI studyUri, String filePath, InputStream inputStream)
             throws CatalogIOManagerException {
-        URI fileUri = getFileUri(userId, projectId, studyId, filePath);
+        URI fileUri = getFileUri(studyUri, filePath);
         createFile(fileUri, inputStream);
     }
 
     public abstract void createFile(URI fileUri, InputStream inputStream)
             throws CatalogIOManagerException;
 
-    public void deleteFile(String userId, String projectId, String studyId, String filePath)
+    public void deleteFile(URI studyUri, String filePath)
             throws CatalogIOManagerException {
-        URI fileUri = getFileUri(userId, projectId, studyId, filePath);
+        URI fileUri = getFileUri(studyUri, filePath);
         checkUriExists(fileUri);
 
         logger.debug("Deleting {}", fileUri.toString());
@@ -450,16 +450,16 @@ public abstract class CatalogIOManager {
     }
 
 
-    public DataInputStream getFileObject(String userid, String projectId, String studyId, String objectId,int start, int limit)
+    public DataInputStream getFileObject(URI studyUri, String objectId,int start, int limit)
             throws CatalogIOManagerException, IOException {
-        URI fileUri = getFileUri(userid, projectId, studyId, objectId);
+        URI fileUri = getFileUri(studyUri, objectId);
         return getFileObject(fileUri, start, limit);
     }
 
     public abstract DataInputStream getFileObject(URI fileUri ,int start, int limit)
             throws CatalogIOManagerException, IOException;
 
-    public abstract DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId,
+    public abstract DataInputStream getGrepFileObject(URI studyUri, String objectId,
                                                       String pattern, boolean ignoreCase, boolean multi)
             throws CatalogIOManagerException, IOException;
 //

@@ -117,7 +117,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
+    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
         return null;
     }
 
