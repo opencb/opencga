@@ -1,5 +1,6 @@
 package org.opencb.opencga.lib.exec;
 
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.opencga.lib.common.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,6 @@ public class Command extends RunnableProcess {
     private StringBuffer errorBuffer = new StringBuffer();
 
     public Command() {
-
     }
 
     public Command(String commandLine) {
@@ -42,10 +42,11 @@ public class Command extends RunnableProcess {
             setStatus(Status.RUNNING);
 
             startTime();
+            String[] cmdArray = Commandline.translateCommandline(getCommandLine());
             if (environment != null && environment.size() > 0) {
-                proc = Runtime.getRuntime().exec(getCommandLine(), ListUtils.toArray(environment));
+                proc = Runtime.getRuntime().exec(cmdArray, ListUtils.toArray(environment));
             } else {
-                proc = Runtime.getRuntime().exec(getCommandLine());
+                proc = Runtime.getRuntime().exec(cmdArray);
             }
 
             InputStream is = proc.getInputStream();
@@ -85,6 +86,7 @@ public class Command extends RunnableProcess {
             exception = e.toString();
             status = Status.ERROR;
         }
+        logger.error("Exception occurred while executing Command {}", exception);
 
     }
 
@@ -195,20 +197,6 @@ public class Command extends RunnableProcess {
      */
     public List<String> getEnvironment() {
         return environment;
-    }
-
-    /**
-     * @param logger the logger to set
-     */
-    public void setLogger(Logger logger) {
-        this.logger = logger;
-    }
-
-    /**
-     * @return the logger
-     */
-    public Logger getLogger() {
-        return logger;
     }
 
 }

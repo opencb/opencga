@@ -250,6 +250,9 @@ public class AnalysisJobExecuter {
                 logger.info("Finished job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
                 logger.info("==========================================");
 
+                //Add the execution information to the job entry
+                catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("resourceManagerAttributes", new ObjectMap("executionInfo", com)), sessionId);
+
                 if (recordOutput) {
                     // Record Output.
                     //   Internally, change status to PROCESSING_OUTPUT and then to READY

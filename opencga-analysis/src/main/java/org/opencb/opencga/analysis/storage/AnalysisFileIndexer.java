@@ -280,7 +280,7 @@ public class AnalysisFileIndexer {
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-variants ")
                     .append(" --file-id ").append(indexFile.getId())
-                    .append(" --study-name ").append(study.getAlias()).append("")
+                    .append(" --study-name \'").append(study.getName()).append("\'")
                     .append(" --study-id ").append(study.getId())
 //                    .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dbName)
