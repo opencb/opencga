@@ -3,12 +3,12 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
@@ -19,6 +19,8 @@ import org.opencb.datastore.core.ComplexTypeConverter;
 public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<VariantStats, DBObject> {
 
     public final static String COHORT_ID = "ci";
+    public final static String STUDY_ID = "sid";
+    
     public final static String MAF_FIELD = "maf";
     public final static String MGF_FIELD = "mgf";
     public final static String MAFALLELE_FIELD = "mafAl";
@@ -70,8 +72,14 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         return mongoStats;
     }
 
-    public Map<String, VariantStats> convertCohortsToDataModelType(DBObject cohortsStats, Variant variant) {
-        Map<String, VariantStats> cohortStats = new LinkedHashMap<>();
+    /**
+     * As in mongo, a variant is {studies:[],stats:[]} but the data model is {studies:[stats:[]]} this method doesn't 
+     * return anything. Instead, the sourceEntries parameter is filled.
+     * @param cohortsStats List from mongo containing VariantStats.
+     * @param variant contains allele info to fill the VariantStats.
+     * @param sourceEntries will be filled with the cohortStats.
+     */
+    public void convertCohortsToDataModelType(DBObject cohortsStats, Variant variant, Map<String, VariantSourceEntry> sourceEntries) {
         if (cohortsStats instanceof List) {
             List<DBObject> cohortStatsList = ((List) cohortsStats);
             for (DBObject vs : cohortStatsList) {
@@ -81,11 +89,12 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                     variantStats.setAltAllele(variant.getAlternate());
                     variantStats.setVariantType(variant.getType());
                 }
-                cohortStats.put((String) vs.get(DBObjectToVariantStatsConverter.COHORT_ID), variantStats);
+                Map<String, VariantStats> cohortStats = sourceEntries.get(vs.get(STUDY_ID)).getCohortStats();
+                cohortStats.put((String) vs.get(COHORT_ID), variantStats);
             }
         }
-        return cohortStats;
     }
+    /*
     public List convertCohortsToStorageType(Map<String, VariantStats> cohortStats) {
         List<DBObject> cohortsStats = new LinkedList<>();
         VariantStats variantStats;
@@ -97,7 +106,30 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         }
         return cohortsStats;
     }
+    */
+
+    public List convertCohortsToStorageType(Map<String, VariantSourceEntry> sourceEntries) {
+        List<DBObject> cohortsStatsList = new LinkedList<>();
+        VariantStats variantStats;
+        for (String studyId : sourceEntries.keySet()) {
+            List list = convertCohortsToStorageType(sourceEntries.get(studyId).getCohortStats(), studyId);
+            cohortsStatsList.addAll(list);
+        }
+        return cohortsStatsList;
+    }
     
+    public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, String studyId) {
+        List<DBObject> cohortsStatsList = new LinkedList<>();
+        VariantStats variantStats;
+            for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
+                variantStats = variantStatsEntry.getValue();
+                DBObject variantStatsDBObject = convertToStorageType(variantStats);
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, variantStatsEntry.getKey());
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
+                cohortsStatsList.add(variantStatsDBObject);
+            }
+        return cohortsStatsList;
+    }
 }
 
 

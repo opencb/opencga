@@ -514,8 +514,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 includeSrc,
-                sampleConverter,
-                statsConverter);
+                sampleConverter
+        );
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
         // Do not create the VariantConverter with the sourceEntryConverter.
