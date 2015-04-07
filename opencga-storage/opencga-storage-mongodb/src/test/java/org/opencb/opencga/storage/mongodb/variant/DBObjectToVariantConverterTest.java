@@ -4,11 +4,13 @@ import com.google.common.collect.Lists;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -23,12 +25,31 @@ public class DBObjectToVariantConverterTest {
     
     private BasicDBObject mongoVariant;
     private Variant variant;
-    
+    protected VariantSourceEntry variantSourceEntry;
+
     @Before
     public void setUp() {
+        //Setup variant
         variant = new Variant("1", 1000, 1000, "A", "C");
         variant.setId("rs666");
-        
+
+        //Setup variantSourceEntry
+        variantSourceEntry = new VariantSourceEntry("f1", "s1");
+        variantSourceEntry.addAttribute("QUAL", "0.01");
+        variantSourceEntry.addAttribute("AN", "2");
+        variantSourceEntry.setFormat("GT:DP");
+
+        Map<String, String> na001 = new HashMap<>();
+        na001.put("GT", "0/0");
+        na001.put("DP", "4");
+        variantSourceEntry.addSampleData("NA001", na001);
+        Map<String, String> na002 = new HashMap<>();
+        na002.put("GT", "0/1");
+        na002.put("DP", "5");
+        variantSourceEntry.addSampleData("NA002", na002);
+        variant.addSourceEntry(variantSourceEntry);
+
+        //Setup mongoVariant
         mongoVariant = new BasicDBObject("_id", "1_1000_A_C")
                 .append(DBObjectToVariantConverter.IDS_FIELD, variant.getIds())
                 .append(DBObjectToVariantConverter.TYPE_FIELD, variant.getType().name())
@@ -51,27 +72,15 @@ public class DBObjectToVariantConverterTest {
     
     @Test
     public void testConvertToDataModelTypeWithFiles() {
-        VariantSourceEntry file = new VariantSourceEntry("f1", "s1");
-        file.addAttribute("QUAL", "0.01");
-        file.addAttribute("AN", "2");
-        file.setFormat("GT:DP");
-        
-        Map<String, String> na001 = new HashMap<>();
-        na001.put("GT", "0/0");
-        na001.put("DP", "4");
-        file.addSampleData("NA001", na001);
-        Map<String, String> na002 = new HashMap<>();
-        na002.put("GT", "0/1");
-        na002.put("DP", "5");
-        file.addSampleData("NA002", na002);
-        variant.addSourceEntry(file);
+        variant.addSourceEntry(variantSourceEntry);
         
         // MongoDB object
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, file.getFileId())
-                .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, file.getStudyId());
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD, 
+
+        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, variantSourceEntry.getFileId())
+                .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, variantSourceEntry.getStudyId());
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
         BasicDBObject genotypeCodes = new BasicDBObject();
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
@@ -92,31 +101,20 @@ public class DBObjectToVariantConverterTest {
 
     @Test
     public void testConvertToStorageTypeWithFiles() {
-        VariantSourceEntry file = new VariantSourceEntry("f1", "s1");
-        file.addAttribute("QUAL", "0.01");
-        file.addAttribute("AN", "2");
-        file.setFormat("GT:DP");
-        
-        Map<String, String> na001 = new HashMap<>();
-        na001.put("GT", "0/0");
-        na001.put("DP", "4");
-        file.addSampleData("NA001", na001);
-        Map<String, String> na002 = new HashMap<>();
-        na002.put("GT", "0/1");
-        na002.put("DP", "5");
-        file.addSampleData("NA002", na002);
-        variant.addSourceEntry(file);
-        
+
+        variant.addSourceEntry(variantSourceEntry);
+
         // MongoDB object
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, file.getFileId())
-                .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, file.getStudyId());
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD, 
+        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, variantSourceEntry.getFileId())
+                .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, variantSourceEntry.getStudyId());
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
         BasicDBObject genotypeCodes = new BasicDBObject();
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.STATS_FIELD, Collections.emptyList());
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
         mongoVariant.append("files", files);
@@ -127,6 +125,8 @@ public class DBObjectToVariantConverterTest {
                 new DBObjectToSamplesConverter(sampleNames),
                 new DBObjectToVariantStatsConverter()));
         DBObject converted = converter.convertToStorageType(variant);
+        assertFalse(converted.containsField(DBObjectToVariantConverter.IDS_FIELD)); //IDs must be added manually.
+        converted.put(DBObjectToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs
         assertEquals(mongoVariant, converted);
     }
 
@@ -141,6 +141,8 @@ public class DBObjectToVariantConverterTest {
     public void testConvertToStorageTypeWithoutFiles() {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter();
         DBObject converted = converter.convertToStorageType(variant);
+        assertFalse(converted.containsField(DBObjectToVariantConverter.IDS_FIELD)); //IDs must be added manually.
+        converted.put(DBObjectToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs
         assertEquals(mongoVariant, converted);
     }
 
