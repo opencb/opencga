@@ -55,6 +55,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("type", TYPE_FIELD);
 //        fields.put("name", NAME_FIELD);
         fieldsMap.put("sourceEntries", FILES_FIELD);
+        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
         fieldsMap.put("annotation", ANNOTATION_FIELD);
     }
 
