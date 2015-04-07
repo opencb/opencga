@@ -9,7 +9,6 @@ import java.util.*;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
@@ -59,7 +58,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("annotation", ANNOTATION_FIELD);
     }
 
-    private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
+    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private DBObjectToVariantAnnotationConverter variantAnnotationConverter;
     private DBObjectToVariantStatsConverter statsConverter;
 
@@ -76,13 +75,13 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
      * the files the variant was read from can be provided in case those 
      * should be processed during the conversion.
      *
-     * @param archivedVariantFileConverter The object used to convert the files
+     * @param variantSourceEntryConverter The object used to convert the files
      * @param statsConverter
      */
-    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter archivedVariantFileConverter, DBObjectToVariantStatsConverter statsConverter) {
-        this.archivedVariantFileConverter = archivedVariantFileConverter;
+    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, DBObjectToVariantStatsConverter statsConverter) {
+        this.variantSourceEntryConverter = variantSourceEntryConverter;
         this.variantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
-        this.statsConverter = null;
+        this.statsConverter = statsConverter;
     }
     
     
@@ -109,12 +108,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         }
         
         // Files
-        if (archivedVariantFileConverter != null) {
+        if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = (BasicDBList) object.get(FILES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
-                    variant.addSourceEntry(archivedVariantFileConverter.convertToDataModelType(dbo));
+                    variant.addSourceEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
                 }
             }
         }
@@ -133,7 +132,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         // Statistics
         if (statsConverter != null && object.containsField(STATS_FIELD)) {
             DBObject stats = (DBObject) object.get(STATS_FIELD);
-            statsConverter.convertCohortsToDataModelType(stats, variant, variant.getSourceEntries());
+            statsConverter.convertCohortsToDataModelType(stats, variant);
         }
         return variant;
     }
@@ -171,10 +170,10 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         mongoVariant.append(HGVS_FIELD, hgvs);
         
         // Files
-        if (archivedVariantFileConverter != null) {
+        if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = new BasicDBList();
             for (VariantSourceEntry archiveFile : object.getSourceEntries().values()) {
-                mongoFiles.add(archivedVariantFileConverter.convertToStorageType(archiveFile));
+                mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(FILES_FIELD, mongoFiles);
         }

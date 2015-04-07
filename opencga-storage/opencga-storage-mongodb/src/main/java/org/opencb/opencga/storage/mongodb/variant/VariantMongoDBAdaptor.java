@@ -456,7 +456,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId() + "_" + variantSource.getFileId());   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId(), variantSource.getFileId());   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
             
             if (!cohorts.isEmpty()) {
