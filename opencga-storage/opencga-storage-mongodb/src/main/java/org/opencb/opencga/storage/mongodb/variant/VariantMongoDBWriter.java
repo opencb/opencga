@@ -256,7 +256,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                         continue;
                     }
                 BasicDBObject update = new BasicDBObject()
-                        .append("$push",
+                        .append("$addToSet",
                                 new BasicDBObject(
                                         DBObjectToVariantConverter.FILES_FIELD,
                                         sourceEntryConverter.convertToStorageType(variantSourceEntry)))
