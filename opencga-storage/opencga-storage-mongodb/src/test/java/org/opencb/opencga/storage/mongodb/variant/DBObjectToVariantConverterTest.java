@@ -93,8 +93,8 @@ public class DBObjectToVariantConverterTest {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToVariantSourceEntryConverter(
                         true,
-                        new DBObjectToSamplesConverter(sampleNames),
-                        new DBObjectToVariantStatsConverter()));
+                        new DBObjectToSamplesConverter(sampleNames)), 
+                new DBObjectToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
         assertEquals(variant, converted);
     }
@@ -114,16 +114,17 @@ public class DBObjectToVariantConverterTest {
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.STATS_FIELD, Collections.emptyList());
+        mongoFile.append(DBObjectToVariantConverter.STATS_FIELD, Collections.emptyList());
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
         mongoVariant.append("files", files);
         
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
-        DBObjectToVariantConverter converter = new DBObjectToVariantConverter(new DBObjectToVariantSourceEntryConverter(
-                true,
-                new DBObjectToSamplesConverter(sampleNames),
-                new DBObjectToVariantStatsConverter()));
+        DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
+                new DBObjectToVariantSourceEntryConverter(
+                        true,
+                        new DBObjectToSamplesConverter(sampleNames)),
+                new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsField(DBObjectToVariantConverter.IDS_FIELD)); //IDs must be added manually.
         converted.put(DBObjectToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs

@@ -246,7 +246,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
         boolean includeSrc = false;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
