@@ -27,14 +27,10 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public final static String ATTRIBUTES_FIELD = "attrs";
     public final static String FORMAT_FIELD = "fm";
     public final static String SAMPLES_FIELD = "samp";
-    public final static String STATS_FIELD = "st";
     
     private boolean includeSrc;
 
     private DBObjectToSamplesConverter samplesConverter;
-    private DBObjectToVariantStatsConverter statsConverter;
-
-    private Variant variant;
 
     /**
      * Create a converter between VariantSourceEntry and DBObject entities when 
@@ -45,8 +41,6 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
-        this.statsConverter = null;
-        this.variant = null;
     }
 
 
@@ -54,27 +48,16 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * Create a converter from VariantSourceEntry to DBObject entities. A
      * samples converter and a statistics converter may be provided in case those
      * should be processed during the conversion.
-     *
-     * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
+     *  @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
      * @param samplesConverter The object used to convert the samples. If null, won't convert
-     * @param statsConverter   The object used to convert the file statistics. If null, won't convert
      *
      */
     public DBObjectToVariantSourceEntryConverter(boolean includeSrc,
-                                                 DBObjectToSamplesConverter samplesConverter,
-                                                 DBObjectToVariantStatsConverter statsConverter) {
+                                                 DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.samplesConverter = samplesConverter;
-        this.statsConverter = statsConverter;
     }
 
-    public Variant getVariant() {
-        return variant;
-    }
-
-    public void setVariant(Variant variant) {
-        this.variant = variant;
-    }
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         String fileId = (String) object.get(FILEID_FIELD);
@@ -121,12 +104,6 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             }
         }
         
-        // Statistics
-        if (statsConverter != null && object.containsField(STATS_FIELD)) {
-            DBObject stats = (DBObject) object.get(STATS_FIELD);
-            Map<String, VariantStats> variantStatsMap = statsConverter.convertCohortsToDataModelType(stats, variant);
-            file.setCohortStats(variantStatsMap);
-        }
         return file;
     }
 
@@ -174,12 +151,6 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             mongoFile.put(SAMPLES_FIELD, samplesConverter.convertToStorageType(object));
         }
         
-        // Statistics
-        if (statsConverter != null && object.getCohortStats() != null) {
-            Map<String, VariantStats> cohortStats = object.getCohortStats();
-            List list = statsConverter.convertCohortsToStorageType(cohortStats);
-            mongoFile.put(STATS_FIELD, list);
-        }
         
         return mongoFile;
     }

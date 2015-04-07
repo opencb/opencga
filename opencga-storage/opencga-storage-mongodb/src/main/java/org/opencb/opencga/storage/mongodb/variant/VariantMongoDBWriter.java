@@ -514,14 +514,14 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 includeSrc,
-                sampleConverter,
-                statsConverter);
+                sampleConverter
+        );
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
         // Do not create the VariantConverter with the sourceEntryConverter.
         // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
         // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
-        variantConverter = new DBObjectToVariantConverter();
+        variantConverter = new DBObjectToVariantConverter(null, statsConverter);
     }
 
     @Deprecated private void addConsequenceType(VariantEffect effect) {

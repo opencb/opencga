@@ -60,9 +60,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // TODO Allow to configure depending on the type of study?
         variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 true,
-                new DBObjectToSamplesConverter(credentials, filesCollectionName),
-                new DBObjectToVariantStatsConverter());
-        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter);
+                new DBObjectToSamplesConverter(credentials, filesCollectionName)
+        );
+        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
     }
 
 
@@ -450,23 +450,31 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats);
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId(), variantSource.getFileId());   // TODO remove when we remove fileId
+//            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
             
             if (!cohorts.isEmpty()) {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
                 
-                DBObject find = new BasicDBObject("_id", id)
-                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD
-                                , variantSource.getStudyId())
-                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD
-                                , variantSource.getFileId());
+                for (DBObject cohort : cohorts) {   // remove already present elements one by one. TODO improve this. pullAll requires exact match and addToSet does not overwrite, we would need a putToSet
+                    DBObject find = new BasicDBObject("_id", id)
+                            .append(
+                                    DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.STUDY_ID,
+                                    cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
+                    DBObject update = new BasicDBObject("$pull",
+                            new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD, 
+                                    new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, 
+                                            cohort.get(DBObjectToVariantStatsConverter.STUDY_ID))));
 
-                DBObject update = new BasicDBObject("$set", new BasicDBObject(
-                        DBObjectToVariantConverter.FILES_FIELD + ".$." + DBObjectToVariantSourceConverter.STATS_FIELD
-                        , cohorts));
-
-                builder.find(find).updateOne(update);
+                    builder.find(find).updateOne(update);
+                }
+                
+                DBObject push = new BasicDBObject("$push", 
+                        new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                                new BasicDBObject("$each", cohorts)));
+                
+                builder.find(new BasicDBObject("_id", id)).update(push);
             }
         }
 
@@ -612,6 +620,50 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 options.put(PROTEIN_SUBSTITUTION, list); //Replace the QueryOption without the malformed query params
             }
 
+            /** STATS **/
+
+            if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD,
+                        options.getString(MAF), builder);
+            }
+
+            if (options.get(MGF) != null && !options.getString(MGF).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD,
+                        options.getString(MGF), builder);
+            }
+
+            if (options.get(MISSING_ALLELES) != null && !options.getString(MISSING_ALLELES).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD,
+                        options.getString(MISSING_ALLELES), builder);
+            }
+
+            if (options.get(MISSING_GENOTYPES) != null && !options.getString(MISSING_GENOTYPES).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD,
+                        options.getString(MISSING_GENOTYPES), builder);
+            }
+
+            if (options.get("numgt") != null && !options.getString("numgt").isEmpty()) {
+                for (String numgt : options.getAsStringList("numgt")) {
+                    String[] split = numgt.split(":");
+                    addCompQueryFilter(
+                            DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
+                            split[1], builder);
+                }
+            }
+
+//            if (options.get("freqgt") != null && !options.getString("freqgt").isEmpty()) {
+//                for (String freqgt : getStringList(options.get("freqgt"))) {
+//                    String[] split = freqgt.split(":");
+//                    addCompQueryFilter(
+//                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.FREQGT_FIELD + "." + split[0],
+//                            split[1], builder);
+//                }
+//            }
+
 
             /** FILES **/
             QueryBuilder fileBuilder = QueryBuilder.start();
@@ -625,52 +677,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
                 addQueryListFilter(
                         DBObjectToVariantSourceConverter.FILEID_FIELD, options.getAsStringList(FILES),
-                                fileBuilder, QueryOperation.AND);
+                        fileBuilder, QueryOperation.AND);
             }
-
-            if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
-                addCompQueryFilter(
-                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD,
-                        options.getString(MAF), fileBuilder);
-            }
-
-            if (options.get(MGF) != null && !options.getString(MGF).isEmpty()) {
-                addCompQueryFilter(
-                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD,
-                        options.getString(MGF), fileBuilder);
-            }
-
-            if (options.get(MISSING_ALLELES) != null && !options.getString(MISSING_ALLELES).isEmpty()) {
-                addCompQueryFilter(
-                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD,
-                        options.getString(MISSING_ALLELES), fileBuilder);
-            }
-
-            if (options.get(MISSING_GENOTYPES) != null && !options.getString(MISSING_GENOTYPES).isEmpty()) {
-                addCompQueryFilter(
-                        DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD,
-                        options.getString(MISSING_GENOTYPES), fileBuilder);
-            }
-
-            if (options.get("numgt") != null && !options.getString("numgt").isEmpty()) {
-                for (String numgt : options.getAsStringList("numgt")) {
-                    String[] split = numgt.split(":");
-                    addCompQueryFilter(
-                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
-                            split[1], fileBuilder);
-                }
-            }
-
-//            if (options.get("freqgt") != null && !options.getString("freqgt").isEmpty()) {
-//                for (String freqgt : getStringList(options.get("freqgt"))) {
-//                    String[] split = freqgt.split(":");
-//                    addCompQueryFilter(
-//                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.FREQGT_FIELD + "." + split[0],
-//                            split[1], fileBuilder);
-//                }
-//            }
-
-
 
             if (options.containsKey(GENOTYPE)) {
                 String sampleGenotypesCSV = options.getString(GENOTYPE);
