@@ -6,8 +6,11 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -18,6 +21,7 @@ public class VariantDBReader implements VariantReader {
     private VariantDBAdaptor variantDBAdaptor;
     private QueryOptions options;
     private VariantDBIterator iterator;
+    protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
     public VariantDBReader(VariantSource variantSource, VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
         this.variantSource = variantSource;
@@ -46,8 +50,8 @@ public class VariantDBReader implements VariantReader {
         }
 
         // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
-//        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
-//        iteratorQueryOptions.add("include", include);
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
+        iteratorQueryOptions.add("include", include);
 
         iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         return iterator != null;
@@ -75,10 +79,13 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public List<Variant> read(int batchSize) {
+
+        long start = System.currentTimeMillis();
         List<Variant> variants = new ArrayList<>(batchSize);
         while (variants.size() < batchSize && iterator.hasNext()) {
             variants.add(iterator.next());
         }
+        logger.info("another batch read. time: {}ms", System.currentTimeMillis() - start);
         return variants;
     }
 }

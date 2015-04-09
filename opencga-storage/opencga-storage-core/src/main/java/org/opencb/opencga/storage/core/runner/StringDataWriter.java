@@ -96,12 +96,14 @@ public class StringDataWriter implements DataWriter<String> {
     @Override
     public boolean write(List<String> batch) {
         try {
+            long start = System.currentTimeMillis();
             for (String b : batch) {
                 if ( ++writtenLines % 1000 == 0) {
                     logger.info("written lines = " + writtenLines);
                 }
                 os.write(b.getBytes());
             }
+            logger.info("another batch written. time: {}ms", System.currentTimeMillis() - start);
         } catch (IOException e) {
             e.printStackTrace();
             return false;

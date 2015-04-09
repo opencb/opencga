@@ -124,7 +124,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
-        int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100")));
+        int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "1000")));
         String extension = params.getString("compressExtension", "snappy");
         int numTasks = params.getInt("transformThreads", 8);
         int capacity = params.getInt("blockingQueueCapacity", numTasks*2);

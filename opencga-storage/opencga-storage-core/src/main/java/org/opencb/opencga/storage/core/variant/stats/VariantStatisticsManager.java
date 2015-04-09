@@ -182,7 +182,7 @@ public class VariantStatisticsManager {
      */
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> samples, QueryOptions options) throws Exception {
         VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        int numThreads = 10;
+        int numTasks = 6;
         int batchSize = 1000;  // future optimization, threads, etc
         boolean overwrite = false;
         if(options != null) { //Parse query options
@@ -192,21 +192,25 @@ public class VariantStatisticsManager {
         
         // reader, tasks and writer
         VariantDBReader reader = new VariantDBReader(variantSource, variantDBAdaptor, options);
-        List<ParallelTaskRunner.BatchFunction<Variant, String>> tasks = new ArrayList<>(numThreads);
-        for (int i = 0; i < numThreads; i++) {
+        List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
+        for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, samples, variantSource));
         }
-        StringDataWriter writer = new StringDataWriter(Paths.get(output));
+        StringDataWriter writer = new StringDataWriter(Paths.get(output.getPath() + VARIANT_STATS_SUFFIX));
         
         // runner 
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, batchSize, false);
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks*2, false);
         ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
+
+        logger.info("starting stats creation");
+        long start = System.currentTimeMillis();
         runner.run();
+        logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
         
         return output;
     }
 
-    class VariantStatsWrapperTask implements ParallelTaskRunner.BatchFunction<Variant, String> {
+    class VariantStatsWrapperTask implements ParallelTaskRunner.Task<Variant, String> {
 
         private boolean overwrite;
         private Map<String, Set<String>> samples;
@@ -233,6 +237,7 @@ public class VariantStatisticsManager {
             VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
 
+            long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
@@ -240,6 +245,7 @@ public class VariantStatisticsManager {
                     e.printStackTrace();
                 }
             }
+            logger.info("another batch calculated. time: {}ms", System.currentTimeMillis() - start);
             logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
 
             return strings;
