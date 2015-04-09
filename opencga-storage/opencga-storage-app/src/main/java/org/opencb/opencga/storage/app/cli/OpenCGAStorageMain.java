@@ -886,7 +886,7 @@ public class OpenCGAStorageMain {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, queryOptions);
             }
-        } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?
+        } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
             logger.error(e.getMessage());
             System.exit(1);
         }

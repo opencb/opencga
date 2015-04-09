@@ -294,7 +294,12 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             // TODO add filters
             logger.debug("about to calculate stats");
             VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
-            URI statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(buildFilename(variantSource) + "." + TimeUtils.getTime()), null, new QueryOptions(params));
+            URI statsUri = null;
+            try {
+                statsUri = variantStatisticsManager.createStats(getDBAdaptor(dbName, params), output.resolve(buildFilename(variantSource) + "." + TimeUtils.getTime()), null, new QueryOptions(params));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             variantStatisticsManager.loadStats(getDBAdaptor(dbName, params), statsUri, new QueryOptions(params));
         }
 
