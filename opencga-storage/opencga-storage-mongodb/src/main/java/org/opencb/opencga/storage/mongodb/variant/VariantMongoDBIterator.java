@@ -32,7 +32,10 @@ public class VariantMongoDBIterator extends VariantDBIterator {
 
     @Override
     public Variant next() {
-        DBObject dbObject = dbCursor.next();
+        DBObject dbObject;
+        synchronized (dbCursor) {
+            dbObject = dbCursor.next();
+        }
         return dbObjectToVariantConverter.convertToDataModelType(dbObject);
     }
 

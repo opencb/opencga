@@ -16,7 +16,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,18 +189,23 @@ public class VariantStatisticsManager {
             batchSize = options.getInt(BATCH_SIZE, batchSize);
             overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
         }
-        
+
+        // iterator
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
+        options.add("include", include);
+
+        VariantDBIterator iterator = variantDBAdaptor.iterator(options);
         // reader, tasks and writer
-        VariantDBReader reader = new VariantDBReader(variantSource, variantDBAdaptor, options);
+//        VariantDBReader reader = new VariantDBReader(variantSource, variantDBAdaptor, options);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, samples, variantSource));
+            tasks.add(new VariantStatsWrapperTask(overwrite, samples, variantSource, iterator, batchSize));
         }
         StringDataWriter writer = new StringDataWriter(Paths.get(output.getPath() + VARIANT_STATS_SUFFIX));
         
         // runner 
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks*2, false);
-        ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
+        ParallelTaskRunner runner = new ParallelTaskRunner<>(null, tasks, writer, config);
 
         logger.info("starting stats creation");
         long start = System.currentTimeMillis();
@@ -217,27 +222,38 @@ public class VariantStatisticsManager {
         private VariantSource variantSource;
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
+        private VariantDBIterator iterator;
+        private int batchSize;
 
-        public VariantStatsWrapperTask(VariantSource variantSource) {
-            this(false, null, variantSource);
+        public VariantStatsWrapperTask(VariantSource variantSource, VariantDBIterator iterator) {
+            this(false, null, variantSource, iterator, 100);
         }
 
-        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples, VariantSource variantSource) {
+        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples, VariantSource variantSource, VariantDBIterator iterator, int batchSize) {
             this.overwrite = overwrite;
             this.samples = samples;
             this.variantSource = variantSource;
+            this.iterator = iterator;
+            this.batchSize = batchSize;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
         }
 
         @Override
         public List<String> apply(List<Variant> variantBatch) {
-            List<String> strings = new ArrayList<>(variantBatch.size());
-            
-            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, variantSource, samples);
 
             long start = System.currentTimeMillis();
+            List<Variant> variants = new ArrayList<>(batchSize);
+            while (variants.size() < batchSize && iterator.hasNext()) {
+                variants.add(iterator.next());
+            }
+            logger.info("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
+            List<String> strings = new ArrayList<>(variants.size());
+            
+            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, variantSource, samples);
+            
+            start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
@@ -245,9 +261,12 @@ public class VariantStatisticsManager {
                     e.printStackTrace();
                 }
             }
-            logger.info("another batch calculated. time: {}ms", System.currentTimeMillis() - start);
-            logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
-
+            logger.info("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
+            if (variants.size() != 0) {
+                logger.info("stats created up to position {}:{}", variants.get(variants.size()-1).getChromosome(), variants.get(variants.size()-1).getStart());
+            } else {
+                logger.info("task with empty batch");
+            }
             return strings;
         }
     }

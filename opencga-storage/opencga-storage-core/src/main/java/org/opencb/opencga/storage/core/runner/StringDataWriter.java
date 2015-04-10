@@ -103,7 +103,7 @@ public class StringDataWriter implements DataWriter<String> {
                 }
                 os.write(b.getBytes());
             }
-            logger.info("another batch written. time: {}ms", System.currentTimeMillis() - start);
+            logger.info("another batch of {} elements written. time: {}ms", batch.size(), System.currentTimeMillis() - start);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
