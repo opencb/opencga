@@ -113,6 +113,7 @@ public class OpenCGAMain {
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
+                System.exit(1);
             }
         }
     }
@@ -155,7 +156,7 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.UserCommands.InfoCommand c = optionsParser.getUserCommands().infoCommand;
 
-                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null, sessionId);
+                        QueryResult<User> user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, user, null));
 
                         break;
@@ -212,7 +213,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
 
                         QueryResult<Project> project = catalogManager.createProject(catalogManager.getUserIdBySessionId(sessionId)
-                                , c.name, c.alias, c.description, c.organization, null, sessionId);
+                                , c.name, c.alias, c.description, c.organization, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -221,7 +222,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.InfoCommand c = optionsParser.getProjectCommands().infoCommand;
 
                         int projectId = catalogManager.getProjectId(c.id);
-                        QueryResult<Project> project = catalogManager.getProject(projectId, null, sessionId);
+                        QueryResult<Project> project = catalogManager.getProject(projectId, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -231,7 +232,7 @@ public class OpenCGAMain {
 
                         int projectId = catalogManager.getProjectId(c.id);
                         QueryResult result = catalogManager.shareProject(projectId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(result);
+                        System.out.println(createOutput(c.cOpt, result, null));
 
                         break;
                     }
@@ -245,8 +246,10 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
 
+                        URI uri = new URI(null, c.uri, null);
                         int projectId = catalogManager.getProjectId(c.projectId);
-                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, Study.Type.valueOf(c.type), c.description, sessionId);
+                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
+                                null, c.description, null, null, null, uri, null, null, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, study, null));
 
                         break;
@@ -265,7 +268,7 @@ public class OpenCGAMain {
 
                         int studyId = catalogManager.getStudyId(c.id);
                         QueryResult result = catalogManager.shareProject(studyId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(result);
+                        System.out.println(createOutput(c.cOpt, result, null));
 
                         break;
                     }
@@ -298,7 +301,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.CreateFolderCommand c = optionsParser.getFileCommands().createFolderCommand;
 
                         int studyId = catalogManager.getStudyId(c.studyId);
-                        QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, null, sessionId);
+                        QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, folder, null));
 
                         break;
@@ -307,8 +310,24 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
 
                         int fileId = catalogManager.getFileId(c.id);
-                        QueryResult<File> file = catalogManager.getFile(fileId, sessionId);
+                        QueryResult<File> file = catalogManager.getFile(fileId, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), file, null));
+
+                        break;
+                    }
+                    case "search": {
+                        OptionsParser.FileCommands.SearchCommand c = optionsParser.getFileCommands().searchCommand;
+
+                        int studyId = catalogManager.getStudyId(c.studyId);
+                        QueryOptions query = new QueryOptions();
+                        if (c.name != null) query.put("like", c.name);
+                        if (c.directory != null) query.put("directory", c.directory);
+                        if (c.bioformats != null) query.put("bioformat", c.bioformats);
+                        if (c.types != null) query.put("type", c.types);
+                        if (c.status != null) query.put("status", c.status);
+
+                        QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(optionsParser.getCommonOptions(), fileQueryResult, null));
 
                         break;
                     }
@@ -342,6 +361,17 @@ public class OpenCGAMain {
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
                             queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                        }
+                        if (c.dbName != null) {
+                            queryOptions.put(AnalysisFileIndexer.DB_NAME, c.dbName);
+                        }
+                        if (c.indexedFileId != null) {
+                            int indexedFileId = catalogManager.getFileId(c.indexedFileId);
+                            if (indexedFileId < 0) {
+                                logger.error("IndexedFileId " + c.indexedFileId + " does not exist");
+                                returnValue = 1;
+                            }
+                            queryOptions.put(AnalysisFileIndexer.INDEX_FILE_ID, indexedFileId);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
@@ -410,9 +440,6 @@ public class OpenCGAMain {
                         queryOptions.put("id", c.sampleIds);
                         queryOptions.put("name", c.sampleNames);
                         queryOptions.put("annotation", c.annotation);
-                        for (String s : c.annotation) {
-                            System.out.println(s);
-                        }
                         queryOptions.put("variableSetId", c.variableSetId);
                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
                         System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
@@ -732,6 +759,14 @@ public class OpenCGAMain {
         return sb;
     }
 
+    /**
+     * Get Bytes numbers in a human readable string
+     * See http://stackoverflow.com/a/3758880
+     *
+     * @param bytes     Quantity of bytes
+     * @param si        Use International System (power of 10) or Binary Units (power of 2)
+     * @return
+     */
     public static String humanReadableByteCount(long bytes, boolean si) {
         int unit = si ? 1000 : 1024;
         if (bytes < unit) return bytes + " B";

@@ -128,6 +128,10 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      */
     public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
 
+    /**
+     * @deprecated Use "getAllVariants" with VariantDBAdaptor.REGION filter instead.
+     */
+    @Deprecated
     public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
 

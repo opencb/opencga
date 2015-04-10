@@ -346,8 +346,11 @@ public class OptionsParser {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         String studyId;
 
-        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+        @Parameter(names = {"-p", "--pedigree"}, description = "[UNUSED] File containing pedigree information (in PED format, optional)", arity = 1)
         String pedigree;
+
+        @Parameter(names = {"--sample-ids"}, description = "CSV List of SampleNames with SampleIds -> <sample-name>:<sample-id>", arity = 1)
+        List<String> sampleIds;
 //
 //        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
 //        boolean includeEffect = false;
@@ -540,11 +543,12 @@ public class OptionsParser {
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         String species = "hsapiens";
 
-        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
-        String assembly = "GRc37";
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", required = false, arity = 1)
+        String assembly = "GRCh37";
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         boolean create = false;
+
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         String load = null;
 

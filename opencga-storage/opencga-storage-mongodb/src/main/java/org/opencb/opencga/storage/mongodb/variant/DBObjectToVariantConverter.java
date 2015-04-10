@@ -37,6 +37,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String SOTERM_FIELD = "so";
     public final static String GENE_FIELD = "gene";
     public final static String ANNOTATION_FIELD = "annot";
+    public final static String STATS_FIELD = "st";
 
     public final static Map<String, String> fieldsMap;
 
@@ -54,30 +55,34 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("type", TYPE_FIELD);
 //        fields.put("name", NAME_FIELD);
         fieldsMap.put("sourceEntries", FILES_FIELD);
+        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
         fieldsMap.put("annotation", ANNOTATION_FIELD);
     }
 
-    private DBObjectToVariantSourceEntryConverter archivedVariantFileConverter;
+    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private DBObjectToVariantAnnotationConverter variantAnnotationConverter;
+    private DBObjectToVariantStatsConverter statsConverter;
 
     /**
      * Create a converter between Variant and DBObject entities when there is 
      * no need to convert the files the variant was read from.
      */
     public DBObjectToVariantConverter() {
-        this(null);
+        this(null, null);
     }
 
     /**
      * Create a converter between Variant and DBObject entities. A converter for 
      * the files the variant was read from can be provided in case those 
      * should be processed during the conversion.
-     * 
-     * @param archivedVariantFileConverter The object used to convert the files
+     *
+     * @param variantSourceEntryConverter The object used to convert the files
+     * @param statsConverter
      */
-    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter archivedVariantFileConverter) {
-        this.archivedVariantFileConverter = archivedVariantFileConverter;
+    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, DBObjectToVariantStatsConverter statsConverter) {
+        this.variantSourceEntryConverter = variantSourceEntryConverter;
         this.variantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
+        this.statsConverter = statsConverter;
     }
     
     
@@ -104,13 +109,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         }
         
         // Files
-        if (archivedVariantFileConverter != null) {
-            archivedVariantFileConverter.setVariant(variant);
+        if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = (BasicDBList) object.get(FILES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
-                    variant.addSourceEntry(archivedVariantFileConverter.convertToDataModelType(dbo));
+                    variant.addSourceEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
                 }
             }
         }
@@ -125,6 +129,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             annotation.setStart(variant.getStart());
             variant.setAnnotation(annotation);
         }
+        
+        // Statistics
+        if (statsConverter != null && object.containsField(STATS_FIELD)) {
+            DBObject stats = (DBObject) object.get(STATS_FIELD);
+            statsConverter.convertCohortsToDataModelType(stats, variant);
+        }
         return variant;
     }
 
@@ -132,7 +142,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public DBObject convertToStorageType(Variant object) {
         // Attributes easily calculated
         BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object))
-//                .append(IDS_FIELD, object.getIds())
+//                .append(IDS_FIELD, object.getIds())    //Do not include IDs.
                 .append(TYPE_FIELD, object.getType().name())
                 .append(CHROMOSOME_FIELD, object.getChromosome())
                 .append(START_FIELD, object.getStart())
@@ -140,7 +150,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
                 .append(LENGTH_FIELD, object.getLength())
                 .append(REFERENCE_FIELD, object.getReference())
                 .append(ALTERNATE_FIELD, object.getAlternate());
-        
+
         // Internal fields used for query optimization (dictionary named "_at")
         BasicDBObject _at = new BasicDBObject();
         mongoVariant.append("_at", _at);
@@ -161,10 +171,10 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         mongoVariant.append(HGVS_FIELD, hgvs);
         
         // Files
-        if (archivedVariantFileConverter != null) {
+        if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = new BasicDBList();
             for (VariantSourceEntry archiveFile : object.getSourceEntries().values()) {
-                mongoFiles.add(archivedVariantFileConverter.convertToStorageType(archiveFile));
+                mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(FILES_FIELD, mongoFiles);
         }
@@ -176,6 +186,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 //                mongoVariant.append(ANNOTATION_FIELD, annotation);
 //            }
 //        }
+
+        // Statistics
+        if (statsConverter != null) {
+            List mongoStats = statsConverter.convertCohortsToStorageType(object.getSourceEntries());
+            mongoVariant.put(STATS_FIELD, mongoStats);
+        }
         return mongoVariant;
     }
 

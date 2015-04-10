@@ -1,6 +1,11 @@
 package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.io.Files;
 import org.opencb.biodata.formats.feature.gff.Gff;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
@@ -11,6 +16,8 @@ import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -30,6 +37,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -337,8 +347,13 @@ public class OpenCGAStorageMain {
                             Math.min((i + 1) * subListSize, regions.size()));
 
                     logger.info("subRegions = " + subRegions);
+//                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariants(subRegions, options);
                     List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-                    logger.info("{}", queryResults);
+                    StringBuilder sb = new StringBuilder();
+                    for (QueryResult<Variant> queryResult : queryResults) {
+                        printQueryResult(queryResult, sb);
+                    }
+                    System.out.println(sb);
                 }
             } else if(gffReader != null) {
                 List<Gff> gffList;
@@ -351,10 +366,14 @@ public class OpenCGAStorageMain {
 
                     logger.info("subRegions = " + subRegions);
                     List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-                    logger.info("{}", queryResults);
+                    StringBuilder sb = new StringBuilder();
+                    for (QueryResult<Variant> queryResult : queryResults) {
+                        printQueryResult(queryResult, sb);
+                    }
+                    System.out.println(sb);
                 }
             } else {
-                System.out.println(dbAdaptor.getAllVariants(options));
+                System.out.println(printQueryResult(dbAdaptor.getAllVariants(options), null));
             }
 
 
@@ -614,6 +633,7 @@ public class OpenCGAStorageMain {
 
         ObjectMap params = new ObjectMap();
 //        params.put(VariantStorageManager.INCLUDE_EFFECT,  c.includeEffect);
+        params.put(VariantStorageManager.SAMPLE_IDS, c.sampleIds);
         params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
         params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
         params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
@@ -870,6 +890,27 @@ public class OpenCGAStorageMain {
             logger.error(e.getMessage());
             System.exit(1);
         }
+    }
+
+    public static StringBuilder printQueryResult(QueryResult queryResult, StringBuilder sb) throws JsonProcessingException {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+        ObjectMapper jsonObjectMapper;
+
+        JsonFactory factory = new JsonFactory();
+        jsonObjectMapper = new ObjectMapper(factory);
+
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+//                objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
+
+        sb.append(jsonObjectMapper.writeValueAsString(queryResult)).append("\n");
+        return sb;
     }
 
 

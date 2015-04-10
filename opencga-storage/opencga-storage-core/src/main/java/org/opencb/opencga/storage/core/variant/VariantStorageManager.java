@@ -51,6 +51,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
     public static final String DB_NAME = "dbName";
+    public static final String SAMPLE_IDS = "sampleIds";
 
     public static final String SPECIES = "species";
     public static final String ASSEMBLY = "assembly";
@@ -144,6 +145,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                     break;
                 case EVS:
                     factory = new VariantVcfEVSFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
+                    break;
+                case EXAC:
+                    factory = new VariantVcfExacFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
                     break;
             }
         } else {
