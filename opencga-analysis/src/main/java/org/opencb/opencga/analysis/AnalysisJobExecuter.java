@@ -202,7 +202,7 @@ public class AnalysisJobExecuter {
         String commandLine = createCommandLine(executable, params);
         System.out.println(commandLine);
 
-        return createJob(catalogManager, studyId, analysisName, jobName, description, outDir, inputFiles, sessionId,
+        return createJob(catalogManager, studyId, jobName, analysisName, description, outDir, inputFiles, sessionId,
                 randomString, temporalOutDirUri, commandLine, false, false, false, new HashMap<String, Object>());
     }
 
