@@ -1010,18 +1010,13 @@ public class CatalogManager implements ICatalogManager {
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, Path completedFilePath, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
-        System.out.println("create file 1");
 
         QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
         File file = result.getResult().get(0);
-        System.out.println("create file 2");
         //path is relative to user, get full path...
-        URI studyURI = getStudyUri(studyId, sessionId);
-        System.out.println("create file 3");
+        URI studyURI = getStudyUri(studyId);
         URI fileURI = getFileUri(studyURI, path);
-        System.out.println("create file 4");
         Files.move(completedFilePath, Paths.get(fileURI));
-        System.out.println("create file 5");
 
         ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
         catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
