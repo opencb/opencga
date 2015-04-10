@@ -543,11 +543,12 @@ public class OptionsParser {
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         String species = "hsapiens";
 
-        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
-        String assembly = "GRc37";
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", required = false, arity = 1)
+        String assembly = "GRCh37";
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         boolean create = false;
+
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         String load = null;
 

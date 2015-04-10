@@ -30,28 +30,20 @@ public interface ICatalogManager {
     //Old interface
     CatalogIOManagerFactory getCatalogIOManagerFactory();
 
-    URI getUserUri(String userId) throws CatalogIOManagerException;
+    URI getUserUri(String userId) throws CatalogException;
 
-    URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException;
+    URI getProjectUri(String userId, String projectId) throws CatalogException;
 
-    @Deprecated
-    URI getStudyUri(String scheme, String userId, String projectId, String studyId)
-            throws CatalogIOManagerException, IOException;
+    URI getStudyUri(int studyId)
+            throws CatalogException;
 
-    @Deprecated
-    URI getStudyUri(String userId, String projectId, String studyId)
-            throws CatalogIOManagerException, IOException;
-
-    URI getStudyUri(int studyId, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException;
-
-    URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
-            throws CatalogIOManagerException;
+    URI getFileUri(int studyId, String relativeFilePath)
+            throws CatalogException;
 
     URI getFileUri(URI studyUri, String relativeFilePath)
-            throws CatalogIOManagerException, IOException;
+            throws CatalogException, IOException;
 
-    URI getFileUri(File file) throws CatalogDBException, CatalogIOManagerException;
+    URI getFileUri(File file) throws CatalogException;
 
     int getProjectIdByStudyId(int studyId) throws CatalogException;
 
@@ -124,6 +116,12 @@ public interface ICatalogManager {
     QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                    String creatorId, String creationDate, String description, String status,
                                    String cipher, String uriScheme, Map<String, Object> stats,
+                                   Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException, IOException;
+
+    QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
+                                   String creatorId, String creationDate, String description, String status,
+                                   String cipher, String uriScheme, URI uri, Map<String, Object> stats,
                                    Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException;
 
@@ -209,13 +207,13 @@ public interface ICatalogManager {
     QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException;
 
     DataInputStream downloadFile(int fileId, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException;
+            throws IOException, CatalogException;
 
     DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
-            throws CatalogIOManagerException, IOException, CatalogException;
+            throws IOException, CatalogException;
 
     DataInputStream grepFile(int fileId, String pattern, boolean ignoreCase, boolean multi, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException;
+            throws IOException, CatalogException;
 
     /*Require role admin*/
     QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;

@@ -146,6 +146,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                 case EVS:
                     factory = new VariantVcfEVSFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
                     break;
+                case EXAC:
+                    factory = new VariantVcfExacFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
+                    break;
             }
         } else {
             throw new IOException("Variants input file format not supported");

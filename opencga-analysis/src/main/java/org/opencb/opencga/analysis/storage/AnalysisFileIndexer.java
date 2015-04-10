@@ -240,7 +240,7 @@ public class AnalysisFileIndexer {
      */
     private String createCommandLine(Study study, File file, File indexFile, List<Sample> sampleList, String storageEngine,
                                      URI outDirUri, final ObjectMap indexFileModifyParams, final String dbName, QueryOptions options)
-            throws CatalogDBException, CatalogIOManagerException {
+            throws CatalogException {
 
         //Create command line
         String userId = file.getOwnerId();
@@ -279,7 +279,7 @@ public class AnalysisFileIndexer {
                     .append(" --storage-engine ").append(storageEngine)
                     .append(" index-variants ")
                     .append(" --file-id ").append(indexFile.getId())
-                    .append(" --study-name \"").append(study.getName()).append("\"")
+                    .append(" --study-name \'").append(study.getName()).append("\'")
                     .append(" --study-id ").append(study.getId())
 //                    .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dbName)

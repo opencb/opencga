@@ -180,29 +180,15 @@ public class CatalogManager implements ICatalogManager {
     }
 
     @Override
-    @Deprecated
-    public URI getStudyUri(String scheme, String userId, String projectId, String studyId)
-            throws CatalogIOManagerException, IOException {
-        return catalogIOManagerFactory.get(scheme).getStudyUri(userId, projectId, studyId);
+    public URI getStudyUri(int studyId)
+            throws CatalogException {
+        return catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", Arrays.asList("projects.studies.uri"))).first().getUri();
     }
 
     @Override
-    @Deprecated
-    public URI getStudyUri(String userId, String projectId, String studyId)
-            throws CatalogIOManagerException, IOException {
-        return ioManager.getStudyUri(userId, projectId, studyId);
-    }
-
-    @Override
-    public URI getStudyUri(int studyId, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException {
-        return getStudy(studyId, sessionId, new QueryOptions("include", Arrays.asList("id", "uri"))).getResult().get(0).getUri();
-    }
-
-    @Override
-    public URI getFileUri(String userId, String projectId, String studyId, String relativeFilePath)
-            throws CatalogIOManagerException {
-        return ioManager.getFileUri(userId, projectId, studyId, relativeFilePath);
+    public URI getFileUri(int studyId, String relativeFilePath)
+            throws CatalogException {
+        return ioManager.getFileUri(getStudyUri(studyId), relativeFilePath);
     }
 
     @Override
@@ -212,11 +198,9 @@ public class CatalogManager implements ICatalogManager {
     }
 
     @Override
-    public URI getFileUri(File file) throws CatalogDBException, CatalogIOManagerException {
+    public URI getFileUri(File file) throws CatalogException {
         int studyId = catalogDBAdaptor.getStudyIdByFileId(file.getId());
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-        String userId = catalogDBAdaptor.getProjectOwnerId(projectId);
-        return getFileUri(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
+        return getFileUri(studyId, file.getPath());
     }
 
     @Override
@@ -566,8 +550,7 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, QueryOptions options, String sessionId)
-            throws CatalogException,
-            CatalogIOManagerException {
+            throws CatalogException {
         checkParameter(ownerId, "ownerId");
         checkParameter(name, "name");
         checkAlias(alias, "alias");
@@ -714,22 +697,64 @@ public class CatalogManager implements ICatalogManager {
                                           String cipher, String uriScheme, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
+        return createStudy(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
+                null, stats, attributes, options, sessionId);
+    }
+
+    /**
+     * Creates a new Study in catalog
+     * @param projectId     Parent project id
+     * @param name          Study Name
+     * @param alias         Study Alias. Must be unique in the project's studies
+     * @param type          Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.beans.Study.Type)
+     * @param creatorId     Creator user id. If null, user by sessionId
+     * @param creationDate  Creation date. If null, now
+     * @param description   Study description. If null, empty string
+     * @param status        Unused
+     * @param cipher        Unused
+     * @param uriScheme     UriScheme to select the CatalogIOManager. Default: CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME
+     * @param uri           URI for the folder where to place the study. Scheme must match with the uriScheme. Folder must exist.
+     * @param stats         Optional stats
+     * @param attributes    Optional attributes
+     * @param options       QueryOptions
+     * @param sessionId     User's sessionId
+     * @return              Generated study
+     * @throws CatalogException
+     * @throws IOException
+     */
+    @Override
+    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
+                                          String creatorId, String creationDate, String description, String status,
+                                          String cipher, String uriScheme, URI uri, Map<String, Object> stats,
+                                          Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
         checkParameter(name, "name");
         checkParameter(alias, "alias");
         checkObj(type, "type");
         checkAlias(alias, "alias");
         checkParameter(sessionId, "sessionId");
 
-        if (description == null) {
-            description = "";
-        }
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
+        description = defaultString(description, "");
         creatorId = defaultString(creatorId, userId);
         creationDate = defaultString(creationDate, TimeUtils.getTime());
         status = defaultString(status, "active");
         cipher = defaultString(cipher, "none");
-        uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
+        if (uri != null) {
+            if (uri.getScheme() == null) {
+                throw new CatalogException("StudyUri must specify the scheme");
+            } else {
+                if (uriScheme != null && !uriScheme.isEmpty()) {
+                    if (!uriScheme.equals(uri.getScheme())) {
+                        throw new CatalogException("StudyUri must specify the scheme");
+                    }
+                } else {
+                    uriScheme = uri.getScheme();
+                }
+            }
+        } else {
+            uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
+        }
         stats = defaultObject(stats, new HashMap<String, Object>());
         attributes = defaultObject(attributes, new HashMap<String, Object>());
 
@@ -785,16 +810,18 @@ public class CatalogManager implements ICatalogManager {
         QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study, options);
         study = result.getResult().get(0);
 
-        URI studyUri;
-        try {
-            studyUri = catalogIOManager.createStudy(projectOwnerId, Integer.toString(projectId), Integer.toString(study.getId()));
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            catalogDBAdaptor.deleteStudy(study.getId());
-            throw e;
+//        URI studyUri;
+        if (uri == null) {
+            try {
+                uri = catalogIOManager.createStudy(projectOwnerId, Integer.toString(projectId), Integer.toString(study.getId()));
+            } catch (CatalogIOManagerException e) {
+                e.printStackTrace();
+                catalogDBAdaptor.deleteStudy(study.getId());
+                throw e;
+            }
         }
 
-        catalogDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", studyUri));
+        catalogDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri));
 
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
@@ -970,7 +997,7 @@ public class CatalogManager implements ICatalogManager {
         QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
         File file = result.getResult().get(0);
         //path is relative to user, get full path...
-        URI studyURI = getStudyUri(studyId, sessionId);
+        URI studyURI = getStudyUri(studyId);
         URI fileURI = getFileUri(studyURI, path);
         Files.write(Paths.get(fileURI), bytes);
 
@@ -1134,7 +1161,7 @@ public class CatalogManager implements ICatalogManager {
     @Override
     @Deprecated
     public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogException,
-            CatalogIOManagerException, IOException, InterruptedException {
+            IOException, InterruptedException {
 
         checkObj(fileIs, "InputStream");
         checkParameter(sessionId, "SessionId");
@@ -1154,7 +1181,7 @@ public class CatalogManager implements ICatalogManager {
         if (!file.getOwnerId().equals(userId)) {
             throw new CatalogDBException("UserId mismatch with file creator");
         }
-        ioManager.createFile(userId, Integer.toString(projectId), Integer.toString(studyId), file.getPath(), fileIs);
+        ioManager.createFile(getStudyUri(studyId), file.getPath(), fileIs);
         Study study = catalogDBAdaptor.getStudy(studyId, null).getResult().get(0);
 
         ObjectMap modifyParameters = new ObjectMap("status", File.Status.UPLOADED);
@@ -1215,7 +1242,7 @@ public class CatalogManager implements ICatalogManager {
             }
         }
 
-        ioManager.createFolder(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString(), parents);
+        ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
         File mainFolder = new File(folderPath.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
                 folderPath.toString() + "/", userId, "", File.Status.READY, 0);
 
@@ -1227,7 +1254,7 @@ public class CatalogManager implements ICatalogManager {
             }
             result = catalogDBAdaptor.createFileToStudy(studyId, mainFolder, options);
         } catch (CatalogDBException e) {
-            ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), folderPath.toString());
+            ioManager.deleteFile(getStudyUri(studyId), folderPath.toString());
             throw e;
         }
         catalogDBAdaptor.updateUserLastActivity(ownerId);
@@ -1294,15 +1321,15 @@ public class CatalogManager implements ICatalogManager {
                     deleteFile(subfile.getId(), sessionId);
                 }
 
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +  file.getName(), sessionId);
                 QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
                 return queryResult;
             case FILE:
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
             case INDEX:
                 throw new CatalogException("Can't delete INDEX file");
-                //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + file.getName(), sessionId);
+                //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
         return null;
@@ -1546,13 +1573,13 @@ public class CatalogManager implements ICatalogManager {
 
     @Override
     public DataInputStream downloadFile(int fileId, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException {
+            throws IOException, CatalogException {
         return downloadFile(fileId, -1, -1, sessionId);
     }
 
     @Override
     public DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
-            throws CatalogIOManagerException, IOException, CatalogException {
+            throws IOException, CatalogException {
         checkParameter(sessionId, "sessionId");
 
 
@@ -1561,22 +1588,19 @@ public class CatalogManager implements ICatalogManager {
             throw new CatalogDBException("Permission denied. User can't download file");
         }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
         QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
         if (fileResult.getResult().isEmpty()) {
             throw new CatalogDBException("File not found");
         }
         File file = fileResult.getResult().get(0);
 
-        return ioManager.getFileObject(userId,
-                Integer.toString(projectId),
-                Integer.toString(studyId),
+        return ioManager.getFileObject(getStudyUri(studyId),
                 file.getPath(), start, limit);
     }
 
     @Override
     public DataInputStream grepFile(int fileId, String pattern, boolean ignoreCase, boolean multi, String sessionId)
-            throws CatalogIOManagerException, IOException, CatalogException {
+            throws IOException, CatalogException {
         checkParameter(sessionId, "sessionId");
 
 
@@ -1592,9 +1616,7 @@ public class CatalogManager implements ICatalogManager {
         }
         File file = fileResult.getResult().get(0);
 
-        return ioManager.getGrepFileObject(userId,
-                Integer.toString(projectId),
-                Integer.toString(studyId),
+        return ioManager.getGrepFileObject(getStudyUri(studyId),
                 file.getPath(), pattern, ignoreCase, multi);
     }
 
@@ -1602,7 +1624,8 @@ public class CatalogManager implements ICatalogManager {
     /**
      * TODO: Set per-file ACL
      */
-    private QueryResult shareFile(int fileId, Acl acl, String sessionId) throws CatalogException {
+    private QueryResult shareFile(int fileId, Acl acl, String sessionId)
+            throws CatalogException {
         checkObj(acl, "acl");
         checkParameter(sessionId, "sessionId");
 
@@ -1617,17 +1640,20 @@ public class CatalogManager implements ICatalogManager {
 
     /*Require role admin*/
     @Override
-    public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId)
+            throws CatalogException {
         return searchFile(-1, query, options, sessionId);
     }
 
     @Override
-    public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId) throws CatalogException {
+    public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId)
+            throws CatalogException {
         return searchFile(studyId, query, null, sessionId);
     }
 
     @Override
-    public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId)
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
@@ -1649,7 +1675,8 @@ public class CatalogManager implements ICatalogManager {
 
     @Override
     public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
-                                              Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
+                                              Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkParameter(name, "name");
         checkObj(files, "files");
@@ -1676,7 +1703,8 @@ public class CatalogManager implements ICatalogManager {
     }
 
     @Override
-    public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByDatasetId(dataSetId);

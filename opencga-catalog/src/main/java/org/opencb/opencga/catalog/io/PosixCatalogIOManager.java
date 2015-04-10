@@ -490,9 +490,9 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
 
     @Override
-    public DataInputStream getGrepFileObject(String userId, String projectId, String studyId, String objectId,
+    public DataInputStream getGrepFileObject(URI studyUri, String objectId,
                                              String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
-        URI fileUri = getFileUri(userId, projectId, studyId, objectId);
+        URI fileUri = getFileUri(studyUri, objectId);
         Path path = Paths.get(fileUri);
         if (Files.isRegularFile(path)) {
             return new DataInputStream(IOUtils.grepFile(path, pattern, ignoreCase, multi));

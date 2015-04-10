@@ -27,7 +27,7 @@ public class CatalogFileManager {
 
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum)
-            throws CatalogIOManagerException {
+            throws CatalogException {
         upload(sourceUri, file, sourceChecksum, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, 10000000);
     }
     /**
@@ -48,7 +48,7 @@ public class CatalogFileManager {
      */
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum, long moveThreshold)
-            throws CatalogIOManagerException {
+            throws CatalogException {
 
         URI targetUri;
         CatalogIOManager sourceIOManager;
@@ -152,15 +152,23 @@ public class CatalogFileManager {
         }
 
         //Check status
-        if(targetChecksum.equals(sourceChecksum)) {
-            logger.info("Checksum matches {}", sourceChecksum);
+        if(!calculateChecksum || targetChecksum.equals(sourceChecksum)) {
+            ObjectMap attributes = new ObjectMap();
+            ObjectMap parameters = new ObjectMap();
+
+            if (calculateChecksum) {
+                logger.info("Checksum matches {}", sourceChecksum);
+                attributes.put("checksum", sourceChecksum);
+            } else {
+                logger.info("Checksum not computed.");
+            }
 
             //Update file
-            ObjectMap parameters = new ObjectMap();
             parameters.put("status", File.Status.READY);
             parameters.put("diskUsage", size);
             parameters.put("creationDate", creationDate);
-            parameters.put("attributes", new ObjectMap("checksum", targetChecksum));
+            parameters.put("attributes", attributes);
+
             try {
                 catalogManager.modifyFile(file.getId(), parameters, sessionId);
             } catch (CatalogException e) {
