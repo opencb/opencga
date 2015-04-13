@@ -410,8 +410,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
         DBCursor dbCursor = coll.nativeQuery().find(qb.get(), projection, options);
-        dbCursor.batchSize(options.getInt("batchSize", 1000));
-        System.out.println("dbCursor.getBatchSize() = " + dbCursor.getBatchSize());
+        dbCursor.batchSize(options.getInt("batchSize", 100));
         return new VariantMongoDBIterator(dbCursor, variantConverter);
     }
 

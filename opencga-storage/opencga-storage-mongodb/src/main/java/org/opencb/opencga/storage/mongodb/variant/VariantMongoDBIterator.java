@@ -32,15 +32,20 @@ public class VariantMongoDBIterator extends VariantDBIterator {
 
     @Override
     public Variant next() {
+        long start = System.currentTimeMillis();
         DBObject dbObject;
-        synchronized (dbCursor) {
-            dbObject = dbCursor.next();
-        }
-        return dbObjectToVariantConverter.convertToDataModelType(dbObject);
+        dbObject = dbCursor.next();
+        timeFetching += System.currentTimeMillis() - start;
+        start = System.currentTimeMillis();
+        Variant variant = dbObjectToVariantConverter.convertToDataModelType(dbObject);
+        timeConverting += System.currentTimeMillis() - start;
+        
+        return variant;
     }
 
     @Override
     public void remove() {
         throw new UnsupportedOperationException( "can't remove from a cursor" );
     }
+
 }

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.cellbase.mongodb.db.VariationMongoDBAdaptor;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -85,7 +86,12 @@ public class VariantDBReader implements VariantReader {
         while (variants.size() < batchSize && iterator.hasNext()) {
             variants.add(iterator.next());
         }
-        logger.info("another batch read. time: {}ms", System.currentTimeMillis() - start);
+        logger.info("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
+        logger.debug("time splitted: fetch = {}ms, convert = {}ms", iterator.getTimeFetching(), iterator.getTimeConverting());
+        
+        iterator.setTimeConverting(0);
+        iterator.setTimeFetching(0);
+        
         return variants;
     }
 }
