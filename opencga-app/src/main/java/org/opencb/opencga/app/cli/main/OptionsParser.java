@@ -399,8 +399,11 @@ public class OptionsParser {
             @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
             Study.Type type = Study.Type.CASE_CONTROL;
 
-            @Parameter(names = {"-d", "--description"}, description = "Organization", required = true, arity = 1)
+            @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
             String description;
+
+            @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required = false, arity = 1)
+            String uri;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Description")

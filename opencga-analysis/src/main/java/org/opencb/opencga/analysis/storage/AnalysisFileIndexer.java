@@ -241,7 +241,7 @@ public class AnalysisFileIndexer {
      */
     private String createCommandLine(Study study, File file, File indexFile, List<Sample> sampleList, String storageEngine,
                                      URI outDirUri, final ObjectMap indexFileModifyParams, final String dbName, String sessionId, QueryOptions options)
-            throws CatalogDBException, CatalogIOManagerException {
+            throws CatalogException {
 
         //Create command line
         String userId = file.getOwnerId();
