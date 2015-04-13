@@ -13,6 +13,7 @@ import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
@@ -563,9 +564,9 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
                           @ApiParam(value = "storageEngine", required = false) @DefaultValue("") @QueryParam("storageEngine") String storageEngine
     ) {
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
-        QueryResult<File> queryResult;
+        QueryResult<Job> queryResult;
         try {
             if (storageEngine.isEmpty()) {
                 storageEngine = StorageManagerFactory.getDefaultStorageManagerName();
@@ -637,7 +638,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse(e.getMessage());
             }
 
-            if (!file.getType().equals(File.Type.INDEX)) {
+//            if (!file.getType().equals(File.Type.INDEX)) {
+            if (file.getIndex() == null) {
                 return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }

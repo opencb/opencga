@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.lib.common.TimeUtils;
 
 import java.util.HashMap;
@@ -56,12 +57,13 @@ public class File {
     private int jobId;
     private List<Acl> acl;
 
+    private Index index;
+
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
     /* Status */
     public enum Status {
-        INDEXING,
         UPLOADING,
         UPLOADED,
         READY,
@@ -71,8 +73,7 @@ public class File {
 
     public enum Type {
         FOLDER,
-        FILE,
-        INDEX
+        FILE
     }
 
     public enum Format {
@@ -114,24 +115,6 @@ public class File {
         VCF4,
         NONE
         }
-
-//    public static final String INDEXING = "indexing";
-//    public static final String UPLOADING = "uploading";
-//    public static final String UPLOADED = "uploaded";
-//    public static final String READY = "ready";
-//    public static final String DELETING = "deleting";
-//    public static final String DELETED = "deleted";
-//
-//    /* Type */
-//    public static final String TYPE_FOLDER = "folder";
-//    public static final String TYPE_FILE = "file";
-//    public static final String TYPE_INDEX = "index";
-//
-//    /* Formats */
-//    public static final String PLAIN = "plain";
-//    public static final String GZIP = "gzip";
-//    public static final String EXECUTABLE = "executable";
-//    public static final String IMAGE = "image";
 
     /* Attributes known values */
     public static final String DELETE_DATE = "deleteDate";      //Long
@@ -326,6 +309,14 @@ public class File {
 
     public void setAcl(List<Acl> acl) {
         this.acl = acl;
+    }
+
+    public Index getIndex() {
+        return index;
+    }
+
+    public void setIndex(Index index) {
+        this.index = index;
     }
 
     public Map<String, Object> getStats() {

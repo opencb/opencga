@@ -44,8 +44,8 @@ public class VariantStorage {
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
         int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
-        if (indexFile.getType() != File.Type.INDEX || indexFile.getBioformat() != File.Bioformat.VARIANT) {
-            throw new AnalysisExecutionException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
+        if (indexFile.getType() != File.Type.FILE || indexFile.getBioformat() != File.Bioformat.VARIANT) {
+            throw new AnalysisExecutionException("Expected file with {type: FILE, bioformat: VARIANT}. " +
                     "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
         }
 
@@ -123,8 +123,8 @@ public class VariantStorage {
 
         File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
         int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
-        if (indexFile.getType() != File.Type.INDEX || indexFile.getBioformat() != File.Bioformat.VARIANT) {
-            throw new AnalysisExecutionException("Expected file with {type: INDEX, bioformat: VARIANT}. " +
+        if (indexFile.getType() != File.Type.FILE || indexFile.getBioformat() != File.Bioformat.VARIANT) {
+            throw new AnalysisExecutionException("Expected file with {type: FILE, bioformat: VARIANT}. " +
                     "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
         }
 

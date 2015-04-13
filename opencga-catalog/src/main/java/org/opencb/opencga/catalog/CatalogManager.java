@@ -1069,7 +1069,7 @@ public class CatalogManager implements ICatalogManager {
             }
         }
 
-        if (status != File.Status.UPLOADING && status != File.Status.INDEXING) {
+        if (status != File.Status.UPLOADING/* && status != File.Status.INDEXING*/) {        //#62
             if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING and INDEXING");
             }
@@ -1266,7 +1266,7 @@ public class CatalogManager implements ICatalogManager {
         }
         File file = fileResult.getResult().get(0);
         switch(file.getStatus()) {
-            case INDEXING:
+//            case INDEXING:        //#62
             case UPLOADING:
             case UPLOADED:
                 throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
@@ -1306,8 +1306,8 @@ public class CatalogManager implements ICatalogManager {
             case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
-            case INDEX:
-                throw new CatalogException("Can't delete INDEX file");
+//            case INDEX:       //#62
+//                throw new CatalogException("Can't delete INDEX file");
                 //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
@@ -1380,8 +1380,8 @@ public class CatalogManager implements ICatalogManager {
                 catalogIOManager = catalogIOManagerFactory.get(study.getUri());
                 catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
                 return catalogDBAdaptor.renameFile(fileId, newPath);
-            case INDEX:
-                return catalogDBAdaptor.renameFile(fileId, newPath);
+//            case INDEX:           //#62
+//                return catalogDBAdaptor.renameFile(fileId, newPath);
         }
 
         return null;
@@ -1430,6 +1430,7 @@ public class CatalogManager implements ICatalogManager {
                         case "status":
                         case "attributes":
                         case "stats":
+                        case "index":
                         case "sampleIds":
                             break;
 

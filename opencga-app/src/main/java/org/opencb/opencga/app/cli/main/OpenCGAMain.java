@@ -246,7 +246,10 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
 
-                        URI uri = new URI(null, c.uri, null);
+                        URI uri = null;
+                        if (c.uri != null && !c.uri.isEmpty()) {
+                            uri = new URI(null, c.uri, null);
+                        }
                         int projectId = catalogManager.getProjectId(c.projectId);
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
                                 null, c.description, null, null, null, uri, null, null, c.cOpt.getQueryOptions(), sessionId);
@@ -374,7 +377,7 @@ public class OpenCGAMain {
                             queryOptions.put(AnalysisFileIndexer.INDEX_FILE_ID, indexedFileId);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
+                        QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
                         break;
