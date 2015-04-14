@@ -36,6 +36,7 @@ public class Study {
 
     private URI uri;
 
+    private Map<File.Bioformat, DataStore> dataStores;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -279,6 +280,14 @@ public class Study {
 
     public void setUri(URI uri) {
         this.uri = uri;
+    }
+
+    public Map<File.Bioformat, DataStore> getDataStores() {
+        return dataStores;
+    }
+
+    public void setDataStores(Map<File.Bioformat, DataStore> dataStores) {
+        this.dataStores = dataStores;
     }
 
     public Map<String, Object> getStats() {

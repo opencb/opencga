@@ -12,6 +12,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.beans.DataStore;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
@@ -651,8 +652,15 @@ public class FileWSServer extends OpenCGAWSServer {
 //                }
 //            }
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
-            String storageEngine = file.getIndex().getStorageEngine();
-            String dbName = file.getIndex().getCredentials().get(AnalysisFileIndexer.DB_NAME).toString();
+            DataStore dataStore = null;
+            try {
+                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, file, sessionId);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse(e);
+            }
+            String storageEngine = dataStore.getStorageEngine();
+            String dbName = dataStore.getDbName();
             QueryResult result;
             switch (file.getBioformat()) {
                 case ALIGNMENT: {

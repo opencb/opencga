@@ -9,11 +9,11 @@ import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,6 @@ public class AnalysisFileIndexer {
     public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
 
     //Options
-    public static final String DB_NAME = "dbName";
     public static final String PARAMETERS = "parameters";
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
     public static final String TRANSFORM = "transform";
@@ -135,18 +134,8 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final String dbName;
-        if (options.containsKey(DB_NAME)) {
-            dbName = options.getString(DB_NAME);
-        } else {
-            if (study.getAttributes().containsKey(DB_NAME) && study.getAttributes().get(DB_NAME) != null) {
-                dbName = study.getAttributes().get(DB_NAME).toString();
-            } else {
-                int projectId = catalogManager.getProjectIdByStudyId(study.getId());
-                String alias = catalogManager.getProject(projectId, new QueryOptions("include", "alias"), sessionId).first().getAlias();
-                dbName = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias;
-            }
-        }
+//        final String dbName;
+        final DataStore dataStore = getDataStore(catalogManager, originalFile, sessionId);
 
         //TODO: Check if file can be indexed
 
@@ -173,8 +162,8 @@ public class AnalysisFileIndexer {
 
 
         /** Create commandLine **/
-        String commandLine = createCommandLine(study, originalFile, inputFile, sampleList, storageEngine,
-                temporalOutDirUri, indexAttributes, dbName, options);
+        String commandLine = createCommandLine(study, originalFile, inputFile, sampleList,
+                temporalOutDirUri, indexAttributes, dataStore, options);
         if (options.containsKey(PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
@@ -195,7 +184,7 @@ public class AnalysisFileIndexer {
 
         /** Create index information only if it's going to be loaded **/
         if (load) {
-            Index indexInformation = new Index(userId, storageEngine, job.getId(), Collections.singletonMap(DB_NAME, dbName), Collections.emptyMap());
+            Index indexInformation = new Index(userId, TimeUtils.getTime(), job.getId(), indexAttributes);
             fileModifyParams.put("index", indexInformation);
         }
 
@@ -211,22 +200,41 @@ public class AnalysisFileIndexer {
         }
     }
 
+    public static DataStore getDataStore(CatalogManager catalogManager, File file, String sessionId) throws CatalogException {
+        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        Study study = catalogManager.getStudy(studyId, sessionId).first();
+        DataStore dataStore;
+        if (study.getDataStores().containsKey(file.getBioformat())) {
+            dataStore = study.getDataStores().get(file.getBioformat());
+        } else {
+            int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+            Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("alias", "dataStores")), sessionId).first();
+            if (project.getDataStores().containsKey(file.getBioformat())) {
+                dataStore = project.getDataStores().get(file.getBioformat());
+            } else { //get default datastore
+                String userId = catalogManager.getFileOwner(file.getId());
+                String alias = project.getAlias();
+                dataStore = new DataStore(StorageManagerFactory.getDefaultStorageManagerName(), Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias);
+            }
+        }
+        return dataStore;
+    }
+
     /**
      *
      * @param study                     Study where file is located
      * @param inputFile                 File to be indexed
      * @param sampleList
-     * @param storageEngine             StorageEngine to be used
      * @param outDirUri                 Index outdir
      * @param indexAttributes           Attributes of the index object
-     * @param dbName
+     * @param dataStore
      * @return                  CommandLine
      *
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
-    private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList, String storageEngine,
-                                     URI outDirUri, final ObjectMap indexAttributes, final String dbName, QueryOptions options)
+    private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
+                                     URI outDirUri, final ObjectMap indexAttributes, final DataStore dataStore, QueryOptions options)
             throws CatalogException {
 
         //Create command line
@@ -239,10 +247,10 @@ public class AnalysisFileIndexer {
         if(originalFile.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
             commandLine = new StringBuilder(opencgaStorageBin)
-                    .append(" --storage-engine ").append(storageEngine)
+                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" index-alignments ")
                     .append(" --file-id ").append(originalFile.getId())
-                    .append(" --database ").append(dbName)
+                    .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --calculate-coverage ").append(chunkSize)
                     .append(" --mean-coverage ").append(chunkSize)
@@ -262,13 +270,13 @@ public class AnalysisFileIndexer {
             }
 
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
-                    .append(" --storage-engine ").append(storageEngine)
+                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" index-variants ")
                     .append(" --file-id ").append(originalFile.getId())
                     .append(" --study-name \'").append(study.getName()).append("\'")
                     .append(" --study-id ").append(study.getId())
 //                    .append(" --study-type ").append(study.getType())
-                    .append(" --database ").append(dbName)
+                    .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --outdir ").append(outDirUri)
                     .append(" --include-genotypes ")

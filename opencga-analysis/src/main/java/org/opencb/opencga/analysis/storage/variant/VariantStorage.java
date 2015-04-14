@@ -19,11 +19,10 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Created by hpccoll1 on 06/03/15.
+ * Created by jacobo on 06/03/15.
  */
 public class VariantStorage {
 
-    private static final String STORAGE_ENGINE = "storageEngine";
     protected static Logger logger = LoggerFactory.getLogger(VariantStorage.class);
 
     final CatalogManager catalogManager;
@@ -33,7 +32,7 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(int indexFileId, List<Integer> cohortIds, String sessionId, QueryOptions options)
+    public QueryResult<Job> calculateStats(int indexedFileId, List<Integer> cohortIds, String sessionId, QueryOptions options)
             throws AnalysisExecutionException, CatalogException {
         if (options == null) {
             options = new QueryOptions();
@@ -43,11 +42,11 @@ public class VariantStorage {
         final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
-        File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
-        int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
-        if (indexFile.getType() != File.Type.FILE || indexFile.getBioformat() != File.Bioformat.VARIANT) {
+        File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
+        int studyId = catalogManager.getStudyIdByFileId(indexedFile.getId());
+        if (indexedFile.getType() != File.Type.FILE || indexedFile.getBioformat() != File.Bioformat.VARIANT) {
             throw new AnalysisExecutionException("Expected file with {type: FILE, bioformat: VARIANT}. " +
-                    "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
+                    "Got {type: " + indexedFile.getType() + ", bioformat: " + indexedFile.getBioformat() + "}");
         }
 
         StringBuilder outputFileName = new StringBuilder();
@@ -62,7 +61,7 @@ public class VariantStorage {
             outputFileName.append(cohort.getName());
         }
 
-        File outDir = catalogManager.getFileParent(indexFileId, null, sessionId).first();
+        File outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
 
         /** Create temporal Job Outdir **/
         final String randomString = "I_" + StringUtils.randomString(10);
@@ -76,16 +75,16 @@ public class VariantStorage {
         /** create command line **/
         String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
 
-        Object dbName = indexFile.getAttributes().get(AnalysisFileIndexer.DB_NAME);
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, indexedFile, sessionId);
         StringBuilder sb = new StringBuilder()
 
                 .append(opencgaStorageBinPath)
-                .append(" --storage-engine ").append(indexFile.getAttributes().get(STORAGE_ENGINE))
+                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" stats-variants ")
-                .append(" --file-id ").append(indexFile.getId())
+                .append(" --file-id ").append(indexedFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
                 .append(" --study-id ").append(studyId)
-                .append(" --database ").append(dbName)
+                .append(" --database ").append(dataStore.getDbName())
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")
                 ;
@@ -113,7 +112,7 @@ public class VariantStorage {
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, new HashMap<String, Object>());
     }
 
-    public QueryResult<Job> annotateVariants(int indexFileId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> annotateVariants(int indexedFileId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -122,14 +121,14 @@ public class VariantStorage {
         final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
-        File indexFile = catalogManager.getFile(indexFileId, sessionId).first();
-        int studyId = catalogManager.getStudyIdByFileId(indexFile.getId());
-        if (indexFile.getType() != File.Type.FILE || indexFile.getBioformat() != File.Bioformat.VARIANT) {
+        File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
+        int studyId = catalogManager.getStudyIdByFileId(indexedFile.getId());
+        if (indexedFile.getType() != File.Type.FILE || indexedFile.getBioformat() != File.Bioformat.VARIANT) {
             throw new AnalysisExecutionException("Expected file with {type: FILE, bioformat: VARIANT}. " +
-                    "Got {type: " + indexFile.getType() + ", bioformat: " + indexFile.getBioformat() + "}");
+                    "Got {type: " + indexedFile.getType() + ", bioformat: " + indexedFile.getBioformat() + "}");
         }
 
-        File outDir = catalogManager.getFileParent(indexFileId, null, sessionId).first();
+        File outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
 
 
         /** Create temporal Job Outdir **/
@@ -143,13 +142,14 @@ public class VariantStorage {
 
         /** create command line **/
         String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, indexedFile, sessionId);
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)
-                .append(" --storage-engine ").append(indexFile.getAttributes().get(STORAGE_ENGINE))
+                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" annotate-variants ")
                 .append(" --outdir ").append(temporalOutDirUri.toString())
-                .append(" --database ").append(indexFile.getAttributes().get(AnalysisFileIndexer.DB_NAME))
+                .append(" --database ").append(dataStore.getDbName())
                 ;
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);
