@@ -89,8 +89,7 @@ public class OpenCGAWSServer {
         try {
             properties.load(is);
             System.out.println("catalog.properties");
-            System.out.println(CatalogManager.CATALOG_DB_HOST + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOST));
-            System.out.println(CatalogManager.CATALOG_DB_PORT + " " + properties.getProperty(CatalogManager.CATALOG_DB_PORT));
+            System.out.println(CatalogManager.CATALOG_DB_HOSTS + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOSTS));
             System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
             System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
             System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));

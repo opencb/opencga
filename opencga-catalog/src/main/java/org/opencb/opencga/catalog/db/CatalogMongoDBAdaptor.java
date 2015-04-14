@@ -11,6 +11,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBCollection;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
@@ -47,8 +48,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private static final String FILTER_ROUTE_JOBS =    "projects.studies.jobs.";
 
     private final MongoDataStoreManager mongoManager;
-    private final MongoCredential credentials;
-//    private final DataStoreServerAddress dataStoreServerAddress;
+    private final MongoDBConfiguration configuration;
+    private final String database;
+    //    private final DataStoreServerAddress dataStoreServerAddress;
     private MongoDataStore db;
 
     private MongoDBCollection metaCollection;
@@ -68,8 +70,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private static ObjectReader jsonSampleReader;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
-    private Properties catalogProperties;
-
     static {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -86,13 +86,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         jsonReaderMap.put(Sample.class, jsonSampleReader = jsonObjectMapper.reader(Sample.class));
     }
 
-    public CatalogMongoDBAdaptor(DataStoreServerAddress dataStoreServerAddress, MongoCredential credentials)
+    public CatalogMongoDBAdaptor(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration, String database)
             throws CatalogDBException {
         super();
-//        this.dataStoreServerAddress = dataStoreServerAddress;
-        this.mongoManager = new MongoDataStoreManager(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort());
-        this.credentials = credentials;
-        //catalogProperties = Config.getAccountProperties();
+        this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);
+        this.configuration = configuration;
+        this.database = database;
 
         logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
 
@@ -100,7 +99,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     private void connect() throws CatalogDBException {
-        db = mongoManager.get(credentials.getSource());
+        db = mongoManager.get(database, configuration);
         if(db == null){
             throw new CatalogDBException("Unable to connect to MongoDB");
         }

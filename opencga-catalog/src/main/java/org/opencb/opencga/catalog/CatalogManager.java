@@ -5,6 +5,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.core.CatalogDBClient;
 import org.opencb.opencga.catalog.core.CatalogClient;
@@ -39,8 +40,8 @@ public class CatalogManager implements ICatalogManager {
     public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
     public static final String CATALOG_DB_DATABASE = "OPENCGA.CATALOG.DB.DATABASE";
     public static final String CATALOG_DB_PASSWORD = "OPENCGA.CATALOG.DB.PASSWORD";
-    public static final String CATALOG_DB_HOST = "OPENCGA.CATALOG.DB.HOST";
-    public static final String CATALOG_DB_PORT = "OPENCGA.CATALOG.DB.PORT";
+    public static final String CATALOG_DB_HOSTS = "OPENCGA.CATALOG.DB.HOSTS";
+    public static final String CATALOG_DB_AUTHENTICATION_DB = "OPENCGA.CATALOG.DB.AUTHENTICATION.DB";
     /* IOManager properties */
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
     /* Manager policies properties */
@@ -143,16 +144,23 @@ public class CatalogManager implements ICatalogManager {
     private void configureDBAdaptor(Properties properties)
             throws CatalogDBException {
 
-        MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
-                properties.getProperty(CATALOG_DB_USER, ""),
-                properties.getProperty(CATALOG_DB_DATABASE, ""),
-                properties.getProperty(CATALOG_DB_PASSWORD, "").toCharArray());
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", properties.getProperty(CATALOG_DB_USER, null))
+                .add("password", properties.getProperty(CATALOG_DB_PASSWORD, null))
+                .add("authenticationDatabase", properties.getProperty(CATALOG_DB_AUTHENTICATION_DB, null))
+                .build();
 
-        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty(CATALOG_DB_HOST, ""),
-                Integer.parseInt(properties.getProperty(CATALOG_DB_PORT, "0")));
-
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : properties.getProperty(CATALOG_DB_HOSTS, "localhost").split(",")) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration, properties.getProperty(CATALOG_DB_DATABASE, ""));
     }
 
     private void configureManager(Properties properties) {
