@@ -51,7 +51,7 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
         this.credentials = credentials;
         this.fileId = fileId;
 
-        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
+        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         coverageConverter = new DBObjectToRegionCoverageConverter();
         meanCoverageConverter = new DBObjectToMeanCoverageConverter();
         updateOptions = new QueryOptions("upsert", true);
