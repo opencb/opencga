@@ -285,9 +285,6 @@ public class AnalysisFileIndexer {
                     .append(" --database ").append(dbName)
                     .append(" --input ").append(catalogManager.getFileUri(file))
                     .append(" --outdir ").append(outDirUri)
-                    .append(" --include-genotypes ")
-                    .append(" --compress-genotypes ")
-                    .append(" --include-stats ")
 //                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
