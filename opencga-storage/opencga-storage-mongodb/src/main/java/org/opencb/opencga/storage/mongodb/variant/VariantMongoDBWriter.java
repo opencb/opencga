@@ -4,6 +4,7 @@ import com.mongodb.*;
 
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -81,6 +82,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long checkExistsDBTime = 0;
     private long bulkTime = 0;
 
+    private static AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+
 
     public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials) {
         this(source, credentials, "variants", "files");
@@ -131,9 +134,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, null, ex);
 //            return false;
 //        }
-        db = mongoDataStore.getDb();
         mongoDataStoreManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         mongoDataStore = mongoDataStoreManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        db = mongoDataStore.getDb();
 
         return mongoDataStore != null;
     }
@@ -146,7 +149,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         filesCollection = db.getCollection(filesCollectionName);
         variantsCollection = db.getCollection(variantsCollectionName);
-
+        variantSourceWritten.set(false);
         setConverters();
 
         resetBulk();
@@ -442,9 +445,11 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
     private boolean writeSourceSummary(VariantSource source) {
-        DBObject studyMongo = sourceConverter.convertToStorageType(source);
-        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
-        filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
+        if (!variantSourceWritten.getAndSet(true)) {
+            DBObject studyMongo = sourceConverter.convertToStorageType(source);
+            DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileId());
+            filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
+        }
         return true;
     }
 
