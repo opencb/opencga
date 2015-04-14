@@ -191,11 +191,6 @@ public class VariantStatisticsManager {
             overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
         }
 
-        // iterator
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
-        options.add("include", include);
-
-        VariantDBIterator iterator = variantDBAdaptor.iterator(options);
 //        reader, tasks and writer
         VariantDBReader reader = new VariantDBReader(variantSource, variantDBAdaptor, options);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
@@ -252,7 +247,7 @@ public class VariantStatisticsManager {
                     e.printStackTrace();
                 }
             }
-            logger.info("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
+            logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
             if (variants.size() != 0) {
                 logger.info("stats created up to position {}:{}", variants.get(variants.size()-1).getChromosome(), variants.get(variants.size()-1).getStart());
             } else {

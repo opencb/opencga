@@ -86,7 +86,7 @@ public class VariantDBReader implements VariantReader {
         while (variants.size() < batchSize && iterator.hasNext()) {
             variants.add(iterator.next());
         }
-        logger.info("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
+        logger.debug("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
         logger.debug("time splitted: fetch = {}ms, convert = {}ms", iterator.getTimeFetching(), iterator.getTimeConverting());
         
         iterator.setTimeConverting(0);

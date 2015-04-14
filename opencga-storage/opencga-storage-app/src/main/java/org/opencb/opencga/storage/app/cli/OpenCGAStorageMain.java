@@ -857,6 +857,7 @@ public class OpenCGAStorageMain {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
+        dbAdaptor.setConstantSamples(variantSource.getFileId());    // TODO jmmut: change to studyId when we remove fileId
 
         /**
          * Create and load stats

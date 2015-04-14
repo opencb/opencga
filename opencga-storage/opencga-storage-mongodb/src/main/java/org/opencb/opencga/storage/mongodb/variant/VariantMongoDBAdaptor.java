@@ -34,8 +34,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private final DBObjectToVariantConverter variantConverter;
-    private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
+    private DBObjectToVariantConverter variantConverter;
+    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
 
@@ -69,6 +69,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setDataWriter(DataWriter dataWriter) {
         this.dataWriter = dataWriter;
+    }
+
+    @Override
+    public void setConstantSamples(String sourceEntry) {
+        List<String> samples = null;
+        QueryResult samplesBySource = variantSourceMongoDBAdaptor.getSamplesBySource(sourceEntry, null);    // TODO jmmut: check when we remove fileId
+        if(samplesBySource.getResult().isEmpty()) {
+            logger.error("setConstantSamples(): couldn't find samples in source {} " + sourceEntry);
+        } else {
+            samples = (List<String>) samplesBySource.getResult().get(0);
+        }
+        
+        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(samples)
+        );
+        
+        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
     }
 
     @Override
@@ -451,8 +469,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId(), variantSource.getFileId());   // TODO remove when we remove fileId
-//            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId(), variantSource.getFileId());   // TODO jmmut: remove when we remove fileId
+//            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO jmmut: use when we remove fileId
             
             if (!cohorts.isEmpty()) {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
