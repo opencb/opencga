@@ -650,9 +650,9 @@ public class FileWSServer extends OpenCGAWSServer {
 //                    index = i;
 //                }
 //            }
-            ObjectMap indexAttributes = new ObjectMap(file.getAttributes());
-            String storageEngine = indexAttributes.get(AnalysisFileIndexer.STORAGE_ENGINE).toString();
-            String dbName = indexAttributes.get(AnalysisFileIndexer.DB_NAME).toString();
+            ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
+            String storageEngine = file.getIndex().getStorageEngine();
+            String dbName = file.getIndex().getCredentials().get(AnalysisFileIndexer.DB_NAME).toString();
             QueryResult result;
             switch (file.getBioformat()) {
                 case ALIGNMENT: {

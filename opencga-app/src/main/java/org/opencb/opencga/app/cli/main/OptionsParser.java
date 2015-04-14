@@ -585,9 +585,12 @@ public class OptionsParser {
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;
 
-            @Parameter(names = {"--indexed-file-id"}, description = "Use an existing indexed file instead of creating a new file in Catalog.")
-            String indexedFileId;
-            
+            @Parameter(names = "--transform", description = "Run only the transform phase")
+            boolean transform = false;
+
+            @Parameter(names = "--load", description = "Run only the load phase")
+            boolean load = false;
+
             @Parameter(names = {"--database"}, description = "Specify the database name instead of using the default database.")
             String dbName;
 

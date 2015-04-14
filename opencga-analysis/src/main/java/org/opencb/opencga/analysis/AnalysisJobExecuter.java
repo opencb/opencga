@@ -230,7 +230,7 @@ public class AnalysisJobExecuter {
 
                 // Create a RUNNING job in CatalogManager
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), Collections.<Integer>emptyList(), resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
+                        outDir.getId(), inputFiles, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
 
                 logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
                 logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());

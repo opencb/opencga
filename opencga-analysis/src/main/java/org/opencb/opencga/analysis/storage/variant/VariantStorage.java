@@ -23,6 +23,7 @@ import java.util.*;
  */
 public class VariantStorage {
 
+    private static final String STORAGE_ENGINE = "storageEngine";
     protected static Logger logger = LoggerFactory.getLogger(VariantStorage.class);
 
     final CatalogManager catalogManager;
@@ -79,7 +80,7 @@ public class VariantStorage {
         StringBuilder sb = new StringBuilder()
 
                 .append(opencgaStorageBinPath)
-                .append(" --storage-engine ").append(indexFile.getAttributes().get(AnalysisFileIndexer.STORAGE_ENGINE))
+                .append(" --storage-engine ").append(indexFile.getAttributes().get(STORAGE_ENGINE))
                 .append(" stats-variants ")
                 .append(" --file-id ").append(indexFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
@@ -145,7 +146,7 @@ public class VariantStorage {
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)
-                .append(" --storage-engine ").append(indexFile.getAttributes().get(AnalysisFileIndexer.STORAGE_ENGINE))
+                .append(" --storage-engine ").append(indexFile.getAttributes().get(STORAGE_ENGINE))
                 .append(" annotate-variants ")
                 .append(" --outdir ").append(temporalOutDirUri.toString())
                 .append(" --database ").append(indexFile.getAttributes().get(AnalysisFileIndexer.DB_NAME))

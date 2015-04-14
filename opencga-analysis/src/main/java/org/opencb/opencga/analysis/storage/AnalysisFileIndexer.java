@@ -34,10 +34,9 @@ import java.util.*;
  * - create job
  * - update index file
  *
- * ...
- * - find files in outDir
- * - update file and job index info
  *
+ *  * If only transform, do not add index information
+ *  * If only load, take "originalFile" from the "inputFileId" jobId -> job.attributes.indexedFile
  *
  * UnIndexFile (fileId, backend)
  * ?????????????????????????????
@@ -45,16 +44,19 @@ import java.util.*;
  */
 public class AnalysisFileIndexer {
 
-    //Indexed file attributes
-    public static final String INDEXED_FILE = "indexedFile";
-    public static final String DB_NAME = "dbName";
-    public static final String STORAGE_ENGINE = "storageEngine";
-
+    //Properties
     public static final String OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX = "OPENCGA.ANALYSIS.STORAGE.DATABASE_PREFIX";
+
+    //Options
+    public static final String DB_NAME = "dbName";
     public static final String PARAMETERS = "parameters";
-    public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
-    public static final String INDEX_FILE_ID = "indexFileId";
+    public static final String TRANSFORM = "transform";
+    public static final String LOAD = "load";
+
+
+    //Other
+    public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -85,8 +87,17 @@ public class AnalysisFileIndexer {
         final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
         final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
-        final boolean transform = true;
-        final boolean load = true;
+        final boolean transform;
+        final boolean load;
+
+        if (!options.getBoolean(TRANSFORM, false) && !options.getBoolean(LOAD, false)) {  // if not present --transform nor --load, do both
+            transform = true;
+            load = true;
+        } else {
+            transform = options.getBoolean(TRANSFORM, false);
+            load = options.getBoolean(LOAD, false);
+        }
+
 
         /** Query catalog for user data. **/
         String userId = catalogManager.getUserIdBySessionId(sessionId);
@@ -112,7 +123,7 @@ public class AnalysisFileIndexer {
                 logger.warn("INDEXED_FILE_ID missing in job " + job.getId());
                 List<Integer> jobInputFiles = job.getInput();
                 if (jobInputFiles.size() != 1) {
-                    throw new CatalogException("Error: Job input is empty");
+                    throw new CatalogException("Error: Job {id: " + job.getId() + "} input is empty");
                 }
                 indexedFileId = jobInputFiles.get(0);
             }
@@ -141,6 +152,7 @@ public class AnalysisFileIndexer {
 
         // ObjectMap to fill with modifications over the indexed file (like new attributes or jobId)
         ObjectMap fileModifyParams = new ObjectMap("attributes", new ObjectMap());
+        ObjectMap indexAttributes = new ObjectMap();
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
@@ -162,7 +174,7 @@ public class AnalysisFileIndexer {
 
         /** Create commandLine **/
         String commandLine = createCommandLine(study, originalFile, inputFile, sampleList, storageEngine,
-                temporalOutDirUri, fileModifyParams, dbName, options);
+                temporalOutDirUri, indexAttributes, dbName, options);
         if (options.containsKey(PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
@@ -206,7 +218,7 @@ public class AnalysisFileIndexer {
      * @param sampleList
      * @param storageEngine             StorageEngine to be used
      * @param outDirUri                 Index outdir
-     * @param fileModifyParams     This map will be used to modify the indexFile
+     * @param indexAttributes           Attributes of the index object
      * @param dbName
      * @return                  CommandLine
      *
@@ -214,14 +226,13 @@ public class AnalysisFileIndexer {
      * @throws CatalogIOManagerException
      */
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList, String storageEngine,
-                                     URI outDirUri, final ObjectMap fileModifyParams, final String dbName, QueryOptions options)
+                                     URI outDirUri, final ObjectMap indexAttributes, final String dbName, QueryOptions options)
             throws CatalogException {
 
         //Create command line
 //        String userId = inputFile.getOwnerId();
         String name = originalFile.getName();
         String commandLine;
-        ObjectMap indexAttributes = fileModifyParams.get("attributes", ObjectMap.class);
 
         String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
 
@@ -271,6 +282,12 @@ public class AnalysisFileIndexer {
             }
             if (options.getBoolean(VariantStorageManager.INCLUDE_SRC, false)) {
                 sb.append(" --include-src ");
+            }
+            if (options.getBoolean(TRANSFORM, false)) {
+                sb.append(" --transform ");
+            }
+            if (options.getBoolean(LOAD, false)) {
+                sb.append(" --load ");
             }
             commandLine = sb.toString();
 

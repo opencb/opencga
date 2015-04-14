@@ -368,14 +368,8 @@ public class OpenCGAMain {
                         if (c.dbName != null) {
                             queryOptions.put(AnalysisFileIndexer.DB_NAME, c.dbName);
                         }
-                        if (c.indexedFileId != null) {
-                            int indexedFileId = catalogManager.getFileId(c.indexedFileId);
-                            if (indexedFileId < 0) {
-                                logger.error("IndexedFileId " + c.indexedFileId + " does not exist");
-                                returnValue = 1;
-                            }
-                            queryOptions.put(AnalysisFileIndexer.INDEX_FILE_ID, indexedFileId);
-                        }
+                        queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
+                        queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
