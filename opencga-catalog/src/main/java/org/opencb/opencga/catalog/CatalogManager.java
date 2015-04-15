@@ -687,17 +687,7 @@ public class CatalogManager implements ICatalogManager {
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException, IOException {
-        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, sessionId);
-    }
-
-    @Override
-    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
-                                          String creatorId, String creationDate, String description, String status,
-                                          String cipher, String uriScheme, Map<String, Object> stats,
-                                          Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
-        return createStudy(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
-                null, stats, attributes, options, sessionId);
+        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null, sessionId);
     }
 
     /**
@@ -713,6 +703,7 @@ public class CatalogManager implements ICatalogManager {
      * @param cipher        Unused
      * @param uriScheme     UriScheme to select the CatalogIOManager. Default: CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME
      * @param uri           URI for the folder where to place the study. Scheme must match with the uriScheme. Folder must exist.
+     * @param datastores    DataStores information
      * @param stats         Optional stats
      * @param attributes    Optional attributes
      * @param options       QueryOptions
@@ -724,7 +715,8 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                           String creatorId, String creationDate, String description, String status,
-                                          String cipher, String uriScheme, URI uri, Map<String, Object> stats,
+                                          String cipher, String uriScheme, URI uri,
+                                          Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         checkParameter(name, "name");
@@ -754,6 +746,7 @@ public class CatalogManager implements ICatalogManager {
         } else {
             uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
         }
+        datastores = defaultObject(datastores, new HashMap<File.Bioformat, DataStore>());
         stats = defaultObject(stats, new HashMap<String, Object>());
         attributes = defaultObject(attributes, new HashMap<String, Object>());
 
@@ -802,7 +795,7 @@ public class CatalogManager implements ICatalogManager {
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
-                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, stats, attributes);
+                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
 
 
         /* CreateStudy */

@@ -56,7 +56,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             try {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
                         study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
-                        study.getDescription(), study.getStatus(), study.getCipher(), null, study.getStats(),
+                        study.getDescription(), study.getStatus(), study.getCipher(), null, null, null, study.getStats(),
                         study.getAttributes(), this.getQueryOptions(), sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
                 queryResults.add(queryResult);
@@ -104,7 +104,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
 
             queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, status, cipher, null, null, null, this.getQueryOptions(), sessionId);
+                    creationDate, description, status, cipher, null, null, null, null, null, this.getQueryOptions(), sessionId);
 
             return createOkResponse(queryResult);
 

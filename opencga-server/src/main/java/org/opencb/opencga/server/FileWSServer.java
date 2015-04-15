@@ -562,23 +562,18 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIdStr,
-                          @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam(value = "storageEngine", required = false) @DefaultValue("") @QueryParam("storageEngine") String storageEngine
+                          @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr
     ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
         QueryResult<Job> queryResult;
         try {
-            if (storageEngine.isEmpty()) {
-                storageEngine = StorageManagerFactory.getDefaultStorageManagerName();
-            }
-            storageEngine = storageEngine.toLowerCase();
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId = catalogManager.getFileId(fileIdStr);
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            queryResult = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
+            queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, this.getQueryOptions());
 
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();

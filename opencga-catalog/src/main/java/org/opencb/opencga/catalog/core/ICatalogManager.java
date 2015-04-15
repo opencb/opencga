@@ -115,13 +115,8 @@ public interface ICatalogManager {
 
     QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                    String creatorId, String creationDate, String description, String status,
-                                   String cipher, String uriScheme, Map<String, Object> stats,
-                                   Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException, IOException;
-
-    QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
-                                   String creatorId, String creationDate, String description, String status,
-                                   String cipher, String uriScheme, URI uri, Map<String, Object> stats,
+                                   String cipher, String uriScheme, URI uri,
+                                   Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                    Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException;
 

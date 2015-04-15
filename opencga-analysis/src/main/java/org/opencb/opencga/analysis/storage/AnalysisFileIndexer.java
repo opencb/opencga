@@ -68,7 +68,6 @@ public class AnalysisFileIndexer {
      *
      * @param fileId            File to index
      * @param outDirId          Place where locate the temporary files
-     * @param storageEngine     Storage engine name where index the file
      * @param sessionId         User session Id
      * @param options           Other options
      * @return                  Generated job for the indexation
@@ -76,7 +75,7 @@ public class AnalysisFileIndexer {
      * @throws CatalogException
      * @throws AnalysisExecutionException
      */
-    public QueryResult<Job> index(int fileId, int outDirId, String storageEngine, String sessionId, QueryOptions options)
+    public QueryResult<Job> index(int fileId, int outDirId, String sessionId, QueryOptions options)
             throws IOException, CatalogException, AnalysisExecutionException {
 
         if (options == null) {
@@ -189,7 +188,7 @@ public class AnalysisFileIndexer {
         }
 
         /** Modify file with new information **/
-        catalogManager.modifyFile(inputFile.getId(), fileModifyParams, sessionId).getResult();
+        catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
 
 
         if (simulate) {

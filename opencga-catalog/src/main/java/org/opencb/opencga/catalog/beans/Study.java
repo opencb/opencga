@@ -62,14 +62,15 @@ public class Study {
     public Study(String name, String alias, Type type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
-                new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(), uri, new HashMap<String, Object>(), new HashMap<String, Object>());
+                new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(),
+                uri, new HashMap<File.Bioformat, DataStore>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
                  String description, String status, String lastActivity, long diskUsage, String cipher, List<Acl> acl,
                  List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
                  List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
-                 Map<String, Object> stats, Map<String, Object> attributes) {
+                 Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -90,6 +91,7 @@ public class Study {
         this.cohorts = cohorts;
         this.variableSets = variableSets;
         this.uri = uri;
+        this.dataStores = dataStores;
         this.stats = stats;
         this.attributes = attributes;
     }
