@@ -190,7 +190,8 @@ public class AnalysisJobExecuter {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
-                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir,
+                            List<Integer> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
 
         // Create temporal Outdir
@@ -203,25 +204,29 @@ public class AnalysisJobExecuter {
         System.out.println(commandLine);
 
         return createJob(catalogManager, studyId, analysisName, jobName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, commandLine, false, false, false, new HashMap<String, Object>());
+                randomString, temporalOutDirUri, commandLine, false, false, false, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public static QueryResult<Job> createJob(CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
                                              File outDir, List<Integer> inputFiles, String sessionId,
                                              String randomString, URI temporalOutDirUri, String commandLine,
-                                             boolean execute, boolean simulate, boolean recordOutput, Map<String, Object> resourceManagerAttributes)
+                                             boolean execute, boolean simulate, boolean recordOutput, Map<String, Object> attributes,
+                                             Map<String, Object> resourceManagerAttributes)
             throws AnalysisExecutionException, CatalogException {
         logger.debug("Creating job {}: simulate {}, execute {}, recordOutput {}", jobName, simulate, execute, recordOutput);
         long start = System.currentTimeMillis();
 
         QueryResult<Job> jobQueryResult;
         if (simulate) { //Simulate a job. Do not create it.
+            if (resourceManagerAttributes == null) {
+                resourceManagerAttributes = new HashMap<>();
+            }
             resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
                             Job.Status.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
-                            null, null, resourceManagerAttributes)));
+                            null, attributes, resourceManagerAttributes)));
         } else {
             if (execute) {
 
@@ -230,7 +235,7 @@ public class AnalysisJobExecuter {
 
                 // Create a RUNNING job in CatalogManager
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), Collections.<Integer>emptyList(), resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
+                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
 
                 logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
                 logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());
@@ -258,7 +263,7 @@ public class AnalysisJobExecuter {
 
                 // Create a PREPARED job in CatalogManager
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, resourceManagerAttributes, Job.Status.PREPARED, null, sessionId);
+                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.PREPARED, null, sessionId);
             }
         }
         return jobQueryResult;

@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -1144,8 +1145,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        QueryOptions filterOptions = filterOptions(options, FILTER_ROUTE_FILES);
 
-        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject("id", fileId), options);
+        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject("id", fileId), filterOptions);
 
         File file = parseFile(queryResult);
         if(file != null) {
@@ -1181,6 +1183,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, fileParameters, acceptedMapParams);
+
+        String[] acceptedObjectParams = {"index"};
+        filterObjectParams(parameters, fileParameters, acceptedObjectParams);
 
         if(!fileParameters.isEmpty()) {
             QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId),
@@ -2292,6 +2297,20 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                     for (Map.Entry<String, Object> entry : map.entrySet()) {
                         filteredParams.put(s + "." + entry.getKey(), dbObject.get(entry.getKey()));
                     }
+                } catch (CatalogDBException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
+        for (String s : acceptedMapParams) {
+            if (parameters.containsKey(s)) {
+                DBObject dbObject = null;
+                try {
+                    dbObject = getDbObject(parameters.get(s), s);
+                    filteredParams.put(s , dbObject);
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
                 }

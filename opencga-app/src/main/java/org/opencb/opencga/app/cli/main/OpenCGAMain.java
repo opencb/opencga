@@ -1,6 +1,5 @@
 package org.opencb.opencga.app.cli.main;
 
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -10,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -20,9 +18,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -50,8 +45,7 @@ public class OpenCGAMain {
 
     private static Logger logger;
 
-    public static void main(String[] args)
-            throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException, URISyntaxException {
+    public static void main(String[] args) throws IOException {
 
         OpenCGAMain opencgaMain = new OpenCGAMain();
 
@@ -118,7 +112,7 @@ public class OpenCGAMain {
         }
     }
 
-    private int runCommand(String[] args) throws CatalogException, IOException, InterruptedException, IllegalOpenCGACredentialsException, AnalysisExecutionException, URISyntaxException {
+    private int runCommand(String[] args) throws Exception {
         OptionsParser optionsParser = new OptionsParser(interactive);
         int returnValue = 0;
         try {
@@ -246,10 +240,14 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.StudyCommands.CreateCommand c = optionsParser.getStudyCommands().createCommand;
 
-                        URI uri = new URI(null, c.uri, null);
+                        URI uri = null;
+                        if (c.uri != null && !c.uri.isEmpty()) {
+                            uri = new URI(null, c.uri, null);
+                        }
+                        Map<File.Bioformat, DataStore> dataStoreMap = parseBioformatDataStoreMap(c);
                         int projectId = catalogManager.getProjectId(c.projectId);
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
-                                null, c.description, null, null, null, uri, null, null, c.cOpt.getQueryOptions(), sessionId);
+                                null, c.description, null, null, null, uri, dataStoreMap, null, null, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, study, null));
 
                         break;
@@ -353,7 +351,6 @@ public class OpenCGAMain {
                         if (outdirId < 0) {
                             outdirId  = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
                         }
-                        String storageEngine = c.storageEngine != null? c.storageEngine : StorageManagerFactory.getDefaultStorageManagerName();
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
@@ -362,19 +359,10 @@ public class OpenCGAMain {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
                             queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
-                        if (c.dbName != null) {
-                            queryOptions.put(AnalysisFileIndexer.DB_NAME, c.dbName);
-                        }
-                        if (c.indexedFileId != null) {
-                            int indexedFileId = catalogManager.getFileId(c.indexedFileId);
-                            if (indexedFileId < 0) {
-                                logger.error("IndexedFileId " + c.indexedFileId + " does not exist");
-                                returnValue = 1;
-                            }
-                            queryOptions.put(AnalysisFileIndexer.INDEX_FILE_ID, indexedFileId);
-                        }
+                        queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
+                        queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        QueryResult<File> queryResult = analysisFileIndexer.index(fileId, outdirId, storageEngine, sessionId, queryOptions);
+                        QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sessionId, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
                         break;
@@ -599,6 +587,33 @@ public class OpenCGAMain {
         logout(sessionId);
 
         return returnValue;
+    }
+
+    private Map<File.Bioformat, DataStore> parseBioformatDataStoreMap(OptionsParser.StudyCommands.CreateCommand c) throws Exception {
+        Map<File.Bioformat, DataStore> dataStoreMap;
+        dataStoreMap = new HashMap<>();
+        HashSet<String> storageEnginesSet = new HashSet<>(Arrays.asList(StorageManagerFactory.getDefaultStorageManagerNames()));
+        for (String datastore : c.datastores) {
+            logger.debug("Parsing datastore {} ", datastore);
+            String[] split = datastore.split(":");
+            if (split.length != 3) {
+                throw new Exception("Invalid datastore. Expected <bioformat>:<storageEngineName>:<database_name>");
+            } else {
+                File.Bioformat bioformat;
+                try {
+                    bioformat = File.Bioformat.valueOf(split[0].toUpperCase());
+                } catch (Exception e) {
+                    throw new Exception("Unknown Bioformat \"" + split[0] + "\"", e);
+                }
+                String storageEngine = split[1];
+                String dbName = split[2];
+                if (!storageEnginesSet.contains(storageEngine)) {
+                    throw new Exception("Unknown StorageEngine \"" + storageEngine + "\"");
+                }
+                dataStoreMap.put(bioformat, new DataStore(storageEngine, dbName));
+            }
+        }
+        return dataStoreMap;
     }
 
     /* Output Formats */

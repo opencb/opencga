@@ -230,8 +230,8 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private void checkFiles(Collection<File> values) throws CatalogException {
         for (File file : values) {
-            if (!file.getType().equals(File.Type.INDEX)) {
-                throw new CatalogException("Expected file type = INDEX");
+            if (!file.getType().equals(File.Type.FILE)) {
+                throw new CatalogException("Expected file type = FILE");
             } else if (!file.getBioformat().equals(File.Bioformat.VARIANT)) {
                 throw new CatalogException("Expected file bioformat = VARIANT");
             }

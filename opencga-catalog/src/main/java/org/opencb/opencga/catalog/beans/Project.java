@@ -22,6 +22,7 @@ public class Project {
     private List<Acl> acl;      // roles?
     private List<Study> studies;
 
+    private Map<File.Bioformat, DataStore> dataStores;
     private Map<String, Object> attributes;
 
     public Project() {
@@ -150,6 +151,14 @@ public class Project {
 
     public void setStudies(List<Study> studies) {
         this.studies = studies;
+    }
+
+    public Map<File.Bioformat, DataStore> getDataStores() {
+        return dataStores;
+    }
+
+    public void setDataStores(Map<File.Bioformat, DataStore> dataStores) {
+        this.dataStores = dataStores;
     }
 
     public Map<String, Object> getAttributes() {

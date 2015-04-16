@@ -404,6 +404,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required = false, arity = 1)
             String uri;
+
+            @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
+            List<String> datastores;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Description")
@@ -576,20 +579,17 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @Parameter(names = {"--storage-engine"}, description = "", required = false, arity = 1)
-            String storageEngine;
-
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;
 
-            @Parameter(names = {"--indexed-file-id"}, description = "Use an existing indexed file instead of creating a new file in Catalog.")
-            String indexedFileId;
-            
-            @Parameter(names = {"--database"}, description = "Specify the database name instead of using the default database.")
-            String dbName;
+            @Parameter(names = "--transform", description = "Run only the transform phase")
+            boolean transform = false;
+
+            @Parameter(names = "--load", description = "Run only the load phase")
+            boolean load = false;
 
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;
