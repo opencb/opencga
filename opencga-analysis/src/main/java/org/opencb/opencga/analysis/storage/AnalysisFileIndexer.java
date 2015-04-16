@@ -184,15 +184,15 @@ public class AnalysisFileIndexer {
         catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
 
         /** Create job **/
-        ObjectMap jobResourceManagerAttributes = new ObjectMap();
-        jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
-        jobResourceManagerAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
+        ObjectMap jobAttributes = new ObjectMap();
+        jobAttributes.put(Job.TYPE, Job.Type.INDEX);
+        jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
 
         String jobName = "index";
         String jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
         final Job job = AnalysisJobExecuter.createJob(catalogManager, studyIdByOutDirId, jobName,
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
-                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, jobResourceManagerAttributes).first();
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, jobAttributes, null).first();
 
         if (load) {
             modifyIndexJobId(originalFile.getId(), job.getId(), sessionId);

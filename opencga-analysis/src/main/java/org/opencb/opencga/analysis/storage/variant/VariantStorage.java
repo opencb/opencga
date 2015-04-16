@@ -109,7 +109,8 @@ public class VariantStorage {
         String jobDescription = "Stats calculation for cohort " + cohortIds;
         return AnalysisJobExecuter.createJob(catalogManager, studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
-                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, new HashMap<String, Object>());
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput,
+                new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public QueryResult<Job> annotateVariants(int indexedFileId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
@@ -165,7 +166,8 @@ public class VariantStorage {
         String jobName = "annotate-stats";
         return AnalysisJobExecuter.createJob(catalogManager, studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
-                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, new HashMap<String, Object>());
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput,
+                new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
 }

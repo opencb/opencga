@@ -2025,13 +2025,7 @@ public class CatalogManager implements ICatalogManager {
 //    }
     @Override
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                                      Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId) throws CatalogException {
-        return createJob(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles, resourceManagerAttributes, null, options, sessionId);
-    }
-
-    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -2060,6 +2054,9 @@ public class CatalogManager implements ICatalogManager {
         job.setStatus(status);
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
+        }
+        if (attributes != null) {
+            job.setAttributes(attributes);
         }
 
         return catalogDBAdaptor.createJob(studyId, job, options);

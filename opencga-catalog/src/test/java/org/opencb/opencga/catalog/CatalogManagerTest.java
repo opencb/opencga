@@ -558,7 +558,7 @@ public class CatalogManagerTest extends GenericTest {
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         System.out.println(catalogManager.createJob(
                 studyId, "mySecondJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.EMPTY_LIST, new HashMap<String, Object>(), null, sessionIdUser));
+                Collections.EMPTY_LIST, new HashMap<String, Object>(), null, Job.Status.PREPARED, null, sessionIdUser));
     }
 
     /**

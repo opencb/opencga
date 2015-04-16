@@ -298,16 +298,17 @@ public interface ICatalogManager {
     //    }
     QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                               Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId)
-            throws CatalogException, CatalogIOManagerException;
+                               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
+                               Job.Status status, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     URI createJobOutDir(int studyId, String dirName, String sessionId)
-            throws CatalogException, CatalogIOManagerException;
+            throws CatalogException;
 
     QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogException;
 
     QueryResult deleteJob(int jobId, String sessionId)
-            throws CatalogException, CatalogIOManagerException;
+            throws CatalogException;
 
     QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws IOException, CatalogIOManagerException, CatalogException;
 
