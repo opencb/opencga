@@ -76,18 +76,11 @@ public class Command extends RunnableProcess {
                 error = errorBuffer.toString();
             }
 
-        } catch (IOException ioe) {
-            exception = ioe.toString();
-            status = Status.ERROR;
-        } catch (InterruptedException e) {
-            exception = e.toString();
-            status = Status.ERROR;
         } catch (Exception e) {
             exception = e.toString();
             status = Status.ERROR;
+            logger.error("Exception occurred while executing Command {}", exception);
         }
-        logger.error("Exception occurred while executing Command {}", exception);
-
     }
 
     @Override

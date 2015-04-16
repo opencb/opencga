@@ -1145,8 +1145,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        QueryOptions filterOptions = filterOptions(options, FILTER_ROUTE_FILES);
 
-        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject("id", fileId), options);
+        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject("id", fileId), filterOptions);
 
         File file = parseFile(queryResult);
         if(file != null) {

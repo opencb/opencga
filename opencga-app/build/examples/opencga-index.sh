@@ -1,15 +1,16 @@
 #!/bin/bash
 
-#if [[ $OPENCGA_HOME ]] 
-#then
-#    export OPENCGA_BIN=opencga
-#else 
-#    echo $OPENCGA_BIN
-#fi
 
 #echo $@
 
 #set -v
+
+if [ ! $OPENCGA_HOME ]
+then
+    export OPENCGA_HOME=/opt/opencga
+fi
+export OPENCGA_BIN=$OPENCGA_HOME'/bin/opencga.sh'
+
 
 export user=admin
 export password=admin
@@ -19,7 +20,6 @@ export uri_arg=""
 export study_uri=""
 
 export transform_file=false
-export OPENCGA_BIN=$OPENCGA_HOME'/bin/opencga.sh'
 export input_file=false
 export log_level=info
 
@@ -40,8 +40,7 @@ while getopts "htu:i:l:U:" opt; do
 	    echo "       -t            : Transform and Load in 2 steps  "
 	    echo "       -U uri        : Study URI location "
 	    #echo "       -            :   "
-	    #echo "       -            :   "
-	    
+
 	    #echo "Usage: -h, -i (vcf_input_file), -u (user_name), -l (log_level), -t, -U (study_URI)"
 
 	    exit 1
@@ -76,13 +75,13 @@ while getopts "htu:i:l:U:" opt; do
 done
 
 
-if [ "$input_file" == false ]
+if [ $input_file == false ]
 then
 	echo "No input file!"
 	exit 1
 fi
 
-if [ "$log_level" == "debug" ]
+if [ $log_level == "debug" ]
 then
 	set -x
 fi
@@ -91,7 +90,7 @@ fi
 $OPENCGA_BIN users create -u $user -p $password -n $user -e user@email.com --log-level ${log_level}
 $OPENCGA_BIN projects create -a ${project_alias} -d "1000 genomes" -n "1000 Genomes" -u $user -p $password --log-level ${log_level}
 $OPENCGA_BIN users list -u $user -p $password -R
-$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d asdf --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:deleteme_$user"
+$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d asdf --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:opencga_test_$user"
 
 $OPENCGA_BIN users list -u $user -p $password -R
 
@@ -106,17 +105,17 @@ $OPENCGA_BIN users list -u $user -p $password -R
 if [ "$transform_file" == "true" ]
 then
 	#Transform file
-	$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform -- -DtestIndex=true $TRANSFORM_DYNAMIC_PARAMS 
+	$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform -- -DtestIndex=true $TRANSFORM_DYNAMIC_PARAMS
 	$OPENCGA_BIN users list -u $user -p $password -R
-	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID
+	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 
 	#Load file
 	TRANSFORMED_VARIANTS_FILE_ID=$(getFileId "variants.json")
 	$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -- -DtestIndex=true $LOAD_DYNAMIC_PARAMS
-	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID
+	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 else
 	$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level}
-	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID
+	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 fi
 
 $OPENCGA_BIN users list -u $user -p $password -R

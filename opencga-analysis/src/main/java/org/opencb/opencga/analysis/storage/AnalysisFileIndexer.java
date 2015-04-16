@@ -138,6 +138,10 @@ public class AnalysisFileIndexer {
 
         //TODO: Check if file can be indexed
 
+        if (originalFile.getIndex() != null) {
+            throw new CatalogException("File '" + originalFile.getId() + "' is already indexed");
+        }
+
         // ObjectMap to fill with modifications over the indexed file (like new attributes or jobId)
         ObjectMap fileModifyParams = new ObjectMap("attributes", new ObjectMap());
         ObjectMap indexAttributes = new ObjectMap();
@@ -170,6 +174,15 @@ public class AnalysisFileIndexer {
             }
         }
 
+        /** Create index information only if it's going to be loaded **/
+        if (load) {
+            Index indexInformation = new Index(userId, TimeUtils.getTime(), Index.Status.INDEXING, /*job.getId()*/-1, indexAttributes);
+            fileModifyParams.put("index", indexInformation);
+        }
+
+        /** Modify file with new information **/
+        catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
+
         /** Create job **/
         ObjectMap jobResourceManagerAttributes = new ObjectMap();
         jobResourceManagerAttributes.put(Job.TYPE, Job.Type.INDEX);
@@ -181,21 +194,24 @@ public class AnalysisFileIndexer {
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, jobResourceManagerAttributes).first();
 
-        /** Create index information only if it's going to be loaded **/
         if (load) {
-            Index indexInformation = new Index(userId, TimeUtils.getTime(), job.getId(), indexAttributes);
-            fileModifyParams.put("index", indexInformation);
+            modifyIndexJobId(originalFile.getId(), job.getId(), sessionId);
         }
-
-        /** Modify file with new information **/
-        catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
-
 
         if (simulate) {
             return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(job));
         } else {
             return new QueryResult<>("indexFile", (int) (System.currentTimeMillis() - start), 1, 1, "", "",
                     catalogManager.getJob(job.getId(), null, sessionId).getResult());
+        }
+    }
+
+    private void modifyIndexJobId(int fileId, int jobId, String sessionId) throws CatalogException {
+        File file = catalogManager.getFile(fileId, sessionId).first();
+        if (file.getIndex() != null) {
+            Index index = file.getIndex();
+            index.setJobId(jobId);
+            catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
         }
     }
 

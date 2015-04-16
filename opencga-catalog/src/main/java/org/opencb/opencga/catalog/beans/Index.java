@@ -10,7 +10,7 @@ public class Index {
 
     private String userId;
     private String date;
-//    private Status status;
+    private Status status;
     private int jobId;
 
     private Map<String, Object> attributes;
@@ -24,9 +24,10 @@ public class Index {
     public Index() {
     }
 
-    public Index(String userId, String date, int jobId, Map<String, Object> attributes) {
+    public Index(String userId, String date, Status status, int jobId, Map<String, Object> attributes) {
         this.userId = userId;
         this.date = date;
+        this.status = status;
         this.jobId = jobId;
         this.attributes = attributes;
     }
@@ -53,6 +54,14 @@ public class Index {
 
     public void setJobId(int jobId) {
         this.jobId = jobId;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public Map<String, Object> getAttributes() {
