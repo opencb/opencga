@@ -71,23 +71,28 @@ class VariantJsonTransformTask extends Task<String> {
     public boolean apply(List<String> batch) {
         List<String> outputBatch = new ArrayList<>(batch.size());
 //            logger.info("batch.size() = " + batch.size());
-        for (String line : batch) {
-            if (line.startsWith("#") || line.trim().isEmpty()) {
-                continue;
-            }
-            List<Variant> variants = factory.create(source, line);
-            for (Variant variant : variants) {
-                try {
-                    String e = objectWriter.writeValueAsString(variant);
-                    outputBatch.add(e + "\n");
-                } catch (IOException e) {
-                    e.printStackTrace();
+        try {
+            for (String line : batch) {
+                if (line.startsWith("#") || line.trim().isEmpty()) {
+                    continue;
+                }
+                List<Variant> variants = factory.create(source, line);
+                for (Variant variant : variants) {
+                    try {
+                        String e = objectWriter.writeValueAsString(variant);
+                        outputBatch.add(e + "\n");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        }
 //            logger.info("outputBatch.size() = " + outputBatch.size());
-        batch.clear();
-        batch.addAll(outputBatch);
+            batch.clear();
+            batch.addAll(outputBatch);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
         return true;
     }
 }

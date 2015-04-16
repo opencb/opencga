@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -9,10 +10,14 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +59,7 @@ public class VariantStatisticsManager {
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
      * @throws IOException
      */
-    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> samples, QueryOptions options) throws IOException {
+    public URI legacyCreateStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> samples, QueryOptions options) throws IOException {
 
         /** Open output streams **/
         Path fileVariantsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
@@ -141,7 +146,6 @@ public class VariantStatisticsManager {
         outputSourceStream.close();
         return output;
     }
-
     private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
         OutputStream outputStream = new FileOutputStream(filePath.toFile());
         logger.info("will write stats to {}", filePath);
@@ -165,31 +169,94 @@ public class VariantStatisticsManager {
 
         return variantDBAdaptor.iterator(iteratorQueryOptions);
     }
+
     /**
-     * Removes samples not present in 'samplesToKeep'
-     * @param variant will be modified
-     * @param samplesToKeep set of names of samples
-     * @return variant with just the samples in 'samplesToKeep'
+     * retrieves batches of Variants, delegates to obtain VariantStatsWrappers from those Variants, and writes them to the output URI.
+     *
+     * @param variantDBAdaptor to obtain the Variants
+     * @param output where to write the VariantStats
+     * @param samples cohorts (subsets) of the samples. key: cohort name, value: list of sample names.
+     * @param options (mandatory) VariantSource, (optional) filters to the query, batch size, number of threads to use...
+     *
+     * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
+     * @throws IOException
      */
-    public Variant filterSample(Variant variant, Set<String> samplesToKeep) {
-        List<String> toRemove = new ArrayList<>();
-        if (samplesToKeep != null) {
-            Collection<VariantSourceEntry> sourceEntries = variant.getSourceEntries().values();
-            Map<String, VariantSourceEntry> filteredSourceEntries = new HashMap<>(sourceEntries.size());
-            for (VariantSourceEntry sourceEntry : sourceEntries) {
-                for (String name : sourceEntry.getSampleNames()) {
-                    if (!samplesToKeep.contains(name)) {
-                        toRemove.add(name);
-                    }
-                }
-                Set<String> sampleNames = sourceEntry.getSampleNames();
-                for (String name : toRemove) {
-                    sampleNames.remove(name);
+    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> samples, QueryOptions options) throws Exception {
+        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+        int numTasks = 6;
+        int batchSize = 100;  // future optimization, threads, etc
+        boolean overwrite = false;
+        if(options != null) { //Parse query options
+            batchSize = options.getInt(BATCH_SIZE, batchSize);
+            overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
+        }
+
+//        reader, tasks and writer
+        VariantDBReader reader = new VariantDBReader(variantSource, variantDBAdaptor, options);
+        List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
+        for (int i = 0; i < numTasks; i++) {
+            tasks.add(new VariantStatsWrapperTask(overwrite, samples, variantSource));
+        }
+        StringDataWriter writer = new StringDataWriter(Paths.get(output.getPath() + VARIANT_STATS_SUFFIX));
+        
+        // runner 
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks*2, false);
+        ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
+
+        logger.info("starting stats creation");
+        long start = System.currentTimeMillis();
+        runner.run();
+        logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
+        
+        return output;
+    }
+
+    class VariantStatsWrapperTask implements ParallelTaskRunner.Task<Variant, String> {
+
+        private boolean overwrite;
+        private Map<String, Set<String>> samples;
+        private VariantSource variantSource;
+        private ObjectMapper jsonObjectMapper;
+        private ObjectWriter variantsWriter;
+
+        public VariantStatsWrapperTask(VariantSource variantSource) {
+            this(false, null, variantSource);
+        }
+
+        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples, VariantSource variantSource) {
+            this.overwrite = overwrite;
+            this.samples = samples;
+            this.variantSource = variantSource;
+            jsonObjectMapper = new ObjectMapper(new JsonFactory());
+            variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
+        }
+
+        @Override
+        public List<String> apply(List<Variant> variants) {
+
+            List<String> strings = new ArrayList<>(variants.size());
+            
+            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, variantSource, samples);
+            
+            long start = System.currentTimeMillis();
+            for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
+                try {
+                    strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
                 }
             }
+            logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
+            if (variants.size() != 0) {
+                logger.info("stats created up to position {}:{}", variants.get(variants.size()-1).getChromosome(), variants.get(variants.size()-1).getStart());
+            } else {
+                logger.info("task with empty batch");
+            }
+            return strings;
         }
-        return variant;
     }
+
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException {
 

@@ -857,6 +857,7 @@ public class OpenCGAStorageMain {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
+        dbAdaptor.setConstantSamples(variantSource.getFileId());    // TODO jmmut: change to studyId when we remove fileId
 
         /**
          * Create and load stats
@@ -886,7 +887,8 @@ public class OpenCGAStorageMain {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, queryOptions);
             }
-        } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?
+        } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
+            e.printStackTrace();
             logger.error(e.getMessage());
             System.exit(1);
         }

@@ -54,6 +54,11 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public void setConstantSamples(String sourceEntry) {
+        
+    }
+
+    @Override
     public QueryResult<Variant> getAllVariants(QueryOptions options) {
 
         try {
