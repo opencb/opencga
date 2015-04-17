@@ -52,6 +52,7 @@ public class Project {
         this.diskUsage = diskUsage;
         this.acl = acl;
         this.studies = studies;
+        this.dataStores = new HashMap<>();
         this.attributes = attributes;
     }
 

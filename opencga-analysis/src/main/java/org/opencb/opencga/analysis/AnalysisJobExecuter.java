@@ -217,10 +217,10 @@ public class AnalysisJobExecuter {
         long start = System.currentTimeMillis();
 
         QueryResult<Job> jobQueryResult;
+        if (resourceManagerAttributes == null) {
+            resourceManagerAttributes = new HashMap<>();
+        }
         if (simulate) { //Simulate a job. Do not create it.
-            if (resourceManagerAttributes == null) {
-                resourceManagerAttributes = new HashMap<>();
-            }
             resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,

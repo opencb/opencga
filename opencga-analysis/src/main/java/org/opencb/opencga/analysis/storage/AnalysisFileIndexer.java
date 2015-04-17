@@ -219,12 +219,12 @@ public class AnalysisFileIndexer {
         int studyId = catalogManager.getStudyIdByFileId(file.getId());
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         DataStore dataStore;
-        if (study.getDataStores().containsKey(file.getBioformat())) {
+        if (study.getDataStores() != null && study.getDataStores().containsKey(file.getBioformat())) {
             dataStore = study.getDataStores().get(file.getBioformat());
         } else {
             int projectId = catalogManager.getProjectIdByStudyId(study.getId());
             Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("alias", "dataStores")), sessionId).first();
-            if (project.getDataStores().containsKey(file.getBioformat())) {
+            if (project.getDataStores() != null && project.getDataStores().containsKey(file.getBioformat())) {
                 dataStore = project.getDataStores().get(file.getBioformat());
             } else { //get default datastore
                 String userId = catalogManager.getFileOwner(file.getId());
