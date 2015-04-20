@@ -348,17 +348,17 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException {
         long startTime = startQuery();
+        if (!userExists(userId)) {
+            throw CatalogDBException.idNotFound("User", userId);
+        }
         DBObject query = new BasicDBObject("id", userId);
         query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
         QueryResult<DBObject> result = userCollection.find(query, options);
         User user = parseUser(result);
-        if(user == null){
-            throw CatalogDBException.idNotFound("User", userId);
-        }
-        joinFields(user, options);
-        if(user.getLastActivity() != null && user.getLastActivity().equals(lastActivity)) { // TODO explain
-            return endQuery("Get user", startTime);
+        if(user == null) {
+            return endQuery("Get user", startTime); // user exists but no different lastActivity was found: return empty result
         } else {
+            joinFields(user, options);
             return endQuery("Get user", startTime, Arrays.asList(user));
         }
     }

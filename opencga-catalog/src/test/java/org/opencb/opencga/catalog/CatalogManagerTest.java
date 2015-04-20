@@ -139,7 +139,7 @@ public class CatalogManagerTest extends GenericTest {
         try {
             catalogManager.getUser("user", null, sessionIdUser2);
             fail();
-        } catch (CatalogDBException e) {
+        } catch (CatalogException e) {
             System.out.println(e);
         }
     }
@@ -193,7 +193,7 @@ public class CatalogManagerTest extends GenericTest {
         try {
             catalogManager.modifyUser("user", params, sessionIdUser2);
             fail("Expected exception");
-        } catch (CatalogDBException e){
+        } catch (CatalogException e){
             System.out.println(e);
         }
 
