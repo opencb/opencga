@@ -55,14 +55,14 @@ public class AnalysisOutputRecorder {
         List<Integer> fileIds = new LinkedList<>();
         CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
 
-        try {
-            /** Modify job status to PROCESSING_OUTPUT **/
-            logger.debug("Modify job {id: {}, status:{}} status to PROCESSING_OUTPUT", job.getId(), job.getStatus());
-            ObjectMap parameters = new ObjectMap("status", Job.Status.PROCESSING_OUTPUT);
-            catalogManager.modifyJob(job.getId(), parameters, sessionId);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            /** Modify job status to PROCESSING_OUTPUT **/
+//            logger.debug("Modify job {id: {}, status:{}} status to PROCESSING_OUTPUT", job.getId(), job.getStatus());
+//            ObjectMap parameters = new ObjectMap("status", Job.Status.PROCESSING_OUTPUT);
+//            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+//        } catch (CatalogException e) {
+//            e.printStackTrace();
+//        }
 
         try {
             /** Scans the output directory from a job or index to find all files. **/
@@ -109,9 +109,9 @@ public class AnalysisOutputRecorder {
 
         /** Modifies the job status to READY and set the output and endTime. **/
         try {
-            switch(Job.Type.valueOf(job.getResourceManagerAttributes().get(Job.TYPE).toString())) {
+            switch(Job.Type.valueOf(job.getAttributes().get(Job.TYPE).toString())) {
                 case INDEX:
-                    Integer indexedFileId = (Integer) job.getResourceManagerAttributes().get(Job.INDEXED_FILE_ID);
+                    Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
                     File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
                     if (indexedFile.getIndex() != null) {
                         Index index = indexedFile.getIndex();
@@ -123,7 +123,7 @@ public class AnalysisOutputRecorder {
                 default:
                     break;
             }
-            ObjectMap parameters = new ObjectMap("status", Job.Status.READY);
+            ObjectMap parameters = new ObjectMap();
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);

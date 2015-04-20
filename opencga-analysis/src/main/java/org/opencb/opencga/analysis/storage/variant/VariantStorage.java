@@ -39,7 +39,6 @@ public class VariantStorage {
         }
         final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
         final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
-        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
         File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
@@ -109,7 +108,7 @@ public class VariantStorage {
         String jobDescription = "Stats calculation for cohort " + cohortIds;
         return AnalysisJobExecuter.createJob(catalogManager, studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
-                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput,
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
@@ -119,7 +118,6 @@ public class VariantStorage {
         }
         final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
         final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
-        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
 
         File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
@@ -166,7 +164,7 @@ public class VariantStorage {
         String jobName = "annotate-stats";
         return AnalysisJobExecuter.createJob(catalogManager, studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
-                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput,
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 

@@ -83,7 +83,6 @@ public class AnalysisFileIndexer {
         }
         final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
         final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
-        final boolean recordOutput = options.getBoolean(AnalysisJobExecuter.RECORD_OUTPUT);
         final long start = System.currentTimeMillis();
         final boolean transform;
         final boolean load;
@@ -192,7 +191,7 @@ public class AnalysisFileIndexer {
         String jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
         final Job job = AnalysisJobExecuter.createJob(catalogManager, studyIdByOutDirId, jobName,
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
-                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, recordOutput, jobAttributes, null).first();
+                sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 
         if (load) {
             modifyIndexJobId(originalFile.getId(), job.getId(), sessionId);

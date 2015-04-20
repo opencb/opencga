@@ -61,6 +61,7 @@ public class Command extends RunnableProcess {
             readErrorStreamThread.join();
             endTime();
 
+            setExitValue(proc.exitValue());
             if (proc.exitValue() != 0) {
                 status = Status.ERROR;
                 // output = IOUtils.toString(proc.getInputStream());

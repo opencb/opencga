@@ -105,13 +105,13 @@ $OPENCGA_BIN users list -u $user -p $password -R
 if [ "$transform_file" == "true" ]
 then
 	#Transform file
-	$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform -- -DtestIndex=true $TRANSFORM_DYNAMIC_PARAMS
+	$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform
 	$OPENCGA_BIN users list -u $user -p $password -R
 	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 
 	#Load file
 	TRANSFORMED_VARIANTS_FILE_ID=$(getFileId "variants.json")
-	$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -- -DtestIndex=true $LOAD_DYNAMIC_PARAMS
+	$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -Dannotate=false
 	$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 else
 	$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level}

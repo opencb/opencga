@@ -354,10 +354,10 @@ public class OpenCGAMain {
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
@@ -376,10 +376,10 @@ public class OpenCGAMain {
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions), null));
@@ -394,10 +394,10 @@ public class OpenCGAMain {
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, sessionId, queryOptions), null));
