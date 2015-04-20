@@ -730,7 +730,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     VariantDBAdaptor dbAdaptor;
                     try {
                         dbAdaptor = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
-                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
+//                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }
