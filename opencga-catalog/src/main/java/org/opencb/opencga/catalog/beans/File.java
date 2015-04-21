@@ -76,6 +76,9 @@ public class File {
         FILE
     }
 
+    /**
+     * General format of the file, such as text, or binary, etc.
+     */
     public enum Format {
         PLAIN,
         GZIP,
@@ -84,6 +87,9 @@ public class File {
         IMAGE
     }
 
+    /**
+     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
+     */
     public enum Bioformat {
         MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
         MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,

@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.beans.User;
@@ -15,6 +16,7 @@ import org.opencb.opencga.lib.common.TimeUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Properties;
 
 /**
@@ -36,16 +38,17 @@ public class CatalogFileManagerTest {
         properties.load(is);
 
 
-        MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
-                properties.getProperty(CatalogManager.CATALOG_DB_USER, ""),
-                properties.getProperty(CatalogManager.CATALOG_DB_DATABASE, ""),
-                properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, "").toCharArray());
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", properties.getProperty(CatalogManager.CATALOG_DB_USER, ""))
+                .add("password", properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, ""))
+                .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
+                .build();
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty(CatalogManager.CATALOG_DB_HOST, ""),
-                Integer.parseInt(properties.getProperty(CatalogManager.CATALOG_DB_PORT, "0")));
+                properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0], 27017);
 
-        CatalogMongoDBAdaptor catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
+        CatalogMongoDBAdaptor catalogDBAdaptor = new CatalogMongoDBAdaptor(Arrays.asList(dataStoreServerAddress),
+                mongoDBConfiguration, properties.getProperty(CatalogManager.CATALOG_DB_DATABASE, ""));
 
 
         catalogManager = new CatalogManager(catalogDBAdaptor, properties);

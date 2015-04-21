@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.vcf4.VcfFormatHeader;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 
 /**
@@ -30,14 +31,16 @@ public class DBObjectToVariantSourceConverterTest {
         source.getSamplesPosition().put("NA002", 2);
         source.getSamplesPosition().put("NA003", 3);
         source.addMetadata("header", "##fileformat=v4.1");
-        source.addMetadata("FORMAT", new VcfFormatHeader("id", "1", "Integer", "description"));
+        source.addMetadata("FORMAT.A", new VcfFormatHeader("id", "1", "Integer", "description"));
         VariantGlobalStats global = new VariantGlobalStats(10, 4, 7, 3, 0, 9, 4, 4, -1, 20.5f, null);
         source.setStats(global);
+        source.setType(VariantStudy.StudyType.CASE_CONTROL);
         
         mongoSource = new BasicDBObject(DBObjectToVariantSourceConverter.FILENAME_FIELD, source.getFileName())
                 .append(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileId())
                 .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, source.getStudyName())
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, source.getStudyId())
+                .append(DBObjectToVariantSourceConverter.STUDYTYPE_FIELD, source.getType())
                 .append(DBObjectToVariantSourceConverter.DATE_FIELD, Calendar.getInstance().getTime())
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, new BasicDBObject()
                         .append("NA000" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "A", 0)
@@ -61,13 +64,13 @@ public class DBObjectToVariantSourceConverterTest {
         // TODO Save pedigree information
         
         // Metadata
-        Map<String, Object> meta = source.getMetadata();
-        DBObject metadataMongo = new BasicDBObject(DBObjectToVariantSourceConverter.HEADER_FIELD, source.getMetadata().get("header"));
+        DBObject metadataMongo = new BasicDBObject(DBObjectToVariantSourceConverter.HEADER_FIELD, source.getMetadata().get("header"))
+                .append("FORMAT" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "A", source.getMetadata().get("FORMAT.A"));
         mongoSource = mongoSource.append(DBObjectToVariantSourceConverter.METADATA_FIELD, metadataMongo);
     }
     
     @Test
-    public void testConvertToDataModelType() {
+    public void testConvertToStorageType() {
         DBObjectToVariantSourceConverter converter = new DBObjectToVariantSourceConverter();
         DBObject converted = converter.convertToStorageType(source);
 
@@ -94,13 +97,24 @@ public class DBObjectToVariantSourceConverterTest {
         DBObject convertedMetadata = (DBObject) converted.get(DBObjectToVariantSourceConverter.METADATA_FIELD);
         DBObject expectedMetadata = (DBObject) converted.get(DBObjectToVariantSourceConverter.METADATA_FIELD);
         assertEquals(expectedMetadata.get(DBObjectToVariantSourceConverter.HEADER_FIELD), convertedMetadata.get(DBObjectToVariantSourceConverter.HEADER_FIELD));
+        assertEquals(expectedMetadata.get("FORMAT" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "A"), convertedMetadata.get("FORMAT" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "A"));
     }
 
     @Test
-    public void testConvertToStorageType() {
+    public void testConvertToDataModelType() {
         DBObjectToVariantSourceConverter converter = new DBObjectToVariantSourceConverter();
         VariantSource converted = converter.convertToDataModelType(mongoSource);
-        assertEquals(source, converted);
+        
+        assertEquals(source.getFileName(), converted.getFileName());
+        assertEquals(source.getFileId(), converted.getFileId());
+        assertEquals(source.getStudyName(), converted.getStudyName());
+        assertEquals(source.getStudyId(), converted.getStudyId());
+        assertEquals(source.getType(), converted.getType());
+        assertEquals(source.getSamplesPosition(), converted.getSamplesPosition());
+        
+        assertEquals(source.getStats(), converted.getStats());
+        assertEquals(source.getMetadata(), converted.getMetadata());
+        assertEquals(source.getPedigree(), converted.getPedigree());
     }
     
 }

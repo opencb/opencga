@@ -4,6 +4,7 @@ import com.mongodb.*;
 
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -13,6 +14,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.annotation.VariantEffect;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -44,7 +46,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private String filesCollectionName;
     private String variantsCollectionName;
 
-    @Deprecated private MongoClient mongoClient;
+//    @Deprecated private MongoClient mongoClient;
     @Deprecated private DB db;
     @Deprecated private DBCollection filesCollection;
     @Deprecated private DBCollection variantsCollection;
@@ -80,6 +82,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long checkExistsDBTime = 0;
     private long bulkTime = 0;
 
+    private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+
 
     public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials) {
         this(source, credentials, "variants", "files");
@@ -114,26 +118,25 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     @Override
     public boolean open() {
-        try {
-            // Mongo configuration
-            ServerAddress address = new ServerAddress(credentials.getMongoHost(), credentials.getMongoPort());
-            if (credentials.getMongoCredentials() != null) {
-                mongoClient = new MongoClient(address, Arrays.asList(credentials.getMongoCredentials()));
-            } else {
-                mongoClient = new MongoClient(address);
-            }
-            db = mongoClient.getDB(credentials.getMongoDbName());
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
-
-        mongoDataStoreManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().init()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword())
-                .build();
-        mongoDataStore = mongoDataStoreManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+//        try {
+//            // Mongo configuration
+//            List<ServerAddress> serverAddresses = new LinkedList<>();
+//            for (DataStoreServerAddress dataStoreServerAddress : credentials.getDataStoreServerAddresses()) {
+//                serverAddresses.add(new ServerAddress(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort()));
+//            }
+//            if (credentials.getMongoCredentials() != null) {
+//                mongoClient = new MongoClient(serverAddresses, Arrays.asList(credentials.getMongoCredentials()));
+//            } else {
+//                mongoClient = new MongoClient(serverAddresses);
+//            }
+//            db = mongoDataStore.getDb();
+//        } catch (UnknownHostException ex) {
+//            Logger.getLogger(VariantMongoDBWriter.class.getName()).log(Level.SEVERE, null, ex);
+//            return false;
+//        }
+        mongoDataStoreManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        mongoDataStore = mongoDataStoreManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        db = mongoDataStore.getDb();
 
         return mongoDataStore != null;
     }
@@ -146,7 +149,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         filesCollection = db.getCollection(filesCollectionName);
         variantsCollection = db.getCollection(variantsCollectionName);
-
+        variantSourceWritten.set(false);
         setConverters();
 
         resetBulk();
@@ -442,9 +445,11 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
     private boolean writeSourceSummary(VariantSource source) {
-        DBObject studyMongo = sourceConverter.convertToStorageType(source);
-        DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileName());
-        filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
+        if (!variantSourceWritten.getAndSet(true)) {
+            DBObject studyMongo = sourceConverter.convertToStorageType(source);
+            DBObject query = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileId());
+            filesMongoCollection.update(query, studyMongo, new QueryOptions("upsert", true));
+        }
         return true;
     }
 
@@ -463,7 +468,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     @Override
     public boolean close() {
-        mongoClient.close();
         this.mongoDataStoreManager.close(this.mongoDataStore.getDb().getName());
         return true;
     }
@@ -493,6 +497,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     public void setDefaultGenotype(String defaultGenotype) {
         this.defaultGenotype = defaultGenotype;
+    }
+
+    public void setThreadSyncronizationBoolean(AtomicBoolean atomicBoolean) {
+        this.variantSourceWritten = atomicBoolean;
     }
 
     private void setConverters() {

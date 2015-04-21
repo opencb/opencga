@@ -796,7 +796,7 @@ public class OpenCGAStorageMain {
         if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {
             outputUri = new URI("file", c.outdir, null);
         }
-        Path outDir = Paths.get(outputUri);
+        Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /**
          * Create and load annotations

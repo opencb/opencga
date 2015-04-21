@@ -34,8 +34,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME";
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER";
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PASS";
-    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOST = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOST";
-    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PORT = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PORT";
+    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOSTS";
 
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
     protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
@@ -81,11 +80,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             String mongoUser = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER, null);
             String mongoPassword = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS, null);
             return new MongoCredentials(
-                    properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOST, "localhost"),
-                    Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PORT, "27017")),
+                    MongoCredentials.parseDataStoreServerAddresses(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS, "localhost")),
                     mongoDbName,
-                    null,
-                    null
+                    mongoUser,
+                    mongoPassword
             );
             //this.mongoCredentials = new MongoCredentials(properties);
         } catch (IllegalOpenCGACredentialsException e) {

@@ -25,6 +25,7 @@ import java.util.*;
 
 /**
  * Created by jacobo on 9/01/15.
+ * @author Javier Lopez &lt;fjlopez@ebi.ac.uk&gt;
  */
 public class VariantAnnotationManager {
 
@@ -73,7 +74,8 @@ public class VariantAnnotationManager {
 
     public enum AnnotationSource {
         CELLBASE_DB_ADAPTOR,
-        CELLBASE_REST
+        CELLBASE_REST,
+        VEP
     }
 
     public static VariantAnnotator buildVariantAnnotator(AnnotationSource source, Properties annotationProperties, String species, String assembly)
@@ -83,6 +85,8 @@ public class VariantAnnotationManager {
                 return CellBaseVariantAnnotator.buildCellbaseAnnotator(annotationProperties, species, assembly, false);
             case CELLBASE_REST:
                 return CellBaseVariantAnnotator.buildCellbaseAnnotator(annotationProperties, species, assembly, true);
+            case VEP:
+                return VepVariantAnnotator.buildVepAnnotator();
             default:
                 //TODO: Reflexion?
                 throw new VariantAnnotatorException("Unknown annotation source: " + source);

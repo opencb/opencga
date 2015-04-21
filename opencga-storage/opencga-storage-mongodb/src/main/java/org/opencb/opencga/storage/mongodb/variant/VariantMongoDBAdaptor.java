@@ -43,15 +43,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName) 
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName)
             throws UnknownHostException {
         // Mongo configuration
-        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
-        db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
-
+        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
 
         collectionName = variantsCollectionName;
