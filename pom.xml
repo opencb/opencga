@@ -24,7 +24,7 @@
         <opencga.version>0.5.0</opencga.version>
         <biodata.version>0.4.2</biodata.version>
         <datastore.version>0.3.2</datastore.version>
-        <cellbase.version>3.1.0-rc.1</cellbase.version>
+        <cellbase.version>3.1.0</cellbase.version>
     </properties>
 
     <scm>
@@ -159,8 +159,18 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-mongodb</artifactId>
+                <artifactId>cellbase-core</artifactId>
                 <version>${cellbase.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.datastore</groupId>
+                        <artifactId>datastore-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.opencb.biodata</groupId>
+                        <artifactId>biodata-formats</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.datastore</groupId>

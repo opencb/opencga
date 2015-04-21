@@ -35,22 +35,22 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         System.out.println(test.toString());
     }
 
-    @Test
-    public void testCreateAnnotationDBAdaptor() throws Exception {
-        VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
-
-        /**
-         * Connecting to CellBase database
-         */
-        CellbaseConfiguration cellbaseConfiguration = getCellbaseConfiguration();
-
-        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, cellbaseSpecies, cellbaseAssembly);
-
-        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testDBAdaptor", null);
-
-        System.out.println(test.toString());
-
-    }
+//    @Test
+//    public void testCreateAnnotationDBAdaptor() throws Exception {
+//        VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
+//
+//        /**
+//         * Connecting to CellBase database
+//         */
+//        CellbaseConfiguration cellbaseConfiguration = getCellbaseConfiguration();
+//
+//        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellbaseConfiguration, cellbaseSpecies, cellbaseAssembly);
+//
+//        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testDBAdaptor", null);
+//
+//        System.out.println(test.toString());
+//
+//    }
 
     @Test
     public void testLoadAnnotation() throws Exception {
@@ -63,25 +63,25 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
     }
 
 
-    private CellbaseConfiguration getCellbaseConfiguration() {
-        CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
-        String mongoHost = "mongodb-hxvm-var-001.ebi.ac.uk";
-        int mongoPort = 27017;
-        String mongoDbName = "cellbase_agambiae_agamp4_v3";
-        String mongoUser = "biouser";
-        String mongoPassword = "B10p@ss";
-
-        cellbaseConfiguration.addSpeciesConnection(cellbaseSpecies, cellbaseAssembly, mongoHost,
-                mongoDbName, mongoPort, "mongo",
-                mongoUser, mongoPassword, 10, 500);
-        cellbaseConfiguration.addSpeciesAlias(cellbaseSpecies, cellbaseSpecies);
-
-        System.out.println(cellbaseSpecies + "-" + cellbaseAssembly);
-        return cellbaseConfiguration;
-    }
+//    private CellbaseConfiguration getCellbaseConfiguration() {
+//        CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
+//        String mongoHost = "mongodb-hxvm-var-001.ebi.ac.uk";
+//        int mongoPort = 27017;
+//        String mongoDbName = "cellbase_agambiae_agamp4_v3";
+//        String mongoUser = "biouser";
+//        String mongoPassword = "B10p@ss";
+//
+//        cellbaseConfiguration.addSpeciesConnection(cellbaseSpecies, cellbaseAssembly, mongoHost,
+//                mongoDbName, mongoPort, "mongo",
+//                mongoUser, mongoPassword, 10, 500);
+//        cellbaseConfiguration.addSpeciesAlias(cellbaseSpecies, cellbaseSpecies);
+//
+//        System.out.println(cellbaseSpecies + "-" + cellbaseAssembly);
+//        return cellbaseConfiguration;
+//    }
 
     private VariantDBAdaptor getDbAdaptor() throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
-        Config.setGcsaHome("/opt/opencga/");
+        Config.setOpenCGAHome("/opt/opencga/");
         VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
 
         String dbName;

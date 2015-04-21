@@ -9,12 +9,12 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceType;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variation.GenomicVariant;
+import org.opencb.cellbase.core.CellBaseConfiguration;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
-import org.opencb.cellbase.mongodb.db.MongoDBAdaptorFactory;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
@@ -66,18 +66,18 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         this.jsonObjectMapper = new ObjectMapper(factory);
         this.dbAdaptorFactory = null;
         this.cellBaseClient = null;
-        jsonObjectMapper.addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
     }
 
-    public CellBaseVariantAnnotator(CellbaseConfiguration cellbaseConfiguration, String cellbaseSpecies, String cellbaseAssembly) {
-        this();
-        /**
-         * Connecting to CellBase database
-         */
-        dbAdaptorFactory = new MongoDBAdaptorFactory(cellbaseConfiguration);
-        variantAnnotationDBAdaptor = dbAdaptorFactory.getVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
-        variationDBAdaptor = dbAdaptorFactory.getVariationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
-    }
+//    public CellBaseVariantAnnotator(CellBaseConfiguration cellbaseConfiguration, String cellbaseSpecies, String cellbaseAssembly) {
+//        this();
+//        /**
+//         * Connecting to CellBase database
+//         */
+//        dbAdaptorFactory = new MongoDBAdaptorFactory(cellbaseConfiguration);
+//        variantAnnotationDBAdaptor = dbAdaptorFactory.getVariantAnnotationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
+//        variationDBAdaptor = dbAdaptorFactory.getVariationDBAdaptor(cellbaseSpecies, cellbaseAssembly);
+//    }
 
     public CellBaseVariantAnnotator(CellBaseClient cellBaseClient) {
         this();
@@ -85,7 +85,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             throw new NullPointerException("CellBaseClient can not be null");
         }
         this.cellBaseClient = cellBaseClient;
-        cellBaseClient.getObjectMapper().addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
+        cellBaseClient.getObjectMapper().addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
     }
 
     public static CellBaseVariantAnnotator buildCellbaseAnnotator(Properties annotatorProperties, String species, String assembly, boolean restConnection)
@@ -107,35 +107,36 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             }
             return new CellBaseVariantAnnotator(cellBaseClient);
         } else {
-            String cellbaseHost = annotatorProperties.getProperty(CELLBASE_DB_HOST, "");
-            String cellbaseDatabase = annotatorProperties.getProperty(CELLBASE_DB_NAME, "");
-            int cellbasePort = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_PORT, "27017"));
-            String cellbaseUser = annotatorProperties.getProperty(CELLBASE_DB_USER, "");
-            String cellbasePassword = annotatorProperties.getProperty(CELLBASE_DB_PASSWORD, "");
-            int maxPoolSize = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_MAX_POOL_SIZE, "10"));
-            int timeout = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_TIMEOUT, "200"));
-
-            checkNull(cellbaseHost, CELLBASE_DB_HOST);
-            checkNull(cellbaseDatabase, CELLBASE_DB_NAME);
-            checkNull(cellbaseUser, CELLBASE_DB_USER);
-            checkNull(cellbasePassword, CELLBASE_DB_PASSWORD);
-
-
-            CellbaseConfiguration cellbaseConfiguration = new CellbaseConfiguration();
-            cellbaseConfiguration.addSpeciesConnection(
-                    species,
-                    assembly,
-                    cellbaseHost,
-                    cellbaseDatabase,
-                    cellbasePort,
-                    "mongo",    //TODO: Change to "mongodb"
-                    cellbaseUser,
-                    cellbasePassword,
-                    maxPoolSize,
-                    timeout);
-            cellbaseConfiguration.addSpeciesAlias(species, species);
-
-            return new CellBaseVariantAnnotator(cellbaseConfiguration, species, assembly);
+            throw new UnsupportedOperationException("Unimplemented CellBase dbAdaptor connection. Use CellBaseClient instead");
+//            String cellbaseHost = annotatorProperties.getProperty(CELLBASE_DB_HOST, "");
+//            String cellbaseDatabase = annotatorProperties.getProperty(CELLBASE_DB_NAME, "");
+//            int cellbasePort = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_PORT, "27017"));
+//            String cellbaseUser = annotatorProperties.getProperty(CELLBASE_DB_USER, "");
+//            String cellbasePassword = annotatorProperties.getProperty(CELLBASE_DB_PASSWORD, "");
+//            int maxPoolSize = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_MAX_POOL_SIZE, "10"));
+//            int timeout = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_TIMEOUT, "200"));
+//
+//            checkNull(cellbaseHost, CELLBASE_DB_HOST);
+//            checkNull(cellbaseDatabase, CELLBASE_DB_NAME);
+//            checkNull(cellbaseUser, CELLBASE_DB_USER);
+//            checkNull(cellbasePassword, CELLBASE_DB_PASSWORD);
+//
+//
+//            CellBaseConfiguration cellbaseConfiguration = new CellBaseConfiguration();
+//            cellbaseConfiguration.addSpeciesConnection(
+//                    species,
+//                    assembly,
+//                    cellbaseHost,
+//                    cellbaseDatabase,
+//                    cellbasePort,
+//                    "mongo",    //TODO: Change to "mongodb"
+//                    cellbaseUser,
+//                    cellbasePassword,
+//                    maxPoolSize,
+//                    timeout);
+//            cellbaseConfiguration.addSpeciesAlias(species, species);
+//
+//            return new CellBaseVariantAnnotator(cellbaseConfiguration, species, assembly);
         }
     }
 
