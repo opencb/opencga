@@ -24,7 +24,7 @@
         <opencga.version>0.6-SNAPSHOT</opencga.version>
         <biodata.version>0.5-SNAPSHOT</biodata.version>
         <datastore.version>0.4-SNAPSHOT</datastore.version>
-        <cellbase.version>3.1-SNAPSHOT</cellbase.version>
+        <cellbase.version>3.1.0</cellbase.version>
         <java-common-libs.version>3.0-SNAPSHOT</java-common-libs.version>
     </properties>
 
@@ -160,8 +160,18 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-mongodb</artifactId>
+                <artifactId>cellbase-core</artifactId>
                 <version>${cellbase.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.datastore</groupId>
+                        <artifactId>datastore-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.opencb.biodata</groupId>
+                        <artifactId>biodata-formats</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.datastore</groupId>
