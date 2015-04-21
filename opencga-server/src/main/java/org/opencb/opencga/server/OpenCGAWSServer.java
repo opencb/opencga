@@ -144,7 +144,7 @@ public class OpenCGAWSServer {
 
     protected QueryOptions getQueryOptions() {
         if(queryOptions == null) {
-            this.queryOptions = new QueryOptions();
+            this.queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             if(!exclude.isEmpty()) {
                 queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
             }

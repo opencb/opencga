@@ -510,6 +510,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
         if (options != null) {
 
+            if (options.containsKey("sort")) {
+                if (options.getBoolean("sort")) {
+                    options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+                } else {
+                    options.remove("sort");
+                }
+            }
+
             /** GENOMIC REGION **/
 
             if (options.getString(ID) != null && !options.getString(ID).isEmpty()) { //) && !options.getString("id").isEmpty()) {

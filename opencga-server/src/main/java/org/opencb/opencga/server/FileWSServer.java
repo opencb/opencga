@@ -566,6 +566,7 @@ public class FileWSServer extends OpenCGAWSServer {
     ) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
+        QueryOptions queryOptions = this.getQueryOptions();
         QueryResult<Job> queryResult;
         try {
             int outDirId = catalogManager.getFileId(outDirStr);
@@ -573,7 +574,8 @@ public class FileWSServer extends OpenCGAWSServer {
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, this.getQueryOptions());
+            queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--include-genotypes"));
+            queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
 
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
