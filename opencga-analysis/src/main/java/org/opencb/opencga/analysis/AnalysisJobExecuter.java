@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.AnalysisJobManager;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
