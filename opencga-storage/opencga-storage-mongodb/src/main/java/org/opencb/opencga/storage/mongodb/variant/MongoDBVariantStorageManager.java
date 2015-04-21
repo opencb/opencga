@@ -6,6 +6,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -165,6 +166,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Writers
         List<VariantWriter> writers = new LinkedList<>();
         List<DataWriter> writerList = new LinkedList<>();
+        AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
             variantDBWriter.setBulkSize(bulkSize);
@@ -174,6 +176,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.setCompressDefaultGenotype(compressSamples);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
             variantDBWriter.setSamplesIds(samplesIds);
+            variantDBWriter.setThreadSyncronizationBoolean(atomicBoolean);
             writerList.add(variantDBWriter);
             writers.add(variantDBWriter);
         }

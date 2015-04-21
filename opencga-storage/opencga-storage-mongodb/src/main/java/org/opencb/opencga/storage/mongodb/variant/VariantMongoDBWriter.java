@@ -82,7 +82,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long checkExistsDBTime = 0;
     private long bulkTime = 0;
 
-    private static AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+    private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
 
 
     public VariantMongoDBWriter(final VariantSource source, MongoCredentials credentials) {
@@ -497,6 +497,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     public void setDefaultGenotype(String defaultGenotype) {
         this.defaultGenotype = defaultGenotype;
+    }
+
+    public void setThreadSyncronizationBoolean(AtomicBoolean atomicBoolean) {
+        this.variantSourceWritten = atomicBoolean;
     }
 
     private void setConverters() {
