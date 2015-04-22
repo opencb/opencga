@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -164,8 +165,9 @@ public class AnalysisFileIndexer {
 
 
         /** Create commandLine **/
+
         String commandLine = createCommandLine(study, originalFile, inputFile, sampleList,
-                temporalOutDirUri, indexAttributes, dataStore, options);
+                temporalOutDirUri, indexAttributes, dataStore, sessionId, options);
         if (options.containsKey(PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
@@ -247,8 +249,10 @@ public class AnalysisFileIndexer {
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      * @throws CatalogIOManagerException
      */
+
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
-                                     URI outDirUri, final ObjectMap indexAttributes, final DataStore dataStore, QueryOptions options)
+                                     URI outDirUri, final ObjectMap indexAttributes, final DataStore dataStore,
+                                     String sessionId, QueryOptions options)
             throws CatalogException {
 
         //Create command line
@@ -293,7 +297,9 @@ public class AnalysisFileIndexer {
                     .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --outdir ").append(outDirUri)
-//                    .append(" --sample-ids ").append(sampleIdsString)
+                    .append(" -D").append(VariantStorageManager.STUDY_CONFIGURATION_MANAGER_CLASS_NAME).append("=").append(CatalogStudyConfigurationManager.class.getName())
+                    .append(" -D").append("sessionId").append("=").append(sessionId)
+                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
             if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {
@@ -323,7 +329,7 @@ public class AnalysisFileIndexer {
     ////AUX METHODS
 
     private List<Sample> getFileSamples(Study study, File file, ObjectMap fileModifyParams, boolean simulate, QueryOptions options, String sessionId)
-            throws CatalogException {
+            throws CatalogException, AnalysisExecutionException {
         List<Sample> sampleList;
         QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
 
@@ -393,11 +399,16 @@ public class AnalysisFileIndexer {
         return sampleList;
     }
 
-    static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file) throws CatalogException{
+    static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file)
+            throws AnalysisExecutionException {
         //TODO: Fix aggregate and studyType
         VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
-        URI fileUri = catalogManager.getFileUri(file);
-        return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        try {
+            URI fileUri = catalogManager.getFileUri(file);
+            return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        } catch (CatalogException | StorageManagerException e) {
+            throw new AnalysisExecutionException(e);
+        }
     }
 
     public static URI createSimulatedOutDirUri() {

@@ -2073,7 +2073,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             return null;
         }
         try {
-            return jsonUserReader.readValue(result.getResult().get(0).toString());
+            return jsonUserReader.readValue(restoreDotsInKeys(result.first()).toString());
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing user", e);
         }
@@ -2083,7 +2083,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         List<Study> studies = new LinkedList<>();
         try {
             for (DBObject object : result.getResult()) {
-                studies.add(jsonStudyReader.<Study>readValue(object.toString()));
+                studies.add(jsonStudyReader.<Study>readValue(restoreDotsInKeys(object).toString()));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing study", e);
@@ -2096,7 +2096,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             return null;
         }
         try {
-            return jsonFileReader.readValue(result.getResult().get(0).toString());
+            return jsonFileReader.readValue(restoreDotsInKeys(result.first()).toString());
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing file", e);
         }
@@ -2106,7 +2106,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         List<File> files = new LinkedList<>();
         try {
             for (DBObject o : result.getResult()) {
-                files.add(jsonFileReader.<File>readValue(o.toString()));
+                files.add(jsonFileReader.<File>readValue(restoreDotsInKeys(o).toString()));
             }
             return files;
         } catch (IOException e) {
@@ -2119,7 +2119,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             return null;
         }
         try {
-            return jsonJobReader.readValue(result.getResult().get(0).toString());
+            return jsonJobReader.readValue(restoreDotsInKeys(result.first()).toString());
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing job", e);
         }
@@ -2129,7 +2129,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         LinkedList<Job> jobs = new LinkedList<>();
         try {
             for (DBObject object : result.getResult()) {
-                jobs.add(jsonJobReader.<Job>readValue(object.toString()));
+                jobs.add(jsonJobReader.<Job>readValue(restoreDotsInKeys(object).toString()));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing job", e);
@@ -2141,7 +2141,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         LinkedList<Sample> samples = new LinkedList<>();
         try {
             for (DBObject object : result.getResult()) {
-                samples.add(jsonSampleReader.<Sample>readValue(object.toString()));
+                samples.add(jsonSampleReader.<Sample>readValue(restoreDotsInKeys(object).toString()));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing samples", e);
@@ -2153,7 +2153,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         LinkedList<T> objects = new LinkedList<>();
         try {
             for (DBObject object : result.getResult()) {
-                objects.add(jsonReaderMap.get(tClass).<T>readValue(object.toString()));
+                objects.add(jsonReaderMap.get(tClass).<T>readValue(restoreDotsInKeys(object).toString()));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -2166,7 +2166,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             return null;
         }
         try {
-            return jsonReaderMap.get(tClass).readValue(result.getResult().get(0).toString());
+            return jsonReaderMap.get(tClass).readValue(restoreDotsInKeys(result.first()).toString());
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
         }
@@ -2176,10 +2176,50 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         DBObject dbObject;
         try {
             dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(object));
+            dbObject = replaceDotsInKeys(dbObject);
         } catch (Exception e) {
             throw new CatalogDBException("Error while writing to Json : " + objectName);
         }
         return dbObject;
+    }
+
+    static final String TO_REPLACE_DOTS = "&#46;";
+//    static final String TO_REPLACE_DOTS = "\uff0e";
+
+    /**
+     * Scan all the DBObject and replace all the dots in keys with
+     * @param object
+     * @return
+     */
+
+
+    static <T> T replaceDotsInKeys(T object) {
+        return replaceInKeys(object, ".", TO_REPLACE_DOTS);
+    }
+    static <T> T restoreDotsInKeys(T object) {
+        return replaceInKeys(object, TO_REPLACE_DOTS, ".");
+    }
+    static <T> T replaceInKeys(T object, String target, String replacement) {
+        if (object instanceof DBObject) {
+            DBObject dbObject = (DBObject) object;
+            List<String> keys = new ArrayList<>();
+            for (String s : dbObject.keySet()) {
+                if (s.contains(target)) {
+                    keys.add(s);
+                }
+                replaceInKeys(dbObject.get(s), target, replacement);
+            }
+            for (String key : keys) {
+                Object value = dbObject.removeField(key);
+                key = key.replace(target, replacement);
+                dbObject.put(key, value);
+            }
+        } else if (object instanceof List) {
+            for (Object o : ((List) object)) {
+                replaceInKeys(o, target, replacement);
+            }
+        }
+        return object;
     }
 
     /**

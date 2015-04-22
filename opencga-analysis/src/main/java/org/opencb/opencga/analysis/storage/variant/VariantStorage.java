@@ -82,13 +82,13 @@ public class VariantStorage {
                 .append(" stats-variants ")
                 .append(" --file-id ").append(indexedFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
-                .append(" --study-id ").append(studyId)
+//                .append(" --study-id ").append(studyId)
                 .append(" --database ").append(dataStore.getDbName())
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")
                 ;
         for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
-            sb.append(" -C ").append(entry.getKey().getName()).append(":");
+            sb.append(" --cohort ").append(entry.getKey().getName()).append(":");
             for (Sample sample : entry.getValue()) {
                 sb.append(sample.getName()).append(",");
             }

@@ -4,6 +4,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
@@ -11,20 +12,21 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Created by jmmut on 3/03/15.
  */
 public class VariantDBReader implements VariantReader {
-    private VariantSource variantSource;
+    private StudyConfiguration studyConfiguration;
     private VariantDBAdaptor variantDBAdaptor;
     private QueryOptions options;
     private VariantDBIterator iterator;
     protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
-    public VariantDBReader(VariantSource variantSource, VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
-        this.variantSource = variantSource;
+    public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
+        this.studyConfiguration = studyConfiguration;
         this.variantDBAdaptor = variantDBAdaptor;
         this.options = options;
     }
@@ -34,7 +36,7 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public List<String> getSampleNames() {
-        return variantSource.getSamples();
+        return new LinkedList<>(studyConfiguration.getSampleIds().keySet());
     }
 
     @Override

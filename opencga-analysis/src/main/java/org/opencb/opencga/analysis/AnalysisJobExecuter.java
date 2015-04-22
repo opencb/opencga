@@ -26,6 +26,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class AnalysisJobExecuter {
@@ -233,14 +234,23 @@ public class AnalysisJobExecuter {
                         outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
                 Job job = jobQueryResult.first();
 
-                /** Execute Job **/
-                logger.info("Executing job {}({})", job.getName(), job.getId());
-                logger.debug("Executing commandLine {}", job.getCommandLine());
+                logger.info("==========================================");
+                logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
+                logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());
+                logger.info("==========================================");
+                System.err.println();
+
                 Command com = new Command(commandLine);
                 com.run();
 
+                System.err.println();
+                logger.info("==========================================");
+                logger.info("Finished job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
+                logger.info("==========================================");
+
+
+                /** Change status to DONE  - Add the execution information to the job entry **/
 //                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
-                /** Change status to DONE **/
                 ObjectMap parameters = new ObjectMap();
                 parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
                 parameters.put("status", Job.Status.DONE);

@@ -27,6 +27,16 @@
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-mongodb</artifactId>
         </dependency>
+
+        <!--Tests-->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>

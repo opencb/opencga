@@ -10,9 +10,13 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.slf4j.LoggerFactory;
 
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.FILEID_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD;
@@ -29,7 +33,10 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     private Map<String, Integer> sampleIds;
     private Map<Integer, String> idSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
+    private StudyConfigurationManager studyConfigurationManager;
     private boolean compressDefaultGenotype;
+
+    public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
 
     /**
      * Create a converter from a Map of samples to DBObject entities.
@@ -41,6 +48,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         this.sampleIds = null;
         this.sourceDbAdaptor = null;
         this.compressDefaultGenotype = compressDefaultGenotype;
+        this.studyConfigurationManager = null;
     }
 
     /**
@@ -72,6 +80,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      * @param credentials Parameters for connecting to the database
      * @param collectionName Collection that stores the variant sources
      */
+    @Deprecated
     public DBObjectToSamplesConverter(MongoCredentials credentials, String collectionName) {
         this(true);
         try {
@@ -92,19 +101,47 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         this.sourceDbAdaptor = variantSourceDBAdaptor;
     }
 
+    /**
+     *
+     */
+    public DBObjectToSamplesConverter(StudyConfigurationManager studyConfigurationManager, VariantSourceDBAdaptor variantSourceDBAdaptor) {
+        this(true);
+        this.sourceDbAdaptor = variantSourceDBAdaptor;
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
+
 
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
-            QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
-                    object.get(FILEID_FIELD).toString(), null);
-            if(samplesBySource.getResult().isEmpty()) {
-                System.out.println("DBObjectToSamplesConverter.convertToDataModelType " + samplesBySource);
-                sampleIds = null;
-                idSamples = null;
+            int studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
+            int fileId = Integer.parseInt(object.get(FILEID_FIELD).toString());
+            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions("fileId", fileId));
+            if(queryResult.first() == null) {
+                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}, fileId: {}} not found! Looking for VariantSource", studyId, fileId);
+
+                QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
+                        object.get(FILEID_FIELD).toString(), null);
+                if(samplesBySource.getResult().isEmpty()) {
+                    logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
+
+                    sampleIds = null;
+                    idSamples = null;
+                } else {
+                    setSamples((List<String>) samplesBySource.getResult().get(0));
+                }
             } else {
-                setSamples((List<String>) samplesBySource.getResult().get(0));
+                setSampleIds(queryResult.first().getSampleIds());
             }
+//            QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
+//                    object.get(FILEID_FIELD).toString(), null);
+//            if(samplesBySource.getResult().isEmpty()) {
+//                System.out.println("DBObjectToSamplesConverter.convertToDataModelType " + samplesBySource);
+//                sampleIds = null;
+//                idSamples = null;
+//            } else {
+//                setSamples((List<String>) samplesBySource.getResult().get(0));
+//            }
         }
         
         if (sampleIds == null || sampleIds.isEmpty()) {

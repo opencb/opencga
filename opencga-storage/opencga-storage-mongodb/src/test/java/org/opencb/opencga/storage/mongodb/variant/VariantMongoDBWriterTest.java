@@ -58,7 +58,7 @@ public class VariantMongoDBWriterTest {
         List<Task<Variant>> taskList = new SortedList<>();
         List<VariantWriter> writers = new ArrayList<>();
 
-        writers.add(new VariantMongoDBWriter(study1, credentials));
+//        writers.add(new VariantMongoDBWriter(study1, credentials));
 
         for (VariantWriter vw : writers) {
             vw.includeStats(true);
