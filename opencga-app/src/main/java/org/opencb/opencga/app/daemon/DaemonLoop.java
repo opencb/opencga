@@ -159,7 +159,7 @@ public class DaemonLoop implements Runnable {
                     switch (jobStatus) {
                         case DONE:
                             analysisOutputRecorder.recordJobOutput(job);
-                            if (job.getError() != null && !job.getError().isEmpty()) {
+                            if (job.getError() == null || job.getError().isEmpty()) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
                             } else {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
