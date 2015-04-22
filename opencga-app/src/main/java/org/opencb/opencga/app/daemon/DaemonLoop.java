@@ -125,9 +125,15 @@ public class DaemonLoop implements Runnable {
                                 break;
                             case SgeManager.ERROR:
                             case SgeManager.EXECUTION_ERROR:
-                                if(!Job.Status.ERROR.equals(job.getStatus())) {
-                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
-                                    jobStatus = Job.Status.ERROR;
+                                if(!Job.Status.DONE.equals(job.getStatus())) {
+                                    ObjectMap parameters = new ObjectMap();
+                                    parameters.put("status", Job.Status.DONE);
+                                    String error = Job.ERRNO_FINISH_ERROR;
+                                    parameters.put("error", error);
+                                    parameters.put("errorDescription", Job.errorDescriptions.get(error));
+                                    catalogManager.modifyJob(job.getId(), parameters, sessionId);
+                                    jobStatus = Job.Status.DONE;
+                                    job.setError(error);
                                 }
                                 break;
                             case SgeManager.QUEUED:
@@ -153,17 +159,10 @@ public class DaemonLoop implements Runnable {
                     switch (jobStatus) {
                         case DONE:
                             analysisOutputRecorder.recordJobOutput(job);
-                            break;
-                        case ERROR:
-                            String jobErrorPolicy = "recordOutput";
-                            switch(jobErrorPolicy) {
-                                case "deleteOutput":
-                                    throw new UnsupportedOperationException("Unimplemented policy");
-                                case "waitForInstructions":
-                                    throw new UnsupportedOperationException("Unimplemented policy");
-                                case "recordOutput":
-                                    analysisOutputRecorder.recordJobOutput(job);
-                                    break;
+                            if (job.getError() != null && !job.getError().isEmpty()) {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
+                            } else {
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
                             }
                             break;
                         case PREPARED:
@@ -174,6 +173,7 @@ public class DaemonLoop implements Runnable {
                             break;
                         case RUNNING:
                             break;
+                        case ERROR:
                         case READY:
                             //Never expected!
                             break;

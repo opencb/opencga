@@ -45,7 +45,7 @@ public class VariantMongoDBWriterTest {
     @AfterClass
     public static void shutdown() throws Exception {
         // Delete Mongo collection
-        MongoClient mongoClient = new MongoClient(credentials.getMongoHost());
+        MongoClient mongoClient = new MongoClient("localhost");
         DB db = mongoClient.getDB(credentials.getMongoDbName());
         db.dropDatabase();
         mongoClient.close();

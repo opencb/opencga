@@ -5,6 +5,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.core.CatalogDBClient;
 import org.opencb.opencga.catalog.core.CatalogClient;
@@ -39,8 +40,8 @@ public class CatalogManager implements ICatalogManager {
     public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
     public static final String CATALOG_DB_DATABASE = "OPENCGA.CATALOG.DB.DATABASE";
     public static final String CATALOG_DB_PASSWORD = "OPENCGA.CATALOG.DB.PASSWORD";
-    public static final String CATALOG_DB_HOST = "OPENCGA.CATALOG.DB.HOST";
-    public static final String CATALOG_DB_PORT = "OPENCGA.CATALOG.DB.PORT";
+    public static final String CATALOG_DB_HOSTS = "OPENCGA.CATALOG.DB.HOSTS";
+    public static final String CATALOG_DB_AUTHENTICATION_DB = "OPENCGA.CATALOG.DB.AUTHENTICATION.DB";
     /* IOManager properties */
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
     /* Manager policies properties */
@@ -143,16 +144,23 @@ public class CatalogManager implements ICatalogManager {
     private void configureDBAdaptor(Properties properties)
             throws CatalogDBException {
 
-        MongoCredential mongoCredential = MongoCredential.createMongoCRCredential(
-                properties.getProperty(CATALOG_DB_USER, ""),
-                properties.getProperty(CATALOG_DB_DATABASE, ""),
-                properties.getProperty(CATALOG_DB_PASSWORD, "").toCharArray());
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", properties.getProperty(CATALOG_DB_USER, null))
+                .add("password", properties.getProperty(CATALOG_DB_PASSWORD, null))
+                .add("authenticationDatabase", properties.getProperty(CATALOG_DB_AUTHENTICATION_DB, null))
+                .build();
 
-        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty(CATALOG_DB_HOST, ""),
-                Integer.parseInt(properties.getProperty(CATALOG_DB_PORT, "0")));
-
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredential);
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : properties.getProperty(CATALOG_DB_HOSTS, "localhost").split(",")) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration, properties.getProperty(CATALOG_DB_DATABASE, ""));
     }
 
     private void configureManager(Properties properties) {
@@ -687,17 +695,7 @@ public class CatalogManager implements ICatalogManager {
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException, IOException {
-        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, sessionId);
-    }
-
-    @Override
-    public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
-                                          String creatorId, String creationDate, String description, String status,
-                                          String cipher, String uriScheme, Map<String, Object> stats,
-                                          Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
-        return createStudy(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
-                null, stats, attributes, options, sessionId);
+        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null, sessionId);
     }
 
     /**
@@ -713,6 +711,7 @@ public class CatalogManager implements ICatalogManager {
      * @param cipher        Unused
      * @param uriScheme     UriScheme to select the CatalogIOManager. Default: CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME
      * @param uri           URI for the folder where to place the study. Scheme must match with the uriScheme. Folder must exist.
+     * @param datastores    DataStores information
      * @param stats         Optional stats
      * @param attributes    Optional attributes
      * @param options       QueryOptions
@@ -724,7 +723,8 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                           String creatorId, String creationDate, String description, String status,
-                                          String cipher, String uriScheme, URI uri, Map<String, Object> stats,
+                                          String cipher, String uriScheme, URI uri,
+                                          Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         checkParameter(name, "name");
@@ -754,6 +754,7 @@ public class CatalogManager implements ICatalogManager {
         } else {
             uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
         }
+        datastores = defaultObject(datastores, new HashMap<File.Bioformat, DataStore>());
         stats = defaultObject(stats, new HashMap<String, Object>());
         attributes = defaultObject(attributes, new HashMap<String, Object>());
 
@@ -802,7 +803,7 @@ public class CatalogManager implements ICatalogManager {
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
-                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, stats, attributes);
+                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
 
 
         /* CreateStudy */
@@ -1069,7 +1070,7 @@ public class CatalogManager implements ICatalogManager {
             }
         }
 
-        if (status != File.Status.UPLOADING && status != File.Status.INDEXING) {
+        if (status != File.Status.UPLOADING/* && status != File.Status.INDEXING*/) {        //#62
             if (!getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING and INDEXING");
             }
@@ -1266,7 +1267,7 @@ public class CatalogManager implements ICatalogManager {
         }
         File file = fileResult.getResult().get(0);
         switch(file.getStatus()) {
-            case INDEXING:
+//            case INDEXING:        //#62
             case UPLOADING:
             case UPLOADED:
                 throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
@@ -1306,8 +1307,8 @@ public class CatalogManager implements ICatalogManager {
             case FILE:
                 renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +file.getName(), sessionId);
                 return catalogDBAdaptor.modifyFile(fileId, objectMap);
-            case INDEX:
-                throw new CatalogException("Can't delete INDEX file");
+//            case INDEX:       //#62
+//                throw new CatalogException("Can't delete INDEX file");
                 //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
@@ -1380,8 +1381,8 @@ public class CatalogManager implements ICatalogManager {
                 catalogIOManager = catalogIOManagerFactory.get(study.getUri());
                 catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
                 return catalogDBAdaptor.renameFile(fileId, newPath);
-            case INDEX:
-                return catalogDBAdaptor.renameFile(fileId, newPath);
+//            case INDEX:           //#62
+//                return catalogDBAdaptor.renameFile(fileId, newPath);
         }
 
         return null;
@@ -1430,6 +1431,7 @@ public class CatalogManager implements ICatalogManager {
                         case "status":
                         case "attributes":
                         case "stats":
+                        case "index":
                         case "sampleIds":
                             break;
 
@@ -2031,13 +2033,7 @@ public class CatalogManager implements ICatalogManager {
 //    }
     @Override
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                                      Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId) throws CatalogException {
-        return createJob(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles, resourceManagerAttributes, null, options, sessionId);
-    }
-
-    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -2066,6 +2062,9 @@ public class CatalogManager implements ICatalogManager {
         job.setStatus(status);
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
+        }
+        if (attributes != null) {
+            job.setAttributes(attributes);
         }
 
         return catalogDBAdaptor.createJob(studyId, job, options);

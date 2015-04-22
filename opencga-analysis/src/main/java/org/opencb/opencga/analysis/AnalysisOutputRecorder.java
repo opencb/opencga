@@ -9,8 +9,10 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Index;
 import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -53,14 +55,14 @@ public class AnalysisOutputRecorder {
         List<Integer> fileIds = new LinkedList<>();
         CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
 
-        try {
-            /** Modify job status to PROCESSING_OUTPUT **/
-            logger.debug("Modify job {id: {}, status:{}} status to PROCESSING_OUTPUT", job.getId(), job.getStatus());
-            ObjectMap parameters = new ObjectMap("status", Job.Status.PROCESSING_OUTPUT);
-            catalogManager.modifyJob(job.getId(), parameters, sessionId);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            /** Modify job status to PROCESSING_OUTPUT **/
+//            logger.debug("Modify job {id: {}, status:{}} status to PROCESSING_OUTPUT", job.getId(), job.getStatus());
+//            ObjectMap parameters = new ObjectMap("status", Job.Status.PROCESSING_OUTPUT);
+//            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+//        } catch (CatalogException e) {
+//            e.printStackTrace();
+//        }
 
         try {
             /** Scans the output directory from a job or index to find all files. **/
@@ -107,18 +109,21 @@ public class AnalysisOutputRecorder {
 
         /** Modifies the job status to READY and set the output and endTime. **/
         try {
-            switch(Job.Type.valueOf(job.getResourceManagerAttributes().get(Job.TYPE).toString())) {
+            switch(Job.Type.valueOf(job.getAttributes().get(Job.TYPE).toString())) {
                 case INDEX:
-                    Integer indexedFileId = (Integer) job.getResourceManagerAttributes().get(Job.INDEXED_FILE_ID);
-                    fileIds.add(indexedFileId);
-                    ObjectMap parameters = new ObjectMap("status", File.Status.READY);
-                    catalogManager.modifyFile(indexedFileId, parameters, sessionId);
+                    Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
+                    File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
+                    if (indexedFile.getIndex() != null) {
+                        Index index = indexedFile.getIndex();
+                        index.setStatus(Index.Status.READY);
+                        catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
+                    }
                     break;
                 case ANALYSIS:
                 default:
                     break;
             }
-            ObjectMap parameters = new ObjectMap("status", Job.Status.READY);
+            ObjectMap parameters = new ObjectMap();
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);

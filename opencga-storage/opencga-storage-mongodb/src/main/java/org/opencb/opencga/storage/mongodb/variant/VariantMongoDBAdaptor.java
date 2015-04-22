@@ -35,8 +35,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private final DBObjectToVariantConverter variantConverter;
-    private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
+    private DBObjectToVariantConverter variantConverter;
+    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
     private final StudyConfigurationManager studyConfigurationManager;
@@ -45,15 +45,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName) 
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName)
             throws UnknownHostException {
         // Mongo configuration
-        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
-        db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
-
+        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
 
         String studiesCollectionName = filesCollectionName;
@@ -73,6 +69,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setDataWriter(DataWriter dataWriter) {
         this.dataWriter = dataWriter;
+    }
+
+    @Override
+    public void setConstantSamples(String sourceEntry) {
+        List<String> samples = null;
+        QueryResult samplesBySource = variantSourceMongoDBAdaptor.getSamplesBySource(sourceEntry, null);    // TODO jmmut: check when we remove fileId
+        if(samplesBySource.getResult().isEmpty()) {
+            logger.error("setConstantSamples(): couldn't find samples in source {} " + sourceEntry);
+        } else {
+            samples = (List<String>) samplesBySource.getResult().get(0);
+        }
+        
+        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
+                true,
+                new DBObjectToSamplesConverter(samples)
+        );
+        
+        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
     }
 
     @Override
@@ -418,6 +432,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
         DBCursor dbCursor = coll.nativeQuery().find(qb.get(), projection, options);
+        dbCursor.batchSize(options.getInt("batchSize", 100));
         return new VariantMongoDBIterator(dbCursor, variantConverter);
     }
 
@@ -506,6 +521,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
         if (options != null) {
+
+            if (options.containsKey("sort")) {
+                if (options.getBoolean("sort")) {
+                    options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+                } else {
+                    options.remove("sort");
+                }
+            }
 
             /** GENOMIC REGION **/
 

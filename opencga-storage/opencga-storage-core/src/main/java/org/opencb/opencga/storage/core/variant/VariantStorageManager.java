@@ -429,12 +429,17 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
         if (params.getBoolean(CALCULATE_STATS)) {
             // TODO add filters
-            logger.debug("about to calculate stats");
-            VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
-            VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, params);
-            URI outputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
-            URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(params));
-            variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(params));
+            try {
+                logger.debug("about to calculate stats");
+                VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, params);
+                URI outputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(params));
+                variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(params));
+            } catch (Exception e) {
+                logger.error("Can't calculate stats." , e);
+                e.printStackTrace();
+            }
         }
 
         return input;

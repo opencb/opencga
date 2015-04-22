@@ -115,13 +115,8 @@ public interface ICatalogManager {
 
     QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                    String creatorId, String creationDate, String description, String status,
-                                   String cipher, String uriScheme, Map<String, Object> stats,
-                                   Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException, IOException;
-
-    QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
-                                   String creatorId, String creationDate, String description, String status,
-                                   String cipher, String uriScheme, URI uri, Map<String, Object> stats,
+                                   String cipher, String uriScheme, URI uri,
+                                   Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                    Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException;
 
@@ -303,16 +298,17 @@ public interface ICatalogManager {
     //    }
     QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                               Map<String, Object> resourceManagerAttributes, QueryOptions options, String sessionId)
-            throws CatalogException, CatalogIOManagerException;
+                               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
+                               Job.Status status, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     URI createJobOutDir(int studyId, String dirName, String sessionId)
-            throws CatalogException, CatalogIOManagerException;
+            throws CatalogException;
 
     QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogException;
 
     QueryResult deleteJob(int jobId, String sessionId)
-            throws CatalogException, CatalogIOManagerException;
+            throws CatalogException;
 
     QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws IOException, CatalogIOManagerException, CatalogException;
 

@@ -34,10 +34,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         // Mongo configuration
-        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
+        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        MongoDBConfiguration mongoDBConfiguration = credentials.getMongoDBConfiguration();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         this.collectionName = collectionName;
         variantSourceConverter = new DBObjectToVariantSourceConverter();
@@ -80,7 +78,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {
+    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and change for getSamplesBySource(String studyId, QueryOptions options)
         if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
                 if (samplesInSources.size() != (long) countSources().getResult().get(0)) {

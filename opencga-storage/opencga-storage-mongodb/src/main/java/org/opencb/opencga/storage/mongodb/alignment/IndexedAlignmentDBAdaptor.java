@@ -59,16 +59,9 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         this.credentials = credentials;
         if(mongoManager == null){
-            mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
+            mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         }
-        MongoDBConfiguration configuration = MongoDBConfiguration
-                .builder()
-                .init()
-                .add("serverAddress", Arrays.asList(new DataStoreServerAddress(credentials.getMongoHost(), credentials.getMongoPort())))
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword())
-                .build();
-        mongoDataStore = mongoManager.get(credentials.getMongoDbName(), configuration);
+        mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
     }
 
     public IndexedAlignmentDBAdaptor(MongoCredentials credentials) {

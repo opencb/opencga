@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
-import com.beust.jcommander.converters.CommaParameterSplitter;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.beans.File;
@@ -164,7 +163,7 @@ public class OptionsParser {
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
     class CommonOptions {
-        @Parameter(names = {"-C", "--conf"}, description = "This parameter set the level of the logging", required = false, arity = 1)
+        @Parameter(names = {"-C", "--conf"}, description = "This parameter sets the level of the logging", required = false, arity = 1)
         public String conf;
 
         @Parameter(names = {"-h", "--help"}, help = true)
@@ -173,7 +172,7 @@ public class OptionsParser {
         @Parameter(names = {"--verbose"}, description = "log-level to debug")
         boolean verbose;
 
-        @Parameter(names = {"--log-level"}, description = "This parameter set the level of the logging. One of {error, warn, info, debug, trace}")
+        @Parameter(names = {"--log-level"}, description = "This parameter sets the level of the logging. One of {error, warn, info, debug, trace}")
         String logLevel = null; // TODO add validation?
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
@@ -188,7 +187,7 @@ public class OptionsParser {
         @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
         public boolean metadata = false;
 
-        @Parameter(names = {"--output-format"}, description = "Output format", required = false, arity = 1)
+        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}", required = false, arity = 1)
         OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
 
         QueryOptions getQueryOptions() {
@@ -212,7 +211,7 @@ public class OptionsParser {
     class ExitCommands {
     }
 
-    @Parameters(commandNames = {"users"}, commandDescription = "Description")
+    @Parameters(commandNames = {"users"}, commandDescription = "User commands")
     class UserCommands {
 
         final CreateCommand createCommand;
@@ -286,7 +285,7 @@ public class OptionsParser {
 
         }
 
-        @Parameters(commandNames = {"login"}, commandDescription = "Login a user and return it's sessionId")
+        @Parameters(commandNames = {"login"}, commandDescription = "Login as user and return its sessionId")
         public class LoginCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -298,7 +297,7 @@ public class OptionsParser {
 //            String password;
         }
 
-        @Parameters(commandNames = {"logout"}, commandDescription = "Description")
+        @Parameters(commandNames = {"logout"}, commandDescription = "End user session")
         public class LogoutCommand {
 
 //            @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
@@ -349,7 +348,7 @@ public class OptionsParser {
             String organization;
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Get project info")
+        @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
         class InfoCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -363,7 +362,7 @@ public class OptionsParser {
         }
     }
 
-    @Parameters(commandNames = {"studies"}, commandDescription = "Description")
+    @Parameters(commandNames = {"studies"}, commandDescription = "Study commands")
     class StudyCommands {
 
         final CreateCommand createCommand;
@@ -378,7 +377,7 @@ public class OptionsParser {
 
         }
 
-        @Parameters(commandNames = {"create"}, commandDescription = "Description")
+        @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
         class CreateCommand {
 
             @ParametersDelegate
@@ -404,9 +403,12 @@ public class OptionsParser {
 
             @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required = false, arity = 1)
             String uri;
+
+            @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
+            List<String> datastores;
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Description")
+        @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
         class InfoCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -421,7 +423,7 @@ public class OptionsParser {
 
 
 
-    @Parameters(commandNames = {"files"}, commandDescription = "File methods")
+    @Parameters(commandNames = {"files"}, commandDescription = "File commands")
     class FileCommands {
 
         final CreateCommand createCommand;
@@ -469,13 +471,13 @@ public class OptionsParser {
             String description;
 
 
-            @Parameter(names = {"-f", "--format"}, description = "format", required = false, arity = 1)
+            @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.beans.File.Format", required = false, arity = 1)
             File.Format format = File.Format.PLAIN;
 
-            @Parameter(names = {"-b", "--bioformat"}, description = "bioformat", required = false, arity = 1)
+            @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.beans.File.Bioformat for more info", required = false, arity = 1)
             File.Bioformat bioformat = File.Bioformat.NONE;
 
-            @Parameter(names = {"-P", "--parents"}, description = "parents", required = false)
+            @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
             boolean parents;
 
             @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
@@ -500,7 +502,7 @@ public class OptionsParser {
             @Parameter(names = {"-s", "--studyId"}, description = "studyId", required = true, arity = 1)
             String studyId;
 
-            @Parameter(names = {"-P", "--parents"}, description = "parents", required = false)
+            @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
             boolean parents;
         }
 
@@ -576,20 +578,17 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
-            @Parameter(names = {"--storage-engine"}, description = "", required = false, arity = 1)
-            String storageEngine;
-
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;
 
-            @Parameter(names = {"--indexed-file-id"}, description = "Use an existing indexed file instead of creating a new file in Catalog.")
-            String indexedFileId;
-            
-            @Parameter(names = {"--database"}, description = "Specify the database name instead of using the default database.")
-            String dbName;
+            @Parameter(names = "--transform", description = "Run only the transform phase")
+            boolean transform = false;
+
+            @Parameter(names = "--load", description = "Run only the load phase")
+            boolean load = false;
 
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;
@@ -649,7 +648,7 @@ public class OptionsParser {
             files.addCommand(this.samplesCommand = new SamplesCommand());
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Description")
+        @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
         class InfoCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -678,7 +677,7 @@ public class OptionsParser {
             @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
             int variableSetId;
 
-            @Parameter(names = {"--description"}, description = "cohort name", required = false, arity = 1)
+            @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
             String description;
 
             @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
@@ -688,7 +687,7 @@ public class OptionsParser {
             String variable;
         }
 
-        @Parameters(commandNames = {"samples"}, commandDescription = "Description")
+        @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
         class SamplesCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -714,7 +713,7 @@ public class OptionsParser {
         }
 
     }
-    @Parameters(commandNames = {"samples"}, commandDescription = "Samples methods")
+    @Parameters(commandNames = {"samples"}, commandDescription = "Samples commands")
     public class SampleCommands {
 
         final InfoCommand infoCommand;
@@ -730,7 +729,7 @@ public class OptionsParser {
 //            files.addCommand(this.samplesCommand = new SamplesCommand());
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Description")
+        @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
         class InfoCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -742,7 +741,7 @@ public class OptionsParser {
             int id;
         }
 
-        @Parameters(commandNames = {"search"}, commandDescription = "Description")
+        @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
         class SearchCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
@@ -789,7 +788,7 @@ public class OptionsParser {
     }
 
 
-    @Parameters(commandNames = {"tools"}, commandDescription = "Tools methods")
+    @Parameters(commandNames = {"tools"}, commandDescription = "Tools commands")
     class ToolCommands {
 
         final CreateCommand createCommand;
@@ -802,7 +801,7 @@ public class OptionsParser {
             tools.addCommand(this.infoCommand = new InfoCommand());
         }
 
-        @Parameters(commandNames = {"create"}, commandDescription = "Regist existint tool in catalog")
+        @Parameters(commandNames = {"create"}, commandDescription = "Register external tool into catalog")
         class CreateCommand {
 
             @ParametersDelegate
@@ -814,7 +813,7 @@ public class OptionsParser {
             @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
             String alias;
 
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+            @Parameter(names = {"-d", "--description"}, description = "Tool description", required = false, arity = 1)
             String description = "";
 
 //            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
@@ -823,7 +822,7 @@ public class OptionsParser {
             @Parameter(names = {"-P", "--path"}, description = "Path", required = true, arity = 1)
             String path;
 
-            @Parameter(names = {"--open"}, description = "Set usability", required = false, arity = 0)
+            @Parameter(names = {"--open"}, description = "Allow other users to use the tool", required = false, arity = 0)
             boolean openTool = false;
         }
 

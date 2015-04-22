@@ -12,7 +12,9 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.beans.DataStore;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.beans.Job;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.lib.common.Config;
 import org.opencb.opencga.lib.common.IOUtils;
@@ -560,23 +562,20 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIdStr,
-                          @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam(value = "storageEngine", required = false) @DefaultValue("") @QueryParam("storageEngine") String storageEngine
+                          @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr
     ) {
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
-        QueryResult<File> queryResult;
+        QueryOptions queryOptions = this.getQueryOptions();
+        QueryResult<Job> queryResult;
         try {
-            if (storageEngine.isEmpty()) {
-                storageEngine = StorageManagerFactory.getDefaultStorageManagerName();
-            }
-            storageEngine = storageEngine.toLowerCase();
             int outDirId = catalogManager.getFileId(outDirStr);
             int fileId = catalogManager.getFileId(fileIdStr);
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            queryResult = analysisFileIndexer.index(fileId, outDirId, storageEngine, sessionId, this.getQueryOptions());
+            queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--include-genotypes"));
+            queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
 
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
@@ -637,7 +636,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse(e.getMessage());
             }
 
-            if (!file.getType().equals(File.Type.INDEX)) {
+//            if (!file.getType().equals(File.Type.INDEX)) {
+            if (file.getIndex() == null) {
                 return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }
@@ -648,9 +648,16 @@ public class FileWSServer extends OpenCGAWSServer {
 //                    index = i;
 //                }
 //            }
-            ObjectMap indexAttributes = new ObjectMap(file.getAttributes());
-            String storageEngine = indexAttributes.get(AnalysisFileIndexer.STORAGE_ENGINE).toString();
-            String dbName = indexAttributes.get(AnalysisFileIndexer.DB_NAME).toString();
+            ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
+            DataStore dataStore = null;
+            try {
+                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, file, sessionId);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse(e);
+            }
+            String storageEngine = dataStore.getStorageEngine();
+            String dbName = dataStore.getDbName();
             QueryResult result;
             switch (file.getBioformat()) {
                 case ALIGNMENT: {
@@ -725,7 +732,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     VariantDBAdaptor dbAdaptor;
                     try {
                         dbAdaptor = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
-                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
+//                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e.getMessage());
                     }

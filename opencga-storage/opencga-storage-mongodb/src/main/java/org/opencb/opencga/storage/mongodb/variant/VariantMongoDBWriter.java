@@ -4,13 +4,13 @@ import com.mongodb.*;
 
 import java.util.*;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -42,6 +42,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private String variantsCollectionName;
 
     @Deprecated private DBCollection variantsCollection;    //Used only for Bulk Operations. TODO: Use Datastore API for BulkOperations
+//    @Deprecated private MongoClient mongoClient;
+    @Deprecated private DB db;
+
 
     private boolean includeStats;
     private boolean includeSrc = true;
@@ -72,6 +75,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private boolean writeVariantSource = true;
     private VariantSource source;
 
+    private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+
 
     public VariantMongoDBWriter(Integer fileId, StudyConfiguration studyConfiguration, MongoCredentials credentials, String variantsCollection, String filesCollection,
                                 boolean includeSamples, boolean includeStats) {
@@ -93,12 +98,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     public boolean open() {
         staticNumVariantsWritten = 0;
         numVariantsWritten = 0;
-        mongoDataStoreManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().init()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword())
-                .build();
-        mongoDataStore = mongoDataStoreManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+
+        mongoDataStoreManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        mongoDataStore = mongoDataStoreManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        db = mongoDataStore.getDb();
+
+
         return mongoDataStore != null;
     }
 
@@ -107,7 +112,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         // Mongo collection creation
         variantMongoCollection = mongoDataStore.getCollection(variantsCollectionName);
         filesMongoCollection = mongoDataStore.getCollection(filesCollectionName);
-
         variantsCollection = mongoDataStore.getDb().getCollection(variantsCollectionName);
 
         setConverters();
@@ -198,7 +202,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //        if(numVariantsWritten % 1000 == 0) {
 //            logger.info("Num variants written " + numVariantsWritten);
 //        }
-        synchronized (this) {
+        synchronized (variantSourceWritten) {
             long l = staticNumVariantsWritten/1000;
             staticNumVariantsWritten += data.size();
             if (staticNumVariantsWritten/1000 != l) {
@@ -263,7 +267,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         return true;
     }
 
-    private boolean writeStudyInformation() {
+    private boolean writeStudyConfiguration() {
         DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
         //(DBObject) JSON.parse(new ObjectMapper().writeValueAsString(study).replace(".", "&#46;"));
 
@@ -278,11 +282,13 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             executeBulk();
         }
         logger.debug("POST");
-        if (writeStudyConfiguration) {
-            writeStudyInformation();
-        }
-        if (writeVariantSource) {
-            writeSourceSummary(source);
+        if (!variantSourceWritten.getAndSet(true)) {
+            if (writeStudyConfiguration) {
+                writeStudyConfiguration();
+            }
+            if (writeVariantSource) {
+                writeSourceSummary(source);
+            }
         }
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
@@ -325,6 +331,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     public void setDefaultGenotype(String defaultGenotype) {
         this.defaultGenotype = defaultGenotype;
+    }
+
+    public void setThreadSyncronizationBoolean(AtomicBoolean atomicBoolean) {
+        this.variantSourceWritten = atomicBoolean;
     }
 
     private void setConverters() {

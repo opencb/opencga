@@ -46,11 +46,8 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     public MongoDBStudyConfigurationManager(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         super(null);
         // Mongo configuration
-        mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
-        db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         this.collectionName = collectionName;
     }
 

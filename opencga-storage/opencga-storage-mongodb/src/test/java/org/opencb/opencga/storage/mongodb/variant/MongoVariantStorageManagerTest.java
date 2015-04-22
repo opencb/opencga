@@ -26,11 +26,8 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest {
     protected void clearDB() throws Exception {
         MongoCredentials credentials = getVariantStorageManager().getMongoCredentials();
         logger.info("Cleaning MongoDB {}" , credentials.getMongoDbName());
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getMongoHost(), credentials.getMongoPort());
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword() != null ? new String(credentials.getPassword()) : null).build();
-        MongoDataStore mongoDataStore = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        MongoDataStore mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         mongoManager.drop(credentials.getMongoDbName());
     }
 

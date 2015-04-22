@@ -57,7 +57,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         if (object.containsField(SAMPLES_FIELD)) {
             Map<String, Integer> samplesPosition = new HashMap<>();
             for (Map.Entry<String, Integer> entry : ((Map<String, Integer>) object.get(SAMPLES_FIELD)).entrySet()) {
-                samplesPosition.put(entry.getKey().replace(CHARACTER_TO_REPLACE_DOTS, ','), entry.getValue());
+                samplesPosition.put(entry.getKey().replace(CHARACTER_TO_REPLACE_DOTS, '.'), entry.getValue());
             }
             source.setSamplesPosition(samplesPosition);
         }
@@ -87,7 +87,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // Metadata
         BasicDBObject metadata = (BasicDBObject) object.get(METADATA_FIELD);
         for (Map.Entry<String, Object> o : metadata.entrySet()) {
-            source.addMetadata(o.getKey(), o.getValue());
+            source.addMetadata(o.getKey().replace(CHARACTER_TO_REPLACE_DOTS, '.'), o.getValue());
         }
         
         return source;
@@ -141,17 +141,16 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         for (Map.Entry<String, Object> metaEntry : meta.entrySet()) {
             if (metaEntry.getKey().equals("variantFileHeader")) {
                 metadataMongo.append(HEADER_FIELD, metaEntry.getValue());
-            } else if (!metaEntry.getKey().contains(".")) {
+            } else {
                 ObjectMapper mapper = new ObjectMapper();
                 ObjectWriter writer = mapper.writer();
+                String key = metaEntry.getKey().replace('.', CHARACTER_TO_REPLACE_DOTS);
                 try {
-                    metadataMongo.append(metaEntry.getKey(), JSON.parse(writer.writeValueAsString(metaEntry.getValue())));
+                    metadataMongo.append(key, JSON.parse(writer.writeValueAsString(metaEntry.getValue())));
                 } catch (JsonProcessingException e) {
                     logger.log(Level.WARNING, "Metadata key {0} could not be parsed in json", metaEntry.getKey());
                     logger.log(Level.INFO, "{}", e.toString());
                 }
-            } else {
-                 logger.log(Level.WARNING, "Metadata key {0} could not be inserted", metaEntry.getKey());
             }
         }
         studyMongo = studyMongo.append(METADATA_FIELD, metadataMongo);

@@ -690,7 +690,7 @@ public class OpenCGAStorageMain {
         if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {
             outputUri = new URI("file", c.outdir, null);
         }
-        Path outDir = Paths.get(outputUri);
+        Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /**
          * Create and load annotations
@@ -755,6 +755,7 @@ public class OpenCGAStorageMain {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
+        dbAdaptor.setConstantSamples(Integer.toString(c.fileId));    // TODO jmmut: change to studyId when we remove fileId
 
         /**
          * Create and load stats
@@ -793,7 +794,8 @@ public class OpenCGAStorageMain {
                 variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
                 studyConfiguration.write(studyConfigurationPath);
             }
-        } catch (IOException | IllegalArgumentException e) {   // file not found? wrong file id or study id?
+        } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
+            e.printStackTrace();
             logger.error(e.getMessage());
             System.exit(1);
         }

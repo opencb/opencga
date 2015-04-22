@@ -33,7 +33,6 @@ public class AnalysisJobExecuter {
 
     public static final String EXECUTE = "execute";
     public static final String SIMULATE = "simulate";
-    public static final String RECORD_OUTPUT = "recordOutput";
     protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecuter.class);
     protected final Properties analysisProperties;
     protected final String home;
@@ -191,7 +190,8 @@ public class AnalysisJobExecuter {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
-                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir,
+                            List<Integer> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
 
         // Create temporal Outdir
@@ -204,34 +204,35 @@ public class AnalysisJobExecuter {
         System.out.println(commandLine);
 
         return createJob(catalogManager, studyId, analysisName, jobName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, commandLine, false, false, false, new HashMap<String, Object>());
+                randomString, temporalOutDirUri, commandLine, false, false, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public static QueryResult<Job> createJob(CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
                                              File outDir, List<Integer> inputFiles, String sessionId,
                                              String randomString, URI temporalOutDirUri, String commandLine,
-                                             boolean execute, boolean simulate, boolean recordOutput, Map<String, Object> resourceManagerAttributes)
+                                             boolean execute, boolean simulate, Map<String, Object> attributes,
+                                             Map<String, Object> resourceManagerAttributes)
             throws AnalysisExecutionException, CatalogException {
-        logger.debug("Creating job {}: simulate {}, execute {}, recordOutput {}", jobName, simulate, execute, recordOutput);
+        logger.debug("Creating job {}: simulate {}, execute {}", jobName, simulate, execute);
         long start = System.currentTimeMillis();
 
         QueryResult<Job> jobQueryResult;
+        if (resourceManagerAttributes == null) {
+            resourceManagerAttributes = new HashMap<>();
+        }
         if (simulate) { //Simulate a job. Do not create it.
             resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
                             Job.Status.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
-                            null, null, resourceManagerAttributes)));
+                            null, attributes, resourceManagerAttributes)));
         } else {
             if (execute) {
-
-//            URI out = temporalOutDirUri.resolve("job_out." + job.getId() + ".log");
-//            URI err = temporalOutDirUri.resolve("job_err." + job.getId() + ".log");
-
-                // Create a RUNNING job in CatalogManager
+                /** Create a RUNNING job in CatalogManager **/
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), Collections.<Integer>emptyList(), resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
+                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
+                Job job = jobQueryResult.first();
 
                 logger.info("==========================================");
                 logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
@@ -240,9 +241,6 @@ public class AnalysisJobExecuter {
                 System.err.println();
 
                 Command com = new Command(commandLine);
-//                SingleProcess sp = new SingleProcess(com);
-//                sp.getRunnableProcess().run();
-//                sp.runSync();
                 com.run();
 
                 System.err.println();
@@ -250,26 +248,36 @@ public class AnalysisJobExecuter {
                 logger.info("Finished job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
                 logger.info("==========================================");
 
-                //Add the execution information to the job entry
-                catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("resourceManagerAttributes", new ObjectMap("executionInfo", com)), sessionId);
 
-                if (recordOutput) {
-                    // Record Output.
-                    //   Internally, change status to PROCESSING_OUTPUT and then to READY
-                    AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                    outputRecorder.recordJobOutput(jobQueryResult.first());
+                /** Change status to DONE  - Add the execution information to the job entry **/
+//                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
+                ObjectMap parameters = new ObjectMap();
+                parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
+                parameters.put("status", Job.Status.DONE);
+                catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+                /** Record output **/
+                AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+                outputRecorder.recordJobOutput(job);
+
+                /** Change status to READY or ERROR **/
+                if (com.getExitValue() == 0) {
+                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
                 } else {
-                    // Change status to DONE
-                    catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
+                    parameters = new ObjectMap();
+                    parameters.put("status", Job.Status.ERROR);
+                    parameters.put("error", Job.ERRNO_FINISH_ERROR);
+                    parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_FINISH_ERROR));
+                    catalogManager.modifyJob(job.getId(), parameters, sessionId);
                 }
-                jobQueryResult = catalogManager.getJob(jobQueryResult.first().getId(), new QueryOptions(), sessionId);
+
+                jobQueryResult = catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
 
             } else {
+                /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-
-                // Create a PREPARED job in CatalogManager
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, resourceManagerAttributes, Job.Status.PREPARED, null, sessionId);
+                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.PREPARED, null, sessionId);
             }
         }
         return jobQueryResult;

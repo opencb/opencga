@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -11,6 +12,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBCollection;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
@@ -47,8 +49,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private static final String FILTER_ROUTE_JOBS =    "projects.studies.jobs.";
 
     private final MongoDataStoreManager mongoManager;
-    private final MongoCredential credentials;
-//    private final DataStoreServerAddress dataStoreServerAddress;
+    private final MongoDBConfiguration configuration;
+    private final String database;
+    //    private final DataStoreServerAddress dataStoreServerAddress;
     private MongoDataStore db;
 
     private MongoDBCollection metaCollection;
@@ -68,8 +71,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private static ObjectReader jsonSampleReader;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
-    private Properties catalogProperties;
-
     static {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -86,13 +87,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         jsonReaderMap.put(Sample.class, jsonSampleReader = jsonObjectMapper.reader(Sample.class));
     }
 
-    public CatalogMongoDBAdaptor(DataStoreServerAddress dataStoreServerAddress, MongoCredential credentials)
+    public CatalogMongoDBAdaptor(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration, String database)
             throws CatalogDBException {
         super();
-//        this.dataStoreServerAddress = dataStoreServerAddress;
-        this.mongoManager = new MongoDataStoreManager(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort());
-        this.credentials = credentials;
-        //catalogProperties = Config.getAccountProperties();
+        this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);
+        this.configuration = configuration;
+        this.database = database;
 
         logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
 
@@ -100,7 +100,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     private void connect() throws CatalogDBException {
-        db = mongoManager.get(credentials.getSource());
+        db = mongoManager.get(database, configuration);
         if(db == null){
             throw new CatalogDBException("Unable to connect to MongoDB");
         }
@@ -347,17 +347,17 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException {
         long startTime = startQuery();
+        if (!userExists(userId)) {
+            throw CatalogDBException.idNotFound("User", userId);
+        }
         DBObject query = new BasicDBObject("id", userId);
         query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
         QueryResult<DBObject> result = userCollection.find(query, options);
         User user = parseUser(result);
-        if(user == null){
-            throw CatalogDBException.idNotFound("User", userId);
-        }
-        joinFields(user, options);
-        if(user.getLastActivity() != null && user.getLastActivity().equals(lastActivity)) { // TODO explain
-            return endQuery("Get user", startTime);
+        if(user == null) {
+            return endQuery("Get user", startTime); // user exists but no different lastActivity was found: return empty result
         } else {
+            joinFields(user, options);
             return endQuery("Get user", startTime, Arrays.asList(user));
         }
     }
@@ -1144,8 +1144,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        QueryOptions filterOptions = filterOptions(options, FILTER_ROUTE_FILES);
 
-        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject("id", fileId), options);
+        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject("id", fileId), filterOptions);
 
         File file = parseFile(queryResult);
         if(file != null) {
@@ -1181,6 +1182,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
         String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, fileParameters, acceptedMapParams);
+
+        String[] acceptedObjectParams = {"index"};
+        filterObjectParams(parameters, fileParameters, acceptedObjectParams);
 
         if(!fileParameters.isEmpty()) {
             QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject("id", fileId),
@@ -2332,6 +2336,20 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
                     for (Map.Entry<String, Object> entry : map.entrySet()) {
                         filteredParams.put(s + "." + entry.getKey(), dbObject.get(entry.getKey()));
                     }
+                } catch (CatalogDBException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
+        for (String s : acceptedMapParams) {
+            if (parameters.containsKey(s)) {
+                DBObject dbObject = null;
+                try {
+                    dbObject = getDbObject(parameters.get(s), s);
+                    filteredParams.put(s , dbObject);
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
                 }

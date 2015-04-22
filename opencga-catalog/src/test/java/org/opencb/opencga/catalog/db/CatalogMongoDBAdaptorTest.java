@@ -14,6 +14,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
+import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -54,24 +55,24 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         properties.load(is);
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty(CatalogManager.CATALOG_DB_HOST),
-                Integer.parseInt(properties.getProperty(CatalogManager.CATALOG_DB_PORT)));
+                properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0], 27017);
 
-        MongoCredential mongoCredentials = MongoCredential.createMongoCRCredential(
-                properties.getProperty(CatalogManager.CATALOG_DB_USER, ""),
-                properties.getProperty(CatalogManager.CATALOG_DB_DATABASE)+"_catalog_test",
-                properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, "").toCharArray());
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", properties.getProperty(CatalogManager.CATALOG_DB_USER, ""))
+                .add("password", properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, ""))
+                .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
+                .build();
 
-
+        String database = properties.getProperty(CatalogManager.CATALOG_DB_DATABASE) + "_catalog_test";
         /**
          * Database is cleared before each execution
          */
 //        clearDB(dataStoreServerAddress, mongoCredentials);
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddress.getHost(), dataStoreServerAddress.getPort());
-        MongoDataStore db = mongoManager.get(mongoCredentials.getSource());
+        MongoDataStore db = mongoManager.get(database);
         db.getDb().dropDatabase();
 
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddress, mongoCredentials);
+        catalogDBAdaptor = new CatalogMongoDBAdaptor(Arrays.asList(dataStoreServerAddress), mongoDBConfiguration, database);
         initDefaultCatalogDB();
     }
 
@@ -99,7 +100,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.<Acl>emptyList(),
                                 Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 1234, "", Collections.<Acl>emptyList(), Collections.<Experiment>emptyList(),
                                                 Arrays.asList(new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "/data/file.vcf", null, null, "", File.Status.READY, 1000)
-                                                ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap()
+                                                ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, null, Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap()
                                         )
                                 ), Collections.<String, Object>emptyMap())
                 ),

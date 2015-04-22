@@ -38,14 +38,17 @@ public class Job {
 
     private Map<String, Object> resourceManagerAttributes;
 
+    private String error;
+    private String errorDescription;
+
     public enum Status {
-       PREPARED, //= "prepared"; //Job is ready to be executed. Daemon will enqueue it.
-       ERROR, //= "error";     //Job finished with errors
-       QUEUED, //= "queued";
-       RUNNING, //= "running";
-       DONE, //= "done";       //Job finished, but output not ready. Daemon will process the output.
-       PROCESSING_OUTPUT,       //Job finished, but output not ready. The output is being processed.
-       READY, //= "ready";     //Job finished and ready
+       PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
+       ERROR,                 //Job with errors. See "errNo"
+       QUEUED,
+       RUNNING,
+       DONE,                  //Job finished, but output not ready. Daemon will process the output.
+//       PROCESSING_OUTPUT,     //Job finished, but output not ready. Daemon will process the output.
+       READY,                 //Job finished and ready
     }
 
     public enum Type {
@@ -57,6 +60,21 @@ public class Job {
     public static final String TYPE = "type";
     public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
     public static final String INDEXED_FILE_ID = "indexedFileId";
+
+    /* Errors */
+    public static final Map<String, String> errorDescriptions;
+
+    public static final String ERRNO_NONE = null;
+    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
+    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
+
+    static {
+        errorDescriptions = new HashMap<>();
+        errorDescriptions.put(ERRNO_NONE, null);
+        errorDescriptions.put(ERRNO_NO_QUEUE, "Unable to queue job");
+        errorDescriptions.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+
+    }
 
     public Job() {
     }
@@ -109,9 +127,11 @@ public class Job {
         if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
             this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
         }
-        if (!this.resourceManagerAttributes.containsKey(Job.TYPE)) {
-            this.resourceManagerAttributes.put(Job.TYPE, Type.ANALYSIS);
+        if (!this.attributes.containsKey(Job.TYPE)) {
+            this.attributes.put(Job.TYPE, Type.ANALYSIS);
         }
+        error = ERRNO_NONE;
+        errorDescription = null;
     }
 
     @Override
@@ -299,5 +319,21 @@ public class Job {
 
     public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) {
         this.resourceManagerAttributes = resourceManagerAttributes;
+    }
+
+    public String getErrorDescription() {
+        return errorDescription;
+    }
+
+    public void setErrorDescription(String errorDescription) {
+        this.errorDescription = errorDescription;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 }

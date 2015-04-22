@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-mongodb</artifactId>
+            <artifactId>cellbase-core</artifactId>
         </dependency>
     </dependencies>
 

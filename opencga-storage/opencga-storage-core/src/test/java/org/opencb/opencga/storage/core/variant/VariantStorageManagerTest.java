@@ -153,7 +153,8 @@ public abstract class VariantStorageManagerTest {
         long start = System.currentTimeMillis();
         int numVariants = 0;
         String expectedStudyId = Integer.toString(studyConfiguration.getStudyId());
-        QueryResult allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 0));
+        QueryResult allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
+        Assert.assertEquals(1, allVariants.getNumResults());
         Assert.assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
@@ -213,12 +214,15 @@ public abstract class VariantStorageManagerTest {
         ObjectMap extractParams = new ObjectMap();
 
         ObjectMap preTransformParams = new ObjectMap();
+        preTransformParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         ObjectMap transformParams = new ObjectMap();
         transformParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         transformParams.put(VariantStorageManager.INCLUDE_SAMPLES, true);
+        transformParams.put(VariantStorageManager.FILE_ID, 6);
         ObjectMap postTransformParams = new ObjectMap();
 
         ObjectMap preLoadParams = new ObjectMap();
+        preLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         ObjectMap loadParams = new ObjectMap();
         loadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         loadParams.put(VariantStorageManager.INCLUDE_SAMPLES, true);

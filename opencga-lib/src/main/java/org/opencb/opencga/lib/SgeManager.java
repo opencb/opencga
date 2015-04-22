@@ -22,7 +22,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class SgeManager {
+public class  SgeManager {
 
 
     private static final Map<String, String> stateDic;
@@ -83,6 +83,9 @@ public class SgeManager {
         Command sgeCommand = new Command(sgeCommandLine);
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
+        if (sgeCommand.getExitValue() != 0) {
+            throw new Exception("Can't queue job " + getSgeJobName(toolName, wumJobName) + ". qsub returned " + sgeCommand.getExitValue() + " and message:" + sgeCommand.getError());
+        }
     }
 
 

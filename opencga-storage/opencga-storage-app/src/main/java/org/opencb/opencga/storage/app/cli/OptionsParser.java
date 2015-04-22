@@ -523,7 +523,7 @@ public class OptionsParser {
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
     class CommandAnnotateVariants extends Command {
 
-        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor, vep}")
         VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")

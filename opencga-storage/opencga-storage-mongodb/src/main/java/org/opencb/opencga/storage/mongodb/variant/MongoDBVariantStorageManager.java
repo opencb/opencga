@@ -6,7 +6,9 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -16,6 +18,7 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
 
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -35,8 +38,8 @@ import org.slf4j.LoggerFactory;
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     //StorageEngine specific Properties
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOST";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PORT";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS                 = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB     = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION.DB";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
@@ -87,20 +90,28 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         return variantMongoDBAdaptor;
     }
 
-    MongoCredentials getMongoCredentials() {
+
+    /* package */ MongoCredentials getMongoCredentials() {
         return getMongoCredentials(null);
     }
-    MongoCredentials getMongoCredentials(String dbName) {
-        String host = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOST, "localhost");
-        int port = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT, "27017"));
+
+    /* package */ MongoCredentials getMongoCredentials(String dbName) {
+        String hosts = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS, "localhost");
+        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(hosts);
+
+//        int port = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT, "27017"));
         if(dbName == null || dbName.isEmpty()) {
             dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME, "variants");
         }
         String user = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER, null);
         String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);
 
+        String authenticationDatabase = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB, null);
+
         try {
-            return new MongoCredentials(host, port, dbName, user, pass);
+            MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, user, pass);
+            mongoCredentials.setAuthenticationDatabase(authenticationDatabase);
+            return mongoCredentials;
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();
             return null;
@@ -139,7 +150,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_LOAD_THREADS, "8")));
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         final int numReaders = 1;
-        final int numWriters = loadThreads - numReaders; //Subtract the reader thread
+        final int numWriters = loadThreads  == 1? 1 : loadThreads - numReaders; //Subtract the reader thread
 
 
         //Reader
@@ -153,6 +164,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Writers
         List<VariantWriter> writers = new LinkedList<>();
         List<DataWriter> writerList = new LinkedList<>();
+        AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
             variantDBWriter.setBulkSize(bulkSize);
@@ -163,6 +175,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.setDefaultGenotype(defaultGenotype);
             variantDBWriter.setVariantSource(source);
 //            variantDBWriter.setSamplesIds(samplesIds);
+            variantDBWriter.setThreadSyncronizationBoolean(atomicBoolean);
             writerList.add(variantDBWriter);
             writers.add(variantDBWriter);
         }
@@ -206,7 +219,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
-        return super.postLoad(input, output, params);
+        return input;
     }
 
     /* --------------------------------------- */
