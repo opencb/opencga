@@ -25,14 +25,16 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
 
         CellBaseClient cellBaseClient;
-//        cellBaseClient = new CellBaseClient("wwwdev.ebi.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
-        cellBaseClient = new CellBaseClient("localhost", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
+        cellBaseClient = new CellBaseClient("wwwdev.ebi.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
+//        cellBaseClient = new CellBaseClient("localhost", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
 
         CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);
 
         URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testREST", null);
 
         System.out.println(test.toString());
+
+        annotator.loadAnnotation(variantDBAdaptor, test, new QueryOptions());
     }
 
 //    @Test
@@ -51,16 +53,6 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
 //        System.out.println(test.toString());
 //
 //    }
-
-    @Test
-    public void testLoadAnnotation() throws Exception {
-        VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
-
-        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator();
-
-        annotator.loadAnnotation(variantDBAdaptor, URI.create("file:///tmp/testREST.annot.json.gz"), new QueryOptions());
-
-    }
 
 
 //    private CellbaseConfiguration getCellbaseConfiguration() {

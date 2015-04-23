@@ -18,7 +18,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 
@@ -40,8 +43,12 @@ public abstract class VariantStorageManagerTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
-        inputUri = VariantStorageManagerTest.class.getClassLoader().getResource(VCF_TEST_FILE_NAME).toURI();
-        outputUri = Paths.get("/tmp").toUri();
+        Path rootDir = Paths.get("tmp", "VariantStorageManagerTest");
+        Files.createDirectories(rootDir);
+        Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
+        inputUri = inputPath.toUri();
+        outputUri = rootDir.toUri();
         logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
     }
 
