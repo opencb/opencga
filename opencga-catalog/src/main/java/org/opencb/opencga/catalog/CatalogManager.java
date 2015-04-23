@@ -329,24 +329,25 @@ public class CatalogManager implements ICatalogManager {
 
         User user = new User(id, name, email, password, organization, User.Role.USER, "");
 
-        String userId = null;
         switch (creationUserPolicy) {
-            case "onlyAdmin":
-                userId = getUserIdBySessionId(sessionId);
+            case "onlyAdmin": {
+                String userId = getUserIdBySessionId(sessionId);
                 if (!userId.isEmpty() && getUserRole(userId).equals(User.Role.ADMIN)) {
                     user.getAttributes().put("creatorUserId", userId);
                 } else {
                     throw new CatalogException("CreateUser Fail. Required Admin role");
                 }
                 break;
-            case "anyLoggedUser":
+            }
+            case "anyLoggedUser": {
                 checkParameter(sessionId, "sessionId");
-                userId = getUserIdBySessionId(sessionId);
+                String userId = getUserIdBySessionId(sessionId);
                 if (userId.isEmpty()) {
                     throw new CatalogException("CreateUser Fail. Required existing account");
                 }
                 user.getAttributes().put("creatorUserId", userId);
                 break;
+            }
             case "always":
             default:
                 break;
@@ -357,7 +358,10 @@ public class CatalogManager implements ICatalogManager {
             ioManager.createUser(user.getId());
             return catalogDBAdaptor.insertUser(user, options);
         } catch (CatalogIOManagerException | CatalogDBException e) {
-            ioManager.deleteUser(user.getId());
+            if (!catalogDBAdaptor.userExists(user.getId())) {
+                logger.error("ERROR! DELETING USER! " + user.getId());
+                ioManager.deleteUser(user.getId());
+            }
             throw e;
         }
     }
