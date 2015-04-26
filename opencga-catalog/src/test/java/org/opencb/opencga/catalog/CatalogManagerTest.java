@@ -17,8 +17,8 @@ import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
 import java.net.URI;

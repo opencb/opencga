@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.io;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.core.common.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

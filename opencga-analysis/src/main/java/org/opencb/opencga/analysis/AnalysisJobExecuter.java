@@ -8,15 +8,15 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.lib.SgeManager;
-import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.core.SgeManager;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.lib.common.TimeUtils;
-import org.opencb.opencga.lib.exec.Command;
-import org.opencb.opencga.lib.exec.SingleProcess;
+import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exec.Command;
+import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class AnalysisJobExecuter {

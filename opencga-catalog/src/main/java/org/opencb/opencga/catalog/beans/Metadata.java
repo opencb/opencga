@@ -1,6 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 
 /**
  * Created by imedina on 13/09/14.

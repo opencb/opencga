@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog;
 
-import com.mongodb.MongoCredential;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
@@ -11,7 +10,7 @@ import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.beans.User;
 import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
 import java.io.InputStream;

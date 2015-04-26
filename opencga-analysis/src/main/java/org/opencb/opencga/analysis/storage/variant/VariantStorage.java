@@ -9,8 +9,8 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -9,8 +9,7 @@ import org.glassfish.jersey.servlet.ServletContainer;
 //import org.opencb.opencga.catalog.CatalogManager;
 //import org.opencb.opencga.catalog.db.CatalogDBException;
 //import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

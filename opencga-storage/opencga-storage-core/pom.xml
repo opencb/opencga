@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-lib</artifactId>
+            <artifactId>opencga-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.cellbase</groupId>

@@ -27,7 +27,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-lib</artifactId>
+            <artifactId>opencga-core</artifactId>
             <exclusions>
                 <exclusion>
                     <artifactId>commons-codec</artifactId>

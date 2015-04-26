@@ -2,7 +2,7 @@ package org.opencb.opencga.catalog.io;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.opencga.lib.common.IOUtils;
+import org.opencb.opencga.core.common.IOUtils;
 
 import java.net.URI;
 import java.nio.file.Files;

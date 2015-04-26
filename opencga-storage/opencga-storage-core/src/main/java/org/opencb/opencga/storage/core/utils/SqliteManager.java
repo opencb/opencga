@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.utils;
 
-import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.core.common.XObject;
 import org.sqlite.SQLiteConfig;
 
 import java.nio.file.Path;

@@ -2,10 +2,9 @@ package org.opencb.opencga.storage.mongodb.variant.annotator;
 
 import org.junit.Test;
 import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;

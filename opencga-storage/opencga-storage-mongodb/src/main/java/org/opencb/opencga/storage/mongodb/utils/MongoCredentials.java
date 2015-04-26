@@ -3,8 +3,8 @@ package org.opencb.opencga.storage.mongodb.utils;
 import com.mongodb.MongoCredential;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.OpenCGACredentials;
+import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.auth.OpenCGACredentials;
 
 import java.util.LinkedList;
 import java.util.List;

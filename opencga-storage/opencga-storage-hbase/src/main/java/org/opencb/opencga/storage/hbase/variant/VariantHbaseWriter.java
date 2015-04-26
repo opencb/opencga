@@ -24,7 +24,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProtos;
 import org.opencb.biodata.models.variant.protobuf.VariantStatsProtos;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.utils.CryptoUtils;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.core.auth.MonbaseCredentials;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.opencb.opencga.storage.core.variant.io.VariantEffectProtos;
 

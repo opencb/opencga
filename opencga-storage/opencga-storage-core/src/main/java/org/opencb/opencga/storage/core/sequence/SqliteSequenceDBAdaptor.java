@@ -5,7 +5,7 @@ import org.opencb.biodata.formats.sequence.fasta.Fasta;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.io.FastaReader;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.core.common.XObject;
 import org.opencb.opencga.storage.core.utils.SqliteManager;
 
 import java.io.File;

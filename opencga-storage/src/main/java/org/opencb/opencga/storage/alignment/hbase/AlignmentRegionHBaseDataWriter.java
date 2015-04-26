@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.alignment.hbase;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -19,7 +18,7 @@ import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.core.auth.MonbaseCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentSummary;
 import org.opencb.opencga.storage.alignment.AlignmentSummary.AlignmentRegionSummaryBuilder;
 import org.opencb.opencga.storage.alignment.proto.AlignmentProto;

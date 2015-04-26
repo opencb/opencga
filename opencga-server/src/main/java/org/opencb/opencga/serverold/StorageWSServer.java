@@ -5,9 +5,9 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.account.beans.ObjectItem;
 import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.lib.common.IOUtils;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -27,7 +27,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.opencb.commons.containers.QueryResult;
-import org.opencb.opencga.server.OpenCGAWSServer;
 
 @Path("/account/{accountId}/storage/{bucketId}/{objectId}")
 public class StorageWSServer extends GenericWSServer {

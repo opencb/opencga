@@ -5,12 +5,10 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 //import org.opencb.cellbase.core.lib.dbquery.DBObjectMap;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.lib.common.networks.Layout;
-import org.opencb.opencga.lib.common.networks.Layout.LayoutResp;
-import org.opencb.opencga.server.OpenCGAWSServer;
+import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.common.networks.Layout;
+import org.opencb.opencga.core.common.networks.Layout.LayoutResp;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

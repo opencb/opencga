@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.daemon;
 
 //import org.apache.catalina.Server;
-import org.eclipse.jetty.server.Server;
 
 
 //import org.mortbay.jetty.Server;
@@ -12,7 +11,7 @@ import org.eclipse.jetty.server.Server;
 //import net.dpml.http.ServletContextHandler;
 
 
-import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.core.common.Config;
 
 
 import java.io.File;

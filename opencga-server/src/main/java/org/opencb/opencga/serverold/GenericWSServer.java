@@ -10,7 +10,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.opencga.account.CloudSessionManager;
 import org.opencb.opencga.account.io.IOManagementException;
-import org.opencb.opencga.lib.common.Config;
+import org.opencb.opencga.core.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -21,7 +21,7 @@ import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.core.auth.MonbaseCredentials;
 import org.opencb.opencga.storage.alignment.AlignmentQueryBuilder;
 import org.opencb.opencga.storage.alignment.AlignmentSummary;
 import org.opencb.opencga.storage.alignment.proto.AlignmentProto;

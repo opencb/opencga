@@ -11,8 +11,8 @@ import org.opencb.commons.bioformats.variant.json.VariantInfo;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.ObjectMap;
 import org.opencb.commons.containers.map.QueryOptions;
-import org.opencb.opencga.lib.auth.SqliteCredentials;
-import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.core.auth.SqliteCredentials;
+import org.opencb.opencga.core.common.XObject;
 import org.opencb.opencga.storage.indices.SqliteManager;
 
 import java.io.IOException;

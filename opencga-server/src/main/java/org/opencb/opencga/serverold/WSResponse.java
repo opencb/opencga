@@ -1,6 +1,6 @@
 package org.opencb.opencga.serverold;
 
-import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.core.common.XObject;
 
 public class WSResponse {
     String error = "None";

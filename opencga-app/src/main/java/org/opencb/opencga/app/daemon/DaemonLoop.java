@@ -18,9 +18,9 @@ import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
-import org.opencb.opencga.lib.SgeManager;
-import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.SgeManager;
+import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import org.slf4j.Logger;

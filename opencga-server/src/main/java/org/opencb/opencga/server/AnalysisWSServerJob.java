@@ -1,7 +1,7 @@
 package org.opencb.opencga.server;
 
 import org.opencb.opencga.analysis.AnalysisJobExecuter;
-import org.opencb.opencga.lib.SgeManager;
+import org.opencb.opencga.core.SgeManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

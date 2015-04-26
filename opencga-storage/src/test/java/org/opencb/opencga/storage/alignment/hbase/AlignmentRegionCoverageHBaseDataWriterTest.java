@@ -11,8 +11,8 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.auth.MonbaseCredentials;
 import org.opencb.opencga.storage.alignment.hbase.AlignmentRegionCoverageHBaseDataWriter;
 
 import java.io.IOException;

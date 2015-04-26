@@ -11,7 +11,7 @@
 
     <modules>
         <module>opencga-app</module>
-        <module>opencga-lib</module>
+        <module>opencga-core</module>
         <module>opencga-storage</module>
         <module>opencga-analysis</module>
         <module>opencga-server</module>
@@ -107,7 +107,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-lib</artifactId>
+                <artifactId>opencga-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
             <dependency>

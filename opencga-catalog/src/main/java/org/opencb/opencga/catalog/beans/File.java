@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.beans;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.HashMap;
 import java.util.LinkedList;

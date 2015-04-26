@@ -14,8 +14,8 @@ import org.opencb.commons.bioformats.feature.Region;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.lib.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.lib.auth.MonbaseCredentials;
+import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.auth.MonbaseCredentials;
 import org.opencb.opencga.storage.alignment.hbase.AlignmentHBaseQueryBuilder;
 import org.opencb.opencga.storage.alignment.hbase.AlignmentRegionHBaseDataWriter;
 

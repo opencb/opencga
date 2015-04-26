@@ -11,9 +11,8 @@ import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
-import org.opencb.opencga.lib.SgeManager;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.server.OpenCGAWSServer;
+import org.opencb.opencga.core.SgeManager;
+import org.opencb.opencga.core.common.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

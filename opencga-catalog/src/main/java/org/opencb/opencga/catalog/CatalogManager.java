@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog;
 
-import com.mongodb.MongoCredential;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -17,9 +16,9 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 
-import org.opencb.opencga.lib.common.MailUtils;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.lib.common.TimeUtils;
+import org.opencb.opencga.core.common.MailUtils;
+import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

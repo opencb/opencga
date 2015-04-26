@@ -17,9 +17,8 @@ import javax.ws.rs.core.UriInfo;
 import org.opencb.commons.containers.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.account.db.AccountManagementException;
-import org.opencb.opencga.lib.common.Config;
-import org.opencb.opencga.lib.common.StringUtils;
-import org.opencb.opencga.server.OpenCGAWSServer;
+import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.StringUtils;
 
 /**
  *

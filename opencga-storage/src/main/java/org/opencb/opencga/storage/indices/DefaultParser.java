@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.indices;
 
-import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.core.common.XObject;
 
 import java.util.Set;
 

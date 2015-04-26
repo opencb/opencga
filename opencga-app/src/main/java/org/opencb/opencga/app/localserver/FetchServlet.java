@@ -1,6 +1,6 @@
 package org.opencb.opencga.app.localserver;
 
-import org.opencb.opencga.lib.common.StringUtils;
+import org.opencb.opencga.core.common.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

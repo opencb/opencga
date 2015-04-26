@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.datamanagers;
 
-import org.opencb.opencga.lib.common.XObject;
+import org.opencb.opencga.core.common.XObject;
 import org.opencb.opencga.storage.indices.DefaultParser;
 import org.opencb.opencga.storage.indices.SqliteManager;
 

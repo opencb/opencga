@@ -15,7 +15,7 @@ import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 import org.opencb.commons.db.SqliteSingletonConnection;
-import org.opencb.opencga.lib.auth.SqliteCredentials;
+import org.opencb.opencga.core.auth.SqliteCredentials;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
