@@ -24,6 +24,9 @@ target/
 *.iws
 .idea/
 
+# Sonar
+sonar-project.properties
+.sonar/*
 
 # Eclipse
 *.pydevproject
