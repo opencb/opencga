@@ -12,7 +12,6 @@
     <modules>
         <module>opencga-app</module>
         <module>opencga-lib</module>
-        <module>opencga-account</module>
         <module>opencga-storage</module>
         <module>opencga-analysis</module>
         <module>opencga-server</module>
