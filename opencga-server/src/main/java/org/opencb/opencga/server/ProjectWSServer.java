@@ -30,6 +30,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 @Path("/projects")
 @Api(value = "projects", description = "projects", position = 2)
@@ -86,14 +88,16 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{projectId}/studies")
     @Produces("application/json")
     @ApiOperation(value = "Study information")
-
     public Response getAllStudies(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectId
     ) {
-        QueryResult queryResult;
+        String[] splitedId = projectId.split(",");
         try {
-            queryResult = catalogManager.getAllStudies(projectId, this.getQueryOptions(), sessionId);
-            return createOkResponse(queryResult);
+            List<QueryResult> results = new LinkedList<>();
+            for (String id : splitedId) {
+                results.add(catalogManager.getAllStudies(Integer.parseInt(id), this.getQueryOptions(), sessionId));
+            }
+            return createOkResponse(results);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());

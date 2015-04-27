@@ -61,25 +61,24 @@ public class AnalysisJobExecuter {
     protected Analysis analysis;
     protected Execution execution;
 
-    protected static ObjectMapper jsonObjectMapper  = new ObjectMapper();
+    protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-    private AnalysisJobExecuter() throws  IOException, AnalysisExecutionException {
+    private AnalysisJobExecuter() throws IOException, AnalysisExecutionException {
         home = Config.getOpenCGAHome();
         analysisProperties = Config.getAnalysisProperties();
         executionName = null;
     }
 
-    public AnalysisJobExecuter(String analysisStr, String execution) throws  IOException, AnalysisExecutionException {
+    public AnalysisJobExecuter(String analysisStr, String execution) throws IOException, AnalysisExecutionException {
         this(analysisStr, execution, "system");
     }
 
     @Deprecated
-    public AnalysisJobExecuter(String analysisStr, String execution, String analysisOwner) throws IOException,  AnalysisExecutionException {
+    public AnalysisJobExecuter(String analysisStr, String execution, String analysisOwner) throws IOException, AnalysisExecutionException {
         this();
         if (analysisOwner.equals("system")) {
             this.analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
-        }
-        else {
+        } else {
             this.analysisRootPath = Paths.get(home, "accounts", analysisOwner);
         }
         this.analysisName = analysisStr;
@@ -93,7 +92,7 @@ public class AnalysisJobExecuter {
         load();
     }
 
-    public AnalysisJobExecuter(Path analysisRootPath, String analysisName, String executionName) throws IOException,  AnalysisExecutionException {
+    public AnalysisJobExecuter(Path analysisRootPath, String analysisName, String executionName) throws IOException, AnalysisExecutionException {
         this();
         this.analysisRootPath = analysisRootPath;
         this.analysisName = analysisName;
@@ -102,7 +101,7 @@ public class AnalysisJobExecuter {
         load();
     }
 
-    private void load()  throws IOException,  AnalysisExecutionException {
+    private void load() throws IOException, AnalysisExecutionException {
 
         analysisPath = Paths.get(home).resolve(analysisRootPath).resolve(analysisName);
         manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
@@ -200,13 +199,14 @@ public class AnalysisJobExecuter {
     }
 
     public QueryResult<Job> createJob(Map<String, List<String>> params,
-                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
+
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
-                            CatalogManager catalogManager, int studyId, String jobName, String description, File outDir,
-                            List<Integer> inputFiles, String sessionId)
+                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir,
+                                      List<Integer> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
 
         // Create temporal Outdir
@@ -218,7 +218,7 @@ public class AnalysisJobExecuter {
         String commandLine = createCommandLine(executable, params);
         System.out.println(commandLine);
 
-        return createJob(catalogManager, studyId, analysisName, jobName, description, outDir, inputFiles, sessionId,
+        return createJob(catalogManager, studyId, jobName, analysisName, description, outDir, inputFiles, sessionId,
                 randomString, temporalOutDirUri, commandLine, false, false, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
