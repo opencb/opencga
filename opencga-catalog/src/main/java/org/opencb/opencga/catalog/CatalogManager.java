@@ -42,6 +42,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1015,7 +1016,6 @@ public class CatalogManager implements ICatalogManager {
 
         QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
         File file = result.getResult().get(0);
-
         //path is relative to user, get full path...
         URI studyURI = getStudyUri(studyId);
         URI fileURI = getFileUri(studyURI, path);
@@ -1027,7 +1027,23 @@ public class CatalogManager implements ICatalogManager {
         return result;
     }
 
-    @Override
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, Path completedFilePath, String description,
+                                        boolean parents, String sessionId)
+            throws CatalogException, IOException {
+
+        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
+        File file = result.getResult().get(0);
+        //path is relative to user, get full path...
+        URI studyURI = getStudyUri(studyId);
+        URI fileURI = getFileUri(studyURI, path);
+        Files.move(completedFilePath, Paths.get(fileURI));
+
+        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
+        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
+
+        return result;
+    }
+
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
@@ -1294,8 +1310,8 @@ public class CatalogManager implements ICatalogManager {
             case DELETED:
                 //Send warning message
                 return new QueryResult("Delete file", 0, 0, 0,
-                    "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
-                    null, Collections.emptyList());
+                        "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
+                        null, Collections.emptyList());
             case READY:
                 break;
         }
@@ -1510,12 +1526,12 @@ public class CatalogManager implements ICatalogManager {
         File file = queryResult.getResult().get(0);
         Path parent = Paths.get(file.getPath()).getParent();
         String parentPath;
-        if(parent == null) {
+        if (parent == null) {
             parentPath = "";
         } else {
-            parentPath = parent.toString().endsWith("/")? parent.toString() : parent.toString() + "/";
+            parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
         }
-        return searchFile(studyId, new QueryOptions("path" , parentPath), sessionId);
+        return searchFile(studyId, new QueryOptions("path", parentPath), sessionId);
     }
 
     @Override
@@ -1689,7 +1705,7 @@ public class CatalogManager implements ICatalogManager {
             throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
         }
         for (Integer fileId : files) {
-            if(catalogDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
+            if (catalogDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
                 throw new CatalogException("Can't create a dataset with files from different files.");
             }
             if (!getFileAcl(userId, fileId).isRead()) {
@@ -2338,7 +2354,7 @@ public class CatalogManager implements ICatalogManager {
 
         checkObj(variables, "Variables List");
         Set<Variable> variablesSet = new HashSet<>(variables);
-        if(variables.size() != variablesSet.size()) {
+        if (variables.size() != variablesSet.size()) {
             throw new CatalogException("Error. Repeated variables");
         }
         return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
@@ -2401,10 +2417,10 @@ public class CatalogManager implements ICatalogManager {
     }
 
     /* package */ QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
-                                                     Map<String, Object> annotations,
-                                                     Map<String, Object> attributes,
-                                                     boolean checkAnnotationSet,
-                                                     String sessionId)
+                                                            Map<String, Object> annotations,
+                                                            Map<String, Object> attributes,
+                                                            boolean checkAnnotationSet,
+                                                            String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkParameter(id, "id");
@@ -2479,7 +2495,6 @@ public class CatalogManager implements ICatalogManager {
 
         return catalogDBAdaptor.createCohort(studyId, cohort);
     }
-
 
 
     /**
