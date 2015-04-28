@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.db;
+package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
@@ -33,8 +33,10 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,7 +62,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * This method is executed one single time beforeClass all the tests. It connects to the MongoDB server.
      *
      * @throws IOException
-     * @throws CatalogDBException
+     * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
     @Before
     public void beforeClass() throws IOException, CatalogDBException {
@@ -558,9 +560,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Test
     public void getFileTest() throws CatalogDBException {
-        System.out.println(catalogDBAdaptor.getFile(catalogDBAdaptor.getFileId(catalogDBAdaptor.getStudyId(catalogDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "/data/file.sam")));
+        System.out.println(catalogDBAdaptor.getFile(catalogDBAdaptor.getFileId(catalogDBAdaptor.getStudyId(catalogDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "/data/file.sam"), null));
         try {
-            System.out.println(catalogDBAdaptor.getFile(-1));
+            System.out.println(catalogDBAdaptor.getFile(-1, null));
             fail("Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -607,7 +609,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         parameters.put("stats", stats);
         System.out.println(catalogDBAdaptor.modifyFile(fileId, parameters));
 
-        File file = catalogDBAdaptor.getFile(fileId).getResult().get(0);
+        File file = catalogDBAdaptor.getFile(fileId, null).getResult().get(0);
         assertEquals(file.getStatus(), File.Status.READY);
         assertEquals(file.getStats(), stats);
 
@@ -620,7 +622,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int fileId = catalogDBAdaptor.getFileId(catalogDBAdaptor.getStudyId(catalogDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "/data/file.bam");
         System.out.println(catalogDBAdaptor.renameFile(fileId, parentPath + newName));
 
-        File file = catalogDBAdaptor.getFile(fileId).getResult().get(0);
+        File file = catalogDBAdaptor.getFile(fileId, null).getResult().get(0);
         assertEquals(file.getName(), newName);
         assertEquals(file.getPath(), parentPath + newName);
 

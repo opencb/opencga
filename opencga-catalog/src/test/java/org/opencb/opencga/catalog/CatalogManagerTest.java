@@ -27,6 +27,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
@@ -64,7 +65,7 @@ public class CatalogManagerTest extends GenericTest {
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user3", "User3 Name", "email3", PASSWORD, "ACME", null);
+        catalogManager.createUser("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null);
         List<ObjectMap> result;
         String session;
         try {
@@ -213,8 +214,6 @@ public class CatalogManagerTest extends GenericTest {
             System.out.println(e);
         }
 
-        catalogManager.changePassword("user", newPassword, PASSWORD, sessionIdUser);
-
     }
 
     /**
@@ -302,7 +301,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifyStudy() throws Exception {
-        int studyId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getStudies().get(0).getId();
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
         String newName = "Phase 1 "+ StringUtils.randomString(20);
         String newDescription = StringUtils.randomString(500);
 
@@ -616,7 +616,7 @@ public class CatalogManagerTest extends GenericTest {
         testCreateVariableSet();
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).getResult().get(0).getId();
         Study study = catalogManager.getAllStudies(projectId, null, sessionIdUser).getResult().get(0);
-        int sampleId = catalogManager.getAllSamples(study.getId(), null, sessionIdUser).getResult().get(0).getId();
+        int sampleId = catalogManager.getAllSamples(study.getId(), new QueryOptions(), sessionIdUser).getResult().get(0).getId();
 
         {
             HashMap<String, Object> annotations = new HashMap<String, Object>();
@@ -644,11 +644,21 @@ public class CatalogManagerTest extends GenericTest {
 
 
     private static void clearCatalog(Properties properties) throws IOException {
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(properties.getProperty("OPENCGA.CATALOG.DB.HOST"), Integer.parseInt(properties.getProperty("OPENCGA.CATALOG.DB.PORT")));
-        MongoDataStore db = mongoManager.get(properties.getProperty("OPENCGA.CATALOG.DB.DATABASE"));
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
         db.getDb().dropDatabase();
 
-        Path rootdir = Paths.get(URI.create(properties.getProperty("OPENCGA.CATALOG.MAIN.ROOTDIR")));
+        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
 //        Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
         deleteFolderTree(rootdir.toFile());
         Files.createDirectory(rootdir);

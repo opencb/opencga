@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.db;
+package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +32,8 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.db.api.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -43,7 +45,8 @@ import java.util.*;
 /**
  * Created by jacobo on 12/09/14.
  */
-public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
+public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
+        implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSamplesDBAdaptor {
 
     private static final String USER_COLLECTION = "user";
     private static final String STUDY_COLLECTION = "study";
@@ -147,7 +150,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
     }
 
-    @Override
     public void disconnect(){
         mongoManager.close(db.getDatabaseName());
     }
@@ -403,7 +405,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
@@ -1267,7 +1269,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     @Override
     public String getFileOwnerId(int fileId) throws CatalogDBException {
-        QueryResult<File> fileQueryResult = getFile(fileId);
+        QueryResult<File> fileQueryResult = getFile(fileId, null);
         if(fileQueryResult == null || fileQueryResult.getResult() == null || fileQueryResult.getResult().isEmpty()) {
             throw CatalogDBException.idNotFound("File", fileId);
         }

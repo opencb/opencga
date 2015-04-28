@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.core;
+package org.opencb.opencga.catalog.client;
 
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.api.ICatalog;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;

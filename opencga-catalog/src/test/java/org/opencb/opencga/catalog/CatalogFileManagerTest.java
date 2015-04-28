@@ -25,8 +25,8 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.beans.User;
-import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
 
 import java.io.IOException;
 import java.io.InputStream;

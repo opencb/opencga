@@ -21,13 +21,15 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.authentication.CatalogAuthenticationService;
+import org.opencb.opencga.catalog.authorization.CatalogAuthorizationService;
 import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.core.CatalogDBClient;
-import org.opencb.opencga.catalog.core.CatalogClient;
-import org.opencb.opencga.catalog.core.ICatalogManager;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptor;
+import org.opencb.opencga.catalog.client.CatalogClient;
+import org.opencb.opencga.catalog.client.CatalogDBClient;
+import org.opencb.opencga.catalog.client.ICatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.db.CatalogMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -42,7 +44,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,6 +75,8 @@ public class CatalogManager implements ICatalogManager {
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
+    private UserManager userManager;
+
 //    private PosixCatalogIOManager ioManager;
 
 
@@ -86,48 +89,32 @@ public class CatalogManager implements ICatalogManager {
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
 
 
-
-    /*public CatalogManager() throws IOException, CatalogIOManagerException, CatalogManagerException {
-        this(System.getenv("OPENCGA_HOME"));
-    }*/
-
     public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOManagerException {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
         configureManager(properties);
         configureIOManager(properties);
+        configureManagers(properties);
     }
 
-    @Deprecated
-    public CatalogManager(String rootdir)
-            throws IOException, CatalogIOManagerException, CatalogDBException {
-//        properties = Config.getAccountProperties();
-
-        logger.debug("CatalogManager rootdir");
-        Path path = Paths.get(rootdir, "conf", "catalog.properties");
-        properties = new Properties();
-        try {
-            properties.load(Files.newInputStream(path));
-        } catch (IOException e) {
-            logger.error("Failed to load account.properties: " + e.getMessage());
-            throw e;
-        }
-
-        configureManager(properties);
-        configureDBAdaptor(properties);
-        configureIOManager(properties);
-    }
-
-    public CatalogManager(Properties properties)
+    public CatalogManager(Properties catalogProperties)
             throws CatalogIOManagerException, CatalogDBException {
-        this.properties = properties;
+        this.properties = catalogProperties;
         logger.debug("CatalogManager configureManager");
         configureManager(properties);
         logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
         logger.debug("CatalogManager configureIOManager");
         configureIOManager(properties);
+
+        configureManagers(properties);
+    }
+
+    private void configureManagers(Properties properties) {
+        CatalogAuthenticationService authenticationService = new CatalogAuthenticationService(catalogDBAdaptor);
+        CatalogAuthorizationService authorizationService = new CatalogAuthorizationService(catalogDBAdaptor);
+        userManager = new UserManager(ioManager, catalogDBAdaptor, authenticationService, authorizationService);
     }
 
     @Override
@@ -231,25 +218,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
-    /* jmmut uncomment
-//    public Uri getJobFolderUri(String userId, String projectId, Uri JobId) {
-//        return ioManager.getJobFolderUri(userId, projectId, JobId);
-//    }
-
-//    public URI getTmpUri() {
-//        return ioManager.getTmpUri();
-//    }
-
-//    public File getFile(String userId, String projectAlias, String studyAlias, Path filePath,
-//                                    String sessionId) throws CatalogManagerException, IOException {
-//        QueryResult queryResult = catalogDBAdaptor.getFile(userId, projectAlias, studyAlias, filePath, sessionId);
-//        if(queryResult.getNumResults() != 1){
-//            return null;
-//        } else {
-//            return (File) queryResult.getResult().get(0);
-//        }
-//    }
-
     /**
      * Id methods
      * <user>@project:study:directories:filePath
@@ -337,119 +305,36 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(id, "id");
-        checkParameter(password, "password");
-        checkParameter(name, "name");
-        checkParameter(email, "email");
-        organization = organization != null ? organization : "";
-
-        User user = new User(id, name, email, password, organization, User.Role.USER, "");
-
-        switch (creationUserPolicy) {
-            case "onlyAdmin": {
-                String userId = getUserIdBySessionId(sessionId);
-                if (!userId.isEmpty() && getUserRole(userId).equals(User.Role.ADMIN)) {
-                    user.getAttributes().put("creatorUserId", userId);
-                } else {
-                    throw new CatalogException("CreateUser Fail. Required Admin role");
-                }
-                break;
-            }
-            case "anyLoggedUser": {
-                checkParameter(sessionId, "sessionId");
-                String userId = getUserIdBySessionId(sessionId);
-                if (userId.isEmpty()) {
-                    throw new CatalogException("CreateUser Fail. Required existing account");
-                }
-                user.getAttributes().put("creatorUserId", userId);
-                break;
-            }
-            case "always":
-            default:
-                break;
-        }
-
-
-        try {
-            ioManager.createUser(user.getId());
-            return catalogDBAdaptor.insertUser(user, options);
-        } catch (CatalogIOManagerException | CatalogDBException e) {
-            if (!catalogDBAdaptor.userExists(user.getId())) {
-                logger.error("ERROR! DELETING USER! " + user.getId());
-                ioManager.deleteUser(user.getId());
-            }
-            throw e;
-        }
+        return userManager.create(id, name, email, password, organization, options, sessionId);
     }
 
     @Override
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
-        checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
-
-        String userId = "anonymous_" + session.getId();
-
-        // TODO sessionID should be created here
-
-        ioManager.createAnonymousUser(userId);
-
-        try {
-            return catalogDBAdaptor.loginAsAnonymous(session);
-        } catch (CatalogDBException e) {
-            ioManager.deleteUser(userId);
-            throw e;
-        }
-
+        return userManager.loginAsAnonymous(sessionIp);
     }
 
     @Override
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
             throws CatalogException, IOException {
-        checkParameter(userId, "userId");
-        checkParameter(password, "password");
-        checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
-
-        return catalogDBAdaptor.login(userId, password, session);
+        return userManager.login(userId, password, sessionIp);
     }
 
     @Override
     public QueryResult logout(String userId, String sessionId) throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
-        switch (getUserRole(userId)) {
-            default:
-                return catalogDBAdaptor.logout(userId, sessionId);
-            case ANONYMOUS:
-                return logoutAnonymous(sessionId);
-        }
+        return userManager.logout(userId, sessionId);
     }
 
     @Override
     public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = getUserIdBySessionId(sessionId);
-        checkParameter(userId, "userId");
-        checkSessionId(userId, sessionId);
-
-        logger.info("logout anonymous user. userId: " + userId + " sesionId: " + sessionId);
-
-        ioManager.deleteAnonymousUser(userId);
-        return catalogDBAdaptor.logoutAnonymous(sessionId);
+        return userManager.logoutAnonymous(sessionId);
     }
 
     @Override
     public QueryResult changePassword(String userId, String oldPassword, String newPassword, String sessionId)
             throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkParameter(oldPassword, "oldPassword");
-        checkParameter(newPassword, "newPassword");
-        checkSessionId(userId, sessionId);  //Only the user can change his own password
-        catalogDBAdaptor.updateUserLastActivity(userId);
-        return catalogDBAdaptor.changePassword(userId, oldPassword, newPassword);
+        userManager.changePassword(userId, oldPassword, newPassword);
+        return new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
     }
 
     @Override
@@ -497,76 +382,23 @@ public class CatalogManager implements ICatalogManager {
     @Override
     public QueryResult<User> getUser(String userId, String lastActivity, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
-        options = defaultObject(options, new QueryOptions());
-
-        if (!options.containsKey("include") && !options.containsKey("exclude")) {
-            options.put("exclude", Arrays.asList("password", "sessions"));
-        }
-//        if(options.containsKey("exclude")) {
-//            options.getListAs("exclude", String.class).add("sessions");
-//        }
-        //FIXME: Should other users get access to other user information? (If so, then filter projects)
-        //FIXME: Should setPassword(null)??
-        QueryResult<User> user = catalogDBAdaptor.getUser(userId, options, lastActivity);
-        return user;
+        return userManager.read(userId, lastActivity, options, sessionId);
     }
 
     @Override
     public String getUserIdBySessionId(String sessionId) {
-        return catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        return userManager.getUserId(sessionId);
     }
 
-    /**
-     * Modify some params from the user profile:
-     * <p/>
-     * name
-     * email
-     * organization
-     * <p/>
-     * attributes
-     * configs
-     *
-     * @param userId     userId
-     * @param parameters Parameters to change.
-     * @param sessionId  sessionId must match with the userId
-     * @return
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
-     */
     @Override
     public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkObj(parameters, "parameters");
-        checkSessionId(userId, sessionId);
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|email|organization|attributes|configs")) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-            }
-        }
-        if (parameters.containsKey("email")) {
-            checkEmail(parameters.getString("email"));
-        }
-        catalogDBAdaptor.updateUserLastActivity(userId);
-        return catalogDBAdaptor.modifyUser(userId, parameters);
+        return userManager.update(userId, parameters, sessionId);
     }
 
     @Override
     public void deleteUser(String userId, String sessionId) throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        String userIdBySessionId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (userIdBySessionId.equals(userId) || getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
-            try {
-                ioManager.deleteUser(userId);
-            } catch (CatalogIOManagerException e) {
-                e.printStackTrace();
-            }
-            catalogDBAdaptor.deleteUser(userId);
-        }
+        userManager.delete(userId, null, sessionId);
     }
 
     /**
@@ -1149,12 +981,6 @@ public class CatalogManager implements ICatalogManager {
 
     }
 
-    private <T> T defaultObject(T object, T defaultObject) {
-        if (object == null) {
-            object = defaultObject;
-        }
-        return object;
-    }
 
     @Override
     @Deprecated
@@ -1185,7 +1011,7 @@ public class CatalogManager implements ICatalogManager {
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
 
-        List<File> result = catalogDBAdaptor.getFile(fileId).getResult();
+        List<File> result = catalogDBAdaptor.getFile(fileId, null).getResult();
         if (result.isEmpty()) {
             throw new CatalogDBException("FileId '" + fileId + "' for found");
         }
@@ -1202,7 +1028,7 @@ public class CatalogManager implements ICatalogManager {
         ObjectMap modifyParameters = new ObjectMap("status", File.Status.UPLOADED);
         modifyParameters.put("uriScheme", study.getUri().getScheme());
         catalogDBAdaptor.modifyFile(fileId, modifyParameters);
-        return catalogDBAdaptor.getFile(fileId);
+        return catalogDBAdaptor.getFile(fileId, null);
     }
 
     @Override
@@ -1296,7 +1122,7 @@ public class CatalogManager implements ICatalogManager {
         if (!getFileAcl(userId, fileId).isDelete()) {
             throw new CatalogDBException("Permission denied. User can't delete this file");
         }
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
         if (fileResult.getResult().isEmpty()) {
             return new QueryResult("Delete file", 0, 0, 0, "File not found", null, Collections.emptyList());
         }
@@ -1382,7 +1208,7 @@ public class CatalogManager implements ICatalogManager {
         if (!getFileAcl(userId, fileId).isWrite()) {
             throw new CatalogDBException("Permission denied. User can't rename this file");
         }
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
         if (fileResult.getResult().isEmpty()) {
             return new QueryResult("Rename file", 0, 0, 0, "File not found", null, null);
         }
@@ -1604,7 +1430,7 @@ public class CatalogManager implements ICatalogManager {
             throw new CatalogDBException("Permission denied. User can't download file");
         }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
         if (fileResult.getResult().isEmpty()) {
             throw new CatalogDBException("File not found");
         }
@@ -1626,7 +1452,7 @@ public class CatalogManager implements ICatalogManager {
         }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
         if (fileResult.getResult().isEmpty()) {
             throw new CatalogException("File not found");
         }
@@ -2621,6 +2447,12 @@ public class CatalogManager implements ICatalogManager {
         return string;
     }
 
+    private <T> T defaultObject(T object, T defaultObject) {
+        if (object == null) {
+            object = defaultObject;
+        }
+        return object;
+    }
 
     /*
      *  Permission methods. Internal use only.
