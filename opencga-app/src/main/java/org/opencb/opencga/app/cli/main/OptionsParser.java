@@ -621,6 +621,9 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
 
+            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+            String outdir = "";
+
             @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = true, arity = 1)
             List<Integer> cohortIds;
 
@@ -641,6 +644,9 @@ public class OptionsParser {
 
             @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
             String id;
+
+            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+            String outdir = "";
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;

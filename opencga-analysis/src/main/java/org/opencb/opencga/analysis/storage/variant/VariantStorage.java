@@ -48,7 +48,7 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(int indexedFileId, List<Integer> cohortIds, String sessionId, QueryOptions options)
+    public QueryResult<Job> calculateStats(int indexedFileId, Integer outDirId, List<Integer> cohortIds, String sessionId, QueryOptions options)
             throws AnalysisExecutionException, CatalogException {
         if (options == null) {
             options = new QueryOptions();
@@ -76,7 +76,12 @@ public class VariantStorage {
             outputFileName.append(cohort.getName());
         }
 
-        File outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
+        File outDir;
+        if (outDirId == null || outDirId <= 0) {
+            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
+        } else {
+            outDir = catalogManager.getFile(outDirId, null, sessionId).first();
+        }
 
         /** Create temporal Job Outdir **/
         final String randomString = "I_" + StringUtils.randomString(10);
@@ -128,7 +133,7 @@ public class VariantStorage {
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public QueryResult<Job> annotateVariants(int indexedFileId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> annotateVariants(int indexedFileId, Integer outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -143,8 +148,12 @@ public class VariantStorage {
                     "Got {type: " + indexedFile.getType() + ", bioformat: " + indexedFile.getBioformat() + "}");
         }
 
-        File outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
-
+        File outDir;
+        if (outDirId == null || outDirId <= 0) {
+            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
+        } else {
+            outDir = catalogManager.getFile(outDirId, null, sessionId).first();
+        }
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;

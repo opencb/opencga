@@ -392,7 +392,15 @@ public class AnalysisFileIndexer {
                         if (simulate) {
                             sampleList.add(new Sample(-1, sampleName, file.getName(), null, null));
                         } else {
-                            sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                            try {
+                                sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                            } catch (CatalogException e) {
+                                if (catalogManager.getAllSamples(study.getId(), new QueryOptions("name", sampleName), sessionId).getResult().isEmpty()) {
+                                    throw e; //Throw exception if sample does not exist.
+                                } else {
+                                    logger.debug("Do not create the sample \"" + sampleName + "\". It has magically appeared");
+                                }
+                            }
                         }
                     }
                 } else {

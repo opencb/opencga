@@ -389,6 +389,7 @@ public class OpenCGAMain {
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
                         int fileId = catalogManager.getFileId(c.id);
+                        int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
@@ -398,7 +399,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, c.cohortIds, sessionId, queryOptions), null));
+                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
                     }
@@ -407,6 +408,7 @@ public class OpenCGAMain {
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
                         int fileId = catalogManager.getFileId(c.id);
+                        int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
@@ -416,7 +418,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, sessionId, queryOptions), null));
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
 
                         break;
                     }
