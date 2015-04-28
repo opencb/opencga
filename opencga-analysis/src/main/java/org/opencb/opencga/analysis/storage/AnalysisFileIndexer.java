@@ -58,6 +58,7 @@ public class AnalysisFileIndexer {
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
     public static final String INDEX_FILE_ID = "indexFileId";
+    public static final String IGNORE_STATUS = "ignoreStatus";  //Do not check if the Indexed file's status is READY.
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -132,7 +133,7 @@ public class AnalysisFileIndexer {
             if (index.getType() != File.Type.INDEX) {
                 throw new CatalogException("Expected {type: INDEX} in IndexedFile " + indexFileId);
             }
-            if (index.getStatus() != File.Status.READY) {
+            if (!options.getBoolean(IGNORE_STATUS, false) && index.getStatus() != File.Status.READY) {
                 throw new CatalogException("Expected {status: READY} in IndexedFile " + indexFileId);
             }
             if (simulate) {
