@@ -247,14 +247,9 @@ public class CatalogManagerTest extends GenericTest {
             assertEquals(project.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
-        try {
-            options = new ObjectMap();
-            options.put("alias", "newProjectAlias");
-            catalogManager.modifyProject(projectId, options, sessionIdUser);
-            fail("Expected 'Parameter can't be changed' exception");
-        } catch (CatalogDBException e){
-            System.out.println(e);
-        }
+        options = new ObjectMap();
+        options.put("alias", "newProjectAlias");
+        catalogManager.modifyProject(projectId, options, sessionIdUser);
 
         try {
             catalogManager.modifyProject(projectId, options, sessionIdUser2);

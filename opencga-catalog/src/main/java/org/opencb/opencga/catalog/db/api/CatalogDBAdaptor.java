@@ -74,9 +74,13 @@ public abstract class CatalogDBAdaptor
     public abstract void disconnect();
 
     public abstract CatalogUserDBAdaptor getCatalogUserDBAdaptor();
+
     public abstract CatalogStudyDBAdaptor getCatalogStudyDBAdaptor();
+
     public abstract CatalogFileDBAdaptor getCatalogFileDBAdaptor();
+
     public abstract CatalogSamplesDBAdaptor getCatalogSamplesDBAdaptor();
+
     public abstract CatalogJobDBAdaptor getCatalogJobDBAdaptor();
 //
 //    /**

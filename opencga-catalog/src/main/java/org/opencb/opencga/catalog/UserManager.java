@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-class UserManager implements IUserManager {
+public class UserManager implements IUserManager {
 
     protected final CatalogIOManager ioManager;
     protected final CatalogUserDBAdaptor userDBAdaptor;

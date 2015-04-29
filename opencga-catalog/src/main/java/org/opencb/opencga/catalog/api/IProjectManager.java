@@ -11,8 +11,8 @@ import org.opencb.opencga.catalog.beans.Project;
 public interface IProjectManager extends ResourceManager<Integer, Project> {
 
     public String  getUserId(int projectId) throws CatalogException;
-    public Integer getProjectId(String projectId) throws CatalogException;
+    public int getProjectId(String projectId) throws CatalogException;
 
     public QueryResult<Project> create(String ownerId, String name, String alias, String description,
-                                       String organization, QueryOptions options) throws CatalogException;
+                                       String organization, QueryOptions options, String sessionId) throws CatalogException;
 }

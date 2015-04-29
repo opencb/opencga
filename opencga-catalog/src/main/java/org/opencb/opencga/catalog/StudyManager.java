@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by hpccoll1 on 29/04/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class StudyManager implements IStudyManager{
 
@@ -253,7 +253,7 @@ public class StudyManager implements IStudyManager{
             throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
         }
         if (parameters.containsKey("alias")) {
-            renameStudy(studyId, parameters.getString("alias"), sessionId);
+            rename(studyId, parameters.getString("alias"), sessionId);
 
             //Clone and remove alias from parameters. Do not modify the original parameter
             parameters = new ObjectMap(parameters);
@@ -273,7 +273,7 @@ public class StudyManager implements IStudyManager{
                 read(studyId, options, sessionId).getResult());
     }
 
-    private QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)
+    private QueryResult rename(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         checkAlias(newStudyAlias, "newStudyAlias");
         checkParameter(sessionId, "sessionId");
