@@ -168,7 +168,7 @@ class UserManager implements IUserManager {
      * @throws CatalogException
      */
     @Override
-    public QueryResult<User> update(String userId, ObjectMap parameters, String sessionId)
+    public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");

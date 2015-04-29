@@ -22,6 +22,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.api.IFileManager;
+import org.opencb.opencga.catalog.api.IStudyManager;
 import org.opencb.opencga.catalog.api.IUserManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
@@ -79,6 +80,7 @@ public class CatalogManager {
     private CatalogClient catalogClient;
 
     private IUserManager userManager;
+    private IStudyManager studyManager;
     private IFileManager fileManager;
 
 //    private PosixCatalogIOManager ioManager;
@@ -122,6 +124,7 @@ public class CatalogManager {
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptor);
         userManager = new UserManager(ioManager, catalogDBAdaptor, authenticationManager, authorizationManager);
         fileManager = new FileManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
+        studyManager = new StudyManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
     }
 
     public CatalogClient client() {
@@ -235,21 +238,7 @@ public class CatalogManager {
     }
 
     public int getStudyId(String id) throws CatalogException {
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException ignore) {
-        }
-
-        String[] split = id.split("@");
-        if (split.length != 2) {
-            return -1;
-        }
-        String[] projectStudy = split[1].replace(':', '/').split("/", 2);
-        if (projectStudy.length != 2) {
-            return -2;
-        }
-        int projectId = catalogDBAdaptor.getProjectId(split[0], projectStudy[0]);
-        return catalogDBAdaptor.getStudyId(projectId, projectStudy[1]);
+        return studyManager.getStudyId(id);
     }
 
     public int getFileId(String id) throws CatalogException {
@@ -358,7 +347,7 @@ public class CatalogManager {
 
     public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
-        return userManager.update(userId, parameters, sessionId);
+        return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
     }
 
     public void deleteUser(String userId, String sessionId) throws CatalogException {
@@ -535,106 +524,10 @@ public class CatalogManager {
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
-        checkParameter(name, "name");
-        checkParameter(alias, "alias");
-        checkObj(type, "type");
-        checkAlias(alias, "alias");
-        checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        description = defaultString(description, "");
-        creatorId = defaultString(creatorId, userId);
-        creationDate = defaultString(creationDate, TimeUtils.getTime());
-        status = defaultString(status, "active");
-        cipher = defaultString(cipher, "none");
-        if (uri != null) {
-            if (uri.getScheme() == null) {
-                throw new CatalogException("StudyUri must specify the scheme");
-            } else {
-                if (uriScheme != null && !uriScheme.isEmpty()) {
-                    if (!uriScheme.equals(uri.getScheme())) {
-                        throw new CatalogException("StudyUri must specify the scheme");
-                    }
-                } else {
-                    uriScheme = uri.getScheme();
-                }
-            }
-        } else {
-            uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
-        }
-        datastores = defaultObject(datastores, new HashMap<File.Bioformat, DataStore>());
-        stats = defaultObject(stats, new HashMap<String, Object>());
-        attributes = defaultObject(attributes, new HashMap<String, Object>());
-
-        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
-
-        String projectOwnerId = catalogDBAdaptor.getProjectOwnerId(projectId);
-
-
-        /* Check project permissions */
-        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) { //User can't write/modify the project
-            throw new CatalogDBException("Permission denied. Can't write in project");
-        }
-        if (!creatorId.equals(userId)) {
-            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
-            } else {
-                if (!catalogDBAdaptor.userExists(creatorId)) {
-                    throw new CatalogException("ERROR: CreatorId does not exist.");
-                }
-            }
-        }
-
-//        URI projectUri = catalogIOManager.getProjectUri(projectOwnerId, Integer.toString(projectId));
-        LinkedList<File> files = new LinkedList<>();
-        LinkedList<Experiment> experiments = new LinkedList<>();
-        LinkedList<Job> jobs = new LinkedList<>();
-        LinkedList<Acl> acls = new LinkedList<>();
-
-        /* Add default ACL */
-        if (!creatorId.equals(projectOwnerId)) {
-            //Add full permissions for the creator if he is not the owner
-            acls.add(new Acl(creatorId, true, true, true, true));
-        }
-
-        //Copy generic permissions from the project.
-
-        QueryResult<Acl> aclQueryResult = catalogDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
-        if (!aclQueryResult.getResult().isEmpty()) {
-            //study.getAcl().add(aclQueryResult.getResult().get(0));
-        } else {
-            throw new CatalogDBException("Project " + projectId + " must have generic ACL");
-        }
-
-
-        files.add(new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0));
-
-        Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
-                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
-
-
-        /* CreateStudy */
-        QueryResult<Study> result = catalogDBAdaptor.createStudy(projectId, study, options);
-        study = result.getResult().get(0);
-
-//        URI studyUri;
-        if (uri == null) {
-            try {
-                uri = catalogIOManager.createStudy(projectOwnerId, Integer.toString(projectId), Integer.toString(study.getId()));
-            } catch (CatalogIOManagerException e) {
-                e.printStackTrace();
-                catalogDBAdaptor.deleteStudy(study.getId());
-                throw e;
-            }
-        }
-
-        catalogDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri));
-
+        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
+                uri, datastores, stats, attributes, options, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
-
-        catalogDBAdaptor.updateUserLastActivity(projectOwnerId);
         return result;
     }
 
@@ -645,58 +538,17 @@ public class CatalogManager {
 
     public QueryResult<Study> getStudy(int studyId, String sessionId, QueryOptions options)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (studyAcl.isRead()) {
-            QueryResult<Study> studyResult = catalogDBAdaptor.getStudy(studyId, options);
-            if (!studyResult.getResult().isEmpty()) {
-                authorizationManager.filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
-            }
-            return studyResult;
-        } else {
-            throw new CatalogDBException("Permission denied. Can't read this study");
-        }
+        return studyManager.read(studyId, options, sessionId);
     }
 
     public QueryResult<Study> getAllStudies(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (!projectAcl.isRead()) {
-            throw new CatalogDBException("Permission denied. Can't read project");
-        }
-
-        QueryResult<Study> allStudies = catalogDBAdaptor.getAllStudies(projectId, options);
-        List<Study> studies = allStudies.getResult();
-        authorizationManager.filterStudies(userId, projectAcl, studies);
-        allStudies.setResult(studies);
-
-        return allStudies;
-
-
+        return studyManager.readAll(new QueryOptions("projectId", projectId), options, sessionId);
     }
 
     public QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
-        checkAlias(newStudyAlias, "newStudyAlias");
-        checkParameter(sessionId, "sessionId");
-        String sessionUserId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        String studyOwnerId = catalogDBAdaptor.getStudyOwnerId(studyId);
-
-        if (!authorizationManager.getStudyACL(sessionUserId, studyId).isWrite()) {  //User can't write/modify the study
-            throw new CatalogDBException("Permission denied. Can't write in project");
-        }
-
-        // Both users must bu updated
-        catalogDBAdaptor.updateUserLastActivity(sessionUserId);
-        catalogDBAdaptor.updateUserLastActivity(studyOwnerId);
-        //TODO get all shared users to updateUserLastActivity
-
-        return catalogDBAdaptor.renameStudy(studyId, newStudyAlias);
-
+        return studyManager.update(studyId, new ObjectMap("alias", newStudyAlias), null, sessionId);
     }
 
     /**
@@ -718,21 +570,7 @@ public class CatalogManager {
      */
     public QueryResult modifyStudy(int studyId, ObjectMap parameters, String sessionId)
             throws CatalogException {
-        checkObj(parameters, "Parameters");
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
-        }
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|type|description|status|attributes|stats")) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-            }
-        }
-
-        String ownerId = catalogDBAdaptor.getStudyOwnerId(studyId);
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return catalogDBAdaptor.modifyStudy(studyId, parameters);
+        return studyManager.update(studyId, parameters, null, sessionId);
     }
 
     public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
@@ -1015,7 +853,7 @@ public class CatalogManager {
      */
     public QueryResult modifyFile(int fileId, ObjectMap parameters, String sessionId)
             throws CatalogException {
-        return fileManager.update(fileId, parameters, sessionId);
+        return fileManager.update(fileId, parameters, null, sessionId); //TODO: Add query options
     }
 
     public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
@@ -1375,22 +1213,6 @@ public class CatalogManager {
 //            }
 //            throw e;
 //        }
-//    }
-//
-//
-//    public List<AnalysisPlugin> getUserAnalysis(String sessionId) throws CatalogManagerException, IOException {
-//        return catalogDBAdaptor.getUserAnalysis(sessionId);
-//    }
-//
-//    public void setJobCommandLine(String userId, String jobId, String commandLine, String sessionId)
-//            throws CatalogManagerException, IOException {
-//        catalogDBAdaptor.setJobCommandLine(userId, jobId, commandLine, sessionId);// this
-//        // method
-//        // increases
-//        // visites
-//        // by 1
-//        // in
-//        // mongodb
 //    }
 
     /**

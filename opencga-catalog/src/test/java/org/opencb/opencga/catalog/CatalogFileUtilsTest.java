@@ -59,23 +59,18 @@ public class CatalogFileUtilsTest {
                 .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
                 .build();
 
+        String[] split = properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0].split(":");
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0], 27017);
-
-        CatalogMongoDBAdaptor catalogDBAdaptor = new CatalogMongoDBAdaptor(Arrays.asList(dataStoreServerAddress),
-                mongoDBConfiguration, properties.getProperty(CatalogManager.CATALOG_DB_DATABASE, ""));
+                split[0], 27017);
 
 
-        catalogManager = new CatalogManager(catalogDBAdaptor, properties);
-
-        //Create ADMIN
-        catalogManager.createUser("admin", "name", "mi@mail.com", "asdf", "", null);
-        catalogDBAdaptor.modifyUser("admin", new ObjectMap("role", User.Role.ADMIN));
+        CatalogManagerTest.clearCatalog(properties);
+        catalogManager = new CatalogManager(properties);
 
         //Create USER
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
-        adminSessionId = catalogManager.login("admin", "asdf", "--").getResult().get(0).getString("sessionId");
+        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         int projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
 

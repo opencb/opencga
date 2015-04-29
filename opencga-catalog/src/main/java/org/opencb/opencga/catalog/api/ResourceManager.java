@@ -51,10 +51,11 @@ public interface ResourceManager<I, R>{
      *
      * @param id          Id of the object to update
      * @param parameters  Parameters to change.
+     * @param options
      * @return            The modified entry.
      * @throws CatalogException
      */
-    public QueryResult<R> update(I id, ObjectMap parameters, String sessionId)
+    public QueryResult<R> update(I id, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException;
 
     /**

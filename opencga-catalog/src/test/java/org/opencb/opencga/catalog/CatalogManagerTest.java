@@ -626,7 +626,7 @@ public class CatalogManagerTest extends GenericTest {
 //    }
 
 
-    private static void clearCatalog(Properties properties) throws IOException {
+    public static void clearCatalog(Properties properties) throws IOException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
             if (hostPort.contains(":")) {

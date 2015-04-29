@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.beans.Project;
 /**
 * @author Jacobo Coll <jacobo167@gmail.com>
 */
-public interface IProjectManager extends ResourceManager<Project, Integer> {
+public interface IProjectManager extends ResourceManager<Integer, Project> {
 
     public String  getUserId(int projectId) throws CatalogException;
     public Integer getProjectId(String projectId) throws CatalogException;

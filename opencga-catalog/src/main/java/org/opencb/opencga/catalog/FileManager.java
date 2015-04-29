@@ -15,7 +15,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -309,7 +308,7 @@ public class FileManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> update(Integer fileId, ObjectMap parameters, String sessionId)
+    public QueryResult<File> update(Integer fileId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         checkObj(parameters, "Parameters");
         checkParameter(sessionId, "sessionId");
