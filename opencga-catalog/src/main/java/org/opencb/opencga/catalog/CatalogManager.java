@@ -23,7 +23,9 @@ import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.api.IFileManager;
 import org.opencb.opencga.catalog.api.IUserManager;
+import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.client.CatalogClient;
@@ -89,6 +91,8 @@ public class CatalogManager {
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
+    private AuthenticationManager authenticationManager;
+    private AuthorizationManager authorizationManager;
 
 
     public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOManagerException {
@@ -114,10 +118,10 @@ public class CatalogManager {
     }
 
     private void configureManagers(Properties properties) {
-        CatalogAuthenticationManager authenticationService = new CatalogAuthenticationManager(catalogDBAdaptor);
-        CatalogAuthorizationManager authorizationService = new CatalogAuthorizationManager(catalogDBAdaptor);
-        userManager = new UserManager(ioManager, catalogDBAdaptor, authenticationService, authorizationService);
-        fileManager = new FileManager(authorizationService, catalogDBAdaptor, catalogIOManagerFactory);
+        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor);
+        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptor);
+        userManager = new UserManager(ioManager, catalogDBAdaptor, authenticationManager, authorizationManager);
+        fileManager = new FileManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
     }
 
     public CatalogClient client() {
@@ -403,11 +407,11 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        Acl projectAcl = getProjectAcl(userId, projectId);
+        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (projectAcl.isRead()) {
             QueryResult<Project> projectResult = catalogDBAdaptor.getProject(projectId, options);
             if (!projectResult.getResult().isEmpty()) {
-                filterStudies(userId, projectAcl, projectResult.getResult().get(0).getStudies());
+                authorizationManager.filterStudies(userId, projectAcl, projectResult.getResult().get(0).getStudies());
             }
             return projectResult;
         } else {
@@ -425,7 +429,7 @@ public class CatalogManager {
         QueryResult<Project> allProjects = catalogDBAdaptor.getAllProjects(ownerId, options);
 
         List<Project> projects = allProjects.getResult();
-        filterProjects(userId, projects);
+        authorizationManager.filterProjects(userId, projects);
         allProjects.setResult(projects);
 
         return allProjects;
@@ -438,7 +442,7 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
 
-        Acl projectAcl = getProjectAcl(userId, projectId);
+        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (projectAcl.isWrite()) {
             catalogDBAdaptor.updateUserLastActivity(ownerId);
             return catalogDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
@@ -468,7 +472,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
-        if (!getProjectAcl(userId, projectId).isWrite()) {
+        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) {
             throw new CatalogDBException("User '" + userId + "' can't modify the project " + projectId);
         }
         for (String s : parameters.keySet()) {
@@ -485,7 +489,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl projectAcl = getProjectAcl(userId, projectId);
+        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (!projectAcl.isWrite()) {
             throw new CatalogDBException("Permission denied. Can't modify project");
         }
@@ -568,11 +572,11 @@ public class CatalogManager {
 
 
         /* Check project permissions */
-        if (!getProjectAcl(userId, projectId).isWrite()) { //User can't write/modify the project
+        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) { //User can't write/modify the project
             throw new CatalogDBException("Permission denied. Can't write in project");
         }
         if (!creatorId.equals(userId)) {
-            if (!getUserRole(userId).equals(User.Role.ADMIN)) {
+            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
             } else {
                 if (!catalogDBAdaptor.userExists(creatorId)) {
@@ -643,11 +647,11 @@ public class CatalogManager {
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = getStudyAcl(userId, studyId);
+        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
         if (studyAcl.isRead()) {
             QueryResult<Study> studyResult = catalogDBAdaptor.getStudy(studyId, options);
             if (!studyResult.getResult().isEmpty()) {
-                filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
+                authorizationManager.filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
             }
             return studyResult;
         } else {
@@ -660,14 +664,14 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        Acl projectAcl = getProjectAcl(userId, projectId);
+        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (!projectAcl.isRead()) {
             throw new CatalogDBException("Permission denied. Can't read project");
         }
 
         QueryResult<Study> allStudies = catalogDBAdaptor.getAllStudies(projectId, options);
         List<Study> studies = allStudies.getResult();
-        filterStudies(userId, projectAcl, studies);
+        authorizationManager.filterStudies(userId, projectAcl, studies);
         allStudies.setResult(studies);
 
         return allStudies;
@@ -682,7 +686,7 @@ public class CatalogManager {
         String sessionUserId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         String studyOwnerId = catalogDBAdaptor.getStudyOwnerId(studyId);
 
-        if (!getStudyAcl(sessionUserId, studyId).isWrite()) {  //User can't write/modify the study
+        if (!authorizationManager.getStudyACL(sessionUserId, studyId).isWrite()) {  //User can't write/modify the study
             throw new CatalogDBException("Permission denied. Can't write in project");
         }
 
@@ -717,7 +721,7 @@ public class CatalogManager {
         checkObj(parameters, "Parameters");
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!getStudyAcl(userId, studyId).isWrite()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
         }
         for (String s : parameters.keySet()) {
@@ -736,7 +740,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = getStudyAcl(userId, studyId);
+        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
         if (!studyAcl.isWrite()) {
             throw new CatalogDBException("Permission denied. Can't modify project");
         }
@@ -909,9 +913,9 @@ public class CatalogManager {
 //         */
 //        Acl fileAcl;
 //        if (parentId < 0) { //If it hasn't got parent, take the StudyAcl
-//            fileAcl = getStudyAcl(userId, studyId);
+//            fileAcl = authorizationManager.getStudyACL(userId, studyId);
 //        } else {
-//            fileAcl = getFileAcl(userId, parentId);
+//            fileAcl = authorizationManager.getFileACL(userId, parentId);
 //        }
 //
 //        if (!fileAcl.isWrite()) {
@@ -974,7 +978,7 @@ public class CatalogManager {
 //        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
 //        String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
 //
-//        if (!getFileAcl(userId, fileId).isWrite()) {
+//        if (!authorizationManager.getFileACL(userId, fileId).isWrite()) {
 //            throw new CatalogManagerException("Permission denied. User can't rename this file");
 //        }
 //        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
@@ -1014,16 +1018,6 @@ public class CatalogManager {
         return fileManager.update(fileId, parameters, sessionId);
     }
 
-//    public QueryResult setIndexFile(int fileId, String backend, Index index, String sessionId) throws CatalogManagerException {
-//        checkObj(backend, "backend");
-//        checkParameter(sessionId, "sessionId");
-//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        if (!getFileAcl(userId, fileId).isWrite()) {
-//            throw new CatalogManagerException("User " + userId + " can't modify the file " + fileId);
-//        }
-//        return catalogDBAdaptor.setIndexFile(fileId, backend, index);
-//    }
-
     public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.getParent(fileId, options, sessionId);
@@ -1043,13 +1037,13 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = getStudyAcl(userId, studyId);
+        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
         if (!studyAcl.isRead()) {
             throw new CatalogException("Permission denied. User can't read file");
         }
         QueryResult<File> allFilesResult = catalogDBAdaptor.getAllFiles(studyId, options);
         List<File> files = allFilesResult.getResult();
-        filterFiles(userId, studyAcl, files);
+        authorizationManager.filterFiles(userId, studyAcl, files);
         allFilesResult.setResult(files);
         return allFilesResult;
     }
@@ -1060,13 +1054,13 @@ public class CatalogManager {
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(folderId);
-        Acl studyAcl = getStudyAcl(userId, studyId);
+        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
         if (!studyAcl.isRead()) {
             throw new CatalogDBException("Permission denied. User can't read file");
         }
         QueryResult<File> allFilesResult = catalogDBAdaptor.getAllFilesInFolder(folderId, options);
         List<File> files = allFilesResult.getResult();
-        filterFiles(userId, studyAcl, files);
+        authorizationManager.filterFiles(userId, studyAcl, files);
         allFilesResult.setResult(files);
         return allFilesResult;
     }
@@ -1082,7 +1076,7 @@ public class CatalogManager {
 
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!getFileAcl(userId, fileId).isRead()) {
+        if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
             throw new CatalogDBException("Permission denied. User can't download file");
         }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -1102,7 +1096,7 @@ public class CatalogManager {
 
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!getFileAcl(userId, fileId).isRead()) {
+        if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
             throw new CatalogException("Permission denied. User can't download file");
         }
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -1127,7 +1121,7 @@ public class CatalogManager {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl fileAcl = getFileAcl(userId, fileId);
+        Acl fileAcl = authorizationManager.getFileACL(userId, fileId);
         if (!fileAcl.isWrite()) {
             throw new CatalogDBException("Permission denied. Can't modify file");
         }
@@ -1154,42 +1148,12 @@ public class CatalogManager {
     public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
                                               Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
-        checkObj(files, "files");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
-        description = defaultString(description, "");
-        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
-
-        if (!getStudyAcl(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
-        }
-        for (Integer fileId : files) {
-            if (catalogDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
-                throw new CatalogException("Can't create a dataset with files from different files.");
-            }
-            if (!getFileAcl(userId, fileId).isRead()) {
-                throw new CatalogException("Permission denied. User " + userId + " can't read the file " + fileId);
-            }
-        }
-
-        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
-
-        return catalogDBAdaptor.createDataset(studyId, dataset, options);
+        return fileManager.createDataset(studyId, name, description, files, attributes, options, sessionId);
     }
 
     public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdByDatasetId(dataSetId);
-
-        if (!getStudyAcl(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
-        }
-
-        return catalogDBAdaptor.getDataset(dataSetId, options);
+        return fileManager.getDataset(dataSetId, options, sessionId);
     }
 
 //    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
@@ -1203,237 +1167,10 @@ public class CatalogManager {
 //        return ioManager.getGrepFileObject(userId, bucketId, objectId, pattern, ignoreCase, multi);
 //    }
 
-//    //TODO
-//    public void shareObject(int fileId, String toAccountId, boolean read,
-//                            boolean write, boolean execute, boolean delete, String sessionId) throws CatalogManagerException {
-//        checkParameters(userId, "userId", bucketId, "bucketId", objectId.toString(), "objectId", toAccountId,
-//                "toAccountId", sessionId, "sessionId");
-//
-//        Acl acl = new Acl(toAccountId, read, write, execute, delete);
-//        catalogDBAdaptor.shareObject(fileId, acl, sessionId);
-//    }
-
-////    public String fetchData(Path objectId, String fileFormat, String regionStr, Map<String, List<String>> params) throws Exception {
-////        checkParameter(objectId.toString(), "objectId");
-////        checkParameter(regionStr, "regionStr");
-////
-////        String result = "";
-////        switch (fileFormat) {
-////            case "bam":
-////                result = fetchAlignmentData(objectId, regionStr, params);
-////                break;
-////            case "vcf":
-////                result = fetchVariationData(objectId, regionStr, params);
-////                break;
-////            default:
-////                throw new IllegalArgumentException("File format " + fileFormat + " not yet supported");
-////        }
-////
-////        return result;
-////    }
-
-//    public QueryResult fetchAlignmentData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-//        AlignmentQueryBuilder queryBuilder = new TabixAlignmentQueryBuilder(new SqliteCredentials(objectPath), null, null);
-//        Region region = Region.parseRegion(regionStr);
-//        QueryOptions options = new QueryOptions(params, true);
-//        QueryResult queryResult = null;
-//
-//        boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
-//        boolean includeAlignments = params.containsKey("alignments") && Boolean.parseBoolean(params.get("alignments").get(0));
-//        boolean includeCoverage = params.containsKey("coverage") && Boolean.parseBoolean(params.get("coverage").get(0));
-//
-//        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap>
-//            queryResult = queryBuilder.getAlignmentsHistogramByRegion(region,
-//                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
-//                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-//
-//        } else if ((includeAlignments && includeCoverage) ||
-//                (!includeAlignments && !includeCoverage)) { // If both or none requested: QueryResult<AlignmentRegion>
-//            queryResult = queryBuilder.getAlignmentRegionInfo(region, options);
-//
-//        } else if (includeAlignments) { // Query the alignments themselves: QueryResult<Alignment>
-//            queryResult = queryBuilder.getAllAlignmentsByRegion(region, options);
-//
-//        } else if (includeCoverage) { // Query the alignments' coverage: QueryResult<RegionCoverage>
-//            queryResult = queryBuilder.getCoverageByRegion(region, options);
-//        }
-//
-//        return queryResult;
-//    }
-
-
-//    public String fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-//        VcfManager vcfManager = new VcfManager();
-//        return vcfManager.getByRegion(objectPath, regionStr, params);
-//    }
-
-
-///*
-//    public QueryResult fetchVariationData(Path objectPath, String regionStr, Map<String, List<String>> params) throws Exception {
-//        String species = params.containsKey("species") ? params.get("species").get(0) : "hsapiens";
-//        VariantDBAdaptor queryBuilder = null;
-//                //new VariantMonbaseQueryBuilder(species,
-//                //new MonbaseCredentials("172.24.79.30", 60010, "172.24.79.30", 2181, "localhost", 9999, "variants_" + species, "cgonzalez", "cgonzalez"));
-//                new VariantSqliteQueryBuilder(new SqliteCredentials(objectPath));
-//        Region region = Region.parseRegion(regionStr);
-//        QueryOptions options = new QueryOptions(params, true);
-//        QueryResult queryResult = null;
-//
-//        boolean includeHistogram = params.containsKey("histogram") && Boolean.parseBoolean(params.get("histogram").get(0));
-//        boolean includeVariants = params.containsKey("variants") && Boolean.parseBoolean(params.get("variants").get(0));
-//        boolean includeStats = params.containsKey("stats") && Boolean.parseBoolean(params.get("stats").get(0));
-//        boolean includeEffects = params.containsKey("effects") && Boolean.parseBoolean(params.get("effects").get(0));
-//        String studyName = params.containsKey("study") ? params.get("study").toString() : "";
-//        if (studyName.equals("")) { // TODO In the future, it will represent that we want to retrieve info from all studies
-//            return new QueryResult(regionStr);
-//        }
-//
-//        if (includeHistogram) { // Query the alignments' histogram: QueryResult<ObjectMap>
-//            // TODO
-//            queryResult = queryBuilder.getVariantFrequencyByRegion(region, studyName,
-//                    params.containsKey("histogramLogarithm") ? Boolean.parseBoolean(params.get("histogram").get(0)) : false,
-//                    params.containsKey("histogramMax") ? Integer.parseInt(params.get("histogramMax").get(0)) : 500);
-//
-//        } else if (includeVariants) {
-//            // TODO in SQLite
-//            queryResult = queryBuilder.getAllVariantsByRegion(region, studyName, options);
-//        } else if (includeStats && !includeEffects) {
-//
-//        } else if (!includeStats && includeEffects) {
-//
-//        }
-//
-//        return queryResult;
-//    }
-//*/
-//
-//    public String indexFileObject(String userId, String bucketId, Path objectId, boolean force, String sessionId) throws Exception {
-//        ObjectItem objectItem = catalogDBAdaptor.getObjectFromBucket(userId, bucketId, objectId, sessionId);
-//        if (objectItem.getStatus().contains("indexer")) {
-//            return "indexing...";
-//        }
-//        String sgeJobName = "ready";
-//        boolean indexReady;
-//        switch (objectItem.getFileFormat()) {
-//            case "bam":
-//                indexReady = BamManager.checkIndex(ioManager.getFileUri(userId, bucketId, objectId));
-//                if (force || !indexReady) {
-//                    sgeJobName = BamManager.createIndex(getFileUri(userId, bucketId, objectId));
-//                    catalogDBAdaptor.setObjectStatus(userId, bucketId, objectId, sgeJobName, sessionId);
-//                }
-//                break;
-//            case "vcf":
-//                indexReady = VcfManager.checkIndex(ioManager.getFileUri(userId, bucketId, objectId));
-//                if (force || !indexReady) {
-//                    sgeJobName = VcfManager.createIndex(getFileUri(userId, bucketId, objectId));
-//                    catalogDBAdaptor.setObjectStatus(userId, bucketId, objectId, sgeJobName, sessionId);
-//                }
-//                break;
-//        }
-//
-//        return sgeJobName;
-//    }
-//
-//    public String indexFileObjectStatus(String userId, String bucketId, Path objectId, String sessionId, String jobId) throws Exception {
-//        checkParameter(jobId, "jobId");
-//        logger.info(jobId);
-//        String objectStatus = catalogDBAdaptor.getObjectFromBucket(userId, bucketId, objectId, sessionId).getStatus();
-//        logger.info(objectStatus);
-////        String jobStatus = SgeManager.status(jobId);
-//        String jobStatus = "finished";
-//        logger.info(jobStatus);
-//        if (jobStatus.equalsIgnoreCase("finished")) {
-//            objectStatus = objectStatus.replace("indexer_", "index_finished_");
-//            logger.info(objectStatus);
-//            catalogDBAdaptor.setObjectStatus(userId, bucketId, objectId, objectStatus, sessionId);
-//        }
-//        return jobStatus;
-//    }
-//
 
     public QueryResult refreshFolder(final int folderId, final String sessionId)
             throws CatalogDBException, IOException {
-
         throw new UnsupportedOperationException();
-//        final Path bucketPath = ioManager.getFileUri(userId, bucketId);
-//        final List<ObjectItem> newObjects = new ArrayList<ObjectItem>();
-//
-//        Files.walkFileTree(bucketPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
-//            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-//                String fileName = file.getFileName().toString();
-//                if (!Files.isHidden(file) && !fileName.equals("sge_err.log") && !fileName.equals("sge_out.log") && !Files.isDirectory(file)) {
-//                    Path ojectId = bucketPath.relativize(file);
-////                    logger.info(ojectId);
-//                    ObjectItem objectItem = null;
-//                    try {//find the current object if already exists
-//                        objectItem = catalogDBAdaptor.getObjectFromBucket(userId, bucketId, ojectId, sessionId);
-//                    } catch (CatalogManagerException e) {
-//                        objectItem = new ObjectItem(ojectId.toString(), ojectId.getFileName().toString(), "r");
-//                        String fileExt = IOUtils.getExtension(ojectId.toString());
-//                        if (fileExt != null) {
-//                            objectItem.setFileFormat(fileExt.substring(1));
-//                        }
-//                        objectItem.setStatus("");
-//                    }
-//                    newObjects.add(objectItem);
-//                    return FileVisitResult.CONTINUE;
-//                } else {
-//                    return FileVisitResult.CONTINUE;
-//                }
-//            }
-//
-//            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-//                // try to delete the file anyway, even if its attributes
-//                // could not be read, since delete-only access is
-//                // theoretically possible
-//                return FileVisitResult.SKIP_SUBTREE;
-//            }
-//
-//            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-//                if (Files.isHidden(dir) || !Files.isReadable(dir) || dir.getFileName().toString().equals("..")
-//                        || dir.getFileName().toString().equals(".")) {
-//                    return FileVisitResult.SKIP_SUBTREE;
-//                }
-//                if (!dir.equals(bucketPath)) {//dont add bucketId folder itself
-//                    Path ojectId = bucketPath.relativize(dir);
-////                    logger.info(bucketId);
-////                    logger.info(ojectId);
-////                    logger.info(dir.toString());
-//
-//                    ObjectItem objectItem = null;
-//                    try {//find the current object if already exists
-//                        objectItem = catalogDBAdaptor.getObjectFromBucket(userId, bucketId, ojectId, sessionId);
-//                    } catch (CatalogManagerException e) {
-//                        objectItem = new ObjectItem(ojectId.toString(), ojectId.getFileName().toString(), "dir");
-//                        objectItem.setFileFormat("dir");
-//                        objectItem.setStatus("");
-//                    }
-//                    newObjects.add(objectItem);
-//                }
-//                return FileVisitResult.CONTINUE;
-//            }
-//
-//            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-//                if (Files.isHidden(dir) || !Files.isReadable(dir)) {
-//                    return FileVisitResult.SKIP_SUBTREE;
-//                }
-//                // here
-//                return FileVisitResult.CONTINUE;
-//            }
-//        });
-//
-//        catalogDBAdaptor.deleteObjectsFromBucket(userId, bucketId, sessionId);
-//        for (ObjectItem objectItem : newObjects) {
-//            catalogDBAdaptor.createObjectToBucket(userId, bucketId, objectItem, sessionId);
-//        }
-//
-//        ObjectMap resultObjectMap = new ObjectMap();
-//        QueryResult<ObjectMap> result = new QueryResult();
-//        resultObjectMap.put("msg", "bucket refreshed");
-//        result.setResult(Arrays.asList(resultObjectMap));
-//        result.setNumResults(1);
-//
-//        return result;
     }
 
     /**
@@ -1462,7 +1199,7 @@ public class CatalogManager {
 
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        if (!getStudyAcl(userId, studyId).isWrite()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. Can't create job");
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList("id", "type", "path"));
@@ -1505,7 +1242,7 @@ public class CatalogManager {
 //        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
 //        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
         int studyId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-        if (!getStudyAcl(userId, studyId).isRead()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. Can't read job");
         }
         return catalogDBAdaptor.incJobVisits(jobId);
@@ -1518,7 +1255,7 @@ public class CatalogManager {
 //        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
 //        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
         int studyId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-        if (!getStudyAcl(userId, studyId).isDelete()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isDelete()) {
             throw new CatalogException("Permission denied. Can't delete job");
         }
 
@@ -1532,7 +1269,7 @@ public class CatalogManager {
 //        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
 //        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
         int studyId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-        if (!getStudyAcl(userId, studyId).isRead()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. Can't read job");
         }
 
@@ -1541,7 +1278,7 @@ public class CatalogManager {
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        User.Role role = getUserRole(userId);
+        User.Role role = authorizationManager.getUserRole(userId);
         switch (role) {
             case ADMIN:
                 return catalogDBAdaptor.searchJob(new QueryOptions("ready", false));
@@ -1553,7 +1290,7 @@ public class CatalogManager {
 
     public QueryResult<Job> getAllJobs(int studyId, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        if (!getStudyAcl(userId, studyId).isRead()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. Can't get jobs");
         }
         return catalogDBAdaptor.getAllJobs(studyId, new QueryOptions());
@@ -1563,7 +1300,7 @@ public class CatalogManager {
 //        String userId = getUserIdBySessionId(sessionId);
 ////        getAnalysisAcl(); //TODO: Look for ACLs !!!
 //        int studyId = getStudyIdByAnalysisId(analysisId);
-//        if (getStudyAcl(userId, studyId).isRead()) {
+//        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
 //            return catalogDBAdaptor.searchJob(new QueryOptions("analysisId", analysisId));
 //        } else {
 //            throw new CatalogManagerException("Permission denied. User can't read this analysis");
@@ -1573,7 +1310,7 @@ public class CatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
 
-//        User.Role role = getUserRole(userId);
+//        User.Role role = authorizationManager.getUserRole(userId);
 //        switch (role) {
 //            case ADMIN:
                 return catalogDBAdaptor.modifyJob(jobId, parameters);
@@ -1671,7 +1408,7 @@ public class CatalogManager {
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!getStudyAcl(userId, studyId).isWrite()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
         Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
@@ -1686,7 +1423,7 @@ public class CatalogManager {
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdBySampleId(sampleId);
 
-        if (!getStudyAcl(userId, studyId).isRead()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
 
@@ -1698,7 +1435,7 @@ public class CatalogManager {
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!getStudyAcl(userId, studyId).isRead()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
 
@@ -1741,7 +1478,7 @@ public class CatalogManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        if (!getStudyAcl(userId, studyId).isWrite()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
 
@@ -1756,7 +1493,7 @@ public class CatalogManager {
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdByVariableSetId(variableSet);
-        if (!getStudyAcl(userId, studyId).isRead()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
 
@@ -1784,7 +1521,7 @@ public class CatalogManager {
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = catalogDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (!getStudyAcl(userId, studyId).isWrite()) {
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
 
@@ -1825,7 +1562,7 @@ public class CatalogManager {
         int studyId = catalogDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = getUserIdBySessionId(sessionId);
 
-        if (getStudyAcl(userId, studyId).isRead()) {
+        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
             return catalogDBAdaptor.getCohort(cohortId);
         } else {
             throw new CatalogException("Permission denied. User " + userId + " can't read cohorts from study");
@@ -1979,188 +1716,6 @@ public class CatalogManager {
             object = defaultObject;
         }
         return object;
-    }
-
-    /*
-     *  Permission methods. Internal use only.
-     *  Builds the specific ACL for each pair sessionId,object
-     *  ****************
-     */
-
-    /**
-     * Removes from the list the projects that the user can not read.
-     * From the remaining projects, filters the studies and files.
-     *
-     * @param userId   UserId
-     * @param projects Projects list
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
-     */
-    private void filterProjects(String userId, List<Project> projects) throws CatalogDBException {
-        Iterator<Project> projectIt = projects.iterator();
-        while (projectIt.hasNext()) {
-            Project p = projectIt.next();
-            Acl projectAcl = getProjectAcl(userId, p.getId());
-            if (!projectAcl.isRead()) {
-                projectIt.remove();
-            } else {
-                List<Study> studies = p.getStudies();
-                filterStudies(userId, projectAcl, studies);
-            }
-        }
-    }
-
-    /**
-     * Removes from the list the studies that the user can not read.
-     * From the remaining studies, filters the files.
-     *
-     * @param userId     UserId
-     * @param projectAcl Project ACL
-     * @param studies    Studies list
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
-     */
-    private void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogDBException {
-        Iterator<Study> studyIt = studies.iterator();
-        while (studyIt.hasNext()) {
-            Study s = studyIt.next();
-            Acl studyAcl = getStudyAcl(userId, s.getId(), projectAcl);
-            if (!studyAcl.isRead()) {
-                studyIt.remove();
-            } else {
-                List<File> files = s.getFiles();
-                filterFiles(userId, studyAcl, files);
-            }
-        }
-    }
-
-    /**
-     * Removes from the list the files that the user can not read.
-     *
-     * @param userId   UserId
-     * @param studyAcl Study ACL
-     * @param files    Files list
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
-     */
-    private void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogDBException {
-        if (files == null || files.isEmpty()) {
-            return;
-        }
-        Iterator<File> fileIt = files.iterator();
-        while (fileIt.hasNext()) {
-            File f = fileIt.next();
-            Acl fileAcl = getFileAcl(userId, f.getId(), studyAcl);
-            if (!fileAcl.isRead()) {
-                fileIt.remove();
-            }
-        }
-    }
-
-    private Acl mergeAcl(String userId, Acl acl1, Acl acl2) {
-        return new Acl(
-                userId,
-                acl1.isRead() && acl2.isRead(),
-                acl1.isWrite() && acl2.isWrite(),
-                acl1.isExecute() && acl2.isExecute(),
-                acl1.isDelete() && acl2.isDelete()
-        );
-    }
-
-    private User.Role getUserRole(String userId) throws CatalogDBException {
-        return catalogDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).getResult().get(0).getRole();
-    }
-
-    private Acl getProjectAcl(String userId, int projectId) throws CatalogDBException {
-        Acl projectAcl;
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
-            return new Acl(userId, true, true, true, true);
-        }
-        boolean sameOwner = catalogDBAdaptor.getProjectOwnerId(projectId).equals(userId);
-
-        if (sameOwner) {
-            projectAcl = new Acl(userId, true, true, true, true);
-        } else {
-            QueryResult<Acl> result = catalogDBAdaptor.getProjectAcl(projectId, userId);
-            if (!result.getResult().isEmpty()) {
-                projectAcl = result.getResult().get(0);
-            } else {
-                QueryResult<Acl> resultAll = catalogDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
-                if (!resultAll.getResult().isEmpty()) {
-                    projectAcl = resultAll.getResult().get(0);
-                } else {
-                    projectAcl = new Acl(userId, false, false, false, false);
-                }
-            }
-        }
-        return projectAcl;
-    }
-
-    private Acl getStudyAcl(String userId, int studyId) throws CatalogDBException {
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-        return getStudyAcl(userId, studyId, getProjectAcl(userId, projectId));
-    }
-
-    private Acl getStudyAcl(String userId, int studyId, Acl projectAcl) throws CatalogDBException {
-        Acl studyAcl;
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
-            return new Acl(userId, true, true, true, true);
-        }
-        boolean sameOwner = catalogDBAdaptor.getStudyOwnerId(studyId).equals(userId);
-
-        if (sameOwner) {
-            studyAcl = new Acl(userId, true, true, true, true);
-        } else {
-            QueryResult<Acl> result = catalogDBAdaptor.getStudyAcl(studyId, userId);
-            if (!result.getResult().isEmpty()) {
-                studyAcl = result.getResult().get(0);
-            } else {
-                QueryResult<Acl> resultAll = catalogDBAdaptor.getStudyAcl(studyId, Acl.USER_OTHERS_ID);
-                if (!resultAll.getResult().isEmpty()) {
-                    studyAcl = resultAll.getResult().get(0);
-                } else {
-                    //studyAcl = new Acl(userId, false, false, false, false);
-                    studyAcl = projectAcl;
-                }
-            }
-        }
-        return mergeAcl(userId, projectAcl, studyAcl);
-    }
-
-    private Acl getFileAcl(String userId, int fileId) throws CatalogDBException {
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
-            return new Acl(userId, true, true, true, true);
-        }
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        return getStudyAcl(userId, studyId);
-    }
-
-    /**
-     * Use StudyACL for all files.
-     */
-    private Acl getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogDBException {
-        return studyAcl;
-    }
-
-    //TODO: Check folder ACLs
-    private Acl __getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogDBException {
-        Acl fileAcl;
-        boolean sameOwner = catalogDBAdaptor.getFileOwnerId(fileId).equals(userId);
-
-        if (sameOwner) {
-            fileAcl = new Acl(userId, true, true, true, true);
-        } else {
-            QueryResult<Acl> result = catalogDBAdaptor.getFileAcl(fileId, userId);
-            if (!result.getResult().isEmpty()) {
-                fileAcl = result.getResult().get(0);
-            } else {
-                QueryResult<Acl> resultAll = catalogDBAdaptor.getFileAcl(fileId, Acl.USER_OTHERS_ID);
-                if (!resultAll.getResult().isEmpty()) {
-                    fileAcl = resultAll.getResult().get(0);
-                } else {
-                    //fileAcl = new Acl(userId, false, false, false, false);
-                    fileAcl = studyAcl;
-                }
-            }
-        }
-        return mergeAcl(userId, fileAcl, studyAcl);
     }
 
 

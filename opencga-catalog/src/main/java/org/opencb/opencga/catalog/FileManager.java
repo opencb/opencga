@@ -5,10 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.api.IFileManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.beans.Acl;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.beans.User;
+import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -469,4 +466,50 @@ public class FileManager implements IFileManager {
 
         return null;
     }
+
+
+    @Override
+    public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
+                                              Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        checkParameter(name, "name");
+        checkObj(files, "files");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        description = defaultString(description, "");
+        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        }
+        for (Integer fileId : files) {
+            if (fileDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
+                throw new CatalogException("Can't create a dataset with files from different files.");
+            }
+            if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
+                throw new CatalogException("Permission denied. User " + userId + " can't read the file " + fileId);
+            }
+        }
+
+        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
+
+        return fileDBAdaptor.createDataset(studyId, dataset, options);
+    }
+
+    @Override
+    public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = fileDBAdaptor.getStudyIdByDatasetId(dataSetId);
+
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        }
+
+        return fileDBAdaptor.getDataset(dataSetId, options);
+    }
+
+
 }
