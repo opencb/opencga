@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.db.api;
 
-import com.mongodb.WriteResult;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -36,7 +35,7 @@ public interface CatalogFileDBAdaptor {
 
     public abstract QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
-    public abstract QueryResult<WriteResult> renameFile(int fileId, String name) throws CatalogDBException;
+    public abstract QueryResult renameFile(int fileId, String name) throws CatalogDBException;
 
     public abstract int getStudyIdByFileId(int fileId) throws CatalogDBException;
 

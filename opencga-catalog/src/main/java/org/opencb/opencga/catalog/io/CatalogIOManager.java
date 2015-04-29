@@ -128,7 +128,7 @@ public abstract class CatalogIOManager {
 
     public abstract void deleteFile(URI fileUri) throws IOException;
 
-    public abstract void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException;
+    public abstract void rename(URI oldName, URI newName) throws CatalogIOManagerException;
 
     public abstract boolean isDirectory(URI uri);
 
@@ -324,11 +324,7 @@ public abstract class CatalogIOManager {
         URI oldFolder = getProjectUri(userId, oldProjectId);
         URI newFolder = getProjectUri(userId, newProjectId);
 
-        try {
-            rename(oldFolder, newFolder);
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("renameProject(): could not rename the project folder: " + e.toString());
-        }
+        rename(oldFolder, newFolder);
     }
 
     public boolean existProject(String userId, String projectId) throws CatalogIOManagerException {

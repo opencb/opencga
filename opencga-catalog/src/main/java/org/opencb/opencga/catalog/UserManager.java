@@ -3,8 +3,8 @@ package org.opencb.opencga.catalog;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.authentication.AuthenticationService;
-import org.opencb.opencga.catalog.authorization.AuthorizationService;
+import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.api.IUserManager;
 import org.opencb.opencga.catalog.beans.Session;
 import org.opencb.opencga.catalog.beans.User;
@@ -20,16 +20,16 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 class UserManager implements IUserManager {
 
     protected final CatalogIOManager ioManager;
     protected final CatalogUserDBAdaptor userDBAdaptor;
-    protected final AuthenticationService authenticationService;
-    protected final AuthorizationService authorizationService;
+    protected final AuthenticationManager authenticationManager;
+    protected final AuthorizationManager authorizationManager;
 
-    protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
@@ -37,11 +37,11 @@ class UserManager implements IUserManager {
     private String creationUserPolicy = "always";
 
     UserManager(CatalogIOManager ioManager, CatalogUserDBAdaptor userDBAdaptor,
-                AuthenticationService authenticationService, AuthorizationService authorizationService) {
+                AuthenticationManager authenticationManager, AuthorizationManager authorizationManager) {
         this.ioManager = ioManager;
         this.userDBAdaptor = userDBAdaptor;
-        this.authenticationService = authenticationService;
-        this.authorizationService = authorizationService;
+        this.authenticationManager = authenticationManager;
+        this.authorizationManager = authorizationManager;
     }
 
 
@@ -59,7 +59,7 @@ class UserManager implements IUserManager {
         checkParameter(newPassword, "newPassword");
 //        checkSessionId(userId, sessionId);  //Only the user can change his own password
         userDBAdaptor.updateUserLastActivity(userId);
-        authenticationService.changePassword(userId, oldPassword, newPassword);
+        authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
     @Override
@@ -91,7 +91,7 @@ class UserManager implements IUserManager {
         switch (creationUserPolicy) {
             case "onlyAdmin": {
                 String userId = getUserId(sessionId);
-                if (!userId.isEmpty() && authorizationService.getUserRole(userId).equals(User.Role.ADMIN)) {
+                if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                     user.getAttributes().put("creatorUserId", userId);
                 } else {
                     throw new CatalogException("CreateUser Fail. Required Admin role");
@@ -152,7 +152,7 @@ class UserManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> readAll(QueryOptions options, String sessionId)
+    public QueryResult<User> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
         return null;
     }
@@ -193,7 +193,7 @@ class UserManager implements IUserManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (userIdBySessionId.equals(userId) || authorizationService.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
+        if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
             try {
                 ioManager.deleteUser(userId);
             } catch (CatalogIOManagerException e) {
@@ -256,7 +256,7 @@ class UserManager implements IUserManager {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        switch (authorizationService.getUserRole(userId)) {
+        switch (authorizationManager.getUserRole(userId)) {
             default:
                 return userDBAdaptor.logout(userId, sessionId);
             case ANONYMOUS:

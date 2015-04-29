@@ -100,7 +100,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException {
+    public void rename(URI oldName, URI newName) throws CatalogIOManagerException {
 
     }
 

@@ -89,6 +89,31 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private static ObjectReader jsonSampleReader;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
+    @Override
+    public CatalogUserDBAdaptor getCatalogUserDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogStudyDBAdaptor getCatalogStudyDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogFileDBAdaptor getCatalogFileDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogSamplesDBAdaptor getCatalogSamplesDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogJobDBAdaptor getCatalogJobDBAdaptor() {
+        return this;
+    }
+
     static {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -1118,7 +1143,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
     @Override
     public int getFileId(int studyId, String path) throws CatalogDBException {
-
         DBObject query = BasicDBObjectBuilder
                 .start(_STUDY_ID, studyId)
                 .append("path", path).get();
@@ -1219,7 +1243,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
      * @param filePath assuming 'pathRelativeToStudy + name'
      */
     @Override
-    public QueryResult<WriteResult> renameFile(int fileId, String filePath) throws CatalogDBException {
+    public QueryResult renameFile(int fileId, String filePath) throws CatalogDBException {
         long startTime = startQuery();
 
         Path path = Paths.get(filePath);
@@ -1250,7 +1274,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-        return endQuery("rename file", startTime, update);
+        return endQuery("rename file", startTime);
     }
 
 

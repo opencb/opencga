@@ -131,7 +131,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException {
+    public void rename(URI oldName, URI newName) throws CatalogIOManagerException {
         String parent;
         if (isDirectory(oldName)) { // if oldName is a file
             parent = "..";
@@ -141,8 +141,12 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         checkUriExists(oldName);
         checkDirectoryUri(oldName.resolve(parent), true);
 
-        if (!Files.exists(Paths.get(newName))) {
-            Files.move(Paths.get(oldName), Paths.get(newName));
+        try {
+            if (!Files.exists(Paths.get(newName))) {
+                Files.move(Paths.get(oldName), Paths.get(newName));
+            }
+        } catch (IOException e) {
+            throw new CatalogIOManagerException("Unable to rename file", e);
         }
     }
 

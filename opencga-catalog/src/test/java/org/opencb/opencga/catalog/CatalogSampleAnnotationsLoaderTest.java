@@ -26,7 +26,6 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.*;
 import org.opencb.opencga.catalog.beans.*;
 
 import java.io.IOException;
@@ -64,7 +63,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
         pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1, sessionId).getResult().get(0);
-        new CatalogFileManager(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
+        new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFile(pedFile.getId(), sessionId).getResult().get(0);
     }
 

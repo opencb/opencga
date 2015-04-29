@@ -21,12 +21,13 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.catalog.authentication.CatalogAuthenticationService;
-import org.opencb.opencga.catalog.authorization.CatalogAuthorizationService;
+import org.opencb.opencga.catalog.api.IFileManager;
+import org.opencb.opencga.catalog.api.IUserManager;
+import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
-import org.opencb.opencga.catalog.client.ICatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
@@ -51,7 +52,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public class CatalogManager implements ICatalogManager {
+public class CatalogManager {
 
     /* DBAdaptor properties */
     public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
@@ -75,7 +76,8 @@ public class CatalogManager implements ICatalogManager {
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
-    private UserManager userManager;
+    private IUserManager userManager;
+    private IFileManager fileManager;
 
 //    private PosixCatalogIOManager ioManager;
 
@@ -112,23 +114,21 @@ public class CatalogManager implements ICatalogManager {
     }
 
     private void configureManagers(Properties properties) {
-        CatalogAuthenticationService authenticationService = new CatalogAuthenticationService(catalogDBAdaptor);
-        CatalogAuthorizationService authorizationService = new CatalogAuthorizationService(catalogDBAdaptor);
+        CatalogAuthenticationManager authenticationService = new CatalogAuthenticationManager(catalogDBAdaptor);
+        CatalogAuthorizationManager authorizationService = new CatalogAuthorizationManager(catalogDBAdaptor);
         userManager = new UserManager(ioManager, catalogDBAdaptor, authenticationService, authorizationService);
+        fileManager = new FileManager(authorizationService, catalogDBAdaptor, catalogIOManagerFactory);
     }
 
-    @Override
     public CatalogClient client() {
         return client("");
     }
 
-    @Override
     public CatalogClient client(String sessionId) {
         catalogClient.setSessionId(sessionId);
         return catalogClient;
     }
 
-    @Override
     public CatalogIOManagerFactory getCatalogIOManagerFactory() {
         return catalogIOManagerFactory;
     }
@@ -179,41 +179,34 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public URI getUserUri(String userId) throws CatalogIOManagerException {
         return ioManager.getUserUri(userId);
     }
 
-    @Override
     public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
         return ioManager.getProjectUri(userId, projectId);
     }
 
-    @Override
     public URI getStudyUri(int studyId)
             throws CatalogException {
         return catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", Arrays.asList("projects.studies.uri"))).first().getUri();
     }
 
-    @Override
     public URI getFileUri(int studyId, String relativeFilePath)
             throws CatalogException {
         return ioManager.getFileUri(getStudyUri(studyId), relativeFilePath);
     }
 
-    @Override
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogIOManagerException, IOException {
         return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
-    @Override
     public URI getFileUri(File file) throws CatalogException {
         int studyId = catalogDBAdaptor.getStudyIdByFileId(file.getId());
         return getFileUri(studyId, file.getPath());
     }
 
-    @Override
     public int getProjectIdByStudyId(int studyId) throws CatalogException {
         return catalogDBAdaptor.getProjectIdByStudyId(studyId);
     }
@@ -224,7 +217,6 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public int getProjectId(String id) throws CatalogDBException {
         try {
             return Integer.parseInt(id);
@@ -238,8 +230,7 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getProjectId(split[0], split[1]);
     }
 
-    @Override
-    public int getStudyId(String id) throws CatalogDBException {
+    public int getStudyId(String id) throws CatalogException {
         try {
             return Integer.parseInt(id);
         } catch (NumberFormatException ignore) {
@@ -257,27 +248,10 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getStudyId(projectId, projectStudy[1]);
     }
 
-    @Override
-    public int getFileId(String id) throws CatalogDBException {
-        try {
-            return Integer.parseInt(id);
-        } catch (NumberFormatException ignore) {
-        }
-
-        String[] split = id.split("@", 2);
-        if (split.length != 2) {
-            return -1;
-        }
-        String[] projectStudyPath = split[1].replace(':', '/').split("/", 3);
-        if (projectStudyPath.length <= 2) {
-            return -2;
-        }
-        int projectId = catalogDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
-        int studyId = catalogDBAdaptor.getStudyId(projectId, projectStudyPath[1]);
-        return catalogDBAdaptor.getFileId(studyId, projectStudyPath[2]);
+    public int getFileId(String id) throws CatalogException {
+        return fileManager.getFileId(id);
     }
 
-    @Override
     public int getToolId(String id) throws CatalogDBException {
         try {
             return Integer.parseInt(id);
@@ -296,48 +270,40 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options)
             throws CatalogException {
         return createUser(id, name, email, password, organization, options, null);
     }
 
-    @Override
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options, String sessionId)
             throws CatalogException {
         return userManager.create(id, name, email, password, organization, options, sessionId);
     }
 
-    @Override
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
         return userManager.loginAsAnonymous(sessionIp);
     }
 
-    @Override
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
             throws CatalogException, IOException {
         return userManager.login(userId, password, sessionIp);
     }
 
-    @Override
     public QueryResult logout(String userId, String sessionId) throws CatalogException {
         return userManager.logout(userId, sessionId);
     }
 
-    @Override
     public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
         return userManager.logoutAnonymous(sessionId);
     }
 
-    @Override
     public QueryResult changePassword(String userId, String oldPassword, String newPassword, String sessionId)
             throws CatalogException {
         userManager.changePassword(userId, oldPassword, newPassword);
         return new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());
     }
 
-    @Override
     public QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogException {
         checkParameter(userId, "userId");
         checkParameter(sessionId, "sessionId");
@@ -347,7 +313,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.changeEmail(userId, nEmail);
     }
 
-    @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogException {
         checkParameter(userId, "userId");
         checkEmail(email);
@@ -374,29 +339,24 @@ public class CatalogManager implements ICatalogManager {
     }
 
 
-    @Override
     public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogException {
         return getUser(userId, lastActivity, new QueryOptions(), sessionId);
     }
 
-    @Override
     public QueryResult<User> getUser(String userId, String lastActivity, QueryOptions options, String sessionId)
             throws CatalogException {
         return userManager.read(userId, lastActivity, options, sessionId);
     }
 
-    @Override
     public String getUserIdBySessionId(String sessionId) {
         return userManager.getUserId(sessionId);
     }
 
-    @Override
     public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         return userManager.update(userId, parameters, sessionId);
     }
 
-    @Override
     public void deleteUser(String userId, String sessionId) throws CatalogException {
         userManager.delete(userId, null, sessionId);
     }
@@ -406,7 +366,6 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -439,7 +398,6 @@ public class CatalogManager implements ICatalogManager {
         return result;
     }
 
-    @Override
     public QueryResult<Project> getProject(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -457,7 +415,6 @@ public class CatalogManager implements ICatalogManager {
         }
     }
 
-    @Override
     public QueryResult<Project> getAllProjects(String ownerId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(ownerId, "ownerId");
@@ -474,7 +431,6 @@ public class CatalogManager implements ICatalogManager {
         return allProjects;
     }
 
-    @Override
     public QueryResult renameProject(int projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
         checkAlias(newProjectAlias, "newProjectAlias");
@@ -506,7 +462,6 @@ public class CatalogManager implements ICatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
-    @Override
     public QueryResult modifyProject(int projectId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         checkObj(parameters, "Parameters");
@@ -525,7 +480,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.modifyProject(projectId, parameters);
     }
 
-    @Override
     public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogException {
         checkObj(acl, "acl");
         checkParameter(sessionId, "sessionId");
@@ -543,7 +497,6 @@ public class CatalogManager implements ICatalogManager {
      * Study methods
      * ***************************
      */
-    @Override
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException, IOException {
@@ -572,7 +525,6 @@ public class CatalogManager implements ICatalogManager {
      * @throws CatalogException
      * @throws IOException
      */
-    @Override
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                           String creatorId, String creationDate, String description, String status,
                                           String cipher, String uriScheme, URI uri,
@@ -682,13 +634,11 @@ public class CatalogManager implements ICatalogManager {
         return result;
     }
 
-    @Override
     public QueryResult<Study> getStudy(int studyId, String sessionId)
             throws CatalogException {
         return getStudy(studyId, sessionId, null);
     }
 
-    @Override
     public QueryResult<Study> getStudy(int studyId, String sessionId, QueryOptions options)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -705,7 +655,6 @@ public class CatalogManager implements ICatalogManager {
         }
     }
 
-    @Override
     public QueryResult<Study> getAllStudies(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -726,7 +675,6 @@ public class CatalogManager implements ICatalogManager {
 
     }
 
-    @Override
     public QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         checkAlias(newStudyAlias, "newStudyAlias");
@@ -764,7 +712,6 @@ public class CatalogManager implements ICatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
-    @Override
     public QueryResult modifyStudy(int studyId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         checkObj(parameters, "Parameters");
@@ -784,7 +731,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.modifyStudy(studyId, parameters);
     }
 
-    @Override
     public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
         checkObj(acl, "acl");
         checkParameter(sessionId, "sessionId");
@@ -803,12 +749,10 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public String getFileOwner(int fileId) throws CatalogDBException {
         return catalogDBAdaptor.getFileOwnerId(fileId);
     }
 
-    @Override
     public int getStudyIdByFileId(int fileId) throws CatalogDBException {
         return catalogDBAdaptor.getStudyIdByFileId(fileId);
     }
@@ -817,7 +761,6 @@ public class CatalogManager implements ICatalogManager {
 //        return catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
 //    }
 
-    @Override
     @Deprecated
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, String sessionId)
@@ -841,7 +784,6 @@ public class CatalogManager implements ICatalogManager {
 //    }
 
     //create file with byte[]
-    @Override
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
@@ -884,105 +826,17 @@ public class CatalogManager implements ICatalogManager {
     }
 
 
-    @Override
     public QueryResult<File> createFile(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                         String ownerId, String creationDate, String description, File.Status status,
                                         long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
                                         Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        checkParameter(sessionId, "sessionId");
-        checkPath(path, "filePath");
-
-        type = defaultObject(type, File.Type.FILE);
-        format = defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
-        bioformat = defaultObject(bioformat, File.Bioformat.NONE);
-        ownerId = defaultString(ownerId, userId);
-        creationDate = defaultString(creationDate, TimeUtils.getTime());
-        description = defaultString(description, "");
-        status = defaultObject(status, File.Status.UPLOADING);
-
-        if (diskUsage < 0) {
-            throw new CatalogException("Error: DiskUsage can't be negative!");
-        }
-        if (experimentId > 0 && !catalogDBAdaptor.experimentExists(experimentId)) {
-            throw new CatalogException("Experiment { id: " + experimentId + "} does not exist.");
-        }
-        sampleIds = defaultObject(sampleIds, new LinkedList<Integer>());
-
-        for (Integer sampleId : sampleIds) {
-            if (!catalogDBAdaptor.sampleExists(sampleId)) {
-                throw new CatalogException("Sample { id: " + sampleId + "} does not exist.");
-            }
-        }
-
-        if (jobId > 0 && !catalogDBAdaptor.jobExists(jobId)) {
-            throw new CatalogException("Job { id: " + jobId + "} does not exist.");
-        }
-        stats = defaultObject(stats, new HashMap<String, Object>());
-        attributes = defaultObject(attributes, new HashMap<String, Object>());
-
-        if (!catalogDBAdaptor.studyExists(studyId)) {
-            throw new CatalogException("Study { id: " + studyId + "} does not exist.");
-        }
-
-        if (!ownerId.equals(userId)) {
-            if (!getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with ownerId != userId");
-            } else {
-                if (!catalogDBAdaptor.userExists(ownerId)) {
-                    throw new CatalogException("ERROR: ownerId does not exist.");
-                }
-            }
-        }
-
-        if (status != File.Status.UPLOADING/* && status != File.Status.INDEXING*/) {        //#62
-            if (!getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING and INDEXING");
-            }
-        }
-
-        //Find parent. If parents == true, create folders.
-        Path parent = Paths.get(path).getParent();
-        int fileId = -1;
-        if (parent != null) {
-            fileId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
-        }
-        if (fileId < 0 && parent != null) {
-            if (parents) {
-                createFolder(studyId, parent, true, null, sessionId);
-                fileId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
-            } else {
-                throw new CatalogDBException("Directory not found " + parent.toString());
-            }
-        }
-
-        //Check permissions
-        Acl parentAcl;
-        if (fileId < 0) {
-            parentAcl = getStudyAcl(userId, studyId);
-        } else {
-            parentAcl = getFileAcl(userId, fileId);
-        }
-
-        if (!parentAcl.isWrite()) {
-            throw new CatalogException("Permission denied, " + userId + " can not write in " +
-                    (parent != null ? "directory " + parent.toString() : "study " + studyId));
-        }
-
-
-        //Create file entry
-        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
-                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
-                new LinkedList<Acl>(), stats, attributes);
-
-        return catalogDBAdaptor.createFileToStudy(studyId, file, options);
-
+        return fileManager.create(studyId, type, format, bioformat, path, ownerId, creationDate, description, status,
+                diskUsage, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
     }
 
 
-    @Override
     @Deprecated
     public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, InputStream fileIs, String sessionId)
@@ -999,7 +853,6 @@ public class CatalogManager implements ICatalogManager {
     }
 
 
-    @Override
     @Deprecated
     public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogException,
             IOException, InterruptedException {
@@ -1031,152 +884,89 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getFile(fileId, null);
     }
 
-    @Override
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         checkPath(folderPath, "folderPath");
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = catalogDBAdaptor.getStudyOwnerId(studyId);
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-
-        LinkedList<File> folders = new LinkedList<>();
-        Path parent = folderPath.getParent();
-        int parentId = -1;
-        if (parent != null) {
-            parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
-        }
-        if (!parents && parentId < 0 && parent != null) {  //If !parents and parent does not exist in the DB (but should exist)
-            throw new CatalogDBException("Path '" + parent + "' does not exist");
-        }
-
-        /*
-            PERMISSION CHECK
-         */
-        Acl fileAcl;
-        if (parentId < 0) { //If it hasn't got parent, take the StudyAcl
-            fileAcl = getStudyAcl(userId, studyId);
-        } else {
-            fileAcl = getFileAcl(userId, parentId);
-        }
-
-        if (!fileAcl.isWrite()) {
-            throw new CatalogDBException("Permission denied. Can't create files or folders in this study");
-        }
-
-        /*
-            CHECK ALREADY EXISTS
-         */
-        if (catalogDBAdaptor.getFileId(studyId, folderPath.toString() + "/") >= 0) {
-            throw new CatalogException("Cannot create directory ‘" + folderPath + "’: File exists");
-        }
-
-        /*
-            PARENTS FOLDERS
-         */
-        while (parentId < 0 && parent != null) {  //Add all the parents that should be created
-            folders.addFirst(new File(parent.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
-                    parent.toString() + "/", userId, "", File.Status.READY, 0));
-            parent = parent.getParent();
-            if (parent != null) {
-                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
-            }
-        }
-
-        ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
-        File mainFolder = new File(folderPath.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
-                folderPath.toString() + "/", userId, "", File.Status.READY, 0);
-
-        QueryResult<File> result;
-        try {
-            assert folders.size() == 0 && !parents || parents;
-            for (File folder : folders) {
-                catalogDBAdaptor.createFileToStudy(studyId, folder, options);
-            }
-            result = catalogDBAdaptor.createFileToStudy(studyId, mainFolder, options);
-        } catch (CatalogDBException e) {
-            ioManager.deleteFile(getStudyUri(studyId), folderPath.toString());
-            throw e;
-        }
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return result;
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", parents, options, sessionId);
+//        checkPath(folderPath, "folderPath");
+//        checkParameter(sessionId, "sessionId");
+//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+//        String ownerId = catalogDBAdaptor.getStudyOwnerId(studyId);
+//        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+//
+//        LinkedList<File> folders = new LinkedList<>();
+//        Path parent = folderPath.getParent();
+//        int parentId = -1;
+//        if (parent != null) {
+//            parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
+//        }
+//        if (!parents && parentId < 0 && parent != null) {  //If !parents and parent does not exist in the DB (but should exist)
+//            throw new CatalogDBException("Path '" + parent + "' does not exist");
+//        }
+//
+//        /*
+//            PERMISSION CHECK
+//         */
+//        Acl fileAcl;
+//        if (parentId < 0) { //If it hasn't got parent, take the StudyAcl
+//            fileAcl = getStudyAcl(userId, studyId);
+//        } else {
+//            fileAcl = getFileAcl(userId, parentId);
+//        }
+//
+//        if (!fileAcl.isWrite()) {
+//            throw new CatalogDBException("Permission denied. Can't create files or folders in this study");
+//        }
+//
+//        /*
+//            CHECK ALREADY EXISTS
+//         */
+//        if (catalogDBAdaptor.getFileId(studyId, folderPath.toString() + "/") >= 0) {
+//            throw new CatalogException("Cannot create directory ‘" + folderPath + "’: File exists");
+//        }
+//
+//        /*
+//            PARENTS FOLDERS
+//         */
+//        while (parentId < 0 && parent != null) {  //Add all the parents that should be created
+//            folders.addFirst(new File(parent.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
+//                    parent.toString() + "/", userId, "", File.Status.READY, 0));
+//            parent = parent.getParent();
+//            if (parent != null) {
+//                parentId = catalogDBAdaptor.getFileId(studyId, parent.toString() + "/");
+//            }
+//        }
+//
+//        ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
+//        File mainFolder = new File(folderPath.getFileName().toString(), File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
+//                folderPath.toString() + "/", userId, "", File.Status.READY, 0);
+//
+//        QueryResult<File> result;
+//        try {
+//            assert folders.size() == 0 && !parents || parents;
+//            for (File folder : folders) {
+//                catalogDBAdaptor.createFileToStudy(studyId, folder, options);
+//            }
+//            result = catalogDBAdaptor.createFileToStudy(studyId, mainFolder, options);
+//        } catch (CatalogDBException e) {
+//            ioManager.deleteFile(getStudyUri(studyId), folderPath.toString());
+//            throw e;
+//        }
+//        catalogDBAdaptor.updateUserLastActivity(ownerId);
+//        return result;
     }
 
 
-    @Override
     public QueryResult deleteFolder(int folderId, String sessionId)
             throws CatalogException, IOException {
         return deleteFile(folderId, sessionId);
     }
 
-    @Override
     public QueryResult deleteFile(int fileId, String sessionId)
             throws CatalogException, IOException {
-        //Safe delete: Don't delete. Just rename file and set {deleting:true}
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-        String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
-
-        if (!getFileAcl(userId, fileId).isDelete()) {
-            throw new CatalogDBException("Permission denied. User can't delete this file");
-        }
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
-        if (fileResult.getResult().isEmpty()) {
-            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, Collections.emptyList());
-        }
-        File file = fileResult.getResult().get(0);
-        switch(file.getStatus()) {
-//            case INDEXING:        //#62
-            case UPLOADING:
-            case UPLOADED:
-                throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
-            case DELETING:
-            case DELETED:
-                //Send warning message
-                return new QueryResult("Delete file", 0, 0, 0,
-                        "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
-                        null, Collections.emptyList());
-            case READY:
-                break;
-        }
-        /*
-        try {
-            ioManager.deleteFile(ownerId, Integer.toString(projectId), Integer.toString(studyId), file.getPath());
-        } catch (CatalogIOManagerException e) {
-            throw new CatalogManagerException(e);
-        }
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return catalogDBAdaptor.deleteFile(fileId);*/
-
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.put("status", File.Status.DELETING);
-        objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
-
-        switch (file.getType()) {
-            case FOLDER:
-                QueryResult<File> allFilesInFolder = catalogDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
-                for (File subfile : allFilesInFolder.getResult()) {
-                    deleteFile(subfile.getId(), sessionId);
-                }
-
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +  file.getName(), sessionId);
-                QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, objectMap);
-                return queryResult;
-            case FILE:
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +file.getName(), sessionId);
-                return catalogDBAdaptor.modifyFile(fileId, objectMap);
-//            case INDEX:       //#62
-//                throw new CatalogException("Can't delete INDEX file");
-                //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-                //return catalogDBAdaptor.modifyFile(fileId, objectMap);
-        }
-        return null;
+        return fileManager.delete(fileId, null, sessionId);
     }
 
-    @Override
     public QueryResult moveFile(int fileId, int folderId, String sessionId) throws CatalogException {
 //        checkParameter(sessionId, "sessionId");
 //        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1195,58 +985,9 @@ public class CatalogManager implements ICatalogManager {
         throw new UnsupportedClassVersionError("move File unsupported");
     }
 
-    @Override
     public QueryResult renameFile(int fileId, String newName, String sessionId)
             throws CatalogException, IOException, CatalogIOManagerException {
-        checkParameter(sessionId, "sessionId");
-        checkPath(newName, "newName");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-        String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
-
-        if (!getFileAcl(userId, fileId).isWrite()) {
-            throw new CatalogDBException("Permission denied. User can't rename this file");
-        }
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
-        if (fileResult.getResult().isEmpty()) {
-            return new QueryResult("Rename file", 0, 0, 0, "File not found", null, null);
-        }
-        File file = fileResult.getResult().get(0);
-//        System.out.println("file = " + file);
-
-        String oldPath = file.getPath();
-        Path parent = Paths.get(oldPath).getParent();
-        String newPath;
-        if (parent == null) {
-            newPath = newName;
-        } else {
-            newPath = parent.resolve(newName).toString();
-        }
-
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<Study> studyQueryResult;
-        Study study;
-        CatalogIOManager catalogIOManager;
-        switch (file.getType()) {
-            case FOLDER:
-                studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);   // TODO? check if something in the subtree is not READY?
-                study = studyQueryResult.getResult().get(0);
-                catalogIOManager = catalogIOManagerFactory.get(study.getUri());
-                catalogIOManager.rename(getFileUri(study.getUri(), oldPath), getFileUri(study.getUri(), newPath));   // io.move() 1
-                QueryResult queryResult = catalogDBAdaptor.renameFile(fileId, newPath);
-                return queryResult;
-            case FILE:
-                studyQueryResult = catalogDBAdaptor.getStudy(studyId, null);
-                study = studyQueryResult.getResult().get(0);
-                catalogIOManager = catalogIOManagerFactory.get(study.getUri());
-                catalogIOManager.rename(getFileUri(study.getUri(), file.getPath()), getFileUri(study.getUri(), newPath));
-                return catalogDBAdaptor.renameFile(fileId, newPath);
-//            case INDEX:           //#62
-//                return catalogDBAdaptor.renameFile(fileId, newPath);
-        }
-
-        return null;
+        return fileManager.renameFile(fileId, newName, sessionId);
     }
 
     /**
@@ -1268,69 +1009,9 @@ public class CatalogManager implements ICatalogManager {
      * @return
      * @throws org.opencb.opencga.catalog.db.CatalogDBException
      */
-    @Override
     public QueryResult modifyFile(int fileId, ObjectMap parameters, String sessionId)
             throws CatalogException {
-        checkObj(parameters, "Parameters");
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        File file = getFile(fileId, sessionId).getResult().get(0);
-        switch (getUserRole(userId)) {
-            case ADMIN:
-                logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
-                break;
-            default:
-                if (!getFileAcl(userId, fileId).isWrite()) {
-                    throw new CatalogException("User " + userId + " can't modify the file " + fileId);
-                }
-                for (String s : parameters.keySet()) {
-                    switch (s) { //Special cases
-                        //Can be modified anytime
-                        case "format":
-                        case "bioformat":
-                        case "description":
-                        case "status":
-                        case "attributes":
-                        case "stats":
-                        case "index":
-                        case "sampleIds":
-                            break;
-
-                        //Can only be modified when file.status == INDEXING
-                        case "jobId":
-//                            if (!file.getStatus().equals(File.Status.INDEXING)) {
-//                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
-//                                        "status == " + file.getStatus().name() + ". " +
-//                                        "Required status INDEXING or admin account");
-//                            }
-                            break;
-
-                        //Can only be modified when file.status == UPLOADING
-                        case "creationDate":
-                        case "diskUsage":
-                            if (!file.getStatus().equals(File.Status.UPLOADING)) {
-                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
-                                        "status == " + file.getStatus().name() + ". " +
-                                        "Required status UPLOADING or admin account");
-                            }
-                            break;
-                        //Path and Name must be changed with "raname" and/or "move" methods.
-                        case "path":
-                        case "name":
-                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
-                                    "Use \"renameFile\" instead");
-                        case "type":
-                        default:
-                            throw new CatalogException("Parameter '" + s + "' can't be changed. " +
-                                    "Requires admin account");
-                    }
-                }
-                break;
-        }
-        String ownerId = catalogDBAdaptor.getFileOwnerId(fileId);
-        QueryResult queryResult = catalogDBAdaptor.modifyFile(fileId, parameters);
-        catalogDBAdaptor.updateUserLastActivity(ownerId);
-        return queryResult;
+        return fileManager.update(fileId, parameters, sessionId);
     }
 
 //    public QueryResult setIndexFile(int fileId, String backend, Index index, String sessionId) throws CatalogManagerException {
@@ -1343,43 +1024,21 @@ public class CatalogManager implements ICatalogManager {
 //        return catalogDBAdaptor.setIndexFile(fileId, backend, index);
 //    }
 
-    @Override
     public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
-        QueryResult<File> queryResult = getFile(fileId, null, sessionId);
-
-        int studyId = getStudyIdByFileId(fileId);
-        File file = queryResult.getResult().get(0);
-        Path parent = Paths.get(file.getPath()).getParent();
-        String parentPath;
-        if (parent == null) {
-            parentPath = "";
-        } else {
-            parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
-        }
-        return searchFile(studyId, new QueryOptions("path", parentPath), sessionId);
+        return fileManager.getParent(fileId, options, sessionId);
     }
 
-    @Override
     public QueryResult<File> getFile(int fileId, String sessionId)
             throws CatalogException {
         return getFile(fileId, null, sessionId);
     }
 
-    @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!getFileAcl(userId, fileId).isRead()) {
-            throw new CatalogException("Permission denied. User can't read file");
-        }
-
-        return catalogDBAdaptor.getFile(fileId, options);
+        return fileManager.read(fileId, options, sessionId);
     }
 
-    @Override
     public QueryResult<File> getAllFiles(int studyId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -1395,7 +1054,6 @@ public class CatalogManager implements ICatalogManager {
         return allFilesResult;
     }
 
-    @Override
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkId(folderId, "folderId");
@@ -1413,13 +1071,11 @@ public class CatalogManager implements ICatalogManager {
         return allFilesResult;
     }
 
-    @Override
     public DataInputStream downloadFile(int fileId, String sessionId)
             throws IOException, CatalogException {
         return downloadFile(fileId, -1, -1, sessionId);
     }
 
-    @Override
     public DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
             throws IOException, CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1440,7 +1096,6 @@ public class CatalogManager implements ICatalogManager {
                 file.getPath(), start, limit);
     }
 
-    @Override
     public DataInputStream grepFile(int fileId, String pattern, boolean ignoreCase, boolean multi, String sessionId)
             throws IOException, CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1481,41 +1136,21 @@ public class CatalogManager implements ICatalogManager {
     }
 
     /*Require role admin*/
-    @Override
     public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
         return searchFile(-1, query, options, sessionId);
     }
 
-    @Override
     public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId)
             throws CatalogException {
         return searchFile(studyId, query, null, sessionId);
     }
 
-    @Override
     public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
-        if (studyId < 0) {
-            switch (getUserRole(userId)) {
-                case ADMIN:
-                    break;
-                default:
-                    throw new CatalogDBException("Permission denied. StudyId or Admin role required");
-            }
-        } else {
-            if (!getStudyAcl(userId, studyId).isRead()) {
-                throw new CatalogException("Permission denied. User " + userId + " can't read data from the study " + studyId);
-            }
-            query.put("studyId", studyId);
-        }
-        return catalogDBAdaptor.searchFile(query, options);
+        return fileManager.readAll(studyId, query, options, sessionId);
     }
 
-    @Override
     public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
                                               Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -1544,7 +1179,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.createDataset(studyId, dataset, options);
     }
 
-    @Override
     public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
@@ -1717,7 +1351,6 @@ public class CatalogManager implements ICatalogManager {
 //    }
 //
 
-    @Override
     public QueryResult refreshFolder(final int folderId, final String sessionId)
             throws CatalogDBException, IOException {
 
@@ -1726,7 +1359,6 @@ public class CatalogManager implements ICatalogManager {
 //        final List<ObjectItem> newObjects = new ArrayList<ObjectItem>();
 //
 //        Files.walkFileTree(bucketPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
-//            @Override
 //            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 //                String fileName = file.getFileName().toString();
 //                if (!Files.isHidden(file) && !fileName.equals("sge_err.log") && !fileName.equals("sge_out.log") && !Files.isDirectory(file)) {
@@ -1750,7 +1382,6 @@ public class CatalogManager implements ICatalogManager {
 //                }
 //            }
 //
-//            @Override
 //            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
 //                // try to delete the file anyway, even if its attributes
 //                // could not be read, since delete-only access is
@@ -1758,7 +1389,6 @@ public class CatalogManager implements ICatalogManager {
 //                return FileVisitResult.SKIP_SUBTREE;
 //            }
 //
-//            @Override
 //            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 //                if (Files.isHidden(dir) || !Files.isReadable(dir) || dir.getFileName().toString().equals("..")
 //                        || dir.getFileName().toString().equals(".")) {
@@ -1783,7 +1413,6 @@ public class CatalogManager implements ICatalogManager {
 //                return FileVisitResult.CONTINUE;
 //            }
 //
-//            @Override
 //            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
 //                if (Files.isHidden(dir) || !Files.isReadable(dir)) {
 //                    return FileVisitResult.SKIP_SUBTREE;
@@ -1809,90 +1438,14 @@ public class CatalogManager implements ICatalogManager {
 
     /**
      * **************************
-     * Analysis methods
-     * ***************************
-     */
-
-//    public QueryResult<Analysis> createAnalysis(int studyId, String name, String alias, String description, String sessionId) throws CatalogManagerException {
-//        checkParameter(name, "name");
-//        checkAlias(alias, "alias");
-//        checkParameter(sessionId, "sessionId");
-//
-//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        if (!getStudyAcl(userId, studyId).isWrite()) {
-//            throw new CatalogManagerException("Permission denied. Can't write in this study");
-//        }
-//        Analysis analysis = new Analysis(name, alias, TimeUtils.getTime(), userId, description);
-//
-//        String ownerId = catalogDBAdaptor.getStudyOwnerId(studyId);
-//        catalogDBAdaptor.updateUserLastActivity(ownerId);
-//        return catalogDBAdaptor.createAnalysis(studyId, analysis);
-//    }
-//
-//
-//    public QueryResult<Analysis> getAnalysis(int analysisId, String sessionId) throws CatalogManagerException {
-//        checkParameter(sessionId, "sessionId");
-//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-//
-//        if (!getStudyAcl(userId, studyId).isRead()) {
-//            throw new CatalogManagerException("Permission denied. User can't read from this study"); //TODO: Should Analysis have ACL?
-//        }
-//
-//        return catalogDBAdaptor.getAnalysis(analysisId);
-//
-//    }
-//
-//    public QueryResult<Analysis> getAllAnalysis(int studyId, String sessionId) throws CatalogManagerException {
-//        checkParameter(sessionId, "sessionId");
-//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//
-//        if (!getStudyAcl(userId, studyId).isRead()) {
-//            throw new CatalogManagerException("Permission denied. Can't read from this study"); //TODO: Should Analysis have ACL?
-//        }
-//
-//        return catalogDBAdaptor.getAllAnalysis(studyId);
-//    }
-//
-//    public QueryResult modifyAnalysis(int analysisId, ObjectMap parameters, String sessionId) throws CatalogManagerException {
-//        checkParameter(sessionId, "sessionId");
-//        checkObj(parameters, "Parameters");
-//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-//
-//        for (String s : parameters.keySet()) {
-//            if (!s.matches("name|date|description|attributes")) {
-//                throw new CatalogManagerException("Parameter '" + s + "' can't be changed");
-//            }
-//        }
-//
-//        if (!getStudyAcl(userId, studyId).isWrite()) {
-//            throw new CatalogManagerException("Permission denied. Can't modify this analysis"); //TODO: Should Analysis have ACL?
-//        }
-//
-//        String ownerId = catalogDBAdaptor.getAnalysisOwner(analysisId);
-//        catalogDBAdaptor.updateUserLastActivity(ownerId);
-//        return catalogDBAdaptor.modifyAnalysis(analysisId, parameters);
-//    }
-    @Override
-    public int getStudyIdByJobId(int jobId) throws CatalogDBException {
-        return catalogDBAdaptor.getStudyIdByJobId(jobId);
-    }
-
-    /**
      * Job methods
      * ***************************
      */
 
-//    @Deprecated
-//    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-//                                      int outDirId, int tmpOutDirId, List<Integer> inputFiles, String sessionId)
-//            throws CatalogManagerException, CatalogIOManagerException {
-//        QueryOptions options = new QueryOptions("include", Arrays.asList("id", "type", "path"));
-//        File tmpOutDir = catalogDBAdaptor.getFile(tmpOutDirId, options).getResult().get(0);     //TODO: Create tmpOutDir outside
-//        return createJob(studyId, name, toolName, description, commandLine, outDirId, getFileUri(tmpOutDir), inputFiles, sessionId);
-//    }
-    @Override
+    public int getStudyIdByJobId(int jobId) throws CatalogDBException {
+        return catalogDBAdaptor.getStudyIdByJobId(jobId);
+    }
+
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options, String sessionId)
@@ -1931,7 +1484,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.createJob(studyId, job, options);
     }
 
-    @Override
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
             throws CatalogException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1943,21 +1495,10 @@ public class CatalogManager implements ICatalogManager {
         QueryResult<Study> studyQueryResult = getStudy(studyId, sessionId, studyQueryOptions);
 
         URI uri = studyQueryResult.getResult().get(0).getUri();
-        CatalogIOManager catalogIOManager;
-        try {
-            catalogIOManager = catalogIOManagerFactory.get(uri);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new CatalogIOManagerException("Error in catalogIOManagerFactory", e);
-        }
+        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);
         return catalogIOManager.createJobOutDir(userId, dirName);
     }
-//
-//    public String checkJobStatus(String userId, String jobId, String sessionId) throws CatalogManagerException, IOException {
-//        return catalogDBAdaptor.getJobStatus(userId, jobId, sessionId);
-//    }
 
-    @Override
     public QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -1970,7 +1511,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.incJobVisits(jobId);
     }
 
-    @Override
     public QueryResult deleteJob(int jobId, String sessionId)
             throws CatalogException, CatalogIOManagerException {
         checkParameter(sessionId, "sessionId");
@@ -1986,7 +1526,6 @@ public class CatalogManager implements ICatalogManager {
     }
 
 
-    @Override
     public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -2000,7 +1539,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getJob(jobId, options);
     }
 
-    @Override
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         User.Role role = getUserRole(userId);
@@ -2013,7 +1551,6 @@ public class CatalogManager implements ICatalogManager {
     }
 
 
-    @Override
     public QueryResult<Job> getAllJobs(int studyId, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         if (!getStudyAcl(userId, studyId).isRead()) {
@@ -2033,7 +1570,6 @@ public class CatalogManager implements ICatalogManager {
 //        }
 //    }
 
-    @Override
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
 
@@ -2125,7 +1661,6 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public QueryResult<Sample> createSample(int studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -2145,7 +1680,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.createSample(studyId, sample, options);
     }
 
-    @Override
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -2159,7 +1693,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getSample(sampleId, options);
     }
 
-    @Override
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
@@ -2172,7 +1705,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.getAllSamples(studyId, options);
     }
 
-    @Override
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
@@ -2186,7 +1718,6 @@ public class CatalogManager implements ICatalogManager {
         return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
     }
 
-    @Override
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
@@ -2220,7 +1751,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.createVariableSet(studyId, variableSet);
     }
 
-    @Override
     public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
             throws CatalogException {
 
@@ -2234,7 +1764,6 @@ public class CatalogManager implements ICatalogManager {
     }
 
 
-    @Override
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
@@ -2328,7 +1857,6 @@ public class CatalogManager implements ICatalogManager {
      * ***************************
      */
 
-    @Override
     public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
                                         String path, boolean openTool, String sessionId) throws CatalogException {
         checkParameter(alias, "alias");
@@ -2351,7 +1879,6 @@ public class CatalogManager implements ICatalogManager {
         return catalogDBAdaptor.createTool(userId, tool);
     }
 
-    @Override
     public QueryResult<Tool> getTool(int id, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         checkParameter(sessionId, "sessionId");

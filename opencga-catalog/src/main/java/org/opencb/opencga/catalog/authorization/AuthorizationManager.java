@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public interface AuthorizationService {
+public interface AuthorizationManager {
 
     public User.Role getUserRole(String userId) throws CatalogDBException;
 

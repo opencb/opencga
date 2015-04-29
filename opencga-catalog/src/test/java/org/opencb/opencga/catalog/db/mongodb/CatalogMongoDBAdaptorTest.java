@@ -44,7 +44,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-@FixMethodOrder(MethodSorters.JVM)
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     private static CatalogDBAdaptor catalogDBAdaptor;

@@ -30,14 +30,14 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * Created by jacobo on 6/11/14.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class CatalogFileManager {
+public class CatalogFileUtils {
 
     private final CatalogManager catalogManager;
-    private static Logger logger = LoggerFactory.getLogger(CatalogFileManager.class);
+    private static Logger logger = LoggerFactory.getLogger(CatalogFileUtils.class);
 
-    public CatalogFileManager(CatalogManager catalogManager) {
+    public CatalogFileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
     }
 

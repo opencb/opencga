@@ -23,7 +23,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.beans.AnalysisBioformatDetect;
 import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogFileManager;
+import org.opencb.opencga.catalog.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Index;
@@ -73,7 +73,7 @@ public class AnalysisOutputRecorder {
     public void recordJobOutput(Job job) {
 
         List<Integer> fileIds = new LinkedList<>();
-        CatalogFileManager catalogFileManager = new CatalogFileManager(catalogManager);
+        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
 
 //        try {
 //            /** Modify job status to PROCESSING_OUTPUT **/
@@ -146,7 +146,7 @@ public class AnalysisOutputRecorder {
                 File file = fileQueryResult.getResult().get(0);
                 fileIds.add(file.getId());
                 /** Moves the file to the read output **/
-                catalogFileManager.upload(uri, file, null, sessionId, false, false, true, calculateChecksum);
+                catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, calculateChecksum);
             }
         } catch (CatalogException | IOException e) {
             e.printStackTrace();

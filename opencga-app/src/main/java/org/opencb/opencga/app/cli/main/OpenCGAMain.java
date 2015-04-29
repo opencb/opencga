@@ -29,7 +29,7 @@ import org.opencb.opencga.analysis.AnalysisJobExecuter;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogFileManager;
+import org.opencb.opencga.catalog.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.beans.*;
@@ -306,7 +306,7 @@ public class OpenCGAMain {
                         QueryResult<File> file = catalogManager.createFile(studyId, c.format, c.bioformat,
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
                                 c.parents, -1, sessionId);
-                        new CatalogFileManager(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, c.move, c.calculateChecksum);
+                        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, c.move, c.calculateChecksum);
                         System.out.println(createOutput(c.cOpt, file, null));
 
                         break;

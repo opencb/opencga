@@ -32,26 +32,30 @@ public interface ResourceManager<I, R>{
      * @return          The specified object
      * @throws CatalogException
      */
-    public QueryResult<R> read(I id, QueryOptions options, String sessionId) throws CatalogException;
+    public QueryResult<R> read(I id, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     /**
      * Read all the R objects matching with the query on the QueryOptions.
      *
-     * @param options   Query to catalog.
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
      * @return          All matching elements.
      * @throws CatalogException
      */
-    public QueryResult<R> readAll(QueryOptions options, String sessionId) throws CatalogException;
+    public QueryResult<R> readAll(QueryOptions query, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     /**
      * Update fields of an existing catalog entry.
      *
-     * @param id        Id of the object to update
-     * @param params    Parameters to change.
-     * @return          The modified entry.
+     * @param id          Id of the object to update
+     * @param parameters  Parameters to change.
+     * @return            The modified entry.
      * @throws CatalogException
      */
-    public QueryResult<R> update(I id, ObjectMap params, String sessionId) throws CatalogException;
+    public QueryResult<R> update(I id, ObjectMap parameters, String sessionId)
+            throws CatalogException;
 
     /**
      * Delete an specified entry from Catalog.
@@ -61,10 +65,12 @@ public interface ResourceManager<I, R>{
      * @return          The deleted object
      * @throws CatalogException
      */
-    public QueryResult<R> delete(I id, QueryOptions options, String sessionId) throws CatalogException;
+    public QueryResult<R> delete(I id, QueryOptions options, String sessionId)
+            throws CatalogException;
 
 
 
+    // auxiliary methods
 
     default void checkId(int id, String name) throws CatalogException {
         if (id < 0) {
