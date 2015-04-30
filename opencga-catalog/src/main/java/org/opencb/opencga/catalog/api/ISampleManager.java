@@ -1,18 +1,39 @@
 package org.opencb.opencga.catalog.api;
 
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.beans.Annotation;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Project;
-import org.opencb.opencga.catalog.beans.Sample;
+import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.beans.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
 * @author Jacobo Coll <jacobo167@gmail.com>
 */
 public interface ISampleManager extends ResourceManager<Integer, Sample> {
-    public Integer getProjectId(String projectId);
+    Integer getStudyId(int sampleId) throws CatalogException;
 
-    public QueryResult<Annotation> annotate(int sampleId);
-    public QueryResult<Annotation> load(File file);
+    QueryResult<AnnotationSet> annotate(int sampleId, String id, int variableSetId, Map<String, Object> annotations,
+                                        Map<String, Object> attributes, boolean checkAnnotationSet, String sessionId)
+            throws CatalogException;
 
+    QueryResult<Annotation> load(File file) throws CatalogException;
+
+    QueryResult<Sample> create(int studyId, String name, String source, String description,
+                               Map<String, Object> attributes, QueryOptions options, String sessionId)
+            throws CatalogException;
+
+    QueryResult<Sample> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                               String description, Map<String, Object> attributes,
+                                               List<Variable> variables, String sessionId)
+            throws CatalogException;
+
+    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                               String description, Map<String, Object> attributes,
+                                               Set<Variable> variables, String sessionId)
+            throws CatalogException;
 }

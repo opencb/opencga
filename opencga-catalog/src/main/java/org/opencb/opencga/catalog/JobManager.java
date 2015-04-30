@@ -7,7 +7,6 @@ import org.opencb.opencga.catalog.api.IJobManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.beans.User;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -54,7 +53,7 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<ObjectMap> visit(int jobId, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 //        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
 //        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
@@ -68,7 +67,7 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> create(QueryOptions params, String sessionId)
             throws CatalogException {
-        checkObj(params, "Params");
+        ParamsUtils.checkObj(params, "Params");
         try {
             return create(
                     params.getInt("studyId"),
@@ -96,13 +95,13 @@ public class JobManager implements IJobManager {
                                    Map<String, Object> attributes,Map<String, Object> resourceManagerAttributes,
                                    Job.Status status, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(name, "name");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkParameter(toolName, "toolName");
-        checkParameter(commandLine, "commandLine");
-        description = defaultString(description, "");
-        status = defaultObject(status, Job.Status.PREPARED);
+        ParamsUtils.checkParameter(toolName, "toolName");
+        ParamsUtils.checkParameter(commandLine, "commandLine");
+        description = ParamsUtils.defaultString(description, "");
+        status = ParamsUtils.defaultObject(status, Job.Status.PREPARED);
 
         // FIXME check inputFiles? is a null conceptually valid?
 
@@ -133,7 +132,7 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> read(Integer jobId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
@@ -146,7 +145,7 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        query = defaultObject(query, new QueryOptions());
+        query = ParamsUtils.defaultObject(query, new QueryOptions());
         query.put("studyId", studyId);
         return readAll(query, options, sessionId);
     }
@@ -154,8 +153,8 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkObj(options, "options");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(options, "options");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             if (!options.containsKey("studyId")) {
@@ -173,8 +172,8 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> update(Integer jobId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkObj(parameters, "parameters");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(parameters, "parameters");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
@@ -188,7 +187,7 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> delete(Integer jobId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         if (!authorizationManager.getStudyACL(userId, studyId).isDelete()) {
@@ -201,8 +200,8 @@ public class JobManager implements IJobManager {
     @Override
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(dirName, "dirName");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(dirName, "dirName");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 

@@ -53,10 +53,10 @@ public class UserManager implements IUserManager {
     @Override
     public void changePassword(String userId, String oldPassword, String newPassword)
             throws CatalogException {
-        checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(userId, "userId");
 //        checkParameter(sessionId, "sessionId");
-        checkParameter(oldPassword, "oldPassword");
-        checkParameter(newPassword, "newPassword");
+        ParamsUtils.checkParameter(oldPassword, "oldPassword");
+        ParamsUtils.checkParameter(newPassword, "newPassword");
 //        checkSessionId(userId, sessionId);  //Only the user can change his own password
         userDBAdaptor.updateUserLastActivity(userId);
         authenticationManager.changePassword(userId, oldPassword, newPassword);
@@ -80,9 +80,9 @@ public class UserManager implements IUserManager {
                                     QueryOptions options, String sessionId)
             throws CatalogException {
 
-        checkParameter(id, "id");
-        checkParameter(password, "password");
-        checkParameter(name, "name");
+        ParamsUtils.checkParameter(id, "id");
+        ParamsUtils.checkParameter(password, "password");
+        ParamsUtils.checkParameter(name, "name");
         checkEmail(email);
         organization = organization != null ? organization : "";
 
@@ -99,7 +99,7 @@ public class UserManager implements IUserManager {
                 break;
             }
             case "anyLoggedUser": {
-                checkParameter(sessionId, "sessionId");
+                ParamsUtils.checkParameter(sessionId, "sessionId");
                 String userId = getUserId(sessionId);
                 if (userId.isEmpty()) {
                     throw new CatalogException("CreateUser Fail. Required existing account");
@@ -134,10 +134,10 @@ public class UserManager implements IUserManager {
     @Override
     public QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        options = defaultObject(options, new QueryOptions());
+        options = ParamsUtils.defaultObject(options, new QueryOptions());
 
         if (!options.containsKey("include") && !options.containsKey("exclude")) {
             options.put("exclude", Arrays.asList("password", "sessions"));
@@ -170,9 +170,9 @@ public class UserManager implements IUserManager {
     @Override
     public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkObj(parameters, "parameters");
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(parameters, "parameters");
         checkSessionId(userId, sessionId);
         for (String s : parameters.keySet()) {
             if (!s.matches("name|email|organization|attributes|configs")) {
@@ -190,8 +190,8 @@ public class UserManager implements IUserManager {
     public QueryResult<User> delete(String userId, QueryOptions options, String sessionId)
             throws CatalogException {
         QueryResult<User> user = read(userId, options, sessionId);
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
             try {
@@ -222,7 +222,7 @@ public class UserManager implements IUserManager {
     @Override
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
-        checkParameter(sessionIp, "sessionIp");
+        ParamsUtils.checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
         String userId = "anonymous_" + session.getId();
@@ -243,9 +243,9 @@ public class UserManager implements IUserManager {
     @Override
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
             throws CatalogException, IOException {
-        checkParameter(userId, "userId");
-        checkParameter(password, "password");
-        checkParameter(sessionIp, "sessionIp");
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(password, "password");
+        ParamsUtils.checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
         return userDBAdaptor.login(userId, password, session);
@@ -253,8 +253,8 @@ public class UserManager implements IUserManager {
 
     @Override
     public QueryResult logout(String userId, String sessionId) throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
         switch (authorizationManager.getUserRole(userId)) {
             default:
@@ -266,9 +266,9 @@ public class UserManager implements IUserManager {
 
     @Override
     public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
-        checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(userId, "userId");
         checkSessionId(userId, sessionId);
 
         logger.info("logout anonymous user. userId: " + userId + " sesionId: " + sessionId);

@@ -71,7 +71,6 @@ public class CatalogManager {
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
-
     private CatalogDBAdaptor catalogDBAdaptor;
     private CatalogIOManager ioManager;
     private CatalogIOManagerFactory catalogIOManagerFactory;
@@ -82,20 +81,14 @@ public class CatalogManager {
     private IStudyManager studyManager;
     private IFileManager fileManager;
     private IJobManager jobManager;
-
-//    private PosixCatalogIOManager ioManager;
-
+    private ISampleManager sampleManager;
 
     private Properties properties;
     private String creationUserPolicy;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
-    protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
-            + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-    protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
-
 
     public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOManagerException {
         this.catalogDBAdaptor = catalogDBAdaptor;
@@ -127,6 +120,7 @@ public class CatalogManager {
         studyManager = new StudyManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
         projectManager = new ProjectManager(authorizationManager, catalogDBAdaptor, ioManager);
         jobManager = new JobManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
+        sampleManager = new SampleManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
     }
 
     public CatalogClient client() {
@@ -178,7 +172,6 @@ public class CatalogManager {
     private void configureManager(Properties properties) {
         creationUserPolicy = properties.getProperty(CATALOG_MANAGER_POLICY_CREATION_USER, "always");
         catalogClient = new CatalogDBClient(this);
-
         //TODO: Check if is empty
         //TODO: Setup catalog if it's empty.
     }
@@ -291,17 +284,12 @@ public class CatalogManager {
     }
 
     public QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogException {
-        checkParameter(userId, "userId");
-        checkParameter(sessionId, "sessionId");
-        checkSessionId(userId, sessionId);
-        checkEmail(nEmail);
-        catalogDBAdaptor.updateUserLastActivity(userId);
-        return catalogDBAdaptor.changeEmail(userId, nEmail);
+        return userManager.update(userId, new ObjectMap("email", nEmail), null, sessionId);
     }
 
     public QueryResult resetPassword(String userId, String email) throws CatalogException {
-        checkParameter(userId, "userId");
-        checkEmail(email);
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(email, "email");
         catalogDBAdaptor.updateUserLastActivity(userId);
 
         String newPassword = StringUtils.randomString(6);
@@ -323,7 +311,6 @@ public class CatalogManager {
 
         return qr;
     }
-
 
     public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogException {
         return getUser(userId, lastActivity, new QueryOptions(), sessionId);
@@ -394,8 +381,8 @@ public class CatalogManager {
     }
 
     public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogException {
-        checkObj(acl, "acl");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(acl, "acl");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
@@ -494,8 +481,8 @@ public class CatalogManager {
     }
 
     public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
-        checkObj(acl, "acl");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(acl, "acl");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
@@ -518,10 +505,6 @@ public class CatalogManager {
     public int getStudyIdByFileId(int fileId) throws CatalogDBException {
         return catalogDBAdaptor.getStudyIdByFileId(fileId);
     }
-
-//    public int getStudyIdByAnalysisId(int analysisId) throws CatalogManagerException {
-//        return catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-//    }
 
     @Deprecated
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
@@ -604,8 +587,8 @@ public class CatalogManager {
     public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogException,
             IOException, InterruptedException {
 
-        checkObj(fileIs, "InputStream");
-        checkParameter(sessionId, "SessionId");
+        ParamsUtils.checkObj(fileIs, "InputStream");
+        ParamsUtils.checkParameter(sessionId, "SessionId");
 
         String userId = catalogDBAdaptor.getFileOwnerId(fileId);
         int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
@@ -633,7 +616,7 @@ public class CatalogManager {
 
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkPath(folderPath, "folderPath");
+        ParamsUtils.checkPath(folderPath, "folderPath");
         return fileManager.createFolder(studyId, folderPath.toString() + "/", parents, options, sessionId);
     }
 
@@ -648,7 +631,7 @@ public class CatalogManager {
     }
 
     public QueryResult moveFile(int fileId, int folderId, String sessionId) throws CatalogException {
-//        checkParameter(sessionId, "sessionId");
+//        ParamsUtils.checkParameter(sessionId, "sessionId");
 //        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 //        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
 //        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
@@ -714,8 +697,8 @@ public class CatalogManager {
     }
 
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkId(folderId, "folderId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkId(folderId, "folderId");
         int studyId = getStudyIdByFileId(folderId);
         File folder = getFile(folderId, sessionId).first();
         if (!folder.getType().equals(File.Type.FOLDER)) {
@@ -731,7 +714,7 @@ public class CatalogManager {
 
     public DataInputStream downloadFile(int fileId, int start, int limit, String sessionId)    //TODO: start & limit does not work
             throws IOException, CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
@@ -762,8 +745,8 @@ public class CatalogManager {
      */
     private QueryResult shareFile(int fileId, Acl acl, String sessionId)
             throws CatalogException {
-        checkObj(acl, "acl");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(acl, "acl");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
         Acl fileAcl = authorizationManager.getFileACL(userId, fileId);
@@ -872,92 +855,30 @@ public class CatalogManager {
     public QueryResult<Sample> createSample(int studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
-        source = defaultString(source, "");
-        description = defaultString(description, "");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify study");
-        }
-        Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
-                attributes);
-
-        return catalogDBAdaptor.createSample(studyId, sample, options);
+        return sampleManager.create(studyId, name, source, description, attributes, options, sessionId);
     }
 
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdBySampleId(sampleId);
-
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
-
-        return catalogDBAdaptor.getSample(sampleId, options);
+        return sampleManager.read(sampleId, options, sessionId);
     }
 
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
-
-        return catalogDBAdaptor.getAllSamples(studyId, options);
+        return sampleManager.readAll(studyId, options, options, sessionId);
     }
 
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
             throws CatalogException {
-
-        checkObj(variables, "Variables List");
-        Set<Variable> variablesSet = new HashSet<>(variables);
-        if (variables.size() != variablesSet.size()) {
-            throw new CatalogException("Error. Repeated variables");
-        }
-        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
+        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
             throws CatalogException {
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
-        checkObj(variables, "Variables Set");
-        unique = defaultObject(unique, true);
-        description = defaultString(description, "");
-        attributes = defaultObject(attributes, new HashMap<String, Object>());
-
-        for (Variable variable : variables) {
-            checkParameter(variable.getId(), "variable ID");
-            checkObj(variable.getType(), "variable Type");
-            variable.setAllowedValues(defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
-            variable.setAttributes(defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
-            variable.setCategory(defaultString(variable.getCategory(), ""));
-            variable.setDependsOn(defaultString(variable.getDependsOn(), ""));
-            variable.setDescription(defaultString(variable.getDescription(), ""));
-//            variable.setRank(defaultString(variable.getDescription(), ""));
-        }
-
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify study");
-        }
-
-        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
-        CatalogSampleAnnotationsValidator.checkVariableSet(variableSet);
-
-        return catalogDBAdaptor.createVariableSet(studyId, variableSet);
+        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
@@ -986,37 +907,7 @@ public class CatalogManager {
                                                             boolean checkAnnotationSet,
                                                             String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(id, "id");
-        checkObj(annotations, "annotations");
-        attributes = defaultObject(attributes, new HashMap<String, Object>());
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify study");
-        }
-
-        QueryResult<VariableSet> variableSetResult = catalogDBAdaptor.getVariableSet(variableSetId, null);
-        if (variableSetResult.getResult().isEmpty()) {
-            throw new CatalogException("VariableSet " + variableSetId + " does not exists");
-        }
-        VariableSet variableSet = variableSetResult.getResult().get(0);
-
-        AnnotationSet annotationSet = new AnnotationSet(id, variableSetId, new HashSet<Annotation>(), TimeUtils.getTime(), attributes);
-
-        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
-            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
-        }
-        QueryResult<Sample> sampleQueryResult = catalogDBAdaptor.getSample(sampleId,
-                new QueryOptions("include", Collections.singletonList("annotationSets")));
-
-        List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
-        if (checkAnnotationSet) {
-            CatalogSampleAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-        }
-
-        return catalogDBAdaptor.annotateSample(sampleId, annotationSet);
+        return sampleManager.annotate(sampleId, id, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
     /**
@@ -1029,7 +920,7 @@ public class CatalogManager {
     }
 
     public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         int studyId = catalogDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = getUserIdBySessionId(sessionId);
@@ -1043,10 +934,10 @@ public class CatalogManager {
 
     public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
-        checkParameter(name, "name");
-        checkObj(sampleIds, "Samples list");
-        description = defaultString(description, "");
-        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+        ParamsUtils.checkParameter(name, "name");
+        ParamsUtils.checkObj(sampleIds, "Samples list");
+        description = ParamsUtils.defaultString(description, "");
+        attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         if (getAllSamples(studyId, new QueryOptions("id", sampleIds), sessionId).getResult().size() != sampleIds.size()) {
 //            for (Integer sampleId : samples) {
@@ -1060,7 +951,6 @@ public class CatalogManager {
         return catalogDBAdaptor.createCohort(studyId, cohort);
     }
 
-
     /**
      * Tools methods
      * ***************************
@@ -1068,10 +958,10 @@ public class CatalogManager {
 
     public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
                                         String path, boolean openTool, String sessionId) throws CatalogException {
-        checkParameter(alias, "alias");
-        checkObj(description, "description"); //description can be empty
-        checkParameter(path, "path");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(alias, "alias");
+        ParamsUtils.checkObj(description, "description"); //description can be empty
+        ParamsUtils.checkParameter(path, "path");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         //TODO: Check Path
 
         String userId = getUserIdBySessionId(sessionId);
@@ -1090,105 +980,10 @@ public class CatalogManager {
 
     public QueryResult<Tool> getTool(int id, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         //TODO: Check ACLs
         return catalogDBAdaptor.getTool(id);
     }
-
-//    public QueryResult<Tool> searchTool(QueryOptions options, String sessionId) {
-//        String userId = getUserIdBySessionId(sessionId);
-//
-//        catalogDBAdaptor.searchTool(options);
-//    }
-
-    /**
-     * ****************
-     */
-    private void checkEmail(String email) throws CatalogException {
-        if (email == null || !emailPattern.matcher(email).matches()) {
-            throw new CatalogException("email not valid");
-        }
-    }
-
-    private void checkId(int id, String name) throws CatalogException {
-        if (id < 0) {
-            throw new CatalogException("Error in id: '" + name + "' is not valid: "
-                    + id + ".");
-        }
-    }
-
-    private void checkParameter(String param, String name) throws CatalogException {
-        if (param == null || param.equals("") || param.equals("null")) {
-            throw new CatalogException("Error in parameter: parameter '" + name + "' is null or empty: "
-                    + param + ".");
-        }
-    }
-
-    private void checkParameters(String... args) throws CatalogException {
-        if (args.length % 2 == 0) {
-            for (int i = 0; i < args.length; i += 2) {
-                checkParameter(args[i], args[i + 1]);
-            }
-        } else {
-            throw new CatalogException("Error in parameter: parameter list is not multiple of 2");
-        }
-    }
-
-    private void checkObj(Object obj, String name) throws CatalogException {
-        if (obj == null) {
-            throw new CatalogException("parameter '" + name + "' is null.");
-        }
-    }
-
-    private void checkRegion(String regionStr, String name) throws CatalogException {
-        if (Pattern.matches("^([a-zA-Z0-9])+:([0-9])+-([0-9])+$", regionStr)) {//chr:start-end
-            throw new CatalogException("region '" + name + "' is not valid");
-        }
-    }
-
-    private void checkSessionId(String userId, String sessionId) throws CatalogException {
-        String userIdBySessionId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!userIdBySessionId.equals(userId)) {
-            throw new CatalogException("Invalid sessionId for user: " + userId);
-        }
-    }
-
-    private void checkPath(String path, String name) throws CatalogException {
-        if (path == null) {
-            throw new CatalogException("parameter '" + name + "' is null.");
-        }
-        checkPath(Paths.get(path), name);
-    }
-
-    private void checkPath(Path path, String name) throws CatalogException {
-        checkObj(path, name);
-        if (path.isAbsolute()) {
-            throw new CatalogException("Error in path: Path '" + name + "' can't be absolute");
-        } else if (path.toString().matches("\\.|\\.\\.")) {
-            throw new CatalogException("Error in path: Path '" + name + "' can't have relative names '.' or '..'");
-        }
-    }
-
-    private void checkAlias(String alias, String name) throws CatalogException {
-        if (alias == null || alias.isEmpty() || !alias.matches("^[_A-Za-z0-9-\\+]+$")) {
-            throw new CatalogException("Error in alias: Invalid alias for '" + name + "'.");
-        }
-    }
-
-    private String defaultString(String string, String defaultValue) {
-        if (string == null || string.isEmpty()) {
-            string = defaultValue;
-        }
-        return string;
-    }
-
-    private <T> T defaultObject(T object, T defaultObject) {
-        if (object == null) {
-            object = defaultObject;
-        }
-        return object;
-    }
-
 
 }

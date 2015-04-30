@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -147,16 +146,16 @@ public class FileManager implements IFileManager {
 
         /** Check and set all the params and create a File object **/
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkParameter(sessionId, "sessionId");
-        checkPath(path, "filePath");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkPath(path, "filePath");
 
-        type = defaultObject(type, File.Type.FILE);
-        format = defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
-        bioformat = defaultObject(bioformat, File.Bioformat.NONE);
-        ownerId = defaultString(ownerId, userId);
-        creationDate = defaultString(creationDate, TimeUtils.getTime());
-        description = defaultString(description, "");
-        status = defaultObject(status, File.Status.UPLOADING);
+        type = ParamsUtils.defaultObject(type, File.Type.FILE);
+        format = ParamsUtils.defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
+        bioformat = ParamsUtils.defaultObject(bioformat, File.Bioformat.NONE);
+        ownerId = ParamsUtils.defaultString(ownerId, userId);
+        creationDate = ParamsUtils.defaultString(creationDate, TimeUtils.getTime());
+        description = ParamsUtils.defaultString(description, "");
+        status = ParamsUtils.defaultObject(status, File.Status.UPLOADING);
 
         if (diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
@@ -164,7 +163,7 @@ public class FileManager implements IFileManager {
         if (experimentId > 0 && !jobDBAdaptor.experimentExists(experimentId)) {
             throw new CatalogException("Experiment { id: " + experimentId + "} does not exist.");
         }
-        sampleIds = defaultObject(sampleIds, new LinkedList<Integer>());
+        sampleIds = ParamsUtils.defaultObject(sampleIds, new LinkedList<Integer>());
 
         for (Integer sampleId : sampleIds) {
             if (!sampleDBAdaptor.sampleExists(sampleId)) {
@@ -175,8 +174,8 @@ public class FileManager implements IFileManager {
         if (jobId > 0 && !jobDBAdaptor.jobExists(jobId)) {
             throw new CatalogException("Job { id: " + jobId + "} does not exist.");
         }
-        stats = defaultObject(stats, new HashMap<String, Object>());
-        attributes = defaultObject(attributes, new HashMap<String, Object>());
+        stats = ParamsUtils.defaultObject(stats, new HashMap<String, Object>());
+        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         if (!studyDBAdaptor.studyExists(studyId)) {
             throw new CatalogException("Study { id: " + studyId + "} does not exist.");
@@ -262,7 +261,7 @@ public class FileManager implements IFileManager {
 
     @Override
     public QueryResult<File> read(Integer id, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getFileACL(userId, id).isRead()) {
@@ -296,7 +295,7 @@ public class FileManager implements IFileManager {
 
     @Override
     public QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         if (studyId <= 0) {
@@ -318,8 +317,8 @@ public class FileManager implements IFileManager {
     @Override
     public QueryResult<File> update(Integer fileId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkObj(parameters, "Parameters");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(parameters, "Parameters");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         File file = read(fileId, null, sessionId).first();
         switch (authorizationManager.getUserRole(userId)) {
@@ -375,7 +374,7 @@ public class FileManager implements IFileManager {
     @Override
     public QueryResult<File> delete(Integer fileId, QueryOptions options, String sessionId)
             throws CatalogException {        //Safe delete: Don't delete. Just rename file and set {deleting:true}
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
@@ -431,8 +430,8 @@ public class FileManager implements IFileManager {
     @Override
     public QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkPath(newName, "newName");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkPath(newName, "newName");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
@@ -479,13 +478,13 @@ public class FileManager implements IFileManager {
     public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
                                               Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
-        checkObj(files, "files");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(name, "name");
+        ParamsUtils.checkObj(files, "files");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        description = defaultString(description, "");
-        attributes = defaultObject(attributes, Collections.<String, Object>emptyMap());
+        description = ParamsUtils.defaultString(description, "");
+        attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
@@ -507,7 +506,7 @@ public class FileManager implements IFileManager {
     @Override
     public QueryResult<Dataset> readDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByDatasetId(dataSetId);
 
@@ -521,7 +520,7 @@ public class FileManager implements IFileManager {
     @Override
     public DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
             throw new CatalogException("Permission denied. User can't read file");
@@ -536,7 +535,7 @@ public class FileManager implements IFileManager {
     @Override
     public DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
             throw new CatalogException("Permission denied. User can't read file");

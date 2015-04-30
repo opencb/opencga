@@ -78,18 +78,18 @@ public class StudyManager implements IStudyManager{
     @Override
     public QueryResult<Study> create(int projectId, String name, String alias, Study.Type type, String creatorId, String creationDate, String description, String status, String cipher, String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException {
 
-        checkParameter(name, "name");
-        checkParameter(alias, "alias");
-        checkObj(type, "type");
-        checkAlias(alias, "alias");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(name, "name");
+        ParamsUtils.checkParameter(alias, "alias");
+        ParamsUtils.checkObj(type, "type");
+        ParamsUtils.checkAlias(alias, "alias");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        description = defaultString(description, "");
-        creatorId = defaultString(creatorId, userId);
-        creationDate = defaultString(creationDate, TimeUtils.getTime());
-        status = defaultString(status, "active");
-        cipher = defaultString(cipher, "none");
+        description = ParamsUtils.defaultString(description, "");
+        creatorId = ParamsUtils.defaultString(creatorId, userId);
+        creationDate = ParamsUtils.defaultString(creationDate, TimeUtils.getTime());
+        status = ParamsUtils.defaultString(status, "active");
+        cipher = ParamsUtils.defaultString(cipher, "none");
         if (uri != null) {
             if (uri.getScheme() == null) {
                 throw new CatalogException("StudyUri must specify the scheme");
@@ -103,11 +103,11 @@ public class StudyManager implements IStudyManager{
                 }
             }
         } else {
-            uriScheme = defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
+            uriScheme = ParamsUtils.defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
         }
-        datastores = defaultObject(datastores, new HashMap<File.Bioformat, DataStore>());
-        stats = defaultObject(stats, new HashMap<String, Object>());
-        attributes = defaultObject(attributes, new HashMap<String, Object>());
+        datastores = ParamsUtils.defaultObject(datastores, new HashMap<File.Bioformat, DataStore>());
+        stats = ParamsUtils.defaultObject(stats, new HashMap<String, Object>());
+        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
@@ -185,7 +185,7 @@ public class StudyManager implements IStudyManager{
 
     @Override
     public QueryResult<Study> create(QueryOptions params, String sessionId) throws CatalogException {
-        checkObj(params, "QueryOptions");
+        ParamsUtils.checkObj(params, "QueryOptions");
         return create(
                 params.getInt("projectId", -1),
                 params.getString("name"),
@@ -207,7 +207,7 @@ public class StudyManager implements IStudyManager{
 
     @Override
     public QueryResult<Study> read(Integer studyId, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
         if (studyAcl.isRead()) {
@@ -223,10 +223,10 @@ public class StudyManager implements IStudyManager{
 
     @Override
     public QueryResult<Study> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         int projectId = query.getInt("projectId", -1);
-        checkId(projectId, "ProjectId");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkId(projectId, "ProjectId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
 
@@ -246,8 +246,8 @@ public class StudyManager implements IStudyManager{
     @Override
     public QueryResult<Study> update(Integer studyId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkObj(parameters, "Parameters");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(parameters, "Parameters");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
@@ -275,8 +275,8 @@ public class StudyManager implements IStudyManager{
 
     private QueryResult rename(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
-        checkAlias(newStudyAlias, "newStudyAlias");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkAlias(newStudyAlias, "newStudyAlias");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String sessionUserId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 

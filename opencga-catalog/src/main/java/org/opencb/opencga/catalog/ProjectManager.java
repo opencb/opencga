@@ -61,10 +61,10 @@ public class ProjectManager implements IProjectManager{
     public QueryResult<Project> create(String ownerId, String name, String alias, String description,
                                        String organization, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(ownerId, "ownerId");
-        checkParameter(name, "name");
-        checkAlias(alias, "alias");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(ownerId, "ownerId");
+        ParamsUtils.checkParameter(name, "name");
+        ParamsUtils.checkAlias(alias, "alias");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
         String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -108,7 +108,7 @@ public class ProjectManager implements IProjectManager{
     @Override
     public QueryResult<Project> read(Integer projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
@@ -129,8 +129,8 @@ public class ProjectManager implements IProjectManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
 
-        checkParameter(ownerId, "ownerId");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkParameter(ownerId, "ownerId");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
 
         QueryResult<Project> allProjects = userDBAdaptor.getAllProjects(ownerId, options);
 
@@ -144,8 +144,8 @@ public class ProjectManager implements IProjectManager{
     @Override
     public QueryResult<Project> update(Integer projectId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        checkObj(parameters, "Parameters");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkObj(parameters, "Parameters");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
         if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) {
@@ -169,8 +169,8 @@ public class ProjectManager implements IProjectManager{
 
     public QueryResult rename(int projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
-        checkAlias(newProjectAlias, "newProjectAlias");
-        checkParameter(sessionId, "sessionId");
+        ParamsUtils.checkAlias(newProjectAlias, "newProjectAlias");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
