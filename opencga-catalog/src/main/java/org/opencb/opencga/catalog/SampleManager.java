@@ -52,7 +52,7 @@ public class SampleManager implements ISampleManager {
         ParamsUtils.checkParameter(sessionId, "sessionId");
         ParamsUtils.checkParameter(id, "id");
         ParamsUtils.checkObj(annotations, "annotations");
-        attributes = ParamsUtils.defaultObject(attributes, new HashMap<>());
+        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
@@ -194,7 +194,7 @@ public class SampleManager implements ISampleManager {
         ParamsUtils.checkObj(variables, "Variables Set");
         unique = ParamsUtils.defaultObject(unique, true);
         description = ParamsUtils.defaultString(description, "");
-        attributes = ParamsUtils.defaultObject(attributes, new HashMap<>());
+        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         for (Variable variable : variables) {
             ParamsUtils.checkParameter(variable.getId(), "variable ID");

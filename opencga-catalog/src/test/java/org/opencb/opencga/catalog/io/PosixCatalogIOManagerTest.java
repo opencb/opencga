@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.io;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.opencga.core.common.IOUtils;
 
@@ -28,6 +29,7 @@ import java.util.Properties;
 
 import static org.junit.Assert.*;
 
+@Ignore
 public class PosixCatalogIOManagerTest {
 
     static CatalogIOManager posixCatalogIOManager;

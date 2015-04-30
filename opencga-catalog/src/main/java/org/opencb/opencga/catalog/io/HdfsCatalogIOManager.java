@@ -128,12 +128,12 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOManagerException, IOException {
+    public DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOManagerException {
         return null;
     }
 
     @Override
-    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
+    public DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException {
         return null;
     }
 

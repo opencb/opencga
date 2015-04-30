@@ -296,7 +296,9 @@ public class FileManager implements IFileManager {
     @Override
     public QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         ParamsUtils.checkParameter(sessionId, "sessionId");
+        query = ParamsUtils.defaultObject(query, new QueryOptions());
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
 
         if (studyId <= 0) {
             switch (authorizationManager.getUserRole(userId)) {

@@ -376,7 +376,7 @@ public class FileWSServer extends OpenCGAWSServer {
             stream = catalogManager.grepFile(fileId, pattern, ignoreCase, multi, sessionId);
 
 //             content = org.apache.commons.io.IOUtils.toString(stream);
-        } catch (CatalogException | IOException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

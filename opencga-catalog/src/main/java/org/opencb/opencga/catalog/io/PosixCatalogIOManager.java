@@ -508,13 +508,6 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
     }
 
-    @Override
-    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,
-                                             boolean ignoreCase, boolean multi)
-            throws CatalogIOManagerException {
-        URI fileUri = getFileUri(studyUri, objectId);
-        return getGrepFileObject(fileUri, pattern, ignoreCase, multi);
-    }
 
     @Override
     public DataInputStream getGrepFileObject(URI fileUri, String pattern,

@@ -87,7 +87,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         HashSet<Variable> variables = new HashSet<>();
         variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, Collections.<String>emptyList(), 0, null, "", null));
         variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, Collections.<String>emptyList(), 0, null, "", null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, true, Collections.<String>emptyList(), 0, null, "", null));
+        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, Collections.<String>emptyList(), 0, null, "", null));
         variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, populations, 0, null, "", null));
 
         VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);

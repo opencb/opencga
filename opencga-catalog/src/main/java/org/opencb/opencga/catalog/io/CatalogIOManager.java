@@ -471,9 +471,12 @@ public abstract class CatalogIOManager {
     public abstract DataInputStream getFileObject(URI fileUri ,int start, int limit)
             throws CatalogIOManagerException;
 
-    public abstract DataInputStream getGrepFileObject(URI studyUri, String objectId,
-                                                      String pattern, boolean ignoreCase, boolean multi)
-            throws CatalogIOManagerException;
+    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,
+                                             boolean ignoreCase, boolean multi)
+            throws CatalogIOManagerException {
+        URI fileUri = getFileUri(studyUri, objectId);
+        return getGrepFileObject(fileUri, pattern, ignoreCase, multi);
+    }
 
     public abstract DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi)
             throws CatalogIOManagerException;
