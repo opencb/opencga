@@ -34,14 +34,13 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/")
 public class OpenCGAWSServer {
 
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
-    protected static Properties properties;
-    protected static Config config;
 
     protected String version;
     protected UriInfo uriInfo;
@@ -84,36 +83,45 @@ public class OpenCGAWSServer {
 
     static {
 
-        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
-        properties = new Properties();
-        try {
-            properties.load(is);
-            System.out.println("catalog.properties");
-            System.out.println(CatalogManager.CATALOG_DB_HOSTS + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOSTS));
-            System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-            System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
-            System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));
-            System.out.println(CatalogManager.CATALOG_MAIN_ROOTDIR + " " + properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
-
-        } catch (IOException e) {
-            System.out.println("Error loading properties");
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-        }
-//        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
+//        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
 //        properties = new Properties();
 //        try {
 //            properties.load(is);
+//            System.out.println("catalog.properties");
+//            System.out.println(CatalogManager.CATALOG_DB_HOSTS + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOSTS));
+//            System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+//            System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
+//            System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));
+//            System.out.println(CatalogManager.CATALOG_MAIN_ROOTDIR + " " + properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+//
 //        } catch (IOException e) {
 //            System.out.println("Error loading properties");
 //            System.out.println(e.getMessage());
 //            e.printStackTrace();
 //        }
-//        Config.setGcsaHome(properties.getProperty("OPENCGA.INSTALLATION.DIR"));    //TODO: Check instalation dir.
-//        properties = Config.getCatalogProperties();
+
+        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
+        String openCGAHome = "";
+        System.out.println("Default opencga_home " + Config.getOpenCGAHome());
+        try {
+            Properties properties = new Properties();
+            properties.load(is);
+            openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", "");
+        } catch (IOException e) {
+            System.out.println("Error loading properties");
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        if (!openCGAHome.isEmpty() && Paths.get(openCGAHome).toFile().exists()) {
+            System.out.println("Using \"openCGAHome\" from the properties file");
+            Config.setOpenCGAHome(openCGAHome);
+        } else {
+            Config.setOpenCGAHome();
+            System.out.println("Using OpenCGA_HOME = " + Config.getOpenCGAHome());
+        }
 
         try {
-            catalogManager = new CatalogManager(properties);
+            catalogManager = new CatalogManager(Config.getCatalogProperties());
         } catch (CatalogIOManagerException | CatalogDBException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -121,10 +129,10 @@ public class OpenCGAWSServer {
 
         jsonObjectMapper = new ObjectMapper();
 
-        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 

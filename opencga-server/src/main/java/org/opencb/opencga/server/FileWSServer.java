@@ -563,7 +563,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
                           @ApiParam(value = "storageEngine", required = false) @DefaultValue("") @QueryParam("storageEngine") String storageEngine
     ) {
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager, properties);
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
         QueryResult<File> queryResult;
         try {
