@@ -463,17 +463,20 @@ public abstract class CatalogIOManager {
 
 
     public DataInputStream getFileObject(URI studyUri, String objectId,int start, int limit)
-            throws CatalogIOManagerException, IOException {
+            throws CatalogIOManagerException {
         URI fileUri = getFileUri(studyUri, objectId);
         return getFileObject(fileUri, start, limit);
     }
 
     public abstract DataInputStream getFileObject(URI fileUri ,int start, int limit)
-            throws CatalogIOManagerException, IOException;
+            throws CatalogIOManagerException;
 
     public abstract DataInputStream getGrepFileObject(URI studyUri, String objectId,
                                                       String pattern, boolean ignoreCase, boolean multi)
-            throws CatalogIOManagerException, IOException;
+            throws CatalogIOManagerException;
+
+    public abstract DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi)
+            throws CatalogIOManagerException;
 //
 //    public abstract DataInputStream getFileFromJob(Path jobPath, String filename, String zip)
 //            throws CatalogIOManagerException,FileNotFoundException;

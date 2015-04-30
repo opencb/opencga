@@ -1485,7 +1485,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if(studies == null || studies.get(0).getDatasets().isEmpty()) {
             throw CatalogDBException.idNotFound("Dataset", datasetId);
         } else {
-            return endQuery("getDataset", startTime, studies.get(0).getDatasets());
+            return endQuery("readDataset", startTime, studies.get(0).getDatasets());
         }
     }
 
@@ -1533,16 +1533,16 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
      * At the moment it does not clean external references to itself.
      */
     @Override
-    public QueryResult<Integer> deleteJob(int jobId) throws CatalogDBException {
+    public QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
         long startTime = startQuery();
-
+        Job job = getJob(jobId, null).first();
         WriteResult id = jobCollection.remove(new BasicDBObject("id", jobId), null).getResult().get(0);
         List<Integer> deletes = new LinkedList<>();
         if (id.getN() == 0) {
             throw CatalogDBException.idNotFound("Job", jobId);
         } else {
             deletes.add(id.getN());
-            return endQuery("delete job", startTime, deletes);
+            return endQuery("delete job", startTime, Collections.singletonList(job));
         }
     }
 
@@ -1648,6 +1648,15 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
             options.remove("ready");
         }
+
+        if (options.containsKey("studyId")) {
+            addQueryIntegerListFilter("studyId", options, _STUDY_ID, query);
+        }
+
+        if (options.containsKey("status")) {
+            addQueryStringListFilter("status", options, query);
+        }
+
         query.putAll(options);
 //        System.out.println("query = " + query);
         QueryResult<DBObject> queryResult = jobCollection.find(query, null);

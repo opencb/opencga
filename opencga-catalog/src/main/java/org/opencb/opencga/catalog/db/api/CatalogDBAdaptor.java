@@ -206,7 +206,7 @@ public abstract class CatalogDBAdaptor
 //
 //    public abstract QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 //
-//    public abstract QueryResult<Object> renameFile(int fileId, String name) throws CatalogDBException;
+//    public abstract QueryResult<Object> rename(int fileId, String name) throws CatalogDBException;
 //
 //    public abstract int getStudyIdByFileId(int fileId) throws CatalogDBException;
 //
@@ -220,7 +220,7 @@ public abstract class CatalogDBAdaptor
 //
 //    public abstract QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
 //
-//    public abstract QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
+//    public abstract QueryResult<Dataset> readDataset(int datasetId, QueryOptions options) throws CatalogDBException;
 //
 //    public abstract int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 //

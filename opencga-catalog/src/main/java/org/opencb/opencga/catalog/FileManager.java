@@ -15,6 +15,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,6 +51,12 @@ public class FileManager implements IFileManager {
     public URI getStudyUri(int studyId)
             throws CatalogException {
         return studyDBAdaptor.getStudy(studyId, new QueryOptions("include", Arrays.asList("projects.studies.uri"))).first().getUri();
+    }
+
+    @Override
+    public URI getFileUri(File file) throws CatalogException {
+        int studyId = fileDBAdaptor.getStudyIdByFileId(file.getId());
+        return getFileUri(studyId, file.getPath());
     }
 
     @Override
@@ -349,7 +357,7 @@ public class FileManager implements IFileManager {
                         case "path":
                         case "name":
                             throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
-                                    "Use \"renameFile\" instead");
+                                    "Use \"rename\" instead");
                         case "type":
                         default:
                             throw new CatalogException("Parameter '" + s + "' can't be changed. " +
@@ -405,15 +413,15 @@ public class FileManager implements IFileManager {
                     delete(subfile.getId(), null, sessionId);
                 }
 
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +  file.getName(), sessionId);
+                rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 QueryResult<File> queryResult = fileDBAdaptor.modifyFile(fileId, objectMap);
                 return queryResult; //TODO: Return the modified file
             case FILE:
-                renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" +file.getName(), sessionId);
+                rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 return fileDBAdaptor.modifyFile(fileId, objectMap); //TODO: Return the modified file
 //            case INDEX:       //#62
 //                throw new CatalogException("Can't delete INDEX file");
-            //renameFile(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
+            //rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
             //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
         return null;
@@ -421,7 +429,7 @@ public class FileManager implements IFileManager {
 
 
     @Override
-    public QueryResult<File> renameFile(int fileId, String newName, String sessionId)
+    public QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkPath(newName, "newName");
@@ -497,7 +505,7 @@ public class FileManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
+    public QueryResult<Dataset> readDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException {
         checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -510,5 +518,32 @@ public class FileManager implements IFileManager {
         return fileDBAdaptor.getDataset(dataSetId, options);
     }
 
+    @Override
+    public DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId)
+            throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
+            throw new CatalogException("Permission denied. User can't read file");
+        }
 
+        URI fileUri = getFileUri(read(fileId, null, sessionId).first());
+        boolean ignoreCase = options.getBoolean("ignoreCase");
+        boolean multi = options.getBoolean("multi");
+        return catalogIOManagerFactory.get(fileUri).getGrepFileObject(fileUri, pattern, ignoreCase, multi);
+    }
+
+    @Override
+    public DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
+            throws CatalogException {
+        checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
+            throw new CatalogException("Permission denied. User can't read file");
+        }
+
+        URI fileUri = getFileUri(read(fileId, null, sessionId).first());
+
+        return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, 0, lines);
+    }
 }

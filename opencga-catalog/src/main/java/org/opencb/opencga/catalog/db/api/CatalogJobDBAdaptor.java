@@ -21,7 +21,7 @@ public interface CatalogJobDBAdaptor {
 
     public abstract QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Integer> deleteJob(int jobId) throws CatalogDBException;
+    public abstract QueryResult<Job> deleteJob(int jobId) throws CatalogDBException;
 
     public abstract QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException;
 

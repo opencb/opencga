@@ -21,10 +21,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.catalog.api.IFileManager;
-import org.opencb.opencga.catalog.api.IProjectManager;
-import org.opencb.opencga.catalog.api.IStudyManager;
-import org.opencb.opencga.catalog.api.IUserManager;
+import org.opencb.opencga.catalog.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
@@ -84,6 +81,7 @@ public class CatalogManager {
     private IProjectManager projectManager;
     private IStudyManager studyManager;
     private IFileManager fileManager;
+    private IJobManager jobManager;
 
 //    private PosixCatalogIOManager ioManager;
 
@@ -128,6 +126,7 @@ public class CatalogManager {
         fileManager = new FileManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
         studyManager = new StudyManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
         projectManager = new ProjectManager(authorizationManager, catalogDBAdaptor, ioManager);
+        jobManager = new JobManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
     }
 
     public CatalogClient client() {
@@ -531,21 +530,6 @@ public class CatalogManager {
         return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
     }
 
-
-//    @Deprecated
-//    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
-//                                        boolean parents, String sessionId)
-//            throws CatalogException {
-//
-//        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
-//        File file = result.getResult().get(0);
-//
-//        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
-//        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
-//
-//        return result;
-//    }
-
     //create file with byte[]
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String description,
                                         boolean parents, String sessionId)
@@ -683,7 +667,7 @@ public class CatalogManager {
 
     public QueryResult renameFile(int fileId, String newName, String sessionId)
             throws CatalogException, IOException, CatalogIOManagerException {
-        return fileManager.renameFile(fileId, newName, sessionId);
+        return fileManager.rename(fileId, newName, sessionId);
     }
 
     /**
@@ -726,35 +710,18 @@ public class CatalogManager {
     }
 
     public QueryResult<File> getAllFiles(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (!studyAcl.isRead()) {
-            throw new CatalogException("Permission denied. User can't read file");
-        }
-        QueryResult<File> allFilesResult = catalogDBAdaptor.getAllFiles(studyId, options);
-        List<File> files = allFilesResult.getResult();
-        authorizationManager.filterFiles(userId, studyAcl, files);
-        allFilesResult.setResult(files);
-        return allFilesResult;
+        return fileManager.readAll(studyId, options, options, sessionId);
     }
 
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
         checkParameter(sessionId, "sessionId");
         checkId(folderId, "folderId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(folderId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (!studyAcl.isRead()) {
-            throw new CatalogDBException("Permission denied. User can't read file");
+        int studyId = getStudyIdByFileId(folderId);
+        File folder = getFile(folderId, sessionId).first();
+        if (!folder.getType().equals(File.Type.FOLDER)) {
+            throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
-        QueryResult<File> allFilesResult = catalogDBAdaptor.getAllFilesInFolder(folderId, options);
-        List<File> files = allFilesResult.getResult();
-        authorizationManager.filterFiles(userId, studyAcl, files);
-        allFilesResult.setResult(files);
-        return allFilesResult;
+        return fileManager.readAll(studyId, new QueryOptions("directory", folder.getPath()), options, sessionId);
     }
 
     public DataInputStream downloadFile(int fileId, String sessionId)
@@ -783,24 +750,10 @@ public class CatalogManager {
     }
 
     public DataInputStream grepFile(int fileId, String pattern, boolean ignoreCase, boolean multi, String sessionId)
-            throws IOException, CatalogException {
-        checkParameter(sessionId, "sessionId");
-
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
-            throw new CatalogException("Permission denied. User can't download file");
-        }
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId, null);
-        if (fileResult.getResult().isEmpty()) {
-            throw new CatalogException("File not found");
-        }
-        File file = fileResult.getResult().get(0);
-
-        return ioManager.getGrepFileObject(getStudyUri(studyId),
-                file.getPath(), pattern, ignoreCase, multi);
+            throws CatalogException {
+        QueryOptions options = new QueryOptions("ignoreCase", ignoreCase);
+        options.put("multi", multi);
+        return fileManager.grep(fileId, pattern, options, sessionId);
     }
 
 
@@ -845,19 +798,8 @@ public class CatalogManager {
 
     public QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return fileManager.getDataset(dataSetId, options, sessionId);
+        return fileManager.readDataset(dataSetId, options, sessionId);
     }
-
-//    public DataInputStream getGrepFileObjectFromBucket(String userId, String bucketId, Path objectId, String sessionId, String pattern, boolean ignoreCase, boolean multi)
-//            throws CatalogIOManagerException, IOException, CatalogManagerException {
-//        checkParameter(bucketId, "bucket");
-//        checkParameter(userId, "userId");
-//        checkParameter(sessionId, "sessionId");
-//        checkParameter(objectId.toString(), "objectId");
-//        checkParameter(pattern, "pattern");
-//
-//        return ioManager.getGrepFileObject(userId, bucketId, objectId, pattern, ignoreCase, multi);
-//    }
 
 
     public QueryResult refreshFolder(final int folderId, final String sessionId)
@@ -871,204 +813,57 @@ public class CatalogManager {
      * ***************************
      */
 
-    public int getStudyIdByJobId(int jobId) throws CatalogDBException {
-        return catalogDBAdaptor.getStudyIdByJobId(jobId);
+    public int getStudyIdByJobId(int jobId) throws CatalogException {
+        return jobManager.getStudyId(jobId);
     }
 
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
-                                      Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options, String sessionId)
+                                      Map<String, Object> resourceManagerAttributes, Job.Status status,
+                                      QueryOptions options, String sessionId)
             throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(name, "name");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        checkParameter(toolName, "toolName");
-        checkParameter(commandLine, "commandLine");
-        description = defaultString(description, "");
-        status = defaultObject(status, Job.Status.PREPARED);
-
-        // FIXME check inputFiles? is a null conceptually valid?
-
-//        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
-
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. Can't create job");
-        }
-        QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList("id", "type", "path"));
-        File outDir = catalogDBAdaptor.getFile(outDirId, fileQueryOptions).getResult().get(0);
-
-        if (!outDir.getType().equals(File.Type.FOLDER)) {
-            throw new CatalogException("Bad outDir type. Required type : " + File.Type.FOLDER);
-        }
-
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
-        job.setStatus(status);
-        if (resourceManagerAttributes != null) {
-            job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
-        }
-        if (attributes != null) {
-            job.setAttributes(attributes);
-        }
-
-        return catalogDBAdaptor.createJob(studyId, job, options);
+        return jobManager.create(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles,
+                attributes, resourceManagerAttributes, status, options, sessionId);
     }
 
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
             throws CatalogException, CatalogIOManagerException {
-        checkParameter(sessionId, "sessionId");
-        checkParameter(dirName, "dirName");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        QueryOptions studyQueryOptions = null;
-//        studyQueryOptions = new QueryOptions("include", Arrays.asList("projects.studies.uri", "projects.studies.id"));
-        QueryResult<Study> studyQueryResult = getStudy(studyId, sessionId, studyQueryOptions);
-
-        URI uri = studyQueryResult.getResult().get(0).getUri();
-        CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);
-        return catalogIOManager.createJobOutDir(userId, dirName);
+        return jobManager.createJobOutDir(studyId, dirName, sessionId);
     }
 
     public QueryResult<ObjectMap> incJobVisites(int jobId, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-//        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-        int studyId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. Can't read job");
-        }
-        return catalogDBAdaptor.incJobVisits(jobId);
+        return jobManager.visit(jobId, sessionId);
     }
 
-    public QueryResult deleteJob(int jobId, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-//        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-        int studyId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isDelete()) {
-            throw new CatalogException("Permission denied. Can't delete job");
-        }
-
-        return catalogDBAdaptor.deleteJob(jobId);
+    public QueryResult deleteJob(int jobId, String sessionId) throws CatalogException {
+        return jobManager.delete(jobId, null, sessionId);
     }
 
 
     public QueryResult<Job> getJob(int jobId, QueryOptions options, String sessionId) throws CatalogException {
-        checkParameter(sessionId, "sessionId");
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-//        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-//        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
-        int studyId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. Can't read job");
-        }
-
-        return catalogDBAdaptor.getJob(jobId, options);
+        return jobManager.read(jobId, options, sessionId);
     }
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        User.Role role = authorizationManager.getUserRole(userId);
-        switch (role) {
-            case ADMIN:
-                return catalogDBAdaptor.searchJob(new QueryOptions("ready", false));
-            default:
-                throw new CatalogException("Permission denied. Admin role required");
-        }
+        return jobManager.readAll(new QueryOptions("status",
+                Arrays.asList(
+                        Job.Status.PREPARED.toString(),
+                        Job.Status.QUEUED.toString(),
+                        Job.Status.RUNNING.toString(),
+                        Job.Status.DONE.toString()
+                )
+        ), null, sessionId);
     }
 
 
     public QueryResult<Job> getAllJobs(int studyId, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. Can't get jobs");
-        }
-        return catalogDBAdaptor.getAllJobs(studyId, new QueryOptions());
+        return jobManager.readAll(studyId, null, null, sessionId);
     }
 
-//    public QueryResult<Job> getJobsByAnalysis(int analysisId, String sessionId) throws CatalogManagerException {
-//        String userId = getUserIdBySessionId(sessionId);
-////        getAnalysisAcl(); //TODO: Look for ACLs !!!
-//        int studyId = getStudyIdByAnalysisId(analysisId);
-//        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
-//            return catalogDBAdaptor.searchJob(new QueryOptions("analysisId", analysisId));
-//        } else {
-//            throw new CatalogManagerException("Permission denied. User can't read this analysis");
-//        }
-//    }
 
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-
-//        User.Role role = authorizationManager.getUserRole(userId);
-//        switch (role) {
-//            case ADMIN:
-                return catalogDBAdaptor.modifyJob(jobId, parameters);
-//            default:
-//                throw new CatalogException("Permission denied. Admin role required");
-//        }
+        return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
-
-//    public DataInputStream getGrepFileFromJob(String userId, String jobId, String filename, String pattern, boolean ignoreCase, boolean multi, String sessionId)
-//            throws CatalogIOManagerException, IOException, CatalogManagerException {
-//        checkParameter(userId, "userId");
-//        checkParameter(jobId, "jobId");
-//        checkParameter(filename, "filename");
-//        checkParameter(pattern, "pattern");
-//        checkParameter(sessionId, "sessionId");
-//
-//
-//        Path jobPath = getUserUri(userId).resolve(catalogDBAdaptor.getJobPath(userId, jobId, sessionId));
-//
-//        return ioManager.getGrepFileFromJob(jobPath, filename, pattern, ignoreCase, multi);
-//    }
-//
-//    public InputStream getJobZipped(String userId, String jobId, String sessionId) throws CatalogIOManagerException,
-//            IOException, CatalogManagerException {
-//        checkParameter(userId, "userId");
-//        checkParameter(jobId, "jobId");
-//        checkParameter(sessionId, "sessionId");
-//
-//        Path jobPath = getUserUri(userId).resolve(catalogDBAdaptor.getJobPath(userId, jobId, sessionId));
-//        logger.info("getJobZipped");
-//        logger.info(jobPath.toString());
-//        logger.info(jobId);
-//        return ioManager.getJobZipped(jobPath, jobId);
-//    }
-//
-//    public QueryResult createJob(String jobName, String projectId, String jobFolder, String toolName, List<String> dataList,
-//                                 String commandLine, String sessionId) throws CatalogManagerException, CatalogIOManagerException, JsonProcessingException {
-//
-//        checkParameter(jobName, "jobName");
-//        checkParameter(projectId, "projectId");
-//        checkParameter(toolName, "toolName");
-//        checkParameter(sessionId, "sessionId");
-//        String userId = catalogDBAdaptor.getAccountIdBySessionId(sessionId);
-//
-//        String jobId = StringUtils.randomString(15);
-//        boolean jobFolderCreated = false;
-//
-//        if (jobFolder == null) {
-//            ioManager.createJob(userId, projectId, jobId);
-//            jobFolder = Paths.get("projects", projectId).resolve(jobId).toString();
-//            jobFolderCreated = true;
-//        }
-//        checkParameter(jobFolder, "jobFolder");
-//
-//        Job job = new Job(jobId, jobName, jobFolder, toolName, Job.QUEUED, commandLine, "", dataList);
-//
-//        try {
-//            return catalogDBAdaptor.createJob(userId, projectId, job, sessionId);
-//        } catch (CatalogManagerException e) {
-//            if (jobFolderCreated) {
-//                ioManager.deleteJob(userId, projectId, jobId);
-//            }
-//            throw e;
-//        }
-//    }
-
     /**
      * Samples methods
      * ***************************
@@ -1093,7 +888,8 @@ public class CatalogManager {
         return catalogDBAdaptor.createSample(studyId, sample, options);
     }
 
-    public QueryResult<Sample> getSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Sample> getSample(int sampleId, QueryOptions options, String sessionId)
+            throws CatalogException {
         checkParameter(sessionId, "sessionId");
 
         String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);

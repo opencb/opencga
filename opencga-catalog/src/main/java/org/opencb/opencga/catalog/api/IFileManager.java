@@ -8,6 +8,7 @@ import org.opencb.opencga.catalog.beans.Dataset;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -23,6 +24,8 @@ public interface IFileManager extends ResourceManager<Integer, File> {
 
     URI getFileUri(int studyId, String relativeFilePath)
             throws CatalogException;
+
+    URI getFileUri(File file) throws CatalogException;
 
     URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogIOManagerException, IOException;
@@ -50,13 +53,17 @@ public interface IFileManager extends ResourceManager<Integer, File> {
     QueryResult<File> getParent(int fileId, QueryOptions options, String sessionId)
     throws CatalogException;
 
-    QueryResult<File> renameFile(int fileId, String newName, String sessionId)
+    QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException;
 
     QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
                                        Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException;
 
-    QueryResult<Dataset> getDataset(int dataSetId, QueryOptions options, String sessionId)
+    QueryResult<Dataset> readDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException;
+
+    DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException;
+
+    DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId) throws CatalogException;
 }

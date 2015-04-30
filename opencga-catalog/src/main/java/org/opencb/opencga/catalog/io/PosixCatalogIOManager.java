@@ -488,34 +488,45 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //    }
 
     @Override
-    public DataInputStream getFileObject(URI fileUri,
-                                         int start, int limit)
-            throws CatalogIOManagerException, IOException {
+    public DataInputStream getFileObject(URI fileUri, int start, int limit)
+            throws CatalogIOManagerException {
 
         Path objectPath = Paths.get(fileUri);
 
         if (Files.isRegularFile(objectPath)) {
-            DataInputStream is;
-            if (start == -1 && limit == -1) {
-                is = new DataInputStream(Files.newInputStream(objectPath));
-                return is;
-            } else {
-                is = new DataInputStream(IOUtils.headOffset(objectPath, start, limit));
+            try {
+                if (start == -1 && limit == -1) {
+                    return new DataInputStream(Files.newInputStream(objectPath));
+                } else {
+                    return new DataInputStream(IOUtils.headOffset(objectPath, start, limit));
+                }
+            } catch (IOException e) {
+                throw new CatalogIOManagerException("Unable to read file", e);
             }
-            return is;
         } else {
             throw new CatalogIOManagerException("Not a regular file: " + objectPath.toAbsolutePath().toString());
         }
     }
 
+    @Override
+    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,
+                                             boolean ignoreCase, boolean multi)
+            throws CatalogIOManagerException {
+        URI fileUri = getFileUri(studyUri, objectId);
+        return getGrepFileObject(fileUri, pattern, ignoreCase, multi);
+    }
 
     @Override
-    public DataInputStream getGrepFileObject(URI studyUri, String objectId,
-                                             String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException, IOException {
-        URI fileUri = getFileUri(studyUri, objectId);
+    public DataInputStream getGrepFileObject(URI fileUri, String pattern,
+                                             boolean ignoreCase, boolean multi)
+            throws CatalogIOManagerException {
         Path path = Paths.get(fileUri);
         if (Files.isRegularFile(path)) {
-            return new DataInputStream(IOUtils.grepFile(path, pattern, ignoreCase, multi));
+            try {
+                return new DataInputStream(IOUtils.grepFile(path, pattern, ignoreCase, multi));
+            } catch (IOException e) {
+                throw new CatalogIOManagerException("Error while grep file", e);
+            }
         } else {
             throw new CatalogIOManagerException("Not a regular file: " + path.toAbsolutePath().toString());
         }
