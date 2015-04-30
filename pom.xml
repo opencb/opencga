@@ -118,11 +118,6 @@
             <!-- Intra-module dependencies -->
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-account</artifactId>
-                <version>${opencga.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
