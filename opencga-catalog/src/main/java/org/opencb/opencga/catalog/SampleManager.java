@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.api.ISampleManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * Created by hpccoll1 on 30/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleManager implements ISampleManager {
 
@@ -216,5 +217,46 @@ public class SampleManager implements ISampleManager {
 
         return sampleDBAdaptor.createVariableSet(studyId, variableSet);
     }
+
+
+    /**
+     * Cohort methods
+     * ***************************
+     */
+
+    @Override
+    public int getStudyIdByCohortId(int cohortId) throws CatalogException {
+        return sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+    }
+
+    @Override
+    public QueryResult<Cohort> readCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+
+        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            return sampleDBAdaptor.getCohort(cohortId);
+        } else {
+            throw CatalogAuthorizationException.cantRead("Cohort", cohortId, null);
+        }
+    }
+
+    @Override
+    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
+                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
+        ParamsUtils.checkParameter(name, "name");
+        ParamsUtils.checkObj(sampleIds, "Samples list");
+        description = ParamsUtils.defaultString(description, "");
+        attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
+
+        if (readAll(studyId, new QueryOptions("id", sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
+            throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
+        }
+        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, sampleIds, attributes);
+        return sampleDBAdaptor.createCohort(studyId, cohort);
+    }
+
 
 }

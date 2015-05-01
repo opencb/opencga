@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class UserManager implements IUserManager {
 
@@ -205,20 +205,6 @@ public class UserManager implements IUserManager {
         return user;
     }
 
-    private void checkSessionId(String userId, String sessionId) throws CatalogException {
-        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!userIdBySessionId.equals(userId)) {
-            throw new CatalogException("Invalid sessionId for user: " + userId);
-        }
-    }
-
-    static void checkEmail(String email) throws CatalogException {
-        if (email == null || !emailPattern.matcher(email).matches()) {
-            throw new CatalogException("email not valid");
-        }
-    }
-
-
     @Override
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
@@ -277,5 +263,18 @@ public class UserManager implements IUserManager {
         return userDBAdaptor.logoutAnonymous(sessionId);
     }
 
+
+    private void checkSessionId(String userId, String sessionId) throws CatalogException {
+        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!userIdBySessionId.equals(userId)) {
+            throw new CatalogException("Invalid sessionId for user: " + userId);
+        }
+    }
+
+    static void checkEmail(String email) throws CatalogException {
+        if (email == null || !emailPattern.matcher(email).matches()) {
+            throw new CatalogException("email not valid");
+        }
+    }
 
 }

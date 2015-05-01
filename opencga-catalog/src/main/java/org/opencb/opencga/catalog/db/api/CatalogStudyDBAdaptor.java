@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.beans.Study;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface CatalogStudyDBAdaptor {
 
@@ -43,7 +43,7 @@ public interface CatalogStudyDBAdaptor {
 
     public abstract QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogDBException;
 
-    public abstract QueryResult setStudyAcl(int projectId, Acl newAcl) throws CatalogDBException;
+    public abstract QueryResult setStudyAcl(int studyId, Acl newAcl) throws CatalogDBException;
 
 
 }

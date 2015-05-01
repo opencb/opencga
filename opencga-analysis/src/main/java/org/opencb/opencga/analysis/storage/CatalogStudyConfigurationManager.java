@@ -36,7 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * Created by hpccoll1 on 23/03/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogStudyConfigurationManager extends StudyConfigurationManager {
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationManager.class);

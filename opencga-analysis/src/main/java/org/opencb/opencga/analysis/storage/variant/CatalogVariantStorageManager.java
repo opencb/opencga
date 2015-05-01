@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * Created by hpccoll1 on 13/02/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogVariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
 //public class CatalogVariantStorageManager extends VariantStorageManager {

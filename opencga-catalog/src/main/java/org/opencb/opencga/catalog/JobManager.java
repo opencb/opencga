@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class JobManager implements IJobManager {
 

@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.authentication;
 import org.opencb.opencga.catalog.CatalogException;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class LDAPAuthenticationManager implements AuthenticationManager {
     @Override

@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.beans;
 import java.util.Map;
 
 /**
- * Created by hpccoll1 on 13/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 
 public class Index {

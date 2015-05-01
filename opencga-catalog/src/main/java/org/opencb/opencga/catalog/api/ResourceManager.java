@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 import java.util.regex.Pattern;
 
 /**
-* @author Jacobo Coll <jacobo167@gmail.com>
+* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface ResourceManager<I, R>{
 

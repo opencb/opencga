@@ -191,7 +191,7 @@ public class CatalogManager {
 
     public URI getStudyUri(int studyId)
             throws CatalogException {
-        return catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", Arrays.asList("projects.studies.uri"))).first().getUri();
+        return fileManager.getStudyUri(studyId);
     }
 
     public URI getFileUri(int studyId, String relativeFilePath)
@@ -205,12 +205,11 @@ public class CatalogManager {
     }
 
     public URI getFileUri(File file) throws CatalogException {
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(file.getId());
-        return getFileUri(studyId, file.getPath());
+        return fileManager.getFileUri(file);
     }
 
     public int getProjectIdByStudyId(int studyId) throws CatalogException {
-        return catalogDBAdaptor.getProjectIdByStudyId(studyId);
+        return studyManager.getProjectId(studyId);
     }
 
     /**
@@ -381,16 +380,7 @@ public class CatalogManager {
     }
 
     public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogException {
-        ParamsUtils.checkObj(acl, "acl");
-        ParamsUtils.checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (!projectAcl.isWrite()) {
-            throw new CatalogDBException("Permission denied. Can't modify project");
-        }
-
-        return catalogDBAdaptor.setProjectAcl(projectId, acl);
+        return authorizationManager.setProjectACL(projectId, acl, sessionId);
     }
 
     /**
@@ -481,16 +471,7 @@ public class CatalogManager {
     }
 
     public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
-        ParamsUtils.checkObj(acl, "acl");
-        ParamsUtils.checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (!studyAcl.isWrite()) {
-            throw new CatalogDBException("Permission denied. Can't modify project");
-        }
-
-        return catalogDBAdaptor.setStudyAcl(studyId, acl);
+        return authorizationManager.setStudyACL(studyId, acl, sessionId);
     }
 
     /**
@@ -498,12 +479,12 @@ public class CatalogManager {
      * ***************************
      */
 
-    public String getFileOwner(int fileId) throws CatalogDBException {
-        return catalogDBAdaptor.getFileOwnerId(fileId);
+    public String getFileOwner(int fileId) throws CatalogException {
+        return fileManager.getUserId(fileId);
     }
 
-    public int getStudyIdByFileId(int fileId) throws CatalogDBException {
-        return catalogDBAdaptor.getStudyIdByFileId(fileId);
+    public int getStudyIdByFileId(int fileId) throws CatalogException {
+        return fileManager.getStudyId(fileId);
     }
 
     @Deprecated
@@ -745,16 +726,7 @@ public class CatalogManager {
      */
     private QueryResult shareFile(int fileId, Acl acl, String sessionId)
             throws CatalogException {
-        ParamsUtils.checkObj(acl, "acl");
-        ParamsUtils.checkParameter(sessionId, "sessionId");
-
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl fileAcl = authorizationManager.getFileACL(userId, fileId);
-        if (!fileAcl.isWrite()) {
-            throw new CatalogDBException("Permission denied. Can't modify file");
-        }
-
-        return catalogDBAdaptor.setFileAcl(fileId, acl);
+        return authorizationManager.setFileACL(fileId, acl, sessionId);
     }
 
     /*Require role admin*/
@@ -916,39 +888,16 @@ public class CatalogManager {
      */
 
     public int getStudyIdByCohortId(int cohortId) throws CatalogException {
-        return catalogDBAdaptor.getStudyIdByCohortId(cohortId);
+        return sampleManager.getStudyIdByCohortId(cohortId);
     }
 
     public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamsUtils.checkParameter(sessionId, "sessionId");
-
-        int studyId = catalogDBAdaptor.getStudyIdByCohortId(cohortId);
-        String userId = getUserIdBySessionId(sessionId);
-
-        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            return catalogDBAdaptor.getCohort(cohortId);
-        } else {
-            throw new CatalogException("Permission denied. User " + userId + " can't read cohorts from study");
-        }
+        return sampleManager.readCohort(cohortId, options, sessionId);
     }
 
     public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
-        ParamsUtils.checkParameter(name, "name");
-        ParamsUtils.checkObj(sampleIds, "Samples list");
-        description = ParamsUtils.defaultString(description, "");
-        attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
-
-        if (getAllSamples(studyId, new QueryOptions("id", sampleIds), sessionId).getResult().size() != sampleIds.size()) {
-//            for (Integer sampleId : samples) {
-//                getSample(sampleId, new QueryOptions("include", "id"), sessionId).first();
-//            }
-            throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
-        }
-
-        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, sampleIds, attributes);
-
-        return catalogDBAdaptor.createCohort(studyId, cohort);
+        return sampleManager.createCohort(studyId, name, description, sampleIds, attributes, sessionId);
     }
 
     /**

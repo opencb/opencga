@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.beans.VariableSet;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface CatalogSamplesDBAdaptor {
 

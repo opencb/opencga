@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by hpccoll1 on 23/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class FileStudyConfigurationManager extends StudyConfigurationManager {
     public static final String STUDY_CONFIGURATION_PATH = "studyConfigurationPath";

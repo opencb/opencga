@@ -7,7 +7,7 @@ import java.nio.file.Paths;
 import java.util.regex.Pattern;
 
 /**
- * Created by hpccoll1 on 30/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class ParamsUtils {
     public static void checkId(int id, String name) throws CatalogException {

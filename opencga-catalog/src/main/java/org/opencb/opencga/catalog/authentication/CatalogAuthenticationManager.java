@@ -4,7 +4,7 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthenticationManager implements AuthenticationManager {
 

@@ -16,7 +16,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import java.util.List;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class ProjectManager implements IProjectManager{
     protected final AuthorizationManager authorizationManager;

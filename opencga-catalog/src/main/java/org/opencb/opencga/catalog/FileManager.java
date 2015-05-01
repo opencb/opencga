@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class FileManager implements IFileManager {
 
@@ -210,15 +210,26 @@ public class FileManager implements IFileManager {
                 path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
                 new LinkedList<>(), stats, attributes);
 
+        return create(studyId, file, parents, options, sessionId);
+    }
+
+    /**
+     * Unchecked create file. Private only
+     *
+     * @throws CatalogException
+     */
+    private QueryResult<File> create(int studyId, File file, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         /**
          * CHECK ALREADY EXISTS
          */
-        if (fileDBAdaptor.getFileId(studyId, path) >= 0) {
-            throw new CatalogException("Cannot create file ‘" + path + "’: File exists");
+        if (fileDBAdaptor.getFileId(studyId, file.getPath()) >= 0) {
+            throw new CatalogException("Cannot create file ‘" + file.getPath() + "’: File exists");
         }
 
         //Find parent. If parents == true, create folders.
-        Path parent = Paths.get(path).getParent();
+        Path parent = Paths.get(file.getPath()).getParent();
         int fileId = -1;
         if (parent != null) {   //If parent == null, the file is in the root of the study
             fileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
@@ -226,8 +237,9 @@ public class FileManager implements IFileManager {
         if (fileId < 0 && parent != null) {
             if (parents) {
                 create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
-                        ownerId, creationDate, "", File.Status.READY, 0, -1, Collections.<Integer>emptyList(),
-                        -1, Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap(), true,
+                        file.getOwnerId(), file.getCreationDate(), "", File.Status.READY, 0, -1,
+                        Collections.<Integer>emptyList(), -1, Collections.<String, Object>emptyMap(),
+                        Collections.<String, Object>emptyMap(), true,
                         options, sessionId);
                 fileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
             } else {
@@ -248,11 +260,11 @@ public class FileManager implements IFileManager {
                     (parent != null ? "directory " + parent.toString() : "study " + studyId));
         }
 
-        if (type == File.Type.FOLDER) {
+        if (file.getType() == File.Type.FOLDER) {
             URI studyUri = getStudyUri(studyId);
             CatalogIOManager ioManager = catalogIOManagerFactory.get(studyUri);
 //            ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
-            ioManager.createFolder(studyUri, path, parents);
+            ioManager.createFolder(studyUri, file.getPath(), parents);
         }
 
 

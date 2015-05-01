@@ -6,7 +6,7 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.Project;
 
 /**
-* @author Jacobo Coll <jacobo167@gmail.com>
+* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface IProjectManager extends ResourceManager<Integer, Project> {
 

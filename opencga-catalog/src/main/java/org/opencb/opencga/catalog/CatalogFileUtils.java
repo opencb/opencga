@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogFileUtils {
 

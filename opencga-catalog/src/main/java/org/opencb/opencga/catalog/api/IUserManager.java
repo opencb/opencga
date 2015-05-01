@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.beans.User;
 import java.io.IOException;
 
 /**
-* @author Jacobo Coll <jacobo167@gmail.com>
+* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface IUserManager extends ResourceManager<String, User> {
 

@@ -12,7 +12,7 @@ import java.net.URI;
 import java.util.Map;
 
 /**
-* @author Jacobo Coll <jacobo167@gmail.com>
+* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface IStudyManager extends ResourceManager<Integer, Study> {
 

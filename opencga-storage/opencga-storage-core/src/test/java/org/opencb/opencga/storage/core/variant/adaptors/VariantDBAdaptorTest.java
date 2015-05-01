@@ -25,7 +25,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 
 /**
- * Created by hpccoll1 on 13/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 @Ignore
 public abstract class VariantDBAdaptorTest extends VariantStorageManagerTest {

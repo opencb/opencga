@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
-* @author Jacobo Coll <jacobo167@gmail.com>
+* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface ISampleManager extends ResourceManager<Integer, Sample> {
     Integer getStudyId(int sampleId) throws CatalogException;
@@ -36,4 +36,11 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
                                                String description, Map<String, Object> attributes,
                                                Set<Variable> variables, String sessionId)
             throws CatalogException;
+
+    int getStudyIdByCohortId(int cohortId) throws CatalogException;
+
+    QueryResult<Cohort> readCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
+                                     Map<String, Object> attributes, String sessionId) throws CatalogException;
 }

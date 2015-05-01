@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
-* @author Jacobo Coll <jacobo167@gmail.com>
+* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface IJobManager extends ResourceManager<Integer, Job> {
     Integer getStudyId(int jobId) throws CatalogException;

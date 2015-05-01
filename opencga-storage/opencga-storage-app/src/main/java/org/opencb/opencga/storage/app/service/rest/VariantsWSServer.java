@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by hpccoll1 on 13/02/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 @Path("/variants")
 public class VariantsWSServer extends DaemonServlet {

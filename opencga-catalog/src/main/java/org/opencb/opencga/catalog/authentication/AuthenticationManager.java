@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.authentication;
 import org.opencb.opencga.catalog.CatalogException;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface AuthenticationManager {
 

@@ -3,7 +3,9 @@ package org.opencb.opencga.catalog.authorization;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.ParamsUtils;
 import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 
@@ -12,7 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by hpccoll1 on 28/04/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
     final CatalogUserDBAdaptor userDBAdaptor;
@@ -55,9 +57,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public QueryResult setProjectACL(int projectId, Acl acl, String sessionId) throws CatalogException {
+        ParamsUtils.checkObj(acl, "acl");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl projectAcl = getProjectACL(userId, projectId);
+        if (!projectAcl.isWrite()) {
+            throw CatalogAuthorizationException.cantModify("Project", projectId, null);
+        }
+
+        return catalogDBAdaptor.setProjectAcl(projectId, acl);
+    }
+
+    @Override
     public Acl getStudyACL(String userId, int studyId) throws CatalogException {
         int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
         return getStudyACL(userId, studyId, getProjectACL(userId, projectId));
+    }
+
+    @Override
+    public QueryResult setStudyACL(int studyId, Acl acl, String sessionId) throws CatalogException {
+        ParamsUtils.checkObj(acl, "acl");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl studyACL = getStudyACL(userId, studyId);
+        if (!studyACL.isWrite()) {
+            throw CatalogAuthorizationException.cantModify("Study", studyId, null);
+        }
+
+        return catalogDBAdaptor.setStudyAcl(studyId, acl);
     }
 
     @Override
@@ -70,8 +100,27 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public QueryResult setFileACL(int fileId, Acl acl, String sessionId) throws CatalogException {
+        ParamsUtils.checkObj(acl, "acl");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        Acl fileAcl = getFileACL(userId, fileId);
+        if (!fileAcl.isWrite()) {
+            throw CatalogAuthorizationException.cantModify("File", fileId, null);
+        }
+
+        return catalogDBAdaptor.setFileAcl(fileId, acl);
+    }
+
+    @Override
     public Acl getSampleACL(String userId, int sampleId) throws CatalogException {
         return getStudyACL(userId, catalogDBAdaptor.getStudyIdBySampleId(sampleId));
+    }
+
+    @Override
+    public QueryResult setSampleACL(int sampleId, Acl acl, String sessionId) {
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
 
