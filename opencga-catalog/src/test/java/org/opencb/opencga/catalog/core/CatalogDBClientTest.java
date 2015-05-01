@@ -26,6 +26,8 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.Project;
 import org.opencb.opencga.catalog.beans.User;
+import org.opencb.opencga.catalog.client.CatalogClient;
+import org.opencb.opencga.catalog.client.CatalogDBClient;
 
 import java.io.IOException;
 import java.util.Properties;

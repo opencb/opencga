@@ -28,16 +28,17 @@ import java.util.Properties;
 public class CatalogIOManagerFactory {
 
     public static final String DEFAULT_CATALOG_SCHEME = "file";
-    private static Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
+    private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
     private final Properties properties;
 
     public CatalogIOManagerFactory(Properties properties) {
         this.properties = properties;
     }
 
-    public CatalogIOManager get(URI uri) throws IOException, CatalogIOManagerException {
+    public CatalogIOManager get(URI uri) throws CatalogIOManagerException {
         return get(uri.getScheme());
     }
+
     public CatalogIOManager get(String io) throws CatalogIOManagerException {
         if(io == null) {
             io = DEFAULT_CATALOG_SCHEME;

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.core;
+package org.opencb.opencga.catalog.client;
 
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.core.CatalogClient;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.Project;
@@ -29,11 +28,11 @@ import java.io.IOException;
 /**
  * Created by jacobo on 10/02/15.
  */
-public class CatalogDBClient implements CatalogClient {
+public class CatalogDBClient implements org.opencb.opencga.catalog.client.CatalogClient {
 
     private final CatalogManager catalogManager;
-    private final CatalogUserClient catalogUserClient;
-    private final CatalogProjectClient catalogProjectClient;
+    private final UserManager catalogUserClient;
+    private final ProjectManager catalogProjectClient;
     private String sessionId;
     private String userId;
     private int projectId;
@@ -41,8 +40,8 @@ public class CatalogDBClient implements CatalogClient {
 
     public CatalogDBClient(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        this.catalogUserClient = new CatalogUserClient();
-        this.catalogProjectClient = new CatalogProjectClient();
+        this.catalogUserClient = new UserManager();
+        this.catalogProjectClient = new ProjectManager();
     }
 
     public CatalogDBClient(CatalogManager catalogManager, String sessionId) {
@@ -58,7 +57,7 @@ public class CatalogDBClient implements CatalogClient {
         this.sessionId = catalogManager.login(userId, password, sessionIp).getResult().get(0).getString("sessionId");
     }
 
-    public class CatalogUserClient implements CatalogClient.CatalogUserClient {
+    public class UserManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogUserClient {
 
         @Override
         public String getUserId(String sessionId) {
@@ -93,8 +92,8 @@ public class CatalogDBClient implements CatalogClient {
         }
 
         @Override
-        public QueryResult<User> update(QueryOptions options) throws CatalogException {
-            return catalogManager.modifyUser(userId, options, sessionId);
+        public QueryResult<User> update(QueryOptions params) throws CatalogException {
+            return catalogManager.modifyUser(userId, params, sessionId);
         }
 
         @Override
@@ -110,7 +109,7 @@ public class CatalogDBClient implements CatalogClient {
         }
     }
 
-    class CatalogProjectClient implements CatalogClient.CatalogProjectClient {
+    class ProjectManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogProjectClient {
 
         @Override
         public String getUserId(int projectId) throws CatalogException {
@@ -148,7 +147,7 @@ public class CatalogDBClient implements CatalogClient {
         }
 
         @Override
-        public QueryResult<Project> update(QueryOptions options) throws CatalogException {
+        public QueryResult<Project> update(QueryOptions params) throws CatalogException {
             return null;
         }
 
@@ -179,40 +178,39 @@ public class CatalogDBClient implements CatalogClient {
     }
 
     @Override
-    public CatalogUserClient users() {
+    public org.opencb.opencga.catalog.client.CatalogClient.CatalogUserClient users() {
         return catalogUserClient;
     }
 
     @Override
-    public CatalogClient.CatalogUserClient users(String userId) {
+    public CatalogUserClient users(String userId) {
         this.userId = userId;
         return catalogUserClient;
     }
 
     @Override
-    public CatalogProjectClient projects() {
+    public org.opencb.opencga.catalog.client.CatalogClient.CatalogProjectClient projects() {
         return catalogProjectClient;
     }
 
     @Override
-    public CatalogClient.CatalogProjectClient projects(int projectId) {
+    public CatalogProjectClient projects(int projectId) {
         this.projectId = projectId;
         return null;
     }
 
     @Override
-    public CatalogStudyClient studies() {
+    public org.opencb.opencga.catalog.client.CatalogClient.CatalogStudyClient studies() {
         return null;
     }
 
     @Override
     public CatalogStudyClient studies(int studyId) {
-        this.studyId = studyId;
         return null;
     }
 
     @Override
-    public CatalogFileClient files() {
+    public org.opencb.opencga.catalog.client.CatalogClient.CatalogFileClient files() {
         return null;
     }
 
@@ -222,7 +220,7 @@ public class CatalogDBClient implements CatalogClient {
     }
 
     @Override
-    public CatalogJobClient jobs() {
+    public org.opencb.opencga.catalog.client.CatalogClient.CatalogJobClient jobs() {
         return null;
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.core;
+package org.opencb.opencga.catalog.client;
 
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;

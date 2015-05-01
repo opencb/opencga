@@ -38,7 +38,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by hpccoll1 on 26/02/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 class VariantJsonTransformTask extends Task<String> {
 

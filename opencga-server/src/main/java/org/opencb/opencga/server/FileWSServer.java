@@ -164,21 +164,10 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
                 IOUtils.deleteDirectory(folderPath);
                 try {
-
-//                    Files.copy(Files.newInputStream(completedFilePath), filePath, StandardCopyOption.REPLACE_EXISTING);
-//
-//                    QueryResult queryResult = catalogManager.uploadFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-//                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, description, parents, sessionId);
-
-//                    QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-//                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, Files.readAllBytes(completedFilePath),
-//                            description, parents, sessionId
-//                    );
                     QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
                             File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath,
                             description, parents, sessionId
                     );
-//                    IOUtils.deleteDirectory(completedFilePath);
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
                     logger.error(e.toString());
@@ -376,7 +365,7 @@ public class FileWSServer extends OpenCGAWSServer {
             stream = catalogManager.grepFile(fileId, pattern, ignoreCase, multi, sessionId);
 
 //             content = org.apache.commons.io.IOUtils.toString(stream);
-        } catch (CatalogException | IOException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }

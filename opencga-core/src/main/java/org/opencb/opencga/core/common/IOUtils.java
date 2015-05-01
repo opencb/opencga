@@ -78,10 +78,12 @@ public class IOUtils {
         int cont = 0;
         String line;
         while ((line = br.readLine()) != null) {
-            if (cont >= offsetLine && cont < numLines) {
-                sb.append(line + "\n");
-            } else {
-                break;
+            if (cont >= offsetLine) {
+                if (cont < numLines) {
+                    sb.append(line + "\n");
+                } else {
+                    break;
+                }
             }
             cont++;
         }

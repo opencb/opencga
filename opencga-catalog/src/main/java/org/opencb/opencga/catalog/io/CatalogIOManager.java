@@ -128,7 +128,7 @@ public abstract class CatalogIOManager {
 
     public abstract void deleteFile(URI fileUri) throws IOException;
 
-    public abstract void rename(URI oldName, URI newName) throws CatalogIOManagerException, IOException;
+    public abstract void rename(URI oldName, URI newName) throws CatalogIOManagerException;
 
     public abstract boolean isDirectory(URI uri);
 
@@ -324,11 +324,7 @@ public abstract class CatalogIOManager {
         URI oldFolder = getProjectUri(userId, oldProjectId);
         URI newFolder = getProjectUri(userId, newProjectId);
 
-        try {
-            rename(oldFolder, newFolder);
-        } catch (IOException e) {
-            throw new CatalogIOManagerException("renameProject(): could not rename the project folder: " + e.toString());
-        }
+        rename(oldFolder, newFolder);
     }
 
     public boolean existProject(String userId, String projectId) throws CatalogIOManagerException {
@@ -467,17 +463,23 @@ public abstract class CatalogIOManager {
 
 
     public DataInputStream getFileObject(URI studyUri, String objectId,int start, int limit)
-            throws CatalogIOManagerException, IOException {
+            throws CatalogIOManagerException {
         URI fileUri = getFileUri(studyUri, objectId);
         return getFileObject(fileUri, start, limit);
     }
 
     public abstract DataInputStream getFileObject(URI fileUri ,int start, int limit)
-            throws CatalogIOManagerException, IOException;
+            throws CatalogIOManagerException;
 
-    public abstract DataInputStream getGrepFileObject(URI studyUri, String objectId,
-                                                      String pattern, boolean ignoreCase, boolean multi)
-            throws CatalogIOManagerException, IOException;
+    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,
+                                             boolean ignoreCase, boolean multi)
+            throws CatalogIOManagerException {
+        URI fileUri = getFileUri(studyUri, objectId);
+        return getGrepFileObject(fileUri, pattern, ignoreCase, multi);
+    }
+
+    public abstract DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi)
+            throws CatalogIOManagerException;
 //
 //    public abstract DataInputStream getFileFromJob(Path jobPath, String filename, String zip)
 //            throws CatalogIOManagerException,FileNotFoundException;

@@ -27,17 +27,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 /**
- * Created by jacobo on 6/11/14.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogFileManager {
+public class CatalogFileUtils {
 
     private final CatalogManager catalogManager;
-    private static Logger logger = LoggerFactory.getLogger(CatalogFileManager.class);
+    private static Logger logger = LoggerFactory.getLogger(CatalogFileUtils.class);
 
-    public CatalogFileManager(CatalogManager catalogManager) {
+    public CatalogFileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
     }
 
@@ -82,38 +83,15 @@ public class CatalogFileManager {
         }
 
         //Check status
-        switch (file.getStatus()) {
-            case UPLOADING:
-                break;
-
-            case UPLOADED:
-            case READY:
-                if(!ignoreStatus) {
-                    throw new CatalogIOManagerException("File status is already uploaded and ready! " +
-                            "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
-                            "Needs 'ignoreStatus = true' for continue.");
-                }
-                break;
+        if (!ignoreStatus) {
+            checkStatus(file);
         }
 
         //Check if there is any file in target
-        if (!overwrite && targetIOManager.exists(targetUri)) {
-            throw new CatalogIOManagerException("There is a file in the target!" +
-                    "file:{id:" + file.getId() + ", targetUri: '" + targetUri + "' } " +
-                    "Needs 'overwrite = true' for continue.");
-        }
+        checkTarget(file, targetUri, targetIOManager, overwrite);
 
         // Get file stats
-        long size = 0;
-        try {
-            size = sourceIOManager.getFileSize(sourceUri);
-        } catch (CatalogIOManagerException e) {
-            e.printStackTrace();
-            logger.error("Can't get fileSize", e);
-        }
-        String creationDate = TimeUtils.getTime();
-//        String creationDate = sourceIOManager.getCreationDate(sourceUri);
-
+        long size = sourceIOManager.getFileSize(sourceUri);
 
         //Calculate source checksum
         if (sourceChecksum == null || sourceChecksum.isEmpty()) {
@@ -169,27 +147,13 @@ public class CatalogFileManager {
 
         //Check status
         if(!calculateChecksum || targetChecksum.equals(sourceChecksum)) {
-            ObjectMap attributes = new ObjectMap();
-            ObjectMap parameters = new ObjectMap();
-
             if (calculateChecksum) {
                 logger.info("Checksum matches {}", sourceChecksum);
-                attributes.put("checksum", sourceChecksum);
             } else {
                 logger.info("Checksum not computed.");
             }
 
-            //Update file
-            parameters.put("status", File.Status.READY);
-            parameters.put("diskUsage", size);
-            parameters.put("creationDate", creationDate);
-            parameters.put("attributes", attributes);
-
-            try {
-                catalogManager.modifyFile(file.getId(), parameters, sessionId);
-            } catch (CatalogException e) {
-                throw new CatalogIOManagerException("Can't update file properties in Catalog.", e);
-            }
+            updateFileAttributes(file, sourceChecksum, sessionId);
 
             if(deleteSource && !fileMoved) {
                 logger.info("Deleting file {} ", sourceUri);
@@ -203,6 +167,116 @@ public class CatalogFileManager {
             throw new CatalogIOManagerException("Checksum mismatches at moving files. " + sourceChecksum + " =! " + targetChecksum);
         }
 
+    }
+
+    public void upload(InputStream inputStream, File file, String sessionId, boolean ignoreStatus,
+                       boolean overwrite, boolean calculateChecksum) throws CatalogException {
+        URI targetUri;
+        CatalogIOManager targetIOManager;
+        try {
+            targetUri = catalogManager.getFileUri(file);
+            targetIOManager = catalogManager.getCatalogIOManagerFactory().get(targetUri.getScheme());
+        } catch (CatalogDBException | CatalogIOManagerException e) {
+            throw new CatalogIOManagerException("Can't upload file.", e);
+        }
+
+
+        //Check status
+        if (!ignoreStatus) {
+            checkStatus(file);
+        }
+
+        //Check if there is any file in target
+        checkTarget(file, targetUri, targetIOManager, overwrite);
+
+
+        try {
+            targetIOManager.createFile(targetUri, inputStream);
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+        }
+
+
+        String checksum = null;
+        if (calculateChecksum) {
+            try {
+                checksum = targetIOManager.calculateChecksum(targetUri);
+            } catch (CatalogIOManagerException e) {
+                e.printStackTrace();
+            }
+        }
+
+        updateFileAttributes(file, checksum, sessionId);
+
+    }
+
+    /**
+     * Update some file attributes.
+     *      Status -> ready
+     *      diskUsage
+     *      creationDate
+     *      checksum
+     * @throws CatalogException
+     */
+    private void updateFileAttributes(File file, String checksum, String sessionId) throws CatalogException {
+        ObjectMap attributes = new ObjectMap();
+        ObjectMap parameters = new ObjectMap();
+
+        URI fileUri = catalogManager.getFileUri(file);
+        CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
+
+        if (checksum != null && !checksum.isEmpty() && !checksum.equals("null")) {
+            attributes.put("checksum", checksum);
+        }
+        long size = 0;
+        try {
+            size = catalogIOManager.getFileSize(fileUri);
+        } catch (CatalogIOManagerException e) {
+            e.printStackTrace();
+            logger.error("Can't get fileSize", e);
+        }
+
+        //String creationDate = catalogIOManager.getCreationDate(fileUri); //TODO
+        String creationDate = TimeUtils.getTime();
+
+        //Update file
+        parameters.put("status", File.Status.READY);
+        parameters.put("diskUsage", size);
+        parameters.put("creationDate", creationDate);
+        parameters.put("attributes", attributes);
+
+        try {
+            catalogManager.modifyFile(file.getId(), parameters, sessionId);
+        } catch (CatalogException e) {
+            throw new CatalogIOManagerException("Can't update file properties in Catalog.", e);
+        }
+    }
+
+    /**
+     * Check if there is any file in the URI target.
+     *
+     * @throws CatalogIOManagerException
+     */
+    private void checkTarget(File file, URI targetUri, CatalogIOManager targetIOManager, boolean overwrite) throws CatalogIOManagerException {
+        if (!overwrite && targetIOManager.exists(targetUri)) {
+            throw new CatalogIOManagerException("There is a file in the target!" +
+                    "file:{id:" + file.getId() + ", targetUri: '" + targetUri + "' } " +
+                    "Needs 'overwrite = true' for continue.");
+        }
+    }
+
+    /**
+     * Check status. To upload a fileObject, the catalog file entry must be in status "uploading".
+     * Set "ignoreStatus = true" to ignore the actual file status and replace the content.
+     *
+     * @throws CatalogIOManagerException
+     */
+    private void checkStatus(File file) throws CatalogIOManagerException {
+        if (file.getStatus() != File.Status.UPLOADING) {
+            throw new CatalogIOManagerException("File status is already uploaded and ready! " +
+                    "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
+                    "Needs 'ignoreStatus = true' for continue.");
+        }
     }
 
     /**

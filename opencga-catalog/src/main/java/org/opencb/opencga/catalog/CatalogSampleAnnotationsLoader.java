@@ -35,7 +35,7 @@ import java.util.*;
 public class CatalogSampleAnnotationsLoader {
 
     private final CatalogManager catalogManager;
-    private static Logger logger = LoggerFactory.getLogger(CatalogFileManager.class);
+    private static Logger logger = LoggerFactory.getLogger(CatalogFileUtils.class);
 
     public CatalogSampleAnnotationsLoader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;

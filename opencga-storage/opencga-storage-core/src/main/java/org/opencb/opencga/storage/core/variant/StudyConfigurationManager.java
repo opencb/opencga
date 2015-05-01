@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 
 /**
- * Created by hpccoll1 on 23/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public abstract class StudyConfigurationManager {
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);

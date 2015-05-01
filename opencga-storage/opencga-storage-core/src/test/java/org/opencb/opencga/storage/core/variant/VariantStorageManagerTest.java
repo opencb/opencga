@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by hpccoll1 on 13/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 @Ignore
 public abstract class VariantStorageManagerTest {

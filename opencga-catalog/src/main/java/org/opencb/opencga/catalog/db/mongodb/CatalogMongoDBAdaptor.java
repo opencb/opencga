@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.db;
+package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +32,8 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.db.api.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -43,7 +45,8 @@ import java.util.*;
 /**
  * Created by jacobo on 12/09/14.
  */
-public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
+public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
+        implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSampleDBAdaptor {
 
     private static final String USER_COLLECTION = "user";
     private static final String STUDY_COLLECTION = "study";
@@ -85,6 +88,31 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     private static ObjectReader jsonStudyReader;
     private static ObjectReader jsonSampleReader;
     private static Map<Class, ObjectReader> jsonReaderMap;
+
+    @Override
+    public CatalogUserDBAdaptor getCatalogUserDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogStudyDBAdaptor getCatalogStudyDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogFileDBAdaptor getCatalogFileDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogSampleDBAdaptor getCatalogSampleDBAdaptor() {
+        return this;
+    }
+
+    @Override
+    public CatalogJobDBAdaptor getCatalogJobDBAdaptor() {
+        return this;
+    }
 
     static {
         jsonObjectMapper = new ObjectMapper();
@@ -147,7 +175,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         }
     }
 
-    @Override
     public void disconnect(){
         mongoManager.close(db.getDatabaseName());
     }
@@ -403,7 +430,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
     }
 
     @Override
-    public QueryResult modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
@@ -1116,7 +1143,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     @Override
     public int getFileId(int studyId, String path) throws CatalogDBException {
-
         DBObject query = BasicDBObjectBuilder
                 .start(_STUDY_ID, studyId)
                 .append("path", path).get();
@@ -1217,7 +1243,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * @param filePath assuming 'pathRelativeToStudy + name'
      */
     @Override
-    public QueryResult<WriteResult> renameFile(int fileId, String filePath) throws CatalogDBException {
+    public QueryResult renameFile(int fileId, String filePath) throws CatalogDBException {
         long startTime = startQuery();
 
         Path path = Paths.get(filePath);
@@ -1248,7 +1274,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-        return endQuery("rename file", startTime, update);
+        return endQuery("rename file", startTime);
     }
 
 
@@ -1267,7 +1293,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
 
     @Override
     public String getFileOwnerId(int fileId) throws CatalogDBException {
-        QueryResult<File> fileQueryResult = getFile(fileId);
+        QueryResult<File> fileQueryResult = getFile(fileId, null);
         if(fileQueryResult == null || fileQueryResult.getResult() == null || fileQueryResult.getResult().isEmpty()) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
@@ -1459,7 +1485,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
         if(studies == null || studies.get(0).getDatasets().isEmpty()) {
             throw CatalogDBException.idNotFound("Dataset", datasetId);
         } else {
-            return endQuery("getDataset", startTime, studies.get(0).getDatasets());
+            return endQuery("readDataset", startTime, studies.get(0).getDatasets());
         }
     }
 
@@ -1507,16 +1533,16 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
      * At the moment it does not clean external references to itself.
      */
     @Override
-    public QueryResult<Integer> deleteJob(int jobId) throws CatalogDBException {
+    public QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
         long startTime = startQuery();
-
+        Job job = getJob(jobId, null).first();
         WriteResult id = jobCollection.remove(new BasicDBObject("id", jobId), null).getResult().get(0);
         List<Integer> deletes = new LinkedList<>();
         if (id.getN() == 0) {
             throw CatalogDBException.idNotFound("Job", jobId);
         } else {
             deletes.add(id.getN());
-            return endQuery("delete job", startTime, deletes);
+            return endQuery("delete job", startTime, Collections.singletonList(job));
         }
     }
 
@@ -1622,6 +1648,15 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor {
             }
             options.remove("ready");
         }
+
+        if (options.containsKey("studyId")) {
+            addQueryIntegerListFilter("studyId", options, _STUDY_ID, query);
+        }
+
+        if (options.containsKey("status")) {
+            addQueryStringListFilter("status", options, query);
+        }
+
         query.putAll(options);
 //        System.out.println("query = " + query);
         QueryResult<DBObject> queryResult = jobCollection.find(query, null);
