@@ -56,6 +56,9 @@ public interface IFileManager extends ResourceManager<Integer, File> {
     QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException;
 
+    QueryResult move(int fileId, String newPath, QueryOptions options, String sessionId)
+            throws CatalogException;
+
     QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
                                        Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException;
@@ -64,6 +67,8 @@ public interface IFileManager extends ResourceManager<Integer, File> {
             throws CatalogException;
 
     DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException;
+
+    DataInputStream download(int fileId, int offset, int limit, QueryOptions options, String sessionId) throws CatalogException;
 
     DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId) throws CatalogException;
 }

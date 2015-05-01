@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.api.IStudyManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
@@ -30,7 +31,7 @@ public class StudyManager implements IStudyManager{
     final protected CatalogUserDBAdaptor userDBAdaptor;
     final protected CatalogStudyDBAdaptor studyDBAdaptor;
     final protected CatalogFileDBAdaptor fileDBAdaptor;
-    final protected CatalogSamplesDBAdaptor sampleDBAdaptor;
+    final protected CatalogSampleDBAdaptor sampleDBAdaptor;
     final protected CatalogJobDBAdaptor jobDBAdaptor;
     final protected CatalogIOManagerFactory catalogIOManagerFactory;
 
@@ -41,7 +42,7 @@ public class StudyManager implements IStudyManager{
         this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSamplesDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
     }
@@ -116,7 +117,7 @@ public class StudyManager implements IStudyManager{
 
         /* Check project permissions */
         if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) { //User can't write/modify the project
-            throw new CatalogDBException("Permission denied. Can't write in project");
+            throw CatalogAuthorizationException.denny(userId, "create", "Project", projectId, null);
         }
         if (!creatorId.equals(userId)) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {

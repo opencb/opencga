@@ -5,9 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.api.IJobManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.beans.User;
+import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -16,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,7 @@ public class JobManager implements IJobManager {
     final protected CatalogUserDBAdaptor userDBAdaptor;
     final protected CatalogStudyDBAdaptor studyDBAdaptor;
     final protected CatalogFileDBAdaptor fileDBAdaptor;
-    final protected CatalogSamplesDBAdaptor sampleDBAdaptor;
+    final protected CatalogSampleDBAdaptor sampleDBAdaptor;
     final protected CatalogJobDBAdaptor jobDBAdaptor;
     final protected CatalogIOManagerFactory catalogIOManagerFactory;
 
@@ -41,7 +40,7 @@ public class JobManager implements IJobManager {
         this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSamplesDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
     }
@@ -213,5 +212,51 @@ public class JobManager implements IJobManager {
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);
         return catalogIOManager.createJobOutDir(userId, dirName);
+    }
+
+    @Override
+    public int getToolId(String toolId) throws CatalogException {
+        try {
+            return Integer.parseInt(toolId);
+        } catch (NumberFormatException ignore) {
+        }
+
+        String[] split = toolId.split("@");
+        if (split.length != 2) {
+            return -1;
+        }
+        return jobDBAdaptor.getToolId(split[0], split[1]);
+    }
+
+    @Override
+    public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
+                                        String path, boolean openTool, String sessionId) throws CatalogException {
+        ParamsUtils.checkParameter(alias, "alias");
+        ParamsUtils.checkObj(description, "description"); //description can be empty
+        ParamsUtils.checkParameter(path, "path");
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+        //TODO: Check Path
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        List<Acl> acl = Arrays.asList(new Acl(userId, true, true, true, true));
+        if (openTool) {
+            acl.add(new Acl(Acl.USER_OTHERS_ID, true, false, true, false));
+        }
+
+        String name = Paths.get(path).getFileName().toString();
+
+        Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
+
+        return jobDBAdaptor.createTool(userId, tool);
+    }
+
+    @Override
+    public QueryResult<Tool> readTool(int id, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        ParamsUtils.checkParameter(sessionId, "sessionId");
+
+        //TODO: Check ACLs
+        return jobDBAdaptor.getTool(id);
     }
 }

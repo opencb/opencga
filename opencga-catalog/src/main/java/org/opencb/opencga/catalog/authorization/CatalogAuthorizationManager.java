@@ -5,9 +5,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.ParamsUtils;
 import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -18,11 +16,15 @@ import java.util.List;
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
     final CatalogUserDBAdaptor userDBAdaptor;
-    private final CatalogDBAdaptor catalogDBAdaptor;
+    final CatalogStudyDBAdaptor studyDBAdaptor;
+    final CatalogFileDBAdaptor fileDBAdaptor;
+    final CatalogSampleDBAdaptor sampleDBAdaptor;
 
     public CatalogAuthorizationManager(CatalogDBAdaptor catalogDBAdaptor) {
-        this.catalogDBAdaptor = catalogDBAdaptor;
         this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
+        this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
+        this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
     }
 
     @Override
@@ -36,16 +38,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (getUserRole(userId).equals(User.Role.ADMIN)) {
             return new Acl(userId, true, true, true, true);
         }
-        boolean sameOwner = catalogDBAdaptor.getProjectOwnerId(projectId).equals(userId);
+        boolean sameOwner = userDBAdaptor.getProjectOwnerId(projectId).equals(userId);
 
         if (sameOwner) {
             projectAcl = new Acl(userId, true, true, true, true);
         } else {
-            QueryResult<Acl> result = catalogDBAdaptor.getProjectAcl(projectId, userId);
+            QueryResult<Acl> result = userDBAdaptor.getProjectAcl(projectId, userId);
             if (!result.getResult().isEmpty()) {
                 projectAcl = result.getResult().get(0);
             } else {
-                QueryResult<Acl> resultAll = catalogDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
+                QueryResult<Acl> resultAll = userDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
                 if (!resultAll.getResult().isEmpty()) {
                     projectAcl = resultAll.getResult().get(0);
                 } else {
@@ -61,18 +63,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamsUtils.checkObj(acl, "acl");
         ParamsUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl projectAcl = getProjectACL(userId, projectId);
         if (!projectAcl.isWrite()) {
-            throw CatalogAuthorizationException.cantModify("Project", projectId, null);
+            throw CatalogAuthorizationException.cantModify(userId, "Project", projectId, null);
         }
 
-        return catalogDBAdaptor.setProjectAcl(projectId, acl);
+        return userDBAdaptor.setProjectAcl(projectId, acl);
     }
 
     @Override
     public Acl getStudyACL(String userId, int studyId) throws CatalogException {
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+        int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         return getStudyACL(userId, studyId, getProjectACL(userId, projectId));
     }
 
@@ -81,13 +83,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamsUtils.checkObj(acl, "acl");
         ParamsUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl studyACL = getStudyACL(userId, studyId);
         if (!studyACL.isWrite()) {
-            throw CatalogAuthorizationException.cantModify("Study", studyId, null);
+            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
         }
 
-        return catalogDBAdaptor.setStudyAcl(studyId, acl);
+        return studyDBAdaptor.setStudyAcl(studyId, acl);
     }
 
     @Override
@@ -95,7 +97,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (getUserRole(userId).equals(User.Role.ADMIN)) {
             return new Acl(userId, true, true, true, true);
         }
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         return getStudyACL(userId, studyId);
     }
 
@@ -104,18 +106,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamsUtils.checkObj(acl, "acl");
         ParamsUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl fileAcl = getFileACL(userId, fileId);
         if (!fileAcl.isWrite()) {
-            throw CatalogAuthorizationException.cantModify("File", fileId, null);
+            throw CatalogAuthorizationException.cantModify(userId, "File", fileId, null);
         }
 
-        return catalogDBAdaptor.setFileAcl(fileId, acl);
+        return fileDBAdaptor.setFileAcl(fileId, acl);
     }
 
     @Override
     public Acl getSampleACL(String userId, int sampleId) throws CatalogException {
-        return getStudyACL(userId, catalogDBAdaptor.getStudyIdBySampleId(sampleId));
+        return getStudyACL(userId, sampleDBAdaptor.getStudyIdBySampleId(sampleId));
     }
 
     @Override
@@ -217,16 +219,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (getUserRole(userId).equals(User.Role.ADMIN)) {
             return new Acl(userId, true, true, true, true);
         }
-        boolean sameOwner = catalogDBAdaptor.getStudyOwnerId(studyId).equals(userId);
+        boolean sameOwner = studyDBAdaptor.getStudyOwnerId(studyId).equals(userId);
 
         if (sameOwner) {
             studyAcl = new Acl(userId, true, true, true, true);
         } else {
-            QueryResult<Acl> result = catalogDBAdaptor.getStudyAcl(studyId, userId);
+            QueryResult<Acl> result = studyDBAdaptor.getStudyAcl(studyId, userId);
             if (!result.getResult().isEmpty()) {
                 studyAcl = result.getResult().get(0);
             } else {
-                QueryResult<Acl> resultAll = catalogDBAdaptor.getStudyAcl(studyId, Acl.USER_OTHERS_ID);
+                QueryResult<Acl> resultAll = studyDBAdaptor.getStudyAcl(studyId, Acl.USER_OTHERS_ID);
                 if (!resultAll.getResult().isEmpty()) {
                     studyAcl = resultAll.getResult().get(0);
                 } else {
@@ -248,16 +250,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     //TODO: Check folder ACLs
     private Acl __getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogException {
         Acl fileAcl;
-        boolean sameOwner = catalogDBAdaptor.getFileOwnerId(fileId).equals(userId);
+        boolean sameOwner = fileDBAdaptor.getFileOwnerId(fileId).equals(userId);
 
         if (sameOwner) {
             fileAcl = new Acl(userId, true, true, true, true);
         } else {
-            QueryResult<Acl> result = catalogDBAdaptor.getFileAcl(fileId, userId);
+            QueryResult<Acl> result = fileDBAdaptor.getFileAcl(fileId, userId);
             if (!result.getResult().isEmpty()) {
                 fileAcl = result.getResult().get(0);
             } else {
-                QueryResult<Acl> resultAll = catalogDBAdaptor.getFileAcl(fileId, Acl.USER_OTHERS_ID);
+                QueryResult<Acl> resultAll = fileDBAdaptor.getFileAcl(fileId, Acl.USER_OTHERS_ID);
                 if (!resultAll.getResult().isEmpty()) {
                     fileAcl = resultAll.getResult().get(0);
                 } else {

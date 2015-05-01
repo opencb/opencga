@@ -327,7 +327,7 @@ public class CatalogManagerTest extends GenericTest {
         fileTest = createDebugFile();
         catalogFileUtils.upload(fileTest.toURI(), fileResult.first(), null, sessionIdUser, false, false, false, true);
         assertTrue("File don't deleted", fileTest.exists());
-        fileTest.delete();
+        assertTrue(fileTest.delete());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
@@ -340,21 +340,21 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<File> fileQueryResult = catalogManager.createFile(
                 studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/folder/" + fileName, "description", true, -1, sessionIdUser);
         catalogFileUtils.upload(fileTest.toURI(), fileQueryResult.first(), null, sessionIdUser, false, false, true, true);
-        fileTest.delete();
+        assertFalse("File deleted by the upload", fileTest.delete());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         fileTest = createDebugFile();
         fileQueryResult = catalogManager.createFile(
                 studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "data/deletable/" + fileName, "description", true, -1, sessionIdUser);
-        catalogFileUtils.upload(fileTest.toURI(), fileQueryResult.first(), null, sessionIdUser, false, false, true, true);
-        fileTest.delete();
+        catalogFileUtils.upload(fileTest.toURI(), fileQueryResult.first(), null, sessionIdUser, false, false, false, true);
+        assertTrue(fileTest.delete());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         fileTest = createDebugFile();
         fileQueryResult = catalogManager.createFile(
                 studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "" + fileName, "file at root", true, -1, sessionIdUser);
-        catalogFileUtils.upload(fileTest.toURI(), fileQueryResult.first(), null, sessionIdUser, false, false, true, true);
-        fileTest.delete();
+        catalogFileUtils.upload(fileTest.toURI(), fileQueryResult.first(), null, sessionIdUser, false, false, false, true);
+        assertTrue(fileTest.delete());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         fileTest = createDebugFile();
@@ -391,7 +391,8 @@ public class CatalogManagerTest extends GenericTest {
 
 
         int offset = 5;
-        dis = catalogManager.downloadFile(file.getId(), offset, 30, sessionIdUser);
+        int limit = 30;
+        dis = catalogManager.downloadFile(file.getId(), offset, limit, sessionIdUser);
         fis = new DataInputStream(new FileInputStream(fileTest));
         for (int i = 0; i < offset; i++) {
             fis.readLine();
@@ -399,11 +400,14 @@ public class CatalogManagerTest extends GenericTest {
 
 
         String line;
+        int lines = 0;
         while ((line = dis.readLine()) != null) {
+            lines++;
             System.out.println(line);
-            fis.readLine().equals(line);
+            assertEquals(fis.readLine(), line);
         }
 
+        assertEquals(limit-offset, lines);
 
         fis.close();
         dis.close();

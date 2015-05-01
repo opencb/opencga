@@ -37,6 +37,8 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
                                                Set<Variable> variables, String sessionId)
             throws CatalogException;
 
+    QueryResult<VariableSet> readVariableset(int variableSet, QueryOptions options, String sessionId) throws CatalogException;
+
     int getStudyIdByCohortId(int cohortId) throws CatalogException;
 
     QueryResult<Cohort> readCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException;

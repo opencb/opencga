@@ -46,7 +46,7 @@ import static org.junit.Assert.*;
 
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
-    private static CatalogDBAdaptor catalogDBAdaptor;
+    private static CatalogMongoDBAdaptor catalogDBAdaptor;
 
 //    @Rule
 //    public Timeout globalTimeout = new Timeout(2000); // 200 ms max per method tested
@@ -477,7 +477,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         objectMap.put("attributes", new ObjectMap(newAttributes).toJson());
         objectMap.put("alias", unexpectedNewAlias);
-        ObjectMap modifiedParams = catalogDBAdaptor.modifyStudy(studyId, objectMap).first();
+        QueryResult<ObjectMap> queryResult = catalogDBAdaptor.modifyStudy(studyId, objectMap);
+        ObjectMap modifiedParams = queryResult.first();
 
         Study study = catalogDBAdaptor.getStudy(studyId, null).first();
 

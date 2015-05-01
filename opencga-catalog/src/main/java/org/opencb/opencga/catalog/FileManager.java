@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.api.IFileManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
@@ -30,7 +31,7 @@ public class FileManager implements IFileManager {
     final protected CatalogUserDBAdaptor userDBAdaptor;
     final protected CatalogStudyDBAdaptor studyDBAdaptor;
     final protected CatalogFileDBAdaptor fileDBAdaptor;
-    final protected CatalogSamplesDBAdaptor sampleDBAdaptor;
+    final protected CatalogSampleDBAdaptor sampleDBAdaptor;
     final protected CatalogJobDBAdaptor jobDBAdaptor;
     final protected CatalogIOManagerFactory catalogIOManagerFactory;
 
@@ -41,7 +42,7 @@ public class FileManager implements IFileManager {
         this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSamplesDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
     }
@@ -452,7 +453,7 @@ public class FileManager implements IFileManager {
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
         if (!authorizationManager.getFileACL(userId, fileId).isWrite()) {
-            throw new CatalogDBException("Permission denied. User can't rename this file");
+            throw CatalogAuthorizationException.cantModify(userId, "File", fileId, null);
         }
         QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
         if (fileResult.getResult().isEmpty()) {
@@ -487,6 +488,24 @@ public class FileManager implements IFileManager {
         return null;
     }
 
+    @Override
+    public QueryResult move(int fileId, String newPath, QueryOptions options, String sessionId)
+            throws CatalogException {
+        throw new UnsupportedOperationException();
+//        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
+//        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+//        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+//        String ownerId = catalogDBAdaptor.getProjectOwnerId(projectId);
+//
+//        if (!authorizationManager.getFileACL(userId, fileId).isWrite()) {
+//            throw new CatalogManagerException("Permission denied. User can't rename this file");
+//        }
+//        QueryResult<File> fileResult = catalogDBAdaptor.getFile(fileId);
+//        if (fileResult.getResult().isEmpty()) {
+//            return new QueryResult("Delete file", 0, 0, 0, "File not found", null, null);
+//        }
+//        File file = fileResult.getResult().get(0);
+    }
 
     @Override
     public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
@@ -501,14 +520,14 @@ public class FileManager implements IFileManager {
         attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
         }
         for (Integer fileId : files) {
             if (fileDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
                 throw new CatalogException("Can't create a dataset with files from different files.");
             }
             if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
-                throw new CatalogException("Permission denied. User " + userId + " can't read the file " + fileId);
+                throw CatalogAuthorizationException.cantRead(userId, "File", fileId, null);
             }
         }
 
@@ -524,8 +543,8 @@ public class FileManager implements IFileManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByDatasetId(dataSetId);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify the study " + studyId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw CatalogAuthorizationException.cantRead(userId, "DataSet", dataSetId, null);
         }
 
         return fileDBAdaptor.getDataset(dataSetId, options);
@@ -537,7 +556,7 @@ public class FileManager implements IFileManager {
         ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
-            throw new CatalogException("Permission denied. User can't read file");
+            throw CatalogAuthorizationException.cantRead(userId, "File", fileId, null);
         }
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
@@ -547,16 +566,21 @@ public class FileManager implements IFileManager {
     }
 
     @Override
-    public DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public DataInputStream download(int fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
         ParamsUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getFileACL(userId, fileId).isRead()) {
-            throw new CatalogException("Permission denied. User can't read file");
+            throw CatalogAuthorizationException.cantRead(userId, "File", fileId, null);
         }
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
 
-        return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, 0, lines);
+        return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);    }
+
+    @Override
+    public DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return download(fileId, 0, lines, options, sessionId);
     }
+
 }

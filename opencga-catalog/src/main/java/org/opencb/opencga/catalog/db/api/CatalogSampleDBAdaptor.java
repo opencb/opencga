@@ -11,7 +11,7 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogSamplesDBAdaptor {
+public interface CatalogSampleDBAdaptor {
 
     /**
      * Samples methods

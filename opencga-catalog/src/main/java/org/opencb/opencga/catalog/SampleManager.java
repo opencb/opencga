@@ -24,7 +24,7 @@ public class SampleManager implements ISampleManager {
     final protected CatalogUserDBAdaptor userDBAdaptor;
     final protected CatalogStudyDBAdaptor studyDBAdaptor;
     final protected CatalogFileDBAdaptor fileDBAdaptor;
-    final protected CatalogSamplesDBAdaptor sampleDBAdaptor;
+    final protected CatalogSampleDBAdaptor sampleDBAdaptor;
     final protected CatalogJobDBAdaptor jobDBAdaptor;
     final protected CatalogIOManagerFactory catalogIOManagerFactory;
 
@@ -36,7 +36,7 @@ public class SampleManager implements ISampleManager {
         this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSamplesDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
     }
@@ -218,6 +218,16 @@ public class SampleManager implements ISampleManager {
         return sampleDBAdaptor.createVariableSet(studyId, variableSet);
     }
 
+    @Override
+    public QueryResult<VariableSet> readVariableset(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSet);
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        return sampleDBAdaptor.getVariableSet(variableSet, options);
+    }
+
 
     /**
      * Cohort methods
@@ -239,7 +249,7 @@ public class SampleManager implements ISampleManager {
         if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
             return sampleDBAdaptor.getCohort(cohortId);
         } else {
-            throw CatalogAuthorizationException.cantRead("Cohort", cohortId, null);
+            throw CatalogAuthorizationException.cantRead(userId, "Cohort", cohortId, null);
         }
     }
 

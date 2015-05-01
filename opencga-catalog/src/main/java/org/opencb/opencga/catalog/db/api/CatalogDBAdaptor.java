@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.beans.*;
 import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.slf4j.Logger;
 
@@ -28,7 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public abstract class CatalogDBAdaptor
-        implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSamplesDBAdaptor {
+        /* implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSamplesDBAdaptor */{
 
     protected Logger logger;
 
@@ -79,7 +76,7 @@ public abstract class CatalogDBAdaptor
 
     public abstract CatalogFileDBAdaptor getCatalogFileDBAdaptor();
 
-    public abstract CatalogSamplesDBAdaptor getCatalogSamplesDBAdaptor();
+    public abstract CatalogSampleDBAdaptor getCatalogSampleDBAdaptor();
 
     public abstract CatalogJobDBAdaptor getCatalogJobDBAdaptor();
 //

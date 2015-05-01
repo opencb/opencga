@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.beans.Tool;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 
 import java.net.URI;
@@ -30,4 +31,11 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
 
     URI createJobOutDir(int studyId, String dirName, String sessionId)
             throws CatalogException ;
+
+    int getToolId(String toolId) throws CatalogException;
+
+    QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
+                                 String path, boolean openTool, String sessionId) throws CatalogException;
+
+    QueryResult<Tool> readTool(int id, String sessionId) throws CatalogException;
 }

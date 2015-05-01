@@ -12,11 +12,15 @@ import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.core.common.MailUtils;
+import org.opencb.opencga.core.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.regex.Pattern;
 
 /**
@@ -28,20 +32,25 @@ public class UserManager implements IUserManager {
     protected final CatalogUserDBAdaptor userDBAdaptor;
     protected final AuthenticationManager authenticationManager;
     protected final AuthorizationManager authorizationManager;
+    protected final Properties properties;
+
+    protected final String creationUserPolicy;
 
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
 
-    private String creationUserPolicy = "always";
-
-    UserManager(CatalogIOManager ioManager, CatalogUserDBAdaptor userDBAdaptor,
-                AuthenticationManager authenticationManager, AuthorizationManager authorizationManager) {
+    public UserManager(CatalogIOManager ioManager, CatalogUserDBAdaptor userDBAdaptor,
+                AuthenticationManager authenticationManager, AuthorizationManager authorizationManager,
+                Properties properties) {
         this.ioManager = ioManager;
         this.userDBAdaptor = userDBAdaptor;
         this.authenticationManager = authenticationManager;
         this.authorizationManager = authorizationManager;
+        this.properties = properties;
+        creationUserPolicy = properties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER, "always");
     }
 
 
@@ -203,6 +212,32 @@ public class UserManager implements IUserManager {
         }
         user.setId("deleteUser");
         return user;
+    }
+
+    @Override
+    public QueryResult resetPassword(String userId, String email) throws CatalogException {
+        ParamsUtils.checkParameter(userId, "userId");
+        ParamsUtils.checkParameter(email, "email");
+        userDBAdaptor.updateUserLastActivity(userId);
+
+        String newPassword = StringUtils.randomString(6);
+        String newCryptPass;
+        try {
+            newCryptPass = StringUtils.sha1(newPassword);
+        } catch (NoSuchAlgorithmException e) {
+            throw new CatalogDBException("could not encode password");
+        }
+
+        QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
+
+        String mailUser = properties.getProperty(CatalogManager.CATALOG_MAIL_USER);
+        String mailPassword = properties.getProperty(CatalogManager.CATALOG_MAIL_PASSWORD);
+        String mailHost = properties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
+        String mailPort = properties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
+
+        MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
+
+        return qr;
     }
 
     @Override

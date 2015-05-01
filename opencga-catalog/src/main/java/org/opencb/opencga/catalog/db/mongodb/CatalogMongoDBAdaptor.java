@@ -46,7 +46,7 @@ import java.util.*;
  * Created by jacobo on 12/09/14.
  */
 public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
-        implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSamplesDBAdaptor {
+        implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSampleDBAdaptor {
 
     private static final String USER_COLLECTION = "user";
     private static final String STUDY_COLLECTION = "study";
@@ -105,7 +105,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public CatalogSamplesDBAdaptor getCatalogSamplesDBAdaptor() {
+    public CatalogSampleDBAdaptor getCatalogSampleDBAdaptor() {
         return this;
     }
 

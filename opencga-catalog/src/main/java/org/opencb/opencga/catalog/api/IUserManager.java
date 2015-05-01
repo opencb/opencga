@@ -56,6 +56,8 @@ public interface IUserManager extends ResourceManager<String, User> {
     QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
             throws CatalogException, IOException;
 
+    QueryResult resetPassword(String userId, String email) throws CatalogException;
+
     QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException;
 

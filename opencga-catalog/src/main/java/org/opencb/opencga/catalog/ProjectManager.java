@@ -24,7 +24,7 @@ public class ProjectManager implements IProjectManager{
     protected final CatalogUserDBAdaptor userDBAdaptor;
     protected final CatalogStudyDBAdaptor studyDBAdaptor;
     protected final CatalogFileDBAdaptor fileDBAdaptor;
-    protected final CatalogSamplesDBAdaptor sampleDBAdaptor;
+    protected final CatalogSampleDBAdaptor sampleDBAdaptor;
     protected final CatalogJobDBAdaptor jobDBAdaptor;
 
     public ProjectManager(AuthorizationManager authorizationManager, CatalogDBAdaptor catalogDBAdaptor,
@@ -33,7 +33,7 @@ public class ProjectManager implements IProjectManager{
         this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSamplesDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         this.ioManager = ioManager;
     }
