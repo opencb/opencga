@@ -36,6 +36,7 @@ while getopts "htu:i:p:l:U:" opt; do
 	    echo "Usage: "
 	    echo "       -h            :   "
 	    echo "       -i vcf_file   : VCF input file  "
+	    echo "       -p ped_file   : Pedigree input file  "
 	    echo "       -u user_name  : User name.  "
 	    echo "       -l log_level  : error, warn, info, debug  "
 	    echo "       -t            : Transform and Load in 2 steps  "
@@ -81,7 +82,7 @@ while getopts "htu:i:p:l:U:" opt; do
 done
 
 
-if [ $input_files_len == 0 ]; then
+if [[ $input_files_len == 0 && $pedigree_file == false ]]; then
 	echo "No input files!"
 	exit 1
 fi

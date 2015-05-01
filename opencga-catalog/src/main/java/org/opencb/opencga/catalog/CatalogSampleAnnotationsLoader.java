@@ -94,13 +94,25 @@ public class CatalogSampleAnnotationsLoader {
             logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis()-auxTime);
         }
 
-        //Add Samples TODO: Check if sample exists
+        //Add Samples
+        QueryOptions samplesQuery = new QueryOptions("name", new LinkedList<>(ped.getIndividuals().keySet()));
+        Map<String, Sample> loadedSamples = new HashMap<>();
+        for (Sample sample : catalogManager.getAllSamples(studyId, samplesQuery, sessionId).getResult()) {
+            loadedSamples.put(sample.getName(), sample);
+        }
+
         auxTime = System.currentTimeMillis();
         for (Individual individual : ped.getIndividuals().values()) {
-            QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, individual.getId(), pedFile.getName(),
-                    "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\" }"
-                    , Collections.<String, Object>emptyMap(), null, sessionId);
-            Sample sample = sampleQueryResult.getResult().get(0);
+            Sample sample;
+            if (loadedSamples.containsKey(individual.getId())) {
+                sample = loadedSamples.get(individual.getId());
+                logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
+            } else {
+                QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, individual.getId(), pedFile.getName(),
+                        "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\" }"
+                        , Collections.<String, Object>emptyMap(), null, sessionId);
+                sample = sampleQueryResult.getResult().get(0);
+            }
             sampleMap.put(individual.getId(), sample);
         }
         logger.debug("Added {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis()-auxTime);
