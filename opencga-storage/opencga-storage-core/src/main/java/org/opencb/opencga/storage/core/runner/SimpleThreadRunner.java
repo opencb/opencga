@@ -32,6 +32,7 @@ import java.util.concurrent.*;
 /**
  * Created by hpccoll1 on 26/02/15.
  */
+@Deprecated
 public class SimpleThreadRunner {
 
     final List POISON_PILL = new LinkedList();
