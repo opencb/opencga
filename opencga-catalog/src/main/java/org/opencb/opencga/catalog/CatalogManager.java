@@ -42,6 +42,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -487,52 +488,29 @@ public class CatalogManager {
         return fileManager.getStudyId(fileId);
     }
 
-    @Deprecated
-    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
-                                        boolean parents, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
-        return createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
-    }
-
     //create file with byte[]
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
-
-        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
-        File file = result.getResult().get(0);
-        //path is relative to user, get full path...
-        URI studyURI = getStudyUri(studyId);
-        URI fileURI = getFileUri(studyURI, path);
-        Files.write(Paths.get(fileURI), bytes);
-
-        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
-        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
-
-        return result;
+        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
+                description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
+        new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
+        return getFile(queryResult.first().getId(), sessionId);
     }
 
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, Path completedFilePath, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
-
-        QueryResult<File> result = createFile(studyId, format, bioformat, path, description, parents, -1, sessionId);
-        File file = result.getResult().get(0);
-        //path is relative to user, get full path...
-        URI studyURI = getStudyUri(studyId);
-        URI fileURI = getFileUri(studyURI, path);
-        Files.move(completedFilePath, Paths.get(fileURI));
-
-        ObjectMap modifyParameters = new ObjectMap("status", File.Status.READY);
-        catalogDBAdaptor.modifyFile(file.getId(), modifyParameters);
-
-        return result;
+        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
+                description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
+        new CatalogFileUtils(this).upload(completedFilePath.toUri(), queryResult.first(), null, sessionId, false, false, true, true, Integer.MAX_VALUE);
+        return getFile(queryResult.first().getId(), sessionId);
     }
 
     public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, int jobId, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
-        return createFile(studyId, File.Type.FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
+            throws CatalogException {
+        return fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
                 jobId, null, null, parents, null, sessionId);
     }
 
@@ -547,53 +525,53 @@ public class CatalogManager {
                 diskUsage, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
     }
 
-
-    @Deprecated
-    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
-                                        boolean parents, InputStream fileIs, String sessionId)
-            throws IOException, CatalogException {
-        QueryResult<File> fileResult = createFile(studyId, format, bioformat, path, description, parents, sessionId);
-        int fileId = fileResult.getResult().get(0).getId();
-        try {
-            fileResult = uploadFile(fileId, fileIs, sessionId);
-        } catch (CatalogIOManagerException | InterruptedException | CatalogDBException | IOException e) {
-            deleteFile(fileId, sessionId);
-            e.printStackTrace();
-        }
-        return fileResult;
-    }
-
-
-    @Deprecated
-    public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogException,
-            IOException, InterruptedException {
-
-        ParamsUtils.checkObj(fileIs, "InputStream");
-        ParamsUtils.checkParameter(sessionId, "SessionId");
-
-        String userId = catalogDBAdaptor.getFileOwnerId(fileId);
-        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
-
-        List<File> result = catalogDBAdaptor.getFile(fileId, null).getResult();
-        if (result.isEmpty()) {
-            throw new CatalogDBException("FileId '" + fileId + "' for found");
-        }
-        File file = result.get(0);
-        if (!file.getStatus().equals(File.Status.UPLOADING)) {
-            throw new CatalogDBException("File '" + fileId + "' already uploaded.");
-        }
-        if (!file.getOwnerId().equals(userId)) {
-            throw new CatalogDBException("UserId mismatch with file creator");
-        }
-        ioManager.createFile(getStudyUri(studyId), file.getPath(), fileIs);
-        Study study = catalogDBAdaptor.getStudy(studyId, null).getResult().get(0);
-
-        ObjectMap modifyParameters = new ObjectMap("status", File.Status.UPLOADED);
-        modifyParameters.put("uriScheme", study.getUri().getScheme());
-        catalogDBAdaptor.modifyFile(fileId, modifyParameters);
-        return catalogDBAdaptor.getFile(fileId, null);
-    }
+//
+//    @Deprecated
+//    public QueryResult<File> uploadFile(int studyId, File.Format format, File.Bioformat bioformat, String path, String description,
+//                                        boolean parents, InputStream fileIs, String sessionId)
+//            throws IOException, CatalogException {
+//        QueryResult<File> fileResult = createFile(studyId, format, bioformat, path, description, parents, sessionId);
+//        int fileId = fileResult.getResult().get(0).getId();
+//        try {
+//            fileResult = uploadFile(fileId, fileIs, sessionId);
+//        } catch (CatalogIOManagerException | InterruptedException | CatalogDBException | IOException e) {
+//            deleteFile(fileId, sessionId);
+//            e.printStackTrace();
+//        }
+//        return fileResult;
+//    }
+//
+//
+//    @Deprecated
+//    public QueryResult<File> uploadFile(int fileId, InputStream fileIs, String sessionId) throws CatalogException,
+//            IOException, InterruptedException {
+//
+//        ParamsUtils.checkObj(fileIs, "InputStream");
+//        ParamsUtils.checkParameter(sessionId, "SessionId");
+//
+//        String userId = catalogDBAdaptor.getFileOwnerId(fileId);
+//        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
+//        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
+//
+//        List<File> result = catalogDBAdaptor.getFile(fileId, null).getResult();
+//        if (result.isEmpty()) {
+//            throw new CatalogDBException("FileId '" + fileId + "' for found");
+//        }
+//        File file = result.get(0);
+//        if (!file.getStatus().equals(File.Status.UPLOADING)) {
+//            throw new CatalogDBException("File '" + fileId + "' already uploaded.");
+//        }
+//        if (!file.getOwnerId().equals(userId)) {
+//            throw new CatalogDBException("UserId mismatch with file creator");
+//        }
+//        ioManager.createFile(getStudyUri(studyId), file.getPath(), fileIs);
+//        Study study = catalogDBAdaptor.getStudy(studyId, null).getResult().get(0);
+//
+//        ObjectMap modifyParameters = new ObjectMap("status", File.Status.UPLOADED);
+//        modifyParameters.put("uriScheme", study.getUri().getScheme());
+//        catalogDBAdaptor.modifyFile(fileId, modifyParameters);
+//        return catalogDBAdaptor.getFile(fileId, null);
+//    }
 
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {

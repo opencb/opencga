@@ -313,22 +313,27 @@ public class CatalogManagerTest extends GenericTest {
 
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
 
-        FileInputStream is;
         java.io.File fileTest;
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        QueryResult<File> file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, sessionIdUser);
+        QueryResult<File> fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, -1, sessionIdUser);
 
-        is = new FileInputStream(fileTest = createDebugFile());
-        System.out.println(catalogManager.uploadFile(file.first().getId(), is, sessionIdUser));
-        is.close();
-        fileTest.delete();
+        fileTest = createDebugFile();
+        catalogFileUtils.upload(fileTest.toURI(), fileResult.first(), null, sessionIdUser, false, false, true, true);
+        assertTrue("File deleted", !fileTest.exists());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        is = new FileInputStream(fileTest = createDebugFile());
-        System.out.println(catalogManager.uploadFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, is, sessionIdUser));
-        is.close();
+        fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, -1, sessionIdUser);
+        fileTest = createDebugFile();
+        catalogFileUtils.upload(fileTest.toURI(), fileResult.first(), null, sessionIdUser, false, false, false, true);
+        assertTrue("File don't deleted", fileTest.exists());
         fileTest.delete();
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
+        fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
+                StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
+        assertTrue("", fileResult.first().getStatus() == File.Status.READY);
+        assertTrue("", fileResult.first().getDiskUsage() == 200);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         fileTest = createDebugFile();
@@ -350,28 +355,82 @@ public class CatalogManagerTest extends GenericTest {
                 studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "" + fileName, "file at root", true, -1, sessionIdUser);
         catalogFileUtils.upload(fileTest.toURI(), fileQueryResult.first(), null, sessionIdUser, false, false, true, true);
         fileTest.delete();
+
+        fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        fileTest = createDebugFile();
+        long size = Files.size(fileTest.toPath());
+        fileQueryResult = catalogManager.createFile(studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "" + fileName,
+                fileTest.toPath(), "file at root", true, sessionIdUser);
+        assertTrue("File should be moved", !fileTest.exists());
+        assertTrue(fileQueryResult.first().getDiskUsage() == size);
     }
 
     @Test
-    public void testDownloadFile() throws CatalogException, IOException, InterruptedException, CatalogIOManagerException {
+    public void testDownloadAndHeadFile() throws CatalogException, IOException, InterruptedException {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         java.io.File fileTest;
         InputStream is = new FileInputStream(fileTest = createDebugFile());
-        int fileId = catalogManager.uploadFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, is, sessionIdUser).first().getId();
+        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", true, -1, sessionIdUser).first();
+        catalogFileUtils.upload(is, file, sessionIdUser, false, false, true);
         is.close();
+
+
+        byte[] bytes = new byte[100];
+        byte[] bytesOrig = new byte[100];
+        DataInputStream fis = new DataInputStream(new FileInputStream(fileTest));
+        DataInputStream dis = catalogManager.downloadFile(file.getId(), sessionIdUser);
+        fis.read(bytesOrig, 0, 100);
+        dis.read(bytes, 0, 100);
+        fis.close();
+        dis.close();
+        assertArrayEquals(bytesOrig, bytes);
+
+
+        int offset = 5;
+        dis = catalogManager.downloadFile(file.getId(), offset, 30, sessionIdUser);
+        fis = new DataInputStream(new FileInputStream(fileTest));
+        for (int i = 0; i < offset; i++) {
+            fis.readLine();
+        }
+
+
+        String line;
+        while ((line = dis.readLine()) != null) {
+            System.out.println(line);
+            fis.readLine().equals(line);
+        }
+
+
+        fis.close();
+        dis.close();
         fileTest.delete();
 
-        DataInputStream dis = catalogManager.downloadFile(fileId, sessionIdUser);
-
-        System.out.println(fileTest.getAbsolutePath());
-        byte[] bytes = new byte[100];
-        dis.read(bytes, 0, 100);
-        System.out.println(new String(bytes));
-//        System.out.println(Bytes.toString(bytes));
     }
+
+
+    @Test
+    public void testDownloadFile() throws CatalogException, IOException, InterruptedException {
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+
+        String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
+        int fileSize = 200;
+        byte[] bytesOrig = StringUtils.randomString(fileSize).getBytes();
+        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
+                bytesOrig, "description", true, sessionIdUser).first();
+
+        DataInputStream dis = catalogManager.downloadFile(file.getId(), sessionIdUser);
+
+        byte[] bytes = new byte[fileSize];
+        dis.read(bytes, 0, fileSize);
+        assertTrue(Arrays.equals(bytesOrig, bytes));
+
+    }
+
 
     @Test
     public void searchFileTest() throws CatalogException, CatalogIOManagerException, IOException {
