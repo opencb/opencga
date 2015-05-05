@@ -19,19 +19,20 @@ package org.opencb.opencga.storage.core.config;
 /**
  * Created by imedina on 01/05/15.
  */
-public class StorageEngineProperties {
+public class StorageEngineConfiguration {
 
     private String id;
     private DatabaseCredentials database;
 
-    public StorageEngineProperties() {
+    public StorageEngineConfiguration() {
 
     }
 
-    public StorageEngineProperties(String id, DatabaseCredentials database) {
+    public StorageEngineConfiguration(String id, DatabaseCredentials database) {
         this.id = id;
         this.database = database;
     }
+
 
     public DatabaseCredentials getDatabase() {
         return database;

@@ -37,14 +37,14 @@ public class StorageConfigurationTest {
         Map<String, String> options = new HashMap<>();
         options.put("key", "value");
 
-        StorageEngineProperties storageEngineProperties1 = new StorageEngineProperties(
+        StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
                 "mongodb", new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options));
-        StorageEngineProperties storageEngineProperties2 = new StorageEngineProperties(
+        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
                 "hbase", new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()));
 
         storageConfiguration.setDefaultStorageEngine("mongodb");
-        storageConfiguration.getStorageEngines().add(storageEngineProperties1);
-        storageConfiguration.getStorageEngines().add(storageEngineProperties2);
+        storageConfiguration.getEngines().add(storageEngineConfiguration1);
+        storageConfiguration.getEngines().add(storageEngineConfiguration2);
 
         try {
             storageConfiguration.serialize(new FileOutputStream("/tmp/aaa"));
