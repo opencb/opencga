@@ -146,7 +146,7 @@ public class UserManager implements IUserManager {
         ParamsUtils.checkParameter(userId, "userId");
         ParamsUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        options = ParamsUtils.defaultObject(options, new QueryOptions());
+        options = ParamsUtils.defaultObject(options, QueryOptions::new);
 
         if (!options.containsKey("include") && !options.containsKey("exclude")) {
             options.put("exclude", Arrays.asList("password", "sessions"));

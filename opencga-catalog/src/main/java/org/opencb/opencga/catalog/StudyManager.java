@@ -106,9 +106,9 @@ public class StudyManager implements IStudyManager{
         } else {
             uriScheme = ParamsUtils.defaultString(uriScheme, CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME);
         }
-        datastores = ParamsUtils.defaultObject(datastores, new HashMap<File.Bioformat, DataStore>());
-        stats = ParamsUtils.defaultObject(stats, new HashMap<String, Object>());
-        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
+        datastores = ParamsUtils.defaultObject(datastores, HashMap<File.Bioformat, DataStore>::new);
+        stats = ParamsUtils.defaultObject(stats, HashMap<String, Object>::new);
+        attributes = ParamsUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 

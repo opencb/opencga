@@ -44,11 +44,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class AnalysisJobExecuter {
+public class AnalysisJobExecutor {
 
     public static final String EXECUTE = "execute";
     public static final String SIMULATE = "simulate";
-    protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecuter.class);
+    protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecutor.class);
     protected final Properties analysisProperties;
     protected final String home;
     protected String analysisName;
@@ -63,18 +63,18 @@ public class AnalysisJobExecuter {
 
     protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-    private AnalysisJobExecuter() throws IOException, AnalysisExecutionException {
+    private AnalysisJobExecutor() throws IOException, AnalysisExecutionException {
         home = Config.getOpenCGAHome();
         analysisProperties = Config.getAnalysisProperties();
         executionName = null;
     }
 
-    public AnalysisJobExecuter(String analysisStr, String execution) throws IOException, AnalysisExecutionException {
+    public AnalysisJobExecutor(String analysisStr, String execution) throws IOException, AnalysisExecutionException {
         this(analysisStr, execution, "system");
     }
 
     @Deprecated
-    public AnalysisJobExecuter(String analysisStr, String execution, String analysisOwner) throws IOException, AnalysisExecutionException {
+    public AnalysisJobExecutor(String analysisStr, String execution, String analysisOwner) throws IOException, AnalysisExecutionException {
         this();
         if (analysisOwner.equals("system")) {
             this.analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
@@ -92,7 +92,7 @@ public class AnalysisJobExecuter {
         load();
     }
 
-    public AnalysisJobExecuter(Path analysisRootPath, String analysisName, String executionName) throws IOException, AnalysisExecutionException {
+    public AnalysisJobExecutor(Path analysisRootPath, String analysisName, String executionName) throws IOException, AnalysisExecutionException {
         this();
         this.analysisRootPath = analysisRootPath;
         this.analysisName = analysisName;

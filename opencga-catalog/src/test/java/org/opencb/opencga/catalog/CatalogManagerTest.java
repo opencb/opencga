@@ -43,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class CatalogManagerTest extends GenericTest {
 
@@ -54,12 +55,6 @@ public class CatalogManagerTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-
-    @BeforeClass
-    public static void init() throws IOException, CatalogException {
-
-
-    }
 
     @Before
     public void setUp() throws IOException, CatalogException {
@@ -301,9 +296,24 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFolder() throws Exception {
-        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
-        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
-        System.out.println(catalogManager.createFolder(studyId, Paths.get("data", "new", "folder"), true, null, sessionIdUser));
+        int projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser2).first().getId();
+
+        Set<String> paths = catalogManager.getAllFiles(studyId, new QueryOptions("type", File.Type.FOLDER),
+                sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
+        assertEquals(3, paths.size());
+        assertTrue(paths.contains(""));             //root
+        assertTrue(paths.contains("data/"));        //data
+        assertTrue(paths.contains("analysis/"));    //analysis
+
+        Path folderPath = Paths.get("data", "new", "folder");
+        File folder = catalogManager.createFolder(studyId, folderPath, true, null, sessionIdUser2).first();
+
+        paths = catalogManager.getAllFiles(studyId, new QueryOptions("type", File.Type.FOLDER),
+                sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
+        assertEquals(5, paths.size());
+        assertTrue(paths.contains("data/new/"));
+        assertTrue(paths.contains("data/new/folder/"));
     }
 
     @Test
@@ -418,8 +428,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDownloadFile() throws CatalogException, IOException, InterruptedException {
-        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
-        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         int fileSize = 200;
@@ -435,9 +444,37 @@ public class CatalogManagerTest extends GenericTest {
 
     }
 
+    @Test
+    public void renameFileTest() throws CatalogException, IOException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/file.txt",
+                StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
+        catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/nested/folder/file2.txt",
+                StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
+
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/nested/"), "nested2", sessionIdUser);
+        Set<String> paths = catalogManager.getAllFiles(studyId, null, sessionIdUser).getResult()
+                .stream().map(File::getPath).collect(Collectors.toSet());
+
+        assertTrue(paths.contains("data/nested2/"));
+        assertFalse(paths.contains("data/nested/"));
+        assertTrue(paths.contains("data/nested2/folder/"));
+        assertTrue(paths.contains("data/nested2/folder/file2.txt"));
+        assertTrue(paths.contains("data/file.txt"));
+
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "Data", sessionIdUser);
+        paths = catalogManager.getAllFiles(studyId, null, sessionIdUser).getResult()
+                .stream().map(File::getPath).collect(Collectors.toSet());
+
+        assertTrue(paths.contains("Data/"));
+        assertTrue(paths.contains("Data/file.txt"));
+        assertTrue(paths.contains("Data/nested2/"));
+        assertTrue(paths.contains("Data/nested2/folder/"));
+        assertTrue(paths.contains("Data/nested2/folder/file2.txt"));
+    }
 
     @Test
-    public void searchFileTest() throws CatalogException, CatalogIOManagerException, IOException {
+    public void searchFileTest() throws CatalogException, IOException {
 
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
@@ -580,22 +617,6 @@ public class CatalogManagerTest extends GenericTest {
         return Paths.get(fileTestName).toFile();
     }
 
-    /**
-     * Analysis methods
-     * ***************************
-     */
-
-//    @Test
-//    public void testCreateAnalysis() throws CatalogManagerException, JsonProcessingException {
-//        int projectId = catalogManager.getAllProjects("user", sessionIdUser).first().getId();
-//        int studyId = catalogManager.getAllStudies(projectId, sessionIdUser).first().getId();
-//        Analysis analysis = new Analysis("MyAnalysis", "analysis1", "date", "user", "description");
-//
-//        System.out.println(catalogManager.createAnalysis(studyId, analysis.getName(), analysis.getAlias(), analysis.getDescription(), sessionIdUser));
-//
-//        System.out.println(catalogManager.createAnalysis(
-//                studyId, "MyAnalysis2", "analysis2", "description", sessionIdUser));
-//    }
 
     /**
      * Job methods

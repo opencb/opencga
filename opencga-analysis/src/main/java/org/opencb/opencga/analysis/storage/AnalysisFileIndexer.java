@@ -21,7 +21,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
@@ -98,8 +98,8 @@ public class AnalysisFileIndexer {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(AnalysisJobExecuter.EXECUTE);
-        final boolean simulate = options.getBoolean(AnalysisJobExecuter.SIMULATE);
+        final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
+        final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
         final long start = System.currentTimeMillis();
         final boolean transform;
         final boolean load;
@@ -207,7 +207,7 @@ public class AnalysisFileIndexer {
 
         String jobName = "index";
         String jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
-        final Job job = AnalysisJobExecuter.createJob(catalogManager, studyIdByOutDirId, jobName,
+        final Job job = AnalysisJobExecutor.createJob(catalogManager, studyIdByOutDirId, jobName,
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 

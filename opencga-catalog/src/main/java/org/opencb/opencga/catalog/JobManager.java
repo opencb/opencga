@@ -144,7 +144,7 @@ public class JobManager implements IJobManager {
     @Override
     public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        query = ParamsUtils.defaultObject(query, new QueryOptions());
+        query = ParamsUtils.defaultObject(query, QueryOptions::new);
         query.put("studyId", studyId);
         return readAll(query, options, sessionId);
     }

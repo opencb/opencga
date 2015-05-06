@@ -24,7 +24,7 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -182,7 +182,7 @@ public class DaemonLoop implements Runnable {
                             }
                             break;
                         case PREPARED:
-                            AnalysisJobExecuter.execute(job);
+                            AnalysisJobExecutor.execute(job);
                             catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
                             break;
                         case QUEUED:

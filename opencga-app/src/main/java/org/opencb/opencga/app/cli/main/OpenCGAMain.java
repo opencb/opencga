@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.CatalogException;
@@ -369,11 +369,11 @@ public class OpenCGAMain {
                         }
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
@@ -392,11 +392,11 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
@@ -411,11 +411,11 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));

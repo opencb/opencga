@@ -53,7 +53,7 @@ public class SampleManager implements ISampleManager {
         ParamsUtils.checkParameter(sessionId, "sessionId");
         ParamsUtils.checkParameter(id, "id");
         ParamsUtils.checkObj(annotations, "annotations");
-        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
+        attributes = ParamsUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
@@ -259,7 +259,7 @@ public class SampleManager implements ISampleManager {
         ParamsUtils.checkParameter(name, "name");
         ParamsUtils.checkObj(sampleIds, "Samples list");
         description = ParamsUtils.defaultString(description, "");
-        attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
+        attributes = ParamsUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         if (readAll(studyId, new QueryOptions("id", sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);

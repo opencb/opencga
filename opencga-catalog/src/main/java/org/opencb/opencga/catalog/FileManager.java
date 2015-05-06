@@ -164,7 +164,7 @@ public class FileManager implements IFileManager {
         if (experimentId > 0 && !jobDBAdaptor.experimentExists(experimentId)) {
             throw new CatalogException("Experiment { id: " + experimentId + "} does not exist.");
         }
-        sampleIds = ParamsUtils.defaultObject(sampleIds, new LinkedList<Integer>());
+        sampleIds = ParamsUtils.defaultObject(sampleIds, LinkedList<Integer>::new);
 
         for (Integer sampleId : sampleIds) {
             if (!sampleDBAdaptor.sampleExists(sampleId)) {
@@ -175,8 +175,8 @@ public class FileManager implements IFileManager {
         if (jobId > 0 && !jobDBAdaptor.jobExists(jobId)) {
             throw new CatalogException("Job { id: " + jobId + "} does not exist.");
         }
-        stats = ParamsUtils.defaultObject(stats, new HashMap<String, Object>());
-        attributes = ParamsUtils.defaultObject(attributes, new HashMap<String, Object>());
+        stats = ParamsUtils.defaultObject(stats, HashMap<String, Object>::new);
+        attributes = ParamsUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         if (!studyDBAdaptor.studyExists(studyId)) {
             throw new CatalogException("Study { id: " + studyId + "} does not exist.");
@@ -309,7 +309,7 @@ public class FileManager implements IFileManager {
     @Override
     public QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         ParamsUtils.checkParameter(sessionId, "sessionId");
-        query = ParamsUtils.defaultObject(query, new QueryOptions());
+        query = ParamsUtils.defaultObject(query, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
 
@@ -517,7 +517,7 @@ public class FileManager implements IFileManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         description = ParamsUtils.defaultString(description, "");
-        attributes = ParamsUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
+        attributes = ParamsUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);

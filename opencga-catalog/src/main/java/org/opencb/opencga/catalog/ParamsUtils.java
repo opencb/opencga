@@ -4,6 +4,7 @@ import org.opencb.opencga.catalog.CatalogException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /**
@@ -78,6 +79,13 @@ public class ParamsUtils {
     public static <O> O defaultObject(O object, O defaultObject) {
         if (object == null) {
             object = defaultObject;
+        }
+        return object;
+    }
+
+    public static <O> O defaultObject(O object, Supplier<O> supplier) {
+        if (object == null) {
+            object = supplier.get();
         }
         return object;
     }
