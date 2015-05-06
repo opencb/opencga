@@ -33,6 +33,7 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 
@@ -234,7 +235,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
-        return input;
+        return super.postLoad(input, output, params);
     }
 
     /* --------------------------------------- */
