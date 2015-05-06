@@ -78,8 +78,21 @@ public class CatalogFileUtils {
             throw new CatalogIOManagerException("Can't upload file.", e);
         }
 
-        if(deleteSource) {
+        if (deleteSource) {
             //TODO: Check if can delete source
+        }
+
+        //If the source is equals to the target, calculate checksum (if needed) and exit
+        if (sourceUri.equals(targetUri)) {
+            logger.info("SourceURI equals to TargetURI. Only calculate checksum and update file entry");
+            String targetChecksum;
+            if (calculateChecksum) {
+                targetChecksum = targetIOManager.calculateChecksum(targetUri);
+            } else {
+                targetChecksum = sourceChecksum;
+            }
+            updateFileAttributes(file, targetChecksum, sessionId);
+            return;
         }
 
         //Check status

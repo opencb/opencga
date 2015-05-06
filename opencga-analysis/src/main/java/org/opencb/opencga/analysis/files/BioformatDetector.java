@@ -1,34 +1,40 @@
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.files;
 
 import org.apache.commons.lang.math.NumberUtils;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
  * Created by ralonso on 12/03/15.
  */
-public class AnalysisBioformatDetect {
+public class BioformatDetector {
 
-    protected static Pattern variantPattern = Pattern.compile(".*\\.vcf(\\.[\\w]*)*", Pattern.CASE_INSENSITIVE);
-    protected static Pattern alignmentPattern = Pattern.compile(".*\\.(sam|bam|cram)(\\.[\\w]*)*", Pattern.CASE_INSENSITIVE);
+    protected static final Map<File.Bioformat, Pattern> bioformatMap = new HashMap<>();
 
-    public static File.Bioformat detect(String path) {
-        Path source = Paths.get(path);
+    static {
+        bioformatMap.put(File.Bioformat.ALIGNMENT, Pattern.compile(".*\\.(bam|sam|cram)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+        bioformatMap.put(File.Bioformat.VARIANT, Pattern.compile(".*\\.(vcf)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+    }
+
+    public static File.Bioformat detect(URI uri) {
+        String path = uri.getPath();
+        Path source = Paths.get(uri);
         String mimeType = "";
         try {
 
-            if (variantPattern.matcher(path).matches()) {
-                return File.Bioformat.VARIANT;
-            } else if (alignmentPattern.matcher(path).matches()) {
-                return File.Bioformat.ALIGNMENT;
+            for (Map.Entry<File.Bioformat, Pattern> entry : bioformatMap.entrySet()) {
+                if (entry.getValue().matcher(path).matches()) {
+                    return entry.getKey();
+                }
             }
 
             mimeType = Files.probeContentType(source);

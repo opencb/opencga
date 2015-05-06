@@ -21,6 +21,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -104,7 +105,8 @@ public class FileManager implements IFileManager {
         }
         int projectId = userDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
         int studyId = studyDBAdaptor.getStudyId(projectId, projectStudyPath[1]);
-        return fileDBAdaptor.getFileId(studyId, projectStudyPath[2]);    }
+        return fileDBAdaptor.getFileId(studyId, projectStudyPath[2]);
+    }
 
     @Override
     public QueryResult<File> create(QueryOptions params, String sessionId) throws CatalogException {
@@ -361,11 +363,11 @@ public class FileManager implements IFileManager {
                         //Can only be modified when file.status == UPLOADING
                         case "creationDate":
                         case "diskUsage":
-                            if (!file.getStatus().equals(File.Status.UPLOADING)) {
-                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
-                                        "status == " + file.getStatus().name() + ". " +
-                                        "Required status UPLOADING or admin account");
-                            }
+//                            if (!file.getStatus().equals(File.Status.UPLOADING)) {
+//                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
+//                                        "status == " + file.getStatus().name() + ". " +
+//                                        "Required status UPLOADING or admin account");
+//                            }
                             break;
                         //Path and Name must be changed with "raname" and/or "move" methods.
                         case "path":
@@ -401,7 +403,7 @@ public class FileManager implements IFileManager {
         QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
 
         File file = fileResult.getResult().get(0);
-        switch(file.getStatus()) {
+        switch (file.getStatus()) {
             case UPLOADING:
             case UPLOADED:
                 throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
@@ -575,12 +577,41 @@ public class FileManager implements IFileManager {
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
 
-        return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);    }
+        return catalogIOManagerFactory.get(fileUri).getFileObject(fileUri, start, limit);
+    }
 
     @Override
     public DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
             throws CatalogException {
         return download(fileId, 0, lines, options, sessionId);
     }
+
+//    private File.Type getType(URI uri, boolean exists) throws CatalogException {
+//        ParamsUtils.checkObj(uri, "uri");
+//        return uri.getPath().endsWith("/") ? File.Type.FOLDER : File.Type.FILE;
+//    }
+
+//    private File.Bioformat setBioformat(File file, String sessionId) throws CatalogException {
+//        ParamsUtils.checkObj(file, "file");
+//
+//
+//        File.Bioformat bioformat = null;
+//        ObjectMap parameters = new ObjectMap();
+//        for (Map.Entry<File.Bioformat, Pattern> entry : bioformatMap.entrySet()) {
+//            if (entry.getValue().matcher(file.getPath()).matches()) {
+//                bioformat = entry.getKey();
+//                break;
+//            }
+//        }
+//
+//        if (bioformat == File.Bioformat.VARIANT) {
+//
+//        }
+//
+//
+//        update(file.getId(), parameters, new QueryOptions(), sessionId);
+//
+//        return File.Bioformat.NONE;
+//    }
 
 }

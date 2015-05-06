@@ -370,7 +370,7 @@ public class CatalogManagerTest extends GenericTest {
         fileTest = createDebugFile();
         long size = Files.size(fileTest.toPath());
         fileQueryResult = catalogManager.createFile(studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "" + fileName,
-                fileTest.toPath(), "file at root", true, sessionIdUser);
+                fileTest.toURI(), "file at root", true, sessionIdUser);
         assertTrue("File should be moved", !fileTest.exists());
         assertTrue(fileQueryResult.first().getDiskUsage() == size);
     }
@@ -600,8 +600,12 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     /* TYPE_FILE UTILS */
-    static java.io.File createDebugFile() throws IOException {
+    public static java.io.File createDebugFile() throws IOException {
         String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
+        return createDebugFile(fileTestName);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName) throws IOException {
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
 
         os.writeBytes("Debug file name: " + fileTestName + "\n");

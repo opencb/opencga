@@ -454,12 +454,12 @@ public class CatalogManager {
         return getFile(queryResult.first().getId(), sessionId);
     }
 
-    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, Path completedFilePath, String description,
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
                 description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
-        new CatalogFileUtils(this).upload(completedFilePath.toUri(), queryResult.first(), null, sessionId, false, false, true, true, Integer.MAX_VALUE);
+        new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Integer.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
 

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.beans.AnalysisBioformatDetect;
+import org.opencb.opencga.analysis.files.BioformatDetector;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -136,7 +136,7 @@ public class AnalysisOutputRecorder {
 //                    bioformat = resultElem.getTag();
 //                }
 
-                bioformat = AnalysisBioformatDetect.detect(Paths.get(uri).toString());
+//                bioformat = BioformatDetector.detect(catalogManager, Paths.get(uri).toString(), sessionId);
 
                 fileQueryResult = catalogManager.createFile(studyId,
                         File.Format.PLAIN, bioformat,
@@ -320,11 +320,6 @@ public class AnalysisOutputRecorder {
      * }
      * }
      */
-
-
-    private void log(Object msg) {
-        System.out.println("\n\n\nAleman: - " + msg.toString() + "\n\n\n");
-    }
 
     private class ResultXMLElem {
         private String type;

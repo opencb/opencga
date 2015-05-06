@@ -169,7 +169,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     public void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException {
         checkUriExists(source);
         if (source.getScheme().equals("file") && target.getScheme().equals("file")) {
-            Files.move(Paths.get(source), Paths.get(target));
+            Files.move(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
         } else {
             throw new CatalogIOManagerException("Can't move from " + source.getScheme() + " to " + target.getScheme());
         }

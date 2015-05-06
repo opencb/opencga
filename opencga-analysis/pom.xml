@@ -70,6 +70,17 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
         </dependency>
+
+
+        <!--Tests-->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
