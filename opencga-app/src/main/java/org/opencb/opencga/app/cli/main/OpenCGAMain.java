@@ -367,18 +367,20 @@ public class OpenCGAMain {
                         if (outdirId < 0) {
                             outdirId  = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
                         }
+                        String sid = sessionId;
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                            if (c.up.sessionId == null || c.up.sessionId.isEmpty()) {
+                                sid = login(c.up);
+                            }
                         } else {
                             queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sessionId, queryOptions);
+                        QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
                         break;

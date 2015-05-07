@@ -118,11 +118,29 @@ public class AnalysisJobExecuter {
         executeCommandLine(commandLine, jobName, jobId, jobFolder, analysisName);
     }
 
-    public static void execute(Job job) throws AnalysisExecutionException, IOException {
+    public static void execute(CatalogManager catalogManager, Job job, String sessionId)
+            throws AnalysisExecutionException, IOException, CatalogException {
         logger.debug("AnalysisJobExecuter: execute, job: {}", job);
 
-        executeCommandLine(job.getCommandLine(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
-                job.getId(), job.getTmpOutDirUri().getPath(), job.getToolName());
+        // read execution param
+        String jobExecutor = Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.JOB.EXECUTOR");
+
+        // local execution
+        if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {
+            logger.debug("AnalysisJobExecuter: execute, running by SingleProcess");
+            executeLocal(catalogManager, job, sessionId);
+        } else {
+            logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
+
+            try {
+                SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
+                        -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
+                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
+            } catch (Exception e) {
+                logger.error(e.toString());
+                throw new AnalysisExecutionException("ERROR: sge execution failed.");
+            }
+        }
     }
 
     private boolean checkRequiredParams(Map<String, List<String>> params, List<Option> validParams) {
@@ -249,44 +267,7 @@ public class AnalysisJobExecuter {
                         outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
                 Job job = jobQueryResult.first();
 
-                logger.info("==========================================");
-                logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
-                logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());
-                logger.info("==========================================");
-                System.err.println();
-
-                Command com = new Command(commandLine);
-                com.run();
-
-                System.err.println();
-                logger.info("==========================================");
-                logger.info("Finished job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
-                logger.info("==========================================");
-
-
-                /** Change status to DONE  - Add the execution information to the job entry **/
-//                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
-                ObjectMap parameters = new ObjectMap();
-                parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
-                parameters.put("status", Job.Status.DONE);
-                catalogManager.modifyJob(job.getId(), parameters, sessionId);
-
-                /** Record output **/
-                AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                outputRecorder.recordJobOutput(job);
-
-                /** Change status to READY or ERROR **/
-                if (com.getExitValue() == 0) {
-                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
-                } else {
-                    parameters = new ObjectMap();
-                    parameters.put("status", Job.Status.ERROR);
-                    parameters.put("error", Job.ERRNO_FINISH_ERROR);
-                    parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_FINISH_ERROR));
-                    catalogManager.modifyJob(job.getId(), parameters, sessionId);
-                }
-
-                jobQueryResult = catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
+                jobQueryResult = executeLocal(catalogManager, job, sessionId);
 
             } else {
                 /** Create a PREPARED job in CatalogManager **/
@@ -296,6 +277,47 @@ public class AnalysisJobExecuter {
             }
         }
         return jobQueryResult;
+    }
+
+    private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException {
+        logger.info("==========================================");
+        logger.info("Executing job {}({})", job.getName(), job.getId());
+        logger.debug("Executing commandLine {}", job.getCommandLine());
+        logger.info("==========================================");
+        System.err.println();
+
+        Command com = new Command(job.getCommandLine());
+        com.run();
+
+        System.err.println();
+        logger.info("==========================================");
+        logger.info("Finished job {}({})", job.getName(), job.getId());
+        logger.info("==========================================");
+
+
+        /** Change status to DONE  - Add the execution information to the job entry **/
+//                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
+        ObjectMap parameters = new ObjectMap();
+        parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
+        parameters.put("status", Job.Status.DONE);
+        catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+        /** Record output **/
+        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+        outputRecorder.recordJobOutput(job);
+
+        /** Change status to READY or ERROR **/
+        if (com.getExitValue() == 0) {
+            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
+        } else {
+            parameters = new ObjectMap();
+            parameters.put("status", Job.Status.ERROR);
+            parameters.put("error", Job.ERRNO_FINISH_ERROR);
+            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_FINISH_ERROR));
+            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+        }
+
+        return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
     }
 
     private static void executeCommandLine(String commandLine, String jobName, int jobId, String jobFolder, String analysisName)

@@ -21,6 +21,7 @@ export study_uri=""
 
 export transform_file=false
 export pedigree_file=false
+export enqueue=""
 export log_level=info
 export input_files=()
 export input_files_len=0
@@ -30,7 +31,7 @@ function getFileId() {
 }
 
 function main() {
-while getopts "htu:i:p:l:U:" opt; do
+while getopts "htu:i:p:l:U:q" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
@@ -42,6 +43,7 @@ while getopts "htu:i:p:l:U:" opt; do
 	    echo "       -l log_level  : error, warn, info, debug  "
 	    echo "       -t            : Transform and Load in 2 steps  "
 	    echo "       -U uri        : Study URI location "
+	    echo "       -q            : Enqueue index jobs. Leave jobs \"PREPARED\". Require a daemon."
 	    #echo "       -            :   "
 
 	    #echo "Usage: -h, -i (vcf_input_file), -u (user_name), -l (log_level), -t, -U (study_URI)"
@@ -77,14 +79,22 @@ while getopts "htu:i:p:l:U:" opt; do
 	    transform_file=true
 	    echo "Transforming file before load"
 	    ;;
+	q)
+	    enqueue="--enqueue"
+	    echo "Queuing index jobs"
+	    ;;
 	\?)
 	    ;;
 	esac
 done
 
+if [[ $enqueue != "" && $transform_file != false ]]; then
+    echo "ERROR: Can't index file in 2 steps (transform and load) and enqueue the jobs"
+    exit 1
+fi
 
 if [[ $input_files_len == 0 && $pedigree_file == false ]]; then
-	echo "No input files!"
+	echo "ERROR: No input files!"
 	exit 1
 fi
 
@@ -122,16 +132,16 @@ for input_file in ${input_files[@]}; do
 
 	if [ "$transform_file" == "true" ]; then
 		#Transform file
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform
+		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform $enqueue
 		$OPENCGA_BIN users list -u $user -p $password -R
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 
 		#Load file
 		TRANSFORMED_VARIANTS_FILE_ID=$(getFileId $FILE_NAME".variants.json")
-		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -Dannotate=false
+		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -Dannotate=false $enqueue
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	else
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level}
+		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	fi
 done

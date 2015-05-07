@@ -19,6 +19,7 @@ package org.opencb.opencga.core;
 import com.google.common.base.Splitter;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exec.Command;
+import org.opencb.opencga.core.exec.RunnableProcess;
 import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,8 +100,8 @@ public class  SgeManager {
         Command sgeCommand = new Command(sgeCommandLine);
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
-        if (sgeCommand.getExitValue() != 0) {
-            throw new Exception("Can't queue job " + getSgeJobName(toolName, wumJobName) + ". qsub returned " + sgeCommand.getExitValue() + " and message:" + sgeCommand.getError());
+        if (sgeCommand.getExitValue() != 0 || sgeCommand.getException() != null) {
+            throw new Exception("Can't queue job " + getSgeJobName(toolName, wumJobName) + ". qsub returned " + sgeCommand.getExitValue() + " and message:" + sgeCommand.getException());
         }
     }
 
