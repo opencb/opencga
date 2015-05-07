@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.analysis.storage;
 
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.*;
@@ -66,7 +66,6 @@ public class AnalysisFileIndexer {
 
     //Options
     public static final String PARAMETERS = "parameters";
-    public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
     public static final String TRANSFORM = "transform";
     public static final String LOAD = "load";
 
@@ -174,7 +173,12 @@ public class AnalysisFileIndexer {
         /** Get file samples **/
         List<Sample> sampleList;
         if (originalFile.getSampleIds() == null || originalFile.getSampleIds().isEmpty()) {
-            sampleList = getFileSamples(study, originalFile, fileModifyParams, simulate, options, sessionId);
+            try {
+                sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
+                        catalogManager.getFileUri(originalFile), fileModifyParams, simulate, options, sessionId);
+            } catch (CatalogException | StorageManagerException e) {
+                throw new AnalysisExecutionException(e);
+            }
         } else {
             sampleList = catalogManager.getAllSamples(study.getId(), new QueryOptions("id", originalFile.getSampleIds()), sessionId).getResult();
         }
@@ -344,96 +348,6 @@ public class AnalysisFileIndexer {
 
     ////AUX METHODS
 
-    private List<Sample> getFileSamples(Study study, File file, ObjectMap fileModifyParams, boolean simulate, QueryOptions options, String sessionId)
-            throws CatalogException, AnalysisExecutionException {
-        List<Sample> sampleList;
-        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.samples.id","projects.studies.samples.name"));
-
-        if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
-            //Read samples from file
-            List<String> sampleNames = null;
-            switch (file.getBioformat()) {
-                case VARIANT: {
-                    if (file.getAttributes().containsKey("variantSource")) {
-                        Object variantSource = file.getAttributes().get("variantSource");
-                        if (variantSource instanceof VariantSource) {
-                            sampleNames = ((VariantSource) variantSource).getSamples();
-                        } else if (variantSource instanceof Map) {
-                            sampleNames = new ObjectMap((Map) variantSource).getAsStringList("samples");
-                        } else {
-                            logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}", variantSource.getClass(), VariantSource.class, Map.class);
-                        }
-                    }
-                    if (sampleNames == null) {
-                        VariantSource variantSource = readVariantSource(catalogManager, study, file);
-                        fileModifyParams.get("attributes", ObjectMap.class).put("variantSource", variantSource);
-                        sampleNames = variantSource.getSamples();
-                    }
-                }
-                break;
-                default:
-                    return new LinkedList<>();
-//                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
-            }
-
-            //Find matching samples in catalog with the sampleName from the VariantSource.
-            queryOptions.add("name", sampleNames);
-            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
-
-            //check if all file samples exists on Catalog
-            if (sampleList.size() != sampleNames.size()) {   //Size does not match. Find the missing samples.
-                Set<String> set = new HashSet<>(sampleNames);
-                for (Sample sample : sampleList) {
-                    set.remove(sample.getName());
-                }
-                logger.warn("Missing samples: m{}", set);
-                if (options.getBoolean(CREATE_MISSING_SAMPLES, true)) {
-                    for (String sampleName : set) {
-                        if (simulate) {
-                            sampleList.add(new Sample(-1, sampleName, file.getName(), null, null));
-                        } else {
-                            try {
-                                sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
-                            } catch (CatalogException e) {
-                                if (catalogManager.getAllSamples(study.getId(), new QueryOptions("name", sampleName), sessionId).getResult().isEmpty()) {
-                                    throw e; //Throw exception if sample does not exist.
-                                } else {
-                                    logger.debug("Do not create the sample \"" + sampleName + "\". It has magically appeared");
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
-                }
-            }
-        } else {
-            //Get samples from file.sampleIds
-            queryOptions.add("id", file.getSampleIds());
-            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
-        }
-
-        List<Integer> sampleIdsList = new ArrayList<>(sampleList.size());
-        for (Sample sample : sampleList) {
-            sampleIdsList.add(sample.getId());
-//                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
-        }
-        fileModifyParams.put("sampleIds", sampleIdsList);
-
-        return sampleList;
-    }
-
-    static public VariantSource readVariantSource(CatalogManager catalogManager, Study study, File file)
-            throws AnalysisExecutionException {
-        //TODO: Fix aggregate and studyType
-        VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
-        try {
-            URI fileUri = catalogManager.getFileUri(file);
-            return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
-        } catch (CatalogException | StorageManagerException e) {
-            throw new AnalysisExecutionException(e);
-        }
-    }
 
     public static URI createSimulatedOutDirUri() {
         return createSimulatedOutDirUri("J_" + StringUtils.randomString(10));
