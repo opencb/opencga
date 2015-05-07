@@ -153,7 +153,9 @@ public class JobManager implements IJobManager {
     public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamsUtils.checkParameter(sessionId, "sessionId");
-        ParamsUtils.checkObj(options, "options");
+        ParamsUtils.checkObj(query, "query");
+        options = ParamsUtils.defaultObject(options, new QueryOptions());
+        query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             if (!options.containsKey("studyId")) {
@@ -165,7 +167,7 @@ public class JobManager implements IJobManager {
                 }
             }
         }
-        return jobDBAdaptor.searchJob(options);
+        return jobDBAdaptor.searchJob(query);
     }
 
     @Override
