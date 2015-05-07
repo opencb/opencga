@@ -6,7 +6,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>0.5.0</version>
+    <version>0.5.1</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -21,9 +21,9 @@
 
     <properties>
         <java.version>1.7</java.version>
-        <opencga.version>0.5.0</opencga.version>
+        <opencga.version>0.5.1</opencga.version>
         <biodata.version>0.4.2</biodata.version>
-        <datastore.version>0.3.2</datastore.version>
+        <datastore.version>0.3.3</datastore.version>
         <cellbase.version>3.1.0</cellbase.version>
     </properties>
 
