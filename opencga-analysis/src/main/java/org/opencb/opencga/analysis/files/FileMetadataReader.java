@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.files;
 
+import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
@@ -39,14 +40,14 @@ public class FileMetadataReader {
      * Creates a file entry in catalog reading metadata information from the fileUri.
      * Do not upload or sync file. Created file status will be <b>UPLOADING</b>
      *
-     * @param studyId           Study on where the file entry is created
-     * @param fileUri           File URI to read metadata information.
-     * @param path              File path, relative to the study
-     * @param description       File description (optional)
-     * @param parents           Create parent folders or not
-     * @param options           Other options
-     * @param sessionId         User sessionId
-     * @return                  The created file with status <b>UPLOADING</b>
+     * @param studyId     Study on where the file entry is created
+     * @param fileUri     File URI to read metadata information.
+     * @param path        File path, relative to the study
+     * @param description File description (optional)
+     * @param parents     Create parent folders or not
+     * @param options     Other options
+     * @param sessionId   User sessionId
+     * @return The created file with status <b>UPLOADING</b>
      * @throws CatalogException
      */
     public QueryResult<File> create(int studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
@@ -93,6 +94,7 @@ public class FileMetadataReader {
         if (fileUri == null) {
             fileUri = catalogManager.getFileUri(file);
         }
+        options = ParamsUtils.defaultObject(options, QueryOptions::new);
         ObjectMap modifyParams = new ObjectMap();
 
         //Get metadata information
@@ -110,19 +112,25 @@ public class FileMetadataReader {
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         if (catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
             switch (bioformat) {
-                case ALIGNMENT:
+                case ALIGNMENT: {
+                    AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
+                    HashMap<String, Object> attributes = new HashMap<>();
+                    attributes.put("alignmentHeader", alignmentHeader);
+                    modifyParams.put("attributes", attributes);
                     break;
-                case VARIANT:
+                }
+                case VARIANT: {
                     VariantSource variantSource = readVariantSource(study, file, fileUri);
                     HashMap<String, Object> attributes = new HashMap<>();
                     attributes.put("variantSource", variantSource);
                     modifyParams.put("attributes", attributes);
                     break;
+                }
                 default:
                     break;
             }
         }
-        List<Sample> fileSamples = getFileSamples(study, file, fileUri, modifyParams, simulate, options, sessionId);
+        List<Sample> fileSamples = getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
 
         if (!modifyParams.isEmpty()) {
             catalogManager.modifyFile(file.getId(), modifyParams, sessionId);
@@ -132,8 +140,23 @@ public class FileMetadataReader {
         return file;
     }
 
+    /**
+     * Get samples from file header.
+     *
+     * @param study                 Study where the file is.
+     * @param file                  File from which read samples.
+     * @param fileUri               File location. If null, ask to Catalog.
+     * @param fileModifyParams      ModifyParams to add sampleIds and other related information (like header).
+     * @param createMissingSamples  Create samples from the file that where missing.
+     * @param simulate              Simulate the creation of samples.
+     * @param options               Options
+     * @param sessionId             User sessionId
+     * @return
+     * @throws CatalogException
+     * @throws StorageManagerException
+     */
     public List<Sample> getFileSamples(Study study, File file, URI fileUri, final ObjectMap fileModifyParams,
-                                       boolean simulate, QueryOptions options, String sessionId)
+                                       boolean createMissingSamples, boolean simulate, QueryOptions options, String sessionId)
             throws CatalogException, StorageManagerException {
         options = ParamsUtils.defaultObject(options, QueryOptions::new);
 
@@ -147,7 +170,7 @@ public class FileMetadataReader {
         if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
             //Read samples from file
             List<String> sampleNames = null;
-            switch (fileModifyParams.containsKey("bioformat")? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
+            switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
                 case VARIANT: {
                     Object variantSourceObj = null;
                     if (file.getAttributes().containsKey("variantSource")) {
@@ -170,14 +193,37 @@ public class FileMetadataReader {
                         fileModifyParams.get("attributes", Map.class).put("variantSource", variantSource);
                         sampleNames = variantSource.getSamples();
                     }
+                    break;
                 }
-                break;
+                case ALIGNMENT: {
+                    Object alignmentHeaderObj = null;
+                    if (file.getAttributes().containsKey("alignmentHeader")) {
+                        alignmentHeaderObj = file.getAttributes().get("alignmentHeader");
+                    } else if (fileModifyParams.getMap("attributes").containsKey("alignmentHeader")) {
+                        alignmentHeaderObj = fileModifyParams.getMap("attributes").get("alignmentHeader");
+                    }
+                    if (alignmentHeaderObj != null) {
+                        if (alignmentHeaderObj instanceof AlignmentHeader) {
+                            sampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
+                        } else if (alignmentHeaderObj instanceof Map) {
+                            sampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
+                        } else {
+                            logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}", alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
+                        }
+                    }
+                    if (sampleNames == null) {
+                        AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
+                        fileModifyParams.get("attributes", Map.class).put("alignmentHeader", alignmentHeader);
+                        sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                    }
+                    break;
+                }
                 default:
                     return new LinkedList<>();
 //                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
             }
 
-            //Find matching samples in catalog with the sampleName from the VariantSource.
+            //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
             sampleQueryOptions.add("name", sampleNames);
             sampleList = catalogManager.getAllSamples(study.getId(), sampleQueryOptions, sessionId).getResult();
@@ -189,7 +235,7 @@ public class FileMetadataReader {
                     set.remove(sample.getName());
                 }
                 logger.warn("Missing samples: m{}", set);
-                if (options.getBoolean(CREATE_MISSING_SAMPLES, true)) {
+                if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
                             sampleList.add(new Sample(-1, sampleName, file.getName(), null, null));
@@ -213,13 +259,35 @@ public class FileMetadataReader {
             }
         } else {
             //Get samples from file.sampleIds
-            sampleList = catalogManager.getAllSamples(study.getId(), new QueryOptions("id", file.getSampleIds()), sessionId).getResult();
+            QueryOptions queryOptions = new QueryOptions(options);
+            queryOptions.add("id", file.getSampleIds());
+            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
         }
 
         List<Integer> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
         fileModifyParams.put("sampleIds", sampleIdsList);
 
         return sampleList;
+    }
+
+    private List<String> getSampleFromAlignmentHeader(Map alignmentHeaderObj) {
+        List<String> sampleNames;
+        sampleNames = new LinkedList<>(new ObjectMap(alignmentHeaderObj).getList("readGroups")
+                .stream()
+                .map((rg) -> ((Map) ((Map) rg).get("attributes")).get("SM").toString())
+                .filter((s) -> s != null)
+                .collect(Collectors.toSet()));
+        return sampleNames;
+    }
+
+    private List<String> getSampleFromAlignmentHeader(AlignmentHeader alignmentHeader) {
+        List<String> sampleNames;
+        Set<String> sampleSet = alignmentHeader.getReadGroups().stream()
+                .map((rg) -> rg.getAttributes().get("SM"))
+                .filter((s) -> s != null)
+                .collect(Collectors.toSet());
+        sampleNames = new LinkedList<>(sampleSet);
+        return sampleNames;
     }
 
     public static VariantSource readVariantSource(Study study, File file, URI fileUri)
@@ -231,7 +299,13 @@ public class FileMetadataReader {
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
         logger.warn("Unimplemented method readAlignmentHeader");
-        return null;
+        AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
+        reader.open();
+        reader.pre();
+        reader.post();
+        reader.close();
+//        reader.getSamHeader().get
+        return reader.getHeader();
     }
 
     public static FileMetadataReader get(CatalogManager catalogManager) {

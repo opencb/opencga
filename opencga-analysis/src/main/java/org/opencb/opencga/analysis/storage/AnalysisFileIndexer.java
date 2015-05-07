@@ -175,7 +175,7 @@ public class AnalysisFileIndexer {
         if (originalFile.getSampleIds() == null || originalFile.getSampleIds().isEmpty()) {
             try {
                 sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
-                        catalogManager.getFileUri(originalFile), fileModifyParams, simulate, options, sessionId);
+                        catalogManager.getFileUri(originalFile), fileModifyParams, options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
             } catch (CatalogException | StorageManagerException e) {
                 throw new AnalysisExecutionException(e);
             }
