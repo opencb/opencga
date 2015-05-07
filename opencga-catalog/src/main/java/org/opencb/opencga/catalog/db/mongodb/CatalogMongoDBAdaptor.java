@@ -1657,7 +1657,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             addQueryStringListFilter("status", options, query);
         }
 
-        query.putAll(options);
 //        System.out.println("query = " + query);
         QueryResult<DBObject> queryResult = jobCollection.find(query, null);
         List<Job> jobs = parseJobs(queryResult);

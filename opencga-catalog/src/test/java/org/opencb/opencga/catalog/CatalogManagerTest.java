@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -603,19 +602,36 @@ public class CatalogManagerTest extends GenericTest {
      */
 
     @Test
-    public void testCreateJob() throws CatalogException, JsonProcessingException {
+    public void testCreateJob() throws CatalogException, IOException {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
-//        int analysisId = catalogManager.getAllAnalysis(studyId, sessionIdUser).first().getId();
 
         File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, null, sessionIdUser).first();
-        Job job = new Job("myFirstJob", "", "samtool", "description", "#rm -rf .*", outDir.getId(), URI.create("file:///tmp"), Collections.<Integer>emptyList());
 
-//        System.out.println(catalogManager.createJob(analysisId, job, sessionIdUser));
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
-        System.out.println(catalogManager.createJob(
-                studyId, "mySecondJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.EMPTY_LIST, new HashMap<String, Object>(), null, Job.Status.PREPARED, null, sessionIdUser));
+        catalogManager.createJob(
+                studyId, "myJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.PREPARED, null, sessionIdUser);
+
+        catalogManager.createJob(
+                studyId, "myReadyJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.READY, null, sessionIdUser);
+
+        catalogManager.createJob(
+                studyId, "myQueuedJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.QUEUED, null, sessionIdUser);
+
+        catalogManager.createJob(
+                studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, null, sessionIdUser);
+
+        String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
+        QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
+        assertEquals(2, unfinishedJobs.getNumResults());
+
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
+        assertEquals(4, allJobs.getNumResults());
+
     }
 
     /**
