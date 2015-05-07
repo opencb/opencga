@@ -342,7 +342,8 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
                         studyConfiguration.getSampleIds().put(sampleName, sampleId);
                     } else {
                         if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
-                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
+                            //throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
+                            logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
                         } else {
                             throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
                         }
