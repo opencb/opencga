@@ -26,6 +26,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.CatalogException;
@@ -264,7 +266,23 @@ public class OpenCGAMain {
                         int projectId = catalogManager.getProjectId(c.projectId);
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
                                 null, c.description, null, null, null, uri, dataStoreMap, null, null, c.cOpt.getQueryOptions(), sessionId);
+                        if (uri != null) {
+                            File root = catalogManager.searchFile(study.first().getId(), new QueryOptions("path", ""), sessionId).first();
+                            new FileScanner(catalogManager, FileScanner.FileScannerPolicy.REPLACE, true, false).scan(root, uri, sessionId);
+                        }
                         System.out.println(createOutput(c.cOpt, study, null));
+
+                        break;
+                    }
+                    case "refresh": {
+                        OptionsParser.StudyCommands.RefreshCommand c = optionsParser.getStudyCommands().refreshCommand;
+                        int studyId = catalogManager.getStudyId(c.id);
+
+                        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
+                        URI studyUri = catalogManager.getStudyUri(studyId);
+                        FileScanner fileScanner = new FileScanner(catalogManager, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false);
+                        List<File> scan = fileScanner.scan(root, studyUri, sessionId);
+                        System.out.println(createOutput(c.cOpt, scan, null));
 
                         break;
                     }
@@ -307,6 +325,7 @@ public class OpenCGAMain {
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
                                 c.parents, -1, sessionId);
                         new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, c.move, c.calculateChecksum);
+                        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, c.cOpt.getQueryOptions(), sessionId, false);
                         System.out.println(createOutput(c.cOpt, file, null));
 
                         break;

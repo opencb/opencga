@@ -23,6 +23,7 @@ public class BioformatDetector {
     static {
         bioformatMap.put(File.Bioformat.ALIGNMENT, Pattern.compile(".*\\.(bam|sam|cram)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
         bioformatMap.put(File.Bioformat.VARIANT, Pattern.compile(".*\\.(vcf)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+        bioformatMap.put(File.Bioformat.PEDIGREE, Pattern.compile(".*\\.(ped)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
     }
 
     public static File.Bioformat detect(URI uri) {

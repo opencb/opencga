@@ -138,7 +138,6 @@ public class FileScannerTest extends TestCase {
     @Test
     public void testComplexAdd() throws IOException, CatalogException {
 
-        CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.vcf");
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.vcf.gz");
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.vcf.variants.json");
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.vcf.variants.json.gz");
@@ -151,9 +150,8 @@ public class FileScannerTest extends TestCase {
 
         Map<String, File> map = files.stream().collect(Collectors.toMap(File::getName, (f) -> f));
 
-        assertEquals(7, files.size());
+        assertEquals(6, files.size());
         files.forEach((file) -> assertEquals(File.Status.READY, file.getStatus()));
-        assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.gz").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.variants.json").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.variants.json.gz").getBioformat());
@@ -161,7 +159,6 @@ public class FileScannerTest extends TestCase {
         assertEquals(File.Bioformat.ALIGNMENT, map.get("file2.bam").getBioformat());
         assertEquals(File.Bioformat.ALIGNMENT, map.get("file2.sam.gz").getBioformat());
 
-        assertEquals(File.Format.PLAIN, map.get("file1.vcf").getFormat());
         assertEquals(File.Format.GZIP, map.get("file1.vcf.gz").getFormat());
         assertEquals(File.Format.PLAIN, map.get("file1.vcf.variants.json").getFormat());
         assertEquals(File.Format.GZIP, map.get("file1.vcf.variants.json.gz").getFormat());

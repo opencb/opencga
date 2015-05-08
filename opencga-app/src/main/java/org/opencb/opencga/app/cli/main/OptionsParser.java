@@ -383,14 +383,15 @@ public class OptionsParser {
 
         final CreateCommand createCommand;
         final InfoCommand infoCommand;
+        final RefreshCommand refreshCommand;
 
         public StudyCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander studies = jcommander.getCommands().get("studies");
             studies.addCommand(createCommand = new CreateCommand());
             studies.addCommand(infoCommand = new InfoCommand());
+            studies.addCommand(refreshCommand = new RefreshCommand());
             studies.addCommand(commandShareResource);
-
         }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
@@ -422,6 +423,22 @@ public class OptionsParser {
 
             @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
             List<String> datastores;
+        }
+
+        @Parameters(commandNames = {"refresh"}, commandDescription = "Scans the study folder to find changes")
+        class RefreshCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+            String id;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get study information")

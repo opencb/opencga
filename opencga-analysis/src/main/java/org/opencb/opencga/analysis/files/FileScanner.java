@@ -6,6 +6,9 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.storage.core.StorageManagerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -17,6 +20,8 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class FileScanner {
+
+    private static Logger logger = LoggerFactory.getLogger(FileScanner.class);
 
     protected final CatalogManager catalogManager;
     protected final FileScannerPolicy policy;
@@ -93,6 +98,12 @@ public class FileScanner {
 
             /** Moves the file to the read output **/
             catalogFileUtils.upload(uri, file, null, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum);
+
+            try {
+                FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, null, sessionId, false);
+            } catch (Exception e) {
+                logger.error("Unable to read metadata information from file { id:" + file.getId() + ", name: \"" + file.getName() + "\" }", e);
+            }
 
             files.add(catalogManager.getFile(file.getId(), sessionId).first());
         }
