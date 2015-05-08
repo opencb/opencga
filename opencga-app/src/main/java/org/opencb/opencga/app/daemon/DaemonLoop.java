@@ -25,6 +25,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -182,8 +183,15 @@ public class DaemonLoop implements Runnable {
                             }
                             break;
                         case PREPARED:
-                            AnalysisJobExecutor.execute(job);
-                            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
+                            try {
+                                AnalysisJobExecutor.execute(catalogManager, job, sessionId);
+                            } catch (AnalysisExecutionException e) {
+                                ObjectMap params = new ObjectMap("status", Job.Status.ERROR);
+                                String error = Job.ERRNO_NO_QUEUE;
+                                params.put("error", error);
+                                params.put("errorDescription", Job.errorDescriptions.get(error));
+                                catalogManager.modifyJob(job.getId(), params, sessionId);
+                            }
                             break;
                         case QUEUED:
                             break;

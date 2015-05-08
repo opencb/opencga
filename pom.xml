@@ -51,8 +51,8 @@
 
     <licenses>
         <license>
-            <name>GNU GENERAL PUBLIC LICENSE Version 2</name>
-            <url>http://www.gnu.org/licenses/gpl-2.0.txt</url>
+            <name>Apache License, Version 2</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 
@@ -116,11 +116,6 @@
     <dependencyManagement>
         <dependencies>
             <!-- Intra-module dependencies -->
-            <dependency>
-                <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-account</artifactId>
-                <version>${opencga.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-core</artifactId>

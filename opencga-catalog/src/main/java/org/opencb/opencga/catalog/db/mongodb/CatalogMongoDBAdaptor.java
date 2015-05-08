@@ -1593,7 +1593,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         long startTime = startQuery();
         Map<String, Object> jobParameters = new HashMap<>();
 
-        String[] acceptedParams = {"name", "userId", "toolName", "date", "description", "outputError", "commandLine", "status", "outdir"};
+        String[] acceptedParams = {"name", "userId", "toolName", "date", "description", "outputError", "commandLine", "status", "outdir", "error", "errorDescription"};
         filterStringParams(parameters, jobParameters, acceptedParams);
 
         String[] acceptedIntParams = {"visits"};
@@ -1657,7 +1657,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             addQueryStringListFilter("status", options, query);
         }
 
-        query.putAll(options);
 //        System.out.println("query = " + query);
         QueryResult<DBObject> queryResult = jobCollection.find(query, null);
         List<Job> jobs = parseJobs(queryResult);
