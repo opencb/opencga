@@ -171,13 +171,14 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             throw new IllegalStateException("Cant createAnnotation without a CellBase source (DBAdaptorFactory or a CellBaseClient)");
         }
 
-        Path path = Paths.get(outDir != null? outDir.toString() : "/tmp" ,fileName + ".annot.json.gz");
+        boolean gzip = options == null || options.getBoolean("gzip", true);
+        Path path = Paths.get(outDir != null? outDir.toString() : "/tmp" ,fileName + ".annot.json" + (gzip? ".gz" : ""));
         URI fileUri = path.toUri();
 
         /** Open output stream **/
         OutputStream outputStream;
         outputStream = new FileOutputStream(path.toFile());
-        if(options != null && options.getBoolean("gzip", true)) {
+        if(gzip) {
             outputStream = new GZIPOutputStream(outputStream);
         }
 
