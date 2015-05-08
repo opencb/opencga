@@ -85,7 +85,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Create a cohort")
     public Response createCohort(
-            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
+            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
             @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
             @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
@@ -98,6 +98,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 return createErrorResponse("Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
+            int studyId = catalogManager.getStudyId(studyIdStr);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                 samplesQuery.add("id", sampleIdsStr);

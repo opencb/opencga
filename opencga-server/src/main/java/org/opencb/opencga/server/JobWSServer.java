@@ -118,13 +118,14 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response createJob(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
             @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") int studyId,
+            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
             @ApiParam(value = "execution", required = false) @DefaultValue("") @QueryParam("execution") String execution,
             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description
     ) {
         QueryResult<Job> jobResult;
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             AnalysisJobExecuter analysisJobExecuter;
             String toolName;
             int toolId = catalogManager.getToolId(toolIdStr);

@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.CatalogException;
 import org.opencb.opencga.catalog.beans.DataStore;
 import org.opencb.opencga.catalog.beans.File;
 import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.db.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
@@ -97,7 +98,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
                                 @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
 //                                @ApiParam(value = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
-                                @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") int studyId,
+                                @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
                                 @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = true) @DefaultValue("") @FormDataParam("description") String description,
                                 @ApiParam(value = "parents", required = true) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
@@ -105,6 +106,12 @@ public class FileWSServer extends OpenCGAWSServer {
         long t = System.currentTimeMillis();
 
         java.nio.file.Path filePath = null;
+        int studyId;
+        try {
+            studyId = catalogManager.getStudyId(studyIdStr);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
         try {
             filePath = Paths.get(catalogManager.getFileUri(studyId, relativeFilePath));
             System.out.println(filePath);
@@ -234,7 +241,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/create-folder")
     @Produces("application/json")
     @ApiOperation(value = "Create folder"/*, response = QueryResult_File.class*/)
-    public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
+    public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder
     ) {
 //        try {
@@ -251,6 +258,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         QueryResult queryResult;
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             queryResult = catalogManager.createFolder(studyId, folderPath, parents, getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -283,12 +291,13 @@ public class FileWSServer extends OpenCGAWSServer {
 //    @Produces("application/json")
     @ApiOperation(value = "File download")
     public Response download(
-            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId) {
+            @PathParam(value = "fileId") @FormDataParam("fileId") String fileIdStr) {
         String content = "";
         DataInputStream stream;
         File file = null;
         try {
-            QueryResult<File> queryResult = catalogManager.getFile(catalogManager.getFileId(Integer.toString(fileId)), this.getQueryOptions(), sessionId);
+            int fileId = catalogManager.getFileId(fileIdStr);
+            QueryResult<File> queryResult = catalogManager.getFile(fileId, this.getQueryOptions(), sessionId);
             file = queryResult.getResult().get(0);
             stream = catalogManager.downloadFile(fileId, sessionId);
 
@@ -307,13 +316,14 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File content")
     public Response content(
-            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId,
+            @PathParam(value = "fileId") @FormDataParam("fileId") String fileIdStr,
             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit
     ) {
         String content = "";
         DataInputStream stream;
         try {
+            int fileId = catalogManager.getFileId(fileIdStr);
             stream = catalogManager.downloadFile(fileId, start, limit, sessionId);
 
 //             content = org.apache.commons.io.IOUtils.toString(stream);
@@ -330,7 +340,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Modify file")
     public Response modify(
-            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId
+            @PathParam(value = "fileId") @FormDataParam("fileId") String fileIdStr
     ) {
         QueryResult queryResult = null;
         ObjectMap parameters = new ObjectMap();
@@ -341,6 +351,7 @@ public class FileWSServer extends OpenCGAWSServer {
             parameters.put(param, value);
         }
         try {
+            int fileId = catalogManager.getFileId(fileIdStr);
             queryResult = catalogManager.modifyFile(fileId, parameters, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -354,7 +365,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "File content")
     public Response downloadGrep(
-            @PathParam(value = "fileId") @FormDataParam("fileId") int fileId,
+            @PathParam(value = "fileId") @FormDataParam("fileId") String fileIdStr,
             @ApiParam(value = "pattern", required = false) @QueryParam("pattern") @DefaultValue(".*") String pattern,
             @ApiParam(value = "ignoreCase", required = false) @QueryParam("ignoreCase") @DefaultValue("false") Boolean ignoreCase,
             @ApiParam(value = "multi", required = false) @QueryParam("multi") @DefaultValue("true") Boolean multi
@@ -362,6 +373,7 @@ public class FileWSServer extends OpenCGAWSServer {
         String content = "";
         DataInputStream stream;
         try {
+            int fileId = catalogManager.getFileId(fileIdStr);
             stream = catalogManager.grepFile(fileId, pattern, ignoreCase, multi, sessionId);
 
 //             content = org.apache.commons.io.IOUtils.toString(stream);
@@ -383,7 +395,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName
     ) {
         /** I think this next two lines should be parametrized either in analysis.properties or the manifest.json of each tool **/
-        String analysisPath = Config.getGcsaHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
+        String analysisPath = Config.getOpenCGAHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
         String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
 
         InputStream stream = null;
@@ -466,10 +478,11 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{folderId}/files")
     @Produces("application/json")
     @ApiOperation(value = "File content")
-    public Response getAllFilesInFolder(@PathParam(value = "folderId") @FormDataParam("folderId") int folderId
+    public Response getAllFilesInFolder(@PathParam(value = "folderId") @FormDataParam("folderId") String folderIdStr
     ) {
         QueryResult<File> results;
         try {
+            int folderId = catalogManager.getFileId(folderIdStr);
             results = catalogManager.getAllFilesInFolder(folderId, getQueryOptions(), sessionId);
         } catch (CatalogException e) {
             e.printStackTrace();
