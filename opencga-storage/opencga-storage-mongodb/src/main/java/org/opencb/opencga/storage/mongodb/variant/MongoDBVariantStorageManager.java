@@ -244,7 +244,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap params) {
-        if (params != null && params.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+        if (params != null && !params.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.buildStudyConfigurationManager(params);
         } else {
             String string = params == null? null : params.getString(DB_NAME);

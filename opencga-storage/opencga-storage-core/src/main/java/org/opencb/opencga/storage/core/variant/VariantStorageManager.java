@@ -97,7 +97,6 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
     protected Properties properties;
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
-    protected StudyConfigurationManager studyConfigurationManager;
 
     public VariantStorageManager() {
         this.properties = new Properties();
@@ -509,11 +508,10 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     /* --------------------------------------- */
 
     final protected StudyConfiguration getStudyConfiguration(ObjectMap params) {
-        StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
-
         if (params.containsKey(STUDY_CONFIGURATION)) {
             return params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
         } else {
+            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
             return studyConfigurationManager.getStudyConfiguration(params.getInt(STUDY_ID), new QueryOptions(params)).first();
         }
     }
@@ -528,6 +526,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
      * @return
      */
     final protected StudyConfigurationManager getStudyConfigurationManager(ObjectMap params) {
+        StudyConfigurationManager studyConfigurationManager = null;
         if (studyConfigurationManager == null) {
             if (params.containsKey(STUDY_CONFIGURATION_MANAGER_CLASS_NAME)) {
                 String studyConfigurationManagerClassName = params.getString(STUDY_CONFIGURATION_MANAGER_CLASS_NAME);

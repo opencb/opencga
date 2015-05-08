@@ -21,20 +21,32 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.run.Task;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -42,6 +54,7 @@ import static org.junit.Assert.*;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Ignore
 public class VariantMongoDBAdaptorTest {
 
     private static String inputFile = VariantMongoDBWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
@@ -50,27 +63,39 @@ public class VariantMongoDBAdaptorTest {
     private static VariantDBAdaptor vqb;
 
     @BeforeClass
-    public static void initialize() throws IOException {
+    public static void initialize() throws Exception {
         // Initialize connection properties
-        Properties properties = new Properties();
-        properties.put("mongo_host", "localhost");
-        properties.put("mongo_port", "27017");
-        properties.put("mongo_db_name", "VariantMongoQueryBuilderTest_db");
-        credentials = new MongoCredentials(properties);
-        
+//        Properties properties = new Properties();
+//        properties.put("mongo_host", "localhost");
+//        properties.put("mongo_port", "27017");
+//        properties.put("mongo_db_name", "VariantMongoQueryBuilderTest_db");
+//        credentials = new MongoCredentials(properties);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager("mongodb");
+
+        ObjectMap params = new ObjectMap();
+        StudyConfiguration studyConfiguration = new StudyConfiguration(2, study.getStudyName());
+        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        params.put(VariantStorageManager.INCLUDE_SAMPLES, true);
+        params.put(VariantStorageManager.FILE_ID, 6);
+        params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "/tmp/study_configuration.json");
+        VariantStorageManagerTest.runETL(variantStorageManager,
+                Paths.get(inputFile).toUri(),
+                Paths.get("tmp").toUri(),
+                params, params, params, params, params, params, params, true, true, true);
         // Initialize dataset to query
 //        VariantVcfReader reader = new VariantVcfReader(inputFile, inputFile, study.getFileName());
-        VariantVcfReader reader = new VariantVcfReader(study, inputFile);
-        VariantMongoDBWriter vdw = null;// = new VariantMongoDBWriter(study, (MongoCredentials) credentials);
-        vdw.includeSamples(true);
-        vdw.includeEffect(true);
-        vdw.includeStats(true);
+//        VariantVcfReader reader = new VariantVcfReader(study, inputFile);
+//        VariantMongoDBWriter vdw = new VariantMongoDBWriter(5, null, (MongoCredentials) credentials, "variants", "files", true, true);
+//        vdw.includeSamples(true);
+//        vdw.setVariantSource(study);
+//        vdw.includeStats(true);
 //        List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
-//        VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
+//        VariantRunner vr = new VariantRunner(study, reader, null, writers, Collections.<Task<Variant>>emptyList());
 //        vr.run();
-        
-        // Initialize query builder
-        vqb = new VariantMongoDBAdaptor(credentials, "variants", "files");
+//
+//        // Initialize query builder
+//        vqb = new VariantMongoDBAdaptor(credentials, "variants", "files");
+        vqb = variantStorageManager.getDBAdaptor(null, null);
     }
 
     @AfterClass

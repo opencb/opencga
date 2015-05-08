@@ -218,12 +218,12 @@ public abstract class VariantStorageManagerTest {
         //        public URI postLoadResult;
     }
 
-    protected static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap params)
+    public static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap params)
             throws IOException, FileFormatException, StorageManagerException {
         return runETL(variantStorageManager, params, true, true, true);
     }
 
-    protected static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap params,
+    public static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap params,
                                     boolean doExtract,
                                     boolean doTransform,
                                     boolean doLoad)
@@ -251,11 +251,12 @@ public abstract class VariantStorageManagerTest {
         loadParams.put(VariantStorageManager.INCLUDE_SAMPLES, true);
         loadParams.put(VariantStorageManager.FILE_ID, 6);
         ObjectMap postLoadParams = new ObjectMap();
+        postLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);
     }
 
-    protected static ETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
+    public static ETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
                                       ObjectMap extractParams,
                                       ObjectMap preTransformParams, ObjectMap transformParams, ObjectMap postTransformParams,
                                       ObjectMap preLoadParams, ObjectMap loadParams, ObjectMap postLoadParams,
