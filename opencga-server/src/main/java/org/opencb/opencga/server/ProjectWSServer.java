@@ -7,6 +7,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.beans.Project;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -14,6 +15,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 @Path("/projects")
 @Api(value = "projects", description = "projects", position = 2)
@@ -33,8 +36,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
             @ApiParam(value = "description", required = true) @QueryParam("description") String description,
             @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
-
-
         QueryResult queryResult;
         try {
 
@@ -54,28 +55,31 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Project information")
     public Response info(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr
     ) {
-        QueryResult queryResult;
-        try {
-            queryResult = catalogManager.getProject(projectId, this.getQueryOptions(), sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        List<QueryResult<Project>> queryResults = new LinkedList<>();
+        for (String projectIdStr : projectIdsStr.split(",")) {
+            try {
+                int projectId = catalogManager.getProjectId(projectIdStr);
+                queryResults.add(catalogManager.getProject(projectId, this.getQueryOptions(), sessionId));
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse(e.getMessage());
+            }
         }
+        return createOkResponse(queryResults);
     }
 
     @GET
     @Path("/{projectId}/studies")
     @Produces("application/json")
-    @ApiOperation(value = "Study information")
-
+    @ApiOperation(value = "Get all studies the from a project")
     public Response getAllStudies(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr
     ) {
         QueryResult queryResult;
         try {
+            int projectId = catalogManager.getProjectId(projectIdStr);
             queryResult = catalogManager.getAllStudies(projectId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -89,7 +93,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Project modify")
     public Response modifyUser(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") int projectId,
+            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
             @ApiParam(value = "name", required = false) @QueryParam("name") String name,
             @ApiParam(value = "description", required = false) @QueryParam("description") String description,
             @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
@@ -104,6 +108,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             objectMap.put("status", status);
             objectMap.put("attributes", attributes);
 
+            int projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {

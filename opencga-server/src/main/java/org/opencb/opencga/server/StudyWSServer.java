@@ -88,7 +88,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Create study with GET method", position = 2)
     public Response createStudy(
-            @ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") int projectId,
+            @ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") String projectIdStr,
             @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
             @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
             @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
@@ -102,7 +102,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
         QueryResult queryResult;
         try {
-
+            int projectId = catalogManager.getProjectId(projectIdStr);
             queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
                     creationDate, description, status, cipher, null, null, null, this.getQueryOptions(), sessionId);
 
@@ -121,25 +121,29 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Study information", position = 3)
 
     public Response info(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr
     ) {
-        QueryResult queryResult;
-        try {
-            queryResult = catalogManager.getStudy(studyId, sessionId, this.getQueryOptions());
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        List<QueryResult<Study>> queryResults = new LinkedList<>();
+        for (String studyIdStr : studyIdsStr.split(",")) {
+            try {
+                int studyId = catalogManager.getStudyId(studyIdStr);
+                queryResults.add(catalogManager.getStudy(studyId, sessionId, this.getQueryOptions()));
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse(e.getMessage());
+            }
         }
+        return createOkResponse(queryResults);
     }
 
     @GET
     @Path("/{studyId}/files")
     @Produces("application/json")
     @ApiOperation(value = "Study files information", position = 5)
-    public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
+    public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         QueryResult queryResult;
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             queryResult = catalogManager.getAllFiles(studyId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -152,9 +156,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/samples")
     @Produces("application/json")
     @ApiOperation(value = "Study samples information", position = 5)
-    public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
+    public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         QueryResult queryResult;
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             queryResult = catalogManager.getAllSamples(studyId, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -183,7 +188,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Study modify", position = 4)
     public Response modifyStudy(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
@@ -192,6 +197,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //            @ApiParam(value = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             ObjectMap objectMap = new ObjectMap();
             if(!name.isEmpty()) {
                 objectMap.put("name", name);
@@ -221,8 +227,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Produces("application/json")
     @ApiOperation(value = "Get all jobs")
     public Response getAllJobs(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
+            @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
         } catch (CatalogException e) {
             return createErrorResponse(e.getMessage());
