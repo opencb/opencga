@@ -425,6 +425,7 @@ public class OptionsParser {
 
         final CreateCommand createCommand;
         final CreateFolderCommand createFolderCommand;
+        final UploadCommand uploadCommand;
         final InfoCommand infoCommand;
         final SearchCommand searchCommand;
         final ListCommand listCommand;
@@ -437,6 +438,7 @@ public class OptionsParser {
             JCommander files = jcommander.getCommands().get("files");
             files.addCommand(this.createCommand = new CreateCommand());
             files.addCommand(this.createFolderCommand = new CreateFolderCommand());
+            files.addCommand(this.uploadCommand = new UploadCommand());
             files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.searchCommand = new SearchCommand());
             files.addCommand(this.listCommand = new ListCommand());
@@ -501,6 +503,32 @@ public class OptionsParser {
 
             @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
             boolean parents;
+        }
+
+        @Parameters(commandNames = {"upload"}, commandDescription = "Attach a physical file to a catalog entry file.")
+        class UploadCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
+            String id;
+
+            @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
+            String inputFile;
+
+            @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed", required = false, arity = 0)
+            boolean replace = false;
+
+            @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
+            boolean move = false;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
+
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
