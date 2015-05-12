@@ -38,7 +38,7 @@ public class FileMetadataReader {
 
     /**
      * Creates a file entry in catalog reading metadata information from the fileUri.
-     * Do not upload or sync file. Created file status will be <b>UPLOADING</b>
+     * Do not upload or sync file. Created file status will be <b>STAGE</b>
      *
      * @param studyId     Study on where the file entry is created
      * @param fileUri     File URI to read metadata information.
@@ -47,7 +47,7 @@ public class FileMetadataReader {
      * @param parents     Create parent folders or not
      * @param options     Other options
      * @param sessionId   User sessionId
-     * @return The created file with status <b>UPLOADING</b>
+     * @return The created file with status <b>STAGE</b>
      * @throws CatalogException
      */
     public QueryResult<File> create(int studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
@@ -58,7 +58,7 @@ public class FileMetadataReader {
 
 
         QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, null, description,
-                File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, options, sessionId);
+                File.Status.STAGE, 0, -1, null, -1, null, null, parents, options, sessionId);
 
         File modifiedFile = null;
 
