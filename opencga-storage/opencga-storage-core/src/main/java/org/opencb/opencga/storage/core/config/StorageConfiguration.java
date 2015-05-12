@@ -64,8 +64,12 @@ public class StorageConfiguration {
 
 
     private String defaultStorageEngine;
-    private String include;
+    private String logLevel;
+
+//    private String include;
+
     private CellBaseConfiguration cellbase;
+
     private List<StorageEngineConfiguration> engines;
 
     public StorageConfiguration() {
@@ -76,7 +80,7 @@ public class StorageConfiguration {
         this.defaultStorageEngine = defaultStorageEngine;
         this.engines = engines;
 
-        this.include = "conf.d";
+//        this.include = "conf.d";
         this.cellbase = new CellBaseConfiguration();
     }
 
@@ -149,17 +153,15 @@ public class StorageConfiguration {
 
     @Override
     public String toString() {
-        return super.toString();
+        return "StorageConfiguration{" +
+                "defaultStorageEngine='" + defaultStorageEngine + '\'' +
+                ", logLevel='" + logLevel + '\'' +
+//                ", include='" + include + '\'' +
+                ", cellbase=" + cellbase +
+                ", engines=" + engines +
+                '}';
     }
 
-    public List<StorageEngineConfiguration> getEngines() {
-        return engines;
-    }
-
-
-    public void setEngines(List<StorageEngineConfiguration> engines) {
-        this.engines = engines;
-    }
 
     public String getDefaultStorageEngine() {
         return defaultStorageEngine;
@@ -169,13 +171,21 @@ public class StorageConfiguration {
         this.defaultStorageEngine = defaultStorageEngine;
     }
 
-    public String getInclude() {
-        return include;
+    public String getLogLevel() {
+        return logLevel;
     }
 
-    public void setInclude(String include) {
-        this.include = include;
+    public void setLogLevel(String logLevel) {
+        this.logLevel = logLevel;
     }
+
+//    public String getInclude() {
+//        return include;
+//    }
+//
+//    public void setInclude(String include) {
+//        this.include = include;
+//    }
 
     public CellBaseConfiguration getCellbase() {
         return cellbase;
@@ -185,4 +195,11 @@ public class StorageConfiguration {
         this.cellbase = cellbase;
     }
 
+    public List<StorageEngineConfiguration> getEngines() {
+        return engines;
+    }
+
+    public void setEngines(List<StorageEngineConfiguration> engines) {
+        this.engines = engines;
+    }
 }
