@@ -109,7 +109,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 params.getString("ownerId", null),
                 params.getString("creationDate", null),
                 params.getString("description", null),
-                File.Status.valueOf(params.getString("type", File.Status.UPLOADING.toString())),
+                File.Status.valueOf(params.getString("type", File.Status.STAGE.toString())),
                 params.getLong("diskUsage", 0),
                 params.getInt("experimentId", -1),
                 params.getAsIntegerList("sampleIds"),
@@ -148,7 +148,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ownerId = ParamUtils.defaultString(ownerId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
-        status = ParamUtils.defaultObject(status, File.Status.UPLOADING);
+        status = ParamUtils.defaultObject(status, File.Status.STAGE);
 
         if (diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
@@ -184,9 +184,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
-        if (status != File.Status.UPLOADING && type == File.Type.FILE) {
+        if (status != File.Status.STAGE && type == File.Type.FILE) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != UPLOADING and INDEXING");
+                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
             }
         }
 
@@ -350,13 +350,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                         case "jobId":
                             break;
 
-                        //Can only be modified when file.status == UPLOADING
+                        //Can only be modified when file.status == STAGE
                         case "creationDate":
                         case "diskUsage":
-//                            if (!file.getStatus().equals(File.Status.UPLOADING)) {
+//                            if (!file.getStatus().equals(File.Status.STAGE)) {
 //                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
 //                                        "status == " + file.getStatus().name() + ". " +
-//                                        "Required status UPLOADING or admin account");
+//                                        "Required status STAGE or admin account");
 //                            }
                             break;
                         //Path and Name must be changed with "raname" and/or "move" methods.
@@ -394,10 +394,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         File file = fileResult.getResult().get(0);
         switch (file.getStatus()) {
-            case UPLOADING:
-            case UPLOADED:
+            case STAGE:
                 throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
-            case DELETING:
+            case TRASHED:
             case DELETED:
                 //Send warning message
                 return new QueryResult<File>("Delete file", 0, 0, 0,
@@ -409,7 +408,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         userDBAdaptor.updateUserLastActivity(ownerId);
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("status", File.Status.DELETING);
+        objectMap.put("status", File.Status.TRASHED);
         objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
 
         switch (file.getType()) {

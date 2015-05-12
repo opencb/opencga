@@ -209,7 +209,7 @@ public class DaemonLoop implements Runnable {
 
             logger.info("----- Pending deletions -----");
             try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.Status.DELETING), sessionId);
+                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.Status.TRASHED), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
                     try {       //TODO: skip if the file is a non-empty folder

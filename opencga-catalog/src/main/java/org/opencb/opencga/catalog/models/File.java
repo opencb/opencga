@@ -50,9 +50,9 @@ public class File {
      */
     private Bioformat bioformat;
 
-    /**
-     * file://, hdfs://
-     */
+//    /**
+//     * file://, hdfs://
+//     */
 //    private String uriScheme;   // quitar
     private String path;
     private String ownerId;
@@ -79,10 +79,10 @@ public class File {
 
     /* Status */
     public enum Status {
-        UPLOADING,
-        UPLOADED,
+        STAGE,
         READY,
-        DELETING,
+        MISSING,
+        TRASHED,
         DELETED
     }
 

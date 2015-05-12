@@ -179,12 +179,18 @@ public class CatalogManager {
 
     public URI getFileUri(int studyId, String relativeFilePath)
             throws CatalogException {
-        return catalogIOManagerFactory.getDefault().getFileUri(getStudyUri(studyId), relativeFilePath);
+        URI studyUri = getStudyUri(studyId);
+        return getFileUri(studyUri, relativeFilePath);
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
-            throws CatalogIOException, IOException {
-        return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
+            throws CatalogException {
+        ParamUtils.checkObj(studyUri, "studyUri");
+        ParamUtils.checkObj(relativeFilePath, "relativeFilePath");
+
+        return relativeFilePath.isEmpty() ?
+                studyUri :
+                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
     public URI getFileUri(File file) throws CatalogException {
@@ -445,7 +451,7 @@ public class CatalogManager {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, File.Status.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -454,7 +460,7 @@ public class CatalogManager {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, File.Status.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Integer.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }

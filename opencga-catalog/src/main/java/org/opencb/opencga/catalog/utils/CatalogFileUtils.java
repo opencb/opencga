@@ -231,6 +231,27 @@ public class CatalogFileUtils {
      *      diskUsage
      *      creationDate
      *      checksum
+     * @param file              File to update
+     * @param calculateChecksum Do calculate checksum
+     * @param sessionId         users sessionId
+     * @throws CatalogException
+     */
+    public void updateFileAttributes(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+        URI fileUri = catalogManager.getFileUri(file);
+        String checksum = null;
+        if (calculateChecksum) {
+            checksum = catalogManager.getCatalogIOManagerFactory().get(fileUri).calculateChecksum(fileUri);
+        }
+        updateFileAttributes(file, checksum, sessionId);
+    }
+
+
+    /**
+     * Update some file attributes.
+     *      Status -> ready
+     *      diskUsage
+     *      creationDate
+     *      checksum
      * @throws CatalogException
      */
     private void updateFileAttributes(File file, String checksum, String sessionId) throws CatalogException {
@@ -287,7 +308,7 @@ public class CatalogFileUtils {
      * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
      */
     private void checkStatus(File file) throws CatalogIOException {
-        if (file.getStatus() != File.Status.UPLOADING) {
+        if (file.getStatus() != File.Status.STAGE) {
             throw new CatalogIOException("File status is already uploaded and ready! " +
                     "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
                     "Needs 'ignoreStatus = true' for continue.");

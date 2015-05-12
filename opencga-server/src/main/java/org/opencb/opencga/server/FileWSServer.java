@@ -202,7 +202,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     "<il><b>type</b> accepted values: [<b>'FOLDER', 'FILE', 'INDEX'</b>].<br></il>" +
                     "<il><b>format</b> accepted values: [<b>'PLAIN', 'GZIP', 'EXECUTABLE', 'IMAGE'</b>].<br></il>" +
                     "<il><b>bioformat</b> accepted values: [<b>'VARIANT', 'ALIGNMENT', 'SEQUENCE', 'NONE'</b>].<br></il>" +
-                    "<il><b>status</b> accepted values (admin required): [<b>'INDEXING', 'UPLOADING', 'UPLOADED', 'READY', 'DELETING', 'DELETED'</b>].<br></il>" +
+                    "<il><b>status</b> accepted values (admin required): [<b>'INDEXING', 'STAGE', 'UPLOADED', 'READY', 'TRASHED', 'DELETED'</b>].<br></il>" +
                     "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
                     "<ul>")
     public Response createFilePOST(
