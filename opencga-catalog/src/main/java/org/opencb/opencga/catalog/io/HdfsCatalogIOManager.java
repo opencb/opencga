@@ -143,7 +143,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public List<URI> listFiles(URI directory) throws CatalogIOException, IOException {
+    public List<URI> listFiles(URI directory) throws CatalogIOException {
         return null;
     }
 

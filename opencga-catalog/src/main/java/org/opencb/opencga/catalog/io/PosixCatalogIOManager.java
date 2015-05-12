@@ -551,7 +551,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         return checksum.split(" ")[0];
     }
 
-    public List<URI> listFiles(URI directory) throws CatalogIOException, IOException {
+    public List<URI> listFiles(URI directory) throws CatalogIOException {
         class ListFiles extends SimpleFileVisitor<Path> {
             private List<String> filePaths = new LinkedList<>();
 
@@ -566,7 +566,11 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             }
         }
         ListFiles fileVisitor = new ListFiles();
-        Files.walkFileTree(Paths.get(directory.getPath()), fileVisitor);
+        try {
+            Files.walkFileTree(Paths.get(directory.getPath()), fileVisitor);
+        } catch (IOException e) {
+            throw new CatalogIOException("Unable to walkFileTree", e);
+        }
         List<URI> fileUris = new LinkedList<>();
 
         for (String filePath : fileVisitor.getFilePaths()) {

@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -105,6 +107,34 @@ public class FileScanner {
     }
 
     /**
+     * Return all untracked files in a study folder
+     * @param study         Study to scan
+     * @return              Untracked files
+     * @throws CatalogException
+     */
+    public List<URI> untrackedFiles(Study study, String sessionId)
+            throws CatalogException {
+        int studyId = study.getId();
+        URI studyUri = catalogManager.getStudyUri(studyId);
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
+        List<URI> uris = ioManager.listFiles(studyUri);
+
+        for (Iterator<URI> iterator = uris.iterator(); iterator.hasNext(); ) {
+            URI uri = iterator.next();
+            String filePath = studyUri.relativize(uri).toString();
+
+            QueryResult<File> searchFile = catalogManager.searchFile(studyId,
+                    new QueryOptions("path", filePath),
+                    new QueryOptions("include", "projects.studies.files.id"), sessionId);
+            if (!searchFile.getResult().isEmpty()) {
+                iterator.remove(); //Remove the ones that have an entry in Catalog
+            }
+        }
+        return uris;
+    }
+
+    /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
      * @param directory             Directory where add found files
@@ -117,6 +147,7 @@ public class FileScanner {
             throws IOException, CatalogException {
         return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, -1, sessionId);
     }
+
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *

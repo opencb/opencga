@@ -493,7 +493,7 @@ public abstract class CatalogIOManager {
 
     public abstract String calculateChecksum(URI file) throws CatalogIOException;
 
-    public abstract List<URI> listFiles(URI directory) throws CatalogIOException, IOException;
+    public abstract List<URI> listFiles(URI directory) throws CatalogIOException;
 
     public abstract long getFileSize(URI file) throws CatalogIOException;
 
