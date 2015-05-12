@@ -30,12 +30,12 @@ import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogFileUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.CatalogSampleAnnotationsLoader;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
@@ -268,7 +268,7 @@ public class OpenCGAMain {
                                 null, c.description, null, null, null, uri, dataStoreMap, null, null, c.cOpt.getQueryOptions(), sessionId);
                         if (uri != null) {
                             File root = catalogManager.searchFile(study.first().getId(), new QueryOptions("path", ""), sessionId).first();
-                            new FileScanner(catalogManager, FileScanner.FileScannerPolicy.REPLACE, true, false).scan(root, uri, sessionId);
+                            new FileScanner(catalogManager).scan(root, uri, FileScanner.FileScannerPolicy.REPLACE, true, false, sessionId);
                         }
                         System.out.println(createOutput(c.cOpt, study, null));
 
@@ -280,8 +280,9 @@ public class OpenCGAMain {
 
                         File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
                         URI studyUri = catalogManager.getStudyUri(studyId);
-                        FileScanner fileScanner = new FileScanner(catalogManager, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false);
-                        List<File> scan = fileScanner.scan(root, studyUri, sessionId);
+                        FileScanner fileScanner = new FileScanner(catalogManager);
+                        List<File> scan = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE,
+                                c.calculateChecksum, false, sessionId);
                         System.out.println(createOutput(c.cOpt, scan, null));
 
                         break;

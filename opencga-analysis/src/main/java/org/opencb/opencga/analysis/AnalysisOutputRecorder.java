@@ -19,11 +19,11 @@ package org.opencb.opencga.analysis;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.files.FileScanner;
-import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Index;
-import org.opencb.opencga.catalog.beans.Job;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Index;
+import org.opencb.opencga.catalog.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +64,8 @@ public class AnalysisOutputRecorder {
             logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
 
-            FileScanner fileScanner = new FileScanner(catalogManager, delete, calculateChecksum, true);
-            List<File> files = fileScanner.scan(outDir, tmpOutDirUri, sessionId);
+            FileScanner fileScanner = new FileScanner(catalogManager);
+            List<File> files = fileScanner.scan(outDir, tmpOutDirUri, delete, calculateChecksum, true, sessionId);
             fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         } catch (CatalogException | IOException e) {
             e.printStackTrace();

@@ -2,9 +2,10 @@ package org.opencb.opencga.catalog.authorization;
 
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.ParamsUtils;
-import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
 
 import java.util.Arrays;
@@ -60,8 +61,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult setProjectACL(int projectId, Acl acl, String sessionId) throws CatalogException {
-        ParamsUtils.checkObj(acl, "acl");
-        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkObj(acl, "acl");
+        ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl projectAcl = getProjectACL(userId, projectId);
@@ -80,8 +81,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult setStudyACL(int studyId, Acl acl, String sessionId) throws CatalogException {
-        ParamsUtils.checkObj(acl, "acl");
-        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkObj(acl, "acl");
+        ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl studyACL = getStudyACL(userId, studyId);
@@ -103,8 +104,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult setFileACL(int fileId, Acl acl, String sessionId) throws CatalogException {
-        ParamsUtils.checkObj(acl, "acl");
-        ParamsUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkObj(acl, "acl");
+        ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Acl fileAcl = getFileACL(userId, fileId);
@@ -139,7 +140,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      *
      * @param userId   UserId
      * @param projects Projects list
-     * @throws org.opencb.opencga.catalog.CatalogException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
     @Override
     public void filterProjects(String userId, List<Project> projects) throws CatalogException {
@@ -163,7 +164,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @param userId     UserId
      * @param projectAcl Project ACL
      * @param studies    Studies list
-     * @throws org.opencb.opencga.catalog.CatalogException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
     @Override
     public void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogException {
@@ -186,7 +187,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @param userId   UserId
      * @param studyAcl Study ACL
      * @param files    Files list
-     * @throws org.opencb.opencga.catalog.CatalogException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
     @Override
     public void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogException {

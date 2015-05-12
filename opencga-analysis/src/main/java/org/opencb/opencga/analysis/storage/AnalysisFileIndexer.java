@@ -22,10 +22,9 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
-import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -266,8 +265,8 @@ public class AnalysisFileIndexer {
      * @param dataStore
      * @return                  CommandLine
      *
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
-     * @throws CatalogIOManagerException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
      */
 
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,

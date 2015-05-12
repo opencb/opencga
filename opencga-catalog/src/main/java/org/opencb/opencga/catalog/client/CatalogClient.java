@@ -18,8 +18,8 @@ package org.opencb.opencga.catalog.client;
 
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.*;
 
 import java.util.List;
 import java.util.Map;

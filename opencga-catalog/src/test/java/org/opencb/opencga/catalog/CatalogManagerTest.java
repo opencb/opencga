@@ -29,10 +29,12 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -207,7 +209,7 @@ public class CatalogManagerTest extends GenericTest {
 
 
     @Test
-    public void testCreateAnonymousProject() throws IOException, CatalogIOManagerException, CatalogException {
+    public void testCreateAnonymousProject() throws IOException, CatalogIOException, CatalogException {
         String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").first().getString("sessionId");
 //        catalogManager.createProject()
           //TODO: Finish test

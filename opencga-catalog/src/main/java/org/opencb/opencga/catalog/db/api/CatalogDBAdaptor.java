@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.Logger;
 
 import java.util.Collections;

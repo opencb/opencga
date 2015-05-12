@@ -26,10 +26,10 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.beans.Tool;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import javax.servlet.http.HttpServletRequest;

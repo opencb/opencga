@@ -1,8 +1,7 @@
 package org.opencb.opencga.analysis.files;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.models.File;
 
 import java.io.*;
 import java.net.URI;

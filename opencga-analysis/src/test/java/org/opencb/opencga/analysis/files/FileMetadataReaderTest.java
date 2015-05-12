@@ -4,13 +4,13 @@ import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogFileUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Project;
-import org.opencb.opencga.catalog.beans.Study;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerException;
 
 import java.io.IOException;

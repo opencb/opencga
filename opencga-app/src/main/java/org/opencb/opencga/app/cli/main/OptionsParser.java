@@ -19,8 +19,8 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Study;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Study;
 
 import java.util.*;
 
@@ -504,10 +504,10 @@ public class OptionsParser {
             String description;
 
 
-            @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.beans.File.Format", required = false, arity = 1)
+            @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.models.File.Format", required = false, arity = 1)
             File.Format format = File.Format.PLAIN;
 
-            @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.beans.File.Bioformat for more info", required = false, arity = 1)
+            @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.models.File.Bioformat for more info", required = false, arity = 1)
             File.Bioformat bioformat = File.Bioformat.NONE;
 
             @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)

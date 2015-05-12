@@ -6,12 +6,12 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.ParamsUtils;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Sample;
-import org.opencb.opencga.catalog.beans.Study;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -94,7 +94,7 @@ public class FileMetadataReader {
         if (fileUri == null) {
             fileUri = catalogManager.getFileUri(file);
         }
-        options = ParamsUtils.defaultObject(options, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         ObjectMap modifyParams = new ObjectMap();
 
         //Get metadata information
@@ -158,7 +158,7 @@ public class FileMetadataReader {
     public List<Sample> getFileSamples(Study study, File file, URI fileUri, final ObjectMap fileModifyParams,
                                        boolean createMissingSamples, boolean simulate, QueryOptions options, String sessionId)
             throws CatalogException, StorageManagerException {
-        options = ParamsUtils.defaultObject(options, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         List<Sample> sampleList;
 

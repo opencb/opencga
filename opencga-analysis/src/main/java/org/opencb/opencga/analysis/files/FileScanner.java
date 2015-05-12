@@ -2,11 +2,11 @@ package org.opencb.opencga.analysis.files;
 
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogFileUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,9 +24,6 @@ public class FileScanner {
     private static Logger logger = LoggerFactory.getLogger(FileScanner.class);
 
     protected final CatalogManager catalogManager;
-    protected final FileScannerPolicy policy;
-    protected final boolean calculateChecksum;
-    protected final boolean deleteSource;
 
     private CatalogFileUtils catalogFileUtils;
 
@@ -37,13 +34,22 @@ public class FileScanner {
 //        RENAME,
     }
 
-    public FileScanner(CatalogManager catalogManager, FileScannerPolicy policy, boolean calculateChecksum, boolean deleteSource) {
+    public FileScanner(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        this.policy = policy;
-        this.calculateChecksum = calculateChecksum;
-        this.deleteSource = deleteSource;
         catalogFileUtils = new CatalogFileUtils(catalogManager);
     }
+
+//    public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
+//            throws CatalogException, IOException {
+//        int studyId = study.getId();
+//        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
+//        URI studyUri = catalogManager.getStudyUri(studyId);
+//        FileScanner fileScanner = new FileScanner(catalogManager);
+////        List<File> scan = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum,
+////                false, sessionId);
+//
+//        return null;
+//    }
 
     /**
      * Scans the files inside the specified URI and adds to the provided directory
@@ -52,7 +58,9 @@ public class FileScanner {
      * @param directoryToScan
      * @return
      */
-    public List<File> scan(File directory, URI directoryToScan, String sessionId) throws IOException, CatalogException {
+    public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
+                           boolean calculateChecksum, boolean deleteSource, String sessionId)
+            throws IOException, CatalogException {
         if (!directoryToScan.getPath().endsWith("/")) {
             throw new IOException("");
         }
@@ -75,7 +83,7 @@ public class FileScanner {
 
             File file = null;
             if (searchFile.getNumResults() != 0) {
-                File existingFile = searchFile.getResult().get(0);
+                File existingFile = searchFile.first();
                 switch (policy) {
                     case DELETE:
                         catalogManager.deleteFile(existingFile.getId(), sessionId);

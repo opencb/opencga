@@ -23,9 +23,8 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.Tool;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Tool;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

@@ -26,12 +26,11 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.DataStore;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -115,7 +114,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             filePath = Paths.get(catalogManager.getFileUri(studyId, relativeFilePath));
             System.out.println(filePath);
-        } catch (CatalogIOManagerException e) {
+        } catch (CatalogIOException e) {
             System.out.println("catalogManager.getFilePath");
             e.printStackTrace();
         } catch (CatalogException e) {

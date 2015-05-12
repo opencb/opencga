@@ -1,6 +1,6 @@
 package org.opencb.opencga.catalog.authentication;
 
-import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 
 /**

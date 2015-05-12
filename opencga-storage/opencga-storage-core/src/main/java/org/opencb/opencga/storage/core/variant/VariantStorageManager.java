@@ -505,7 +505,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     /* --------------------------------------- */
-    /*  StudyConfiguration util methods        */
+    /*  StudyConfiguration utils methods        */
     /* --------------------------------------- */
 
     final protected StudyConfiguration getStudyConfiguration(ObjectMap params) {

@@ -20,9 +20,9 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.Variable;
-import org.opencb.opencga.catalog.beans.VariableSet;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.VariableSet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -31,7 +31,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 
 /**

@@ -21,21 +21,24 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.catalog.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.*;
+import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
-import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +69,6 @@ public class CatalogManager {
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
     private CatalogDBAdaptor catalogDBAdaptor;
-    private CatalogIOManager ioManager;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
@@ -83,7 +85,7 @@ public class CatalogManager {
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOManagerException {
+    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOException {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
@@ -92,7 +94,7 @@ public class CatalogManager {
     }
 
     public CatalogManager(Properties catalogProperties)
-            throws CatalogIOManagerException, CatalogDBException {
+            throws CatalogIOException, CatalogDBException {
         this.properties = catalogProperties;
         logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
@@ -109,12 +111,12 @@ public class CatalogManager {
 
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor.getCatalogUserDBAdaptor());
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptor);
-        userManager = new UserManager(ioManager, catalogDBAdaptor.getCatalogUserDBAdaptor(), authenticationManager, authorizationManager, properties);
-        fileManager = new FileManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
-        studyManager = new StudyManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
-        projectManager = new ProjectManager(authorizationManager, catalogDBAdaptor, ioManager);
-        jobManager = new JobManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
-        sampleManager = new SampleManager(authorizationManager, catalogDBAdaptor, catalogIOManagerFactory);
+        userManager = new UserManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        fileManager = new FileManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        studyManager = new StudyManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {
@@ -131,14 +133,8 @@ public class CatalogManager {
     }
 
     private void configureIOManager(Properties properties)
-            throws CatalogIOManagerException {
+            throws CatalogIOException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-//        ioManager = this.catalogIOManagerFactory.get(properties.getProperty("CATALOG.MODE", DEFAULT_CATALOG_SCHEME));
-        String scheme = URI.create(properties.getProperty(CATALOG_MAIN_ROOTDIR)).getScheme();
-        if (scheme == null) {
-            scheme = "file";
-        }
-        ioManager = this.catalogIOManagerFactory.get(scheme);
     }
 
     private void configureDBAdaptor(Properties properties)
@@ -168,12 +164,12 @@ public class CatalogManager {
      * ***************************
      */
 
-    public URI getUserUri(String userId) throws CatalogIOManagerException {
-        return ioManager.getUserUri(userId);
+    public URI getUserUri(String userId) throws CatalogIOException {
+        return catalogIOManagerFactory.getDefault().getUserUri(userId);
     }
 
-    public URI getProjectUri(String userId, String projectId) throws CatalogIOManagerException {
-        return ioManager.getProjectUri(userId, projectId);
+    public URI getProjectUri(String userId, String projectId) throws CatalogIOException {
+        return catalogIOManagerFactory.getDefault().getProjectUri(userId, projectId);
     }
 
     public URI getStudyUri(int studyId)
@@ -183,11 +179,11 @@ public class CatalogManager {
 
     public URI getFileUri(int studyId, String relativeFilePath)
             throws CatalogException {
-        return ioManager.getFileUri(getStudyUri(studyId), relativeFilePath);
+        return catalogIOManagerFactory.getDefault().getFileUri(getStudyUri(studyId), relativeFilePath);
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
-            throws CatalogIOManagerException, IOException {
+            throws CatalogIOException, IOException {
         return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
@@ -329,7 +325,7 @@ public class CatalogManager {
      * @param parameters Parameters to change.
      * @param sessionId  sessionId to check permissions
      * @return
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
      */
     public QueryResult modifyProject(int projectId, ObjectMap parameters, String sessionId)
             throws CatalogException {
@@ -355,7 +351,7 @@ public class CatalogManager {
      * @param projectId     Parent project id
      * @param name          Study Name
      * @param alias         Study Alias. Must be unique in the project's studies
-     * @param type          Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.beans.Study.Type)
+     * @param type          Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.models.Study.Type)
      * @param creatorId     Creator user id. If null, user by sessionId
      * @param creationDate  Creation date. If null, now
      * @param description   Study description. If null, empty string
@@ -420,7 +416,7 @@ public class CatalogManager {
      * @param parameters Parameters to change.
      * @param sessionId  sessionId to check permissions
      * @return
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
      */
     public QueryResult modifyStudy(int studyId, ObjectMap parameters, String sessionId)
             throws CatalogException {
@@ -483,7 +479,7 @@ public class CatalogManager {
 
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamsUtils.checkPath(folderPath, "folderPath");
+        ParamUtils.checkPath(folderPath, "folderPath");
         return fileManager.createFolder(studyId, folderPath.toString() + "/", parents, options, sessionId);
     }
 
@@ -502,7 +498,7 @@ public class CatalogManager {
     }
 
     public QueryResult renameFile(int fileId, String newName, String sessionId)
-            throws CatalogException, IOException, CatalogIOManagerException {
+            throws CatalogException, IOException, CatalogIOException {
         return fileManager.rename(fileId, newName, sessionId);
     }
 
@@ -523,7 +519,7 @@ public class CatalogManager {
      * @param parameters Parameters to change.
      * @param sessionId  sessionId to check permissions
      * @return
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
      */
     public QueryResult modifyFile(int fileId, ObjectMap parameters, String sessionId)
             throws CatalogException {
@@ -550,8 +546,8 @@ public class CatalogManager {
     }
 
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamsUtils.checkParameter(sessionId, "sessionId");
-        ParamsUtils.checkId(folderId, "folderId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkId(folderId, "folderId");
         int studyId = getStudyIdByFileId(folderId);
         File folder = getFile(folderId, sessionId).first();
         if (!folder.getType().equals(File.Type.FOLDER)) {
@@ -639,7 +635,7 @@ public class CatalogManager {
     }
 
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
-            throws CatalogException, CatalogIOManagerException {
+            throws CatalogException, CatalogIOException {
         return jobManager.createJobOutDir(studyId, dirName, sessionId);
     }
 
@@ -723,7 +719,7 @@ public class CatalogManager {
         return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
     }
 
-    /* package */ QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                             Map<String, Object> annotations,
                                                             Map<String, Object> attributes,
                                                             boolean checkAnnotationSet,
