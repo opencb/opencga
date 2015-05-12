@@ -38,9 +38,28 @@ public class StorageConfigurationTest {
         options.put("key", "value");
 
         StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
-                "mongodb", new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options));
+                "mongodb",
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options)),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options)),
+                new HashMap<>());
+
         StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
-                "hbase", new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()));
+                "hbase",
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hbase.alignment.MongoDBAlignmentStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap())),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hbase.alignment.MongoDBVariantStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap())),
+                new HashMap<>());
+
+//        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
+//                "hbase",
+//                "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager",
+//                "org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager",
+//                new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()),
+//                new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()),
+//                null,
+//                new HashMap<>());
+
+//        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
+//                "hbase", new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()));
 
         storageConfiguration.setDefaultStorageEngine("mongodb");
         storageConfiguration.getEngines().add(storageEngineConfiguration1);

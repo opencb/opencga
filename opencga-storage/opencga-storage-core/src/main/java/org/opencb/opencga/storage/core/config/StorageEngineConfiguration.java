@@ -16,30 +16,46 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import java.util.Map;
+
 /**
  * Created by imedina on 01/05/15.
  */
 public class StorageEngineConfiguration {
 
     private String id;
-    private DatabaseCredentials database;
+//    private String conf;
+
+    /**
+     * options parameter defines database-specific parameters
+     */
+    private Map<String, String> options;
+
+    private StorageEtlConfiguration alignment;
+    private StorageEtlConfiguration variant;
 
     public StorageEngineConfiguration() {
 
     }
 
-    public StorageEngineConfiguration(String id, DatabaseCredentials database) {
+    public StorageEngineConfiguration(String id, StorageEtlConfiguration alignment, StorageEtlConfiguration variant,
+                                      Map<String, String> options) {
         this.id = id;
-        this.database = database;
+        this.alignment = alignment;
+        this.variant = variant;
+//        this.conf = conf;
+        this.options = options;
     }
 
-
-    public DatabaseCredentials getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(DatabaseCredentials database) {
-        this.database = database;
+    @Override
+    public String toString() {
+        return "StorageEngineConfiguration{" +
+                "id='" + id + '\'' +
+//                ", conf='" + conf + '\'' +
+                ", options=" + options +
+                ", alignment=" + alignment +
+                ", variant=" + variant +
+                '}';
     }
 
     public String getId() {
@@ -48,5 +64,37 @@ public class StorageEngineConfiguration {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+//    public String getConf() {
+//        return conf;
+//    }
+//
+//    public void setConf(String conf) {
+//        this.conf = conf;
+//    }
+
+    public Map<String, String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, String> options) {
+        this.options = options;
+    }
+
+    public StorageEtlConfiguration getAlignment() {
+        return alignment;
+    }
+
+    public void setAlignment(StorageEtlConfiguration alignment) {
+        this.alignment = alignment;
+    }
+
+    public StorageEtlConfiguration getVariant() {
+        return variant;
+    }
+
+    public void setVariant(StorageEtlConfiguration variant) {
+        this.variant = variant;
     }
 }

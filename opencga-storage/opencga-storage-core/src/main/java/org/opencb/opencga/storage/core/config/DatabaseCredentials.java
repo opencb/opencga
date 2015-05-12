@@ -35,7 +35,7 @@ public class DatabaseCredentials {
     /**
      * options parameter defines database-specific parameters
      */
-    private Map<String, String> options;
+//    private Map<String, String> options;
 
 
     public DatabaseCredentials() {
@@ -46,8 +46,9 @@ public class DatabaseCredentials {
         this.hosts = hosts;
         this.user = user;
         this.password = password;
-        this.options = options;
+//        this.options = options;
     }
+
 
     @Override
     public String toString() {
@@ -55,9 +56,10 @@ public class DatabaseCredentials {
                 "hosts=" + hosts +
                 ", user='" + user + '\'' +
                 ", password='" + password + '\'' +
-                ", options=" + options +
+//                ", options=" + options +
                 '}';
     }
+
 
     public List<String> getHosts() {
         return hosts;
@@ -83,11 +85,12 @@ public class DatabaseCredentials {
         this.password = password;
     }
 
-    public Map<String, String> getOptions() {
-        return options;
-    }
+//    public Map<String, String> getOptions() {
+//        return options;
+//    }
+//
+//    public void setOptions(Map<String, String> options) {
+//        this.options = options;
+//    }
 
-    public void setOptions(Map<String, String> options) {
-        this.options = options;
-    }
 }
