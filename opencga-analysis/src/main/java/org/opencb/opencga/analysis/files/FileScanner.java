@@ -107,13 +107,27 @@ public class FileScanner {
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
-     * @param directory
-     * @param directoryToScan
+     * @param directory             Directory where add found files
+     * @param directoryToScan       Directory to scan
      * @throws CatalogException
      * @return found and new files.
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, String sessionId)
+            throws IOException, CatalogException {
+        return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, -1, sessionId);
+    }
+    /**
+     * Scans the files inside the specified URI and adds to the provided directory.
+     *
+     * @param directory             Directory where add found files
+     * @param directoryToScan       Directory to scan
+     * @param jobId                 If any, the job that has generated this files
+     * @throws CatalogException
+     * @return found and new files.
+     */
+    public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
+                           boolean calculateChecksum, boolean deleteSource, int jobId, String sessionId)
             throws IOException, CatalogException {
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
@@ -151,7 +165,7 @@ public class FileScanner {
             }
 
             if (file == null) {
-                file = catalogManager.createFile(studyId, getFormat(uri), getBioformat(uri), filePath, "", true, -1, sessionId).first();
+                file = catalogManager.createFile(studyId, getFormat(uri), getBioformat(uri), filePath, "", true, jobId, sessionId).first();
                 /** Moves the file to the read output **/
                 catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
                 returnFile = true;      //Return file because is new
