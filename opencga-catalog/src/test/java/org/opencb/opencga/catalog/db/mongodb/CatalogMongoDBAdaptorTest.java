@@ -22,7 +22,6 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.junit.runners.MethodSorters;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -32,11 +31,10 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,7 +59,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
      * This method is executed one single time beforeClass all the tests. It connects to the MongoDB server.
      *
      * @throws IOException
-     * @throws org.opencb.opencga.catalog.db.CatalogDBException
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
      */
     @Before
     public void before() throws IOException, CatalogDBException {

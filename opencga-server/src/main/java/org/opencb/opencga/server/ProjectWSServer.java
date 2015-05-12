@@ -22,8 +22,8 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.Project;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Project;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

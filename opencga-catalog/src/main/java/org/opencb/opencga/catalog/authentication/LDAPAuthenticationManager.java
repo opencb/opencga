@@ -1,6 +1,6 @@
 package org.opencb.opencga.catalog.authentication;
 
-import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;

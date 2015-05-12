@@ -31,8 +31,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
@@ -130,7 +130,7 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(properties);
-        } catch (CatalogIOManagerException | CatalogDBException e) {
+        } catch (CatalogIOException | CatalogDBException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }

@@ -22,10 +22,9 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.Tool;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Tool;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -61,9 +60,9 @@ public class ToolWSServer extends OpenCGAWSServer{
             for (String id : splitedToolId) {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
-                AnalysisJobExecuter analysisJobExecuter = new AnalysisJobExecuter(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                tool.setManifest(analysisJobExecuter.getAnalysis());
-                tool.setResult(analysisJobExecuter.getResult());
+                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                tool.setManifest(analysisJobExecutor.getAnalysis());
+                tool.setResult(analysisJobExecutor.getResult());
                 results.add(toolResult);
             }
             return createOkResponse(results);
@@ -87,8 +86,8 @@ public class ToolWSServer extends OpenCGAWSServer{
             List<String> results = new LinkedList<>();
             for (String id : splitedToolId) {
                 Tool tool = catalogManager.getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
-                AnalysisJobExecuter analysisJobExecuter = new AnalysisJobExecuter(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                String help = analysisJobExecuter.help("");
+                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                String help = analysisJobExecutor.help("");
                 System.out.println(help);
                 results.add(help);
             }

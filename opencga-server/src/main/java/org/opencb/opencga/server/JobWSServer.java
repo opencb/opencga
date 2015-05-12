@@ -23,13 +23,13 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.beans.Tool;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -126,22 +126,22 @@ public class JobWSServer extends OpenCGAWSServer {
         QueryResult<Job> jobResult;
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            AnalysisJobExecuter analysisJobExecuter;
+            AnalysisJobExecutor analysisJobExecutor;
             String toolName;
             int toolId = catalogManager.getToolId(toolIdStr);
             if (toolId < 0) {
-                analysisJobExecuter = new AnalysisJobExecuter(toolIdStr, execution);    //LEGACY MODE, AVOID USING
+                analysisJobExecutor = new AnalysisJobExecutor(toolIdStr, execution);    //LEGACY MODE, AVOID USING
                 toolName = toolIdStr;
             } else {
                 Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
-                analysisJobExecuter = new AnalysisJobExecuter(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 toolName = tool.getName();
             }
 
             List<Integer> inputFiles = new LinkedList<>();
             Map<String, List<String>> localParams = new HashMap<>(params);
 
-            Execution ex = analysisJobExecuter.getExecution();
+            Execution ex = analysisJobExecutor.getExecution();
             // Set input param
             for (InputParam inputParam : ex.getInputParams()) {
                 if (params.containsKey(inputParam.getName())) {
@@ -151,7 +151,7 @@ public class JobWSServer extends OpenCGAWSServer {
                         for (String fileId : files.split(",")) {
                             if (fileId.startsWith("example_")) { // is a example
                                 fileId = fileId.replace("example_", "");
-                                filePaths.add(analysisJobExecuter.getExamplePath(fileId));
+                                filePaths.add(analysisJobExecutor.getExamplePath(fileId));
                             } else {
                                 File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
                                 filePaths.add(catalogManager.getFileUri(file).getPath());
@@ -172,7 +172,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
             // Set outdir
-            String outputParam = analysisJobExecuter.getExecution().getOutputParam();
+            String outputParam = analysisJobExecutor.getExecution().getOutputParam();
             if (params.get(outputParam).isEmpty()) {
                 return createErrorResponse("Missing output param '" + outputParam + "'");
             }
@@ -236,12 +236,12 @@ public class JobWSServer extends OpenCGAWSServer {
 //                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
 //            Job job = jobResult.getResult().get(0);
 
-            QueryResult<Job> jobQueryResult = analysisJobExecuter.createJob(
+            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(
                     localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
 
             // Execute job
 //            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
-//            AnalysisJobExecuter.execute(jobQueryResult.getResult().get(0));
+//            AnalysisJobExecutor.execute(jobQueryResult.getResult().get(0));
             //Job will be executed by the Daemon. status: PREPARED
 
             return createOkResponse(jobQueryResult);

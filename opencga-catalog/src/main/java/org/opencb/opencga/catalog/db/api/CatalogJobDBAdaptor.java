@@ -3,9 +3,9 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.beans.Job;
-import org.opencb.opencga.catalog.beans.Tool;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -17,25 +17,25 @@ public interface CatalogJobDBAdaptor {
      * ***************************
      */
 
-    public abstract boolean jobExists(int jobId);
+    boolean jobExists(int jobId);
 
-    public abstract QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Job> deleteJob(int jobId) throws CatalogDBException;
+    QueryResult<Job> deleteJob(int jobId) throws CatalogDBException;
 
-    public abstract QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException;
 
-    public abstract QueryResult<Job> getAllJobs(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> getAllJobs(int studyId, QueryOptions options) throws CatalogDBException;
 
-    public abstract String getJobStatus(int jobId, String sessionId) throws CatalogDBException;
+    String getJobStatus(int jobId, String sessionId) throws CatalogDBException;
 
-    public abstract QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
+    QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
 
-    public abstract QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
-    public abstract int getStudyIdByJobId(int jobId) throws CatalogDBException;
+    int getStudyIdByJobId(int jobId) throws CatalogDBException;
 
-    public abstract QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException;
 
 
     /**
@@ -43,11 +43,11 @@ public interface CatalogJobDBAdaptor {
      * ***************************
      */
 
-    public abstract QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException;
+    QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException;
 
-    public abstract QueryResult<Tool> getTool(int id) throws CatalogDBException;
+    QueryResult<Tool> getTool(int id) throws CatalogDBException;
 
-    public abstract int getToolId(String userId, String toolAlias) throws CatalogDBException;
+    int getToolId(String userId, String toolAlias) throws CatalogDBException;
 
 
 //    public abstract QueryResult<Tool> searchTool(QueryOptions options);
@@ -57,6 +57,6 @@ public interface CatalogJobDBAdaptor {
      * ***************************
      */
 
-    public abstract boolean experimentExists(int experimentId);
+    boolean experimentExists(int experimentId);
 
 }

@@ -25,15 +25,17 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.CatalogFileUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.CatalogSampleAnnotationsLoader;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.beans.File;
+import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
@@ -264,7 +266,24 @@ public class OpenCGAMain {
                         int projectId = catalogManager.getProjectId(c.projectId);
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
                                 null, c.description, null, null, null, uri, dataStoreMap, null, null, c.cOpt.getQueryOptions(), sessionId);
+                        if (uri != null) {
+                            File root = catalogManager.searchFile(study.first().getId(), new QueryOptions("path", ""), sessionId).first();
+                            new FileScanner(catalogManager).scan(root, uri, FileScanner.FileScannerPolicy.REPLACE, true, false, sessionId);
+                        }
                         System.out.println(createOutput(c.cOpt, study, null));
+
+                        break;
+                    }
+                    case "refresh": {
+                        OptionsParser.StudyCommands.RefreshCommand c = optionsParser.getStudyCommands().refreshCommand;
+                        int studyId = catalogManager.getStudyId(c.id);
+
+                        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
+                        URI studyUri = catalogManager.getStudyUri(studyId);
+                        FileScanner fileScanner = new FileScanner(catalogManager);
+                        List<File> scan = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE,
+                                c.calculateChecksum, false, sessionId);
+                        System.out.println(createOutput(c.cOpt, scan, null));
 
                         break;
                     }
@@ -307,6 +326,7 @@ public class OpenCGAMain {
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
                                 c.parents, -1, sessionId);
                         new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false, c.move, c.calculateChecksum);
+                        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, c.cOpt.getQueryOptions(), sessionId, false);
                         System.out.println(createOutput(c.cOpt, file, null));
 
                         break;
@@ -370,12 +390,12 @@ public class OpenCGAMain {
                         String sid = sessionId;
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
                             if (c.up.sessionId == null || c.up.sessionId.isEmpty()) {
                                 sid = login(c.up);
                             }
                         } else {
-                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
@@ -394,11 +414,11 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
@@ -413,11 +433,11 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecuter.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecuter.RECORD_OUTPUT, false);
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecuter.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecuter.RECORD_OUTPUT, true);
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));

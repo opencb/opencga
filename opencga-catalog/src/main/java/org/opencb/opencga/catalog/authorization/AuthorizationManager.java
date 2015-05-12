@@ -4,9 +4,8 @@ package org.opencb.opencga.catalog.authorization;
 //import java.security.acl.Acl;
 
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.*;
 
 import java.util.List;
 

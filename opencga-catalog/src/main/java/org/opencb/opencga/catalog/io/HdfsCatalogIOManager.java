@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.catalog.io;
 
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+
 import java.io.DataInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 
@@ -51,31 +51,31 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
 
-    public HdfsCatalogIOManager(String propertiesFile) throws CatalogIOManagerException {
+    public HdfsCatalogIOManager(String propertiesFile) throws CatalogIOException {
         super(propertiesFile);
     }
 
-    public HdfsCatalogIOManager(Properties properties) throws CatalogIOManagerException {
+    public HdfsCatalogIOManager(Properties properties) throws CatalogIOException {
         super(properties);
     }
 
     @Override
-    protected void setProperties(Properties properties) throws CatalogIOManagerException {
+    protected void setProperties(Properties properties) throws CatalogIOException {
 
     }
 
     @Override
-    protected void checkUriExists(URI param) throws CatalogIOManagerException {
+    protected void checkUriExists(URI param) throws CatalogIOException {
 
     }
 
     @Override
-    protected void checkUriScheme(URI param) throws CatalogIOManagerException {
+    protected void checkUriScheme(URI param) throws CatalogIOException {
 
     }
 
     @Override
-    protected void checkDirectoryUri(URI param, boolean writable) throws CatalogIOManagerException {
+    protected void checkDirectoryUri(URI param, boolean writable) throws CatalogIOException {
 
     }
 
@@ -85,7 +85,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public URI createDirectory(URI uri, boolean parents) throws CatalogIOManagerException {
+    public URI createDirectory(URI uri, boolean parents) throws CatalogIOException {
         return null;
     }
 
@@ -100,7 +100,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void rename(URI oldName, URI newName) throws CatalogIOManagerException {
+    public void rename(URI oldName, URI newName) throws CatalogIOException {
 
     }
 
@@ -113,7 +113,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     public void copyFile(URI source, URI destination) { }
 
     @Override
-    public void moveFile(URI source, URI target) throws IOException, CatalogIOManagerException {
+    public void moveFile(URI source, URI target) throws IOException, CatalogIOException {
 
     }
 
@@ -123,17 +123,17 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void createFile(URI fileUri, InputStream inputStream) throws CatalogIOManagerException {
+    public void createFile(URI fileUri, InputStream inputStream) throws CatalogIOException {
 
     }
 
     @Override
-    public DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOManagerException {
+    public DataInputStream getFileObject(URI fileUri, int start, int limit) throws CatalogIOException {
         return null;
     }
 
     @Override
-    public DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException {
+    public DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOException {
         return null;
     }
 
@@ -143,12 +143,12 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public List<URI> listFiles(URI directory) throws CatalogIOManagerException, IOException {
+    public List<URI> listFiles(URI directory) throws CatalogIOException, IOException {
         return null;
     }
 
     @Override
-    public long getFileSize(URI file) throws CatalogIOManagerException {
+    public long getFileSize(URI file) throws CatalogIOException {
         return 0;
     }
 

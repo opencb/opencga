@@ -239,7 +239,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     /* --------------------------------------- */
-    /*  StudyConfiguration util methods        */
+    /*  StudyConfiguration utils methods        */
     /* --------------------------------------- */
 
     @Override

@@ -25,8 +25,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.beans.*;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 import java.io.IOException;
 import java.util.ArrayList;

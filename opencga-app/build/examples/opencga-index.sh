@@ -115,13 +115,13 @@ if [ $pedigree_file == false ]; then
 	echo "Do not load ped file"
 else
 	PEDIGREE_FILE_NAME=$(echo $pedigree_file | rev | cut -d / -f1 | rev )
-	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $pedigree_file --bioformat PEDIGREE  --path data/peds/ --checksum --output-format IDS  --log-level ${log_level}
-	$OPENCGA_BIN samples load --study-id $user@${project_alias}:${study_alias} -u $user -p $password --pedigree-id $(getFileId ${PEDIGREE_FILE_NAME}"$" ) --log-level ${log_level}
+	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $pedigree_file --path data/peds/ --checksum --output-format IDS  --log-level ${log_level}
+	$OPENCGA_BIN samples load --study-id $user@${project_alias}:${study_alias} -u $user -p $password --pedigree-id $(getFileId ${PEDIGREE_FILE_NAME}"$" ) --output-format ID_CSV --log-level ${log_level}
 fi
 
 for input_file in ${input_files[@]}; do
 	echo "Indexing file $input_file"
-	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --bioformat VARIANT  --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
 
 	FILE_NAME=$(echo $input_file | rev | cut -d / -f1 | rev )
 	VCF_FILE_ID=$(getFileId ${FILE_NAME}"$" )

@@ -30,9 +30,9 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.beans.*;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.catalog.db.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.slf4j.LoggerFactory;
 

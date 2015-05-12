@@ -19,8 +19,8 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.beans.File;
-import org.opencb.opencga.catalog.beans.Study;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Study;
 
 import java.util.*;
 
@@ -383,14 +383,15 @@ public class OptionsParser {
 
         final CreateCommand createCommand;
         final InfoCommand infoCommand;
+        final RefreshCommand refreshCommand;
 
         public StudyCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander studies = jcommander.getCommands().get("studies");
             studies.addCommand(createCommand = new CreateCommand());
             studies.addCommand(infoCommand = new InfoCommand());
+            studies.addCommand(refreshCommand = new RefreshCommand());
             studies.addCommand(commandShareResource);
-
         }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
@@ -422,6 +423,22 @@ public class OptionsParser {
 
             @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
             List<String> datastores;
+        }
+
+        @Parameters(commandNames = {"refresh"}, commandDescription = "Scans the study folder to find changes")
+        class RefreshCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+            String id;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
@@ -487,10 +504,10 @@ public class OptionsParser {
             String description;
 
 
-            @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.beans.File.Format", required = false, arity = 1)
+            @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.models.File.Format", required = false, arity = 1)
             File.Format format = File.Format.PLAIN;
 
-            @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.beans.File.Bioformat for more info", required = false, arity = 1)
+            @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.models.File.Bioformat for more info", required = false, arity = 1)
             File.Bioformat bioformat = File.Bioformat.NONE;
 
             @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)

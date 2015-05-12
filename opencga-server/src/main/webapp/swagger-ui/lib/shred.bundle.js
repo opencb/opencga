@@ -425,7 +425,7 @@ require.define("/node_modules/ax/package.json", function (require, module, expor
 });
 
 require.define("/node_modules/ax/lib/ax.js", function (require, module, exports, __dirname, __filename) {
-    var inspect = require("util").inspect
+    var inspect = require("utils").inspect
   , fs = require("fs")
 ;
 
