@@ -274,16 +274,25 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "refresh": {
-                        OptionsParser.StudyCommands.RefreshCommand c = optionsParser.getStudyCommands().refreshCommand;
+                    case "resync": {
+                        OptionsParser.StudyCommands.ResyncCommand c = optionsParser.getStudyCommands().resyncCommand;
                         int studyId = catalogManager.getStudyId(c.id);
 
-                        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
-                        URI studyUri = catalogManager.getStudyUri(studyId);
+                        Study study = catalogManager.getStudy(studyId, sessionId).first();
                         FileScanner fileScanner = new FileScanner(catalogManager);
-                        List<File> scan = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE,
-                                c.calculateChecksum, false, sessionId);
+                        List<File> scan = fileScanner.reSync(study, c.calculateChecksum, sessionId);
                         System.out.println(createOutput(c.cOpt, scan, null));
+
+                        break;
+                    }
+                    case "check-files": {
+                        OptionsParser.StudyCommands.CheckCommand c = optionsParser.getStudyCommands().checkCommand;
+                        int studyId = catalogManager.getStudyId(c.id);
+
+                        Study study = catalogManager.getStudy(studyId, sessionId).first();
+                        FileScanner fileScanner = new FileScanner(catalogManager);
+                        List<File> check = fileScanner.checkStudyFiles(study, c.calculateChecksum, sessionId);
+                        System.out.println(createOutput(c.cOpt, check, null));
 
                         break;
                     }
