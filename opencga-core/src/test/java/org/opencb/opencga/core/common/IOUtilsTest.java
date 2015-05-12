@@ -39,6 +39,18 @@ public class IOUtilsTest {
         in.close();
 
     }
+    @Test
+    public void testHeadOffset2() throws Exception {
+
+        InputStream is = IOUtils.headOffset(Paths.get(inputFile), 2, 4);
+        BufferedReader in = new BufferedReader(new InputStreamReader(is));
+        String inputLine;
+        while ((inputLine = in.readLine()) != null) {
+            System.out.println(inputLine);
+        }
+        in.close();
+
+    }
 
     @Test
     public void testGrepFile() throws Exception {

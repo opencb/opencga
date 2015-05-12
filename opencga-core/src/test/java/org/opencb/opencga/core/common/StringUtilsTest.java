@@ -28,7 +28,7 @@ public class StringUtilsTest extends GenericTest {
     public void testRandomString() throws Exception {
         DataOutputStream os = new DataOutputStream(new FileOutputStream("/tmp/tokens"));
 
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 10000; i++) {
             os.writeChars(StringUtils.randomString(10) + "\n");
         }
         os.flush();

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * Created by hpccoll1 on 26/02/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 @Deprecated
 public class SimpleThreadRunner {

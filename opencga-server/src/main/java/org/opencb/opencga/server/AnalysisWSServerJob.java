@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server;
 
-import org.opencb.opencga.analysis.AnalysisJobExecuter;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.core.SgeManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +31,7 @@ import java.io.IOException;
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Deprecated
 public class AnalysisWSServerJob extends OpenCGAWSServer {
-    private AnalysisJobExecuter aje;
+    private AnalysisJobExecutor aje;
     private String baseUrl;
     private String accountId;
     private String analysis;
@@ -50,7 +50,7 @@ public class AnalysisWSServerJob extends OpenCGAWSServer {
 //        analysisError = false;
 //        analysisErrorMsg = "analysis not found.";
 //        try {
-//            aje = new AnalysisJobExecuter(analysis);
+//            aje = new AnalysisJobExecutor(analysis);
 //        } catch (Exception e) {
 //            logger.error(e.toString());
 //            analysisError = true;
@@ -184,7 +184,7 @@ public class AnalysisWSServerJob extends OpenCGAWSServer {
 //
 //        Analysis analysisObj = null;
 //        try {
-//            aje = new AnalysisJobExecuter(analysis, analysisOwner);
+//            aje = new AnalysisJobExecutor(analysis, analysisOwner);
 //            analysisObj = aje.getAnalysis();
 //        } catch (Exception e) {
 //            logger.error(e.toString());

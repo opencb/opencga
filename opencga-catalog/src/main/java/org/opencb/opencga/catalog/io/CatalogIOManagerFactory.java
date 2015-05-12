@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.catalog.io;
 
-import java.io.IOException;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,20 +29,29 @@ import java.util.Properties;
  */
 public class CatalogIOManagerFactory {
 
-    public static final String DEFAULT_CATALOG_SCHEME = "file";
-    private static Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
+    private String defaultCatalogScheme = "file";
+    private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
     private final Properties properties;
 
     public CatalogIOManagerFactory(Properties properties) {
         this.properties = properties;
+        String scheme = URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)).getScheme();
+        if (scheme != null) {
+            defaultCatalogScheme = scheme;
+        }
     }
 
-    public CatalogIOManager get(URI uri) throws IOException, CatalogIOManagerException {
+    public CatalogIOManager get(URI uri) throws CatalogIOException {
         return get(uri.getScheme());
     }
-    public CatalogIOManager get(String io) throws CatalogIOManagerException {
+
+    public CatalogIOManager getDefault() throws CatalogIOException {
+        return get(defaultCatalogScheme);
+    }
+
+    public CatalogIOManager get(String io) throws CatalogIOException {
         if(io == null) {
-            io = DEFAULT_CATALOG_SCHEME;
+            io = defaultCatalogScheme;
         }
 
         if(!catalogIOManagers.containsKey(io)) {
@@ -57,4 +68,13 @@ public class CatalogIOManagerFactory {
         }
         return catalogIOManagers.get(io);
     }
+
+    public void setDefaultCatalogScheme(String defaultCatalogScheme) {
+        this.defaultCatalogScheme = defaultCatalogScheme;
+    }
+
+    public String getDefaultCatalogScheme() {
+        return defaultCatalogScheme;
+    }
+
 }

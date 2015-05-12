@@ -88,7 +88,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
 //    }
 
     private VariantDBAdaptor getDbAdaptor() throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
-        Config.setOpenCGAHome("/opt/opencga/");
+        Config.setOpenCGAHome();
         VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager();
 
         String dbName;

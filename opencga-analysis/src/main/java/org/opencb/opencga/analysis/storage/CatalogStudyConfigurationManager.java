@@ -20,11 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.beans.Study;
-import org.opencb.opencga.catalog.db.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -36,7 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * Created by hpccoll1 on 23/03/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogStudyConfigurationManager extends StudyConfigurationManager {
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationManager.class);
@@ -47,7 +47,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
     public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.name", "projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
 
-    public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogDBException, CatalogIOManagerException {
+    public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogDBException, CatalogIOException {
         super(objectMap);
         catalogManager = new CatalogManager(Config.getCatalogProperties());
         sessionId = objectMap.getString("sessionId");

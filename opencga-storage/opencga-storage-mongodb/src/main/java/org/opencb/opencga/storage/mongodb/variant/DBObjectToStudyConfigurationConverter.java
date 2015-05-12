@@ -27,7 +27,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import java.io.IOException;
 
 /**
- * Created by hpccoll1 on 17/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class DBObjectToStudyConfigurationConverter implements ComplexTypeConverter<StudyConfiguration, DBObject> {
 

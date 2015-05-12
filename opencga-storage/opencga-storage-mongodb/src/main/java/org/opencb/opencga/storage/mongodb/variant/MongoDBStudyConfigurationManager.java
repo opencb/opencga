@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by hpccoll1 on 19/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class MongoDBStudyConfigurationManager extends StudyConfigurationManager {
 

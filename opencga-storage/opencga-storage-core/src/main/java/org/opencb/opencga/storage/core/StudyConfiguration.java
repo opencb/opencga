@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Created by hpccoll1 on 12/03/15.
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class StudyConfiguration {
 
