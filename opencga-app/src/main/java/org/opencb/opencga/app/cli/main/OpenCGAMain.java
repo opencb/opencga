@@ -47,6 +47,8 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 29/09/14.
@@ -302,6 +304,38 @@ public class OpenCGAMain {
                         int studyId = catalogManager.getStudyId(c.id);
                         QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId, c.cOpt.getQueryOptions());
                         System.out.println(createOutput(c.cOpt, study, null));
+
+                        break;
+                    }
+                    case "status": {
+                        OptionsParser.StudyCommands.StatusCommand c = optionsParser.getStudyCommands().statusCommand;
+
+                        int studyId = catalogManager.getStudyId(c.id);
+                        Study study = catalogManager.getStudy(studyId, sessionId).first();
+                        FileScanner fileScanner = new FileScanner(catalogManager);
+
+                        List<URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
+
+                        URI studyUri = catalogManager.getStudyUri(studyId);
+                        Map<URI, String> relativeUrisMap = untrackedFiles.stream().collect(Collectors.toMap((k) -> k, (u) -> studyUri.relativize(u).toString()));
+                        int maxUntracked = relativeUrisMap.values().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+
+                        List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
+                        int maxMissing = missingFiles.stream().map(File::getPath).map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+
+                        String format = "\t%-" + Math.max(maxMissing, maxUntracked) + "s  -> %s\n";
+
+                        if (!relativeUrisMap.isEmpty()) {
+                            System.out.println("Untracked files");
+                            relativeUrisMap.forEach((u, s) -> System.out.printf(format, s, u));
+                        }
+
+                        if (!missingFiles.isEmpty()) {
+                            System.out.println("\nMissing files");
+                            for (File file : missingFiles) {
+                                System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+                            }
+                        }
 
                         break;
                     }

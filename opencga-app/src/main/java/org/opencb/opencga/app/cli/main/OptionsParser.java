@@ -385,6 +385,7 @@ public class OptionsParser {
         final InfoCommand infoCommand;
         final ResyncCommand resyncCommand;
         final CheckCommand checkCommand;
+        final StatusCommand statusCommand;
 
         public StudyCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -393,7 +394,19 @@ public class OptionsParser {
             studies.addCommand(infoCommand = new InfoCommand());
             studies.addCommand(resyncCommand = new ResyncCommand());
             studies.addCommand(checkCommand = new CheckCommand());
+            studies.addCommand(statusCommand = new StatusCommand());
             studies.addCommand(commandShareResource);
+        }
+
+        abstract class BaseStudyCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+            String id;
         }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
@@ -428,48 +441,23 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
-        class ResyncCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
-            String id;
-
+        class ResyncCommand extends BaseStudyCommand {
             @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
             boolean calculateChecksum = false;
         }
 
         @Parameters(commandNames = {"check-files"}, commandDescription = "Check if files in study are correctly tracked.")
-        class CheckCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
-            String id;
+        class CheckCommand extends BaseStudyCommand {
 
             @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
             boolean calculateChecksum = false;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
-        class InfoCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
+        class InfoCommand  extends BaseStudyCommand {}
 
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
-            String id;
-        }
+        @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
+        class StatusCommand extends BaseStudyCommand {}
     }
 
 
