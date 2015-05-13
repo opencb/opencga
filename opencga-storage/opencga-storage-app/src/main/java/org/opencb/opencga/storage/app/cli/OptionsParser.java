@@ -374,7 +374,7 @@ public class OptionsParser {
         String aggregationMappingFile = null;
         
         @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
-        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+        VariantStudy.StudyType studyType = VariantStudy.StudyType.COLLECTION;
 
         @Parameter(names = {"--transform"}, description = "Run only the transform phase")
         boolean transform = false; // stop before load
