@@ -93,7 +93,7 @@ public class CatalogFileUtils {
             } else {
                 targetChecksum = sourceChecksum;
             }
-            updateFileAttributes(file, targetChecksum, sessionId);
+            updateFileAttributes(file, targetChecksum, targetUri, null, sessionId);
             return;
         }
 
@@ -168,7 +168,7 @@ public class CatalogFileUtils {
                 logger.info("Checksum not computed.");
             }
 
-            updateFileAttributes(file, sourceChecksum, sessionId);
+            updateFileAttributes(file, sourceChecksum, targetUri, null, sessionId);
 
             if(deleteSource && !fileMoved) {
                 logger.info("Deleting file {} ", sourceUri);
@@ -221,7 +221,31 @@ public class CatalogFileUtils {
             }
         }
 
-        updateFileAttributes(file, checksum, sessionId);
+        updateFileAttributes(file, checksum, targetUri, null, sessionId);
+
+    }
+
+    public void link(File file, boolean calculateChecksum, URI externalUri, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(file, "file");
+        ParamUtils.checkObj(externalUri, "externalUri");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        
+        if (!file.getType().equals(File.Type.FILE)) {
+            throw new CatalogIOException("Only files with type File.Type.FILE can have an external link");
+        }
+        checkStatus(file);
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
+        String checksum = null;
+        if (calculateChecksum) {
+            try {
+                checksum = ioManager.calculateChecksum(externalUri);
+            } catch (CatalogIOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        updateFileAttributes(file, checksum, externalUri, new ObjectMap("uri", externalUri), sessionId);
 
     }
 
@@ -242,7 +266,7 @@ public class CatalogFileUtils {
         if (calculateChecksum) {
             checksum = catalogManager.getCatalogIOManagerFactory().get(fileUri).calculateChecksum(fileUri);
         }
-        updateFileAttributes(file, checksum, sessionId);
+        updateFileAttributes(file, checksum, null, null, sessionId);
     }
 
 
@@ -254,11 +278,14 @@ public class CatalogFileUtils {
      *      checksum
      * @throws CatalogException
      */
-    private void updateFileAttributes(File file, String checksum, String sessionId) throws CatalogException {
+    private void updateFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters, String sessionId)
+            throws CatalogException {
         ObjectMap attributes = new ObjectMap();
-        ObjectMap parameters = new ObjectMap();
+        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
 
-        URI fileUri = catalogManager.getFileUri(file);
+        if (fileUri == null) {
+            fileUri = catalogManager.getFileUri(file);
+        }
         CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
 
         if (checksum != null && !checksum.isEmpty() && !checksum.equals("null")) {

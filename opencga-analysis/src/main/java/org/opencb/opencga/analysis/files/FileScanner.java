@@ -65,7 +65,7 @@ public class FileScanner {
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
             if (file.getStatus() == File.Status.READY || file.getStatus() == File.Status.MISSING) {   //What about the "thrashed" files?
-                URI fileUri = catalogManager.getFileUri(studyUri, file.getPath());
+                URI fileUri = catalogManager.getFileUri(study, file);
                 if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
                     logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
                     if (file.getStatus() != File.Status.MISSING) {

@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
@@ -32,7 +34,11 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Properties;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by jacobo on 28/01/15.
@@ -44,6 +50,9 @@ public class CatalogFileUtilsTest {
     private String userSessionId;
     private String adminSessionId;
     private CatalogManager catalogManager;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void before() throws CatalogException, IOException {
@@ -97,6 +106,33 @@ public class CatalogFileUtilsTest {
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId);
         catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, true);
+    }
+
+    @Test
+    public void linkFileTest() throws IOException, CatalogException {
+
+        java.io.File createdFile = CatalogManagerTest.createDebugFile();
+        URI sourceUri = createdFile.toURI();
+        File file;
+        URI fileUri;
+
+        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+        catalogFileUtils.link(file, true, sourceUri, userSessionId);
+
+        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        fileUri = catalogManager.getFileUri(file);
+        assertEquals(sourceUri, fileUri);
+        assertTrue(createdFile.exists());
+
+        catalogManager.renameFile(file.getId(), "newName", userSessionId);
+        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        fileUri = catalogManager.getFileUri(file);
+        assertEquals(sourceUri, fileUri);
+        assertTrue(createdFile.exists());
+
+        thrown.expect(CatalogException.class);
+        catalogFileUtils.link(file, true, sourceUri, userSessionId);
     }
 
 }

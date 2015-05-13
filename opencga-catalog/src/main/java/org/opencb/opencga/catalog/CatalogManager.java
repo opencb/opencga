@@ -177,24 +177,17 @@ public class CatalogManager {
         return fileManager.getStudyUri(studyId);
     }
 
-    public URI getFileUri(int studyId, String relativeFilePath)
-            throws CatalogException {
-        URI studyUri = getStudyUri(studyId);
-        return getFileUri(studyUri, relativeFilePath);
+    public URI getFileUri(File file) throws CatalogException {
+        return fileManager.getFileUri(file);
+    }
+
+    public URI getFileUri(Study study, File file) throws CatalogException {
+        return fileManager.getFileUri(study, file);
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogException {
-        ParamUtils.checkObj(studyUri, "studyUri");
-        ParamUtils.checkObj(relativeFilePath, "relativeFilePath");
-
-        return relativeFilePath.isEmpty() ?
-                studyUri :
-                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
-    }
-
-    public URI getFileUri(File file) throws CatalogException {
-        return fileManager.getFileUri(file);
+        return fileManager.getFileUri(studyUri, relativeFilePath);
     }
 
     public int getProjectIdByStudyId(int studyId) throws CatalogException {

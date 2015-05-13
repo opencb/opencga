@@ -30,6 +30,8 @@ import java.util.*;
  */
 public class FileManager extends AbstractManager implements IFileManager {
 
+    private static final QueryOptions includeStudyUri = new QueryOptions("include", Arrays.asList("projects.studies.uri"));
+
     protected static Logger logger = LoggerFactory.getLogger(FileManager.class);
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
@@ -41,36 +43,45 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public URI getStudyUri(int studyId)
             throws CatalogException {
-        return studyDBAdaptor.getStudy(studyId, new QueryOptions("include", Arrays.asList("projects.studies.uri"))).first().getUri();
+        return studyDBAdaptor.getStudy(studyId, includeStudyUri).first().getUri();
     }
 
     @Override
     public URI getFileUri(File file) throws CatalogException {
-        int studyId = fileDBAdaptor.getStudyIdByFileId(file.getId());
-        return getFileUri(studyId, file.getPath());
+        ParamUtils.checkObj(file, "File");
+        if (file.getUri() != null) {
+            return file.getUri();
+        } else {
+            return getFileUri(studyDBAdaptor.getStudy(getStudyId(file.getId()), includeStudyUri).first(), file);
+        }
     }
 
     @Override
-    public URI getFileUri(int studyId, String relativeFilePath)
-            throws CatalogException {
-        URI studyUri = getStudyUri(studyId);
-        return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
+    public URI getFileUri(Study study, File file) throws CatalogException {
+        ParamUtils.checkObj(study, "Study");
+        ParamUtils.checkObj(file, "File");
+        if (file.getUri() != null) {
+            return file.getUri();
+        } else {
+            return file.getPath().isEmpty() ?
+                    study.getUri() :
+                    catalogIOManagerFactory.get(study.getUri()).getFileUri(study.getUri(), file.getPath());
+        }
     }
 
     @Override
-    public URI getFileUri(URI studyUri, String relativeFilePath)
-            throws CatalogIOException {
-        return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
+    public URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException {
+        ParamUtils.checkObj(studyUri, "studyUri");
+        ParamUtils.checkObj(relativeFilePath, "relativeFilePath");
+
+        return relativeFilePath.isEmpty() ?
+                studyUri :
+                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
     @Override
     public String getUserId(int fileId) throws CatalogException {
         return fileDBAdaptor.getFileOwnerId(fileId);
-    }
-
-    @Override
-    public Integer getProjectId(int fileId) throws CatalogException {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -349,6 +360,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                         case "sampleIds":
                         case "jobId":
                             break;
+                        case "uri":
+                            logger.info("File {id: " + fileId + "} uri modified. New value: " + parameters.get("uri"));
+                            break;
 
                         //Can only be modified when file.status == STAGE
                         case "creationDate":
@@ -465,14 +479,19 @@ public class FileManager extends AbstractManager implements IFileManager {
         userDBAdaptor.updateUserLastActivity(ownerId);
         CatalogIOManager catalogIOManager;
         URI studyUri = getStudyUri(studyId);
+        boolean isExternal = file.getUri() != null; //If the file URI is not null, the file is external located.
         switch (file.getType()) {
             case FOLDER:
-                catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
-                catalogIOManager.rename(getFileUri(studyUri, oldPath), getFileUri(studyUri, newPath));   // io.move() 1
+                if (!isExternal) {  //Only rename non external files
+                    catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
+                    catalogIOManager.rename(getFileUri(studyUri, oldPath), getFileUri(studyUri, newPath));   // io.move() 1
+                }
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
             case FILE:
-                catalogIOManager = catalogIOManagerFactory.get(studyUri);
-                catalogIOManager.rename(getFileUri(studyUri, file.getPath()), getFileUri(studyUri, newPath));
+                if (!isExternal) {  //Only rename non external files
+                    catalogIOManager = catalogIOManagerFactory.get(studyUri);
+                    catalogIOManager.rename(getFileUri(studyUri, file.getPath()), getFileUri(studyUri, newPath));
+                }
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
         }
 
