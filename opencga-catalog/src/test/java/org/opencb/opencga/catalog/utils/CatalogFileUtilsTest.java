@@ -111,14 +111,16 @@ public class CatalogFileUtilsTest {
     @Test
     public void linkFileTest() throws IOException, CatalogException {
 
-        java.io.File createdFile = CatalogManagerTest.createDebugFile();
-        URI sourceUri = createdFile.toURI();
+        java.io.File createdFile;
+        URI sourceUri;
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
         File file;
         URI fileUri;
 
         file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
                 "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
-        catalogFileUtils.link(file, true, sourceUri, userSessionId);
+        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
 
         file = catalogManager.getFile(file.getId(), userSessionId).first();
         fileUri = catalogManager.getFileUri(file);
@@ -131,8 +133,14 @@ public class CatalogFileUtilsTest {
         assertEquals(sourceUri, fileUri);
         assertTrue(createdFile.exists());
 
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
+        catalogFileUtils.link(file, true, sourceUri, true, userSessionId);
+
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
         thrown.expect(CatalogException.class);
-        catalogFileUtils.link(file, true, sourceUri, userSessionId);
+        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
     }
 
 }

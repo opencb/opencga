@@ -122,13 +122,21 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void deleteDirectory(URI uri) throws IOException {
-        IOUtils.deleteDirectory(Paths.get(uri));
+    public void deleteDirectory(URI uri) throws CatalogIOException {
+        try {
+            IOUtils.deleteDirectory(Paths.get(uri));
+        } catch (IOException e) {
+            throw new CatalogIOException("Could not delete directory " + uri, e);
+        }
     }
 
     @Override
-    public void deleteFile(URI fileUri) throws IOException {
-        Files.delete(Paths.get(fileUri));
+    public void deleteFile(URI fileUri) throws CatalogIOException {
+        try {
+            Files.delete(Paths.get(fileUri));
+        } catch (IOException e) {
+            throw new CatalogIOException("Could not delete file " + fileUri, e);
+        }
     }
 
     @Override

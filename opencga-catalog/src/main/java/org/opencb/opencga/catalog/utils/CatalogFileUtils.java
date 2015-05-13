@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.utils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -149,12 +150,12 @@ public class CatalogFileUtils {
             } catch (CatalogIOException catalogIOException) {
                 try {
                     targetIOManager.deleteFile(targetUri);
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
+                } catch (CatalogIOException e) {
+                    e.printStackTrace();
                     //You fail at failing!
                     throw new CatalogIOException(
                             "Fail calculating target checksum : " + catalogIOException.getMessage() + "" +
-                            "Fail deleting target file : " + ioException.getMessage(), catalogIOException);
+                            "Fail deleting target file : " + e.getMessage(), catalogIOException);
                 }
                 throw catalogIOException;
             }
@@ -174,8 +175,8 @@ public class CatalogFileUtils {
                 logger.info("Deleting file {} ", sourceUri);
                 try {
                     sourceIOManager.deleteFile(sourceUri);
-                } catch (IOException e) {
-                    throw new CatalogIOException("Can't delete source.", e);
+                } catch (CatalogIOException e) {
+                    throw e;
                 }
             }
         } else {
@@ -225,15 +226,28 @@ public class CatalogFileUtils {
 
     }
 
-    public void link(File file, boolean calculateChecksum, URI externalUri, String sessionId) throws CatalogException {
+    public void link(File file, boolean calculateChecksum, URI externalUri, boolean relink, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        
+
         if (!file.getType().equals(File.Type.FILE)) {
             throw new CatalogIOException("Only files with type File.Type.FILE can have an external link");
         }
-        checkStatus(file);
+
+        File.Status fileStatus = file.getStatus();
+        if (!fileStatus.equals(File.Status.STAGE) && !fileStatus.equals(File.Status.MISSING)) {
+            if (relink) {
+                if (!fileStatus.equals(File.Status.READY)) {
+                    throw new CatalogIOException("Unable to relink a file with status : " + fileStatus);
+                }
+                if (file.getUri() == null) {
+                    throw new CatalogIOException("Unable to relink a non linked file");
+                }
+            } else {
+                throw new CatalogIOException("Unable to create a link a file with status : " + fileStatus);
+            }
+        }
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
         String checksum = null;
@@ -246,6 +260,22 @@ public class CatalogFileUtils {
         }
 
         updateFileAttributes(file, checksum, externalUri, new ObjectMap("uri", externalUri), sessionId);
+
+    }
+
+    public void delete(File file, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(file, "file");
+
+        if (!file.getStatus().equals(File.Status.TRASHED)) {
+            throw new CatalogIOException("Only trashed files can be deleted");
+        }
+
+        if (file.getUri() == null) { //Do not delete file if is external
+            URI fileUri = catalogManager.getFileUri(file);
+            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
+            ioManager.deleteFile(fileUri);
+        }
+        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
 
     }
 

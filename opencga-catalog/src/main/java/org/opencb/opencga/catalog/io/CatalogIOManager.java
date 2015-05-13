@@ -125,9 +125,9 @@ public abstract class CatalogIOManager {
         return createDirectory(uri, false);
     }
 
-    public abstract void deleteDirectory(URI uri) throws IOException;
+    public abstract void deleteDirectory(URI uri) throws CatalogIOException;
 
-    public abstract void deleteFile(URI fileUri) throws IOException;
+    public abstract void deleteFile(URI fileUri) throws CatalogIOException;
 
     public abstract void rename(URI oldName, URI newName) throws CatalogIOException;
 
@@ -250,11 +250,7 @@ public abstract class CatalogIOManager {
     public void deleteUser(String userId) throws CatalogIOException {
         URI userUri = getUserUri(userId);
         checkUriExists(userUri);
-        try {
-            deleteDirectory(userUri);
-        } catch (IOException e) {
-            throw new CatalogIOException("IOException: " + e.toString());
-        }
+        deleteDirectory(userUri);
     }
 
     public  URI createAnonymousUser(String anonymousUserId) throws CatalogIOException {
@@ -282,11 +278,7 @@ public abstract class CatalogIOManager {
         URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
         checkUriExists(anonymousUserUri);
 
-        try {
-            deleteDirectory(anonymousUserUri);
-        } catch (IOException e1) {
-            throw new CatalogIOException("IOException: " + e1.toString());
-        }
+        deleteDirectory(anonymousUserUri);
 //        return anonymousUserPath;
     }
 
@@ -313,11 +305,7 @@ public abstract class CatalogIOManager {
         URI projectUri = getProjectUri(userId, projectId);
         checkUriExists(projectUri);
 
-        try {
-            deleteDirectory(projectUri);
-        } catch (IOException e) {
-            throw new CatalogIOException("deleteProject(): could not delete the project folder: " + e.toString());
-        }
+        deleteDirectory(projectUri);
     }
 
     public void renameProject(String userId, String oldProjectId, String newProjectId)
@@ -360,11 +348,7 @@ public abstract class CatalogIOManager {
         checkUriScheme(studyUri);
         checkUriExists(studyUri);
 
-        try {
-            deleteDirectory(studyUri);
-        } catch (IOException e) {
-            throw new CatalogIOException("deleteProject(): could not delete the project folder: " + e.toString());
-        }
+        deleteDirectory(studyUri);
     }
 
 //    public void renameStudy(String userId, String projectId, String oldStudyId, String newStudyId)
@@ -451,14 +435,10 @@ public abstract class CatalogIOManager {
         checkUriExists(fileUri);
 
         logger.debug("Deleting {}", fileUri.toString());
-        try {
-            if(isDirectory(fileUri)) {
-                deleteDirectory(fileUri);
-            }else {
-                deleteFile(fileUri);
-            }
-        } catch (IOException e) {
-            throw new CatalogIOException("deleteFile(): could not delete the object " + e.toString());
+        if(isDirectory(fileUri)) {
+            deleteDirectory(fileUri);
+        } else {
+            deleteFile(fileUri);
         }
     }
 

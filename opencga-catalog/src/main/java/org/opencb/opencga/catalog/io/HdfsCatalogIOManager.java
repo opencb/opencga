@@ -90,12 +90,12 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void deleteDirectory(URI uri) throws IOException {
+    public void deleteDirectory(URI uri)   {
 
     }
 
     @Override
-    public void deleteFile(URI fileUri) throws IOException {
+    public void deleteFile(URI fileUri) {
 
     }
 

@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -218,9 +219,7 @@ public class DaemonLoop implements Runnable {
                             QueryResult<Study> studyQueryResult = catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
                             Study study = studyQueryResult.getResult().get(0);
                             logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
-                            CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(study.getUri());
-                            catalogIOManager.deleteFile(catalogIOManager.getFileUri(study.getUri(), file.getPath()));
-                            catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
+                            new CatalogFileUtils(catalogManager).delete(file, sessionId);
                         } else {
                             logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(), file.getAttributes());
                             logger.info("{}", (currentTimeMillis - deleteDate)/1000);
