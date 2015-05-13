@@ -29,7 +29,7 @@ public class VepVariantAnnotator implements VariantAnnotator {
     private final JsonFactory factory;
     private ObjectMapper jsonObjectMapper;
 
-    protected static Logger logger = LoggerFactory.getLogger(CellBaseVariantAnnotator.class);
+    protected static Logger logger = LoggerFactory.getLogger(VepVariantAnnotator.class);
 
     public VepVariantAnnotator() {
         this.factory = new JsonFactory();
