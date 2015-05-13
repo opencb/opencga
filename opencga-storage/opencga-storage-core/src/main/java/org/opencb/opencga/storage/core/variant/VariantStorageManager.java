@@ -116,8 +116,8 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
     }
 
     @Override
-    public URI extract(URI from, URI to, ObjectMap params) {
-        return from;
+    public URI extract(URI input, URI ouput, ObjectMap params) {
+        return input;
     }
 
     @Override

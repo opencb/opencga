@@ -72,8 +72,8 @@ public class CatalogVariantStorageManager implements StorageManager<VariantWrite
     }
 
     @Override
-    public URI extract(URI from, URI to, ObjectMap params) throws StorageManagerException {
-        return getStorageManager(params).extract(from, to, params);
+    public URI extract(URI input, URI ouput, ObjectMap params) throws StorageManagerException {
+        return getStorageManager(params).extract(input, ouput, params);
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core;
 
-
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
