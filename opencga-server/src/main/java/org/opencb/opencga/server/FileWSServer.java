@@ -614,7 +614,10 @@ public class FileWSServer extends OpenCGAWSServer {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
             if (!queryOptions.containsKey(AnalysisFileIndexer.PARAMETERS)) {
-                queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--include-genotypes", "--calculate-stats", "--include-stats"));
+                File a = catalogManager.getFile(fileId, sessionId).getResult().get(0);
+                if(a.getBioformat() == File.Bioformat.VARIANT){
+                    queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--include-genotypes", "--calculate-stats", "--include-stats"));
+                }
             }
             queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
 
