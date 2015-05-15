@@ -122,13 +122,21 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void deleteDirectory(URI uri) throws IOException {
-        IOUtils.deleteDirectory(Paths.get(uri));
+    public void deleteDirectory(URI uri) throws CatalogIOException {
+        try {
+            IOUtils.deleteDirectory(Paths.get(uri));
+        } catch (IOException e) {
+            throw new CatalogIOException("Could not delete directory " + uri, e);
+        }
     }
 
     @Override
-    public void deleteFile(URI fileUri) throws IOException {
-        Files.delete(Paths.get(fileUri));
+    public void deleteFile(URI fileUri) throws CatalogIOException {
+        try {
+            Files.delete(Paths.get(fileUri));
+        } catch (IOException e) {
+            throw new CatalogIOException("Could not delete file " + fileUri, e);
+        }
     }
 
     @Override
@@ -551,7 +559,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         return checksum.split(" ")[0];
     }
 
-    public List<URI> listFiles(URI directory) throws CatalogIOException, IOException {
+    public List<URI> listFiles(URI directory) throws CatalogIOException {
         class ListFiles extends SimpleFileVisitor<Path> {
             private List<String> filePaths = new LinkedList<>();
 
@@ -566,7 +574,11 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             }
         }
         ListFiles fileVisitor = new ListFiles();
-        Files.walkFileTree(Paths.get(directory.getPath()), fileVisitor);
+        try {
+            Files.walkFileTree(Paths.get(directory.getPath()), fileVisitor);
+        } catch (IOException e) {
+            throw new CatalogIOException("Unable to walkFileTree", e);
+        }
         List<URI> fileUris = new LinkedList<>();
 
         for (String filePath : fileVisitor.getFilePaths()) {

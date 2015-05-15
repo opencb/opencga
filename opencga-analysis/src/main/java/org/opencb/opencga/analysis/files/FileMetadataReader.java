@@ -38,7 +38,7 @@ public class FileMetadataReader {
 
     /**
      * Creates a file entry in catalog reading metadata information from the fileUri.
-     * Do not upload or sync file. Created file status will be <b>UPLOADING</b>
+     * Do not upload or sync file. Created file status will be <b>STAGE</b>
      *
      * @param studyId     Study on where the file entry is created
      * @param fileUri     File URI to read metadata information.
@@ -47,7 +47,7 @@ public class FileMetadataReader {
      * @param parents     Create parent folders or not
      * @param options     Other options
      * @param sessionId   User sessionId
-     * @return The created file with status <b>UPLOADING</b>
+     * @return The created file with status <b>STAGE</b>
      * @throws CatalogException
      */
     public QueryResult<File> create(int studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
@@ -58,7 +58,7 @@ public class FileMetadataReader {
 
 
         QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, null, description,
-                File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, options, sessionId);
+                File.Status.STAGE, 0, -1, null, -1, null, null, parents, options, sessionId);
 
         File modifiedFile = null;
 
@@ -130,11 +130,11 @@ public class FileMetadataReader {
                     break;
             }
         }
-        List<Sample> fileSamples = getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+        /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
 
         if (!modifyParams.isEmpty()) {
             catalogManager.modifyFile(file.getId(), modifyParams, sessionId);
-            return catalogManager.getFile(file.getId(), sessionId).first();
+            return catalogManager.getFile(file.getId(), options, sessionId).first();
         }
 
         return file;
@@ -298,7 +298,6 @@ public class FileMetadataReader {
     }
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
-        logger.warn("Unimplemented method readAlignmentHeader");
         AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
         reader.open();
         reader.pre();

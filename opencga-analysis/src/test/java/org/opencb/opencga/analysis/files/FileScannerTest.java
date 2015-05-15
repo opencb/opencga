@@ -91,14 +91,12 @@ public class FileScannerTest extends TestCase {
         List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
-        assertEquals(File.Status.DELETING, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus());
+        assertEquals(File.Status.TRASHED, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus());
     }
 
     @Test
     public void testReplaceExisting() throws IOException, CatalogException {
-
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.txt");
-
 
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
@@ -118,21 +116,77 @@ public class FileScannerTest extends TestCase {
 
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.txt");
 
-
-        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
-                CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
-
         FileScanner fileScanner = new FileScanner(catalogManager);
         List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        assertEquals(1, files.size());
 
         URI studyUri = catalogManager.getStudyUri(study.getId());
-        CatalogManagerTest.createDebugFile(studyUri.resolve(files.get(0).getPath()).resolve("file2.txt").getPath());
+        CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
         File root = catalogManager.searchFile(study.getId(), new QueryOptions("name", "."), sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
+        assertEquals(1, files.size());
         files.forEach((f) -> assertTrue(f.getDiskUsage() > 0));
         files.forEach((f) -> assertEquals(f.getStatus(), File.Status.READY));
         files.forEach((f) -> assertTrue(f.getAttributes().containsKey("checksum")));
+    }
+
+    @Test
+    public void testResyncStudy() throws IOException, CatalogException {
+        CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.txt");
+
+        //ReSync study folder. Will detect any difference.
+        FileScanner fileScanner = new FileScanner(catalogManager);
+        List<File> files;
+        files = fileScanner.reSync(study, true, sessionIdUser);
+        assertEquals(0, files.size());
+
+        //Add one extra file. ReSync study folder.
+        URI studyUri = catalogManager.getStudyUri(study.getId());
+        Path filePath = CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").getPath()).toPath();
+        files = fileScanner.reSync(study, true, sessionIdUser);
+
+        assertEquals(1, files.size());
+        File file = files.get(0);
+        assertTrue(file.getDiskUsage() > 0);
+        assertEquals(File.Status.READY, file.getStatus());
+        assertTrue(file.getAttributes().containsKey("checksum"));
+
+
+        //Delete file. CheckStudyFiles. Will detect one File.Status.MISSING file
+        Files.delete(filePath);
+        files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
+
+        assertEquals(1, files.size());
+        assertEquals(File.Status.MISSING, files.get(0).getStatus());
+        String originalChecksum = files.get(0).getAttributes().get("checksum").toString();
+
+        //Restore file. CheckStudyFiles. Will detect one re-tracked file. Checksum must be different.
+        CatalogManagerTest.createDebugFile(filePath.toString());
+        files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
+
+        assertEquals(1, files.size());
+        assertEquals(File.Status.READY, files.get(0).getStatus());
+        String newChecksum = files.get(0).getAttributes().get("checksum").toString();
+        assertFalse(originalChecksum.equals(newChecksum));
+
+        //Delete file. ReSync. Will detect one File.Status.MISSING file (like checkFile)
+        Files.delete(filePath);
+        files = fileScanner.reSync(study, true, sessionIdUser);
+
+        assertEquals(1, files.size());
+        assertEquals(File.Status.MISSING, files.get(0).getStatus());
+        originalChecksum = files.get(0).getAttributes().get("checksum").toString();
+
+        //Restore file. CheckStudyFiles. Will detect one found file. Checksum must be different.
+        CatalogManagerTest.createDebugFile(filePath.toString());
+        files = fileScanner.reSync(study, true, sessionIdUser);
+
+        assertEquals(1, files.size());
+        assertEquals(File.Status.READY, files.get(0).getStatus());
+        newChecksum = files.get(0).getAttributes().get("checksum").toString();
+        assertFalse(originalChecksum.equals(newChecksum));
+
     }
 
     @Test

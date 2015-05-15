@@ -47,7 +47,7 @@ public class AnalysisOutputRecorder {
     private final CatalogManager catalogManager;
     private final String sessionId;
     private final boolean calculateChecksum = false;    //TODO: Read from config file
-    private final FileScanner.FileScannerPolicy delete = FileScanner.FileScannerPolicy.DELETE; //TODO: Read from config file
+    private final FileScanner.FileScannerPolicy fileScannerPolicy = FileScanner.FileScannerPolicy.DELETE; //TODO: Read from config file
 
     public AnalysisOutputRecorder(CatalogManager catalogManager, String sessionId) {
         this.catalogManager = catalogManager;
@@ -65,7 +65,7 @@ public class AnalysisOutputRecorder {
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
 
             FileScanner fileScanner = new FileScanner(catalogManager);
-            List<File> files = fileScanner.scan(outDir, tmpOutDirUri, delete, calculateChecksum, true, sessionId);
+            List<File> files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
             fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         } catch (CatalogException | IOException e) {
             e.printStackTrace();

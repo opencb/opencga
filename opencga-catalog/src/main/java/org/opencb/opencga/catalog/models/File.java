@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,9 +52,10 @@ public class File {
     private Bioformat bioformat;
 
     /**
-     * file://, hdfs://
+     * Optional external file location. If null, file is inside its study.
      */
-//    private String uriScheme;   // quitar
+    private URI uri;
+
     private String path;
     private String ownerId;
     private String creationDate;
@@ -79,10 +81,10 @@ public class File {
 
     /* Status */
     public enum Status {
-        UPLOADING,
-        UPLOADED,
+        STAGE,
         READY,
-        DELETING,
+        MISSING,
+        TRASHED,
         DELETED
     }
 
@@ -173,7 +175,7 @@ public class File {
         this.type = type;
         this.format = format;
         this.bioformat = bioformat;
-//        this.uriScheme = uriScheme;
+        this.uri = null;
         this.path = path;
         this.ownerId = ownerId;
         this.creationDate = creationDate;
@@ -186,7 +188,6 @@ public class File {
         this.acl = acl;
         this.stats = stats;
         this.attributes = attributes;
-//        this.indices = indices;
     }
 
     @Override
@@ -252,6 +253,14 @@ public class File {
 
     public void setBioformat(Bioformat bioformat) {
         this.bioformat = bioformat;
+    }
+
+    public URI getUri() {
+        return uri;
+    }
+
+    public void setUri(URI uri) {
+        this.uri = uri;
     }
 
     public String getPath() {

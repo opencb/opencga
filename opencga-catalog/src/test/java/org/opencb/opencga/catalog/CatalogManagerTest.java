@@ -594,9 +594,9 @@ public class CatalogManagerTest extends GenericTest {
                 new QueryOptions("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
                 null, sessionIdUser).getResult();
 
-        assertTrue(file.getStatus() == File.Status.DELETING);
+        assertTrue(file.getStatus() == File.Status.TRASHED);
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus() == File.Status.DELETING);
+            assertTrue(subFile.getStatus() == File.Status.TRASHED);
         }
     }
 

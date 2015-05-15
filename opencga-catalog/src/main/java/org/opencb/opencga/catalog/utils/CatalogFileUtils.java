@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.utils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -93,7 +94,7 @@ public class CatalogFileUtils {
             } else {
                 targetChecksum = sourceChecksum;
             }
-            updateFileAttributes(file, targetChecksum, sessionId);
+            updateFileAttributes(file, targetChecksum, targetUri, null, sessionId);
             return;
         }
 
@@ -148,13 +149,14 @@ public class CatalogFileUtils {
                 }
             } catch (CatalogIOException catalogIOException) {
                 try {
+                    logger.info("Checksum fail. Delete target file.");
                     targetIOManager.deleteFile(targetUri);
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
+                } catch (CatalogIOException e) {
+                    e.printStackTrace();
                     //You fail at failing!
                     throw new CatalogIOException(
                             "Fail calculating target checksum : " + catalogIOException.getMessage() + "" +
-                            "Fail deleting target file : " + ioException.getMessage(), catalogIOException);
+                            "Fail deleting target file : " + e.getMessage(), catalogIOException);
                 }
                 throw catalogIOException;
             }
@@ -168,14 +170,14 @@ public class CatalogFileUtils {
                 logger.info("Checksum not computed.");
             }
 
-            updateFileAttributes(file, sourceChecksum, sessionId);
+            updateFileAttributes(file, sourceChecksum, targetUri, null, sessionId);
 
             if(deleteSource && !fileMoved) {
-                logger.info("Deleting file {} ", sourceUri);
+                logger.info("Deleting source file {} after moving", sourceUri);
                 try {
                     sourceIOManager.deleteFile(sourceUri);
-                } catch (IOException e) {
-                    throw new CatalogIOException("Can't delete source.", e);
+                } catch (CatalogIOException e) {
+                    throw e;
                 }
             }
         } else {
@@ -221,7 +223,60 @@ public class CatalogFileUtils {
             }
         }
 
-        updateFileAttributes(file, checksum, sessionId);
+        updateFileAttributes(file, checksum, targetUri, null, sessionId);
+
+    }
+
+    public void link(File file, boolean calculateChecksum, URI externalUri, boolean relink, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(file, "file");
+        ParamUtils.checkObj(externalUri, "externalUri");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        if (!file.getType().equals(File.Type.FILE)) {
+            throw new CatalogIOException("Only files with type File.Type.FILE can have an external link");
+        }
+
+        File.Status fileStatus = file.getStatus();
+        if (!fileStatus.equals(File.Status.STAGE) && !fileStatus.equals(File.Status.MISSING)) {
+            if (relink) {
+                if (!fileStatus.equals(File.Status.READY)) {
+                    throw new CatalogIOException("Unable to relink a file with status : " + fileStatus);
+                }
+                if (file.getUri() == null) {
+                    throw new CatalogIOException("Unable to relink a non linked file");
+                }
+            } else {
+                throw new CatalogIOException("Unable to create a link a file with status : " + fileStatus);
+            }
+        }
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
+        String checksum = null;
+        if (calculateChecksum) {
+            try {
+                checksum = ioManager.calculateChecksum(externalUri);
+            } catch (CatalogIOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        updateFileAttributes(file, checksum, externalUri, new ObjectMap("uri", externalUri), sessionId);
+
+    }
+
+    public void delete(File file, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(file, "file");
+
+        if (!file.getStatus().equals(File.Status.TRASHED)) {
+            throw new CatalogIOException("Only trashed files can be deleted");
+        }
+
+        if (file.getUri() == null) { //Do not delete file if is external
+            URI fileUri = catalogManager.getFileUri(file);
+            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
+            ioManager.deleteFile(fileUri);
+        }
+        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
 
     }
 
@@ -231,13 +286,37 @@ public class CatalogFileUtils {
      *      diskUsage
      *      creationDate
      *      checksum
+     * @param file              File to update
+     * @param calculateChecksum Do calculate checksum
+     * @param sessionId         users sessionId
      * @throws CatalogException
      */
-    private void updateFileAttributes(File file, String checksum, String sessionId) throws CatalogException {
-        ObjectMap attributes = new ObjectMap();
-        ObjectMap parameters = new ObjectMap();
-
+    public void updateFileAttributes(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
         URI fileUri = catalogManager.getFileUri(file);
+        String checksum = null;
+        if (calculateChecksum) {
+            checksum = catalogManager.getCatalogIOManagerFactory().get(fileUri).calculateChecksum(fileUri);
+        }
+        updateFileAttributes(file, checksum, null, null, sessionId);
+    }
+
+
+    /**
+     * Update some file attributes.
+     *      Status -> ready
+     *      diskUsage
+     *      creationDate
+     *      checksum
+     * @throws CatalogException
+     */
+    private void updateFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters, String sessionId)
+            throws CatalogException {
+        ObjectMap attributes = new ObjectMap();
+        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
+
+        if (fileUri == null) {
+            fileUri = catalogManager.getFileUri(file);
+        }
         CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
 
         if (checksum != null && !checksum.isEmpty() && !checksum.equals("null")) {
@@ -287,7 +366,7 @@ public class CatalogFileUtils {
      * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
      */
     private void checkStatus(File file) throws CatalogIOException {
-        if (file.getStatus() != File.Status.UPLOADING) {
+        if (file.getStatus() != File.Status.STAGE) {
             throw new CatalogIOException("File status is already uploaded and ready! " +
                     "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
                     "Needs 'ignoreStatus = true' for continue.");
