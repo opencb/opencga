@@ -26,6 +26,7 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
@@ -49,6 +50,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.*;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Path("/files")
 @Api(value = "files", description = "files", position = 4)
@@ -496,10 +498,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/search")
     @Produces("application/json")
     @ApiOperation(value = "File info")
-    public Response search(@ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+    public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
                            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
                            @ApiParam(value = "bioformat", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
                            @ApiParam(value = "maxSize", required = false) @DefaultValue("") @QueryParam("maxSize") String maxSize,
                            @ApiParam(value = "minSize", required = false) @DefaultValue("") @QueryParam("minSize") String minSize,
                            @ApiParam(value = "startDate", required = false) @DefaultValue("") @QueryParam("startDate") String startDate,
@@ -507,47 +512,18 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "like", required = false) @DefaultValue("") @QueryParam("like") String like,
                            @ApiParam(value = "startsWith", required = false) @DefaultValue("") @QueryParam("startsWith") String startsWith,
                            @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-                           @ApiParam(value = "indexJobId", required = false) @DefaultValue("") @QueryParam("indexJobId") String indexJobId
+                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes
 
     ) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
 
             QueryOptions query = new QueryOptions();
-            if (!name.isEmpty()) {
-                query.put("name", name);
+            for (CatalogFileDBAdaptor.FileFilterOption option : CatalogFileDBAdaptor.FileFilterOption.values()) {
+                if (params.containsKey(option.name())) {
+                    query.put(option.name(), params.getFirst(option.name()));
+                }
             }
-            if (!type.isEmpty()) {
-                query.put("type", type);
-            }
-            if (!bioformat.isEmpty()) {
-                query.put("bioformat", bioformat);
-            }
-            if (!maxSize.isEmpty()) {
-                query.put("maxSize", maxSize);
-            }
-            if (!minSize.isEmpty()) {
-                query.put("minSize", minSize);
-            }
-            if (!startDate.isEmpty()) {
-                query.put("startDate", startDate);
-            }
-            if (!endDate.isEmpty()) {
-                query.put("endDate", endDate);
-            }
-            if (!like.isEmpty()) {
-                query.put("like", like);
-            }
-            if (!startsWith.isEmpty()) {
-                query.put("startsWith", startsWith);
-            }
-            if (!directory.isEmpty()) {
-                query.put("directory", directory);
-            }
-            if (!indexJobId.isEmpty()) {
-                query.put("indexJobId", indexJobId);
-            }
-
 
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
