@@ -17,10 +17,13 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
+import junit.framework.*;
 import org.junit.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
@@ -658,7 +661,35 @@ public class CatalogManagerTest extends GenericTest {
 
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
         assertEquals(4, allJobs.getNumResults());
+    }
 
+    @Test
+    public void testCreateFailJob() throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
+        thrown.expect(CatalogException.class);
+        catalogManager.createJob(
+                studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, projectId, //Bad outputId
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, null, sessionIdUser);
+    }
+
+    @Test
+    public void testGetAllJobs() throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, null, sessionIdUser).first();
+
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
+        catalogManager.createJob(
+                studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, null, sessionIdUser);
+
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
+
+        assertEquals(1, allJobs.getNumTotalResults());
+        assertEquals(1, allJobs.getNumResults());
     }
 
     /**

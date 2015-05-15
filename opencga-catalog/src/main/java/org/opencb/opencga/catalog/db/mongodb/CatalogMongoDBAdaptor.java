@@ -1635,30 +1635,30 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> searchJob(QueryOptions query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        DBObject query = new BasicDBObject();
+        DBObject mongoQuery = new BasicDBObject();
 
-        if(options.containsKey("ready")) {
-            if(options.getBoolean("ready")) {
-                query.put("status", Job.Status.READY.name());
+        if(query.containsKey("ready")) {
+            if(query.getBoolean("ready")) {
+                mongoQuery.put("status", Job.Status.READY.name());
             } else {
-                query.put("status", new BasicDBObject("$ne", Job.Status.READY.name()));
+                mongoQuery.put("status", new BasicDBObject("$ne", Job.Status.READY.name()));
             }
-            options.remove("ready");
+            query.remove("ready");
         }
 
-        if (options.containsKey("studyId")) {
-            addQueryIntegerListFilter("studyId", options, _STUDY_ID, query);
+        if (query.containsKey("studyId")) {
+            addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
         }
 
-        if (options.containsKey("status")) {
-            addQueryStringListFilter("status", options, query);
+        if (query.containsKey("status")) {
+            addQueryStringListFilter("status", query, mongoQuery);
         }
 
 //        System.out.println("query = " + query);
-        QueryResult<DBObject> queryResult = jobCollection.find(query, null);
+        QueryResult<DBObject> queryResult = jobCollection.find(mongoQuery, null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Search job", startTime, jobs);
     }
