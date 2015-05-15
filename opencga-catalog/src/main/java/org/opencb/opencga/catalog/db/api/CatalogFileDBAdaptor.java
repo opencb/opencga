@@ -13,6 +13,36 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
  */
 public interface CatalogFileDBAdaptor {
 
+    public enum FileFilterOption {
+        id(""),
+        studyId(""),
+        name(""),
+        type(""),
+        path(""),
+        bioformat(""),
+        status(""),
+        maxSize(""),
+        minSize(""),
+        startDate(""),
+        endDate(""),
+        like(""),
+        startsWith(""),
+        directory(""),
+        attributes("Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        ;
+
+        private FileFilterOption(String description) {
+            this.description = description;
+        }
+
+        private String description;
+
+        public String getDescription() {
+            return description;
+        }
+
+    }
+
     /**
      * File methods
      * ***************************
