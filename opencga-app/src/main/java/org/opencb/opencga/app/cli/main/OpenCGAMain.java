@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
@@ -47,7 +48,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -178,12 +178,12 @@ public class OpenCGAMain {
                     case "list": {
                         OptionsParser.UserCommands.ListCommand c = optionsParser.getUserCommands().listCommand;
 
-                        String ident = "";
+                        String indent = "";
                         User user = catalogManager.getUser(c.up.user != null ? c.up.user : catalogManager.getUserIdBySessionId(sessionId), null,
                                 new QueryOptions("include", Arrays.asList("id", "name", "projects.id","projects.alias","projects.name")), sessionId).first();
                         System.out.println(user.getId() + " - " + user.getName());
-                        ident+= "\t";
-                        System.out.println(listProjects(user.getProjects(), c.recursive ? c.level : 1, ident, new StringBuilder(), sessionId));
+                        indent+= "\t";
+                        System.out.println(listProjects(user.getProjects(), c.recursive ? c.level : 1, indent, new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -307,6 +307,16 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "list": {
+                        OptionsParser.StudyCommands.ListCommand c = optionsParser.getStudyCommands().listCommand;
+
+                        int studyId = catalogManager.getStudyId(c.id);
+                        List<Study> studies = catalogManager.getStudy(studyId, sessionId).getResult();
+                        String indent = "";
+                        System.out.println(listStudies(studies, c.recursive ? c.level : 1, indent, new StringBuilder(), sessionId));
+
+                        break;
+                    }
                     case "status": {
                         OptionsParser.StudyCommands.StatusCommand c = optionsParser.getStudyCommands().statusCommand;
 
@@ -326,12 +336,13 @@ public class OpenCGAMain {
                         String format = "\t%-" + Math.max(maxMissing, maxUntracked) + "s  -> %s\n";
 
                         if (!relativeUrisMap.isEmpty()) {
-                            System.out.println("Untracked files");
+                            System.out.println("UNTRACKED files");
                             relativeUrisMap.forEach((u, s) -> System.out.printf(format, s, u));
+                            System.out.println("\n");
                         }
 
                         if (!missingFiles.isEmpty()) {
-                            System.out.println("\nMissing files");
+                            System.out.println("MISSING files");
                             for (File file : missingFiles) {
                                 System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
                             }
@@ -383,6 +394,50 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "link": {
+                        OptionsParser.FileCommands.LinkCommand c = optionsParser.getFileCommands().linkCommand;
+
+                        Path inputFile = Paths.get(c.inputFile);
+                        URI uri = UriUtils.getUri(c.inputFile);
+
+                        if (!inputFile.toFile().exists()) {
+                            throw new FileNotFoundException("File " + uri + " not found");
+                        }
+
+                        int studyId = catalogManager.getStudyId(c.studyId);
+                        File file = catalogManager.createFile(studyId, null, null,
+                                Paths.get(c.path, inputFile.getFileName().toString()).toString(),
+                                c.description, c.parents, -1, sessionId).first();
+                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, sessionId);
+                        file = catalogManager.getFile(file.getId(), c.cOpt.getQueryOptions(), sessionId).first();
+                        file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
+
+                        System.out.println(createOutput(c.cOpt, file, null));
+
+                        break;
+                    }
+                    case "relink": {
+                        OptionsParser.FileCommands.RelinkCommand c = optionsParser.getFileCommands().relinkCommand;
+
+                        Path inputFile = Paths.get(c.inputFile);
+                        URI uri = UriUtils.getUri(c.inputFile);
+
+                        if (!inputFile.toFile().exists()) {
+                            throw new FileNotFoundException("File " + uri + " not found");
+                        }
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        File file = catalogManager.getFile(fileId, sessionId).first();
+
+                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, true, sessionId);
+                        file = catalogManager.getFile(file.getId(), c.cOpt.getQueryOptions(), sessionId).first();
+                        file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
+
+
+                        System.out.println(createOutput(c.cOpt, file, null));
+
+                        break;
+                    }
                     case "info": {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
 
@@ -412,11 +467,9 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.ListCommand c = optionsParser.getFileCommands().listCommand;
 
                         int fileId = catalogManager.getFileId(c.id);
-                        String path = catalogManager.getFile(fileId, sessionId).first().getPath();
+                        List<File> result = catalogManager.getFile(fileId, sessionId).getResult();
                         int studyId = catalogManager.getStudyIdByFileId(fileId);
-                        System.out.println(listFiles(studyId, path, c.recursive? c.level : 1, "", new StringBuilder(), sessionId));
-//                        QueryResult<File> file = catalogManager.getAllFilesInFolder(fileId, null, sessionId);
-//                        System.out.println(file);
+                        System.out.println(listFiles(result, studyId, c.recursive? c.level : 1, "", new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -832,9 +885,16 @@ public class OpenCGAMain {
                     new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
                     sessionId).getResult();
 
+            listStudies(studies, level, indent, sb, sessionId);
+        }
+        return sb;
+    }
+
+    private StringBuilder listStudies(List<Study> studies, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+        if (level > 0) {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
-                sb.append(String.format("%s (%d) - %s : %s\n", indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
+                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
                 listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
             }
         }
@@ -844,10 +904,24 @@ public class OpenCGAMain {
     private StringBuilder listFiles(int studyId, String path, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new QueryOptions("directory", path), sessionId).getResult();
+            listFiles(files, studyId, level, indent, sb, sessionId);
+        }
+        return sb;
+    }
+
+    private StringBuilder listFiles(List<File> files, int studyId, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+        if (level > 0) {
             for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
                 File file = iterator.next();
 //                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
-                sb.append(String.format("%s (%d) - %s   [%s, %s]\n", indent + (iterator.hasNext() ? "├──" : "└──"), file.getId(), file.getName(), file.getStatus(), humanReadableByteCount(file.getDiskUsage(), false)));
+                sb.append(String.format("%s (%d) - %s   [%s, %s]%s\n",
+                        indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                        file.getId(),
+                        file.getName(),
+                        file.getStatus(),
+                        humanReadableByteCount(file.getDiskUsage(), false),
+                        file.getUri() == null? "" : " --> " + file.getUri()
+                ));
                 if (file.getType() == File.Type.FOLDER) {
                     listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
 //                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "| " : "  "), sessionId);

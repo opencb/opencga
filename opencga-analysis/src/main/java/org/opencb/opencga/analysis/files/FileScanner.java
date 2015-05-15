@@ -181,8 +181,10 @@ public class FileScanner {
             boolean returnFile = false;
             if (searchFile.getNumResults() != 0) {
                 File existingFile = searchFile.first();
+                logger.info("File already existing in target \"" + filePath + "\". FileScannerPolicy = " + policy);
                 switch (policy) {
                     case DELETE:
+                        logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         catalogManager.deleteFile(existingFile.getId(), sessionId);
                         break;
                     case REPLACE:
@@ -197,6 +199,7 @@ public class FileScanner {
 
             if (file == null) {
                 file = catalogManager.createFile(studyId, getFormat(uri), getBioformat(uri), filePath, "", true, jobId, sessionId).first();
+                logger.info("Added new file " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" }");
                 /** Moves the file to the read output **/
                 catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
                 returnFile = true;      //Return file because is new

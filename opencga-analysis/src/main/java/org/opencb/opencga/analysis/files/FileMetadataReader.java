@@ -130,11 +130,11 @@ public class FileMetadataReader {
                     break;
             }
         }
-        List<Sample> fileSamples = getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+        /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
 
         if (!modifyParams.isEmpty()) {
             catalogManager.modifyFile(file.getId(), modifyParams, sessionId);
-            return catalogManager.getFile(file.getId(), sessionId).first();
+            return catalogManager.getFile(file.getId(), options, sessionId).first();
         }
 
         return file;
@@ -298,7 +298,6 @@ public class FileMetadataReader {
     }
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
-        logger.warn("Unimplemented method readAlignmentHeader");
         AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
         reader.open();
         reader.pre();

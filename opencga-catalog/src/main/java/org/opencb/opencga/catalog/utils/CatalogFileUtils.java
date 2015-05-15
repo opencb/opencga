@@ -149,6 +149,7 @@ public class CatalogFileUtils {
                 }
             } catch (CatalogIOException catalogIOException) {
                 try {
+                    logger.info("Checksum fail. Delete target file.");
                     targetIOManager.deleteFile(targetUri);
                 } catch (CatalogIOException e) {
                     e.printStackTrace();
@@ -172,7 +173,7 @@ public class CatalogFileUtils {
             updateFileAttributes(file, sourceChecksum, targetUri, null, sessionId);
 
             if(deleteSource && !fileMoved) {
-                logger.info("Deleting file {} ", sourceUri);
+                logger.info("Deleting source file {} after moving", sourceUri);
                 try {
                     sourceIOManager.deleteFile(sourceUri);
                 } catch (CatalogIOException e) {

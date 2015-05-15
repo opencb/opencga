@@ -218,10 +218,12 @@ public class OptionsParser {
         }
     }
 
+    class BasicCommand {
+    }
+
     @Parameters(commandNames = {"help"}, commandDescription = "Description")
     class HelpCommands {
     }
-
 
     @Parameters(commandNames = {"exit"}, commandDescription = "Description")
     class ExitCommands {
@@ -384,6 +386,7 @@ public class OptionsParser {
         final CreateCommand createCommand;
         final InfoCommand infoCommand;
         final ResyncCommand resyncCommand;
+        final ListCommand listCommand;
         final CheckCommand checkCommand;
         final StatusCommand statusCommand;
 
@@ -393,6 +396,7 @@ public class OptionsParser {
             studies.addCommand(createCommand = new CreateCommand());
             studies.addCommand(infoCommand = new InfoCommand());
             studies.addCommand(resyncCommand = new ResyncCommand());
+            studies.addCommand(listCommand = new ListCommand());
             studies.addCommand(checkCommand = new CheckCommand());
             studies.addCommand(statusCommand = new StatusCommand());
             studies.addCommand(commandShareResource);
@@ -456,6 +460,15 @@ public class OptionsParser {
         @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
         class InfoCommand  extends BaseStudyCommand {}
 
+        @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
+        class ListCommand extends BaseStudyCommand {
+            @Parameter(names = {"-L", "--level"}, description = "Descend only level directories deep.", arity = 1)
+            public int level = Integer.MAX_VALUE;
+
+            @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
+            public boolean recursive = false;
+        }
+
         @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
         class StatusCommand extends BaseStudyCommand {}
     }
@@ -467,6 +480,8 @@ public class OptionsParser {
 
         final CreateCommand createCommand;
         final CreateFolderCommand createFolderCommand;
+        final LinkCommand linkCommand;
+        final RelinkCommand relinkCommand;
         final InfoCommand infoCommand;
         final SearchCommand searchCommand;
         final ListCommand listCommand;
@@ -479,6 +494,8 @@ public class OptionsParser {
             JCommander files = jcommander.getCommands().get("files");
             files.addCommand(this.createCommand = new CreateCommand());
             files.addCommand(this.createFolderCommand = new CreateFolderCommand());
+            files.addCommand(this.linkCommand = new LinkCommand());
+            files.addCommand(this.relinkCommand = new RelinkCommand());
             files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.searchCommand = new SearchCommand());
             files.addCommand(this.listCommand = new ListCommand());
@@ -486,6 +503,17 @@ public class OptionsParser {
             files.addCommand(this.statsCommand = new StatsCommand());
             files.addCommand(this.annotationCommand = new AnnotationCommand());
 //        files.addCommand(commandShareResource);
+        }
+
+        class BaseFileCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
+            String id;
         }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Create file")
@@ -509,7 +537,6 @@ public class OptionsParser {
             @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
             String description;
 
-
             @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.models.File.Format", required = false, arity = 1)
             File.Format format = File.Format.PLAIN;
 
@@ -521,6 +548,9 @@ public class OptionsParser {
 
             @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
             boolean move;
+
+            @Parameter(names = {"-l", "--link"}, description = "Link as an external file", required = false, arity = 0)
+            boolean link;
 
             @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
             boolean calculateChecksum = false;
@@ -545,17 +575,44 @@ public class OptionsParser {
             boolean parents;
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
-        class InfoCommand {
+        @Parameters(commandNames = {"link"}, commandDescription = "Link an external file into catalog.")
+        class LinkCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
-            String id;
+            @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
+            String inputFile;
+
+            @Parameter(names = {"-s", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+            String studyId;
+
+            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+            String description;
+
+            @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
+            String path  = "";
+
+            @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
+            boolean parents;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
         }
+
+        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be on STAGE of be an external file")
+        class RelinkCommand extends BaseFileCommand {
+            @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
+            String inputFile;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
+        }
+
+        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
+        class InfoCommand extends BaseFileCommand {}
 
         @Parameters(commandNames = {"search"}, commandDescription = "Search files")
         class SearchCommand {
@@ -589,16 +646,7 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
-        class ListCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--file-id"}, description = "Folder id", required = true, arity = 1)
-            String id;
-
+        class ListCommand extends BaseFileCommand {
             @Parameter(names = {"-L", "--level"}, description = "Descend only level directories deep.", arity = 1)
             public int level = Integer.MAX_VALUE;
 
@@ -607,16 +655,7 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
-        class IndexCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
-            String id;
-
+        class IndexCommand extends BaseFileCommand {
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
 
@@ -634,16 +673,7 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"stats-variants"}, commandDescription = "Calculate variant stats for a set of cohorts.")
-        class StatsCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
-            String id;
-
+        class StatsCommand extends BaseFileCommand {
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
 
@@ -658,15 +688,7 @@ public class OptionsParser {
         }
 
         @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
-        class AnnotationCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            CommonOptions cOpt = commonOptions;
-
-            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
-            String id;
+        class AnnotationCommand extends BaseFileCommand {
 
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
