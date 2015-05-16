@@ -37,7 +37,7 @@ OpenCGA is an open-source and collaborative project. We appreciate any help and 
 # How to build 
 OpenCGA is mainly developed in Java and it uses [Apache Maven](http://maven.apache.org/) as build tool. OpenCGA requires Java 7+ and a set of other OpenCB Java dependencies that can be found in [Maven Central Repository](http://search.maven.org/).
 
-Stable releases are merged and tagged at **_master_** branch, you are encourage to use latest stable release for production. Current active development is carried out at **_develop_** branch, only compilation is guaranteed and bugs are expected, use this branch for development or for testing new functionalities. Only dependencies of **_master_** branch are ensured to be deployed at [Maven Central Repository](http://search.maven.org/), **_develop_** branch may require users to download and install other active OpenCB repositories:
+Stable releases are merged and tagged at **_master_** branch, you are encourage to use latest stable release for production. Current active development is carried out at **_develop_** branch and need **Java 8**, only compilation is guaranteed and bugs are expected, use this branch for development or for testing new functionalities. Only dependencies of **_master_** branch are ensured to be deployed at [Maven Central Repository](http://search.maven.org/), **_develop_** branch may require users to download and install other active OpenCB repositories:
 * _biodata_: https://github.com/opencb/biodata (branch 'develop')
 * _datastore_: https://github.com/opencb/datastore (branch 'develop')
 * _cellbase_: https://github.com/opencb/cellbase (branch 'develop')
