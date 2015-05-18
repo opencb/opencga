@@ -96,13 +96,13 @@ public class SimpleThreadRunner {
         }
 
     }
-    
+
     private String getExceptionString(Exception e) {
-        String stack = "";
+        StringBuilder stack = new StringBuilder(e.toString()).append("\n");
         for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-            stack += "    " + stackTraceElement + "\n";
+            stack.append("    ").append(stackTraceElement).append("\n");
         }
-        return e.toString() + "\n" + stack;
+        return stack.toString();
     }
     
     class ReaderRunnable implements Runnable {
