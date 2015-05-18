@@ -460,6 +460,24 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         }
         logger.info("POST");
         writeSourceSummary(source);
+
+        DBObject empty = new BasicDBObject();   // are we sure a null won't raise nullptrException? it doesn't seem to be checks anywhere
+        variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), empty);
+        variantMongoCollection.createIndex(new BasicDBObject("annot.xrefs.id", 1), empty);
+        variantMongoCollection.createIndex(new BasicDBObject("annot.ct.so", 1), empty);
+        variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), empty);
+        variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), empty);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), empty);
+        variantMongoCollection.createIndex(new BasicDBObject("st.maf", 1), empty);
+        variantMongoCollection.createIndex(new BasicDBObject("st.mgf", 1), empty);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                        .append(DBObjectToVariantConverter.START_FIELD, 1)
+                        .append(DBObjectToVariantConverter.END_FIELD, 1), empty);
+        logger.debug("sent order to create indices");
+
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
         logger.debug("bulkTime " + bulkTime / 1000000.0 + "ms ");
