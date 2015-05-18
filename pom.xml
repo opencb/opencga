@@ -22,7 +22,7 @@
     <properties>
         <java.version>1.7</java.version>
         <opencga.version>0.5.2-SNAPSHOT</opencga.version>
-        <biodata.version>0.4.3</biodata.version>
+        <biodata.version>0.4.4</biodata.version>
         <datastore.version>0.3.3</datastore.version>
         <cellbase.version>3.1.0</cellbase.version>
     </properties>
