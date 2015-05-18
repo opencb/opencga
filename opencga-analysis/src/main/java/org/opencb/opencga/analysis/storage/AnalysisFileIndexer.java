@@ -289,7 +289,7 @@ public class AnalysisFileIndexer {
                     .append(" --file-id ").append(originalFile.getId())
                     .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
-                    .append(" --calculate-coverage ").append(chunkSize)
+                    .append(" --calculate-coverage ")
                     .append(" --mean-coverage ").append(chunkSize)
                     .append(" --outdir ").append(outDirUri)
 //                    .append(" --credentials ")
