@@ -469,9 +469,13 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), empty);
         variantMongoCollection.createIndex(
                 new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), empty);
+                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), empty);
         variantMongoCollection.createIndex(new BasicDBObject("st.maf", 1), empty);
         variantMongoCollection.createIndex(new BasicDBObject("st.mgf", 1), empty);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                        .append(DBObjectToVariantConverter.START_FIELD, 1)
+                        .append(DBObjectToVariantConverter.END_FIELD, 1), empty);
         logger.debug("sent order to create indices");
 
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
