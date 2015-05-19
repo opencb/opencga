@@ -41,7 +41,7 @@ public class StorageConfigurationTest {
                 "mongodb",
                 new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options)),
                 new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options)),
-                new HashMap<>());
+                options);
 
         StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
                 "hbase",

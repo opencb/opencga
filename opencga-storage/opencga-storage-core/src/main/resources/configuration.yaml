@@ -1,0 +1,48 @@
+---
+defaultStorageEngine: "mongodb"
+logLevel: info
+cellbase:
+  hosts:
+  - ${OPENCGA.CELLBASE.HOST}
+  version: ${OPENCGA.CELLBASE.VERSION}
+engines:
+- id: "mongodb"
+  options: {}
+  alignment:
+    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "mongodb-dev:27017"
+      user: "user"
+      password: "password"
+  variant:
+    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
+    options:
+      transform.batch_size: 200
+      load.batch_size: 100
+      load.bulk_size: 100
+      load.compress_genotypes: true
+    database:
+      hosts:
+      - ${OPENCGA.STORAGE.VARIANT.DB.HOST}
+      user: ${OPENCGA.STORAGE.VARIANT.DB.USER}
+      password: ${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}
+- id: "hbase"
+  options: {}
+  alignment:
+    manager: "org.opencb.opencga.storage.hbase.alignment.MongoDBAlignmentStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "who-master:60000"
+      user: "user"
+      password: "password"
+  variant:
+    manager: "org.opencb.opencga.storage.hbase.variant.MongoDBVariantStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "who-master:60000"
+      user: "user"
+      password: "password"
