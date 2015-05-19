@@ -75,7 +75,9 @@ public class AnalysisOutputRecorder {
 
         /** Modifies the job to set the output and endTime. **/
         try {
-            switch(Job.Type.valueOf(job.getAttributes().get(Job.TYPE).toString())) {
+            String type = job.getAttributes().containsKey(Job.TYPE) ?
+                    job.getAttributes().get(Job.TYPE).toString() : Job.Type.ANALYSIS.toString();
+            switch(Job.Type.valueOf(type)) {
                 case INDEX:
                     Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
                     File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
