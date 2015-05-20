@@ -555,12 +555,14 @@ public class CatalogManager {
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkId(folderId, "folderId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         int studyId = getStudyIdByFileId(folderId);
         File folder = getFile(folderId, sessionId).first();
         if (!folder.getType().equals(File.Type.FOLDER)) {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
-        return fileManager.readAll(studyId, new QueryOptions("directory", folder.getPath()), options, sessionId);
+        options.put("directory", folder.getPath());
+        return fileManager.readAll(studyId, options, options, sessionId);
     }
 
     public DataInputStream downloadFile(int fileId, String sessionId)
