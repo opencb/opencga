@@ -729,24 +729,26 @@ public class OpenCGAMain {
         Map<File.Bioformat, DataStore> dataStoreMap;
         dataStoreMap = new HashMap<>();
         HashSet<String> storageEnginesSet = new HashSet<>(Arrays.asList(StorageManagerFactory.getDefaultStorageManagerNames()));
-        for (String datastore : c.datastores) {
-            logger.debug("Parsing datastore {} ", datastore);
-            String[] split = datastore.split(":");
-            if (split.length != 3) {
-                throw new Exception("Invalid datastore. Expected <bioformat>:<storageEngineName>:<database_name>");
-            } else {
-                File.Bioformat bioformat;
-                try {
-                    bioformat = File.Bioformat.valueOf(split[0].toUpperCase());
-                } catch (Exception e) {
-                    throw new Exception("Unknown Bioformat \"" + split[0] + "\"", e);
+        if (c.datastores != null) {
+            for (String datastore : c.datastores) {
+                logger.debug("Parsing datastore {} ", datastore);
+                String[] split = datastore.split(":");
+                if (split.length != 3) {
+                    throw new Exception("Invalid datastore. Expected <bioformat>:<storageEngineName>:<database_name>");
+                } else {
+                    File.Bioformat bioformat;
+                    try {
+                        bioformat = File.Bioformat.valueOf(split[0].toUpperCase());
+                    } catch (Exception e) {
+                        throw new Exception("Unknown Bioformat \"" + split[0] + "\"", e);
+                    }
+                    String storageEngine = split[1];
+                    String dbName = split[2];
+                    if (!storageEnginesSet.contains(storageEngine)) {
+                        throw new Exception("Unknown StorageEngine \"" + storageEngine + "\"");
+                    }
+                    dataStoreMap.put(bioformat, new DataStore(storageEngine, dbName));
                 }
-                String storageEngine = split[1];
-                String dbName = split[2];
-                if (!storageEnginesSet.contains(storageEngine)) {
-                    throw new Exception("Unknown StorageEngine \"" + storageEngine + "\"");
-                }
-                dataStoreMap.put(bioformat, new DataStore(storageEngine, dbName));
             }
         }
         return dataStoreMap;
