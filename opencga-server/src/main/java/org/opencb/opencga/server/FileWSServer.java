@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Index;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
@@ -659,7 +660,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
 //            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null) {
+            if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
                 return createErrorResponse("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,7 @@ public class AnalysisOutputRecorder {
         this.sessionId = sessionId;
     }
 
-    public void recordJobOutput(Job job) {
+    public void recordJobOutput(Job job, boolean jobFailed) {
 
         List<Integer> fileIds;
 
@@ -81,11 +82,55 @@ public class AnalysisOutputRecorder {
                 case INDEX:
                     Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
                     File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
+                    final Index index;
                     if (indexedFile.getIndex() != null) {
-                        Index index = indexedFile.getIndex();
-                        index.setStatus(Index.Status.READY);
-                        catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
+                        index = indexedFile.getIndex();
+                        switch (index.getStatus()) {
+                            case NONE:
+                            case TRANSFORMED:
+                            case READY:
+                                logger.warn("Unexpected index status. Expected "
+                                        + Index.Status.TRANSFORMING + ", "
+                                        + Index.Status.LOADING + " or "
+                                        + Index.Status.INDEXING
+                                        + " and got " + index.getStatus());
+
+                                index.setStatus(Index.Status.READY);
+                                break;
+                            case TRANSFORMING:
+                                if (jobFailed) {
+                                    logger.warn("Job failed. Restoring status from " +
+                                            Index.Status.TRANSFORMING + " to " + Index.Status.NONE);
+                                    index.setStatus(Index.Status.NONE);
+                                } else {
+                                    index.setStatus(Index.Status.TRANSFORMED);
+                                }
+                                break;
+                            case LOADING:
+                                if (jobFailed) {
+                                    logger.warn("Job failed. Restoring status from " +
+                                            Index.Status.LOADING + " to " + Index.Status.TRANSFORMED);
+                                    index.setStatus(Index.Status.TRANSFORMED);
+                                } else {
+                                    index.setStatus(Index.Status.READY);
+                                }
+                                break;
+                            case INDEXING:
+                                if (jobFailed) {
+                                    logger.warn("Job failed. Restoring status from " +
+                                            Index.Status.INDEXING + " to " + Index.Status.NONE);
+                                    index.setStatus(Index.Status.NONE);
+                                } else {
+                                    index.setStatus(Index.Status.READY);
+                                }
+                                break;
+                        }
+                    } else {
+                        index = new Index(job.getUserId(), job.getDate(), Index.Status.READY, job.getId(), new HashMap<>());
+                        logger.warn("Expected INDEX object on the indexed file " +
+                                "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");
                     }
+                    catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
                     break;
                 case ANALYSIS:
                 default:

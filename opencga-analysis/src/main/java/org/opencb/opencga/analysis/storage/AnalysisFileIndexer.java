@@ -123,7 +123,8 @@ public class AnalysisFileIndexer {
             throw new CatalogException("Expected file type = " + File.Type.FILE + " instead of " + inputFile.getType());
         }
 
-        if (!transform) { //Don't transform. Just load. Select the original file
+        /** Get the original file. **/
+        if (!transform && load) { //Don't transform. Just load. Select the original file
             if (inputFile.getJobId() <= 0) {
                 throw new CatalogException("Error: can't load this file. JobId unknown");
             }
@@ -147,18 +148,41 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-//        final String dbName;
         final DataStore dataStore = getDataStore(catalogManager, originalFile, sessionId);
 
-        //TODO: Check if file can be indexed
-
+        /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
-            throw new CatalogException("File '" + originalFile.getId() + "' is already indexed");
+            switch (originalFile.getIndex().getStatus()) {
+                case TRANSFORMING:
+                    throw new CatalogException("File '" + originalFile.getId() + "' it's being transformed");
+                case TRANSFORMED:
+                    if (transform) {
+                        throw new CatalogException("File '" + originalFile.getId() + "' is already transformed");
+                    }
+                    break;
+                case LOADING:
+                    throw new CatalogException("File '" + originalFile.getId() + "' it's being loaded");
+                case INDEXING:
+                    throw new CatalogException("File '" + originalFile.getId() + "' it's being indexed");
+                case READY:
+                    throw new CatalogException("File '" + originalFile.getId() + "' is already indexed");
+                case NONE:
+                    break;
+            }
+        } else {
+            if (!transform && load) {
+                throw new CatalogException("File '" + originalFile.getId() + "' need to be transformed before loading");
+            }
         }
 
         // ObjectMap to fill with modifications over the indexed file (like new attributes or jobId)
-        ObjectMap fileModifyParams = new ObjectMap("attributes", new ObjectMap());
-        ObjectMap indexAttributes = new ObjectMap();
+        final ObjectMap fileModifyParams = new ObjectMap("attributes", new ObjectMap());
+        final ObjectMap indexAttributes;
+        if (originalFile.getIndex() == null || originalFile.getIndex().getAttributes() == null) {
+            indexAttributes = new ObjectMap();
+        } else {
+            indexAttributes = new ObjectMap(originalFile.getIndex().getAttributes());
+        }
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
@@ -174,7 +198,8 @@ public class AnalysisFileIndexer {
         if (originalFile.getSampleIds() == null || originalFile.getSampleIds().isEmpty()) {
             try {
                 sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
-                        catalogManager.getFileUri(originalFile), fileModifyParams, options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+                        catalogManager.getFileUri(originalFile), fileModifyParams,
+                        options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
             } catch (CatalogException | StorageManagerException e) {
                 throw new AnalysisExecutionException(e);
             }
@@ -184,7 +209,6 @@ public class AnalysisFileIndexer {
 
 
         /** Create commandLine **/
-
         String commandLine = createCommandLine(study, originalFile, inputFile, sampleList,
                 temporalOutDirUri, indexAttributes, dataStore, sessionId, options);
         if (options.containsKey(PARAMETERS)) {
@@ -194,14 +218,27 @@ public class AnalysisFileIndexer {
             }
         }
 
-        /** Create index information only if it's going to be loaded **/
-        if (load) {
-            Index indexInformation = new Index(userId, TimeUtils.getTime(), Index.Status.INDEXING, /*job.getId()*/-1, indexAttributes);
+        /** Create index information **/
+        Index indexInformation = originalFile.getIndex();
+        if (indexInformation == null) {
+            indexInformation = new Index(userId, TimeUtils.getTime(), Index.Status.NONE, -1, indexAttributes);
+        }
+        if (transform && !load) {
+            indexInformation.setStatus(Index.Status.TRANSFORMING);
+        } else if (!transform && load) {
+            indexInformation.setStatus(Index.Status.LOADING);
+        } else if (transform && load) {
+            indexInformation.setStatus(Index.Status.INDEXING);
+        }
+
+        if (!simulate) {
             fileModifyParams.put("index", indexInformation);
         }
 
         /** Modify file with new information **/
-        catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
+        if (!simulate) {
+            catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
+        }
 
         /** Create job **/
         ObjectMap jobAttributes = new ObjectMap();
@@ -214,8 +251,9 @@ public class AnalysisFileIndexer {
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 
-        if (load) {
-            modifyIndexJobId(originalFile.getId(), job.getId(), sessionId);
+
+        if (!simulate) {
+            modifyIndexJobId(originalFile.getId(), job.getId(), transform, load, sessionId);
         }
 
         if (simulate) {
@@ -226,13 +264,19 @@ public class AnalysisFileIndexer {
         }
     }
 
-    private void modifyIndexJobId(int fileId, int jobId, String sessionId) throws CatalogException {
+
+    private void modifyIndexJobId(int fileId, int jobId, boolean transform, boolean load, String sessionId) throws CatalogException {
         File file = catalogManager.getFile(fileId, sessionId).first();
-        if (file.getIndex() != null) {
-            Index index = file.getIndex();
-            index.setJobId(jobId);
-            catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
+        Index index = file.getIndex();
+        index.setJobId(jobId);
+        if (transform && !load) {
+            index.getAttributes().put("transformJobId", jobId);
+        } else if (!transform && load) {
+            index.getAttributes().put("loadJobId", jobId);
+        } else if (transform && load) {
+            index.getAttributes().put("indexJobId", jobId);
         }
+        catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
     }
 
     public static DataStore getDataStore(CatalogManager catalogManager, File file, String sessionId) throws CatalogException {

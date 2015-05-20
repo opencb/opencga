@@ -33,8 +33,13 @@ public class Index {
 
     /**
      * States
+     *
+     * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
+     *      \                                              /
+     *       ------------------> INDEXING ----------------/
+     *
      */
-    public enum Status {INDEXING, READY}
+    public enum Status {NONE, TRANSFORMING, TRANSFORMED, LOADING, INDEXING, READY}
 
 
     public Index() {
