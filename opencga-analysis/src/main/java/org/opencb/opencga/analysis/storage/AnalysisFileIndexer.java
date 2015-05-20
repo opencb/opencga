@@ -247,7 +247,7 @@ public class AnalysisFileIndexer {
             if (project.getDataStores() != null && project.getDataStores().containsKey(file.getBioformat())) {
                 dataStore = project.getDataStores().get(file.getBioformat());
             } else { //get default datastore
-                String userId = catalogManager.getFileOwner(file.getId());
+                String userId = catalogManager.getUserIdByStudyId(studyId); //Must use the UserByStudyId instead of the file owner.
                 String alias = project.getAlias();
                 dataStore = new DataStore(StorageManagerFactory.getDefaultStorageManagerName(), Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias);
             }

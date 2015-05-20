@@ -276,6 +276,14 @@ public class CatalogManager {
         return userManager.getUserId(sessionId);
     }
 
+    public String getUserIdByStudyId(int studyId) throws CatalogException {
+        return studyManager.getUserId(studyId);
+    }
+
+    public String getUserIdByProjectId(int projectId) throws CatalogException {
+        return projectManager.getUserId(projectId);
+    }
+
     public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
