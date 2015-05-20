@@ -188,7 +188,7 @@ public class OpenCGAStorageMain {
                 /**
                  * Parse QueryOptions
                  */
-                QueryOptions options = new QueryOptions();
+                QueryOptions options = new QueryOptions(new HashMap<>(c.params));
 
                 if (c.studyAlias != null && !c.studyAlias.isEmpty()) {
                     options.add("studies", Arrays.asList(c.studyAlias.split(",")));

@@ -74,6 +74,9 @@ while getopts "htu:i:p:l:U:q" opt; do
 	l)
 	    log_level=$OPTARG
 	    echo "Using log-level "$log_level
+        if [ $log_level == "debug" ]; then
+            set -x
+        fi
 	    ;;
 	t)
 	    transform_file=true
@@ -98,9 +101,6 @@ if [[ $input_files_len == 0 && $pedigree_file == false ]]; then
 	exit 1
 fi
 
-if [ $log_level == "debug" ]; then
-	set -x
-fi
 
 
 $OPENCGA_BIN users create -u $user -p $password -n $user -e user@email.com --log-level ${log_level}
