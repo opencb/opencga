@@ -1,20 +1,4 @@
 
-/*
- * Copyright 2015 OpenCB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 // The purpose of the `Content` object is to abstract away the data conversions
 // to and from raw content entities as strings. For example, you want to be able
 // to pass in a Javascript object and have it be automatically converted into a
@@ -26,7 +10,7 @@
 
 // The `Content` constructor takes an options object, which *must* have either a
 // `body` or `data` property and *may* have a `type` property indicating the
-// media type. If there is no `type` attributes, a default will be inferred.
+// media type. If there is no `type` attribute, a default will be inferred.
 var Content = function(options) {
   this.body = options.body;
   this.data = options.data;
@@ -48,7 +32,7 @@ Object.defineProperties(Content.prototype,{
 // - **type**. Typically accessed as `content.type`, reflects the `content-type`
 //   header associated with the request or response. If not passed as an options
 //   to the constructor or set explicitly, it will infer the type the `data`
-//   attributes, if possible, and, failing that, will default to `text/plain`.
+//   attribute, if possible, and, failing that, will default to `text/plain`.
   type: {
     get: function() {
       if (this._type) {
@@ -73,9 +57,9 @@ Object.defineProperties(Content.prototype,{
 // - **data**. Typically accessed as `content.data`, reflects the content entity
 //   converted into Javascript data. This can be a string, if the `type` is, say,
 //   `text/plain`, but can also be a Javascript object. The conversion applied is
-//   based on the `processor` attributes. The `data` attributes can also be set
+//   based on the `processor` attribute. The `data` attribute can also be set
 //   directly, in which case the conversion will be done the other way, to infer
-//   the `body` attributes.
+//   the `body` attribute.
   data: {
     get: function() {
       if (this._body) {
@@ -93,8 +77,8 @@ Object.defineProperties(Content.prototype,{
   },
 
 // - **body**. Typically accessed as `content.body`, reflects the content entity
-//   as a UTF-8 string. It is the mirror of the `data` attributes. If you set the
-//   `data` attributes, the `body` attributes will be inferred and vice-versa. If
+//   as a UTF-8 string. It is the mirror of the `data` attribute. If you set the
+//   `data` attribute, the `body` attribute will be inferred and vice-versa. If
 //   you attempt to set both, an exception is raised.
   body: {
     get: function() {
@@ -198,11 +182,11 @@ Content.registerProcessor(
 // easier to read.
 var Errors = {
   setDataWithBody: function(object) {
-    throw new Error("Attempt to set data attributes of a content object " +
+    throw new Error("Attempt to set data attribute of a content object " +
         "when the body attributes was already set.");
   },
   setBodyWithData: function(object) {
-    throw new Error("Attempt to set body attributes of a content object " +
+    throw new Error("Attempt to set body attribute of a content object " +
         "when the data attributes was already set.");
   }
 }
