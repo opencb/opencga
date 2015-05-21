@@ -531,17 +531,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         assertTrue(studyId >= 0);
         File file;
-        file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "", File.Status.UPLOADING, 1000);
+        file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
         LinkedList<Acl> acl = new LinkedList<>();
         acl.push(new Acl("jcoll", true, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, true));
         file.setAcl(acl);
         System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
-        file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime(), "", File.Status.UPLOADING, 1000);
+        file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
         System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
-        file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, TimeUtils.getTime(), "", File.Status.UPLOADING, 1000);
+        file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
         System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
-        file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, TimeUtils.getTime(), "", File.Status.UPLOADING, 1000);
+        file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
 
         try {
             System.out.println(catalogDBAdaptor.createFileToStudy(-20, file, null));
@@ -591,8 +591,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 //    @Test
 //    public void setFileStatus() throws CatalogDBException, IOException {
 //        int fileId = catalogDBAdaptor.getFileId("jcoll", "1000G", "ph1", "data/file.vcf");
-//        System.out.println(catalogDBAdaptor.setFileStatus(fileId, File.Status.UPLOADING));
-//        assertEquals(catalogDBAdaptor.getFile(fileId).first().getStatus(), File.Status.UPLOADING);
+//        System.out.println(catalogDBAdaptor.setFileStatus(fileId, File.Status.STAGE));
+//        assertEquals(catalogDBAdaptor.getFile(fileId).first().getStatus(), File.Status.STAGE);
 //        System.out.println(catalogDBAdaptor.setFileStatus(fileId, File.Status.UPLOADED));
 //        assertEquals(catalogDBAdaptor.getFile(fileId).first().getStatus(), File.Status.UPLOADED);
 //        System.out.println(catalogDBAdaptor.setFileStatus(fileId, File.Status.READY));

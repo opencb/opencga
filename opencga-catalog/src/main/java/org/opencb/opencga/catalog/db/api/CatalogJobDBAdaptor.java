@@ -35,7 +35,7 @@ public interface CatalogJobDBAdaptor {
 
     int getStudyIdByJobId(int jobId) throws CatalogDBException;
 
-    QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> searchJob(QueryOptions query, QueryOptions options) throws CatalogDBException;
 
 
     /**

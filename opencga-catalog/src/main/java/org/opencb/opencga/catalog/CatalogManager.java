@@ -177,18 +177,17 @@ public class CatalogManager {
         return fileManager.getStudyUri(studyId);
     }
 
-    public URI getFileUri(int studyId, String relativeFilePath)
-            throws CatalogException {
-        return catalogIOManagerFactory.getDefault().getFileUri(getStudyUri(studyId), relativeFilePath);
+    public URI getFileUri(File file) throws CatalogException {
+        return fileManager.getFileUri(file);
+    }
+
+    public URI getFileUri(Study study, File file) throws CatalogException {
+        return fileManager.getFileUri(study, file);
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
-            throws CatalogIOException, IOException {
-        return catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
-    }
-
-    public URI getFileUri(File file) throws CatalogException {
-        return fileManager.getFileUri(file);
+            throws CatalogException {
+        return fileManager.getFileUri(studyUri, relativeFilePath);
     }
 
     public int getProjectIdByStudyId(int studyId) throws CatalogException {
@@ -275,6 +274,14 @@ public class CatalogManager {
 
     public String getUserIdBySessionId(String sessionId) {
         return userManager.getUserId(sessionId);
+    }
+
+    public String getUserIdByStudyId(int studyId) throws CatalogException {
+        return studyManager.getUserId(studyId);
+    }
+
+    public String getUserIdByProjectId(int projectId) throws CatalogException {
+        return projectManager.getUserId(projectId);
     }
 
     public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
@@ -445,7 +452,7 @@ public class CatalogManager {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, File.Status.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -454,7 +461,7 @@ public class CatalogManager {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.Status.UPLOADING, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, File.Status.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Integer.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -548,12 +555,14 @@ public class CatalogManager {
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkId(folderId, "folderId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         int studyId = getStudyIdByFileId(folderId);
         File folder = getFile(folderId, sessionId).first();
         if (!folder.getType().equals(File.Type.FOLDER)) {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
-        return fileManager.readAll(studyId, new QueryOptions("directory", folder.getPath()), options, sessionId);
+        options.put("directory", folder.getPath());
+        return fileManager.readAll(studyId, options, options, sessionId);
     }
 
     public DataInputStream downloadFile(int fileId, String sessionId)

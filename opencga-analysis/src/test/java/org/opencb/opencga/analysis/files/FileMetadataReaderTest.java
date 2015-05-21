@@ -66,7 +66,7 @@ public class FileMetadataReaderTest extends TestCase {
 
         File file = fileQueryResult.first();
 
-        assertEquals(file.getStatus(), File.Status.UPLOADING);
+        assertEquals(file.getStatus(), File.Status.STAGE);
         assertEquals(file.getFormat(), File.Format.GZIP);
         assertEquals(file.getBioformat(), File.Bioformat.VARIANT);
         assertNotNull(file.getAttributes().get("variantSource"));
@@ -92,7 +92,7 @@ public class FileMetadataReaderTest extends TestCase {
 
         File file = fileQueryResult.first();
 
-        assertEquals(File.Status.UPLOADING, file.getStatus());
+        assertEquals(File.Status.STAGE, file.getStatus());
         assertEquals(File.Format.PLAIN, file.getFormat());
         assertEquals(File.Bioformat.NONE, file.getBioformat());
         assertNull(file.getAttributes().get("variantSource"));
@@ -120,7 +120,7 @@ public class FileMetadataReaderTest extends TestCase {
 
         File file = fileQueryResult.first();
 
-        assertEquals(File.Status.UPLOADING, file.getStatus());
+        assertEquals(File.Status.STAGE, file.getStatus());
         assertEquals(File.Format.PLAIN, file.getFormat());
         assertEquals(File.Bioformat.NONE, file.getBioformat());
         assertNull(file.getAttributes().get("variantSource"));

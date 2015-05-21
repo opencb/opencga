@@ -39,16 +39,22 @@ public class Command extends RunnableProcess {
     protected static Logger logger = LoggerFactory.getLogger(Command.class);
     private StringBuffer outputBuffer = new StringBuffer();
     private StringBuffer errorBuffer = new StringBuffer();
-
-    public Command() {
-    }
+    private final String[] cmdArray;
 
     public Command(String commandLine) {
         this.commandLine = commandLine;
+        cmdArray = Commandline.translateCommandline(getCommandLine());
     }
 
     public Command(String commandLine, List<String> environment) {
         this.commandLine = commandLine;
+        this.environment = environment;
+        cmdArray = Commandline.translateCommandline(getCommandLine());
+    }
+
+    public Command(String[] cmdArray, List<String> environment) {
+        this.cmdArray = cmdArray;
+        this.commandLine = Commandline.toString(cmdArray);
         this.environment = environment;
     }
 
@@ -58,7 +64,7 @@ public class Command extends RunnableProcess {
             setStatus(Status.RUNNING);
 
             startTime();
-            String[] cmdArray = Commandline.translateCommandline(getCommandLine());
+            logger.info(Commandline.describeCommand(cmdArray));
             if (environment != null && environment.size() > 0) {
                 proc = Runtime.getRuntime().exec(cmdArray, ListUtils.toArray(environment));
             } else {

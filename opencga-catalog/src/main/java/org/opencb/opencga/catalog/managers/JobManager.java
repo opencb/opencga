@@ -151,16 +151,16 @@ public class JobManager extends AbstractManager implements IJobManager {
         query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            if (!options.containsKey("studyId")) {
+            if (!query.containsKey("studyId")) {
                 throw new CatalogException("Permission denied. Can't get jobs without specify an StudyId");
             } else {
-                int studyId = options.getInt("studyId");
+                int studyId = query.getInt("studyId");
                 if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
                     throw new CatalogException("Permission denied. Can't get jobs");
                 }
             }
         }
-        return jobDBAdaptor.searchJob(query);
+        return jobDBAdaptor.searchJob(query, options);
     }
 
     @Override

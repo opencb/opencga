@@ -41,6 +41,8 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -1209,7 +1211,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         Map<String, Object> fileParameters = new HashMap<>();
 
-        String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status"};
+        String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status", "uri"};
         filterStringParams(parameters, fileParameters, acceptedParams);
 
         String[] acceptedLongParams = {"diskUsage"};
@@ -1391,47 +1393,50 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 //        BasicDBList filters = new BasicDBList();
         DBObject mongoQuery = new BasicDBObject();
 
-        if(query.containsKey("id")){
-            addQueryIntegerListFilter("id", query, "_id", mongoQuery);
+        if (query.containsKey(FileFilterOption.id.name())) {
+            addQueryIntegerListFilter(FileFilterOption.id.name(), query, "_id", mongoQuery);
         }
-        if(query.containsKey("studyId")){
-            addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
+        if (query.containsKey(FileFilterOption.studyId.name())) {
+            addQueryIntegerListFilter(FileFilterOption.studyId.name(), query, _STUDY_ID, mongoQuery);
         }
-        if(query.containsKey("name")){
-            addQueryStringListFilter("name", query, mongoQuery);
+        if (query.containsKey(FileFilterOption.name.name())) {
+            addQueryStringListFilter(FileFilterOption.name.name(), query, mongoQuery);
         }
-        if(query.containsKey("type")){
-            addQueryStringListFilter("type", query, mongoQuery);
+        if (query.containsKey(FileFilterOption.type.name())) {
+            addQueryStringListFilter(FileFilterOption.type.name(), query, mongoQuery);
         }
-        if(query.containsKey("path")){
-            addQueryStringListFilter("path", query, mongoQuery);
+        if (query.containsKey(FileFilterOption.path.name())) {
+            addQueryStringListFilter(FileFilterOption.path.name(), query, mongoQuery);
         }
-        if(query.containsKey("bioformat")){
-            addQueryStringListFilter("bioformat", query, mongoQuery);
+        if (query.containsKey(FileFilterOption.bioformat.name())) {
+            addQueryStringListFilter(FileFilterOption.bioformat.name(), query, mongoQuery);
         }
-        if(query.containsKey("status")){
+        if (query.containsKey(FileFilterOption.status.name())) {
             addQueryStringListFilter("status", query, mongoQuery);
         }
-        if(query.containsKey("maxSize")){
+        if (query.containsKey(FileFilterOption.maxSize.name())) {
             mongoQuery.put("size", new BasicDBObject("$lt", query.getInt("maxSize")));
         }
-        if(query.containsKey("minSize")){
+        if (query.containsKey(FileFilterOption.minSize.name())) {
             mongoQuery.put("size", new BasicDBObject("$gt", query.getInt("minSize")));
         }
-        if(query.containsKey("startDate")){
+        if (query.containsKey(FileFilterOption.startDate.name())) {
             mongoQuery.put("creationDate", new BasicDBObject("$lt", query.getString("startDate")));
         }
-        if(query.containsKey("endDate")){
+        if (query.containsKey(FileFilterOption.endDate.name())) {
             mongoQuery.put("creationDate", new BasicDBObject("$gt", query.getString("endDate")));
         }
-        if(query.containsKey("like")){
+        if (query.containsKey(FileFilterOption.like.name())) {
             mongoQuery.put("name", new BasicDBObject("$regex", query.getString("like")));
         }
-        if (query.containsKey("startsWith")){
+        if (query.containsKey(FileFilterOption.startsWith.name())) {
             mongoQuery.put("name", new BasicDBObject("$regex", "^" + query.getString("startsWith")));
         }
-        if (query.containsKey("directory")){
+        if (query.containsKey(FileFilterOption.directory.name())) {
             mongoQuery.put("path", new BasicDBObject("$regex", "^" + query.getString("directory") + "[^/]+/?$"));
+        }
+        if (query.containsKey(FileFilterOption.attributes.name())) {
+            addCompQueryFilter(FileFilterOption.attributes.name(), query, "attributes", mongoQuery);
         }
 
 //        DBObject query = new BasicDBObject("$and", filters);
@@ -1635,30 +1640,30 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Job> searchJob(QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> searchJob(QueryOptions query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        DBObject query = new BasicDBObject();
+        DBObject mongoQuery = new BasicDBObject();
 
-        if(options.containsKey("ready")) {
-            if(options.getBoolean("ready")) {
-                query.put("status", Job.Status.READY.name());
+        if(query.containsKey("ready")) {
+            if(query.getBoolean("ready")) {
+                mongoQuery.put("status", Job.Status.READY.name());
             } else {
-                query.put("status", new BasicDBObject("$ne", Job.Status.READY.name()));
+                mongoQuery.put("status", new BasicDBObject("$ne", Job.Status.READY.name()));
             }
-            options.remove("ready");
+            query.remove("ready");
         }
 
-        if (options.containsKey("studyId")) {
-            addQueryIntegerListFilter("studyId", options, _STUDY_ID, query);
+        if (query.containsKey("studyId")) {
+            addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
         }
 
-        if (options.containsKey("status")) {
-            addQueryStringListFilter("status", options, query);
+        if (query.containsKey("status")) {
+            addQueryStringListFilter("status", query, mongoQuery);
         }
 
 //        System.out.println("query = " + query);
-        QueryResult<DBObject> queryResult = jobCollection.find(query, null);
+        QueryResult<DBObject> queryResult = jobCollection.find(mongoQuery, null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Search job", startTime, jobs);
     }
@@ -2327,6 +2332,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private void addQueryStringListFilter(String key, QueryOptions options, DBObject query) {
         addQueryStringListFilter(key, options, key, query);
     }
+
     private void addQueryStringListFilter(String optionKey, QueryOptions options, String queryKey, DBObject query) {
         if (options.containsKey(optionKey)) {
             List<String> stringList = options.getAsStringList(optionKey);
@@ -2352,6 +2358,59 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
     }
+
+    static Pattern operationPattern = Pattern.compile("(.*)(<=?|>=?|!=|!?~=?|==)(.*)");
+    private DBObject addCompQueryFilter(String optionKey, QueryOptions options, String queryKey, DBObject query) throws CatalogDBException {
+        List<String> list = options.getAsStringList(optionKey);
+        for (String cond : list) {
+            Matcher matcher = operationPattern.matcher(cond);
+            if (!matcher.find()) {
+                throw new CatalogDBException("Unknown filter operation: " + cond);
+            }
+            addCompQueryFilter(
+                    queryKey == null || queryKey.isEmpty()? matcher.group(1) : queryKey + "." + matcher.group(1),
+                    matcher.group(2),
+                    matcher.group(3), query);
+        }
+        return query;
+    }
+
+    private DBObject addCompQueryFilter(String queryKey, String op, String filter, DBObject query) throws CatalogDBException {
+        try {
+            switch (op) {
+                case "<":
+                    query.put(queryKey, new BasicDBObject("$lt", Float.parseFloat(filter)));
+                    break;
+                case "<=":
+                    query.put(queryKey, new BasicDBObject("$lte", Float.parseFloat(filter)));
+                    break;
+                case ">":
+                    query.put(queryKey, new BasicDBObject("$gt", Float.parseFloat(filter)));
+                    break;
+                case ">=":
+                    query.put(queryKey, new BasicDBObject("$gte", Float.parseFloat(filter)));
+                    break;
+                case "==":
+                    query.put(queryKey, new BasicDBObject("$eq", Float.parseFloat(filter)));
+                    break;
+                case "!=":
+                    query.put(queryKey, new BasicDBObject("$ne", Float.parseFloat(filter)));
+                    break;
+                case "!~":
+                case "!~=":
+                    query.put(queryKey, new BasicDBObject("$not", new BasicDBObject("$regex", filter)));
+                    break;
+                case "~":
+                case "~=":
+                    query.put(queryKey, new BasicDBObject("$regex", filter));
+                    break;
+            }
+        } catch (NumberFormatException e) {
+            throw new CatalogDBException(e);
+        }
+        return query;
+    }
+
 
     /*  */
 

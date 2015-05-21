@@ -21,6 +21,7 @@ import org.junit.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
@@ -29,6 +30,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.models.*;
@@ -56,6 +58,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+    private File testFolder;
 
     @Before
     public void setUp() throws IOException, CatalogException {
@@ -84,8 +87,15 @@ public class CatalogManagerTest extends GenericTest {
         int studyId3 = catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
 
-        catalogManager.createFolder(studyId, Paths.get("data/test/folder/"), true, null, sessionIdUser);
+        testFolder = catalogManager.createFolder(studyId, Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
         catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
+
+
+        ObjectMap attributes = new ObjectMap("field", "value");
+        attributes.put("numValue", 5);
+        catalogManager.modifyFile(testFolder.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+
+
 
     }
 
@@ -482,25 +492,79 @@ public class CatalogManagerTest extends GenericTest {
         QueryOptions options;
         QueryResult<File> result;
 
-        options = new QueryOptions("startsWith", "data");
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.startsWith.toString(), "data");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
-        System.out.println(result);
-        assertTrue(result.getNumResults() == 1);
+        assertEquals(1, result.getNumResults());
 
-        options = new QueryOptions("directory", "jobs");
-        System.out.println(catalogManager.searchFile(studyId, options, sessionIdUser));
+        //Folder "jobs" does not exist
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "jobs");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(0, result.getNumResults());
 
-        options = new QueryOptions("directory", "data");
-        System.out.println(catalogManager.searchFile(studyId, options, sessionIdUser));
+        //Get all files in data
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "data/");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(1, result.getNumResults());
 
-        options = new QueryOptions("directory", "data.*");
-        System.out.println(catalogManager.searchFile(studyId, options, sessionIdUser));
+        //Get all files in data recursively
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "data/.*");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field~=value"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==5.0"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue>=5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue>4"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<6"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<=5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue>5"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<5"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<2"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==23"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue~=5"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+    }
+
+    @Test
+    public void testSearchFileFail1() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        thrown.expect(CatalogDBException.class);
+        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==NotANumber"), sessionIdUser);
+    }
+
+    @Test
+    public void testSearchFileFail2() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        thrown.expect(CatalogDBException.class);
+        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "badFilter"), sessionIdUser);
     }
 
     @Test
     public void testGetFileParent() throws CatalogException, IOException {
-
-        int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
         int fileId;
         fileId = catalogManager.getFileId("user@1000G:phase1:data/test/folder/");
@@ -594,9 +658,9 @@ public class CatalogManagerTest extends GenericTest {
                 new QueryOptions("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
                 null, sessionIdUser).getResult();
 
-        assertTrue(file.getStatus() == File.Status.DELETING);
+        assertTrue(file.getStatus() == File.Status.TRASHED);
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus() == File.Status.DELETING);
+            assertTrue(subFile.getStatus() == File.Status.TRASHED);
         }
     }
 
@@ -658,7 +722,35 @@ public class CatalogManagerTest extends GenericTest {
 
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
         assertEquals(4, allJobs.getNumResults());
+    }
 
+    @Test
+    public void testCreateFailJob() throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
+        thrown.expect(CatalogException.class);
+        catalogManager.createJob(
+                studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, projectId, //Bad outputId
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, null, sessionIdUser);
+    }
+
+    @Test
+    public void testGetAllJobs() throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, null, sessionIdUser).first();
+
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
+        catalogManager.createJob(
+                studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
+                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, null, sessionIdUser);
+
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
+
+        assertEquals(1, allJobs.getNumTotalResults());
+        assertEquals(1, allJobs.getNumResults());
     }
 
     /**

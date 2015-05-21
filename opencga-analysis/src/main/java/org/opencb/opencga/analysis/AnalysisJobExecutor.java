@@ -304,7 +304,7 @@ public class AnalysisJobExecutor {
 
         /** Record output **/
         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-        outputRecorder.recordJobOutput(job);
+        outputRecorder.recordJobOutput(job, com.getExitValue() != 0);
 
         /** Change status to READY or ERROR **/
         if (com.getExitValue() == 0) {

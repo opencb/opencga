@@ -17,6 +17,7 @@
 package org.opencb.opencga.core;
 
 import com.google.common.base.Splitter;
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.core.exec.RunnableProcess;
@@ -82,22 +83,31 @@ public class  SgeManager {
     @Deprecated
     public static void queueJob(String toolName, String wumJobName, int wumUserId, String outdir, String commandLine, String queue, String logFileId)
             throws Exception {
-        logFileId = logFileId == null || logFileId.isEmpty()? "" : "." + logFileId;
-        queue = queue == null || queue.isEmpty()? getQueueName(toolName) : queue;
+        logFileId = logFileId == null || logFileId.isEmpty() ? "" : "." + logFileId;
+        queue = queue == null || queue.isEmpty() ? getQueueName(toolName) : queue;
         String outFile = Paths.get(outdir, "sge_out" + logFileId + ".log").toString();
         String errFile = Paths.get(outdir, "sge_err" + logFileId + ".log").toString();
-                // init sge job
-                String sgeCommandLine = "qsub -V " +
-                        " -N " + getSgeJobName(toolName, wumJobName) +
-                        " -o " + outFile +
-                        " -e " + errFile +
-                        " -q " + queue +
-                        " -b y " + commandLine;
+        // init sge job
+        ArrayList<String> args = new ArrayList<>(Arrays.asList(
+                "qsub", "-V",
+                "-N", getSgeJobName(toolName, wumJobName),
+                "-o", outFile,
+                "-e", errFile,
+                "-q", queue,
+                "-b", "y" ));
 
-        logger.info("SgeManager: Enqueuing job: " + sgeCommandLine);
+        for (String arg : Commandline.translateCommandline(commandLine)) {
+            if (arg.contains(" ")) {
+                arg = "\\\"" + arg + "\\\"";
+            }
+            args.add(arg);
+        }
+
+        String[] cmdArray = args.toArray(new String[args.size()]);
+        logger.info("SgeManager: Enqueuing job: " + Commandline.toString(cmdArray));
 
         // thrown command to shell
-        Command sgeCommand = new Command(sgeCommandLine);
+        Command sgeCommand = new Command(cmdArray, null);
         SingleProcess sp = new SingleProcess(sgeCommand);
         sp.getRunnableProcess().run();
         if (sgeCommand.getExitValue() != 0 || sgeCommand.getException() != null) {

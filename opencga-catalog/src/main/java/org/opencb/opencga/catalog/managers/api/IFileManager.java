@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.models.Study;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -17,39 +18,44 @@ import java.util.Map;
 * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface IFileManager extends ResourceManager<Integer, File> {
-    URI getStudyUri(int studyId)
-            throws CatalogException;
 
-    URI getFileUri(int studyId, String relativeFilePath)
-            throws CatalogException;
+    /*-------------*/
+    /* URI METHODS */
+    /*-------------*/
+    URI getStudyUri(int studyId) throws CatalogException;
+
+    URI getFileUri(Study study, File file) throws CatalogException;
 
     URI getFileUri(File file) throws CatalogException;
 
-    URI getFileUri(URI studyUri, String relativeFilePath)
-            throws CatalogIOException, IOException;
+    URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException;
 
-    public String  getUserId(int fileId) throws CatalogException;
+    /*-------------*/
+    /* ID METHODS  */
+    /*-------------*/
+    String  getUserId(int fileId) throws CatalogException;
 
-    public Integer getProjectId(int fileId) throws CatalogException;
+    Integer getStudyId(int fileId) throws CatalogException;
 
-    public Integer getStudyId(int fileId) throws CatalogException;
+    Integer getFileId(String fileId) throws CatalogException;
 
-    public Integer getFileId(String fileId) throws CatalogException;
+    /*--------------*/
+    /* CRUD METHODS */
+    /*--------------*/
+    QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
+                             String ownerId, String creationDate, String description, File.Status status,
+                             long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
+                             Map<String, Object> stats, Map<String, Object> attributes,
+                             boolean parents, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> createFolder(int studyId, String path, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException;
-
-    public QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                    String ownerId, String creationDate, String description, File.Status status,
-                                    long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
-                                    Map<String, Object> stats, Map<String, Object> attributes,
-                                    boolean parents, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException;
 
     QueryResult<File> getParent(int fileId, QueryOptions options, String sessionId)
-    throws CatalogException;
+            throws CatalogException;
 
     QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException;
@@ -64,9 +70,12 @@ public interface IFileManager extends ResourceManager<Integer, File> {
     QueryResult<Dataset> readDataset(int dataSetId, QueryOptions options, String sessionId)
             throws CatalogException;
 
-    DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException;
+    DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId)
+            throws CatalogException;
 
-    DataInputStream download(int fileId, int offset, int limit, QueryOptions options, String sessionId) throws CatalogException;
+    DataInputStream download(int fileId, int offset, int limit, QueryOptions options, String sessionId)
+            throws CatalogException;
 
-    DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId) throws CatalogException;
+    DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
+            throws CatalogException;
 }
