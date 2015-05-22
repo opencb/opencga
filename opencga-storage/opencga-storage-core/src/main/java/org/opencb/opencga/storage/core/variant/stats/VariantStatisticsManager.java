@@ -32,7 +32,6 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -51,7 +50,6 @@ import java.util.zip.GZIPOutputStream;
  */
 public class VariantStatisticsManager {
 
-    public static final String BATCH_SIZE = "batchSize";
     private String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
     private String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
     private final JsonFactory jsonFactory;
@@ -90,7 +88,7 @@ public class VariantStatisticsManager {
         ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
 
         /** Variables for statistics **/
-        int batchSize = options.getInt(BATCH_SIZE, 1000); // future optimization, threads, etc
+        int batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, 1000); // future optimization, threads, etc
         boolean overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, false);
         List<Variant> variantBatch = new ArrayList<>(batchSize);
         int retrievedVariants = 0;
@@ -199,18 +197,29 @@ public class VariantStatisticsManager {
         int numTasks = 6;
         int batchSize = 100;  // future optimization, threads, etc
         boolean overwrite = false;
+        String fileId;
         if(options != null) { //Parse query options
-            batchSize = options.getInt(BATCH_SIZE, batchSize);
+            batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, batchSize);
+            numTasks = options.getInt(VariantStorageManager.LOAD_THREADS, numTasks);
             overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
+            fileId = options.getString(VariantStorageManager.FILE_ID);
+        } else {
+            logger.error("missing required fileId in QueryOptions");
+            throw new Exception("createStats: need a fileId to calculate stats from.");
         }
 
-//        reader, tasks and writer
+        VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, Integer.toString(studyConfiguration.getStudyId()));
+
+
+       // reader, tasks and writer
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, options);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, samples, studyConfiguration, options.getString(VariantStorageManager.FILE_ID)));
+            tasks.add(new VariantStatsWrapperTask(overwrite, samples, studyConfiguration, fileId, variantSourceStats));
         }
-        StringDataWriter writer = new StringDataWriter(Paths.get(output.getPath() + VARIANT_STATS_SUFFIX));
+        Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
+        logger.info("will write stats to {}", variantStatsPath);
+        StringDataWriter writer = new StringDataWriter(variantStatsPath);
         
         // runner 
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks*2, false);
@@ -220,7 +229,14 @@ public class VariantStatisticsManager {
         long start = System.currentTimeMillis();
         runner.run();
         logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
-        
+
+        // source stats
+        Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
+        OutputStream outputSourceStream = getOutputStream(fileSourcePath, options);
+        ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
+        outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
+        outputSourceStream.close();
+
         return output;
     }
 
@@ -232,30 +248,45 @@ public class VariantStatisticsManager {
         private String fileId;
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
+        private VariantSourceStats variantSourceStats;
 
-        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples, StudyConfiguration studyConfiguration, String fileId) {
+        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples,
+                                       StudyConfiguration studyConfiguration, String fileId,
+                                       VariantSourceStats variantSourceStats) {
             this.overwrite = overwrite;
             this.samples = samples;
             this.studyConfiguration = studyConfiguration;
             this.fileId = fileId;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
+            this.variantSourceStats = variantSourceStats;
         }
 
         @Override
         public List<String> apply(List<Variant> variants) {
 
             List<String> strings = new ArrayList<>(variants.size());
-            
+            boolean defaultCohortAbsent = false;
+
             VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, studyConfiguration.getStudyId()+"", fileId, samples);
-            
+
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
+                    if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
+                        defaultCohortAbsent = true;
+                    }
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
+                }
+            }
+            // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
+            if (!defaultCohortAbsent) {
+                synchronized (variantSourceStats) {
+                    variantSourceStats.updateFileStats(variants);
+                    variantSourceStats.updateSampleStats(variants, null);  // TODO test
                 }
             }
             logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
@@ -292,7 +323,7 @@ public class VariantStatisticsManager {
         /** Initialize Json parse **/
         JsonParser parser = jsonFactory.createParser(variantInputStream);
 
-        int batchSize = options.getInt(BATCH_SIZE, 1000);
+        int batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, 1000);
         ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(batchSize);
         int writes = 0;
         int variantsNumber = 0;

@@ -134,6 +134,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Sample> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(query, "query");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -141,7 +142,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
-        return sampleDBAdaptor.getAllSamples(studyId, options);
+        query.putAll(options);
+        return sampleDBAdaptor.getAllSamples(studyId, query);
     }
 
     @Override
