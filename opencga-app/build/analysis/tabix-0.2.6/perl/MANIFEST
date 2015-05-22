@@ -1,8 +1,0 @@
-MANIFEST
-typemap
-Tabix.xs
-Tabix.pm
-TabixIterator.pm
-Makefile.PL
-t/01local.t
-t/02remote.t
