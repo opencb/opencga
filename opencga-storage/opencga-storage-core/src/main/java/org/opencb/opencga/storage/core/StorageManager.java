@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core;
 
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,9 +29,26 @@ import java.net.URI;
  * @param <DBWRITER>
  * @param <DBADAPTOR>
  */
-public interface StorageManager<DBWRITER, DBADAPTOR> {
+public abstract class StorageManager<DBWRITER, DBADAPTOR> {
 
-    void addConfigUri(URI configUri);
+    protected StorageConfiguration configuration;
+    protected Logger logger;
+
+    public StorageManager() {
+
+    }
+
+    public StorageManager(StorageConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
+
+    @Deprecated
+    public void addConfigUri(URI configUri) {}
+
+    public void addConfiguration(StorageConfiguration configuration){
+        this.configuration = configuration;
+    }
 
     /**
      * ETL cycle consists of the following execution steps:
@@ -49,17 +68,17 @@ public interface StorageManager<DBWRITER, DBADAPTOR> {
      * @param input Data source origin
      * @param ouput Final location of data
      */
-    URI extract(URI input, URI ouput, ObjectMap params) throws StorageManagerException;
+    public abstract URI extract(URI input, URI ouput, ObjectMap params) throws StorageManagerException;
 
 
-    URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
+    public abstract URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
 
-    URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
+    public abstract URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
 
-    URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
+    public abstract URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
 
 
-    URI preLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
+    public abstract URI preLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
 
     /**
      * This method loads the transformed data file into a database, the database credentials are expected to be read
@@ -70,9 +89,9 @@ public interface StorageManager<DBWRITER, DBADAPTOR> {
      * @throws IOException
      * @throws StorageManagerException
      */
-    URI load(URI input, ObjectMap params) throws IOException, StorageManagerException;
+    public abstract URI load(URI input, ObjectMap params) throws IOException, StorageManagerException;
 
-    URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
+    public abstract URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
 
 
     /**
@@ -80,9 +99,8 @@ public interface StorageManager<DBWRITER, DBADAPTOR> {
      *  - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
      *  - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
-    DBWRITER getDBWriter(String dbName, ObjectMap params) throws StorageManagerException;
+    public abstract DBWRITER getDBWriter(String dbName, ObjectMap params) throws StorageManagerException;
 
-    DBADAPTOR getDBAdaptor(String dbName, ObjectMap params) throws StorageManagerException;
-
+    public abstract DBADAPTOR getDBAdaptor(String dbName, ObjectMap params) throws StorageManagerException;
 
 }

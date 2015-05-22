@@ -61,9 +61,9 @@ public class StorageConfigurationTest {
 //        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
 //                "hbase", new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()));
 
-        storageConfiguration.setDefaultStorageEngine("mongodb");
-        storageConfiguration.getEngines().add(storageEngineConfiguration1);
-        storageConfiguration.getEngines().add(storageEngineConfiguration2);
+        storageConfiguration.setDefaultStorageEngineId("mongodb");
+        storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
+        storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
         try {
             storageConfiguration.serialize(new FileOutputStream("/tmp/aaa"));

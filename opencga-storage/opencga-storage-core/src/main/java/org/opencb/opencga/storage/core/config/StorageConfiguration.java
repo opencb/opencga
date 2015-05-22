@@ -63,35 +63,33 @@ public class StorageConfiguration {
 
 
 
-    private String defaultStorageEngine;
+    private String defaultStorageEngineId;
     private String logLevel;
 
 //    private String include;
 
     private CellBaseConfiguration cellbase;
 
-    private List<StorageEngineConfiguration> engines;
+    private List<StorageEngineConfiguration> storageEngines;
 
     public StorageConfiguration() {
         this("", new ArrayList<>());
     }
 
-    public StorageConfiguration(String defaultStorageEngine, List<StorageEngineConfiguration> engines) {
-        this.defaultStorageEngine = defaultStorageEngine;
-        this.engines = engines;
+    public StorageConfiguration(String defaultStorageEngineId, List<StorageEngineConfiguration> storageEngines) {
+        this.defaultStorageEngineId = defaultStorageEngineId;
+        this.storageEngines = storageEngines;
 
 //        this.include = "conf.d";
         this.cellbase = new CellBaseConfiguration();
     }
 
-    public void load(InputStream configurationInputStream) throws IOException {
-        load(configurationInputStream, "yaml");
+    public static StorageConfiguration load(InputStream configurationInputStream) throws IOException {
+        return load(configurationInputStream, "yaml");
     }
 
-
-
-    public void load(InputStream configurationInputStream, String format) throws IOException {
-        StorageConfiguration storageConfiguration = null;
+    public static StorageConfiguration load(InputStream configurationInputStream, String format) throws IOException {
+        StorageConfiguration storageConfiguration;
         ObjectMapper objectMapper;
         switch (format) {
             case "json":
@@ -107,23 +105,48 @@ public class StorageConfiguration {
         }
 
         if(storageConfiguration != null) {
-            if (storageConfiguration.getDefaultStorageEngine() != null) {
-                this.defaultStorageEngine = storageConfiguration.getDefaultStorageEngine();
-            }
+//            if (storageConfiguration.getDefaultStorageEngineId() != null) {
+//                this.defaultStorageEngineId = storageConfiguration.getDefaultStorageEngineId();
+//            }
 //            if (storageConfiguration.get) {
 //                this.include = sto
 //                  for(conf.d) ...
 //            }
-            for (StorageEngineConfiguration storageEngineConfiguration : storageConfiguration.getEngines()) {
-                this.engines.add(storageEngineConfiguration);
+//            for (StorageEngineConfiguration storageEngineConfiguration : storageConfiguration.getStorageEngines()) {
+//                this.storageEngines.add(storageEngineConfiguration);
+//            }
+        }
+        return storageConfiguration;
+    }
+
+    public void serialize(OutputStream configurationOututStream) throws IOException {
+        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
+    }
+
+    public StorageEngineConfiguration getStorageEngine() {
+        return getStorageEngine(defaultStorageEngineId);
+    }
+
+    public StorageEngineConfiguration getStorageEngine(String storageEngine) {
+        StorageEngineConfiguration storageEngineConfiguration = null;
+        for (StorageEngineConfiguration engine : storageEngines) {
+            if (engine.getId().equals(storageEngine)) {
+                storageEngineConfiguration = engine;
+                break;
             }
         }
+
+        if(storageEngineConfiguration == null && storageEngines.size() > 0) {
+            storageEngineConfiguration = storageEngines.get(0);
+        }
+
+        return storageEngineConfiguration;
     }
 
     public void addStorageEngine(InputStream configurationInputStream) throws IOException {
         addStorageEngine(configurationInputStream, "yaml");
     }
-
 
     public void addStorageEngine(InputStream configurationInputStream, String format) throws IOException {
         StorageEngineConfiguration storageEngineConfiguration = null;
@@ -142,33 +165,28 @@ public class StorageConfiguration {
         }
 
         if(storageEngineConfiguration != null) {
-            this.engines.add(storageEngineConfiguration);
+            this.storageEngines.add(storageEngineConfiguration);
         }
-    }
-
-    public void serialize(OutputStream configurationOututStream) throws IOException {
-        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
-        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
     @Override
     public String toString() {
         return "StorageConfiguration{" +
-                "defaultStorageEngine='" + defaultStorageEngine + '\'' +
+                "defaultStorageEngineId='" + defaultStorageEngineId + '\'' +
                 ", logLevel='" + logLevel + '\'' +
 //                ", include='" + include + '\'' +
                 ", cellbase=" + cellbase +
-                ", engines=" + engines +
+                ", storageEngines=" + storageEngines +
                 '}';
     }
 
 
-    public String getDefaultStorageEngine() {
-        return defaultStorageEngine;
+    public String getDefaultStorageEngineId() {
+        return defaultStorageEngineId;
     }
 
-    public void setDefaultStorageEngine(String defaultStorageEngine) {
-        this.defaultStorageEngine = defaultStorageEngine;
+    public void setDefaultStorageEngineId(String defaultStorageEngineId) {
+        this.defaultStorageEngineId = defaultStorageEngineId;
     }
 
     public String getLogLevel() {
@@ -195,11 +213,11 @@ public class StorageConfiguration {
         this.cellbase = cellbase;
     }
 
-    public List<StorageEngineConfiguration> getEngines() {
-        return engines;
+    public List<StorageEngineConfiguration> getStorageEngines() {
+        return storageEngines;
     }
 
-    public void setEngines(List<StorageEngineConfiguration> engines) {
-        this.engines = engines;
+    public void setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
+        this.storageEngines = storageEngines;
     }
 }

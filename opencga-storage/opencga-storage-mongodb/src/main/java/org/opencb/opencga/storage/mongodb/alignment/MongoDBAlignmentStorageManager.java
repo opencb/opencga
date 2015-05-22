@@ -27,6 +27,7 @@ import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Date 15/08/14.
@@ -45,7 +47,7 @@ import java.util.*;
  */
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
-    public static final String MONGO_DB_NAME = "opencga";
+    public static final String MONGODB_DATABASE_NAME = "opencga";
     public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME";
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER";
@@ -53,16 +55,22 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOSTS";
 
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
-    protected static Logger logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
-
-    public MongoDBAlignmentStorageManager(Path propertiesPath) {
-        this();
-        addConfigUri(URI.create(propertiesPath.toString()));
-    }
+    protected static Logger logger;
 
     public MongoDBAlignmentStorageManager() {
-        super();
+        this(null);
     }
+
+    public MongoDBAlignmentStorageManager(StorageConfiguration configuration) {
+        super(configuration);
+        logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
+    }
+
+//    @Deprecated
+//    public MongoDBAlignmentStorageManager(Path propertiesPath) {
+//        this();
+//        addConfigUri(URI.create(propertiesPath.toString()));
+//    }
 
     @Override
     public CoverageMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
@@ -74,7 +82,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public AlignmentDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
-            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGO_DB_NAME);
+//            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGODB_DATABASE_NAME);
+            dbName = configuration.getStorageEngine("mongodb").getOptions().getOrDefault("database.coverage.collection.name", MONGODB_DATABASE_NAME);
             logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
         }
         Path path = Paths.get(properties.getProperty(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
@@ -93,13 +102,18 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     private MongoCredentials getMongoCredentials(String mongoDbName){
         try {   //TODO: Use user and password
-            String mongoUser = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER, null);
-            String mongoPassword = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS, null);
+//            String mongoUser = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER, null);
+//            String mongoPassword = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS, null);
+            String mongodbUser = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getUser();
+            String mongodbPassword = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getPassword();
+            String hosts = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getHosts()
+                    .stream().map(String::toString).collect(Collectors.joining(","));
             return new MongoCredentials(
-                    MongoCredentials.parseDataStoreServerAddresses(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS, "localhost")),
+//                    MongoCredentials.parseDataStoreServerAddresses(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS, "localhost")),
+                    MongoCredentials.parseDataStoreServerAddresses(hosts),
                     mongoDbName,
-                    mongoUser,
-                    mongoPassword
+                    mongodbUser,
+                    mongodbPassword
             );
             //this.mongoCredentials = new MongoCredentials(properties);
         } catch (IllegalOpenCGACredentialsException e) {

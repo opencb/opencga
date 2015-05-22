@@ -1,16 +1,19 @@
 ---
-defaultStorageEngine: "mongodb"
+defaultStorageEngineId: "mongodb"
 logLevel: info
 cellbase:
   hosts:
   - ${OPENCGA.CELLBASE.HOST}
   version: ${OPENCGA.CELLBASE.VERSION}
-engines:
+storageEngines:
 - id: "mongodb"
   options: {}
   alignment:
     manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
-    options: {}
+    options:
+      transform.region_size: 200000
+      transform.coverage_chunk_size: 1000
+      database.name: "opencga"
     database:
       hosts:
       - "mongodb-dev:27017"
@@ -23,6 +26,7 @@ engines:
       load.batch_size: 100
       load.bulk_size: 100
       load.compress_genotypes: true
+      database.name: "opencga"
     database:
       hosts:
       - ${OPENCGA.STORAGE.VARIANT.DB.HOST}

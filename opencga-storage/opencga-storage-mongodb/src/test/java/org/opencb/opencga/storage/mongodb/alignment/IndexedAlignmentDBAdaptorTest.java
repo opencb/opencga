@@ -30,6 +30,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,15 +48,24 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     private AlignmentMetaDataDBAdaptor metadata;
 
     @Before
-    public void before(){
-        manager = new MongoDBAlignmentStorageManager(Paths.get("/media/jacobo/Nusado/opencga", "opencga.properties"));
-        metadata = new AlignmentMetaDataDBAdaptor(manager.getProperties().getProperty("files-index", "/tmp/files-index.properties"));
-        //manager.getMetadata();
+    public void before() {
+        try {
+            StorageConfiguration storageConfiguration = StorageConfiguration
+                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("configuration.yaml"));
 
-        Path adaptorPath = null;
-        adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
-        manager.getProperties().setProperty(MongoDBAlignmentStorageManager.OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, adaptorPath.toString());
-        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(MongoDBAlignmentStorageManager.MONGO_DB_NAME, new ObjectMap());
+//            manager = new MongoDBAlignmentStorageManager(Paths.get("/media/jacobo/Nusado/opencga", "opencga.properties"));
+//            metadata = new AlignmentMetaDataDBAdaptor(manager.getProperties().getProperty("files-index", "/tmp/files-index.properties"));
+            manager = new MongoDBAlignmentStorageManager(storageConfiguration);
+//            metadata = new AlignmentMetaDataDBAdaptor(manager.getProperties().getProperty("files-index", "/tmp/files-index.properties"));
+
+            Path adaptorPath = null;
+            adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
+//            manager.getProperties().setProperty(MongoDBAlignmentStorageManager.OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, adaptorPath.toString());
+            dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(MongoDBAlignmentStorageManager.MONGODB_DATABASE_NAME, new ObjectMap());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Test

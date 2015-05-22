@@ -27,6 +27,7 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -41,7 +42,8 @@ import java.util.Properties;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogVariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
+@Deprecated
+public class CatalogVariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
 //public class CatalogVariantStorageManager extends VariantStorageManager {
 
 
@@ -69,6 +71,11 @@ public class CatalogVariantStorageManager implements StorageManager<VariantWrite
             e.printStackTrace();
         }
         configUris.add(configUri);
+    }
+
+    @Override
+    public void addConfiguration(StorageConfiguration configuration) {
+
     }
 
     @Override

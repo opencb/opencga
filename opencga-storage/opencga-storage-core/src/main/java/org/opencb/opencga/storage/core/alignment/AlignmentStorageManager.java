@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataW
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
-import org.slf4j.Logger;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -50,8 +50,7 @@ import java.util.Properties;
 /**
  * Created by jacobo on 14/08/14.
  */
-public abstract class AlignmentStorageManager implements StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> { //DataReader<AlignmentRegion>,
-
+public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
 
     public static final String MEAN_COVERAGE_SIZE_LIST = "meanCoverageSizeList";
     public static final String PLAIN = "plain";
@@ -66,8 +65,18 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
     public static final String COPY_FILE = "copy";
     public static final String DB_NAME = "dbName";
 
+    @Deprecated
     protected final Properties properties = new Properties();
-    protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+//    protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+
+    public AlignmentStorageManager() {
+        this(null);
+    }
+
+    public AlignmentStorageManager(StorageConfiguration configuration) {
+        super(configuration);
+        logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+    }
 
     @Override
     public void addConfigUri(URI configUri){
@@ -82,9 +91,9 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         }
     }
 
-    public Properties getProperties() {
-        return properties;
-    }
+//    public Properties getProperties() {
+//        return properties;
+//    }
 
     @Override
     public URI extract(URI input, URI ouput, ObjectMap params) {
@@ -133,7 +142,6 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
 
         Path input = Paths.get(inputUri.getPath());
         Path output = Paths.get(outputUri.getPath());
-        Path bamFile = input;
 
         checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
 
@@ -142,7 +150,8 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         boolean includeCoverage = params.getBoolean(INCLUDE_COVERAGE, false);
         boolean createBai = params.getBoolean(CREATE_BAI, false);
         int regionSize = params.getInt(REGION_SIZE,
-                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
+//                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
+                Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.region_size", "200000")));
         List<String> meanCoverageSizeList = params.getAsStringList(MEAN_COVERAGE_SIZE_LIST);
         String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
         String fileAlias = params.getString(FILE_ALIAS, defaultFileAlias);
@@ -177,7 +186,7 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
 
         //Reader
         AlignmentDataReader reader;
-        reader = new AlignmentBamDataReader(bamFile, null); //Read from sorted BamFile
+        reader = new AlignmentBamDataReader(input, null); //Read from sorted BamFile
 
 
         //Tasks
@@ -185,9 +194,10 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
         // tasks.add(new AlignmentRegionCompactorTask(new SqliteSequenceDBAdaptor(sqliteSequenceDBPath)));
         if(includeCoverage) {
             AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
-            for (String size : meanCoverageSizeList) {
-                coverageCalculatorTask.addMeanCoverageCalculator(size);
-            }
+//        for (String size : meanCoverageSizeList) {
+//            coverageCalculatorTask.addMeanCoverageCalculator(size);
+//        }
+            meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
             tasks.add(coverageCalculatorTask);
         }
 
@@ -205,7 +215,8 @@ public abstract class AlignmentStorageManager implements StorageManager<DataWrit
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
-                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
+//                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
+                    Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.coverage_chunk_size", "1000")));
             writers.add(alignmentCoverageJsonDataWriter);
             if(outputFile == null) {
                 outputFile = alignmentCoverageJsonDataWriter.getCoverageFilename();

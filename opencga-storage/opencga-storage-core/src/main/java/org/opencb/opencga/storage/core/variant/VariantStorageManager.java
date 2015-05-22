@@ -55,8 +55,7 @@ import java.util.*;
 /**
  * Created by imedina on 13/08/14.
  */
-public abstract class VariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
-
+public abstract class VariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
 
     public static final String INCLUDE_STATS = "includeStats";              //Include existing stats on the original file.
     public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)

@@ -39,6 +39,7 @@ import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -132,6 +133,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             e.printStackTrace();
             return null;
         }
+    }
+
+    @Override
+    public void addConfiguration(StorageConfiguration configuration) {
+
     }
 
     @Override
