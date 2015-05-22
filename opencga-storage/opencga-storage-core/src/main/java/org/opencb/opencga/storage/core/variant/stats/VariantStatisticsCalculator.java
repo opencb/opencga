@@ -78,7 +78,7 @@ public class VariantStatisticsCalculator {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
 
         for (Variant variant : variants) {
-            VariantSourceEntry file = variant.getSourceEntry(studyId, fileId);
+            VariantSourceEntry file = variant.getSourceEntry(fileId, studyId);
             if (file == null) {
                 skippedFiles++;
                 continue;
