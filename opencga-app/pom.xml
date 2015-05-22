@@ -221,10 +221,10 @@
                                 <echo>Deleting from ${installation.dir}</echo>
                                 <exec executable="rm">
                                     <arg value="-rf"/>
-                                    <arg value="${installation.dir}/analysis"/>
                                     <arg value="${installation.dir}/conf"/>
                                     <arg value="${installation.dir}/bin"/>
                                     <arg value="${installation.dir}/libs"/>
+                                    <arg value="${installation.dir}/tools"/>
                                 </exec>
 
                                 <echo>Adding execution permission</echo>
@@ -238,10 +238,10 @@
                                 <echo>Copying to ${installation.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${build.dir}/analysis"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/bin"/>
                                     <arg value="${build.dir}/libs"/>
+                                    <arg value="${build.dir}/tools"/>
                                     <arg value="${installation.dir}"/>
                                 </exec>
                             </target>
