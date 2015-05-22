@@ -1,0 +1,141 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.storage.app.cli;
+
+import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+/**
+ * Created by imedina on 22/05/15.
+ */
+public class IndexAlignmentsCommandExecutor extends CommandExecutor {
+
+    private CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
+
+    public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
+
+    public IndexAlignmentsCommandExecutor(CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions) {
+        super(indexAlignmentsCommandOptions.logLevel, indexAlignmentsCommandOptions.verbose,
+                indexAlignmentsCommandOptions.configFile);
+
+        this.indexAlignmentsCommandOptions = indexAlignmentsCommandOptions;
+    }
+
+
+    @Override
+    public void execute() {
+        logger.debug("in IndexVariantsCommandExecutor");
+
+        try {
+            AlignmentStorageManager alignmentStorageManager;
+            String storageEngine = indexAlignmentsCommandOptions.storageEngine;
+            if (storageEngine == null || storageEngine.isEmpty()) {
+                alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
+            } else {
+                alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
+            }
+            URI input = new URI(null, indexAlignmentsCommandOptions.input, null);
+            if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
+                alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
+            }
+
+            URI outdir;
+            if (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty()) {
+                outdir = new URI(null, indexAlignmentsCommandOptions.outdir + (indexAlignmentsCommandOptions.outdir.endsWith("/") ? "" : "/"), null).resolve(".");
+            } else {
+                outdir = input.resolve(".");
+            }
+
+            assertDirectoryExists(outdir);
+
+            ObjectMap params = new ObjectMap();
+            params.putAll(indexAlignmentsCommandOptions.params);
+
+            if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
+                params.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
+            }
+            params.put(AlignmentStorageManager.PLAIN, false);
+            params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
+            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+            params.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
+            params.put(AlignmentStorageManager.COPY_FILE, false);
+            params.put(AlignmentStorageManager.ENCRYPT, "null");
+
+            params.putAll(indexAlignmentsCommandOptions.params);
+
+            boolean extract, transform, load;
+            URI nextFileUri = input;
+
+            if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load, do both
+                extract = true;
+                transform = true;
+                load = true;
+            } else {
+                extract = indexAlignmentsCommandOptions.transform;
+                transform = indexAlignmentsCommandOptions.transform;
+                load = indexAlignmentsCommandOptions.load;
+            }
+
+            if (extract) {
+                logger.info("-- Extract alignments -- {}", input);
+                nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+            }
+
+            if (transform) {
+                logger.info("-- PreTransform alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+                logger.info("-- Transform alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+                logger.info("-- PostTransform alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+            }
+
+            if (load) {
+                logger.info("-- PreLoad alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+                logger.info("-- Load alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+                logger.info("-- PostLoad alignments -- {}", nextFileUri);
+                nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+            }
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (StorageManagerException e) {
+            e.printStackTrace();
+        } catch (FileFormatException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+}

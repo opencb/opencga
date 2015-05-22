@@ -16,10 +16,15 @@
 
 package org.opencb.opencga.storage.app.cli;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 /**
  * Created by imedina on 02/03/15.
  */
 public class StorageMain {
+
+    public static final String VERSION = "0.6.0-SNAPSHOT";
 
     public static void main(String[] args) {
 
@@ -32,11 +37,18 @@ public class StorageMain {
                 cliOptionsParser.printUsage();
             }
             if(cliOptionsParser.getGeneralOptions().version) {
-                System.out.println("version = 0.5.0");
+                System.out.println("Version " + VERSION);
             }
         }else {
             CommandExecutor commandExecutor = null;
             switch (parsedCommand) {
+                case "index-alignments":
+                    if (cliOptionsParser.getIndexAlignmentsCommandOptions().help) {
+                        cliOptionsParser.printUsage();
+                    } else {
+                        commandExecutor = new IndexAlignmentsCommandExecutor(cliOptionsParser.getIndexAlignmentsCommandOptions());
+                    }
+                    break;
                 case "index-variants":
                     if (cliOptionsParser.getIndexVariantsCommandOptions().help) {
                         cliOptionsParser.printUsage();
@@ -49,13 +61,15 @@ public class StorageMain {
             }
 
             if (commandExecutor != null) {
-//                try {
-//                    commandParser.readCellBaseConfiguration();
+                try {
+                    commandExecutor.loadOpenCGAStorageConfiguration();
                     commandExecutor.execute();
-//                } catch (IOException |URISyntaxException ex) {
-//                    commandParser.getLogger().error("Error reading cellbase configuration: " + ex.getMessage());
-//                }
+                } catch (IOException |URISyntaxException ex) {
+                    commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
+                }
             }
         }
     }
+
+
 }
