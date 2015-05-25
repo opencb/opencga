@@ -33,14 +33,14 @@ public class CliOptionsParser {
     private final GeneralOptions generalOptions;
     private final CommonCommandOptions commonCommandOptions;
 
-    private final CommandCreateAccessions accessions;
+    private final CreateAccessionsCommandOption createAccessionsCommandOption;
 
-    private final IndexVariantsCommandOptions indexVariantsCommandOptions;
     private final IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
+    private final IndexVariantsCommandOptions indexVariantsCommandOptions;
 //    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
 
-    private final QueryVariantsCommandOptions queryVariantsCommandOptions;
     private final QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
+    private final QueryVariantsCommandOptions queryVariantsCommandOptions;
 
     private final AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
     private final StatsVariantsCommandOptions statsVariantsCommandOptions;
@@ -54,8 +54,9 @@ public class CliOptionsParser {
         jcommander.setProgramName("opencga-storage2.sh");
 
         commonCommandOptions = new CommonCommandOptions();
-        jcommander.addCommand(accessions = new CommandCreateAccessions());
+//        jcommander.addCommand(createAccessionsCommandOption = new createAccessionsCommandOption());
 
+        createAccessionsCommandOption = new CreateAccessionsCommandOption();
         indexVariantsCommandOptions = new IndexVariantsCommandOptions();
         indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
 //        indexSequenceCommandOptions = new IndexSequenceCommandOptions();
@@ -64,11 +65,12 @@ public class CliOptionsParser {
         annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
         statsVariantsCommandOptions = new StatsVariantsCommandOptions();
 
-        jcommander.addCommand("index-variants", indexVariantsCommandOptions);
+        jcommander.addCommand("create-accessions", createAccessionsCommandOption);
         jcommander.addCommand("index-alignments", indexAlignmentsCommandOptions);
+        jcommander.addCommand("index-variants", indexVariantsCommandOptions);
 //        jcommander.addCommand("index-sequence", indexSequenceCommandOptions);
-        jcommander.addCommand("fetch-variants", queryVariantsCommandOptions);
         jcommander.addCommand("fetch-alignments", queryAlignmentsCommandOptions);
+        jcommander.addCommand("fetch-variants", queryVariantsCommandOptions);
         jcommander.addCommand("annotate-variants", annotateVariantsCommandOptions);
         jcommander.addCommand("stats-variants", statsVariantsCommandOptions);
     }
@@ -144,7 +146,7 @@ public class CliOptionsParser {
 
 
     @Parameters(commandNames = {"create-accessions"}, commandDescription = "Creates accession IDs for an input file")
-    public class CommandCreateAccessions extends CommonCommandOptions {
+    public class CreateAccessionsCommandOption extends CommonCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to annotation with accession IDs", required = true, arity = 1)
         public String input;
@@ -173,7 +175,7 @@ public class CliOptionsParser {
     }
 
 
-    public class IndexCommandOptions extends CommonCommandOptions {
+    class IndexCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         public String input;
@@ -198,6 +200,17 @@ public class CliOptionsParser {
 
 //        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
 //        String backend = "mongodb";
+    }
+
+    @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
+    public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
+
+        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
+        public boolean calculateCoverage = false;
+
+        //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        public List<String> meanCoverage = Collections.singletonList("200");
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
@@ -253,186 +266,176 @@ public class CliOptionsParser {
         public String annotatorConfigFile;
     }
 
-    @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
-    public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
-
-        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
-        public boolean calculateCoverage = false;
-
-        //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
-        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
-        public List<String> meanCoverage = Collections.singletonList("200");
-    }
-
 
 
     class QueryCommandOptions extends CommonCommandOptions {
-        //File location parameters
+
         @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
-        String backend = "mongodb";
+        public String backend = "mongodb";
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
-        String dbName;
+        public String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
-        String credentials = "";
+        public String credentials;
 
         @Parameter(names = {"-r","--region"}, description = " [CSV]", required = false)
-        List<String> regions = new LinkedList<>();
+        public List<String> regions = new LinkedList<>();
 
         @Parameter(names = {"--region-gff-file"}, description = "", required = false)
-        String gffFile;
+        public String gffFile;
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. Default: stdout", required = false, arity = 1)
-        String output;
+        public String output;
 
         @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false, arity = 1)
-        String outputFormat = "vcf";
-
-    }
-
-    @Parameters(commandNames = {"fetch-variants"}, commandDescription = "Search over indexed variants")
-    class QueryVariantsCommandOptions extends QueryCommandOptions {
-
-        //Filter parameters
-        @Parameter(names = {"--study-alias"}, description = " [CSV]", required = false)
-        String studyAlias;
-
-        @Parameter(names = {"-a", "--alias"}, description = "File unique ID. [CSV]", required = false, arity = 1)
-        String fileId;
-
-        @Parameter(names = {"-e", "--effect"}, description = " [CSV]", required = false, arity = 1)
-        String effect;
-
-        @Parameter(names = {"--id"}, description = " [CSV]", required = false)
-        String id;
-
-        @Parameter(names = {"-t", "--type"}, description = " [CSV]", required = false)
-        String type;
-
-        @Parameter(names = {"-g", "--gene"}, description = " [CSV]", required = false)
-        String gene;
-
-        @Parameter(names = {"--reference"}, description = " [CSV]", required = false)
-        String reference;
-
-        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
-        List<String> stats = new LinkedList<>();
-
-        @Parameter(names = {"--annot-filter"}, description = " [CSV]", required = false)
-        List<String> annot = new LinkedList<>();
-
+        public String outputFormat = "vcf";
 
     }
 
     @Parameters(commandNames = {"fetch-alignments"}, commandDescription = "Search over indexed alignments")
-    class QueryAlignmentsCommandOptions extends QueryCommandOptions {
+    public class QueryAlignmentsCommandOptions extends QueryCommandOptions {
 
         //Filter parameters
         @Parameter(names = {"-a", "--alias"}, description = "File unique ID.", required = false, arity = 1)
-        String fileId;
+        public String fileId;
 
         @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
-        String filePath;
+        public String filePath;
 
         @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
-        boolean coverage;
+        public boolean coverage = false;
 
         @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
-        int histogram = -1;
+        public boolean histogram = false;
 
         @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
-        boolean asPairs;
+        public boolean asPairs;
 
         @Parameter(names = {"--process-differences"}, description = " ", required = false)
-        boolean processDifferences;
+        public boolean processDifferences;
 
         @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
-        List<String> stats = new LinkedList<>();
+        public List<String> stats = new LinkedList<>();
+
+    }
+
+    @Parameters(commandNames = {"fetch-variants"}, commandDescription = "Search over indexed variants")
+    public class QueryVariantsCommandOptions extends QueryCommandOptions {
+
+        @Parameter(names = {"--study-alias"}, description = " [CSV]", required = false)
+        public String studyAlias;
+
+        @Parameter(names = {"-a", "--alias"}, description = "File unique ID. [CSV]", required = false, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"-e", "--effect"}, description = " [CSV]", required = false, arity = 1)
+        public String effect;
+
+        @Parameter(names = {"--id"}, description = " [CSV]", required = false)
+        public String id;
+
+        @Parameter(names = {"-t", "--type"}, description = " [CSV]", required = false)
+        public String type;
+
+        @Parameter(names = {"-g", "--gene"}, description = " [CSV]", required = false)
+        public String gene;
+
+        @Parameter(names = {"--reference"}, description = " [CSV]", required = false)
+        public String reference;
+
+        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
+        public List<String> stats = new LinkedList<>();
+
+        @Parameter(names = {"--annot-filter"}, description = " [CSV]", required = false)
+        public List<String> annot = new LinkedList<>();
 
     }
 
 
 
-    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load annotations into a database.")
-    class AnnotateVariantsCommandOptions extends CommonCommandOptions {
+    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
+    public class AnnotateVariantsCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
-        boolean create = false;
+        public boolean create = false;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
-        String load = null;
+        public boolean load = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
+        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
-        boolean overwriteAnnotations = false;
+        public boolean overwriteAnnotations = false;
 
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
-        String annotatorConfig = null;
+        public String annotatorConfig;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
-        String dbName;
+        public String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
-        String credentials = "";
+        public String credentials;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
-        String fileName = "";
+        public String fileName;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
-        String outdir = "./";
+        public String outdir;
 
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
-        String species = "hsapiens";
+        public String species = "hsapiens";
 
         @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
-        String assembly = "GRc37";
-
+        public String assembly = "GRc37";
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
-        List<String> filterRegion = null;
+        public List<String> filterRegion;
 
         @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
-        List<String> filterChromosome = null;
+        public List<String> filterChromosome;
 
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
-        String filterGene = null;
+        public String filterGene;
 
         @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
-        List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+        public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+
     }
 
 
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
-    class StatsVariantsCommandOptions extends CommonCommandOptions {
+    public class StatsVariantsCommandOptions extends CommonCommandOptions {
+
+        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+        public boolean create = false;
+
+        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
+        public boolean load = false;
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
-        boolean overwriteStats = false;
+        public boolean overwriteStats = false;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        String fileId;
+        public String fileId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
-        String dbName;
+        public String dbName;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
-        String credentials = "";
+        public String credentials;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
-        String fileName = "";
+        public String fileName;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
-        String outdir = ".";
-        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
-        boolean create = false;
-        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
-        String load = null;
+        public String outdir = ".";
+
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
@@ -453,6 +456,14 @@ public class CliOptionsParser {
         return generalOptions;
     }
 
+    public CommonCommandOptions getCommonCommandOptions() {
+        return commonCommandOptions;
+    }
+
+    public CreateAccessionsCommandOption getCreateAccessionsCommandOption() {
+        return createAccessionsCommandOption;
+    }
+
     public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
         return indexVariantsCommandOptions;
     }
@@ -464,10 +475,6 @@ public class CliOptionsParser {
 //    IndexSequenceCommandOptions getIndexSequenceCommandOptions() {
 //        return indexSequenceCommandOptions;
 //    }
-
-    public CommandCreateAccessions getAccessionsCommand() {
-        return accessions;
-    }
 
     public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
         return queryVariantsCommandOptions;
@@ -484,7 +491,4 @@ public class CliOptionsParser {
         return statsVariantsCommandOptions;
     }
 
-    public CommonCommandOptions getCommonCommandOptions() {
-        return commonCommandOptions;
-    }
 }

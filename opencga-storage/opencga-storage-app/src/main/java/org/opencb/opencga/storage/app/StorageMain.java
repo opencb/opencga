@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.storage.app;
 
-import org.opencb.opencga.storage.app.cli.CliOptionsParser;
-import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.IndexAlignmentsCommandExecutor;
-import org.opencb.opencga.storage.app.cli.IndexVariantsCommandExecutor;
+import org.opencb.opencga.storage.app.cli.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -47,6 +44,13 @@ public class StorageMain {
         }else {
             CommandExecutor commandExecutor = null;
             switch (parsedCommand) {
+                case "create-accessions":
+                    if (cliOptionsParser.getCreateAccessionsCommandOption().help) {
+                        cliOptionsParser.printUsage();
+                    } else {
+                        commandExecutor = new CreateAccessionsCommandExecutor(cliOptionsParser.getCreateAccessionsCommandOption());
+                    }
+                    break;
                 case "index-alignments":
                     if (cliOptionsParser.getIndexAlignmentsCommandOptions().help) {
                         cliOptionsParser.printUsage();
@@ -59,6 +63,34 @@ public class StorageMain {
                         cliOptionsParser.printUsage();
                     } else {
                         commandExecutor = new IndexVariantsCommandExecutor(cliOptionsParser.getIndexVariantsCommandOptions());
+                    }
+                    break;
+                case "fetch-alignments":
+                    if (cliOptionsParser.getQueryAlignmentsCommandOptions().help) {
+                        cliOptionsParser.printUsage();
+                    } else {
+                        commandExecutor = new FetchAlignmentsCommandExecutor(cliOptionsParser.getQueryAlignmentsCommandOptions());
+                    }
+                    break;
+                case "fetch-variants":
+                    if (cliOptionsParser.getQueryVariantsCommandOptions().help) {
+                        cliOptionsParser.printUsage();
+                    } else {
+                        commandExecutor = new FetchVariantsCommandExecutor(cliOptionsParser.getQueryVariantsCommandOptions());
+                    }
+                    break;
+                case "annotate-variants":
+                    if (cliOptionsParser.getAnnotateVariantsCommandOptions().help) {
+                        cliOptionsParser.printUsage();
+                    } else {
+                        commandExecutor = new AnnotateVariantsCommandExecutor(cliOptionsParser.getAnnotateVariantsCommandOptions());
+                    }
+                    break;
+                case "stats-variants":
+                    if (cliOptionsParser.getStatsVariantsCommandOptions().help) {
+                        cliOptionsParser.printUsage();
+                    } else {
+                        commandExecutor = new StatsVariantsCommandExecutor(cliOptionsParser.getStatsVariantsCommandOptions());
                     }
                     break;
                 default:

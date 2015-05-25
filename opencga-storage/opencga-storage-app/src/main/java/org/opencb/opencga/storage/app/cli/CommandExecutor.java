@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.apache.commons.lang.StringUtils;
-import org.opencb.cellbase.core.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,9 +119,11 @@ public abstract class CommandExecutor {
                         .load(new FileInputStream(new File(this.appHome + "/configuration.yml")));
             }else {
                 logger.debug("Loading configuration from '{}'",
-                        CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
+                        StorageConfiguration.class.getClassLoader()
+                                .getResourceAsStream("configuration.yml")
+                                .toString());
                 this.configuration = StorageConfiguration
-                        .load(CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                        .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
             }
         }
     }

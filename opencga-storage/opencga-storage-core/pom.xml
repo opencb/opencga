@@ -52,7 +52,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>configuration.yaml</include>
+                    <include>configuration.yml</include>
                 </includes>
             </resource>
         </resources>
