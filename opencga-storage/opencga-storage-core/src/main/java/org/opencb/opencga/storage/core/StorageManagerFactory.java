@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core;
 
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.net.URI;
@@ -31,8 +32,14 @@ import java.util.Properties;
  */
 public class StorageManagerFactory {
 
+    private static StorageConfiguration storageConfiguration;
+
     private static Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
     private static Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
+
+    public StorageManagerFactory(StorageConfiguration storageConfiguration) {
+        this.storageConfiguration = storageConfiguration;
+    }
 
     public static AlignmentStorageManager getAlignmentStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
@@ -59,11 +66,35 @@ public class StorageManagerFactory {
     private static <T extends StorageManager> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
 
+        /*
+         * This new block of code use new StorageConfiguration system, it must replace older one
+         */
+        if(storageConfiguration != null && !storageManagerMap.containsKey(storageEngineName)) {
+            String clazz = null;
+            switch (bioformat) {
+                case "ALIGNMENT":
+                    clazz = storageConfiguration.getStorageEngine(storageEngineName).getAlignment().getManager();
+                    break;
+                case "VARIANT":
+                    clazz = storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
+                    break;
+            }
+
+            T storageManager = (T) Class.forName(clazz).newInstance();
+            storageManager.addConfiguration(storageConfiguration);
+
+            storageManagerMap.put(storageEngineName, storageManager);
+            return storageManagerMap.get(storageEngineName);
+        }
+
+        // OLD CODE!!!
+
         // Get a valid StorageEngine name
         storageEngineName = parseStorageEngineName(storageEngineName);
         if(storageEngineName == null) {
             return null;
         }
+
 
         // Check if this already has been created
         if(!storageManagerMap.containsKey(storageEngineName)) {

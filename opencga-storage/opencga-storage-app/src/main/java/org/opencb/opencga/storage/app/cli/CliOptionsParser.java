@@ -54,14 +54,13 @@ public class CliOptionsParser {
         jcommander.setProgramName("opencga-storage2.sh");
 
         commonCommandOptions = new CommonCommandOptions();
-//        jcommander.addCommand(createAccessionsCommandOption = new createAccessionsCommandOption());
 
         createAccessionsCommandOption = new CreateAccessionsCommandOption();
-        indexVariantsCommandOptions = new IndexVariantsCommandOptions();
         indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
+        indexVariantsCommandOptions = new IndexVariantsCommandOptions();
 //        indexSequenceCommandOptions = new IndexSequenceCommandOptions();
-        queryVariantsCommandOptions = new QueryVariantsCommandOptions();
         queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
+        queryVariantsCommandOptions = new QueryVariantsCommandOptions();
         annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
         statsVariantsCommandOptions = new StatsVariantsCommandOptions();
 

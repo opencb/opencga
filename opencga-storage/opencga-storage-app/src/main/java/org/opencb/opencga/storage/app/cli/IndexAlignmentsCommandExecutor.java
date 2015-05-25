@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 22/05/15.
@@ -33,7 +34,7 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
     private CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
 
-    public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
+//    public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
 
     public IndexAlignmentsCommandExecutor(CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions) {
         super(indexAlignmentsCommandOptions.logLevel, indexAlignmentsCommandOptions.verbose,
@@ -45,21 +46,29 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() {
-        logger.debug("in IndexVariantsCommandExecutor");
+        logger.debug("In IndexAlignmentsCommandExecutor");
 
         try {
+            // We need to find out the Storage Engine Id to be used
+            String storageEngine = (indexAlignmentsCommandOptions.storageEngine != null && !indexAlignmentsCommandOptions.storageEngine.isEmpty())
+                    ? indexAlignmentsCommandOptions.storageEngine
+                    : configuration.getDefaultStorageEngineId();
+            logger.debug("storageEngine set to '{}'", storageEngine);
+
+            StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
             AlignmentStorageManager alignmentStorageManager;
-            String storageEngine = indexAlignmentsCommandOptions.storageEngine;
             if (storageEngine == null || storageEngine.isEmpty()) {
-                alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
+                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
             } else {
-                alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
+                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
             }
-            URI input = new URI(null, indexAlignmentsCommandOptions.input, null);
+
             if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
                 alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
             }
 
+//            URI input = new URI(null, indexAlignmentsCommandOptions.input, null);
+            URI input = Paths.get(indexAlignmentsCommandOptions.input).toUri();
             URI outdir;
             if (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty()) {
                 outdir = new URI(null, indexAlignmentsCommandOptions.outdir + (indexAlignmentsCommandOptions.outdir.endsWith("/") ? "" : "/"), null).resolve(".");
@@ -70,7 +79,9 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
             assertDirectoryExists(outdir);
 
             ObjectMap params = new ObjectMap();
-            params.putAll(indexAlignmentsCommandOptions.params);
+            if(indexAlignmentsCommandOptions.params != null) {
+                params.putAll(indexAlignmentsCommandOptions.params);
+            }
 
             if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
                 params.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
@@ -82,7 +93,7 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
             params.put(AlignmentStorageManager.COPY_FILE, false);
             params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-            params.putAll(indexAlignmentsCommandOptions.params);
+//            params.putAll(indexAlignmentsCommandOptions.params);
 
             boolean extract, transform, load;
             URI nextFileUri = input;
@@ -134,8 +145,6 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
-
-
     }
 
 }

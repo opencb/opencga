@@ -171,7 +171,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
             if (!Files.exists(bamIndexFile)) {
                 long start = System.currentTimeMillis();
                 String indexBai = "samtools index " + input.toString() + " " + bamIndexFile.toString();
-                logger.info("Creating index : " + indexBai);
+                logger.info("Creating BAM index: '{}'", indexBai);
                 try {
                     Runtime.getRuntime().exec(indexBai).waitFor();
                 } catch (InterruptedException e) {
@@ -185,9 +185,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         //3 Calculate Coverage and transform
 
         //Reader
-        AlignmentDataReader reader;
-        reader = new AlignmentBamDataReader(input, null); //Read from sorted BamFile
-
+        AlignmentDataReader reader = new AlignmentBamDataReader(input, null); //Read from sorted BamFile
 
         //Tasks
         List<Task<AlignmentRegion>> tasks = new LinkedList<>();
