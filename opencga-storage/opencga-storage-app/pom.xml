@@ -100,7 +100,7 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.cli.StorageMain</mainClass>
+                            <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
                             <name>opencga-storage2.sh</name>
                             <platforms>
                                 <platform>unix</platform>

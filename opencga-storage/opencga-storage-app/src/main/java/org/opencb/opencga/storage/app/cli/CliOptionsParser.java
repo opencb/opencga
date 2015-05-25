@@ -75,21 +75,7 @@ public class CliOptionsParser {
 
     public void parse(String[] args) throws ParameterException {
         jcommander.parse(args);
-//        String parsedCommand = jcommander.getParsedCommand();
-//        return parsedCommand != null? parsedCommand: "";
     }
-
-//    Command getCommand() {
-//        String parsedCommand = jcommander.getParsedCommand();
-//        if (parsedCommand != null) {
-//            JCommander jCommander = jcommander.getCommands().get(parsedCommand);
-//            List<Object> objects = jCommander.getObjects();
-//            if (!objects.isEmpty() && objects.get(0) instanceof Command) {
-//                return ((Command) objects.get(0));
-//            }
-//        }
-//        return null;
-//    }
 
     public String getCommand() {
         return (jcommander.getParsedCommand() != null) ? jcommander.getParsedCommand(): "";
@@ -104,7 +90,7 @@ public class CliOptionsParser {
     }
 
     @Deprecated
-    String usage() {
+    public String usage() {
         StringBuilder builder = new StringBuilder();
         String parsedCommand = jcommander.getParsedCommand();
         if(parsedCommand != null && !parsedCommand.isEmpty()){
@@ -115,196 +101,167 @@ public class CliOptionsParser {
         return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
     }
 
-    class GeneralOptions {
+    public class GeneralOptions {
 
         @Parameter(names = {"-h", "--help"}, help = true)
-        boolean help;
+        public boolean help;
 
         @Parameter(names = {"--version"})
-        boolean version;
+        public boolean version;
 
     }
 
-//    class Command {
-//
-//        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-//        Map<String, String> params = new HashMap<>();
-//    }
-
-    class CommonCommandOptions {
+    public class CommonCommandOptions {
 
         @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
-        boolean help;
+        public boolean help;
 
-        @Parameter(names = {"-L", "--log-level"}, description = "one of {error, warn, info, debug, trace}")
-        String logLevel = "info";
+        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
+        public String logLevel = "info";
 
-        @Parameter(names = {"-v", "--verbose"}, description = "log-level to debug")
-        boolean verbose;
+        @Deprecated
+        @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
+        public boolean verbose = false;
 
         @Parameter(names = {"-C", "--conf" }, description = "Properties path")
-        String configFile;
+        public String configFile;
 
-        @Parameter(names = { "--sm-name" }, description = "StorageManager class name. (Must be in the classpath)")
-        String storageManagerName;
+        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in configuration.yml")
+        public String storageEngine;
 
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in OPENCGA.STORAGE.ENGINES, in storage.properties")
-        String storageEngine = null;
+        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb.compression=snappy", hidden = false)
+        public Map<String, String> params;
 
+        @Deprecated
+        @Parameter(names = { "--sm-name" }, description = "StorageManager class name (Must be in the classpath).")
+        public String storageManagerName;
+
+        @Deprecated
         @Parameter(names = {"--storage-engine-config"}, arity = 1, description = "Path of the file with options to overwrite storage-<Plugin>.properties")
-        String storageEngineConfigFile = null;
-
-        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> params = new HashMap<>();
-
-        @Override
-        public String toString() {
-            String paramsString = "{";
-            for(Map.Entry<String, String> e :  params.entrySet()){
-                paramsString += e.getKey()+" = "+e.getValue() + ", ";
-            }
-            paramsString += "}";
-            return "GeneralParameters{" +
-                    "configFile='" + configFile + '\'' +
-                    ", storageManagerName='" + storageManagerName + '\'' +
-                    ", help=" + help +
-                    ", params=" + paramsString +
-                    '}';
-        }
+        public String storageEngineConfigFile;
 
     }
-
 
 
     @Parameters(commandNames = {"create-accessions"}, commandDescription = "Creates accession IDs for an input file")
-    class CommandCreateAccessions extends CommonCommandOptions {
+    public class CommandCreateAccessions extends CommonCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to annotation with accession IDs", required = true, arity = 1)
-        String input;
+        public String input;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where the output file will be saved", arity = 1)
+        public String outdir;
 
         @Parameter(names = {"-p", "--prefix"}, description = "Accession IDs prefix", arity = 1)
-        String prefix;
+        public String prefix;
 
         @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for prefixes)",
                 required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)", arity = 1)
-        String resumeFromAccession;
+        public String resumeFromAccession;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where the output file will be saved", arity = 1)
-        String outdir;
-
-        class StudyIdValidator implements IValueValidator<String> {
-            @Override
-            public void validate(String name, String value) throws ParameterException {
-                if (value.length() < 6) {
-                    throw new ParameterException("The study ID must be at least 6 characters long");
-                }
-            }
-        }
+//        class StudyIdValidator implements IValueValidator<String> {
+//            @Override
+//            public void validate(String name, String value) throws ParameterException {
+//                if (value.length() < 6) {
+//                    throw new ParameterException("The study ID must be at least 6 characters long");
+//                }
+//            }
+//        }
     }
 
 
-    class IndexCommandOptions extends CommonCommandOptions {
+    public class IndexCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
-        String input;
+        public String input;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
-        String outdir = "";
+        public String outdir;
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        String fileId;
+        public String fileId;
+
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        boolean transform = false;
+
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        boolean load = false;
 
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
-        String credentials = "";
+        public String credentials;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
-        String dbName;
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        public String dbName;
 
-//        @Parameter(names = {"-T", "--temporal-dir"}, description = "Directory where place temporal files (pending)", required = false, arity = 1)
-//        String tmp = "";
-//        @Parameter(names = {"--delete-temporal"}, description = "Delete temporal files (pending)", required = false)
-//        boolean delete = false;
 //        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
 //        String backend = "mongodb";
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
-    class IndexVariantsCommandOptions extends IndexCommandOptions {
-
-        @Parameter(names = {"--transform"}, description = "Run only the transform phase")
-        boolean transform = false; // stop before load
-
-        @Parameter(names = {"--load"}, description = "Run only the load phase")
-        boolean load = false; // skip transform
+    public class IndexVariantsCommandOptions extends IndexCommandOptions {
 
         @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
-        String study;
+        public String study;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
-        String pedigree;
+        public String pedigree;
 
         @Deprecated
-        @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file (optional)")
-        boolean includeStats = false;
+        @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file")
+        public boolean includeStats = false;
 
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
-        boolean includeGenotype = false;
+        public boolean includeGenotype = false;
 
         @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
-        boolean compressGenotypes = false;
+        public boolean compressGenotypes = false;
 
         @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
-        boolean includeSrc = false;
+        public boolean includeSrc = false;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC (optional)", arity = 1)
-        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC", arity = 1)
+        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
-        VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+        @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
+        public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
-        boolean gvcf = false;
+        public boolean gvcf = false;
 
         @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
-        boolean bgzip = false;
+        public boolean bgzip = false;
 
         @Parameter(names = {"--calculate-stats"}, description = "Calculate statistics information over de indexed variants after the load step (optional)")
-        boolean calculateStats = false;
+        public boolean calculateStats = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step (optional)")
-        boolean annotate = false;
+        public boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
+        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
-        boolean overwriteAnnotations = false;
+        public boolean overwriteAnnotations = false;
 
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
-        String annotatorConfigFile = null;
+        public String annotatorConfigFile;
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
-    class IndexAlignmentsCommandOptions extends IndexCommandOptions {
-
-        @Parameter(names = "--transform", description = "Run only the transform phase")
-        boolean transform = false;
-
-        @Parameter(names = "--load", description = "Run only the load phase")
-        boolean load = false;
+    public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
 
         @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
-        boolean calculateCoverage = false;
+        public boolean calculateCoverage = false;
 
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
         @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
-        List<String> meanCoverage = Collections.singletonList("200");
+        public List<String> meanCoverage = Collections.singletonList("200");
     }
 
 
@@ -492,15 +449,15 @@ public class CliOptionsParser {
     }
 
 
-    GeneralOptions getGeneralOptions() {
+    public GeneralOptions getGeneralOptions() {
         return generalOptions;
     }
 
-    IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
+    public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
         return indexVariantsCommandOptions;
     }
 
-    IndexAlignmentsCommandOptions getIndexAlignmentsCommandOptions() {
+    public IndexAlignmentsCommandOptions getIndexAlignmentsCommandOptions() {
         return indexAlignmentsCommandOptions;
     }
 
@@ -508,26 +465,26 @@ public class CliOptionsParser {
 //        return indexSequenceCommandOptions;
 //    }
 
-    CommandCreateAccessions getAccessionsCommand() {
+    public CommandCreateAccessions getAccessionsCommand() {
         return accessions;
     }
 
-    QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
+    public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
         return queryVariantsCommandOptions;
     }
 
-    QueryAlignmentsCommandOptions getQueryAlignmentsCommandOptions() {
+    public QueryAlignmentsCommandOptions getQueryAlignmentsCommandOptions() {
         return queryAlignmentsCommandOptions;
     }
 
-    AnnotateVariantsCommandOptions getAnnotateVariantsCommandOptions() {
+    public AnnotateVariantsCommandOptions getAnnotateVariantsCommandOptions() {
         return annotateVariantsCommandOptions;
     }
-    StatsVariantsCommandOptions getStatsVariantsCommandOptions() {
+    public StatsVariantsCommandOptions getStatsVariantsCommandOptions() {
         return statsVariantsCommandOptions;
     }
 
-    CommonCommandOptions getCommonCommandOptions() {
+    public CommonCommandOptions getCommonCommandOptions() {
         return commonCommandOptions;
     }
 }

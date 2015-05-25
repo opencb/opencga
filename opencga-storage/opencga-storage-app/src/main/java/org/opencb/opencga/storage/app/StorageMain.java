@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli;
+package org.opencb.opencga.storage.app;
+
+import org.opencb.opencga.storage.app.cli.CliOptionsParser;
+import org.opencb.opencga.storage.app.cli.CommandExecutor;
+import org.opencb.opencga.storage.app.cli.IndexAlignmentsCommandExecutor;
+import org.opencb.opencga.storage.app.cli.IndexVariantsCommandExecutor;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

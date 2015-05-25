@@ -114,13 +114,15 @@ public abstract class CommandExecutor {
             logger.debug("Loading configuration from '{}'", this.configFile);
             this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
         }else {
-            if(Files.exists(Paths.get(this.appHome + "/configuration.yaml"))) {
-                logger.debug("Loading configuration from '{}'", this.appHome+"/configuration.yaml");
-                this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.appHome+"/configuration.yaml")));
+            if(this.appHome != null && Files.exists(Paths.get(this.appHome + "/configuration.yml"))) {
+                logger.debug("Loading configuration from '{}'", this.appHome+"/configuration.yml");
+                this.configuration = StorageConfiguration
+                        .load(new FileInputStream(new File(this.appHome + "/configuration.yml")));
             }else {
                 logger.debug("Loading configuration from '{}'",
-                        CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.yaml").toString());
-                this.configuration = StorageConfiguration.load(CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.yaml"));
+                        CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
+                this.configuration = StorageConfiguration
+                        .load(CellBaseConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
             }
         }
     }
@@ -132,7 +134,8 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath) throws IOException, InterruptedException {
+    protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
+            throws IOException, InterruptedException {
         ProcessBuilder builder = getProcessBuilder(workingDirectory, binPath, args, logFilePath);
 
         logger.debug("Executing command: " + StringUtils.join(builder.command(), " "));
