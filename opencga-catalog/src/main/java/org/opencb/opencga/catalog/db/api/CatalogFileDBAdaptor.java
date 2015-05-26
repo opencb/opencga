@@ -13,34 +13,44 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
  */
 public interface CatalogFileDBAdaptor {
 
-    public enum FileFilterOption {
-        id(""),
-        studyId(""),
-        name(""),
-        type(""),
-        path(""),
-        bioformat(""),
-        status(""),
-        maxSize(""),
-        minSize(""),
-        startDate(""),
-        endDate(""),
-        like(""),
-        startsWith(""),
-        directory(""),
-        attributes("Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+    public enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
+        id(Type.NUMERICAL, ""),
+        studyId(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        type(Type.TEXT, ""),
+        path(Type.TEXT, ""),
+        format(Type.TEXT, ""),
+        bioformat(Type.TEXT, ""),
+        status(Type.TEXT, ""),
+        diskUsage(Type.NUMERICAL, ""),
+        directory(Type.TEXT, ""),
+        attributes(Type.TEXT, "Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        nattributes(Type.NUMERICAL, "Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        @Deprecated maxSize(Type.NUMERICAL, ""),
+        @Deprecated minSize(Type.NUMERICAL, ""),
+        @Deprecated startDate(Type.TEXT, ""),
+        @Deprecated endDate(Type.TEXT, ""),
+        @Deprecated like(Type.TEXT, ""),
+        @Deprecated startsWith(Type.TEXT, ""),
         ;
 
-        private FileFilterOption(String description) {
+        private FileFilterOption(Type type, String description) {
             this.description = description;
+            this.t = type;
         }
 
-        private String description;
+        final private String description;
+        final private Type t;
 
+        @Override
         public String getDescription() {
             return description;
         }
 
+        @Override
+        public Type getType() {
+            return t;
+        }
     }
 
     /**

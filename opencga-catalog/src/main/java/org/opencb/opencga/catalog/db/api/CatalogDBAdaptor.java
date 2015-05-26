@@ -24,8 +24,15 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class CatalogDBAdaptor
-        /* implements CatalogUserDBAdaptor, CatalogStudyDBAdaptor, CatalogFileDBAdaptor, CatalogJobDBAdaptor, CatalogSamplesDBAdaptor */{
+public abstract class CatalogDBAdaptor {
+
+    public static interface FilterOption {
+        enum Type {
+            NUMERICAL, TEXT
+        }
+        Type getType();
+        String getDescription();
+    }
 
     protected Logger logger;
 
