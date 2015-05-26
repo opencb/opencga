@@ -103,9 +103,12 @@ public class CatalogManagerTest extends GenericTest {
                 testFolder.getPath() + "test_0.5K.txt",
                 StringUtils.randomString(500).getBytes(), "", false, sessionIdUser);
 
-        catalogManager.createFile(studyId, File.Format.IMAGE, File.Bioformat.NONE,
+        File test1k = catalogManager.createFile(studyId, File.Format.IMAGE, File.Bioformat.NONE,
                 testFolder.getPath() + "test_0.1K.png",
-                StringUtils.randomString(100).getBytes(), "", false, sessionIdUser);
+                StringUtils.randomString(100).getBytes(), "", false, sessionIdUser).first();
+
+
+        catalogManager.modifyFile(test1k.getId(), new ObjectMap("sampleIds", Arrays.asList(1,2,3,4,5)), sessionIdUser);
 
 
 
@@ -549,6 +552,9 @@ public class CatalogManagerTest extends GenericTest {
         options = new QueryOptions("type", "FILE");
         options.put("diskUsage", "<400");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions("sampleIds", "3,4,5"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         options = new QueryOptions("type", "FILE");

@@ -14,18 +14,32 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 public interface CatalogFileDBAdaptor {
 
     public enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
-        id(Type.NUMERICAL, ""),
         studyId(Type.NUMERICAL, ""),
+        directory(Type.TEXT, ""),
+
+        id(Type.NUMERICAL, ""),
         name(Type.TEXT, ""),
         type(Type.TEXT, ""),
-        path(Type.TEXT, ""),
         format(Type.TEXT, ""),
         bioformat(Type.TEXT, ""),
+        uri(Type.TEXT, ""),
+        path(Type.TEXT, ""),
+        ownerId(Type.TEXT, ""),
+        creationDate(Type.TEXT, ""),
+        description(Type.TEXT, ""),
         status(Type.TEXT, ""),
         diskUsage(Type.NUMERICAL, ""),
-        directory(Type.TEXT, ""),
+        experimentId(Type.NUMERICAL, ""),
+        sampleIds(Type.NUMERICAL, ""),
+        jobId(Type.NUMERICAL, ""),
+        acl(Type.TEXT, ""),
+
+        stats(Type.TEXT, ""),
+        nstats(Type.NUMERICAL, ""),
+
         attributes(Type.TEXT, "Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes(Type.NUMERICAL, "Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+
         @Deprecated maxSize(Type.NUMERICAL, ""),
         @Deprecated minSize(Type.NUMERICAL, ""),
         @Deprecated startDate(Type.TEXT, ""),
@@ -35,21 +49,21 @@ public interface CatalogFileDBAdaptor {
         ;
 
         private FileFilterOption(Type type, String description) {
-            this.description = description;
-            this.t = type;
+            this._description = description;
+            this._type = type;
         }
 
-        final private String description;
-        final private Type t;
+        final private String _description;
+        final private Type _type;
 
         @Override
         public String getDescription() {
-            return description;
+            return _description;
         }
 
         @Override
         public Type getType() {
-            return t;
+            return _type;
         }
     }
 
