@@ -95,6 +95,21 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("numValue", 5);
         catalogManager.modifyFile(testFolder.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
 
+        catalogManager.createFile(studyId, File.Format.GZIP, File.Bioformat.NONE,
+                testFolder.getPath() + "test_1K.txt.gz",
+                StringUtils.randomString(1000).getBytes(), "", false, sessionIdUser);
+
+        catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                testFolder.getPath() + "test_0.5K.txt",
+                StringUtils.randomString(500).getBytes(), "", false, sessionIdUser);
+
+        File test1k = catalogManager.createFile(studyId, File.Format.IMAGE, File.Bioformat.NONE,
+                testFolder.getPath() + "test_0.1K.png",
+                StringUtils.randomString(100).getBytes(), "", false, sessionIdUser).first();
+
+
+        catalogManager.modifyFile(test1k.getId(), new ObjectMap("sampleIds", Arrays.asList(1,2,3,4,5)), sessionIdUser);
+
 
 
     }
@@ -492,7 +507,7 @@ public class CatalogManagerTest extends GenericTest {
         QueryOptions options;
         QueryResult<File> result;
 
-        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.startsWith.toString(), "data");
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~^data");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
@@ -509,39 +524,93 @@ public class CatalogManagerTest extends GenericTest {
         //Get all files in data recursively
         options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "data/.*");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(5, result.getNumResults());
+
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        result.getResult().forEach(f -> assertEquals(File.Type.FILE, f.getType()));
+        int numFiles = result.getNumResults();
+        assertEquals(3, numFiles);
+
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FOLDER");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        result.getResult().forEach(f -> assertEquals(File.Type.FOLDER, f.getType()));
+        int numFolders = result.getNumResults();
+        assertEquals(5, numFolders);
+
+
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE,FOLDER");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(8, result.getNumResults());
+        assertEquals(numFiles + numFolders, result.getNumResults());
+
+        options = new QueryOptions("type", "FILE");
+        options.put("diskUsage", ">400");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
         assertEquals(2, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field~=value"), sessionIdUser);
+        options = new QueryOptions("type", "FILE");
+        options.put("diskUsage", "<400");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions("sampleIds", "3,4,5"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==5.0"), sessionIdUser);
+        options = new QueryOptions("type", "FILE");
+        options.put("format", "GZIP,IMAGE");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString() + ".field" , "~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue>=5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions("attributes.field" , "~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue>4"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field=~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<6"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<=5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field=value"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue>5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions("nattributes.numValue", ">=5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions("nattributes.numValue", ">4,<6"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==5.0"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue>=5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue>4"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue<6"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString() + ".numValue", "<=5"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue>5"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue<5"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue<2"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue<2"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==23"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==23"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue~=5"), sessionIdUser);
@@ -553,14 +622,14 @@ public class CatalogManagerTest extends GenericTest {
     public void testSearchFileFail1() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogDBException.class);
-        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue==NotANumber"), sessionIdUser);
+        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==NotANumber"), sessionIdUser);
     }
 
     @Test
     public void testSearchFileFail2() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogDBException.class);
-        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "badFilter"), sessionIdUser);
+        catalogManager.searchFile(studyId, new QueryOptions("badFilter", "badFilter"), sessionIdUser);
     }
 
     @Test
