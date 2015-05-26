@@ -42,6 +42,12 @@ public class DatabaseCredentials {
 
     }
 
+    public DatabaseCredentials(List<String> hosts, String user, String password) {
+        this.hosts = hosts;
+        this.user = user;
+        this.password = password;
+    }
+
     public DatabaseCredentials(List<String> hosts, String user, String password, Map<String, String> options) {
         this.hosts = hosts;
         this.user = user;

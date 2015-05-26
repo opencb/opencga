@@ -136,12 +136,11 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 if (includeCoverage) {
                     AlignmentRegion alignmentRegion;
                     if (!alignmentList.isEmpty()) {
-                        alignmentRegion = new AlignmentRegion(
-                                alignmentList, null);
+                        alignmentRegion = new AlignmentRegion(alignmentList, null);
                         alignmentRegion.setEnd(region.getEnd());
                     } else {
                         alignmentRegion = new AlignmentRegion(region.getChromosome(), region.getStart(), region.getEnd());
-                        alignmentRegion.setAlignments(new LinkedList<Alignment>());
+                        alignmentRegion.setAlignments(new LinkedList<>());
                     }
                     regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
                 }

@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 
+@Deprecated
 public class BamManager {
 
     protected static ObjectMapper jsonObjectMapper;

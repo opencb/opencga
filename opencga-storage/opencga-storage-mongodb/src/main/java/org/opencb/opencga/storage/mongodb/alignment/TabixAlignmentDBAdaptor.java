@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
+@Deprecated
 public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private TabixCredentials tabixCredentials;

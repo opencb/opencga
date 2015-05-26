@@ -140,6 +140,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         checkUri(inputUri, "input file");
         checkUri(outputUri, "output directory");
 
+        params = configuration.getStorageEngine().getAlignment().getOptions();
+
         Path input = Paths.get(inputUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
@@ -151,7 +153,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         boolean createBai = params.getBoolean(CREATE_BAI, false);
         int regionSize = params.getInt(REGION_SIZE,
 //                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
-                Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.region_size", "200000")));
+//                Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.region_size", "200000")));
+                configuration.getStorageEngine().getOptions().getInt("transform.region_size", 200000));
         List<String> meanCoverageSizeList = params.getAsStringList(MEAN_COVERAGE_SIZE_LIST);
         String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
         String fileAlias = params.getString(FILE_ALIAS, defaultFileAlias);
@@ -214,7 +217,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
 //                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
-                    Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.coverage_chunk_size", "1000")));
+//                    Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.coverage_chunk_size", "1000")));
+                    configuration.getStorageEngine().getOptions().getInt("transform.coverage_chunk_size", 1000));
             writers.add(alignmentCoverageJsonDataWriter);
             if(outputFile == null) {
                 outputFile = alignmentCoverageJsonDataWriter.getCoverageFilename();

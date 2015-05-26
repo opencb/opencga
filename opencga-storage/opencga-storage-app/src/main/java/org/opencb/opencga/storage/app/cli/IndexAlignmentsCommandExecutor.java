@@ -18,14 +18,15 @@ package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
 /**
  * Created by imedina on 22/05/15.
@@ -50,10 +51,70 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
         try {
             // We need to find out the Storage Engine Id to be used
+            // If not storage engine is passed then the default is taken from configuration.yml file
             String storageEngine = (indexAlignmentsCommandOptions.storageEngine != null && !indexAlignmentsCommandOptions.storageEngine.isEmpty())
                     ? indexAlignmentsCommandOptions.storageEngine
                     : configuration.getDefaultStorageEngineId();
             logger.debug("storageEngine set to '{}'", storageEngine);
+
+            StorageEngineConfiguration mongoDBStorageConfiguration = configuration.getStorageEngine(storageEngine);
+
+
+//            StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
+//            AlignmentStorageManager alignmentStorageManager;
+//            if (storageEngine == null || storageEngine.isEmpty()) {
+//                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+//            } else {
+//                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+//            }
+//            if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
+//                alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
+//            }
+
+            URI input = UriUtils.createUri(indexAlignmentsCommandOptions.input);
+            URI outdir;
+            if (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty()) {
+                outdir = UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.outdir);
+            } else {
+                // Get parent folder form input file
+                outdir = input.resolve(".");
+            }
+
+            assertDirectoryExists(outdir);
+
+            @Deprecated
+            ObjectMap params = new ObjectMap();
+
+            if(indexAlignmentsCommandOptions.params != null) {
+//                params.putAll(indexAlignmentsCommandOptions.params);
+                mongoDBStorageConfiguration.getAlignment().getOptions().putAll(indexAlignmentsCommandOptions.params);
+            }
+
+            if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
+//                params.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
+                mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
+            }
+
+            if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
+//                params.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
+                mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
+            }
+//            else {
+//                params.put(AlignmentStorageManager.DB_NAME, configuration.getStorageEngine(storageEngine)
+//                        .getAlignment().getOptions().get("database.name"));
+//            }
+
+//            params.put(AlignmentStorageManager.PLAIN, false);
+//            params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
+//            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+//            params.put(AlignmentStorageManager.COPY_FILE, false);
+//            params.put(AlignmentStorageManager.ENCRYPT, "null");
+
+            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.PLAIN, false);
+            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
+            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.COPY_FILE, false);
+            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.ENCRYPT, "null");
 
             StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
             AlignmentStorageManager alignmentStorageManager;
@@ -62,38 +123,10 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
             } else {
                 alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
             }
+//            if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
+//                alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
+//            }
 
-            if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
-                alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
-            }
-
-//            URI input = new URI(null, indexAlignmentsCommandOptions.input, null);
-            URI input = Paths.get(indexAlignmentsCommandOptions.input).toUri();
-            URI outdir;
-            if (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty()) {
-                outdir = new URI(null, indexAlignmentsCommandOptions.outdir + (indexAlignmentsCommandOptions.outdir.endsWith("/") ? "" : "/"), null).resolve(".");
-            } else {
-                outdir = input.resolve(".");
-            }
-
-            assertDirectoryExists(outdir);
-
-            ObjectMap params = new ObjectMap();
-            if(indexAlignmentsCommandOptions.params != null) {
-                params.putAll(indexAlignmentsCommandOptions.params);
-            }
-
-            if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-                params.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
-            }
-            params.put(AlignmentStorageManager.PLAIN, false);
-            params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
-            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
-            params.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
-            params.put(AlignmentStorageManager.COPY_FILE, false);
-            params.put(AlignmentStorageManager.ENCRYPT, "null");
-
-//            params.putAll(indexAlignmentsCommandOptions.params);
 
             boolean extract, transform, load;
             URI nextFileUri = input;

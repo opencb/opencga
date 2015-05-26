@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import org.opencb.datastore.core.ObjectMap;
+
 import java.util.Map;
 
 /**
@@ -29,7 +31,8 @@ public class StorageEngineConfiguration {
     /**
      * options parameter defines database-specific parameters
      */
-    private Map<String, String> options;
+//    private Map<String, String> options;
+    private ObjectMap options;
 
     private StorageEtlConfiguration alignment;
     private StorageEtlConfiguration variant;
@@ -39,7 +42,7 @@ public class StorageEngineConfiguration {
     }
 
     public StorageEngineConfiguration(String id, StorageEtlConfiguration alignment, StorageEtlConfiguration variant,
-                                      Map<String, String> options) {
+                                      ObjectMap options) {
         this.id = id;
         this.alignment = alignment;
         this.variant = variant;
@@ -74,11 +77,11 @@ public class StorageEngineConfiguration {
 //        this.conf = conf;
 //    }
 
-    public Map<String, String> getOptions() {
+    public ObjectMap getOptions() {
         return options;
     }
 
-    public void setOptions(Map<String, String> options) {
+    public void setOptions(ObjectMap options) {
         this.options = options;
     }
 

@@ -69,21 +69,23 @@ public class StorageManagerFactory {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
          */
-        if(storageConfiguration != null && !storageManagerMap.containsKey(storageEngineName)) {
-            String clazz = null;
-            switch (bioformat) {
-                case "ALIGNMENT":
-                    clazz = storageConfiguration.getStorageEngine(storageEngineName).getAlignment().getManager();
-                    break;
-                case "VARIANT":
-                    clazz = storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
-                    break;
+        if(storageConfiguration != null) {
+            if(!storageManagerMap.containsKey(storageEngineName)) {
+                String clazz = null;
+                switch (bioformat.toUpperCase()) {
+                    case "ALIGNMENT":
+                        clazz = storageConfiguration.getStorageEngine(storageEngineName).getAlignment().getManager();
+                        break;
+                    case "VARIANT":
+                        clazz = storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
+                        break;
+                }
+
+                T storageManager = (T) Class.forName(clazz).newInstance();
+                storageManager.addConfiguration(storageConfiguration);
+
+                storageManagerMap.put(storageEngineName, storageManager);
             }
-
-            T storageManager = (T) Class.forName(clazz).newInstance();
-            storageManager.addConfiguration(storageConfiguration);
-
-            storageManagerMap.put(storageEngineName, storageManager);
             return storageManagerMap.get(storageEngineName);
         }
 

@@ -78,7 +78,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobId}/visit")
     @Produces("application/json")
-    @ApiOperation(value = "Increment job visites")
+    @ApiOperation(value = "Increment job visits")
     public Response visit(
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {

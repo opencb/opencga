@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.core.UriUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
@@ -398,7 +398,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.LinkCommand c = optionsParser.getFileCommands().linkCommand;
 
                         Path inputFile = Paths.get(c.inputFile);
-                        URI uri = UriUtils.getUri(c.inputFile);
+                        URI uri = UriUtils.createUri(c.inputFile);
 
                         if (!inputFile.toFile().exists()) {
                             throw new FileNotFoundException("File " + uri + " not found");
@@ -420,7 +420,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.RelinkCommand c = optionsParser.getFileCommands().relinkCommand;
 
                         Path inputFile = Paths.get(c.inputFile);
-                        URI uri = UriUtils.getUri(c.inputFile);
+                        URI uri = UriUtils.createUri(c.inputFile);
 
                         if (!inputFile.toFile().exists()) {
                             throw new FileNotFoundException("File " + uri + " not found");

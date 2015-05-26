@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.core.common;
 
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class XObject extends LinkedHashMap<String, Object> {
 
 

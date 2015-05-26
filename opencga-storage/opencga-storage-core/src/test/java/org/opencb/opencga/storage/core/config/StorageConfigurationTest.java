@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.config;
 
 import org.junit.Test;
+import org.opencb.datastore.core.ObjectMap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -34,20 +35,21 @@ public class StorageConfigurationTest {
     public void testDefault() {
         StorageConfiguration storageConfiguration = new StorageConfiguration();
 
-        Map<String, String> options = new HashMap<>();
+//        Map<String, String> options = new HashMap<>();
+        ObjectMap options = new ObjectMap();
         options.put("key", "value");
 
         StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
                 "mongodb",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options)),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password", options)),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
                 options);
 
         StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
-                "hbase",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hbase.alignment.MongoDBAlignmentStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap())),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hbase.alignment.MongoDBVariantStorageManager", Collections.EMPTY_MAP, new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap())),
-                new HashMap<>());
+                "hadoop",
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+                options);
 
 //        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
 //                "hbase",

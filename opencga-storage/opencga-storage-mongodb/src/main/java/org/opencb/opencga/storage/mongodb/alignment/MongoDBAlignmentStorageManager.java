@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
@@ -83,7 +84,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
 //            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGODB_DATABASE_NAME);
-            dbName = configuration.getStorageEngine("mongodb").getOptions().getOrDefault("database.coverage.collection.name", MONGODB_DATABASE_NAME);
+//            dbName = configuration.getStorageEngine("mongodb").getOptions().getOrDefault("database.coverage.collection.name", MONGODB_DATABASE_NAME);
+            dbName = configuration.getStorageEngine("mongodb").getAlignment().getOptions().getString("database.coverage.collection.name", MONGODB_DATABASE_NAME);
             logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
         }
         Path path = Paths.get(properties.getProperty(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
@@ -104,10 +106,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         try {   //TODO: Use user and password
 //            String mongoUser = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER, null);
 //            String mongoPassword = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS, null);
-            String mongodbUser = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getUser();
-            String mongodbPassword = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getPassword();
             String hosts = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getHosts()
                     .stream().map(String::toString).collect(Collectors.joining(","));
+            String mongodbUser = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getUser();
+            String mongodbPassword = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getPassword();
             return new MongoCredentials(
 //                    MongoCredentials.parseDataStoreServerAddresses(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS, "localhost")),
                     MongoCredentials.parseDataStoreServerAddresses(hosts),
@@ -146,9 +148,14 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         checkUri(inputUri, "input uri");
         Path input = Paths.get(inputUri.getPath());
 
-        String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
-        String dbName = params.getString(DB_NAME);
+        ObjectMapper objectMapper = new ObjectMapper();
+        System.out.println("configuration = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configuration));
 
+//        String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
+        String fileId = configuration.getStorageEngine("mongodb").getAlignment().getOptions().getString(AlignmentStorageManager.FILE_ID, input.getFileName().toString().split("\\.")[0]);
+//        String dbName = params.getString(DB_NAME);
+        String dbName = configuration.getStorageEngine("mongodb").getAlignment().getOptions().getString("database.name", DB_NAME);
+        System.out.println("dbName = " + dbName);
 
         //Reader
         AlignmentCoverageJsonDataReader alignmentDataReader = getAlignmentCoverageJsonDataReader(input);

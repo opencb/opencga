@@ -16,9 +16,9 @@ storageEngines:
       database.name: "opencga"
     database:
       hosts:
-      - "mongodb-dev:27017"
-      user: "user"
-      password: "password"
+      - "localhost:27017"
+      user: ""
+      password: ""
   variant:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
     options:
