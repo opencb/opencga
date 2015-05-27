@@ -43,6 +43,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -90,6 +91,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private static ObjectReader jsonStudyReader;
     private static ObjectReader jsonSampleReader;
     private static Map<Class, ObjectReader> jsonReaderMap;
+
+    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit").stream().collect(Collectors.toSet());
+    public static final Pattern operationPattern = Pattern.compile("([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]*)");
 
     @Override
     public CatalogUserDBAdaptor getCatalogUserDBAdaptor() {
@@ -1395,6 +1399,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
+                if (isDataStoreOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
                 FileFilterOption option = FileFilterOption.valueOf(key);
                 switch (option) {
                     case id:
@@ -2354,7 +2361,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
     }
 
-    static Pattern operationPattern = Pattern.compile("([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]*)");
+
+    private boolean isDataStoreOption(String key) {
+        return datastoreOptions.contains(key);
+    }
 
     private List<DBObject> addCompQueryFilter(String optionKey, QueryOptions options, FilterOption.Type type, List<DBObject> andQuery) throws CatalogDBException {
         return addCompQueryFilter(type, optionKey, options, "", andQuery);

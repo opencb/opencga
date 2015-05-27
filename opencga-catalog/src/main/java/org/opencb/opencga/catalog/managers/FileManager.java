@@ -63,9 +63,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
+            URI studyUri = study.getUri() == null ? getStudyUri(study.getId()) : study.getUri();
             return file.getPath().isEmpty() ?
-                    study.getUri() :
-                    catalogIOManagerFactory.get(study.getUri()).getFileUri(study.getUri(), file.getPath());
+                    studyUri :
+                    catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, file.getPath());
         }
     }
 
