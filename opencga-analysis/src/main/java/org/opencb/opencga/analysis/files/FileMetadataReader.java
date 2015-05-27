@@ -104,9 +104,11 @@ public class FileMetadataReader {
 
         if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
             modifyParams.put("format", format);
+            file.setFormat(format);
         }
         if (bioformat != File.Bioformat.NONE && !bioformat.equals(file.getBioformat())) {
             modifyParams.put("bioformat", bioformat);
+            file.setBioformat(bioformat);
         }
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
@@ -114,16 +116,20 @@ public class FileMetadataReader {
             switch (bioformat) {
                 case ALIGNMENT: {
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
-                    HashMap<String, Object> attributes = new HashMap<>();
-                    attributes.put("alignmentHeader", alignmentHeader);
-                    modifyParams.put("attributes", attributes);
+                    if (alignmentHeader != null) {
+                        HashMap<String, Object> attributes = new HashMap<>();
+                        attributes.put("alignmentHeader", alignmentHeader);
+                        modifyParams.put("attributes", attributes);
+                    }
                     break;
                 }
                 case VARIANT: {
                     VariantSource variantSource = readVariantSource(study, file, fileUri);
-                    HashMap<String, Object> attributes = new HashMap<>();
-                    attributes.put("variantSource", variantSource);
-                    modifyParams.put("attributes", attributes);
+                    if (variantSource != null) {
+                        HashMap<String, Object> attributes = new HashMap<>();
+                        attributes.put("variantSource", variantSource);
+                        modifyParams.put("attributes", attributes);
+                    }
                     break;
                 }
                 default:
@@ -190,8 +196,12 @@ public class FileMetadataReader {
 
                     if (sampleNames == null) {
                         VariantSource variantSource = readVariantSource(study, file, fileUri);
-                        fileModifyParams.get("attributes", Map.class).put("variantSource", variantSource);
-                        sampleNames = variantSource.getSamples();
+                        if (variantSource != null) {
+                            fileModifyParams.get("attributes", Map.class).put("variantSource", variantSource);
+                            sampleNames = variantSource.getSamples();
+                        } else {
+                            sampleNames = new LinkedList<>();
+                        }
                     }
                     break;
                 }
@@ -213,8 +223,12 @@ public class FileMetadataReader {
                     }
                     if (sampleNames == null) {
                         AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
-                        fileModifyParams.get("attributes", Map.class).put("alignmentHeader", alignmentHeader);
-                        sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                        if (alignmentHeader != null) {
+                            fileModifyParams.get("attributes", Map.class).put("alignmentHeader", alignmentHeader);
+                            sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                        } else {
+                            sampleNames = new LinkedList<>();
+                        }
                     }
                     break;
                 }
@@ -292,19 +306,27 @@ public class FileMetadataReader {
 
     public static VariantSource readVariantSource(Study study, File file, URI fileUri)
             throws StorageManagerException {
-        //TODO: Fix aggregate and studyType
-        VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
-        return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        if (file.getFormat() == File.Format.VCF) {
+            //TODO: Fix aggregate and studyType
+            VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
+            return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        } else {
+            return null;
+        }
     }
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
-        AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
-        reader.open();
-        reader.pre();
-        reader.post();
-        reader.close();
-//        reader.getSamHeader().get
-        return reader.getHeader();
+        if (file.getFormat() == File.Format.SAM || file.getFormat() == File.Format.BAM) {
+            AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
+            reader.open();
+            reader.pre();
+            reader.post();
+            reader.close();
+    //        reader.getSamHeader().get
+            return reader.getHeader();
+        } else {
+            return null;
+        }
     }
 
     public static FileMetadataReader get(CatalogManager catalogManager) {

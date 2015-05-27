@@ -213,12 +213,12 @@ public class FileScannerTest extends TestCase {
         assertEquals(File.Bioformat.ALIGNMENT, map.get("file2.bam").getBioformat());
         assertEquals(File.Bioformat.ALIGNMENT, map.get("file2.sam.gz").getBioformat());
 
-        assertEquals(File.Format.GZIP, map.get("file1.vcf.gz").getFormat());
-        assertEquals(File.Format.PLAIN, map.get("file1.vcf.variants.json").getFormat());
-        assertEquals(File.Format.GZIP, map.get("file1.vcf.variants.json.gz").getFormat());
-//        assertEquals(File.Format.SNAPPY, map.get("file1.vcf.variants.json.snappy").getFormat());
-//        assertEquals(File.Format.BINARY, map.get("file2.bam").getFormat());
-        assertEquals(File.Format.GZIP, map.get("file2.sam.gz").getFormat());
+        assertEquals(File.Format.VCF, map.get("file1.vcf.gz").getFormat());
+        assertEquals(File.Format.JSON, map.get("file1.vcf.variants.json").getFormat());
+        assertEquals(File.Format.JSON, map.get("file1.vcf.variants.json.gz").getFormat());
+        assertEquals(File.Format.JSON, map.get("file1.vcf.variants.json.snappy").getFormat());
+        assertEquals(File.Format.BAM, map.get("file2.bam").getFormat());
+        assertEquals(File.Format.SAM, map.get("file2.sam.gz").getFormat());
 
     }
 

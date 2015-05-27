@@ -66,9 +66,9 @@ public class FileMetadataReaderTest extends TestCase {
 
         File file = fileQueryResult.first();
 
-        assertEquals(file.getStatus(), File.Status.STAGE);
-        assertEquals(file.getFormat(), File.Format.GZIP);
-        assertEquals(file.getBioformat(), File.Bioformat.VARIANT);
+        assertEquals(File.Status.STAGE, file.getStatus());
+        assertEquals(File.Format.VCF, file.getFormat());
+        assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(2504, file.getSampleIds().size());
         assertEquals(0, file.getDiskUsage());
@@ -76,9 +76,9 @@ public class FileMetadataReaderTest extends TestCase {
         new CatalogFileUtils(catalogManager).upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
 
-        assertEquals(file.getStatus(), File.Status.READY);
-        assertEquals(file.getFormat(), File.Format.GZIP);
-        assertEquals(file.getBioformat(), File.Bioformat.VARIANT);
+        assertEquals(File.Status.READY, file.getStatus());
+        assertEquals(File.Format.VCF, file.getFormat());
+        assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(2504, file.getSampleIds().size());
         assertTrue(file.getDiskUsage() > 0);
@@ -105,7 +105,7 @@ public class FileMetadataReaderTest extends TestCase {
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
         assertEquals(File.Status.READY, file.getStatus());
-        assertEquals(File.Format.GZIP, file.getFormat());
+        assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(2504, file.getSampleIds().size());
