@@ -840,17 +840,11 @@ public class OptionsParser {
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"--study-id"}, description = "Study id where to load samples", required = true, arity = 1)
-            String studyId;
-
             @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
             int variableSetId;
 
             @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
             String pedigreeFileId;
-
-//            @Parameter(names = {"--pedigree-file"}, description = "Pedigree file not loaded in OpenCGA", required = false, arity = 1)
-//            String pedigreeFile;
         }
     }
 
