@@ -21,12 +21,14 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,19 +102,24 @@ public class VariantStorage {
 
                 .append(opencgaStorageBinPath)
                 .append(" --storage-engine ").append(dataStore.getStorageEngine())
+                .append(" --verbose ")
                 .append(" stats-variants ")
+                .append(" --study-id ").append(studyId)
                 .append(" --file-id ").append(indexedFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
 //                .append(" --study-id ").append(studyId)
                 .append(" --database ").append(dataStore.getDbName())
+                .append(" -D").append(VariantStorageManager.STUDY_CONFIGURATION_MANAGER_CLASS_NAME).append("=").append(CatalogStudyConfigurationManager.class.getName())
+                .append(" -D").append("sessionId").append("=").append(sessionId)
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")
                 ;
         for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
-            sb.append(" --cohort ").append(entry.getKey().getName()).append(":");
+            sb.append(" --cohort-sample-ids ").append(entry.getKey().getName()).append(":");
             for (Sample sample : entry.getValue()) {
                 sb.append(sample.getName()).append(",");
             }
+            sb.append(" --cohort-ids ").append(entry.getKey().getName()).append(":").append(entry.getKey().getId());
         }
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);

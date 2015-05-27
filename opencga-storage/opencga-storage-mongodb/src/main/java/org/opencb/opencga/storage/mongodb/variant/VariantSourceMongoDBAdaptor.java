@@ -196,6 +196,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
+            if (!dbo.containsField(DBObjectToVariantSourceConverter.FILEID_FIELD)) {
+                continue;
+            }
             String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
             DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
             samplesInSources.put(key, new ArrayList(value.toMap().keySet()));

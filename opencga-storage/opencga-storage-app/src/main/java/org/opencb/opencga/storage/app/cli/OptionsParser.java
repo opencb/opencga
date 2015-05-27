@@ -662,6 +662,9 @@ public class OptionsParser {
         @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
         boolean overwriteStats = false;
 
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study", required = true, arity = 1)
+        int studyId;
+
         @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         int fileId;
 
@@ -684,13 +687,13 @@ public class OptionsParser {
 //        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
 //        String load = null;
 
-        @DynamicParameter(names = {"--cohort"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
         Map<String, String> cohort = new HashMap<>();
 
-        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, cohortIds will be auto-generated.")
-        Map<String, Integer> cohortIds = new HashMap<>();
+        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, cohortIds will be auto-generated.", assignment = ":")
+        Map<String, String> cohortIds = new HashMap<>();
 
-        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = true, arity = 1)
+        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
 /* TODO: filters?

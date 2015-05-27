@@ -70,6 +70,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia
@@ -549,7 +550,9 @@ public class OpenCGAStorageMain {
         params.put(VariantStorageManager.DB_NAME, c.dbName);
         params.put(VariantStorageManager.ANNOTATE, c.annotate);
         params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
-        params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
+        if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
+            params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
+        }
 
         if(c.annotate) {
             //Get annotator config
@@ -740,8 +743,8 @@ public class OpenCGAStorageMain {
     private static void statsVariants(OptionsParser.CommandStatsVariants c)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException, StorageManagerException {
 
-        Path studyConfigurationPath = Paths.get(c.studyConfigurationFile);
-        StudyConfiguration studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
+//        Path studyConfigurationPath = Paths.get(c.studyConfigurationFile);
+//        StudyConfiguration studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
 
         /**
          * query options
@@ -752,7 +755,12 @@ public class OpenCGAStorageMain {
         queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
         queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
         queryOptions.put(VariantStorageManager.FILE_ID, c.fileId);
-        queryOptions.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        queryOptions.put(VariantStorageManager.STUDY_ID, c.studyId);
+//        queryOptions.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
+            queryOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
+        }
+
 
         Map<String, Set<String>> cohorts = null;
         if (c.cohort != null && !c.cohort.isEmpty()) {
@@ -770,8 +778,8 @@ public class OpenCGAStorageMain {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
-        dbAdaptor.setConstantSamples(Integer.toString(c.fileId));    // TODO jmmut: change to studyId when we remove fileId
-
+//        dbAdaptor.setConstantSamples(Integer.toString(c.fileId));    // TODO jmmut: change to studyId when we remove fileId
+        StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(queryOptions);
         /**
          * Create and load stats
          */
@@ -794,8 +802,9 @@ public class OpenCGAStorageMain {
 
         try {
 
+            Map<String, Integer> cohortIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
             /** Check and update StudyConfiguration **/
-            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, c.cohortIds);
+            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
 
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
@@ -807,7 +816,7 @@ public class OpenCGAStorageMain {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
                 variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-                studyConfiguration.write(studyConfigurationPath);
+                variantStorageManager.getStudyConfigurationManager(queryOptions).updateStudyConfiguration(studyConfiguration, queryOptions);
             }
         } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
             e.printStackTrace();
