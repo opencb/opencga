@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.files;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -17,25 +18,81 @@ import java.util.regex.Pattern;
  */
 public class BioformatDetector {
 
-    protected static final Map<File.Bioformat, Pattern> bioformatMap = new HashMap<>();
+//    protected static final Map<File.Bioformat, Pattern> bioformatMap = new HashMap<>();
 
-    static {
-        bioformatMap.put(File.Bioformat.ALIGNMENT, Pattern.compile(".*\\.(bam|sam|cram)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
-        bioformatMap.put(File.Bioformat.VARIANT, Pattern.compile(".*\\.(vcf)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
-        bioformatMap.put(File.Bioformat.PEDIGREE, Pattern.compile(".*\\.(ped)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
-    }
+//    static {
+//        bioformatMap.put(File.Bioformat.ALIGNMENT, Pattern.compile(".*\\.(bam|sam|cram)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+//        bioformatMap.put(File.Bioformat.VARIANT, Pattern.compile(".*\\.(vcf)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+//        bioformatMap.put(File.Bioformat.PEDIGREE, Pattern.compile(".*\\.(ped)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
+//    }
 
     public static File.Bioformat detect(URI uri) {
+        return detect(uri, FormatDetector.detect(uri), CompressionDetector.detect(uri));
+    }
+    public static File.Bioformat detect(URI uri, File.Format format, File.Compression compression) {
+
         String path = uri.getPath();
         Path source = Paths.get(uri);
         String mimeType = "";
-        try {
 
-            for (Map.Entry<File.Bioformat, Pattern> entry : bioformatMap.entrySet()) {
-                if (entry.getValue().matcher(path).matches()) {
-                    return entry.getKey();
-                }
+        try {
+            switch (format) {
+                case VCF:
+                case GVCF:
+                case BCF:
+                    return File.Bioformat.VARIANT;
+                case TBI:
+                    break;
+                case SAM:
+                case BAM:
+                case CRAM:
+                    return File.Bioformat.ALIGNMENT;
+                case BAI:
+                    return File.Bioformat.NONE; //TODO: Alignment?
+                case FASTQ:
+                    return File.Bioformat.SEQUENCE;
+                case PED:
+                    return File.Bioformat.PEDIGREE;
+                case TAB_SEPARATED_VALUES:
+                    break;
+                case COMMA_SEPARATED_VALUES:
+                    break;
+                case PROTOCOL_BUFFER:
+                    break;
+                case PLAIN:
+                    break;
+                case JSON:
+                case AVRO:
+                    String file;
+                    if (compression != File.Compression.NONE) {
+                        file = com.google.common.io.Files.getNameWithoutExtension(uri.getPath()); //Remove compression extension
+                        file = com.google.common.io.Files.getNameWithoutExtension(file);  //Remove format extension
+                    } else {
+                        file = com.google.common.io.Files.getNameWithoutExtension(uri.getPath()); //Remove format extension
+                    }
+
+                    if (file.endsWith("variants")) {
+                        return File.Bioformat.VARIANT;
+                    } else if (file.endsWith("alignments")) {
+                        return File.Bioformat.ALIGNMENT;
+                    }
+                    break;
+                case PARQUET:
+                    break;
+                case IMAGE:
+                case BINARY:
+                case EXECUTABLE:
+                case UNKNOWN:
+                case XML:
+                    return File.Bioformat.NONE;
+                default:
             }
+
+//            for (Map.Entry<File.Bioformat, Pattern> entry : bioformatMap.entrySet()) {
+//                if (entry.getValue().matcher(path).matches()) {
+//                    return entry.getKey();
+//                }
+//            }
 
             mimeType = Files.probeContentType(source);
 
@@ -43,7 +100,8 @@ public class BioformatDetector {
                 return File.Bioformat.OTHER_NEWICK;
             }
 
-            if (!mimeType.equalsIgnoreCase("text/plain")
+            if (mimeType == null
+                    || !mimeType.equalsIgnoreCase("text/plain")
                     || path.endsWith(".redirection")
                     || path.endsWith(".Rout")
                     || path.endsWith("cel_files.txt")

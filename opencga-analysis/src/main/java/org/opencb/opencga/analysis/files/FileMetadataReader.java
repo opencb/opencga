@@ -102,10 +102,10 @@ public class FileMetadataReader {
         File.Format format = FormatDetector.detect(fileUri);
         File.Bioformat bioformat = BioformatDetector.detect(fileUri);
 
-        if (!format.equals(file.getFormat())) {
+        if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
             modifyParams.put("format", format);
         }
-        if (!bioformat.equals(file.getBioformat())) {
+        if (bioformat != File.Bioformat.NONE && !bioformat.equals(file.getBioformat())) {
             modifyParams.put("bioformat", bioformat);
         }
 

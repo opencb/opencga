@@ -198,7 +198,7 @@ public class FileScanner {
             }
 
             if (file == null) {
-                file = catalogManager.createFile(studyId, getFormat(uri), getBioformat(uri), filePath, "", true, jobId, sessionId).first();
+                file = catalogManager.createFile(studyId, FormatDetector.detect(uri), BioformatDetector.detect(uri), filePath, "", true, jobId, sessionId).first();
                 logger.info("Added new file " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" }");
                 /** Moves the file to the read output **/
                 catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
@@ -223,14 +223,6 @@ public class FileScanner {
             }
         }
         return files;
-    }
-
-    private File.Bioformat getBioformat(URI uri) {
-        return BioformatDetector.detect(uri);
-    }
-
-    private File.Format getFormat(URI uri) {
-        return FormatDetector.detect(uri);
     }
 
 }

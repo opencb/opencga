@@ -97,11 +97,35 @@ public class File {
      * General format of the file, such as text, or binary, etc.
      */
     public enum Format {
+
+        VCF,
+        BCF,
+        GVCF,
+        TBI,
+
+        SAM,
+        BAM,
+        BAI,
+        CRAM,
+        FASTQ,
+        PED,
+
+        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
+
+        IMAGE,
         PLAIN,
-        GZIP,
         BINARY,
         EXECUTABLE,
-        IMAGE
+        @Deprecated GZIP,
+        UNKNOWN,
+    }
+
+    public enum Compression {
+        GZIP,
+        BGZIP,
+        ZIP,
+        SNAPPY,
+        NONE,
     }
 
     /**
@@ -133,11 +157,12 @@ public class File {
         OTHER_VCF,
         OTHER_PED,
 
+        @Deprecated VCF4,
+
         VARIANT,
         ALIGNMENT,
         SEQUENCE,
         PEDIGREE,
-        VCF4,
         NONE
         }
 
