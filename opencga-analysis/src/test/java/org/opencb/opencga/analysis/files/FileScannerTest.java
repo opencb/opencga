@@ -95,6 +95,26 @@ public class FileScannerTest extends TestCase {
     }
 
     @Test
+    public void testDeleteTrashed() throws IOException, CatalogException {
+
+        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
+                CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
+
+        catalogManager.deleteFile(file.getId(), sessionIdUser);
+
+        file = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        assertEquals(File.Status.TRASHED, file.getStatus());
+
+        Files.delete(Paths.get(catalogManager.getFileUri(file)));
+        List<File> files = new FileScanner(catalogManager).checkStudyFiles(study, false, sessionIdUser);
+
+        file = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        assertEquals(File.Status.DELETED, file.getStatus());
+        assertEquals(1, files.size());
+        assertEquals(file.getId(), files.get(0).getId());
+    }
+
+    @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.txt");
 

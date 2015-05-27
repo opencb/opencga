@@ -91,6 +91,7 @@ public class FileScanner {
                     URI fileUri = catalogManager.getFileUri(study, file);
                     if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
                         catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
+                        modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
                         break;
                     }
                 }
