@@ -465,13 +465,20 @@ public class OpenCGAMain {
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
                         if (file.getType() == File.Type.FILE) {
-                            file = fileMetadataReader.setMetadataInformation(file, null, queryOptions, sessionId, false);
-                            files = Collections.singletonList(file);
+                            File file1 = fileMetadataReader.setMetadataInformation(file, null, queryOptions, sessionId, false);
+                            if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
+                                files = Collections.emptyList();
+                            } else {
+                                files = Collections.singletonList(file);
+                            }
                         } else {
-                            List<File> result = catalogManager.getAllFilesInFolder(file.getId(), queryOptions, sessionId).getResult();
+                            List<File> result = catalogManager.getAllFilesInFolder(file.getId(), null, sessionId).getResult();
                             files = new ArrayList<>(result.size());
                             for (File f : result) {
-                                files.add(fileMetadataReader.setMetadataInformation(f, null, queryOptions, sessionId, false));
+                                File file1 = fileMetadataReader.setMetadataInformation(f, null, queryOptions, sessionId, false);
+                                if (f != file1) {    //Add only modified files.
+                                    files.add(file1);
+                                }
                             }
                         }
 

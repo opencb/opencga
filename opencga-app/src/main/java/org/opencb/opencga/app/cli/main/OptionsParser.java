@@ -653,10 +653,8 @@ public class OptionsParser {
             public boolean recursive = false;
         }
 
-        @Parameters(commandNames = {"refresh"}, commandDescription = "Reads metadata from the selected file")
-        class RefreshCommand extends BaseFileCommand {
-
-        }
+        @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
+        class RefreshCommand extends BaseFileCommand { }
 
         @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
         class IndexCommand extends BaseFileCommand {

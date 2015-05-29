@@ -60,6 +60,9 @@ public class FormatDetector {
                 return File.Format.TAB_SEPARATED_VALUES;
             case "csv":
                 return File.Format.COMMA_SEPARATED_VALUES;
+            case "txt":
+            case "log":
+                return File.Format.PLAIN;
             case "xml":
                 return File.Format.XML;
             case "json":

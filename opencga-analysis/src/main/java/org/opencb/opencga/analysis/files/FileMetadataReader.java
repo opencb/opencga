@@ -87,11 +87,11 @@ public class FileMetadataReader {
      * @param options       Other options
      * @param sessionId     User sessionId
      * @param simulate      Simulate the metadata modifications.
-     * @return
+     * @return              If there are no modifications, return the same input file. Else, return the updated file
      * @throws CatalogException
      * @throws StorageManagerException
      */
-    public File setMetadataInformation(File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
+    public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
             throws CatalogException, StorageManagerException {
         int studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (fileUri == null) {
@@ -177,8 +177,11 @@ public class FileMetadataReader {
 
         List<Sample> sampleList;
 
+        Map<String, Object> attributes;
         if (!fileModifyParams.containsKey("attributes")) {
-            fileModifyParams.put("attributes", new HashMap<String, Object>());
+            attributes = new HashMap<>();
+        } else {
+            attributes = fileModifyParams.getMap("attributes");
         }
 
         List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
@@ -190,7 +193,7 @@ public class FileMetadataReader {
                     Object variantSourceObj = null;
                     if (file.getAttributes().containsKey("variantSource")) {
                         variantSourceObj = file.getAttributes().get("variantSource");
-                    } else if (fileModifyParams.getMap("attributes").containsKey("variantSource")) {
+                    } else if (attributes.containsKey("variantSource")) {
                         variantSourceObj = fileModifyParams.getMap("attributes").get("variantSource");
                     }
                     if (variantSourceObj != null) {
@@ -206,7 +209,7 @@ public class FileMetadataReader {
                     if (sampleNames == null) {
                         VariantSource variantSource = readVariantSource(study, file, fileUri);
                         if (variantSource != null) {
-                            fileModifyParams.get("attributes", Map.class).put("variantSource", variantSource);
+                            attributes.put("variantSource", variantSource);
                             sampleNames = variantSource.getSamples();
                         } else {
                             sampleNames = new LinkedList<>();
@@ -218,7 +221,7 @@ public class FileMetadataReader {
                     Object alignmentHeaderObj = null;
                     if (file.getAttributes().containsKey("alignmentHeader")) {
                         alignmentHeaderObj = file.getAttributes().get("alignmentHeader");
-                    } else if (fileModifyParams.getMap("attributes").containsKey("alignmentHeader")) {
+                    } else if (attributes.containsKey("alignmentHeader")) {
                         alignmentHeaderObj = fileModifyParams.getMap("attributes").get("alignmentHeader");
                     }
                     if (alignmentHeaderObj != null) {
@@ -233,7 +236,7 @@ public class FileMetadataReader {
                     if (sampleNames == null) {
                         AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
                         if (alignmentHeader != null) {
-                            fileModifyParams.get("attributes", Map.class).put("alignmentHeader", alignmentHeader);
+                            attributes.put("alignmentHeader", alignmentHeader);
                             sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
                         } else {
                             sampleNames = new LinkedList<>();
@@ -289,6 +292,9 @@ public class FileMetadataReader {
 
         List<Integer> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
         fileModifyParams.put("sampleIds", sampleIdsList);
+        if (!attributes.isEmpty()) {
+            fileModifyParams.put("attributes", attributes);
+        }
 
         return sampleList;
     }

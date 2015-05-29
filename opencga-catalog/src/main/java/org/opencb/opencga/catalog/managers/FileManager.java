@@ -504,6 +504,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult move(int fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException {
         throw new UnsupportedOperationException();
+        //TODO https://github.com/opencb/opencga/issues/136
 //        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 //        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
 //        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);
