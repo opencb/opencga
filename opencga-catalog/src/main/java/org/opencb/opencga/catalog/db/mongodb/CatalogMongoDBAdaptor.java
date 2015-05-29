@@ -1372,7 +1372,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
-                if (isDataStoreOption(key)) {
+                if (isDataStoreOption(key) || key.equals("sid") || key.equals("metadata")) {
                     continue;   //Exclude DataStore options
                 }
                 FileFilterOption option = FileFilterOption.valueOf(key);
