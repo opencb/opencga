@@ -51,7 +51,8 @@ class CatalogMongoDBUtils {
     private static Map<Class, ObjectReader> jsonReaderMap;
 
     public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit").stream().collect(Collectors.toSet());
-    public static final Pattern operationPattern = Pattern.compile("([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]*)");
+//    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     static {
         jsonObjectMapper = new ObjectMapper();
@@ -386,7 +387,7 @@ class CatalogMongoDBUtils {
             queryKey = "";
         }
 
-        ArrayList<DBObject> or = new ArrayList<DBObject>(optionsList.size());
+        ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
             Matcher matcher = operationPattern.matcher(option);
             String operator;
@@ -398,12 +399,13 @@ class CatalogMongoDBUtils {
                 filter = option;
             } else {
                 operator = matcher.group(2);
-                if (queryKey.isEmpty()) {
-                    key = matcher.group(1);
-                } else {
-                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
-                    key = queryKey + separatorDot + matcher.group(1);
-                }
+//                if (queryKey.isEmpty()) {
+//                    key = matcher.group(1);
+//                } else {
+//                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
+//                    key = queryKey + separatorDot + matcher.group(1);
+//                }
+                key = queryKey;
                 filter = matcher.group(3);
             }
             if ( key.isEmpty()) {
@@ -454,7 +456,7 @@ class CatalogMongoDBUtils {
             case "":
             case "=":
             case "==":
-                query.put(queryKey, new BasicDBObject("$eq", filter));
+                query.put(queryKey, filter);
                 break;
             case "~":
             case "=~":

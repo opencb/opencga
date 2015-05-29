@@ -562,19 +562,22 @@ public class CatalogManagerTest extends GenericTest {
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
         assertEquals(2, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString() + ".field" , "~val"), sessionIdUser);
+        CatalogFileDBAdaptor.FileFilterOption attributes = CatalogFileDBAdaptor.FileFilterOption.attributes;
+        CatalogFileDBAdaptor.FileFilterOption nattributes = CatalogFileDBAdaptor.FileFilterOption.nattributes;
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".field" , "~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new QueryOptions("attributes.field" , "~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field=~val"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".field", "=~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field~val"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".field", "~val"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "field=value"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".field", "value"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new QueryOptions("nattributes.numValue", ">=5"), sessionIdUser);
@@ -583,37 +586,39 @@ public class CatalogManagerTest extends GenericTest {
         result = catalogManager.searchFile(studyId, new QueryOptions("nattributes.numValue", ">4,<6"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", "==5"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==5.0"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", "==5.0"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", "5.0"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue>=5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", ">=5"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue>4"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", ">4"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue<6"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", "<6"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString() + ".numValue", "<=5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue", "<=5"), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue>5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue" , ">5"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue<5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue" , "<5"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue<2"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue" , "<2"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==23"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".numValue" , "==23"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.attributes.toString(), "numValue~=5"), sessionIdUser);
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".numValue" , "~=5"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
     }
@@ -622,7 +627,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testSearchFileFail1() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogDBException.class);
-        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString(), "numValue==NotANumber"), sessionIdUser);
+        catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString() + ".numValue", "==NotANumber"), sessionIdUser);
     }
 
     @Test
