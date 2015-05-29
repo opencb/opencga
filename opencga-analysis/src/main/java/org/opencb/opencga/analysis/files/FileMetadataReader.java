@@ -8,6 +8,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
@@ -78,12 +79,14 @@ public class FileMetadataReader {
      *      Format
      *      FileHeader (for known bioformats)
      *      SampleIds
+     *      Disk usage (size)
+     *      Checksum (if calculateChecksum == true)
      *
-     * @param file
-     * @param fileUri
-     * @param options
-     * @param sessionId
-     * @param simulate
+     * @param file          File from which read metadata
+     * @param fileUri       File location. If null, ask to Catalog.
+     * @param options       Other options
+     * @param sessionId     User sessionId
+     * @param simulate      Simulate the metadata modifications.
      * @return
      * @throws CatalogException
      * @throws StorageManagerException
@@ -96,6 +99,10 @@ public class FileMetadataReader {
         }
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ObjectMap modifyParams = new ObjectMap();
+
+        if (file.getType() == File.Type.FOLDER) {
+            return file;
+        }
 
         //Get metadata information
 
@@ -137,6 +144,8 @@ public class FileMetadataReader {
             }
         }
         /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+
+        modifyParams.putAll(new CatalogFileUtils(catalogManager).getModifiedFileAttributes(file, fileUri, false));
 
         if (!modifyParams.isEmpty()) {
             catalogManager.modifyFile(file.getId(), modifyParams, sessionId);

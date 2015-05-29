@@ -82,7 +82,9 @@ public class FileScanner {
                     } else if (file.getStatus() == File.Status.MISSING) {
                         logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                         logger.info("Set status to " + File.Status.READY);
-                        catalogFileUtils.updateFileAttributes(file, calculateChecksum, sessionId);
+                        ObjectMap params = catalogFileUtils.getModifiedFileAttributes(file, fileUri, calculateChecksum);
+                        params.put("status", File.Status.READY);
+                        catalogManager.modifyFile(file.getId(), params, sessionId);
                         modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
                     }
                     break;
