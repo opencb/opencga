@@ -306,7 +306,7 @@ public class FileMetadataReader {
 
     public static VariantSource readVariantSource(Study study, File file, URI fileUri)
             throws StorageManagerException {
-        if (file.getFormat() == File.Format.VCF) {
+        if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
             //TODO: Fix aggregate and studyType
             VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
             return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
@@ -316,7 +316,10 @@ public class FileMetadataReader {
     }
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
-        if (file.getFormat() == File.Format.SAM || file.getFormat() == File.Format.BAM) {
+        if (file.getFormat() == File.Format.SAM
+                || file.getFormat() == File.Format.BAM
+                || FormatDetector.detect(fileUri) == File.Format.SAM
+                || FormatDetector.detect(fileUri) == File.Format.BAM) {
             AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
             reader.open();
             reader.pre();
