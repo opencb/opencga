@@ -505,7 +505,7 @@ public class CatalogManager {
     }
 
     public QueryResult renameFile(int fileId, String newName, String sessionId)
-            throws CatalogException, IOException, CatalogIOException {
+            throws CatalogException {
         return fileManager.rename(fileId, newName, sessionId);
     }
 

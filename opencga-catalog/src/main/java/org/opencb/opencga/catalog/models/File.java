@@ -59,6 +59,7 @@ public class File {
     private String path;
     private String ownerId;
     private String creationDate;
+    private String modificationDate;
     private String description;
 
     private Status status;
@@ -204,6 +205,7 @@ public class File {
         this.path = path;
         this.ownerId = ownerId;
         this.creationDate = creationDate;
+        this.modificationDate = creationDate;
         this.description = description;
         this.status = status;
         this.diskUsage = diskUsage;
@@ -211,6 +213,7 @@ public class File {
         this.sampleIds = sampleIds;
         this.jobId = jobId;
         this.acl = acl;
+        this.index = null;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -227,6 +230,7 @@ public class File {
                 ", path:'" + path + '\'' + "\n\t" +
                 ", ownerId:'" + ownerId + '\'' + "\n\t" +
                 ", creationDate:'" + creationDate + '\'' + "\n\t" +
+                ", modificationDate:'" + modificationDate + '\'' + "\n\t" +
                 ", description:'" + description + '\'' + "\n\t" +
                 ", status:'" + status + '\'' + "\n\t" +
                 ", diskUsage:" + diskUsage + "\n\t" +
@@ -310,6 +314,14 @@ public class File {
 
     public void setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public void setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
     }
 
     public String getDescription() {

@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.attribute.FileTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -476,6 +478,10 @@ public abstract class CatalogIOManager {
     public abstract List<URI> listFiles(URI directory) throws CatalogIOException;
 
     public abstract long getFileSize(URI file) throws CatalogIOException;
+
+    public abstract Date getCreationDate(URI file) throws CatalogIOException;
+
+    public abstract Date getModificationDate(URI file) throws CatalogIOException;
 
 //    public abstract String getCreationDate(URI file);
 }

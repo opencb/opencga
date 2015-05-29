@@ -26,6 +26,7 @@ public interface CatalogFileDBAdaptor {
         path(Type.TEXT, ""),
         ownerId(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
+        modificationDate(Type.TEXT, ""),
         description(Type.TEXT, ""),
         status(Type.TEXT, ""),
         diskUsage(Type.NUMERICAL, ""),

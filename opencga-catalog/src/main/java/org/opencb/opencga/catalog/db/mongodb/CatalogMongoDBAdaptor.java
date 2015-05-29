@@ -1188,7 +1188,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         Map<String, Object> fileParameters = new HashMap<>();
 
-        String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status", "uri"};
+        String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status", "uri", "creationDate", "modificationDate"};
         filterStringParams(parameters, fileParameters, acceptedParams);
 
         String[] acceptedLongParams = {"diskUsage"};

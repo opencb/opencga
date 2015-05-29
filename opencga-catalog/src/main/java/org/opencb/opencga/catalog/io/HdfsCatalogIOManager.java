@@ -22,6 +22,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -150,6 +151,16 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     @Override
     public long getFileSize(URI file) throws CatalogIOException {
         return 0;
+    }
+
+    @Override
+    public Date getCreationDate(URI file) {
+        return null;
+    }
+
+    @Override
+    public Date getModificationDate(URI file) throws CatalogIOException {
+        return null;
     }
 
 

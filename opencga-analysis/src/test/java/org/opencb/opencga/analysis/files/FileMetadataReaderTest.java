@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 
 import java.io.*;
@@ -92,18 +93,26 @@ public class FileMetadataReaderTest extends TestCase {
 
         assertEquals(bytes.length, file.getDiskUsage());
 
+        String creationDate = file.getCreationDate();
+        String modificationDate = file.getModificationDate();
+
         URI fileUri = catalogManager.getFileUri(file);
+
+        try {
+            Thread.sleep(1000); //Sleep 1 second to see changes on the "modificationDate"
+        } catch (InterruptedException ignored) {}
 
         OutputStream outputStream = new FileOutputStream(Paths.get(fileUri).toFile(), true);
         byte[] bytes2 = StringUtils.randomString(100).getBytes();
         outputStream.write(bytes2);
         outputStream.close();
 
-
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
         assertEquals(bytes.length + bytes2.length, file.getDiskUsage());
+        assertTrue(TimeUtils.toDate(modificationDate).getTime() < TimeUtils.toDate(file.getModificationDate()).getTime());
+        assertEquals(creationDate, file.getCreationDate());
 
     }
 

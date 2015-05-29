@@ -285,8 +285,8 @@ public class CatalogFileUtils {
     /**
      * Update some file attributes.
      *      diskUsage
-     *      creationDate
-     *      checksum
+     *      modificationDate
+     *      attributes.checksum
      * @param file              File to update
      * @param calculateChecksum Do calculate checksum
      * @param sessionId         users sessionId
@@ -304,7 +304,7 @@ public class CatalogFileUtils {
     /**
      * Get a ObjectMap with some fields if they have been modified.
      *      diskUsage
-     *      creationDate
+     *      modificationDate
      *      attributes.checksum
      *
      * @param fileUri If null, calls to getFileUri()
@@ -328,8 +328,8 @@ public class CatalogFileUtils {
     /**
      * Update some file attributes.
      *      diskUsage
-     *      creationDate
-     *      checksum
+     *      modificationDate
+     *      attributes.checksum
      * @throws CatalogException
      */
     private void updateFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters, String sessionId)
@@ -349,7 +349,7 @@ public class CatalogFileUtils {
     /**
      * Get a ObjectMap with some fields if they have been modified.
      *      diskUsage
-     *      creationDate
+     *      modificationDate
      *      attributes.checksum
      *
      * @throws CatalogException
@@ -377,10 +377,9 @@ public class CatalogFileUtils {
             logger.error("Can't get fileSize", e);
         }
 
-        //String creationDate = catalogIOManager.getCreationDate(fileUri); //TODO
-        String creationDate = TimeUtils.getTime();
-        if (!creationDate.equals(file.getCreationDate())) {
-            parameters.put("creationDate", creationDate);
+        String modificationDate = TimeUtils.getTime(catalogIOManager.getModificationDate(fileUri));
+        if (!modificationDate.equals(file.getModificationDate())) {
+            parameters.put("modificationDate", modificationDate);
         }
 
         return parameters;

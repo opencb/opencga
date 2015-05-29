@@ -24,14 +24,26 @@ import java.util.GregorianCalendar;
 
 public class TimeUtils {
 
+    private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
+    private static final SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMddHHmmss);
+
+    private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
+    private static final SimpleDateFormat sdfMillis = new SimpleDateFormat(yyyyMMddHHmmssSSS);
+
     public static String getTime() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-        return sdf.format(new Date());
+        return getTime(new Date());
+    }
+
+    public static String getTime(Date date) {
+        return sdf.format(date);
     }
 
     public static String getTimeMillis() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-        return sdf.format(new Date());
+        return getTimeMillis(new Date());
+    }
+
+    public static String getTimeMillis(Date date) {
+        return sdfMillis.format(date);
     }
 
     public static Date add24HtoDate(Date date) {
@@ -43,13 +55,16 @@ public class TimeUtils {
     }
 
     public static Date toDate(String dateStr) {
-        Date now = null;
+        Date date = null;
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-            now = sdf.parse(dateStr);
+            if (dateStr.length() == yyyyMMddHHmmss.length()) {
+                date = sdf.parse(dateStr);
+            } else {
+                date = sdfMillis.parse(dateStr);
+            }
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        return now;
+        return date;
     }
 }

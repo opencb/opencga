@@ -367,6 +367,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         //Can only be modified when file.status == STAGE
                         case "creationDate":
+                        case "modificationDate":
                         case "diskUsage":
 //                            if (!file.getStatus().equals(File.Status.STAGE)) {
 //                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
