@@ -455,6 +455,29 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "refresh": {
+                        OptionsParser.FileCommands.RefreshCommand c = optionsParser.getFileCommands().refreshCommand;
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        File file = catalogManager.getFile(fileId, sessionId).first();
+
+                        List<File> files;
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
+                        if (file.getType() == File.Type.FILE) {
+                            file = fileMetadataReader.setMetadataInformation(file, null, queryOptions, sessionId, false);
+                            files = Collections.singletonList(file);
+                        } else {
+                            List<File> result = catalogManager.getAllFilesInFolder(file.getId(), queryOptions, sessionId).getResult();
+                            files = new ArrayList<>(result.size());
+                            for (File f : result) {
+                                files.add(fileMetadataReader.setMetadataInformation(f, null, queryOptions, sessionId, false));
+                            }
+                        }
+
+                        System.out.println(createOutput(c.cOpt, files, null));
+                        break;
+                    }
                     case "info": {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
 
