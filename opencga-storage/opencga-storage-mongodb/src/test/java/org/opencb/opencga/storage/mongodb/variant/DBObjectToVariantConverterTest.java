@@ -75,7 +75,7 @@ public class DBObjectToVariantConverterTest {
                 .append(DBObjectToVariantConverter.LENGTH_FIELD, variant.getLength())
                 .append(DBObjectToVariantConverter.REFERENCE_FIELD, variant.getReference())
                 .append(DBObjectToVariantConverter.ALTERNATE_FIELD, variant.getAlternate());
-        
+
         BasicDBList chunkIds = new BasicDBList();
         chunkIds.add("1_1_1k");
         chunkIds.add("1_0_10k");
@@ -130,7 +130,6 @@ public class DBObjectToVariantConverterTest {
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
-        mongoFile.append(DBObjectToVariantConverter.STATS_FIELD, Collections.emptyList());
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
         mongoVariant.append("files", files);
@@ -144,6 +143,7 @@ public class DBObjectToVariantConverterTest {
         DBObject converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsField(DBObjectToVariantConverter.IDS_FIELD)); //IDs must be added manually.
         converted.put(DBObjectToVariantConverter.IDS_FIELD, variant.getIds());  //Add IDs
+        mongoVariant.append(DBObjectToVariantConverter.STATS_FIELD, Collections.emptyList());
         assertEquals(mongoVariant, converted);
     }
 
