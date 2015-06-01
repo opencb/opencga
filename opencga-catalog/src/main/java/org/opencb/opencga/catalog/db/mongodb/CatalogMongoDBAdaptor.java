@@ -16,12 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.*;
-import com.mongodb.util.JSON;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -36,14 +31,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
@@ -83,6 +74,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private MongoDBCollection fileCollection;
     private MongoDBCollection sampleCollection;
     private MongoDBCollection jobCollection;
+    private Map<String, MongoDBCollection> collections;
 
     //    private static final Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
 
@@ -132,23 +124,33 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             throw new CatalogDBException("Unable to connect to MongoDB");
         }
 
-        metaCollection = db.getCollection(METADATA_COLLECTION);
-        userCollection = db.getCollection(USER_COLLECTION);
-        studyCollection = db.getCollection(STUDY_COLLECTION);
-        fileCollection = db.getCollection(FILE_COLLECTION);
-        sampleCollection = db.getCollection(SAMPLE_COLLECTION);
-        jobCollection = db.getCollection(JOB_COLLECTION);
+        collections = new HashMap<>();
+        collections.put(METADATA_COLLECTION, metaCollection = db.getCollection(METADATA_COLLECTION));
+        collections.put(USER_COLLECTION, userCollection = db.getCollection(USER_COLLECTION));
+        collections.put(STUDY_COLLECTION, studyCollection = db.getCollection(STUDY_COLLECTION));
+        collections.put(FILE_COLLECTION, fileCollection = db.getCollection(FILE_COLLECTION));
+        collections.put(SAMPLE_COLLECTION, sampleCollection = db.getCollection(SAMPLE_COLLECTION));
+        collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
+    }
 
+    @Override
+    public void initializeCatalogDB() throws CatalogDBException {
         //If "metadata" document doesn't exist, create.
-        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_OBJECT_ID));
-        if(queryResult.getResult().get(0) == 0){
+        if(!isCatalogDBReady()) {
+
+            /* Check all collections are empty */
+            for (Map.Entry<String, MongoDBCollection> entry : collections.entrySet()) {
+                if (entry.getValue().count().first() != 0L) {
+                    throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey() + " is not empty.");
+                }
+            }
+
             try {
                 DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
                 metadataObject.put("_id", METADATA_OBJECT_ID);
                 metaCollection.insert(metadataObject, null);
-                insertUser(new User("admin", "admin", "admin@email.com", "admin", "opencb", User.Role.ADMIN, "active"), new QueryOptions());
 
-            } catch (DuplicateKeyException e){
+            } catch (DuplicateKeyException e) {
                 logger.warn("Trying to replace MetadataObject. DuplicateKey");
             }
             //Set indexes
@@ -156,9 +158,22 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 //            nativeUserCollection.createIndex(new BasicDBObject("id", 1), unique);
 //            nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
 //            nativeJobCollection.createIndex(new BasicDBObject("id", 1), unique);
+        } else {
+            throw new CatalogDBException("Catalog already initialized");
         }
     }
 
+    /**
+     * CatalogMongoDBAdaptor is ready when contains the METADATA_OBJECT
+     * @return
+     */
+    @Override
+    public boolean isCatalogDBReady() {
+        QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_OBJECT_ID));
+        return queryResult.getResult().get(0) == 1;
+    }
+
+    @Override
     public void disconnect(){
         mongoManager.close(db.getDatabaseName());
     }

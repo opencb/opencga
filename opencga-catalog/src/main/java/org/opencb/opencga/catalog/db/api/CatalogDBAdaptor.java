@@ -77,6 +77,17 @@ public abstract class CatalogDBAdaptor {
     }
 
 
+    /**
+     * Says if the catalog database is ready to be used. If false, needs to be initialized
+     */
+    public abstract boolean isCatalogDBReady();
+
+    /**
+     * Initializes de Database with the initial structure.
+     * @throws CatalogDBException   if there was any problem, or it was already initialized.
+     */
+    public abstract void initializeCatalogDB() throws CatalogDBException;
+
     public abstract void disconnect();
 
     public abstract CatalogUserDBAdaptor getCatalogUserDBAdaptor();

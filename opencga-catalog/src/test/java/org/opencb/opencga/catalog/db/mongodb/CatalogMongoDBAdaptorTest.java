@@ -97,6 +97,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
 //    @Before
     public void initDefaultCatalogDB() throws CatalogDBException {
+
+        assertTrue(!catalogDBAdaptor.isCatalogDBReady());
+        catalogDBAdaptor.initializeCatalogDB();
+
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
@@ -133,6 +137,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         user3 = catalogDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
 
 
+    }
+
+    @Test
+    public void initializeInitializedDB() throws CatalogDBException {
+        assertTrue(catalogDBAdaptor.isCatalogDBReady());
+
+        thrown.expect(CatalogDBException.class);
+        catalogDBAdaptor.initializeCatalogDB();
     }
 
     /** **************************
