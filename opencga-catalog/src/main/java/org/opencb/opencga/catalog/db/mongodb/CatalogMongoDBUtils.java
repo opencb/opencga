@@ -43,15 +43,10 @@ class CatalogMongoDBUtils {
 
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
-//    private static ObjectReader jsonFileReader;
-//    private static ObjectReader jsonUserReader;
-//    private static ObjectReader jsonJobReader;
-//    private static ObjectReader jsonStudyReader;
-//    private static ObjectReader jsonSampleReader;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
     public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit").stream().collect(Collectors.toSet());
-//    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     static {
@@ -67,7 +62,7 @@ class CatalogMongoDBUtils {
         return getNewAutoIncrementId("idCounter", metaCollection);
     }
 
-    static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection){
+    static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
         QueryResult<BasicDBObject> result = metaCollection.findAndModify(
                 new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
                 new BasicDBObject(field, true),  //Fields
@@ -81,10 +76,10 @@ class CatalogMongoDBUtils {
     }
 
     static void checkUserExist(String userId, boolean exists, MongoDBCollection UserMongoDBCollection) throws CatalogDBException {
-        if(userId == null) {
+        if (userId == null) {
             throw new CatalogDBException("userId param is null");
         }
-        if(userId.equals("")) {
+        if (userId.equals("")) {
             throw new CatalogDBException("userId is empty");
         }
 
@@ -138,7 +133,7 @@ class CatalogMongoDBUtils {
     }
 
     static <T> T parseObject(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
-        if(result.getResult().isEmpty()) {
+        if (result.getResult().isEmpty()) {
             return null;
         }
         try {
@@ -180,6 +175,7 @@ class CatalogMongoDBUtils {
 
     /**
      * Scan all the DBObject and replace all the dots in keys with
+     *
      * @param object
      * @return
      */
@@ -188,9 +184,11 @@ class CatalogMongoDBUtils {
     static <T> T replaceDotsInKeys(T object) {
         return replaceInKeys(object, ".", TO_REPLACE_DOTS);
     }
+
     static <T> T restoreDotsInKeys(T object) {
         return replaceInKeys(object, TO_REPLACE_DOTS, ".");
     }
+
     static <T> T replaceInKeys(T object, String target, String replacement) {
         if (object instanceof DBObject) {
             DBObject dbObject = (DBObject) object;
@@ -219,24 +217,24 @@ class CatalogMongoDBUtils {
 
     /**
      * Filter "include" and "exclude" options.
-     *
+     * <p/>
      * Include and Exclude options are as absolute routes. This method removes all the values that are not in the
      * specified route. For the values in the route, the route is removed.
-     *
+     * <p/>
      * [
-     *  name,
-     *  projects.id,
-     *  projects.studies.id,
-     *  projects.studies.alias,
-     *  projects.studies.name
+     * name,
+     * projects.id,
+     * projects.studies.id,
+     * projects.studies.alias,
+     * projects.studies.name
      * ]
-     *
+     * <p/>
      * with route = "projects.studies.", then
-     *
+     * <p/>
      * [
-     *  id,
-     *  alias,
-     *  name
+     * id,
+     * alias,
+     * name
      * ]
      *
      * @param options
@@ -244,7 +242,7 @@ class CatalogMongoDBUtils {
      * @return
      */
     static QueryOptions filterOptions(QueryOptions options, String route) {
-        if(options == null) {
+        if (options == null) {
             return null;
         }
 
@@ -255,9 +253,9 @@ class CatalogMongoDBUtils {
             List<String> list = filteredOptions.getAsStringList(listName);
             List<String> filteredList = new LinkedList<>();
             int length = route.length();
-            if(list != null) {
+            if (list != null) {
                 for (String s : list) {
-                    if(s.startsWith(route)) {
+                    if (s.startsWith(route)) {
                         filteredList.add(s.substring(length));
                     }
                 }
@@ -269,7 +267,7 @@ class CatalogMongoDBUtils {
 
     static void filterStringParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
         for (String s : acceptedParams) {
-            if(parameters.containsKey(s)) {
+            if (parameters.containsKey(s)) {
                 filteredParams.put(s, parameters.getString(s));
             }
         }
@@ -277,7 +275,7 @@ class CatalogMongoDBUtils {
 
     static void filterIntegerListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntegerListParams) {
         for (String s : acceptedIntegerListParams) {
-            if(parameters.containsKey(s)) {
+            if (parameters.containsKey(s)) {
                 filteredParams.put(s, parameters.getAsIntegerList(s));
             }
         }
@@ -310,7 +308,7 @@ class CatalogMongoDBUtils {
                 DBObject dbObject = null;
                 try {
                     dbObject = getDbObject(parameters.get(s), s);
-                    filteredParams.put(s , dbObject);
+                    filteredParams.put(s, dbObject);
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
                 }
@@ -320,9 +318,9 @@ class CatalogMongoDBUtils {
 
     static void filterIntParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntParams) {
         for (String s : acceptedIntParams) {
-            if(parameters.containsKey(s)) {
+            if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
-                if(anInt != Integer.MIN_VALUE) {
+                if (anInt != Integer.MIN_VALUE) {
                     filteredParams.put(s, anInt);
                 }
             }
@@ -331,7 +329,7 @@ class CatalogMongoDBUtils {
 
     static void filterLongParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedLongParams) {
         for (String s : acceptedLongParams) {
-            if(parameters.containsKey(s)) {
+            if (parameters.containsKey(s)) {
                 long aLong = parameters.getLong(s, Long.MIN_VALUE);
                 if (aLong != Long.MIN_VALUE) {
                     filteredParams.put(s, aLong);
@@ -408,7 +406,7 @@ class CatalogMongoDBUtils {
                 key = queryKey;
                 filter = matcher.group(3);
             }
-            if ( key.isEmpty()) {
+            if (key.isEmpty()) {
                 throw new CatalogDBException("Unknown filter operation: " + option + " . Missing key");
             }
             switch (type) {
@@ -422,6 +420,9 @@ class CatalogMongoDBUtils {
                     break;
                 case TEXT:
                     or.add(addStringOperationQueryFilter(key, operator, filter, new BasicDBObject()));
+                    break;
+                case BOOLEAN:
+                    or.add(addBooleanOperationQueryFilter(key, operator, Boolean.parseBoolean(filter), new BasicDBObject()));
                     break;
             }
         }
@@ -463,7 +464,7 @@ class CatalogMongoDBUtils {
                 query.put(queryKey, new BasicDBObject("$regex", filter));
                 break;
             default:
-                throw new CatalogDBException("Unknown query operation " + op);
+                throw new CatalogDBException("Unknown numerical query operation " + op);
         }
         return query;
     }
@@ -488,15 +489,31 @@ class CatalogMongoDBUtils {
             case "":
             case "=":
             case "==":
-                query.put(queryKey, new BasicDBObject("$eq", filter));
+                query.put(queryKey, filter);
                 break;
             default:
-                throw new CatalogDBException("Unknown query operation " + op);
+                throw new CatalogDBException("Unknown string query operation " + op);
         }
         return query;
     }
 
+    static DBObject addBooleanOperationQueryFilter(String queryKey, String op, Boolean filter, DBObject query) throws CatalogDBException {
+        switch (op) {
+            case "!=":
+                query.put(queryKey, new BasicDBObject("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            default:
+                throw new CatalogDBException("Unknown boolean query operation " + op);
+        }
+        return query;
+    }
 
+    @Deprecated
     static DBObject addCompQueryFilter(String queryKey, String op, String filter, DBObject query) throws CatalogDBException {
         try {
             switch (op) {

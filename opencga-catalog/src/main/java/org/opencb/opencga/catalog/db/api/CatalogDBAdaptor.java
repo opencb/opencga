@@ -27,8 +27,10 @@ import java.util.List;
 public abstract class CatalogDBAdaptor {
 
     public static interface FilterOption {
+        String getKey();
+
         enum Type {
-            NUMERICAL, TEXT
+            NUMERICAL, TEXT, BOOLEAN
         }
         Type getType();
         String getDescription();

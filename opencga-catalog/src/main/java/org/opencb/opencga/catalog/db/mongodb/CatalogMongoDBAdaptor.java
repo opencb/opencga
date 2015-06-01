@@ -1383,15 +1383,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                     case studyId:
                         addCompQueryFilter(option.getType(), option.name(), query, _STUDY_ID, mongoQueryList);
                         break;
-                    case nattributes:
-                        String queryKey = entry.getKey().replaceFirst("nattributes", "attributes");
-                        addCompQueryFilter(option.getType(), entry.getKey(), query, queryKey, mongoQueryList);
-                        break;
                     case directory:
                         mongoQueryList.add(new BasicDBObject("path", new BasicDBObject("$regex", "^" + query.getString("directory") + "[^/]+/?$")));
                         break;
                     default:
-                        addCompQueryFilter(option.getType(), entry.getKey(), query, entry.getKey(), mongoQueryList);
+                        String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option.getType(), entry.getKey(), query, queryKey, mongoQueryList);
                         break;
                     case minSize:
                         mongoQueryList.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
