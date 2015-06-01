@@ -20,6 +20,7 @@ import org.junit.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -32,6 +33,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -128,6 +131,57 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         options = new QueryOptions(VariantDBAdaptor.FILES, -1);
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals("There is no file with ID -1", 0, queryResult.getNumResults());
+    }
+
+    @Test
+    public void testIterator() {
+        for (Variant variant : dbAdaptor) {
+            VariantSourceEntry entry = variant.getSourceEntries().entrySet().iterator().next().getValue();
+            assertEquals("6", entry.getFileId());
+            assertEquals("5", entry.getStudyId());
+            assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getSampleNames());
+        }
+    }
+
+    @Test
+    public void testGetAllVariants_genotypes() {
+        Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
+        Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
+
+        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":1|1");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+
+
+        //get for each genotype. Should return all variants
+        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":0|0,0|1,1|0,1|1,./.");
+        options.add("limit", 1);
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(1, queryResult.getNumResults());
+        assertEquals(999, queryResult.getNumTotalResults());
+
+        //Get all missing genotypes for sample na19600
+        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":./.");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(9, queryResult.getNumTotalResults());
+        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
+
+        //This works, but is incorrect. Better use "./."
+        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":-1/-1");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(9, queryResult.getNumTotalResults());
+        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
+
+
+        //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
+        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":1|1"+";"+na19685+":0|0,1|0");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(14, queryResult.getNumTotalResults());
+        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> {
+            assertEquals("1|1", vse.getSampleData("NA19600", "GT"));
+            assertTrue(Arrays.asList("0|0", "1|0").contains(vse.getSampleData("NA19685", "GT")));
+        }));
     }
 
 /*

@@ -434,10 +434,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator() {
-        MongoDBCollection coll = db.getCollection(collectionName);
-
-        DBCursor dbCursor = coll.nativeQuery().find(new BasicDBObject(), new QueryOptions());
-        return new VariantMongoDBIterator(dbCursor, variantConverter);
+        return iterator(new QueryOptions());
     }
 
     @Override
@@ -756,7 +753,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     String[] genotypes = sampleGenotype[1].split(OR);
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
                     for (String genotype : genotypes) {
-                        String s = DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD + "." + genotype;
+                        String s = DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD + "." +
+                                DBObjectToSamplesConverter.genotypeToStorageType(genotype);
                         //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
                         genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
                     }

@@ -191,7 +191,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
         for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
             if (!dbo.getKey().equals("def")) {
-                String genotype = dbo.getKey().replace("-1", ".");
+                String genotype = genotypeToDataModelType(dbo.getKey());
                 for (Integer sampleId : (List<Integer>) dbo.getValue()) {
                     if (idSamples.containsKey(sampleId)) {
                         fileWithSamples.getSamplesData().get(idSamples.get(sampleId)).put("GT", genotype);
@@ -242,7 +242,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
-            String genotypeStr = entry.getKey().toString().replace(".", "-1");
+            String genotypeStr = genotypeToStorageType(entry.getKey().toString());
             if (longestList != null && entry.getKey().equals(longestList.getKey())) {
                 mongoSamples.append("def", genotypeStr);
             } else {
@@ -304,5 +304,13 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
             mongoSamples.put(entry.getKey(), sampleData);
         }
         return mongoSamples;
+    }
+
+    public static String genotypeToDataModelType(String genotype) {
+        return genotype.replace("-1", ".");
+    }
+
+    public static String genotypeToStorageType(String genotype) {
+        return genotype.replace(".", "-1");
     }
 }
