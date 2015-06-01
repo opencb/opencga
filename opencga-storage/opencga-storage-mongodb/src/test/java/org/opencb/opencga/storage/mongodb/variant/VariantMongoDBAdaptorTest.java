@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -27,24 +24,14 @@ import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
  */
 public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
 
-    static protected MongoDBVariantStorageManager manager = null;
-
     @Override
     protected MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        if (manager == null) {
-            manager = new MongoDBVariantStorageManager();
-            manager.addConfigUri(this.getClass().getClassLoader().getResource("storage-mongo-test.properties").toURI());
-        }
-        return manager;
+        return MongoVariantStorageManagerTestUtils.getVariantStorageManager();
     }
 
     @Override
     protected void clearDB() throws Exception {
-        MongoCredentials credentials = getVariantStorageManager().getMongoCredentials();
-        logger.info("Cleaning MongoDB {}" , credentials.getMongoDbName());
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
-        MongoDataStore mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        mongoManager.drop(credentials.getMongoDbName());
+        MongoVariantStorageManagerTestUtils.clearDB();
     }
 
 }

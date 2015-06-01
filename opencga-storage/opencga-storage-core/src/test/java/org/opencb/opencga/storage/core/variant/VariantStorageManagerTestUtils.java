@@ -56,6 +56,10 @@ public abstract class VariantStorageManagerTestUtils {
     @Before
     public void before() throws Exception {
         clearDB();
+    }
+
+    @Before
+    public final void _before() throws Exception {
         variantStorageManager = getVariantStorageManager();
     }
 
