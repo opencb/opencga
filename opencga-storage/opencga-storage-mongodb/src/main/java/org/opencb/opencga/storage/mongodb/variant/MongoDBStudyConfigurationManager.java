@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -91,7 +92,14 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
             studyConfiguration = studyConfigurationMap.get(studyId);
         }
 
-        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+        List<StudyConfiguration> list;
+        if (studyConfiguration == null) {
+            list = Collections.emptyList();
+        } else {
+            list = Collections.singletonList(studyConfiguration.clone());
+        }
+
+        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", list);
     }
 
     @Override

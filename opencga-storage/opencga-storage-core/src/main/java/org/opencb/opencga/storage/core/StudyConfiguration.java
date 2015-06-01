@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class StudyConfiguration {
+public class StudyConfiguration implements Cloneable {
 
     private int studyId;
     private String studyName;
@@ -34,12 +34,23 @@ public class StudyConfiguration {
     private Map<String, Integer> fileIds;
     private Map<String, Integer> sampleIds;
     private Map<String, Integer> cohortIds;
-//    private Map<Integer, String> inverseFileIds;
-//    private Map<Integer, String> inverseSampleIds;
-//    private Map<Integer, String> inverseCohortIds;
     private Map<Integer, Set<Integer>> cohorts;
 
     public StudyConfiguration() {
+    }
+
+    public StudyConfiguration(StudyConfiguration other) {
+        this.studyId = other.studyId;
+        this.studyName = other.studyName;
+        this.fileIds = new HashMap<>(other.fileIds);
+        this.sampleIds = new HashMap<>(other.sampleIds);
+        this.cohortIds = new HashMap<>(other.cohortIds);
+        this.cohorts = new HashMap<>(other.cohorts);
+    }
+
+    @Override
+    public StudyConfiguration clone() {
+        return new StudyConfiguration(this);
     }
 
     public StudyConfiguration(int studyId, String studyName) {
@@ -146,7 +157,33 @@ public class StudyConfiguration {
         this.cohorts = cohorts;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof StudyConfiguration)) return false;
 
+        StudyConfiguration that = (StudyConfiguration) o;
+
+        if (studyId != that.studyId) return false;
+        if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) return false;
+        if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) return false;
+        if (fileIds != null ? !fileIds.equals(that.fileIds) : that.fileIds != null) return false;
+        if (sampleIds != null ? !sampleIds.equals(that.sampleIds) : that.sampleIds != null) return false;
+        if (studyName != null ? !studyName.equals(that.studyName) : that.studyName != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = studyId;
+        result = 31 * result + (studyName != null ? studyName.hashCode() : 0);
+        result = 31 * result + (fileIds != null ? fileIds.hashCode() : 0);
+        result = 31 * result + (sampleIds != null ? sampleIds.hashCode() : 0);
+        result = 31 * result + (cohortIds != null ? cohortIds.hashCode() : 0);
+        result = 31 * result + (cohorts != null ? cohorts.hashCode() : 0);
+        return result;
+    }
 
     public static <T,R> Map<R,T> inverseMap(Map<T, R> map) {
         Map<R,T> inverseMap = new HashMap<>(map.size());
