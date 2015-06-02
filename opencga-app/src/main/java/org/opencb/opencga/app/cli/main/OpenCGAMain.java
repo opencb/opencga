@@ -226,8 +226,9 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
 
-                        QueryResult<Project> project = catalogManager.createProject(catalogManager.getUserIdBySessionId(sessionId)
-                                , c.name, c.alias, c.description, c.organization, c.cOpt.getQueryOptions(), sessionId);
+                        String user = c.up.user == null || c.up.user.isEmpty() ? catalogManager.getUserIdBySessionId(sessionId) : c.up.user;
+                        QueryResult<Project> project = catalogManager.createProject(
+                                user, c.name, c.alias, c.description, c.organization, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;

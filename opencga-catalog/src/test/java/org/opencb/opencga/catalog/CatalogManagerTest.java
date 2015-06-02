@@ -249,16 +249,35 @@ public class CatalogManagerTest extends GenericTest {
 
 
     @Test
-    public void testCreateAnonymousProject() throws IOException, CatalogIOException, CatalogException {
+    public void testCreateAnonymousProject() throws IOException, CatalogException {
         String sessionId = catalogManager.loginAsAnonymous("127.0.0.1").first().getString("sessionId");
-//        catalogManager.createProject()
-          //TODO: Finish test
+
+        String userId = catalogManager.getUserIdBySessionId(sessionId);
+
+        catalogManager.createProject(userId, "Project", "project", "", "", null, sessionId);
+
+        catalogManager.logoutAnonymous(sessionId);
+
     }
 
     @Test
     public void testGetAllProjects() throws Exception {
-        System.out.println(catalogManager.getAllProjects("user", null, sessionIdUser));
-        System.out.println(catalogManager.getAllProjects("user", null, sessionIdUser2));
+        QueryResult<Project> projects = catalogManager.getAllProjects("user", null, sessionIdUser);
+        assertEquals(1, projects.getNumResults());
+
+        projects = catalogManager.getAllProjects("user", null, sessionIdUser2);
+        assertEquals(0, projects.getNumResults());
+    }
+
+    @Test
+    public void testCreateProject() throws Exception {
+
+        String projectAlias = "projectAlias_ASDFASDF";
+
+        catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
+
+        thrown.expect(CatalogDBException.class);
+        catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
     }
 
     @Test
