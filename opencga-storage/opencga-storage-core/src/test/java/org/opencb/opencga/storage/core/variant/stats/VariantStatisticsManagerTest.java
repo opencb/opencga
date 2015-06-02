@@ -49,11 +49,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     @Override
     @Before
     public void before() throws Exception {
-        if (etlResult == null) {
-            studyConfiguration = newStudyConfiguration();
-            clearDB();
-            etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
-        }
+        studyConfiguration = newStudyConfiguration();
+        clearDB();
+        etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
         dbAdaptor = getVariantStorageManager().getDBAdaptor(null, null);
     }
 
@@ -164,9 +162,13 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         for (Variant variant : dbAdaptor) {
             for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
                 Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
+                String calculatedCohorts = cohortStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
-                    assertTrue(cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
-                    assertEquals(studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to the number of samples)
+                    assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " + calculatedCohorts,
+                            cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
+
+                    assertEquals("Stats have less genotypes than expected.",
+                            studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to the number of samples)
                             cohortStats.get(entry.getKey()).getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
                 }
             }
