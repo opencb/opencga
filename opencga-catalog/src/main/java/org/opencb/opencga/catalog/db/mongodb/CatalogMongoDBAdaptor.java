@@ -251,7 +251,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         QueryResult insert;
         try {
             insert = userCollection.insert(userDBObject, null);
-        } catch (MongoException.DuplicateKey e) {
+        } catch (DuplicateKeyException e) {
             throw new CatalogDBException("User {id:\""+user.getId()+"\"} already exists");
         }
 
@@ -301,31 +301,41 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException {
         checkParameter(userId, "userId");
         checkParameter(password, "password");
-
         long startTime = startQuery();
 
         QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
         if(count.getResult().get(0) == 0){
             throw new CatalogDBException("Bad user or password");
         } else {
-
             QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
             if (countSessions.getResult().get(0) != 0) {
                 throw new CatalogDBException("Already logged");
             } else {
-                BasicDBObject id = new BasicDBObject("id", userId);
-                BasicDBObject updates = new BasicDBObject(
-                        "$push", new BasicDBObject(
-                        "sessions", getDbObject(session, "Sesion")
-                )
-                );
-                userCollection.update(id, updates, null);
-
+                addSession(userId, session);
                 ObjectMap resultObjectMap = new ObjectMap();
                 resultObjectMap.put("sessionId", session.getId());
                 resultObjectMap.put("userId", userId);
                 return endQuery("Login", startTime, Arrays.asList(resultObjectMap));
             }
+        }
+    }
+
+    @Override
+    public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+        if (countSessions.getResult().get(0) != 0) {
+            throw new CatalogDBException("Already logged with this sessionId");
+        } else {
+            BasicDBObject id = new BasicDBObject("id", userId);
+            BasicDBObject updates = new BasicDBObject(
+                    "$push", new BasicDBObject(
+                    "sessions", getDbObject(session, "Session")
+            )
+            );
+            userCollection.update(id, updates, null);
+
+            return endQuery("Login", startTime, Collections.singletonList(session));
         }
     }
 
@@ -366,7 +376,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         try {
             userCollection.insert(anonymous, null);
-        } catch (MongoException.DuplicateKey e) {
+        } catch (DuplicateKeyException e) {
             throw new CatalogDBException("Anonymous user {id:\""+user.getId()+"\"} already exists");
         }
 
@@ -469,8 +479,18 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult getSession(String userId, String sessionId) throws CatalogDBException {
-        throw new UnsupportedOperationException();
+    public QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject("id", userId);
+        query.put("sessions.id", sessionId);
+        BasicDBObject projection = new BasicDBObject("sessions",
+                new BasicDBObject("$elemMatch",
+                        new BasicDBObject("id", sessionId)));
+        QueryResult<DBObject> result = userCollection.find(query, projection, null);
+        User user = parseUser(result);
+
+        return endQuery("getSession", startTime, user.getSessions());
     }
 
     @Override
@@ -1111,7 +1131,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         try {
             fileCollection.insert(fileDBObject, null);
-        } catch (MongoException.DuplicateKey e) {
+        } catch (DuplicateKeyException e) {
             throw new CatalogDBException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 
