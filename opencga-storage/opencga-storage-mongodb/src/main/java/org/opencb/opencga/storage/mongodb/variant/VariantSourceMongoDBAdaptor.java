@@ -79,7 +79,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {
+    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and change for getSamplesBySource(String studyId, QueryOptions options)
         if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
                 if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
