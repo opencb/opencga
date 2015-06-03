@@ -149,6 +149,10 @@
                                     <arg value="${build.dir}/bin/${app.name}.sh"/>
                                     <arg value="${build.dir}/bin/${service.name}.sh"/>
                                 </exec>
+                                <exec executable="cp">
+                                    <arg value="${pom.basedir}/../opencga-storage-core/target/classes/configuration.yml"/>
+                                    <arg value="${build.dir}/conf/"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
