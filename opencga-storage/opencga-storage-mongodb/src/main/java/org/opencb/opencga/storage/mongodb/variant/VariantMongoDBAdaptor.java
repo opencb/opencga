@@ -144,7 +144,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
-        options.add("sort", new BasicDBObject("chr", 1).append("start", 1));
+        
         QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
         queryResult.setId(region.toString());
         return queryResult;
@@ -156,6 +156,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
+        
+        // If the users asks to sort the results, do it by chromosome and start
+        if (options.getBoolean(SORT, false)) {
+            options.put(SORT, new BasicDBObject("chr", 1).append("start", 1));
+        }
+        
         // If the user asks to merge the results, run only one query,
         // otherwise delegate in the method to query regions one by one
         if (options.getBoolean(MERGE, false)) {
