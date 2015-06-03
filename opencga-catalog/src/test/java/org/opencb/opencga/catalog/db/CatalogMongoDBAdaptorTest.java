@@ -827,4 +827,24 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(visits == jobAfter.getVisits());
     }
 
+
+
+    /////////// Other tests
+    @Test
+    public void replaceDots() {
+
+        DBObject original = new BasicDBObject("o.o", 4).append("4.4", Arrays.asList(1, 3, 4, new BasicDBObject("933.44", "df.sdf"))).append("key", new BasicDBObject("key....k", "value...2.2.2"));
+        DBObject o = new BasicDBObject("o.o", 4).append("4.4", Arrays.asList(1, 3, 4, new BasicDBObject("933.44", "df.sdf"))).append("key", new BasicDBObject("key....k", "value...2.2.2"));
+        System.out.println(o);
+
+        CatalogMongoDBAdaptor.replaceDotsInKeys(o);
+        System.out.println(o);
+
+        CatalogMongoDBAdaptor.restoreDotsInKeys(o);
+        System.out.println(o);
+
+        Assert.assertEquals(original, o);
+
+    }
+
 }
