@@ -26,6 +26,7 @@ public interface CatalogFileDBAdaptor {
         path(Type.TEXT, ""),
         ownerId(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
+        modificationDate(Type.TEXT, ""),
         description(Type.TEXT, ""),
         status(Type.TEXT, ""),
         diskUsage(Type.NUMERICAL, ""),
@@ -33,12 +34,14 @@ public interface CatalogFileDBAdaptor {
         sampleIds(Type.NUMERICAL, ""),
         jobId(Type.NUMERICAL, ""),
         acl(Type.TEXT, ""),
+        bacl("acl", Type.BOOLEAN, ""),
 
         stats(Type.TEXT, ""),
-        nstats(Type.NUMERICAL, ""),
+        nstats("stats", Type.NUMERICAL, ""),
 
-        attributes(Type.TEXT, "Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        nattributes(Type.NUMERICAL, "Format: <key><operation><value> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
         @Deprecated maxSize(Type.NUMERICAL, ""),
         @Deprecated minSize(Type.NUMERICAL, ""),
@@ -49,10 +52,18 @@ public interface CatalogFileDBAdaptor {
         ;
 
         private FileFilterOption(Type type, String description) {
+            this._key = name();
             this._description = description;
             this._type = type;
         }
 
+        private FileFilterOption(String key, Type type, String description) {
+            this._key = key;
+            this._description = description;
+            this._type = type;
+        }
+
+        final private String _key;
         final private String _description;
         final private Type _type;
 
@@ -64,6 +75,11 @@ public interface CatalogFileDBAdaptor {
         @Override
         public Type getType() {
             return _type;
+        }
+
+        @Override
+        public String getKey() {
+            return _key;
         }
     }
 

@@ -8,6 +8,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
@@ -78,17 +79,19 @@ public class FileMetadataReader {
      *      Format
      *      FileHeader (for known bioformats)
      *      SampleIds
+     *      Disk usage (size)
+     *      Checksum (if calculateChecksum == true)
      *
-     * @param file
-     * @param fileUri
-     * @param options
-     * @param sessionId
-     * @param simulate
-     * @return
+     * @param file          File from which read metadata
+     * @param fileUri       File location. If null, ask to Catalog.
+     * @param options       Other options
+     * @param sessionId     User sessionId
+     * @param simulate      Simulate the metadata modifications.
+     * @return              If there are no modifications, return the same input file. Else, return the updated file
      * @throws CatalogException
      * @throws StorageManagerException
      */
-    public File setMetadataInformation(File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
+    public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
             throws CatalogException, StorageManagerException {
         int studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (fileUri == null) {
@@ -97,16 +100,22 @@ public class FileMetadataReader {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ObjectMap modifyParams = new ObjectMap();
 
+        if (file.getType() == File.Type.FOLDER) {
+            return file;
+        }
+
         //Get metadata information
 
         File.Format format = FormatDetector.detect(fileUri);
         File.Bioformat bioformat = BioformatDetector.detect(fileUri);
 
-        if (!format.equals(file.getFormat())) {
+        if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
             modifyParams.put("format", format);
+            file.setFormat(format);
         }
-        if (!bioformat.equals(file.getBioformat())) {
+        if (bioformat != File.Bioformat.NONE && !bioformat.equals(file.getBioformat())) {
             modifyParams.put("bioformat", bioformat);
+            file.setBioformat(bioformat);
         }
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
@@ -114,16 +123,20 @@ public class FileMetadataReader {
             switch (bioformat) {
                 case ALIGNMENT: {
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
-                    HashMap<String, Object> attributes = new HashMap<>();
-                    attributes.put("alignmentHeader", alignmentHeader);
-                    modifyParams.put("attributes", attributes);
+                    if (alignmentHeader != null) {
+                        HashMap<String, Object> attributes = new HashMap<>();
+                        attributes.put("alignmentHeader", alignmentHeader);
+                        modifyParams.put("attributes", attributes);
+                    }
                     break;
                 }
                 case VARIANT: {
                     VariantSource variantSource = readVariantSource(study, file, fileUri);
-                    HashMap<String, Object> attributes = new HashMap<>();
-                    attributes.put("variantSource", variantSource);
-                    modifyParams.put("attributes", attributes);
+                    if (variantSource != null) {
+                        HashMap<String, Object> attributes = new HashMap<>();
+                        attributes.put("variantSource", variantSource);
+                        modifyParams.put("attributes", attributes);
+                    }
                     break;
                 }
                 default:
@@ -131,6 +144,8 @@ public class FileMetadataReader {
             }
         }
         /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+
+        modifyParams.putAll(new CatalogFileUtils(catalogManager).getModifiedFileAttributes(file, fileUri, false));
 
         if (!modifyParams.isEmpty()) {
             catalogManager.modifyFile(file.getId(), modifyParams, sessionId);
@@ -162,8 +177,11 @@ public class FileMetadataReader {
 
         List<Sample> sampleList;
 
+        Map<String, Object> attributes;
         if (!fileModifyParams.containsKey("attributes")) {
-            fileModifyParams.put("attributes", new HashMap<String, Object>());
+            attributes = new HashMap<>();
+        } else {
+            attributes = fileModifyParams.getMap("attributes");
         }
 
         List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
@@ -175,7 +193,7 @@ public class FileMetadataReader {
                     Object variantSourceObj = null;
                     if (file.getAttributes().containsKey("variantSource")) {
                         variantSourceObj = file.getAttributes().get("variantSource");
-                    } else if (fileModifyParams.getMap("attributes").containsKey("variantSource")) {
+                    } else if (attributes.containsKey("variantSource")) {
                         variantSourceObj = fileModifyParams.getMap("attributes").get("variantSource");
                     }
                     if (variantSourceObj != null) {
@@ -190,8 +208,12 @@ public class FileMetadataReader {
 
                     if (sampleNames == null) {
                         VariantSource variantSource = readVariantSource(study, file, fileUri);
-                        fileModifyParams.get("attributes", Map.class).put("variantSource", variantSource);
-                        sampleNames = variantSource.getSamples();
+                        if (variantSource != null) {
+                            attributes.put("variantSource", variantSource);
+                            sampleNames = variantSource.getSamples();
+                        } else {
+                            sampleNames = new LinkedList<>();
+                        }
                     }
                     break;
                 }
@@ -199,7 +221,7 @@ public class FileMetadataReader {
                     Object alignmentHeaderObj = null;
                     if (file.getAttributes().containsKey("alignmentHeader")) {
                         alignmentHeaderObj = file.getAttributes().get("alignmentHeader");
-                    } else if (fileModifyParams.getMap("attributes").containsKey("alignmentHeader")) {
+                    } else if (attributes.containsKey("alignmentHeader")) {
                         alignmentHeaderObj = fileModifyParams.getMap("attributes").get("alignmentHeader");
                     }
                     if (alignmentHeaderObj != null) {
@@ -213,8 +235,12 @@ public class FileMetadataReader {
                     }
                     if (sampleNames == null) {
                         AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
-                        fileModifyParams.get("attributes", Map.class).put("alignmentHeader", alignmentHeader);
-                        sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                        if (alignmentHeader != null) {
+                            attributes.put("alignmentHeader", alignmentHeader);
+                            sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                        } else {
+                            sampleNames = new LinkedList<>();
+                        }
                     }
                     break;
                 }
@@ -266,6 +292,9 @@ public class FileMetadataReader {
 
         List<Integer> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
         fileModifyParams.put("sampleIds", sampleIdsList);
+        if (!attributes.isEmpty()) {
+            fileModifyParams.put("attributes", attributes);
+        }
 
         return sampleList;
     }
@@ -292,19 +321,30 @@ public class FileMetadataReader {
 
     public static VariantSource readVariantSource(Study study, File file, URI fileUri)
             throws StorageManagerException {
-        //TODO: Fix aggregate and studyType
-        VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
-        return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
+            //TODO: Fix aggregate and studyType
+            VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
+            return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+        } else {
+            return null;
+        }
     }
 
     public static AlignmentHeader readAlignmentHeader(Study study, File file, URI fileUri) {
-        AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
-        reader.open();
-        reader.pre();
-        reader.post();
-        reader.close();
-//        reader.getSamHeader().get
-        return reader.getHeader();
+        if (file.getFormat() == File.Format.SAM
+                || file.getFormat() == File.Format.BAM
+                || FormatDetector.detect(fileUri) == File.Format.SAM
+                || FormatDetector.detect(fileUri) == File.Format.BAM) {
+            AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
+            reader.open();
+            reader.pre();
+            reader.post();
+            reader.close();
+    //        reader.getSamHeader().get
+            return reader.getHeader();
+        } else {
+            return null;
+        }
     }
 
     public static FileMetadataReader get(CatalogManager catalogManager) {

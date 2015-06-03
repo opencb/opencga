@@ -63,9 +63,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
+            URI studyUri = study.getUri() == null ? getStudyUri(study.getId()) : study.getUri();
             return file.getPath().isEmpty() ?
-                    study.getUri() :
-                    catalogIOManagerFactory.get(study.getUri()).getFileUri(study.getUri(), file.getPath());
+                    studyUri :
+                    catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, file.getPath());
         }
     }
 
@@ -366,6 +367,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         //Can only be modified when file.status == STAGE
                         case "creationDate":
+                        case "modificationDate":
                         case "diskUsage":
 //                            if (!file.getStatus().equals(File.Status.STAGE)) {
 //                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
@@ -502,6 +504,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult move(int fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException {
         throw new UnsupportedOperationException();
+        //TODO https://github.com/opencb/opencga/issues/136
 //        String userId = catalogDBAdaptor.getUserIdBySessionId(sessionId);
 //        int studyId = catalogDBAdaptor.getStudyIdByFileId(fileId);
 //        int projectId = catalogDBAdaptor.getProjectIdByStudyId(studyId);

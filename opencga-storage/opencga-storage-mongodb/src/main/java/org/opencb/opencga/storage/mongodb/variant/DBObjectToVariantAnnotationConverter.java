@@ -139,7 +139,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                             getDefault(ct, AA_CHANGE_FIELD, "") /*.toString() */,
                             getDefault(ct, CODON_FIELD, "") /*.toString() */,
                             proteinSubstitutionScores,
-                            soAccessionNames));
+                            soAccessionNames, Collections.<ExpressionValue>emptyList()));
                 }
             }
 

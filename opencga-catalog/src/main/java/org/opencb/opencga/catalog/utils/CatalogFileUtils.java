@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.utils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -32,6 +31,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Objects;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -94,7 +94,7 @@ public class CatalogFileUtils {
             } else {
                 targetChecksum = sourceChecksum;
             }
-            updateFileAttributes(file, targetChecksum, targetUri, null, sessionId);
+            updateFileAttributes(file, targetChecksum, targetUri, new ObjectMap("status", File.Status.READY), sessionId);
             return;
         }
 
@@ -170,7 +170,7 @@ public class CatalogFileUtils {
                 logger.info("Checksum not computed.");
             }
 
-            updateFileAttributes(file, sourceChecksum, targetUri, null, sessionId);
+            updateFileAttributes(file, sourceChecksum, targetUri, new ObjectMap("status", File.Status.READY), sessionId);
 
             if(deleteSource && !fileMoved) {
                 logger.info("Deleting source file {} after moving", sourceUri);
@@ -223,7 +223,7 @@ public class CatalogFileUtils {
             }
         }
 
-        updateFileAttributes(file, checksum, targetUri, null, sessionId);
+        updateFileAttributes(file, checksum, targetUri, new ObjectMap("status", File.Status.READY), sessionId);
 
     }
 
@@ -260,7 +260,9 @@ public class CatalogFileUtils {
             }
         }
 
-        updateFileAttributes(file, checksum, externalUri, new ObjectMap("uri", externalUri), sessionId);
+        ObjectMap objectMap = new ObjectMap("uri", externalUri);
+        objectMap.put("status", File.Status.READY);
+        updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
 
     }
 
@@ -282,10 +284,9 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     *      Status -> ready
      *      diskUsage
-     *      creationDate
-     *      checksum
+     *      modificationDate
+     *      attributes.checksum
      * @param file              File to update
      * @param calculateChecksum Do calculate checksum
      * @param sessionId         users sessionId
@@ -300,50 +301,88 @@ public class CatalogFileUtils {
         updateFileAttributes(file, checksum, null, null, sessionId);
     }
 
+    /**
+     * Get a ObjectMap with some fields if they have been modified.
+     *      diskUsage
+     *      modificationDate
+     *      attributes.checksum
+     *
+     * @param fileUri If null, calls to getFileUri()
+     *
+     * TODO: Lazy checksum: Only calculate checksum if the diskUsage has changed.
+     * @param calculateChecksum     Calculate checksum to check if have changed
+     * @throws CatalogException
+     */
+    public ObjectMap getModifiedFileAttributes(File file, URI fileUri, boolean calculateChecksum) throws CatalogException {
+        if (fileUri == null) {
+            fileUri = catalogManager.getFileUri(file);
+        }
+        String checksum = null;
+        if (calculateChecksum) {
+            checksum = catalogManager.getCatalogIOManagerFactory().get(fileUri).calculateChecksum(fileUri);
+        }
+        return getModifiedFileAttributes(file, checksum, fileUri, null);
+    }
+
 
     /**
      * Update some file attributes.
-     *      Status -> ready
      *      diskUsage
-     *      creationDate
-     *      checksum
+     *      modificationDate
+     *      attributes.checksum
      * @throws CatalogException
      */
     private void updateFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters, String sessionId)
             throws CatalogException {
-        ObjectMap attributes = new ObjectMap();
-        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
+        parameters = getModifiedFileAttributes(file, checksum, fileUri, parameters);
 
+        //Update file
+        try {
+            if (!parameters.isEmpty()) {    //If there is something to update
+                catalogManager.modifyFile(file.getId(), parameters, sessionId);
+            }
+        } catch (CatalogException e) {
+            throw new CatalogIOException("Can't update file properties in Catalog.", e);
+        }
+    }
+
+    /**
+     * Get a ObjectMap with some fields if they have been modified.
+     *      diskUsage
+     *      modificationDate
+     *      attributes.checksum
+     *
+     * @throws CatalogException
+     */
+    private ObjectMap getModifiedFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters) throws CatalogException {
+        parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
         if (fileUri == null) {
             fileUri = catalogManager.getFileUri(file);
         }
         CatalogIOManager catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
 
         if (checksum != null && !checksum.isEmpty() && !checksum.equals("null")) {
-            attributes.put("checksum", checksum);
+            if (file.getAttributes() == null || !Objects.equals(file.getAttributes().get("checksum"), checksum)) {
+                parameters.put("attributes", new ObjectMap("checksum", checksum));
+            }
         }
-        long size = 0;
+
         try {
-            size = catalogIOManager.getFileSize(fileUri);
+            long size = catalogIOManager.getFileSize(fileUri);
+            if (file.getDiskUsage() != size) {
+                parameters.put("diskUsage", size);
+            }
         } catch (CatalogIOException e) {
             e.printStackTrace();
             logger.error("Can't get fileSize", e);
         }
 
-        //String creationDate = catalogIOManager.getCreationDate(fileUri); //TODO
-        String creationDate = TimeUtils.getTime();
-
-        //Update file
-        parameters.put("status", File.Status.READY);
-        parameters.put("diskUsage", size);
-        parameters.put("creationDate", creationDate);
-        parameters.put("attributes", attributes);
-
-        try {
-            catalogManager.modifyFile(file.getId(), parameters, sessionId);
-        } catch (CatalogException e) {
-            throw new CatalogIOException("Can't update file properties in Catalog.", e);
+        String modificationDate = TimeUtils.getTime(catalogIOManager.getModificationDate(fileUri));
+        if (!modificationDate.equals(file.getModificationDate())) {
+            parameters.put("modificationDate", modificationDate);
         }
+
+        return parameters;
     }
 
     /**

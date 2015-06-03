@@ -188,7 +188,7 @@ public class VariantStatisticsManager {
      * @param variantDBAdaptor to obtain the Variants
      * @param output where to write the VariantStats
      * @param samples cohorts (subsets) of the samples. key: cohort name, value: list of sample names.
-     * @param options (mandatory) VariantSource, (optional) filters to the query, batch size, number of threads to use...
+     * @param options (mandatory) fileId, (optional) filters to the query, batch size, number of threads to use...
      *
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
      * @throws IOException

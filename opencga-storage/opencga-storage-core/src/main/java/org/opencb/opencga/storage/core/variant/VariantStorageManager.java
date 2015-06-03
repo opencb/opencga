@@ -506,7 +506,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     /*  StudyConfiguration utils methods        */
     /* --------------------------------------- */
 
-    final protected StudyConfiguration getStudyConfiguration(ObjectMap params) {
+    final public StudyConfiguration getStudyConfiguration(ObjectMap params) {
         if (params.containsKey(STUDY_CONFIGURATION)) {
             return params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
         } else {
@@ -524,7 +524,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
      * @param params
      * @return
      */
-    final protected StudyConfigurationManager getStudyConfigurationManager(ObjectMap params) {
+    final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap params) {
         StudyConfigurationManager studyConfigurationManager = null;
         if (studyConfigurationManager == null) {
             if (params.containsKey(STUDY_CONFIGURATION_MANAGER_CLASS_NAME)) {

@@ -97,6 +97,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
 //    @Before
     public void initDefaultCatalogDB() throws CatalogDBException {
+
+        assertTrue(!catalogDBAdaptor.isCatalogDBReady());
+        catalogDBAdaptor.initializeCatalogDB();
+
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
@@ -133,6 +137,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         user3 = catalogDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
 
 
+    }
+
+    @Test
+    public void initializeInitializedDB() throws CatalogDBException {
+        assertTrue(catalogDBAdaptor.isCatalogDBReady());
+
+        thrown.expect(CatalogDBException.class);
+        catalogDBAdaptor.initializeCatalogDB();
     }
 
     /** **************************
@@ -195,6 +207,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     }
 
     @Test
+    public void loginTest2() throws CatalogDBException, IOException {
+        String userId = user1.getId();
+        Session sessionJCOLL = new Session("127.0.0.1");
+        QueryResult<ObjectMap> login = catalogDBAdaptor.login(userId, "1234", sessionJCOLL);
+        assertEquals(userId, login.first().getString("userId"));
+
+        thrown.expect(CatalogDBException.class); //Already logged
+        catalogDBAdaptor.login(userId, "1234", sessionJCOLL);
+    }
+
+    @Test
     public void logoutTest() throws CatalogDBException, IOException {
         String userId = user1.getId();
         Session sessionJCOLL = new Session("127.0.0.1");
@@ -207,7 +230,25 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         //thrown.expect(CatalogDBException.class);
         QueryResult falseSession = catalogDBAdaptor.logout(userId, "FalseSession");
         assertTrue(falseSession.getWarningMsg() != null && !falseSession.getWarningMsg().isEmpty());
+    }
 
+    @Test
+    public void getUserIdBySessionId() throws CatalogDBException {
+        String userId = user1.getId();
+
+        catalogDBAdaptor.login(userId, "1234", new Session("127.0.0.1")); //Having multiple conections
+        catalogDBAdaptor.login(userId, "1234", new Session("127.0.0.1"));
+        catalogDBAdaptor.login(userId, "1234", new Session("127.0.0.1"));
+
+        Session sessionJCOLL = new Session("127.0.0.1");
+        QueryResult<ObjectMap> login = catalogDBAdaptor.login(userId, "1234", sessionJCOLL);
+        assertEquals(userId, login.first().getString("userId"));
+
+        assertEquals(user1.getId(), catalogDBAdaptor.getUserIdBySessionId(sessionJCOLL.getId()));
+        QueryResult logout = catalogDBAdaptor.logout(userId, sessionJCOLL.getId());
+        assertEquals(0, logout.getResult().size());
+
+        assertEquals("", catalogDBAdaptor.getUserIdBySessionId(sessionJCOLL.getId()));
     }
 
     @Test
@@ -779,10 +820,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         DBObject o = new BasicDBObject("o.o", 4).append("4.4", Arrays.asList(1, 3, 4, new BasicDBObject("933.44", "df.sdf"))).append("key", new BasicDBObject("key....k", "value...2.2.2"));
         System.out.println(o);
 
-        CatalogMongoDBAdaptor.replaceDotsInKeys(o);
+        CatalogMongoDBUtils.replaceDotsInKeys(o);
         System.out.println(o);
 
-        CatalogMongoDBAdaptor.restoreDotsInKeys(o);
+        CatalogMongoDBUtils.restoreDotsInKeys(o);
         System.out.println(o);
 
         Assert.assertEquals(original, o);

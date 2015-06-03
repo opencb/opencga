@@ -102,6 +102,12 @@ public class CatalogManager {
         configureIOManager(properties);
         logger.debug("CatalogManager configureManager");
         configureManagers(properties);
+
+        if (!catalogDBAdaptor.isCatalogDBReady()) {
+            catalogDBAdaptor.initializeCatalogDB();
+            User admin = new User("admin", "admin", "admin@email.com", "admin", "openCB", User.Role.ADMIN, "active");
+            catalogDBAdaptor.getCatalogUserDBAdaptor().insertUser(admin, null);
+        }
     }
 
     private void configureManagers(Properties properties) {
@@ -505,7 +511,7 @@ public class CatalogManager {
     }
 
     public QueryResult renameFile(int fileId, String newName, String sessionId)
-            throws CatalogException, IOException, CatalogIOException {
+            throws CatalogException {
         return fileManager.rename(fileId, newName, sessionId);
     }
 

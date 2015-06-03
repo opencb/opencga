@@ -29,10 +29,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class PosixCatalogIOManager extends CatalogIOManager {
 
@@ -602,6 +599,27 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
     }
 
+    @Override
+    public Date getCreationDate(URI file) throws CatalogIOException {
+        checkUriScheme(file);
+        try {
+            return Date.from(Files.readAttributes(Paths.get(file), BasicFileAttributes.class).creationTime().toInstant());
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogIOException("Can't get file size", e);
+        }
+    }
+
+    @Override
+    public Date getModificationDate(URI file) throws CatalogIOException {
+        checkUriScheme(file);
+        try {
+            return Date.from(Files.readAttributes(Paths.get(file), BasicFileAttributes.class).lastModifiedTime().toInstant());
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new CatalogIOException("Can't get file size", e);
+        }
+    }
 
 
 //    public String getFileTableFromJob(Path jobPath, String filename, String start, String limit, String colNames,

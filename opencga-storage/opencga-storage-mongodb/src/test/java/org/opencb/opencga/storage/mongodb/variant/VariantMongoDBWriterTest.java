@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Properties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -40,6 +41,7 @@ import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Ignore
 public class VariantMongoDBWriterTest {
 
     private static Properties properties;

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -74,7 +75,15 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             e.printStackTrace();
             logger.error("Unable to get StudyConfiguration from Catalog", e);
         }
-        return new QueryResult<>(Integer.toString(studyId), (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+
+        List<StudyConfiguration> list;
+        if (studyConfiguration == null) {
+            list = Collections.emptyList();
+        } else {
+            list = Collections.singletonList(studyConfiguration.clone());
+        }
+
+        return new QueryResult<>(Integer.toString(studyId), (int) (System.currentTimeMillis() - start), 1, 1, "", "", list);
     }
 
     @Override

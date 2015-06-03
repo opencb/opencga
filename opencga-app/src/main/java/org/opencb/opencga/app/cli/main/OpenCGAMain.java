@@ -226,8 +226,9 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
 
-                        QueryResult<Project> project = catalogManager.createProject(catalogManager.getUserIdBySessionId(sessionId)
-                                , c.name, c.alias, c.description, c.organization, c.cOpt.getQueryOptions(), sessionId);
+                        String user = c.up.user == null || c.up.user.isEmpty() ? catalogManager.getUserIdBySessionId(sessionId) : c.up.user;
+                        QueryResult<Project> project = catalogManager.createProject(
+                                user, c.name, c.alias, c.description, c.organization, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -324,16 +325,25 @@ public class OpenCGAMain {
                         Study study = catalogManager.getStudy(studyId, sessionId).first();
                         FileScanner fileScanner = new FileScanner(catalogManager);
 
+                        /** First, run CheckStudyFiles to find new missing files **/
+                        List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
+                        List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().equals(File.Status.READY)).collect(Collectors.toList());
+                        int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+
+                        /** Get untracked files **/
                         List<URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
                         URI studyUri = catalogManager.getStudyUri(studyId);
                         Map<URI, String> relativeUrisMap = untrackedFiles.stream().collect(Collectors.toMap((k) -> k, (u) -> studyUri.relativize(u).toString()));
                         int maxUntracked = relativeUrisMap.values().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
+                        /** Get missing files **/
                         List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
-                        int maxMissing = missingFiles.stream().map(File::getPath).map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+                        int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
-                        String format = "\t%-" + Math.max(maxMissing, maxUntracked) + "s  -> %s\n";
+
+                        /** Print pretty **/
+                        String format = "\t%-" + Math.max(Math.max(maxMissing, maxUntracked), maxFound) + "s  -> %s\n";
 
                         if (!relativeUrisMap.isEmpty()) {
                             System.out.println("UNTRACKED files");
@@ -344,6 +354,14 @@ public class OpenCGAMain {
                         if (!missingFiles.isEmpty()) {
                             System.out.println("MISSING files");
                             for (File file : missingFiles) {
+                                System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+                            }
+                            System.out.println("\n");
+                        }
+
+                        if (!found.isEmpty()) {
+                            System.out.println("FOUND files");
+                            for (File file : found) {
                                 System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
                             }
                         }
@@ -436,6 +454,36 @@ public class OpenCGAMain {
 
                         System.out.println(createOutput(c.cOpt, file, null));
 
+                        break;
+                    }
+                    case "refresh": {
+                        OptionsParser.FileCommands.RefreshCommand c = optionsParser.getFileCommands().refreshCommand;
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        File file = catalogManager.getFile(fileId, sessionId).first();
+
+                        List<File> files;
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
+                        if (file.getType() == File.Type.FILE) {
+                            File file1 = fileMetadataReader.setMetadataInformation(file, null, queryOptions, sessionId, false);
+                            if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
+                                files = Collections.emptyList();
+                            } else {
+                                files = Collections.singletonList(file);
+                            }
+                        } else {
+                            List<File> result = catalogManager.getAllFilesInFolder(file.getId(), null, sessionId).getResult();
+                            files = new ArrayList<>(result.size());
+                            for (File f : result) {
+                                File file1 = fileMetadataReader.setMetadataInformation(f, null, queryOptions, sessionId, false);
+                                if (f != file1) {    //Add only modified files.
+                                    files.add(file1);
+                                }
+                            }
+                        }
+
+                        System.out.println(createOutput(c.cOpt, files, null));
                         break;
                     }
                     case "info": {
@@ -574,9 +622,6 @@ public class OpenCGAMain {
                         OptionsParser.SampleCommands.LoadCommand c = optionsParser.sampleCommands.loadCommand;
 
                         CatalogSampleAnnotationsLoader catalogSampleAnnotationsLoader = new CatalogSampleAnnotationsLoader(catalogManager);
-//                        if (c.pedigreeFileId == null || c.pedigreeFileId.isEmpty()) {
-//                            catalogManager.
-//                        }
                         int fileId = catalogManager.getFileId(c.pedigreeFileId);
                         File pedigreeFile = catalogManager.getFile(fileId, sessionId).first();
 

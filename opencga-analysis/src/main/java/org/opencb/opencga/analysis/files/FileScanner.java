@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.files;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -55,29 +56,46 @@ public class FileScanner {
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         URI studyUri = catalogManager.getStudyUri(study.getId());
 
+        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList(
+                "projects.studies.files.id",
+                "projects.studies.files.status",
+                "projects.studies.files.path"));
+        queryOptions.put(CatalogFileDBAdaptor.FileFilterOption.status.toString(), Arrays.asList(
+                File.Status.READY, File.Status.MISSING, File.Status.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(),
-                new QueryOptions("include", Arrays.asList(
-                        "projects.studies.files.id",
-                        "projects.studies.files.status",
-                        "projects.studies.files.path")),
+                queryOptions,
                 sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
-            if (file.getStatus() == File.Status.READY || file.getStatus() == File.Status.MISSING) {   //What about the "thrashed" files?
-                URI fileUri = catalogManager.getFileUri(study, file);
-                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                    logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
-                    if (file.getStatus() != File.Status.MISSING) {
-                        logger.info("Set status to " + File.Status.MISSING);
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.MISSING), sessionId);
+            switch (file.getStatus()) {
+                case READY:
+                case MISSING: {
+                    URI fileUri = catalogManager.getFileUri(study, file);
+                    if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+                        logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
+                        if (file.getStatus() != File.Status.MISSING) {
+                            logger.info("Set status to " + File.Status.MISSING);
+                            catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.MISSING), sessionId);
+                            modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
+                        }
+                    } else if (file.getStatus() == File.Status.MISSING) {
+                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
+                        logger.info("Set status to " + File.Status.READY);
+                        ObjectMap params = catalogFileUtils.getModifiedFileAttributes(file, fileUri, calculateChecksum);
+                        params.put("status", File.Status.READY);
+                        catalogManager.modifyFile(file.getId(), params, sessionId);
                         modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
                     }
-                } else if (file.getStatus() == File.Status.MISSING) {
-                    logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
-                    logger.info("Set status to " + File.Status.READY);
-                    catalogFileUtils.updateFileAttributes(file, calculateChecksum, sessionId);
-                    modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
+                    break;
+                }
+                case TRASHED: {
+                    URI fileUri = catalogManager.getFileUri(study, file);
+                    if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
+                        modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
+                        break;
+                    }
                 }
             }
         }
@@ -87,7 +105,7 @@ public class FileScanner {
     /**
      * Scan the study folder, add all untracked files and check tracking
      *
-     * @param study                 Study to resinc
+     * @param study                 Study to resync
      * @param calculateChecksum     Calculate Checksum of files
      * @return                      New, lost and found files
      * @throws CatalogException
@@ -198,7 +216,7 @@ public class FileScanner {
             }
 
             if (file == null) {
-                file = catalogManager.createFile(studyId, getFormat(uri), getBioformat(uri), filePath, "", true, jobId, sessionId).first();
+                file = catalogManager.createFile(studyId, FormatDetector.detect(uri), BioformatDetector.detect(uri), filePath, "", true, jobId, sessionId).first();
                 logger.info("Added new file " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" }");
                 /** Moves the file to the read output **/
                 catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
@@ -223,14 +241,6 @@ public class FileScanner {
             }
         }
         return files;
-    }
-
-    private File.Bioformat getBioformat(URI uri) {
-        return BioformatDetector.detect(uri);
-    }
-
-    private File.Format getFormat(URI uri) {
-        return FormatDetector.detect(uri);
     }
 
 }

@@ -27,8 +27,10 @@ import java.util.List;
 public abstract class CatalogDBAdaptor {
 
     public static interface FilterOption {
+        String getKey();
+
         enum Type {
-            NUMERICAL, TEXT
+            NUMERICAL, TEXT, BOOLEAN
         }
         Type getType();
         String getDescription();
@@ -74,6 +76,17 @@ public abstract class CatalogDBAdaptor {
         return queryResult;
     }
 
+
+    /**
+     * Says if the catalog database is ready to be used. If false, needs to be initialized
+     */
+    public abstract boolean isCatalogDBReady();
+
+    /**
+     * Initializes de Database with the initial structure.
+     * @throws CatalogDBException   if there was any problem, or it was already initialized.
+     */
+    public abstract void initializeCatalogDB() throws CatalogDBException;
 
     public abstract void disconnect();
 

@@ -129,6 +129,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         List<Project> projects = allProjects.getResult();
         authorizationManager.filterProjects(userId, projects);
         allProjects.setResult(projects);
+        allProjects.setNumResults(projects.size());
 
         return allProjects;
     }

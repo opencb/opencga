@@ -95,6 +95,26 @@ public class FileScannerTest extends TestCase {
     }
 
     @Test
+    public void testDeleteTrashed() throws IOException, CatalogException {
+
+        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
+                CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
+
+        catalogManager.deleteFile(file.getId(), sessionIdUser);
+
+        file = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        assertEquals(File.Status.TRASHED, file.getStatus());
+
+        Files.delete(Paths.get(catalogManager.getFileUri(file)));
+        List<File> files = new FileScanner(catalogManager).checkStudyFiles(study, false, sessionIdUser);
+
+        file = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        assertEquals(File.Status.DELETED, file.getStatus());
+        assertEquals(1, files.size());
+        assertEquals(file.getId(), files.get(0).getId());
+    }
+
+    @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.txt");
 
@@ -213,12 +233,12 @@ public class FileScannerTest extends TestCase {
         assertEquals(File.Bioformat.ALIGNMENT, map.get("file2.bam").getBioformat());
         assertEquals(File.Bioformat.ALIGNMENT, map.get("file2.sam.gz").getBioformat());
 
-        assertEquals(File.Format.GZIP, map.get("file1.vcf.gz").getFormat());
-        assertEquals(File.Format.PLAIN, map.get("file1.vcf.variants.json").getFormat());
-        assertEquals(File.Format.GZIP, map.get("file1.vcf.variants.json.gz").getFormat());
-//        assertEquals(File.Format.SNAPPY, map.get("file1.vcf.variants.json.snappy").getFormat());
-//        assertEquals(File.Format.BINARY, map.get("file2.bam").getFormat());
-        assertEquals(File.Format.GZIP, map.get("file2.sam.gz").getFormat());
+        assertEquals(File.Format.VCF, map.get("file1.vcf.gz").getFormat());
+        assertEquals(File.Format.JSON, map.get("file1.vcf.variants.json").getFormat());
+        assertEquals(File.Format.JSON, map.get("file1.vcf.variants.json.gz").getFormat());
+        assertEquals(File.Format.JSON, map.get("file1.vcf.variants.json.snappy").getFormat());
+        assertEquals(File.Format.BAM, map.get("file2.bam").getFormat());
+        assertEquals(File.Format.SAM, map.get("file2.sam.gz").getFormat());
 
     }
 

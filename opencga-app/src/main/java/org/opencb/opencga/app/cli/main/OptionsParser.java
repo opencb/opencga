@@ -482,6 +482,7 @@ public class OptionsParser {
         final CreateFolderCommand createFolderCommand;
         final LinkCommand linkCommand;
         final RelinkCommand relinkCommand;
+        final RefreshCommand refreshCommand;
         final InfoCommand infoCommand;
         final SearchCommand searchCommand;
         final ListCommand listCommand;
@@ -494,11 +495,12 @@ public class OptionsParser {
             JCommander files = jcommander.getCommands().get("files");
             files.addCommand(this.createCommand = new CreateCommand());
             files.addCommand(this.createFolderCommand = new CreateFolderCommand());
+            files.addCommand(this.infoCommand = new InfoCommand());
+            files.addCommand(this.listCommand = new ListCommand());
             files.addCommand(this.linkCommand = new LinkCommand());
             files.addCommand(this.relinkCommand = new RelinkCommand());
-            files.addCommand(this.infoCommand = new InfoCommand());
+            files.addCommand(this.refreshCommand = new RefreshCommand());
             files.addCommand(this.searchCommand = new SearchCommand());
-            files.addCommand(this.listCommand = new ListCommand());
             files.addCommand(this.indexCommand = new IndexCommand());
             files.addCommand(this.statsCommand = new StatsCommand());
             files.addCommand(this.annotationCommand = new AnnotationCommand());
@@ -548,9 +550,6 @@ public class OptionsParser {
 
             @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
             boolean move;
-
-            @Parameter(names = {"-l", "--link"}, description = "Link as an external file", required = false, arity = 0)
-            boolean link;
 
             @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
             boolean calculateChecksum = false;
@@ -653,6 +652,9 @@ public class OptionsParser {
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
         }
+
+        @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
+        class RefreshCommand extends BaseFileCommand { }
 
         @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
         class IndexCommand extends BaseFileCommand {
@@ -840,17 +842,11 @@ public class OptionsParser {
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"--study-id"}, description = "Study id where to load samples", required = true, arity = 1)
-            String studyId;
-
             @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
             int variableSetId;
 
             @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
             String pedigreeFileId;
-
-//            @Parameter(names = {"--pedigree-file"}, description = "Pedigree file not loaded in OpenCGA", required = false, arity = 1)
-//            String pedigreeFile;
         }
     }
 
