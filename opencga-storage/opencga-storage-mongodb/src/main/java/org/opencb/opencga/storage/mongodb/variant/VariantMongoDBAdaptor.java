@@ -472,29 +472,51 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
             List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId(), variantSource.getFileId());   // TODO jmmut: remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO jmmut: use when we remove fileId
-            
+
+            // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
+            // db.variants.update(
+            //      {_id:<id>},
+            //      {$pull:{st:{cid:{$in:["Cohort 1","cohort 2"]}, fid:{$in:["file 1", "file 2"]}, sid:{$in:["study 1", "study 2"]}}}}
+            // )
+            // db.variants.update(
+            //      {_id:<id>},
+            //      {$push:{st:{$each: [{cid:"Cohort 1", fid:"file 1", ... , value:3},{cid:"Cohort 2", ... , value:3}] }}}
+            // )
             if (!cohorts.isEmpty()) {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
-                
-                for (DBObject cohort : cohorts) {   // remove already present elements one by one. TODO improve this. pullAll requires exact match and addToSet does not overwrite, we would need a putToSet
-                    DBObject find = new BasicDBObject("_id", id)
-                            .append(
-                                    DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.STUDY_ID,
-                                    cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
-                    DBObject update = new BasicDBObject("$pull",
-                            new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD, 
-                                    new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, 
-                                            cohort.get(DBObjectToVariantStatsConverter.STUDY_ID))));
 
-                    builder.find(find).updateOne(update);
+                List<String> cohortIds = new ArrayList<>(cohorts.size());
+                List<String> fileIds = new ArrayList<>(cohorts.size());
+                List<String> studyIds = new ArrayList<>(cohorts.size());
+                for (DBObject cohort : cohorts) {
+                    cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
+                    fileIds.add((String) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
+                    studyIds.add((String) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
-                
-                DBObject push = new BasicDBObject("$push", 
+
+                DBObject find = new BasicDBObject("_id", id);
+
+                DBObject update = new BasicDBObject("$pull",
+                        new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                                new BasicDBObject()
+                                        .append(
+                                                DBObjectToVariantStatsConverter.STUDY_ID,
+                                                new BasicDBObject("$in", studyIds))
+                                        .append(
+                                                DBObjectToVariantStatsConverter.FILE_ID,
+                                                new BasicDBObject("$in", fileIds))
+                                        .append(
+                                                DBObjectToVariantStatsConverter.COHORT_ID,
+                                                new BasicDBObject("$in", cohortIds))));
+
+                builder.find(find).updateOne(update);
+
+                DBObject push = new BasicDBObject("$push",
                         new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                                 new BasicDBObject("$each", cohorts)));
-                
-                builder.find(new BasicDBObject("_id", id)).update(push);
+
+                builder.find(find).update(push);
             }
         }
 
