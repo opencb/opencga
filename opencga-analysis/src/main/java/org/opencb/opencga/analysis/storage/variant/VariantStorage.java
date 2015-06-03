@@ -60,6 +60,7 @@ public class VariantStorage {
             }
             outputFileName.append(cohort.getName());
         }
+        outputFileName.insert(0, indexFile.getName() + ".");
 
         File outDir;
         if (outDirId == null || outDirId <= 0) {
