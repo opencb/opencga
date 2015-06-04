@@ -17,6 +17,9 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
@@ -31,7 +34,10 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Objects;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -272,10 +278,36 @@ public class CatalogFileUtils {
         if (!file.getStatus().equals(File.Status.TRASHED)) {
             throw new CatalogIOException("Only trashed files can be deleted");
         }
+        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        if (file.getType().equals(File.Type.FOLDER)) {
+            List<File> files = catalogManager.getAllFiles(studyId,
+                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
+                            "~" + file.getPath() + "..*"), sessionId).getResult();
+            for (File f : files) {
+                if (f.getStatus() != File.Status.TRASHED && f.getStatus() != File.Status.DELETED) {
+                    throw new CatalogIOException("Only trashed files can be deleted");
+                }
+            }
+            for (File f : files) {
+                if (f.getType() == File.Type.FILE && f.getStatus() != File.Status.DELETED) {
+                    delete(f, sessionId);
+                }
+            }
+            List<File> folders = files.stream().filter(f -> f.getType() == File.Type.FOLDER && f.getStatus() != File.Status.DELETED)
+                    .sorted((f1, f2) -> f2.getPath().length() - f1.getPath().length()).collect(Collectors.toList());
+            for (File folder : folders) {
+                delete(folder, sessionId);
+            }
+        }
 
-        if (file.getUri() == null) { //Do not delete file if is external
+        if (!catalogManager.isExternal(file)) { //Do not delete file if is external
             URI fileUri = catalogManager.getFileUri(file);
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
+            if (ioManager.isDirectory(fileUri)) {
+                if (!ioManager.listFiles(fileUri).isEmpty()) {
+                    throw new CatalogIOException("Unable to delete folder " + fileUri + ". Folder is not empty!");
+                }
+            }
             ioManager.deleteFile(fileUri);
         }
         catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
