@@ -591,7 +591,7 @@ public class OptionsParser {
             @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
             String description;
 
-            @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
+            @Parameter(names = {"--path"}, description = "New folder path", required = false, arity = 1)
             String path  = "";
 
             @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)

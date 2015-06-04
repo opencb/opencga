@@ -31,6 +31,7 @@ import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -416,17 +417,18 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.LinkCommand c = optionsParser.getFileCommands().linkCommand;
 
                         Path inputFile = Paths.get(c.inputFile);
-                        URI uri = UriUtils.getUri(c.inputFile);
+                        URI inputUri = UriUtils.getUri(c.inputFile);
 
-                        if (!inputFile.toFile().exists()) {
-                            throw new FileNotFoundException("File " + uri + " not found");
+                        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(inputUri);
+                        if (!ioManager.exists(inputUri)) {
+                            throw new FileNotFoundException("File " + inputUri + " not found");
                         }
 
                         int studyId = catalogManager.getStudyId(c.studyId);
+                        String path = c.path.isEmpty()? inputFile.getFileName().toString() : Paths.get(c.path, inputFile.getFileName().toString()).toString();
                         File file = catalogManager.createFile(studyId, null, null,
-                                Paths.get(c.path, inputFile.getFileName().toString()).toString(),
-                                c.description, c.parents, -1, sessionId).first();
-                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, sessionId);
+                                path, c.description, c.parents, -1, sessionId).first();
+                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, inputUri, false, sessionId);
                         file = catalogManager.getFile(file.getId(), c.cOpt.getQueryOptions(), sessionId).first();
                         file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
 
