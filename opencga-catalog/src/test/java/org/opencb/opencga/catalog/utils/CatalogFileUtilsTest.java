@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
@@ -29,12 +30,17 @@ import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -141,6 +147,80 @@ public class CatalogFileUtilsTest {
         sourceUri = createdFile.toURI();
         thrown.expect(CatalogException.class);
         catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+    }
+
+    @Test
+    public void linkFolderTest() throws Exception {
+        Path directory = Paths.get("/tmp/linkFolderTest");
+        IOUtils.deleteDirectory(directory);
+        Files.createDirectory(directory);
+        List<java.io.File> createdFiles = new LinkedList<>();
+        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString()));
+        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file2.txt").toString()));
+        Files.createDirectory(directory.resolve("dir"));
+        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("file2.txt").toString()));
+        Files.createDirectory(directory.resolve("dir").resolve("subdir"));
+        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("subdir").resolve("file3.txt").toString()));
+        URI sourceUri = directory.toUri();
+
+        URI fileUri;
+
+        File folder = catalogManager.createFile(studyId, File.Type.FOLDER, null, null,
+                "test", null, null, null, File.Status.STAGE, 0, -1, null, -1, null, null, true, null, userSessionId).first();
+        folder = catalogFileUtils.link(folder, true, sourceUri, false, userSessionId);
+        int studyId = catalogManager.getStudyIdByFileId(folder.getId());
+
+        fileUri = catalogManager.getFileUri(folder);
+        assertEquals(sourceUri, fileUri);
+        for (java.io.File createdFile : createdFiles) {
+            assertTrue(createdFile.exists());
+        }
+        for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
+            assertEquals(File.Status.READY, f.getStatus());
+            if (f.getType() != File.Type.FOLDER) {
+                assertTrue(f.getAttributes().containsKey("checksum"));
+                assertTrue(f.getUri() != null);
+            }
+        }
+
+
+        catalogManager.deleteFolder(folder.getId(), userSessionId);
+        for (java.io.File createdFile : createdFiles) {
+            assertTrue(createdFile.exists());
+        }
+        for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
+            assertEquals(File.Status.TRASHED, f.getStatus());
+            if (f.getType() != File.Type.FOLDER) {
+                assertTrue(f.getAttributes().containsKey("checksum"));
+                assertTrue(f.getUri() != null);
+            }
+        }
+        catalogFileUtils.delete(catalogManager.getFile(folder.getId(), userSessionId).first(), userSessionId);
+        for (java.io.File createdFile : createdFiles) {
+            assertTrue(createdFile.exists());
+        }
+        for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
+            assertEquals(File.Status.DELETED, f.getStatus());
+            if (f.getType() != File.Type.FOLDER) {
+                assertTrue(f.getAttributes().containsKey("checksum"));
+                assertTrue(f.getUri() != null);
+            }
+        }
+
+//        catalogManager.renameFile(file.getId(), "newName", userSessionId);
+//        file = catalogManager.getFile(file.getId(), userSessionId).first();
+//        fileUri = catalogManager.getFileUri(file);
+//        assertEquals(sourceUri, fileUri);
+//        assertTrue(createdFile.exists());
+//
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        catalogFileUtils.link(file, true, sourceUri, true, userSessionId);
+//
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        thrown.expect(CatalogException.class);
+//        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
     }
 
 }

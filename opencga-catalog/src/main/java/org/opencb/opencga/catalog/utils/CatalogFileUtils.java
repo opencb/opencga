@@ -233,14 +233,11 @@ public class CatalogFileUtils {
 
     }
 
-    public void link(File file, boolean calculateChecksum, URI externalUri, boolean relink, String sessionId) throws CatalogException {
+
+    public File link(File file, boolean calculateChecksum, URI externalUri, boolean relink, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
-
-        if (!file.getType().equals(File.Type.FILE)) {
-            throw new CatalogIOException("Only files with type File.Type.FILE can have an external link");
-        }
 
         File.Status fileStatus = file.getStatus();
         if (!fileStatus.equals(File.Status.STAGE) && !fileStatus.equals(File.Status.MISSING)) {
@@ -248,7 +245,7 @@ public class CatalogFileUtils {
                 if (!fileStatus.equals(File.Status.READY)) {
                     throw new CatalogIOException("Unable to relink a file with status : " + fileStatus);
                 }
-                if (file.getUri() == null) {
+                if (!catalogManager.isExternal(file)) {
                     throw new CatalogIOException("Unable to relink a non linked file");
                 }
             } else {
@@ -257,19 +254,70 @@ public class CatalogFileUtils {
         }
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
-        String checksum = null;
-        if (calculateChecksum) {
-            try {
-                checksum = ioManager.calculateChecksum(externalUri);
-            } catch (CatalogIOException e) {
-                e.printStackTrace();
+
+        if (file.getType() == File.Type.FOLDER) {
+            logger.info("Linking a folder");
+
+            int studyId = catalogManager.getStudyIdByFileId(file.getId());
+            List<File> files = new LinkedList<>();
+            List<URI> uris = ioManager.listFiles(externalUri);
+            Map<URI, String> uriStringMap = new HashMap<>();
+
+            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
+            Path folderPath = Paths.get(file.getPath());
+            for (URI uri : uris) {
+                if (ioManager.isDirectory(uri)) {
+                    continue;       //Skip directories. Will be created automatically with "parents = true"
+                }
+                String relativePath = folderPath.resolve(externalUri.relativize(uri).getPath()).toString();
+                uriStringMap.put(uri, relativePath);
             }
+
+            //Search if there is any existing file in the folder with the path to use.
+            QueryOptions pathsQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
+                    new LinkedList<>(uriStringMap.values()));
+            List<File> result = catalogManager.getAllFiles(studyId, pathsQuery, sessionId).getResult();
+            if (result.size() != 0) {
+                for (File f : result) {
+                    logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
+                }
+                throw new CatalogException("Unable to link folder {} to uri {}. Existing files on folder");
+            }
+
+            //Set URI to folder. This will mark the directory as "external"
+            catalogManager.modifyFile(file.getId(), new ObjectMap("uri", externalUri), sessionId);
+
+            //Create and link files.
+            for (Map.Entry<URI, String> entry : uriStringMap.entrySet()) {
+                String relativePath = entry.getValue();
+                URI uri = entry.getKey();
+                logger.info("Adding file \"{}\"", relativePath);
+                //Create new file. Parents = true to create folders. Parameter "parents" should not be used here, it's
+                //only related to the main folder creation.
+                File newFile = catalogManager.createFile(studyId, null, null, relativePath, "", true, -1, sessionId).first();
+                files.add(catalogFileUtils.link(newFile, calculateChecksum, uri, false, sessionId));
+            }
+
+            ObjectMap objectMap = new ObjectMap();
+            objectMap.put("status", File.Status.READY);
+            updateFileAttributes(file, null, externalUri, objectMap, sessionId);
+            return catalogManager.getFile(file.getId(), sessionId).first();
+        } else {
+
+            String checksum = null;
+            if (calculateChecksum) {
+                try {
+                    checksum = ioManager.calculateChecksum(externalUri);
+                } catch (CatalogIOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            ObjectMap objectMap = new ObjectMap("uri", externalUri);
+            objectMap.put("status", File.Status.READY);
+            updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
+            return catalogManager.getFile(file.getId(), sessionId).first();
         }
-
-        ObjectMap objectMap = new ObjectMap("uri", externalUri);
-        objectMap.put("status", File.Status.READY);
-        updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
-
     }
 
     public void delete(File file, String sessionId) throws CatalogException {
