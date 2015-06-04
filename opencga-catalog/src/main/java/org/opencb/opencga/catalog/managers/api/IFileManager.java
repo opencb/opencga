@@ -39,6 +39,8 @@ public interface IFileManager extends ResourceManager<Integer, File> {
 
     Integer getFileId(String fileId) throws CatalogException;
 
+    boolean isExternal(File file) throws CatalogException;
+
     /*--------------*/
     /* CRUD METHODS */
     /*--------------*/
