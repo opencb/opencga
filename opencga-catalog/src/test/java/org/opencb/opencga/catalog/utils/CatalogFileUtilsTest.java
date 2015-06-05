@@ -228,4 +228,96 @@ public class CatalogFileUtilsTest {
 //        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
     }
 
+
+    @Test
+    public void deleteFilesTest1() throws CatalogException, IOException {
+        File file1 = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "my.txt", StringUtils.randomString(200).getBytes(), "", false, userSessionId).first();
+
+        thrown.expect(CatalogException.class);
+        catalogFileUtils.delete(file1, userSessionId);
+    }
+
+    @Test
+    public void deleteFilesTest2() throws CatalogException, IOException {
+        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "my.txt", StringUtils.randomString(200).getBytes(), "", false, userSessionId).first();
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(file));
+        assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first())));
+
+        catalogManager.deleteFile(file.getId(), userSessionId);
+        assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first())));
+
+        catalogFileUtils.delete(file.getId(), userSessionId);
+        assertTrue(!ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first())));
+    }
+
+    @Test
+    public void deleteFoldersTest() throws CatalogException, IOException {
+        List<File> folderFiles = new LinkedList<>();
+        File folder = prepareFiles(folderFiles);
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(folder));
+        for (File file : folderFiles) {
+            assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
+        }
+
+        catalogManager.deleteFolder(folder.getId(), userSessionId);
+        assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
+        for (File file : folderFiles) {
+            URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
+            assertTrue("File uri: " + fileUri + " should exist", ioManager.exists(fileUri));
+        }
+
+        catalogFileUtils.delete(folder.getId(), userSessionId);
+        assertTrue(!ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
+        for (File file : folderFiles) {
+            URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
+            assertTrue("File uri: " + fileUri + " should NOT exist", !ioManager.exists(fileUri));
+        }
+    }
+    @Test
+    public void deleteFoldersTest2() throws CatalogException, IOException {
+        List<File> folderFiles = new LinkedList<>();
+        File folder = prepareFiles(folderFiles);
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(folder));
+        for (File file : folderFiles) {
+            assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
+        }
+
+        //Create deleted files inside the folder
+        File toDelete = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
+        catalogManager.deleteFile(toDelete.getId(), userSessionId);
+        catalogFileUtils.delete(toDelete.getId(), userSessionId);
+
+        File toTrash = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
+        catalogManager.deleteFile(toTrash.getId(), userSessionId);
+
+        catalogManager.deleteFolder(folder.getId(), userSessionId);
+        assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
+        for (File file : folderFiles) {
+            URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
+            assertTrue("File uri: " + fileUri + " should exist", ioManager.exists(fileUri));
+        }
+
+        catalogFileUtils.delete(folder.getId(), userSessionId);
+        assertTrue(!ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
+        for (File file : folderFiles) {
+            URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
+            assertTrue("File uri: " + fileUri + " should NOT exist", !ioManager.exists(fileUri));
+        }
+    }
+
+
+
+
+    private File prepareFiles(List<File> folderFiles) throws CatalogException, IOException {
+        File folder = catalogManager.createFolder(studyId, Paths.get("folder"), false, null, userSessionId).first();
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my3.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my4.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my5.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/subsubfolder/my6.txt", StringUtils.randomString(200).getBytes(), "", true, userSessionId).first());
+        return folder;
+    }
+
+
 }
