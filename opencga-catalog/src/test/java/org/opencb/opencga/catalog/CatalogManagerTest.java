@@ -32,6 +32,7 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
@@ -791,6 +792,40 @@ public class CatalogManagerTest extends GenericTest {
         int deletable = catalogManager.getFileId("user@1000G/phase3/");
         thrown.expect(CatalogException.class);
         deleteFolderAndCheck(deletable);
+    }
+
+    @Test
+    public void deleteFolderTest() throws CatalogException, IOException {
+        List<File> folderFiles = new LinkedList<>();
+        int studyId = catalogManager.getStudyId("user@1000G/phase3");
+        File folder = catalogManager.createFolder(studyId, Paths.get("folder"), false, null, sessionIdUser).first();
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils.randomString(200).getBytes(), "", true, sessionIdUser).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", StringUtils.randomString(200).getBytes(), "", true, sessionIdUser).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my3.txt", StringUtils.randomString(200).getBytes(), "", true, sessionIdUser).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my4.txt", StringUtils.randomString(200).getBytes(), "", true, sessionIdUser).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/my5.txt", StringUtils.randomString(200).getBytes(), "", true, sessionIdUser).first());
+        folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/subsubfolder/my6.txt", StringUtils.randomString(200).getBytes(), "", true, sessionIdUser).first());
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(folder));
+        for (File file : folderFiles) {
+            assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
+        }
+
+        File stagedFile = catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/subsubfolder/my_staged.txt",
+                null, null, null, File.Status.STAGE, 0, -1, null, -1, null, null, true, null, sessionIdUser).first();
+
+        thrown.expect(CatalogException.class);
+        try {
+            catalogManager.deleteFolder(folder.getId(), sessionIdUser);
+        } finally {
+            assertEquals("Folder name should not be modified", folder.getPath(), catalogManager.getFile(folder.getId(), sessionIdUser).first().getPath());
+            assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), sessionIdUser).first())));
+            for (File file : folderFiles) {
+                assertEquals("File name should not be modified", file.getPath(), catalogManager.getFile(file.getId(), sessionIdUser).first().getPath());
+                URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), sessionIdUser).first());
+                assertTrue("File uri: " + fileUri + " should exist", ioManager.exists(fileUri));
+            }
+        }
     }
 
     private void deleteFolderAndCheck(int deletable) throws CatalogException, IOException {

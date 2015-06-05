@@ -13,7 +13,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -445,23 +444,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
-        if (!authorizationManager.getFileACL(userId, fileId).isDelete()) {
-            throw new CatalogDBException("Permission denied. User can't delete this file");
-        }
-        QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
-
-        File file = fileResult.getResult().get(0);
-        switch (file.getStatus()) {
-            case STAGE:
-                throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
-            case TRASHED:
-            case DELETED:
-                //Send warning message
-                return new QueryResult<File>("Delete file", 0, 0, 0,
-                        "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
-                        null, Collections.emptyList());
-            case READY:
-                break;
+        File file = fileDBAdaptor.getFile(fileId, null).first();
+        QueryResult<File> result = checkCanDeleteFile(file, userId);
+        if (result != null) {
+            return result;
         }
 
         userDBAdaptor.updateUserLastActivity(ownerId);
@@ -471,25 +457,61 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         switch (file.getType()) {
             case FOLDER:
-                QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
+                QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(fileId, null);
+                // delete recursively. Walk tree depth first
+                for (File subfolder : allFilesInFolder.getResult()) {
+                    if (subfolder.getType() == File.Type.FOLDER) {
+                        delete(subfolder.getId(), null, sessionId);
+                    }
+                }
+                //Check can delete files
                 for (File subfile : allFilesInFolder.getResult()) {
-                    delete(subfile.getId(), null, sessionId);
+                    if (subfile.getType() == File.Type.FILE) {
+                        checkCanDeleteFile(subfile, userId);
+                    }
+                }
+                for (File subfile : allFilesInFolder.getResult()) {
+                    if (subfile.getType() == File.Type.FILE) {
+                        delete(subfile.getId(), null, sessionId);
+                    }
                 }
 
-                rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-                QueryResult<File> queryResult = fileDBAdaptor.modifyFile(fileId, objectMap);
+                fileDBAdaptor.modifyFile(fileId, objectMap);
+                QueryResult<File> queryResult = rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 return queryResult; //TODO: Return the modified file
             case FILE:
                 rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 return fileDBAdaptor.modifyFile(fileId, objectMap); //TODO: Return the modified file
-//            case INDEX:       //#62
-//                throw new CatalogException("Can't delete INDEX file");
-            //rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-            //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
         return null;
     }
 
+    private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
+        if (!authorizationManager.getFileACL(userId, file.getId()).isDelete()) {
+            throw new CatalogDBException("Permission denied. User can't delete this file");
+        }
+
+        switch (file.getStatus()) {
+            case STAGE:
+            case MISSING:
+            default:
+                throw new CatalogException("File is not ready. {" +
+                        "id: " + file.getId() + ", " +
+                        "path:\"" + file.getPath() + "\"," +
+                        "status: '" + file.getStatus() + "'}");
+            case TRASHED:
+            case DELETED:
+                //Send warning message
+                String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}";
+                logger.warn(warningMsg);
+                return new QueryResult<File>("Delete file", 0, 0, 0,
+                        warningMsg,
+                        null, Collections.emptyList());
+            case READY:
+                break;
+        }
+        return null;
+    }
 
     @Override
     public QueryResult<File> rename(int fileId, String newName, String sessionId)
@@ -504,12 +526,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!authorizationManager.getFileACL(userId, fileId).isWrite()) {
             throw CatalogAuthorizationException.cantModify(userId, "File", fileId, null);
         }
-        QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
-        if (fileResult.getResult().isEmpty()) {
-            return new QueryResult<File>("Rename file", 0, 0, 0, "File not found", null, null);
-        }
-        File file = fileResult.getResult().get(0);
-//        System.out.println("file = " + file);
+        File file = fileDBAdaptor.getFile(fileId, null).first();
 
         String oldPath = file.getPath();
         Path parent = Paths.get(oldPath).getParent();

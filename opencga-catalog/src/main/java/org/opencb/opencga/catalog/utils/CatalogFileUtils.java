@@ -320,6 +320,9 @@ public class CatalogFileUtils {
         }
     }
 
+    public void delete(int fileId, String sessionId) throws CatalogException {
+        delete(catalogManager.getFile(fileId, sessionId).first(), sessionId);
+    }
     public void delete(File file, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
 

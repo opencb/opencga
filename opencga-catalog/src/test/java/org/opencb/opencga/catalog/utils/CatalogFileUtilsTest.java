@@ -27,10 +27,12 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
@@ -165,10 +167,10 @@ public class CatalogFileUtilsTest {
 
         URI fileUri;
 
+        //Create folder & link
         File folder = catalogManager.createFile(studyId, File.Type.FOLDER, null, null,
                 "test", null, null, null, File.Status.STAGE, 0, -1, null, -1, null, null, true, null, userSessionId).first();
         folder = catalogFileUtils.link(folder, true, sourceUri, false, userSessionId);
-        int studyId = catalogManager.getStudyIdByFileId(folder.getId());
 
         fileUri = catalogManager.getFileUri(folder);
         assertEquals(sourceUri, fileUri);
@@ -182,8 +184,9 @@ public class CatalogFileUtilsTest {
                 assertTrue(f.getUri() != null);
             }
         }
+        assertTrue(!Paths.get(catalogManager.getStudyUri(studyId).resolve(folder.getName())).toFile().exists());
 
-
+        //Delete folder. Should trash everything.
         catalogManager.deleteFolder(folder.getId(), userSessionId);
         for (java.io.File createdFile : createdFiles) {
             assertTrue(createdFile.exists());
@@ -195,6 +198,8 @@ public class CatalogFileUtilsTest {
                 assertTrue(f.getUri() != null);
             }
         }
+
+        //Final delete folder. Should not remove original files.
         catalogFileUtils.delete(catalogManager.getFile(folder.getId(), userSessionId).first(), userSessionId);
         for (java.io.File createdFile : createdFiles) {
             assertTrue(createdFile.exists());
