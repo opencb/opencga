@@ -114,8 +114,8 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 //            params.put(AlignmentStorageManager.ENCRYPT, "null");
 
             mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.PLAIN, false);
-            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
             mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
             mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.COPY_FILE, false);
             mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.ENCRYPT, "null");
 

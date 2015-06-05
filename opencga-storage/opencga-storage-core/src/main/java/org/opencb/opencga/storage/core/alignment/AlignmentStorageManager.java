@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.alignment;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileReader;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
@@ -76,6 +77,11 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
     public AlignmentStorageManager(StorageConfiguration configuration) {
         super(configuration);
+        logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+    }
+
+    public AlignmentStorageManager(String storageEngineId, StorageConfiguration configuration) {
+        super(storageEngineId, configuration);
         logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
     }
 
@@ -138,15 +144,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public URI transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params)
             throws IOException, FileFormatException {
 
-        checkUri(inputUri, "input file");
-        checkUri(outputUri, "output directory");
-
-        // We need to merge passed 'params' with config
-        if(params == null) {
-            params = configuration.getStorageEngine().getAlignment().getOptions();
-        } else {
-            params.putAll(configuration.getStorageEngine().getAlignment().getOptions());
-        }
+//        checkUri(inputUri, "input file");
+//        checkUri(outputUri, "output directory");
 
         Path input = Paths.get(inputUri.getPath());
         FileUtils.checkFile(input);
@@ -154,26 +153,29 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         Path output = Paths.get(outputUri.getPath());
         FileUtils.checkDirectory(output);
 
-        checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
+        // Check if a BAM file is passed and it is sorted.
+        // Only binaries and sorted BAM files are accepted at this point.
+        checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());
 
-        boolean plain = params.getBoolean(PLAIN, false);
-        boolean writeJsonAlignments = params.getBoolean(WRITE_ALIGNMENTS, true);
-        boolean includeCoverage = params.getBoolean(INCLUDE_COVERAGE, false);
-        boolean createBai = params.getBoolean(CREATE_BAI, false);
+        boolean plain = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(PLAIN, false);
+        boolean createBai = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(CREATE_BAI, true);
+        boolean includeCoverage = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(INCLUDE_COVERAGE, false);
+        boolean writeJsonAlignments = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(WRITE_ALIGNMENTS, false);
 
-        int regionSize = params.getInt(REGION_SIZE,
+        int regionSize = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getInt(REGION_SIZE,
 //                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
-//                Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.region_size", "200000")));
                 configuration.getStorageEngine().getOptions().getInt("transform.region_size", 200000));
-        List<String> meanCoverageSizeList = params.getAsStringList(MEAN_COVERAGE_SIZE_LIST);
-        String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
-        String fileAlias = params.getString(FILE_ALIAS, defaultFileAlias);
+
+//        String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
+        String defaultFileAlias = StringUtils.substringBeforeLast(input.getFileName().toString(), ".");
+//        System.out.println(defaultFileAlias + "\n" + defaultFileAlias2);
+
+        String fileAlias = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getString(FILE_ALIAS, defaultFileAlias);
 
 //        String encrypt = params.getString(ENCRYPT, "null");
 //        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
 //        String fileName = inputPath.getFileName().toString();
 //        Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
-
 
         //1 Encrypt
         //encrypt(encrypt, bamFile, fileId, output, copy);
@@ -197,26 +199,27 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         //3 Calculate Coverage and transform
 
-        //Reader
-        AlignmentDataReader reader = new AlignmentBamDataReader(input, null); //Read from sorted BamFile
-
         //Tasks
-        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
         // tasks.add(new AlignmentRegionCompactorTask(new SqliteSequenceDBAdaptor(sqliteSequenceDBPath)));
-        if(includeCoverage) {
-            AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
-//        for (String size : meanCoverageSizeList) {
-//            coverageCalculatorTask.addMeanCoverageCalculator(size);
-//        }
-            meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
-            tasks.add(coverageCalculatorTask);
-        }
+        List<Task<AlignmentRegion>> tasks = new LinkedList<>();
 
-        //Writers
+        // Reader and Writer creation
+        AlignmentDataReader reader = new AlignmentBamDataReader(input, null); //Read from sorted BamFile
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
         String jsonOutputFiles = output.resolve(fileAlias + ".bam").toString();
         String outputFile = null;
 
+        // We set the different coverage size regions
+        if(includeCoverage) {
+            AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
+            List<String> meanCoverageSizeList = configuration.getStorageEngine(storageEngineId)
+                    .getAlignment().getOptions().getAsStringList(MEAN_COVERAGE_SIZE_LIST);
+            meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
+            tasks.add(coverageCalculatorTask);
+        }
+
+        // TODO
+        // This must be deleted, alignments are not stored any more in JSON
         if(writeJsonAlignments) {
             AlignmentJsonDataWriter alignmentDataWriter = new AlignmentJsonDataWriter(reader, jsonOutputFiles, !plain);
             writers.add(new AlignmentRegionDataWriter(alignmentDataWriter));
@@ -224,12 +227,10 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         }
 
         if(includeCoverage) {
-            logger.debug("MongoDB Alignment transform: includeCoverage");
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
 //                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
-//                    Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.coverage_chunk_size", "1000")));
                     configuration.getStorageEngine().getOptions().getInt("transform.coverage_chunk_size", 1000));
             writers.add(alignmentCoverageJsonDataWriter);
             if(outputFile == null) {
@@ -252,9 +253,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         runner.run();
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
-
-
-        logger.info("done!");
 
         return outputUri.resolve(outputFile);
     }
@@ -309,6 +307,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         return destFile;
     }
 
+    @Deprecated
     protected Path sortAlignmentsFile(Path input, Path outdir) throws IOException {
         Path sortBam;
         SAMFileReader reader = new SAMFileReader(input.toFile());
@@ -410,12 +409,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         switch (sortOrder) {
             case coordinate:
-                logger.debug("File {} sorted.", bamFileName);
+                logger.debug("BAM file '{}' is sorted.", bamFileName);
                 break;
             case queryname:
             case unsorted:
             default:
-                throw new IOException("Expected sorted Bam file. " +
+                throw new IOException("Expected sorted BAM file. " +
                         "File " + bamFileName + " is an unsorted bam (" + sortOrder.name() + ")");
         }
     }

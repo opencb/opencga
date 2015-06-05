@@ -48,7 +48,12 @@ import java.util.stream.Collectors;
  */
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
-    public static final String MONGODB_DATABASE_NAME = "opencga";
+    /**
+     * This field value must be the same that the one at configuration.yml
+     */
+    public static final String STORAGE_ENGINE_ID = "mongodb";
+
+    public static final String MONGODB_DEFAULT_DATABASE_NAME = "opencga";
     public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME";
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER";
@@ -56,14 +61,14 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOSTS";
 
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
-    protected static Logger logger;
+//    protected static Logger logger;
 
     public MongoDBAlignmentStorageManager() {
         this(null);
     }
 
     public MongoDBAlignmentStorageManager(StorageConfiguration configuration) {
-        super(configuration);
+        super(STORAGE_ENGINE_ID, configuration);
         logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
     }
 
@@ -83,9 +88,9 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public AlignmentDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
-//            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGODB_DATABASE_NAME);
-//            dbName = configuration.getStorageEngine("mongodb").getOptions().getOrDefault("database.coverage.collection.name", MONGODB_DATABASE_NAME);
-            dbName = configuration.getStorageEngine("mongodb").getAlignment().getOptions().getString("database.coverage.collection.name", MONGODB_DATABASE_NAME);
+//            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGODB_DEFAULT_DATABASE_NAME);
+//            dbName = configuration.getStorageEngine("mongodb").getOptions().getOrDefault("database.coverage.collection.name", MONGODB_DEFAULT_DATABASE_NAME);
+            dbName = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString("database.coverage.collection.name", MONGODB_DEFAULT_DATABASE_NAME);
             logger.info("Using default dbName in MongoDBAlignmentStorageManager.getDBAdaptor()");
         }
         Path path = Paths.get(properties.getProperty(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
@@ -106,10 +111,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         try {   //TODO: Use user and password
 //            String mongoUser = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER, null);
 //            String mongoPassword = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS, null);
-            String hosts = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getHosts()
+            String hosts = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getDatabase().getHosts()
                     .stream().map(String::toString).collect(Collectors.joining(","));
-            String mongodbUser = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getUser();
-            String mongodbPassword = configuration.getStorageEngine("mongodb").getAlignment().getDatabase().getPassword();
+            String mongodbUser = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getDatabase().getUser();
+            String mongodbPassword = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getDatabase().getPassword();
             return new MongoCredentials(
 //                    MongoCredentials.parseDataStoreServerAddresses(properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS, "localhost")),
                     MongoCredentials.parseDataStoreServerAddresses(hosts),
@@ -125,15 +130,14 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
 
-
-
-
-
     @Override
     public URI transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params) throws IOException, FileFormatException {
-        params.put(WRITE_ALIGNMENTS, false);
-        params.put(CREATE_BAI, true);
-        params.put(INCLUDE_COVERAGE, true);
+//        params.put(WRITE_ALIGNMENTS, false);
+//        params.put(CREATE_BAI, true);
+//        params.put(INCLUDE_COVERAGE, true);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(WRITE_ALIGNMENTS, false);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(CREATE_BAI, true);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(INCLUDE_COVERAGE, true);
         return super.transform(inputUri, pedigree, outputUri, params);
     }
 
@@ -152,10 +156,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         System.out.println("configuration = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configuration));
 
 //        String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
-        String fileId = configuration.getStorageEngine("mongodb").getAlignment().getOptions()
+        String fileId = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions()
                 .getString(AlignmentStorageManager.FILE_ID, input.getFileName().toString().split("\\.")[0]);
 //        String dbName = params.getString(DB_NAME);
-        String dbName = configuration.getStorageEngine("mongodb").getAlignment().getOptions()
+        String dbName = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions()
                 .getString("database.name", DB_NAME);
         System.out.println("dbName = " + dbName);
 

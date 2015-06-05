@@ -204,12 +204,11 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
 
-        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing [true]")
+        @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing [true]")
         public boolean calculateCoverage = true;
 
-        //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
         @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
-        public List<String> meanCoverage = Collections.singletonList("200");
+        public List<String> meanCoverage = Arrays.asList("200", "10000");
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")

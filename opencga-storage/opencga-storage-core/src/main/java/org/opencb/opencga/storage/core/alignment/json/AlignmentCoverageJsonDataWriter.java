@@ -172,14 +172,11 @@ public class AlignmentCoverageJsonDataWriter implements DataWriter<AlignmentRegi
     }
 
     private void writeMeanCoverageJson(List<MeanCoverage> meanCoverage) throws IOException {
-        Collections.sort(meanCoverage, new Comparator<MeanCoverage>() {
-            @Override
-            public int compare(MeanCoverage o1, MeanCoverage o2) {
-                if(o1.getRegion().getChromosome().equals(o2.getRegion().getChromosome())){
-                    return o1.getRegion().getStart() - o2.getRegion().getStart();
-                } else {
-                    return o1.getRegion().getChromosome().compareTo(o2.getRegion().getChromosome());
-                }
+        Collections.sort(meanCoverage, (o1, o2) -> {
+            if(o1.getRegion().getChromosome().equals(o2.getRegion().getChromosome())){
+                return o1.getRegion().getStart() - o2.getRegion().getStart();
+            } else {
+                return o1.getRegion().getChromosome().compareTo(o2.getRegion().getChromosome());
             }
         });
 

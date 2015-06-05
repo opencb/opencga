@@ -31,17 +31,22 @@ import java.net.URI;
  */
 public abstract class StorageManager<DBWRITER, DBADAPTOR> {
 
+    protected String storageEngineId;
     protected StorageConfiguration configuration;
     protected Logger logger;
 
     public StorageManager() {
-
     }
 
     public StorageManager(StorageConfiguration configuration) {
-        this.configuration = configuration;
+        this(configuration.getDefaultStorageEngineId(), configuration);
+//        this.configuration = configuration;
     }
 
+    public StorageManager(String storageEngineId, StorageConfiguration configuration) {
+        this.storageEngineId = storageEngineId;
+        this.configuration = configuration;
+    }
 
     @Deprecated
     public void addConfigUri(URI configUri) {}

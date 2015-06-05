@@ -61,7 +61,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
             Path adaptorPath = null;
             adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
 //            manager.getProperties().setProperty(MongoDBAlignmentStorageManager.OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, adaptorPath.toString());
-            dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(MongoDBAlignmentStorageManager.MONGODB_DATABASE_NAME, new ObjectMap());
+            dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(MongoDBAlignmentStorageManager.MONGODB_DEFAULT_DATABASE_NAME, new ObjectMap());
         } catch (IOException e) {
             e.printStackTrace();
         }
