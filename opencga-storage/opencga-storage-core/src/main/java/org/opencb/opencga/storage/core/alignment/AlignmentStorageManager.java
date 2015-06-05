@@ -27,6 +27,7 @@ import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -140,10 +141,18 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         checkUri(inputUri, "input file");
         checkUri(outputUri, "output directory");
 
-        params = configuration.getStorageEngine().getAlignment().getOptions();
+        // We need to merge passed 'params' with config
+        if(params == null) {
+            params = configuration.getStorageEngine().getAlignment().getOptions();
+        } else {
+            params.putAll(configuration.getStorageEngine().getAlignment().getOptions());
+        }
 
         Path input = Paths.get(inputUri.getPath());
+        FileUtils.checkFile(input);
+
         Path output = Paths.get(outputUri.getPath());
+        FileUtils.checkDirectory(output);
 
         checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
 
@@ -151,6 +160,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         boolean writeJsonAlignments = params.getBoolean(WRITE_ALIGNMENTS, true);
         boolean includeCoverage = params.getBoolean(INCLUDE_COVERAGE, false);
         boolean createBai = params.getBoolean(CREATE_BAI, false);
+
         int regionSize = params.getInt(REGION_SIZE,
 //                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
 //                Integer.parseInt(configuration.getStorageEngine().getOptions().getOrDefault("transform.region_size", "200000")));
@@ -212,7 +222,9 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
             writers.add(new AlignmentRegionDataWriter(alignmentDataWriter));
             outputFile = alignmentDataWriter.getAlignmentFilename();
         }
+
         if(includeCoverage) {
+            logger.debug("MongoDB Alignment transform: includeCoverage");
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(

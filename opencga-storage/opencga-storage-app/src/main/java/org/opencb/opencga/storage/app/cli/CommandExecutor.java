@@ -41,6 +41,7 @@ public abstract class CommandExecutor {
     protected String configFile;
 
     protected String appHome;
+
     protected StorageConfiguration configuration;
 
     protected Logger logger;
@@ -128,6 +129,7 @@ public abstract class CommandExecutor {
         }
     }
 
+    @Deprecated
     protected void assertDirectoryExists(URI outdir){
         if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
             logger.error("given output directory {} does not exist, please create it first.", outdir);
@@ -169,6 +171,14 @@ public abstract class CommandExecutor {
         }
 
         return builder;
+    }
+
+    public StorageConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public void setConfiguration(StorageConfiguration configuration) {
+        this.configuration = configuration;
     }
 
 }

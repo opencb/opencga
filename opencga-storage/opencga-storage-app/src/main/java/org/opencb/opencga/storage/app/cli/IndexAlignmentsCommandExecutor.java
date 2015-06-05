@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -27,6 +28,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 22/05/15.
@@ -80,7 +82,8 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
                 outdir = input.resolve(".");
             }
 
-            assertDirectoryExists(outdir);
+//            assertDirectoryExists(outdir);
+            FileUtils.checkDirectory(Paths.get(outdir));
 
             @Deprecated
             ObjectMap params = new ObjectMap();

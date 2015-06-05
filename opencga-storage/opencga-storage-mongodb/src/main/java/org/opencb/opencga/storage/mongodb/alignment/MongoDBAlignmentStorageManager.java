@@ -152,9 +152,11 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         System.out.println("configuration = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configuration));
 
 //        String fileId = params.getString(FILE_ID, input.getFileName().toString().split("\\.")[0]);
-        String fileId = configuration.getStorageEngine("mongodb").getAlignment().getOptions().getString(AlignmentStorageManager.FILE_ID, input.getFileName().toString().split("\\.")[0]);
+        String fileId = configuration.getStorageEngine("mongodb").getAlignment().getOptions()
+                .getString(AlignmentStorageManager.FILE_ID, input.getFileName().toString().split("\\.")[0]);
 //        String dbName = params.getString(DB_NAME);
-        String dbName = configuration.getStorageEngine("mongodb").getAlignment().getOptions().getString("database.name", DB_NAME);
+        String dbName = configuration.getStorageEngine("mongodb").getAlignment().getOptions()
+                .getString("database.name", DB_NAME);
         System.out.println("dbName = " + dbName);
 
         //Reader

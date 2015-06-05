@@ -204,8 +204,8 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
 
-        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing")
-        public boolean calculateCoverage = false;
+        @Parameter(names = "--calculate-coverage", description = "Calculate also coverage while indexing [true]")
+        public boolean calculateCoverage = true;
 
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
         @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
