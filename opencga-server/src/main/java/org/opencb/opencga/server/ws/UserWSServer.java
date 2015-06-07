@@ -41,7 +41,7 @@ public class UserWSServer extends OpenCGAWSServer {
                         @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
-    
+
 
     @GET
     @Path("/create")
