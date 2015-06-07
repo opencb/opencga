@@ -52,6 +52,7 @@ import javax.ws.rs.core.*;
 import java.net.URI;
 import java.util.*;
 
+
 @Path("/{version}/files")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Files", position = 4, description = "Methods for working with 'files' endpoint")
@@ -518,27 +519,6 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/delete")
-    @ApiOperation(value = "Delete file")
-    public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
-        return delete(fileId);
-    }
-
-    @DELETE
-    @Path("/{fileId}/delete")
-    @ApiOperation(value = "Delete file")
-    public Response delete(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
-        try {
-            int fileIdNum = catalogManager.getFileId(fileId);
-            QueryResult result = catalogManager.deleteFile(fileIdNum, sessionId);
-            return createOkResponse(result);
-        } catch (CatalogException | IOException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
-
-    @GET
     @Path("/{fileId}/index")
     @ApiOperation(value = "File index")
     public Response index(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIdStr,
@@ -569,21 +549,6 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
 //    @GET
-//    @Path("/index-status")
-//    @Produces("application/json")
-//    @ApiOperation(value = "File index status")
-//    public Response indexStatus(@ApiParam(value = "jobId", required = true) @DefaultValue("") @QueryParam("jobId") String jobId
-//    ) {
-//        String status;
-//        try {
-//            status = SgeManager.status(jobId);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return createErrorResponse(e.getMessage());
-//        }
-//        return createOkResponse(status);
-//    }
-
 
     @GET
     @Path("/{fileId}/fetch")
@@ -764,6 +729,7 @@ public class FileWSServer extends OpenCGAWSServer {
         return objectMap;
     }
 
+
     private List<java.nio.file.Path> getSortedChunkList(java.nio.file.Path folderPath) throws IOException {
         List<java.nio.file.Path> files = new ArrayList<>();
         DirectoryStream<java.nio.file.Path> stream = Files.newDirectoryStream(folderPath, "*_partial");
@@ -783,4 +749,41 @@ public class FileWSServer extends OpenCGAWSServer {
         });
         return files;
     }
+
+    //    }
+//        return createOkResponse(status);
+//        }
+//            return createErrorResponse(e.getMessage());
+//            e.printStackTrace();
+//        } catch (Exception e) {
+//            status = SgeManager.status(jobId);
+//        try {
+//        String status;
+//    ) {
+//    public Response indexStatus(@ApiParam(value = "jobId", required = true) @DefaultValue("") @QueryParam("jobId") String jobId
+//    @ApiOperation(value = "File index status")
+//    @Produces("application/json")
+//    @Path("/index-status")
+
+    @GET
+    @Path("/{fileId}/delete")
+    @ApiOperation(value = "Delete file")
+    public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
+        return delete(fileId);
+    }
+
+    @DELETE
+    @Path("/{fileId}/delete")
+    @ApiOperation(value = "Delete file")
+    public Response delete(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
+        try {
+            int fileIdNum = catalogManager.getFileId(fileId);
+            QueryResult result = catalogManager.deleteFile(fileIdNum, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogException | IOException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
 }
