@@ -43,7 +43,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     public VariableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                             @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
-        params = uriInfo.getQueryParameters();
+//        params = uriInfo.getQueryParameters();
     }
 
     @POST

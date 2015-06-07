@@ -103,7 +103,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr) {
         try {
 
-            QueryOptions queryOptions = getAllQueryOptions();
+//            QueryOptions queryOptions = getAllQueryOptions();
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(catalogManager.getStudyId(studyIdStr), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {

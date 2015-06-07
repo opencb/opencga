@@ -42,7 +42,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                           @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
-        params = uriInfo.getQueryParameters();
+//        params = uriInfo.getQueryParameters();
     }
 
     @GET

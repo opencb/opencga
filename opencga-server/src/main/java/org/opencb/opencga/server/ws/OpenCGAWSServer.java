@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
@@ -85,6 +86,7 @@ public class OpenCGAWSServer {
     protected String sessionId;
 
     protected UriInfo uriInfo;
+    protected HttpServletRequest httpServletRequest;
     protected MultivaluedMap<String, String> params;
 
     protected String sessionIp;
@@ -129,47 +131,45 @@ public class OpenCGAWSServer {
 //            e.printStackTrace();
 //        }
 
-        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
-        String openCGAHome = "";
-        System.out.println("Default opencga_home " + Config.getOpenCGAHome());
         try {
             Properties properties = new Properties();
+            InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
             properties.load(is);
-            openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", "");
+            String openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", Config.getOpenCGAHome());
+            System.out.println("OpenCGA home set to: " + openCGAHome);
+            if(Config.getOpenCGAHome() == null || Config.getOpenCGAHome().isEmpty()) {
+                Config.setOpenCGAHome(openCGAHome);
+            }
         } catch (IOException e) {
-            System.out.println("Error loading properties");
-            System.out.println(e.getMessage());
+            System.out.println("Error loading properties:\n" + e.getMessage());
             e.printStackTrace();
         }
-        if (!openCGAHome.isEmpty() && Paths.get(openCGAHome).toFile().exists()) {
-            System.out.println("Using \"openCGAHome\" from the properties file");
-            Config.setOpenCGAHome(openCGAHome);
-        } else {
-            Config.setOpenCGAHome();
-            System.out.println("Using OpenCGA_HOME = " + Config.getOpenCGAHome());
-        }
+
+//        if (!openCGAHome.isEmpty() && Paths.get(openCGAHome).toFile().exists()) {
+//            System.out.println("Using \"openCGAHome\" from the properties file");
+//            Config.setOpenCGAHome(openCGAHome);
+//        } else {
+//            Config.setOpenCGAHome();
+//            System.out.println("Using OpenCGA_HOME = " + Config.getOpenCGAHome());
+//        }
 
         try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
         } catch (CatalogIOException | CatalogDBException e) {
-            System.out.println(e.getMessage());
+            System.out.println("ERROR when creating CatalogManager: " + e.getMessage());
             e.printStackTrace();
         }
 
         jsonObjectMapper = new ObjectMapper();
 
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+//        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+//        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+//        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+//        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         jsonObjectWriter = jsonObjectMapper.writer();
-
-    }
-
-    public OpenCGAWSServer() {
 
     }
 
@@ -178,53 +178,55 @@ public class OpenCGAWSServer {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
+        this.httpServletRequest = httpServletRequest;
         this.params = uriInfo.getQueryParameters();
-        logger.debug(uriInfo.getRequestUri().toString());
+//        logger.debug(uriInfo.getRequestUri().toString());
         this.queryOptions = null;
-        this.sessionIp = httpServletRequest.getRemoteAddr();
-        System.out.println("sessionIp = " + sessionIp);
+//        this.sessionIp = httpServletRequest.getRemoteAddr();
+//        System.out.println("sessionIp = " + sessionIp);
     }
 
     protected QueryOptions getQueryOptions() {
         if(queryOptions == null) {
-            this.queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            if(!exclude.isEmpty()) {
-                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
-            }
-            if(!include.isEmpty()) {
-                queryOptions.put("include", Arrays.asList(include.split(",")));
-            }
+            this.queryOptions = new QueryOptions();
+//            this.queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+//            if(!exclude.isEmpty()) {
+//                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
+//            }
+//            if(!include.isEmpty()) {
+//                queryOptions.put("include", Arrays.asList(include.split(",")));
+//            }
 //            queryOptions.put("metadata", metadata);
         }
         return queryOptions;
     }
 
-    protected QueryOptions getAllQueryOptions() {
-        return getAllQueryOptions(null);
-    }
+//    protected QueryOptions getAllQueryOptions() {
+//        return getAllQueryOptions(null);
+//    }
 
-    protected QueryOptions getAllQueryOptions(Collection<String> acceptedQueryOptions) {
-        return getAllQueryOptions(new HashSet<String>(acceptedQueryOptions));
-    }
-
-    protected QueryOptions getAllQueryOptions(Set<String> acceptedQueryOptions) {
-        QueryOptions queryOptions = this.getQueryOptions();
-        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-            if (acceptedQueryOptions == null || acceptedQueryOptions.contains(entry.getKey())) {
-                if (!entry.getValue().isEmpty()) {
-                    Iterator<String> iterator = entry.getValue().iterator();
-                    StringBuilder sb = new StringBuilder(iterator.next());
-                    while (iterator.hasNext()) {
-                        sb.append(",").append(iterator.next());
-                    }
-                    queryOptions.add(entry.getKey(), sb.toString());
-                } else {
-                    queryOptions.add(entry.getKey(), null);
-                }
-            }
-        }
-        return queryOptions;
-    }
+//    protected QueryOptions getAllQueryOptions(Collection<String> acceptedQueryOptions) {
+//        return getAllQueryOptions(new HashSet<String>(acceptedQueryOptions));
+//    }
+//
+//    protected QueryOptions getAllQueryOptions(Set<String> acceptedQueryOptions) {
+//        QueryOptions queryOptions = this.getQueryOptions();
+//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+//            if (acceptedQueryOptions == null || acceptedQueryOptions.contains(entry.getKey())) {
+//                if (!entry.getValue().isEmpty()) {
+//                    Iterator<String> iterator = entry.getValue().iterator();
+//                    StringBuilder sb = new StringBuilder(iterator.next());
+//                    while (iterator.hasNext()) {
+//                        sb.append(",").append(iterator.next());
+//                    }
+//                    queryOptions.add(entry.getKey(), sb.toString());
+//                } else {
+//                    queryOptions.add(entry.getKey(), null);
+//                }
+//            }
+//        }
+//        return queryOptions;
+//    }
 
     @GET
     @Path("/help")
@@ -243,7 +245,7 @@ public class OpenCGAWSServer {
         endTime = System.currentTimeMillis() - startTime;
         queryResponse.setTime(new Long(endTime - startTime).intValue());
         queryResponse.setApiVersion(version);
-        queryResponse.setQueryOptions(getQueryOptions());
+//        queryResponse.setQueryOptions(getQueryOptions());
 
         // Guarantee that the QueryResponse object contains a list of results
         List list;
