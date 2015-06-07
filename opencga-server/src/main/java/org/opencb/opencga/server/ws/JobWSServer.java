@@ -42,7 +42,7 @@ import java.util.*;
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Path("/{version}/job")
-@Api(value = "job", description = "job", position = 5)
+@Api(value = "job", position = 5, description = "Methods for working with 'job' endpoint")
 public class JobWSServer extends OpenCGAWSServer {
 
     public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

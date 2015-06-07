@@ -53,7 +53,7 @@ import java.net.URI;
 import java.util.*;
 
 @Path("/{version}/files")
-@Api(value = "files", description = "files", position = 4)
+@Api(value = "Files", position = 4, description = "Methods for working with 'files' endpoint")
 public class FileWSServer extends OpenCGAWSServer {
 
 

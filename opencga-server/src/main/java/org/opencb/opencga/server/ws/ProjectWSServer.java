@@ -35,7 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Path("/{version}/projects")
-@Api(value = "projects", description = "projects", position = 2)
+@Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
 
     public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

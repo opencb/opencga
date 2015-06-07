@@ -36,7 +36,7 @@ import java.util.*;
  * Created by jacobo on 15/12/14.
  */
 @Path("/{version}/cohorts")
-@Api(value = "cohorts", description = "Cohorts")
+@Api(value = "Cohorts", description = "Methods for working with 'cohorts' endpoint", position = 10)
 public class CohortWSServer extends OpenCGAWSServer {
 
     public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

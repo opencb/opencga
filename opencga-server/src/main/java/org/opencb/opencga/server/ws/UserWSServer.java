@@ -33,45 +33,39 @@ import java.io.IOException;
 import java.util.Map;
 
 @Path("/{version}/users")
-@Api(value = "users", description = "Users web service", position = 1)
+@Produces(MediaType.APPLICATION_JSON)
+@Api(value = "Users", position = 1, description = "Methods for working with 'users' endpoint")
 public class UserWSServer extends OpenCGAWSServer {
 
     public UserWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                         @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
+    
 
     @GET
     @Path("/create")
-    @Produces("application/json")
     @ApiOperation(value = "Creates a new User")
-
-    public Response createUser(
-            @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
-            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-            @ApiParam(value = "email", required = true) @QueryParam("email") String email,
-            @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-            @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
+    public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
+                               @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+                               @ApiParam(value = "email", required = true) @QueryParam("email") String email,
+                               @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
+                               @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
             queryResult = catalogManager.createUser(userId, name, email, password, organization, this.getQueryOptions());
             return createOkResponse(queryResult);
-
         } catch (CatalogException  e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-
     }
 
     @GET
     @Path("/{userId}/login")
-    @Produces("application/json")
     @ApiOperation(value = "User login")
-
-    public Response login(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
+    public Response login(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                          @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
             if (userId.toLowerCase().equals("anonymous")) {
@@ -88,11 +82,9 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/logout")
-    @Produces("application/json")
     @ApiOperation(value = "User login")
-    public Response logout(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId
-    ) throws IOException {
+    public Response logout(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId)
+            throws IOException {
         try {
             QueryResult result;
             if (userId.toLowerCase().equals("anonymous")) {
@@ -109,13 +101,10 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/change-password")
-    @Produces("application/json")
     @ApiOperation(value = "User password change")
-    public Response changePassword(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-            @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1
-    ) throws IOException {
+    public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                   @ApiParam(value = "password", required = true) @QueryParam("password") String password,
+                                   @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1) throws IOException {
         try {
             QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
             return createOkResponse(result);
@@ -127,12 +116,9 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/change-email")
-    @Produces("application/json")
     @ApiOperation(value = "User email change")
-    public Response changeEmail(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail
-    ) throws IOException {
+    public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail) throws IOException {
         try {
             QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
             return createOkResponse(result);
@@ -144,12 +130,9 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/reset-password")
-    @Produces("application/json")
     @ApiOperation(value = "User email change")
-    public Response resetPassword(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "email", required = true) @QueryParam("email") String email
-    ) throws IOException {
+    public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                  @ApiParam(value = "email", required = true) @QueryParam("email") String email) throws IOException {
         try {
             QueryResult result = catalogManager.resetPassword(userId, email);
             return createOkResponse(result);
@@ -161,16 +144,13 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/modify")
-    @Produces("application/json")
     @ApiOperation(value = "User modify")
-    public Response modifyUser(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
-            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-            @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs)
-            throws IOException {
+    public Response modifyUser(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                               @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+                               @ApiParam(value = "email", required = false) @QueryParam("email") String email,
+                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                               @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
+                               @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             if (name != null) {
@@ -200,31 +180,24 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{userId}/modify")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "User modify")
-    public Response modifyUserPOST(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value="params", required = true) Map<String, Object> params) {
+    public Response modifyUserPOST(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                   @ApiParam(value="params", required = true) Map<String, Object> params) {
         try {
             ObjectMap objectMap = new ObjectMap(params);
-
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-
-
     }
 
     @GET
     @Path("/{userId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "User info")
-    public Response getInfo(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
+    public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
             QueryResult result = catalogManager.getUser(userId, lastActivity, this.getQueryOptions(), sessionId);
             return createOkResponse(result);
@@ -237,12 +210,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/projects")
-    @Produces("application/json")
     @ApiOperation(value = "Project information")
-
-    public Response getAllProjects(
-            @ApiParam(value = "userId", required = true) @PathParam("userId") String userId
-    ) {
+    public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         QueryResult queryResult;
         try {
             queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);

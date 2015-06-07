@@ -37,7 +37,7 @@ import java.util.List;
  * Created by jacobo on 16/12/14.
  */
 @Path("/{version}/variables")
-@Api(value = "variables", description = "Variable sets")
+@Api(value = "Variables", description = "Methods for working with 'variables' endpoint")
 public class VariableWSServer extends OpenCGAWSServer {
 
     public VariableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

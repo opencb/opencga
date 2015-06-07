@@ -38,7 +38,7 @@ import java.util.*;
  * Created by jacobo on 15/12/14.
  */
 @Path("/{version}/samples")
-@Api(value = "samples", description = "Samples")
+@Api(value = "Samples", description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
 
     public SampleWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

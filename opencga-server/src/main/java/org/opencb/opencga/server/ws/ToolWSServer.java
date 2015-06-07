@@ -40,7 +40,7 @@ import java.util.List;
  * Created by jacobo on 30/10/14.
  */
 @Path("/{version}/tools")
-@Api(value = "tools", description = "tools", position = 6)
+@Api(value = "Tools", description = "Methods for working with 'tools' endpoint", position = 6)
 public class ToolWSServer extends OpenCGAWSServer {
 
     public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
