@@ -33,6 +33,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 
 @Path("/{version}/projects")
@@ -99,14 +100,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/modify")
+    @Path("/{projectId}/update")
     @ApiOperation(value = "Project modify")
-    public Response modifyUser(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
-                               @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                               @ApiParam(value = "status", required = false) @QueryParam("status") String status,
-                               @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) throws IOException {
+    public Response update(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
+                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                           @ApiParam(value = "status", required = false) @QueryParam("status") String status,
+                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             objectMap.put("name", name);
@@ -122,6 +123,30 @@ public class ProjectWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+    }
+
+    @POST
+    @Path("/{projectId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update by POST [NO TESTED]")
+    public Response updateByPost(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) throws IOException {
+        try {
+            ObjectMap objectMap = new ObjectMap(params);
+            int projectId = catalogManager.getProjectId(projectIdStr);
+            QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
+            return createOkResponse(result);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{projectId}/delete")
+    @ApiOperation(value = "Delete a project [PENDING]")
+    public Response delete(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectId) {
+        return createOkResponse("PENDING");
     }
 
 }

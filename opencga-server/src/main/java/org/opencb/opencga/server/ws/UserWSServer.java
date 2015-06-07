@@ -63,13 +63,27 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{userId}/info")
+    @ApiOperation(value = "Retrieves all user info")
+    public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
+        try {
+            QueryResult result = catalogManager.getUser(userId, lastActivity, this.getQueryOptions(), sessionId);
+            return createOkResponse(result);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/{userId}/login")
-    @ApiOperation(value = "User login")
+    @ApiOperation(value = "User login returns a valid session ID token")
     public Response login(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                           @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
-            if (userId.toLowerCase().equals("anonymous")) {
+            if (userId.equalsIgnoreCase("anonymous")) {
                 queryResult = catalogManager.loginAsAnonymous(sessionIp);
             } else {
                 queryResult = catalogManager.login(userId, password, sessionIp);
@@ -83,12 +97,12 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/logout")
-    @ApiOperation(value = "User login")
+    @ApiOperation(value = "User logout method")
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId)
             throws IOException {
         try {
             QueryResult result;
-            if (userId.toLowerCase().equals("anonymous")) {
+            if (userId.equalsIgnoreCase("anonymous")) {
                 result = catalogManager.logoutAnonymous(sessionId);
             } else {
                 result = catalogManager.logout(userId, sessionId);
@@ -143,15 +157,29 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+
     @GET
-    @Path("/{userId}/modify")
-    @ApiOperation(value = "User modify")
-    public Response modifyUser(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                               @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                               @ApiParam(value = "email", required = false) @QueryParam("email") String email,
-                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                               @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-                               @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs) throws IOException {
+    @Path("/{userId}/projects")
+    @ApiOperation(value = "Project information")
+    public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
+        try {
+            QueryResult queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{userId}/update")
+    @ApiOperation(value = "Update some user attributes using GET method")
+    public Response update(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "email", required = false) @QueryParam("email") String email,
+                           @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             if (name != null) {
@@ -179,11 +207,11 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{userId}/modify")
+    @Path("/{userId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "User modify")
-    public Response modifyUserPOST(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                   @ApiParam(value="params", required = true) Map<String, Object> params) {
+    @ApiOperation(value = "Update some user attributes using POST method")
+    public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
             ObjectMap objectMap = new ObjectMap(params);
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
@@ -195,28 +223,12 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{userId}/info")
-    @ApiOperation(value = "User info")
-    public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
+    @Path("/{userId}/delete")
+    @ApiOperation(value = "Delete an user [NO TESTED]")
+    public Response delete(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, this.getQueryOptions(), sessionId);
-            return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
-
-
-    @GET
-    @Path("/{userId}/projects")
-    @ApiOperation(value = "Project information")
-    public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
-        QueryResult queryResult;
-        try {
-            queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);
-            return createOkResponse(queryResult);
+            catalogManager.deleteUser(userId, sessionId);
+            return createOkResponse("User '" + userId + "' deleted");
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
