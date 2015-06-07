@@ -32,16 +32,17 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.Map;
 
+
 @Path("/{version}/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Users", position = 1, description = "Methods for working with 'users' endpoint")
 public class UserWSServer extends OpenCGAWSServer {
 
+
     public UserWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                         @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
-
 
     @GET
     @Path("/create")

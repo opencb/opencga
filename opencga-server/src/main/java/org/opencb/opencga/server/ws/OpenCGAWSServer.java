@@ -71,16 +71,6 @@ public class OpenCGAWSServer {
     @ApiParam(name = "included fields", value = "Only fields included in response. Whole JSON path e.g.: transcripts.id")
     protected String include;
 
-    @DefaultValue("-1")
-    @QueryParam("limit")
-    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
-    protected int limit;
-
-    @DefaultValue("-1")
-    @QueryParam("skip")
-    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
-    protected int skip;
-
     @DefaultValue("")
     @QueryParam("sid")
     protected String sessionId;
@@ -101,6 +91,17 @@ public class OpenCGAWSServer {
     protected static ObjectMapper jsonObjectMapper;
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
+
+
+//    @DefaultValue("-1")
+//    @QueryParam("limit")
+//    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
+//    protected int limit;
+
+//    @DefaultValue("-1")
+//    @QueryParam("skip")
+//    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
+//    protected int skip;
 
 //    @DefaultValue("true")
 //    @QueryParam("metadata")
@@ -168,9 +169,7 @@ public class OpenCGAWSServer {
 //        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
         jsonObjectWriter = jsonObjectMapper.writer();
-
     }
 
     public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

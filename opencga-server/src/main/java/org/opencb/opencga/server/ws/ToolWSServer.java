@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.models.Tool;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
@@ -40,8 +41,10 @@ import java.util.List;
  * Created by jacobo on 30/10/14.
  */
 @Path("/{version}/tools")
+@Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Tools", description = "Methods for working with 'tools' endpoint", position = 6)
 public class ToolWSServer extends OpenCGAWSServer {
+
 
     public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                         @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -50,15 +53,13 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "Tool info")
     public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
-                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution
-    ) {
-        String[] splitedToolId = toolId.split(",");
+                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
+        String[] toolIds = toolId.split(",");
         try {
             List<QueryResult> results = new LinkedList<>();
-            for (String id : splitedToolId) {
+            for (String id : toolIds) {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
                 AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
@@ -73,19 +74,15 @@ public class ToolWSServer extends OpenCGAWSServer {
         }
     }
 
-
-
     @GET
     @Path("/{toolId}/help")
-    @Produces("application/json")
     @ApiOperation(value = "Tool help")
     public Response help(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
-                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution
-    ) {
-        String[] splitedToolId = toolId.split(",");
+                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
+        String[] toolIds = toolId.split(",");
         try {
             List<String> results = new LinkedList<>();
-            for (String id : splitedToolId) {
+            for (String id : toolIds) {
                 Tool tool = catalogManager.getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
                 AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 String help = analysisJobExecutor.help("");

@@ -34,6 +34,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
@@ -42,8 +43,10 @@ import java.util.*;
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Path("/{version}/jobs")
+@Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Jobs", position = 5, description = "Methods for working with 'jobs' endpoint")
 public class JobWSServer extends OpenCGAWSServer {
+
 
     public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                        @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -61,13 +64,10 @@ public class JobWSServer extends OpenCGAWSServer {
 //        catalogManager.search
 //    }
 
-
     @GET
     @Path("/{jobId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "Get job information")
-    public Response info(
-            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+    public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, this.getQueryOptions(), sessionId));
         } catch (CatalogException e) {
@@ -77,10 +77,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/visit")
-    @Produces("application/json")
     @ApiOperation(value = "Increment job visites")
-    public Response visit(
-            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+    public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
         } catch (CatalogException e) {
@@ -90,11 +88,9 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/delete")
-    @Produces("application/json")
     @ApiOperation(value = "Delete job")
-    public Response delete(
-            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
-            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+    public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
+                           @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         List<QueryResult> results = new LinkedList<>();
         try {
             if (deleteFiles) {
@@ -113,7 +109,6 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("application/json")
     @ApiOperation(value = "Create job")
     public Response createJob(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,

@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Properties;
 
 @Path("/{version}/util")
+@Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
 
     public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
@@ -56,7 +57,6 @@ public class UtilsWSServer extends OpenCGAWSServer {
                               @DefaultValue("F") @FormDataParam("directed") String directed,
                               @DefaultValue("F") @FormDataParam("weighted") String weighted,
                               @DefaultValue("infomap") @FormDataParam("method") String method) throws IOException {
-
         String home = Config.getGcsaHome();
         Properties analysisProperties = Config.getAnalysisProperties();
         Properties accountProperties = Config.getAccountProperties();
@@ -118,7 +118,6 @@ public class UtilsWSServer extends OpenCGAWSServer {
     public Response topology(@FormDataParam("sif") String sifData,
                              @DefaultValue("F") @FormDataParam("directed") String directed,
                              @DefaultValue("F") @FormDataParam("weighted") String weighted) throws IOException {
-
         String home = Config.getGcsaHome();
         Properties analysisProperties = Config.getAnalysisProperties();
         Properties accountProperties = Config.getAccountProperties();
@@ -173,7 +172,6 @@ public class UtilsWSServer extends OpenCGAWSServer {
 
         return createOkResponse(result);
     }
-
 
     @GET
     @Path("/proxy")

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.ws;
 
-
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
@@ -28,15 +27,19 @@ import org.opencb.opencga.catalog.models.Project;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+
 @Path("/{version}/projects")
+@Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
+
 
     public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                            @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -45,21 +48,15 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("application/json")
     @ApiOperation(value = "Create project")
-    public Response createProject(
-            @ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
-            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-            @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
-            @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
-        QueryResult queryResult;
+    public Response createProject(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
+                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+                                  @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
+                                  @ApiParam(value = "description", required = true) @QueryParam("description") String description,
+                                  @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
         try {
-
-            queryResult = catalogManager.createProject(userId, name, alias, description, organization, this.getQueryOptions(), sessionId);
-
+            QueryResult queryResult = catalogManager.createProject(userId, name, alias, description, organization, this.getQueryOptions(), sessionId);
             return createOkResponse(queryResult);
-
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
@@ -69,7 +66,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "Project information")
     public Response info(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         List<QueryResult<Project>> queryResults = new LinkedList<>();
@@ -87,7 +83,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/studies")
-    @Produces("application/json")
     @ApiOperation(value = "Get all studies the from a project")
     public Response getAllStudies(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         String[] splitedId = projectIdsStr.split(",");
@@ -105,16 +100,13 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/modify")
-    @Produces("application/json")
     @ApiOperation(value = "Project modify")
-    public Response modifyUser(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
-            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-            @ApiParam(value = "status", required = false) @QueryParam("status") String status,
-            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes)
-            throws IOException {
+    public Response modifyUser(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
+                               @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                               @ApiParam(value = "status", required = false) @QueryParam("status") String status,
+                               @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             objectMap.put("name", name);

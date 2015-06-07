@@ -38,8 +38,10 @@ import java.util.*;
  * Created by jacobo on 15/12/14.
  */
 @Path("/{version}/samples")
+@Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Samples", description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
+
 
     public SampleWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                           @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -49,7 +51,6 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("application/json")
     @ApiOperation(value = "Create sample")
     public Response createSample(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
@@ -66,7 +67,6 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/load")
-    @Produces("application/json")
     @ApiOperation(value = "Load samples from a ped file")
     public Response loadSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                 @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileIdStr,
@@ -84,7 +84,6 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "Get sample information")
     public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
         try {
@@ -98,7 +97,6 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @Produces("application/json")
     @ApiOperation(value = "Get sample information")
     public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr) {
         try {
@@ -115,14 +113,11 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample")
-    public Response annotateSamplePOST(
-            @ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-            @ApiParam(value = "id", required = true) @QueryParam("id") String id,
-            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
-            Map<String, Object> annotations
-    ) {
+    public Response annotateSamplePOST(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+                                       @ApiParam(value = "id", required = true) @QueryParam("id") String id,
+                                       @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+                                       Map<String, Object> annotations) {
         try {
             QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId,
                     annotations, this.getQueryOptions(), sessionId);
@@ -136,15 +131,11 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample")
-    public Response annotateSampleGET(
-            @ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-            @ApiParam(value = "id", required = true) @QueryParam("id") String id,
-            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId
-    ) {
+    public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+                                      @ApiParam(value = "id", required = true) @QueryParam("id") String id,
+                                      @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId) {
         try {
-
             QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
             if(variableSetResult.getResult().isEmpty()) {
                 return createErrorResponse("VariableSet not find.");

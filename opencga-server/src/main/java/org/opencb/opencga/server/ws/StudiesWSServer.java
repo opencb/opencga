@@ -30,9 +30,12 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+
 @Path("/{version}/studies")
+@Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudiesWSServer extends OpenCGAWSServer {
+
 
      public StudiesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                             @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -42,7 +45,6 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a file with POST method", response = QueryResult.class, position = 1, notes =
             "Wont't accept files, jobs, experiments, samples.<br>" +
             "Will accept (but not yet): acl, uri, cohorts, datasets.<br>" +
@@ -54,10 +56,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
             "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
             "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
             "<ul>")
-    public Response createStudyPOST(
-            @ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
-            @ApiParam(value="studies", required = true) List<Study> studies
-    ) {
+    public Response createStudyPOST(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
+                                    @ApiParam(value="studies", required = true) List<Study> studies) {
 //        List<Study> catalogStudies = new LinkedList<>();
         List<QueryResult<Study>> queryResults = new LinkedList<>();
         int projectId;
@@ -97,45 +97,32 @@ public class StudiesWSServer extends OpenCGAWSServer {
         return createOkResponse(queryResults);
     }
 
-
-
     @GET
     @Path("/create")
-    @Produces("application/json")
     @ApiOperation(value = "Create study with GET method", position = 2)
-    public Response createStudy(
-            @ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") String projectIdStr,
-            @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
-            @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
-            @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
-            @ApiParam(value = "creatorId",    required = false) @QueryParam("creatorId") String creatorId,
-            @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "description",  required = false) @QueryParam("description") String description,
-            @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
-            @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher
-            ) {
-
-
-        QueryResult queryResult;
+    public Response createStudy(@ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") String projectIdStr,
+                                @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
+                                @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
+                                @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
+                                @ApiParam(value = "creatorId",    required = false) @QueryParam("creatorId") String creatorId,
+                                @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
+                                @ApiParam(value = "description",  required = false) @QueryParam("description") String description,
+                                @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
+                                @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
         try {
             int projectId = catalogManager.getProjectId(projectIdStr);
-            queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
+            QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
                     creationDate, description, status, cipher, null, null, null, null, null, this.getQueryOptions(), sessionId);
-
             return createOkResponse(queryResult);
-
         } catch (CatalogException | IOException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
-
     }
 
     @GET
     @Path("/{studyId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "Study information", position = 3)
-
     public Response info(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr
     ) {
@@ -154,7 +141,6 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/files")
-    @Produces("application/json")
     @ApiOperation(value = "Study files information", position = 5)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         QueryResult queryResult;
@@ -170,7 +156,6 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/samples")
-    @Produces("application/json")
     @ApiOperation(value = "Study samples information", position = 5)
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         QueryResult queryResult;
@@ -201,14 +186,12 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/modify")
-    @Produces("application/json")
     @ApiOperation(value = "Study modify", position = 4)
-    public Response modifyStudy(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
-            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
-            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
+    public Response modifyStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                                @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                                @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+                                @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                                @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
 //            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
 //            @ApiParam(value = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
@@ -240,10 +223,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/job")
-    @Produces("application/json")
     @ApiOperation(value = "Get all jobs")
-    public Response getAllJobs(
-            @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+    public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
             return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.models.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
@@ -36,8 +37,10 @@ import java.util.*;
  * Created by jacobo on 15/12/14.
  */
 @Path("/{version}/cohorts")
+@Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Cohorts", description = "Methods for working with 'cohorts' endpoint", position = 10)
 public class CohortWSServer extends OpenCGAWSServer {
+
 
     public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                           @Context HttpServletRequest httpServletRequest) throws IOException {
@@ -47,7 +50,6 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/info")
-    @Produces("application/json")
     @ApiOperation(value = "Get cohort information")
     public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         try {
@@ -61,7 +63,6 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/samples")
-    @Produces("application/json")
     @ApiOperation(value = "Get samples from cohort")
     public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         try {
@@ -81,15 +82,13 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Produces("application/json")
     @ApiOperation(value = "Create a cohort")
-    public Response createCohort(
-            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-            @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
-            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
-            @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
-            @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
-            @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
+    public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                                 @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
+                                 @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+                                 @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
+                                 @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
+                                 @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
         try {
             //QueryOptions queryOptions = getAllQueryOptions();
             List<Cohort> cohorts = new LinkedList<>();
@@ -172,11 +171,9 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/{cohortId}/delete")
-    @Produces("application/json")
     @ApiOperation(value = "Delete cohort. PENDING")
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         return createErrorResponse("Unimplemented");
     }
-
 
 }
