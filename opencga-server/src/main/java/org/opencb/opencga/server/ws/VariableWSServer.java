@@ -38,7 +38,7 @@ import java.util.List;
  */
 @Path("/{version}/variables")
 @Produces("application/json")
-@Api(value = "Variables", description = "Methods for working with 'variables' endpoint")
+@Api(value = "Variables", position = 7, description = "Methods for working with 'variables' endpoint")
 public class VariableWSServer extends OpenCGAWSServer {
 
 
@@ -51,7 +51,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create variable set")
+    @ApiOperation(value = "Create variable set", position = 1)
     public Response createSet(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                               @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                               @ApiParam(value = "unique", required = false) @QueryParam("unique") Boolean unique,
@@ -71,7 +71,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableSetId}/info")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get VariableSet info")
+    @ApiOperation(value = "Get VariableSet info", position = 2)
     public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") int variableSetId) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, this.getQueryOptions(), sessionId);

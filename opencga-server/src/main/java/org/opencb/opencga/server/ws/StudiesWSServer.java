@@ -44,7 +44,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create study with GET method", position = 2)
+    @ApiOperation(value = "Create study with GET method", position = 1)
     public Response createStudy(@ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") String projectIdStr,
                                 @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
                                 @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
@@ -122,7 +122,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/info")
-    @ApiOperation(value = "Study information", position = 3)
+    @ApiOperation(value = "Study information", position = 2)
     public Response info(
             @ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr
     ) {
@@ -141,7 +141,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/files")
-    @ApiOperation(value = "Study files information", position = 5)
+    @ApiOperation(value = "Study files information", position = 3)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         QueryResult queryResult;
         try {
@@ -155,38 +155,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/samples")
-    @ApiOperation(value = "Study samples information", position = 5)
-    public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
-        QueryResult queryResult;
-        try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
-            queryResult = catalogManager.getAllSamples(studyId, this.getQueryOptions(), sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
-
-//    @GET
-//    @Path("/{studyId}/analysis")
-//    @Produces("application/json")
-//    @ApiOperation(value = "Study information")
-//    public Response getAllAnalysis(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId) {
-//        QueryResult queryResult;
-//        try {
-//            queryResult = catalogManager.getAllAnalysis(studyId, sessionId);
-//            return createOkResponse(queryResult);
-//        } catch (CatalogManagerException e) {
-//            e.printStackTrace();
-//            return createErrorResponse(e.getMessage());
-//        }
-//    }
-
-    @GET
     @Path("/{studyId}/jobs")
-    @ApiOperation(value = "Get all jobs")
+    @ApiOperation(value = "Get all jobs", position = 4)
     public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
@@ -197,8 +167,36 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{studyId}/samples")
+    @ApiOperation(value = "Study samples information", position = 5)
+    public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            QueryResult queryResult = catalogManager.getAllSamples(studyId, this.getQueryOptions(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/variants")
+    @ApiOperation(value = "Study samples information", position = 6)
+    public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+        return createOkResponse("PENDING");
+    }
+
+    @GET
+    @Path("/{studyId}/alignments")
+    @ApiOperation(value = "Study samples information", position = 7)
+    public Response getAlignments(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+        return createOkResponse("PENDING");
+    }
+
+    @GET
     @Path("/{studyId}/update")
-    @ApiOperation(value = "Study modify", position = 4)
+    @ApiOperation(value = "Study modify", position = 8)
     public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
                            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
@@ -235,7 +233,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]")
+    @ApiOperation(value = "Delete a study [PENDING]", position = 9)
     public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String userId) {
         return createOkResponse("PENDING");
     }

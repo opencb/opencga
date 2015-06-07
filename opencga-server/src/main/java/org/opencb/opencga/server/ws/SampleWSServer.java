@@ -39,7 +39,7 @@ import java.util.*;
  */
 @Path("/{version}/samples")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Samples", description = "Methods for working with 'samples' endpoint")
+@Api(value = "Samples", position = 6, description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
 
 
@@ -51,7 +51,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create sample")
+    @ApiOperation(value = "Create sample", position = 1)
     public Response createSample(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "source", required = false) @QueryParam("source") String source,
@@ -66,8 +66,21 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{sampleId}/info")
+    @ApiOperation(value = "Get sample information", position = 2)
+    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
+        try {
+            QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, this.getQueryOptions(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    @GET
     @Path("/load")
-    @ApiOperation(value = "Load samples from a ped file")
+    @ApiOperation(value = "Load samples from a ped file", position = 3)
     public Response loadSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                 @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileIdStr,
                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Integer variableSetId) {
@@ -83,24 +96,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/info")
-    @ApiOperation(value = "Get sample information")
-    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
-        try {
-            QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, this.getQueryOptions(), sessionId);
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
-        }
-    }
-
-    @GET
     @Path("/search")
-    @ApiOperation(value = "Get sample information")
+    @ApiOperation(value = "Get sample information", position = 4)
     public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr) {
         try {
-
 //            QueryOptions queryOptions = getAllQueryOptions();
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(catalogManager.getStudyId(studyIdStr), queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -113,7 +112,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample")
+    @ApiOperation(value = "annotate sample", position = 5)
     public Response annotateSamplePOST(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
                                        @ApiParam(value = "id", required = true) @QueryParam("id") String id,
                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
@@ -131,7 +130,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample")
+    @ApiOperation(value = "annotate sample", position = 5)
     public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
                                       @ApiParam(value = "id", required = true) @QueryParam("id") String id,
                                       @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId) {

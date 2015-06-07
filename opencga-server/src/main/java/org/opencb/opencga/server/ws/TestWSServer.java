@@ -32,7 +32,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 @Path("/{version}/test")
-@Api(value = "test", description = "test web services")
+@Api(value = "test", position = 12, description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 
     public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

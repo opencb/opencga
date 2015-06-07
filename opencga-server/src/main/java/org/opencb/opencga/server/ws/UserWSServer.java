@@ -46,7 +46,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Creates a new User")
+    @ApiOperation(value = "Creates a new user", position = 1)
     public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "email", required = true) @QueryParam("email") String email,
@@ -64,7 +64,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/info")
-    @ApiOperation(value = "Retrieves all user info")
+    @ApiOperation(value = "Retrieves all user info", position = 2)
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
@@ -78,7 +78,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/login")
-    @ApiOperation(value = "User login returns a valid session ID token")
+    @ApiOperation(value = "User login returns a valid session ID token", position = 3)
     public Response login(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                           @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
         QueryResult queryResult;
@@ -97,7 +97,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/logout")
-    @ApiOperation(value = "User logout method")
+    @ApiOperation(value = "User logout method", position = 4)
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId)
             throws IOException {
         try {
@@ -116,7 +116,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/change-password")
-    @ApiOperation(value = "User password change")
+    @ApiOperation(value = "User password change", position = 5)
     public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                    @ApiParam(value = "password", required = true) @QueryParam("password") String password,
                                    @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1) throws IOException {
@@ -131,7 +131,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/change-email")
-    @ApiOperation(value = "User email change")
+    @ApiOperation(value = "User email change", position = 6)
     public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                 @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail) throws IOException {
         try {
@@ -145,7 +145,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/reset-password")
-    @ApiOperation(value = "User email change")
+    @ApiOperation(value = "User email change", position = 7)
     public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                   @ApiParam(value = "email", required = true) @QueryParam("email") String email) throws IOException {
         try {
@@ -160,7 +160,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/projects")
-    @ApiOperation(value = "Project information")
+    @ApiOperation(value = "Project information", position = 8)
     public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
             QueryResult queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);
@@ -173,7 +173,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method")
+    @ApiOperation(value = "Update some user attributes using GET method", position = 9)
     public Response update(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
@@ -209,7 +209,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{userId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method")
+    @ApiOperation(value = "Update some user attributes using POST method", position = 9)
     public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
@@ -224,7 +224,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/delete")
-    @ApiOperation(value = "Delete an user [NO TESTED]")
+    @ApiOperation(value = "Delete an user [NO TESTED]", position = 10)
     public Response delete(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
             catalogManager.deleteUser(userId, sessionId);

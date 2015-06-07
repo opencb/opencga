@@ -49,7 +49,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create project")
+    @ApiOperation(value = "Create project", position = 1)
     public Response createProject(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
                                   @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
@@ -67,7 +67,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/info")
-    @ApiOperation(value = "Project information")
+    @ApiOperation(value = "Project information", position = 2)
     public Response info(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         List<QueryResult<Project>> queryResults = new LinkedList<>();
         for (String projectIdStr : projectIdsStr.split(",")) {
@@ -84,7 +84,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/studies")
-    @ApiOperation(value = "Get all studies the from a project")
+    @ApiOperation(value = "Get all studies the from a project", position = 3)
     public Response getAllStudies(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         String[] splitedId = projectIdsStr.split(",");
         try {
@@ -101,7 +101,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/update")
-    @ApiOperation(value = "Project modify")
+    @ApiOperation(value = "Project update", position = 4)
     public Response update(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
@@ -128,7 +128,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{projectId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update by POST [NO TESTED]")
+    @ApiOperation(value = "Update by POST [NO TESTED]", position = 4)
     public Response updateByPost(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) throws IOException {
         try {
@@ -144,7 +144,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projectId}/delete")
-    @ApiOperation(value = "Delete a project [PENDING]")
+    @ApiOperation(value = "Delete a project [PENDING]", position = 5)
     public Response delete(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectId) {
         return createOkResponse("PENDING");
     }
