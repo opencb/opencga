@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.serverold;
 
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.core.SgeManager;
@@ -30,7 +30,7 @@ import java.io.IOException;
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Deprecated
-public class AnalysisWSServerJob extends OpenCGAWSServer {
+public class AnalysisWSServerJob {
     private AnalysisJobExecutor aje;
     private String baseUrl;
     private String accountId;
@@ -39,51 +39,51 @@ public class AnalysisWSServerJob extends OpenCGAWSServer {
     private String analysisErrorMsg;
     private String projectId;
 
-    public AnalysisWSServerJob(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-        super(version, uriInfo, httpServletRequest);
-        baseUrl = uriInfo.getBaseUri().toString();
-        params = uriInfo.getQueryParameters();
-//        this.accountId = accountId;
-//        this.analysis = analysis;
-//        this.projectId = projectId;
+//    public AnalysisWSServerJob(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+////        super(version, uriInfo, httpServletRequest);
+//        baseUrl = uriInfo.getBaseUri().toString();
+////        params = uriInfo.getQueryParameters();
+////        this.accountId = accountId;
+////        this.analysis = analysis;
+////        this.projectId = projectId;
+//
+////        analysisError = false;
+////        analysisErrorMsg = "analysis not found.";
+////        try {
+////            aje = new AnalysisJobExecutor(analysis);
+////        } catch (Exception e) {
+////            logger.error(e.toString());
+////            analysisError = true;
+////        }
+//
+//
+//    }
 
-//        analysisError = false;
-//        analysisErrorMsg = "analysis not found.";
-//        try {
-//            aje = new AnalysisJobExecutor(analysis);
-//        } catch (Exception e) {
-//            logger.error(e.toString());
-//            analysisError = true;
+//    @GET
+//    public Response help1() {
+//        if (analysisError) {
+//            return createErrorResponse(analysisErrorMsg);
 //        }
-
-
-    }
-
-    @GET
-    public Response help1() {
-        if (analysisError) {
-            return createErrorResponse(analysisErrorMsg);
-        }
-        return createOkResponse(aje.help(baseUrl));
-    }
-
-    @GET
-    @Path("/help")
-    public Response help2() {
-        if (analysisError) {
-            return createErrorResponse(analysisErrorMsg);
-        }
-        return createOkResponse(aje.help(baseUrl));
-    }
-
-    @GET
-    @Path("/params")
-    public Response showParams() {
-        if (analysisError) {
-            return createErrorResponse(analysisErrorMsg);
-        }
-        return createOkResponse(aje.params());
-    }
+//        return createOkResponse(aje.help(baseUrl));
+//    }
+//
+//    @GET
+//    @Path("/help")
+//    public Response help2() {
+//        if (analysisError) {
+//            return createErrorResponse(analysisErrorMsg);
+//        }
+//        return createOkResponse(aje.help(baseUrl));
+//    }
+//
+//    @GET
+//    @Path("/params")
+//    public Response showParams() {
+//        if (analysisError) {
+//            return createErrorResponse(analysisErrorMsg);
+//        }
+//        return createOkResponse(aje.params());
+//    }
 
 //    @GET
 //    @Path("/test")
@@ -105,20 +105,20 @@ public class AnalysisWSServerJob extends OpenCGAWSServer {
 //        }
 //    }
 
-    @GET
-    @Path("/status")
-    public Response status(@DefaultValue("") @QueryParam("jobid") String jobId) throws Exception {
-        if (analysisError) {
-            return createErrorResponse(analysisErrorMsg);
-        }
-        try {
-            return createOkResponse(SgeManager.status(analysis + "_" + jobId));
-        } catch (Exception e) {
-            logger.error(e.toString());
-            return createErrorResponse("job id not found.");
-        }
-
-    }
+//    @GET
+//    @Path("/status")
+//    public Response status(@DefaultValue("") @QueryParam("jobid") String jobId) throws Exception {
+//        if (analysisError) {
+//            return createErrorResponse(analysisErrorMsg);
+//        }
+//        try {
+//            return createOkResponse(SgeManager.status(analysis + "_" + jobId));
+//        } catch (Exception e) {
+//            logger.error(e.toString());
+//            return createErrorResponse("job id not found.");
+//        }
+//
+//    }
 
 //    @GET
 //    @Path("/{analysis}")

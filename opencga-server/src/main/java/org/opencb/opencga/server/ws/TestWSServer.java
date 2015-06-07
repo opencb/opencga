@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 
 import com.wordnik.swagger.annotations.Api;
@@ -31,11 +31,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
-@Path("/test")
+@Path("/{version}/test")
 @Api(value = "test", description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                        @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 

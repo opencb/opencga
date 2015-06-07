@@ -89,6 +89,11 @@
             <artifactId>jersey-media-json-jackson</artifactId>
             <version>2.17</version>
         </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.glassfish.jersey.containers.glassfish</groupId>-->
+        <!--<artifactId>jersey-gf-cdi</artifactId>-->
+        <!--<version>2.12</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>com.wordnik</groupId>
             <artifactId>swagger-jersey2-jaxrs_2.11</artifactId>
@@ -104,11 +109,11 @@
         <!--<groupId>javax.mail</groupId>-->
         <!--<artifactId>mail</artifactId>-->
         <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>asm</groupId>-->
-        <!--<artifactId>asm</artifactId>-->
-        <!--<version>3.3.1</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>3.3.1</version>
+        </dependency>
     </dependencies>
 
     <build>

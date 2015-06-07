@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 
+import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -42,10 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
@@ -53,52 +51,67 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Path("/")
+@Path("/{version}")
+@Produces("text/plain")
 public class OpenCGAWSServer {
 
-    protected Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    protected String version;
-    protected UriInfo uriInfo;
-    protected String sessionIp;
-
-    // Common input arguments
-    protected MultivaluedMap<String, String> params;
-    private QueryOptions queryOptions;
-    protected QueryResponse queryResponse;
-
-    // Common output members
-    protected long startTime;
-    protected long endTime;
-
-    protected static ObjectWriter jsonObjectWriter;
-    protected static ObjectMapper jsonObjectMapper;
-
-    //Common query params
     @DefaultValue("")
-    @QueryParam("sid")
-    protected String sessionId;
-
-    @DefaultValue("json")
-    @QueryParam("of")
-    protected String outputFormat;
+    @PathParam("version")
+    @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
+    protected String version;
 
     @DefaultValue("")
     @QueryParam("exclude")
+    @ApiParam(name = "excluded fields", value = "Fields excluded in response. Whole JSON path e.g.: transcripts.id")
     protected String exclude;
 
     @DefaultValue("")
     @QueryParam("include")
+    @ApiParam(name = "included fields", value = "Only fields included in response. Whole JSON path e.g.: transcripts.id")
     protected String include;
 
-    @DefaultValue("true")
-    @QueryParam("metadata")
-    protected Boolean metadata;
+    @DefaultValue("-1")
+    @QueryParam("limit")
+    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
+    protected int limit;
+
+    @DefaultValue("-1")
+    @QueryParam("skip")
+    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
+    protected int skip;
+
+    @DefaultValue("")
+    @QueryParam("sid")
+    protected String sessionId;
+
+    protected UriInfo uriInfo;
+    protected MultivaluedMap<String, String> params;
+
+    protected String sessionIp;
+
+    protected long startTime;
+    protected long endTime;
+
+    protected QueryOptions queryOptions;
+    protected QueryResponse queryResponse;
+
+    protected static ObjectWriter jsonObjectWriter;
+    protected static ObjectMapper jsonObjectMapper;
+
+    protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
+
+//    @DefaultValue("true")
+//    @QueryParam("metadata")
+//    protected boolean metadata;
+
+//    @DefaultValue("json")
+//    @QueryParam("of")
+//    protected String outputFormat;
 
     protected static CatalogManager catalogManager;
 
     static {
-
+        logger = LoggerFactory.getLogger("org.opencb.opencga.server.ws.OpenCGAWSServer");
 //        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
 //        properties = new Properties();
 //        try {
@@ -156,7 +169,12 @@ public class OpenCGAWSServer {
 
     }
 
-    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public OpenCGAWSServer() {
+
+    }
+
+    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                           @Context HttpServletRequest httpServletRequest) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
@@ -164,6 +182,7 @@ public class OpenCGAWSServer {
         logger.debug(uriInfo.getRequestUri().toString());
         this.queryOptions = null;
         this.sessionIp = httpServletRequest.getRemoteAddr();
+        System.out.println("sessionIp = " + sessionIp);
     }
 
     protected QueryOptions getQueryOptions() {
@@ -175,7 +194,7 @@ public class OpenCGAWSServer {
             if(!include.isEmpty()) {
                 queryOptions.put("include", Arrays.asList(include.split(",")));
             }
-            queryOptions.put("metadata", metadata);
+//            queryOptions.put("metadata", metadata);
         }
         return queryOptions;
     }
@@ -207,6 +226,12 @@ public class OpenCGAWSServer {
         return queryOptions;
     }
 
+    @GET
+    @Path("/help")
+    public Response help() {
+        return createOkResponse("No help available");
+    }
+
     protected Response createErrorResponse(Object o) {
         QueryResult<ObjectMap> result = new QueryResult();
         result.setErrorMsg(o.toString());
@@ -230,15 +255,16 @@ public class OpenCGAWSServer {
         }
         queryResponse.setResponse(list);
 
-        switch (outputFormat.toLowerCase()) {
-            case "json":
-                return createJsonResponse(queryResponse);
-            case "xml":
-//                return createXmlResponse(queryResponse);
-            default:
-                return buildResponse(Response.ok());
-        }
+//        switch (outputFormat.toLowerCase()) {
+//            case "json":
+//            return createJsonResponse(queryResponse);
+//            case "xml":
+////                return createXmlResponse(queryResponse);
+//            default:
+//            return buildResponse(Response.ok());
+//        }
 
+        return createJsonResponse(queryResponse);
 
     }
 

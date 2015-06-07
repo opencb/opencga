@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -41,11 +41,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-
-@Path("/util")
+@Path("/{version}/util")
 public class UtilsWSServer extends OpenCGAWSServer {
 
-    public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                         @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 

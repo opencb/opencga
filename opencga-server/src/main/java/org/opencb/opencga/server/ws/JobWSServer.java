@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
-
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -41,12 +40,13 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Path("/job")
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
+@Path("/{version}/job")
 @Api(value = "job", description = "job", position = 5)
 public class JobWSServer extends OpenCGAWSServer {
 
-    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                       @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 

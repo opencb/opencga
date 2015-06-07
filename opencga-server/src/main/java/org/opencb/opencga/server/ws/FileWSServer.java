@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -51,14 +51,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.*;
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Collectors;
 
-@Path("/files")
+@Path("/{version}/files")
 @Api(value = "files", description = "files", position = 4)
 public class FileWSServer extends OpenCGAWSServer {
 
 
-    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                        @Context HttpServletRequest httpServletRequest)
             throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         super(version, uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);

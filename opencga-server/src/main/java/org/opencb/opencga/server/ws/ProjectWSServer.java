@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 
 import com.wordnik.swagger.annotations.Api;
@@ -34,11 +34,12 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-@Path("/projects")
+@Path("/{version}/projects")
 @Api(value = "projects", description = "projects", position = 2)
 public class ProjectWSServer extends OpenCGAWSServer {
 
-    public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                           @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -70,9 +71,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{projectId}/info")
     @Produces("application/json")
     @ApiOperation(value = "Project information")
-    public Response info(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr
-    ) {
+    public Response info(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         List<QueryResult<Project>> queryResults = new LinkedList<>();
         for (String projectIdStr : projectIdsStr.split(",")) {
             try {
@@ -90,9 +89,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{projectId}/studies")
     @Produces("application/json")
     @ApiOperation(value = "Get all studies the from a project")
-    public Response getAllStudies(
-            @ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr
-    ) {
+    public Response getAllStudies(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         String[] splitedId = projectIdsStr.split(",");
         try {
             List<QueryResult> results = new LinkedList<>();

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -36,11 +36,12 @@ import java.util.List;
 /**
  * Created by jacobo on 16/12/14.
  */
-@Path("/variables")
+@Path("/{version}/variables")
 @Api(value = "variables", description = "Variable sets")
-public class VariableWSServer extends OpenCGAWSServer{
+public class VariableWSServer extends OpenCGAWSServer {
 
-    public VariableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public VariableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                            @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
         params = uriInfo.getQueryParameters();
     }

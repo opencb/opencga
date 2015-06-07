@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
-
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
 import org.opencb.datastore.core.ObjectMap;
@@ -31,11 +30,12 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-@Path("/studies")
+@Path("/{version}/studies")
 @Api(value = "studies", description = "studies", position = 3)
-public class StudyWSServer extends OpenCGAWSServer {
+public class StudiesWSServer extends OpenCGAWSServer {
 
-    public StudyWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+     public StudiesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                            @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 

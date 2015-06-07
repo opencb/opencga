@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -35,11 +35,12 @@ import java.util.*;
 /**
  * Created by jacobo on 15/12/14.
  */
-@Path("/cohorts")
+@Path("/{version}/cohorts")
 @Api(value = "cohorts", description = "Cohorts")
 public class CohortWSServer extends OpenCGAWSServer {
 
-    public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                          @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
         params = uriInfo.getQueryParameters();
     }

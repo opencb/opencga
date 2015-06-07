@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -39,11 +39,12 @@ import java.util.List;
 /**
  * Created by jacobo on 30/10/14.
  */
-@Path("/tools")
+@Path("/{version}/tools")
 @Api(value = "tools", description = "tools", position = 6)
-public class ToolWSServer extends OpenCGAWSServer{
+public class ToolWSServer extends OpenCGAWSServer {
 
-    public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                        @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 

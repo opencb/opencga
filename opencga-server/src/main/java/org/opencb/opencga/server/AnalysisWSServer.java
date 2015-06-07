@@ -17,23 +17,14 @@
 package org.opencb.opencga.server;
 
 
-import com.wordnik.swagger.annotations.Api;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
-
-@Path("/analysis")
-@Api(value = "analysis", description = "analysis")
+//@Path("/{version}/analysis")
+//@Api(value = "analysis", description = "analysis")
 @Deprecated
-public class AnalysisWSServer extends OpenCGAWSServer {
+public class AnalysisWSServer {
 
-    public AnalysisWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-        super(version, uriInfo, httpServletRequest);
-    }
+//    public AnalysisWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+//        super(version, uriInfo, httpServletRequest);
+//    }
 
 //    @GET
 //    @Path("/create")

@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.serverold;
+package org.opencb.opencga.server;
 
-import java.io.IOException;
+import org.glassfish.jersey.server.ResourceConfig;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
+/**
+ * Created by imedina on 07/06/15.
+ */
+public class OpenCGAServer extends ResourceConfig {
 
-public class GffWSServer extends GenericWSServer {
-
-    public GffWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-        super(uriInfo, httpServletRequest);
+    public OpenCGAServer() {
+        packages("org.opencb.opencga.server.ws");
     }
-
 
 }
