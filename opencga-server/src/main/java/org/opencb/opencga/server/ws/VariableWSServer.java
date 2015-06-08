@@ -33,6 +33,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 16/12/14.
@@ -81,6 +82,29 @@ public class VariableWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+    }
+
+    @GET
+    @Path("/{variableSetId}/update")
+    @ApiOperation(value = "Update some user attributes using GET method", position = 3)
+    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) throws IOException {
+        return createErrorResponse("PENDING");
+    }
+
+    @POST
+    @Path("/{variableSetId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 3)
+    public Response updateByPost(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+        return createErrorResponse("PENDING");
+    }
+
+    @GET
+    @Path("/{variableSetId}/delete")
+    @ApiOperation(value = "Delete an user [NO TESTED]", position = 4)
+    public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) {
+        return createErrorResponse("PENDING");
     }
 
 }

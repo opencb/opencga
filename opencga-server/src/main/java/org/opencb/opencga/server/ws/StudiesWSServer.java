@@ -235,7 +235,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/delete")
     @ApiOperation(value = "Delete a study [PENDING]", position = 9)
-    public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String userId) {
+    public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
         return createOkResponse("PENDING");
     }
 

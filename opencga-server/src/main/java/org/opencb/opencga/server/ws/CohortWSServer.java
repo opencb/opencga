@@ -169,8 +169,24 @@ public class CohortWSServer extends OpenCGAWSServer {
 //
 
     @GET
+    @Path("/{cohortId}/update")
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId) throws IOException {
+        return createErrorResponse("PENDING");
+    }
+
+    @POST
+    @Path("/{cohortId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 4)
+    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+        return createErrorResponse("PENDING");
+    }
+
+    @GET
     @Path("/{cohortId}/delete")
-    @ApiOperation(value = "Delete cohort. PENDING", position = 4)
+    @ApiOperation(value = "Delete cohort. PENDING", position = 5)
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         return createErrorResponse("PENDING");
     }

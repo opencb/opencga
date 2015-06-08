@@ -156,24 +156,24 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 9)
-    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String userId) throws IOException {
+    @ApiOperation(value = "Update some user attributes using GET method", position = 6)
+    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) throws IOException {
         return createErrorResponse("PENDING");
     }
 
     @POST
     @Path("/{sampleId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 9)
-    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String userId,
+    @ApiOperation(value = "Update some user attributes using POST method", position = 6)
+    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         return createErrorResponse("PENDING");
     }
 
     @GET
     @Path("/{sampleId}/delete")
-    @ApiOperation(value = "Delete an user [NO TESTED]", position = 10)
-    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String userId) {
+    @ApiOperation(value = "Delete an user [NO TESTED]", position = 7)
+    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) {
         return createErrorResponse("PENDING");
     }
 

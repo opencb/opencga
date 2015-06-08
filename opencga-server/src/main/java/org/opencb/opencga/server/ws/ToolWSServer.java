@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 30/10/14.
@@ -54,7 +55,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/info")
-    @ApiOperation(value = "Tool info")
+    @ApiOperation(value = "Tool info", position = 2)
     public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
         String[] toolIds = toolId.split(",");
@@ -77,7 +78,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/help")
-    @ApiOperation(value = "Tool help")
+    @ApiOperation(value = "Tool help", position = 3)
     public Response help(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
         String[] toolIds = toolId.split(",");
@@ -95,6 +96,29 @@ public class ToolWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+    }
+
+    @GET
+    @Path("/{toolId}/update")
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    public Response update(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) throws IOException {
+        return createErrorResponse("PENDING");
+    }
+
+    @POST
+    @Path("/{toolId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 4)
+    public Response updateByPost(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+        return createErrorResponse("PENDING");
+    }
+
+    @GET
+    @Path("/{toolId}/delete")
+    @ApiOperation(value = "Delete an user [NO TESTED]", position = 5)
+    public Response delete(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) {
+        return createErrorResponse("PENDING");
     }
 
 }
