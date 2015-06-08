@@ -53,9 +53,8 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "email", required = true) @QueryParam("email") String email,
                                @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
                                @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
-        QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
+            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
             return createOkResponse(queryResult);
         } catch (CatalogException  e) {
             e.printStackTrace();
@@ -82,6 +81,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "User login returns a valid session ID token", position = 3)
     public Response login(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                           @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
+        sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult queryResult;
         try {
             if (userId.equalsIgnoreCase("anonymous")) {

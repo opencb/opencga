@@ -173,7 +173,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", position = 4, response = QueryResponse.class, nickname = "chunkUpload")
+    @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = QueryResponse.class)
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
@@ -527,6 +527,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/fetch")
     @ApiOperation(value = "File fetch", position = 15)
+    @Deprecated
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds,
                           @ApiParam(value = "region", allowMultiple = true, required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
@@ -685,6 +686,20 @@ public class FileWSServer extends OpenCGAWSServer {
         return createOkResponse(results);
     }
 
+    @GET
+    @Path("/{fileId}/variants")
+    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15)
+    public Response getVariants(@ApiParam(value = "fileId", required = true) @PathParam("fileId") String fileId) {
+        return createOkResponse("PENDING");
+    }
+
+    @GET
+    @Path("/{fileId}/alignments")
+    @ApiOperation(value = "Fetch alignments from a BAM file", position = 15)
+    public Response getAlignments(@ApiParam(value = "fileId", required = true) @PathParam("fileId") String fileId) {
+        return createOkResponse("PENDING");
+    }
+    
     private ObjectMap getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {
         ObjectMap objectMap = new ObjectMap();
 

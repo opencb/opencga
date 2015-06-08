@@ -160,10 +160,10 @@ public class OpenCGAWSServer {
         this.httpServletRequest = httpServletRequest;
 
         this.params = uriInfo.getQueryParameters();
-//        logger.debug(uriInfo.getRequestUri().toString());
-//        this.queryOptions = null;
 //        this.sessionIp = httpServletRequest.getRemoteAddr();
 //        System.out.println("sessionIp = " + sessionIp);
+//        logger.debug(uriInfo.getRequestUri().toString());
+//        this.queryOptions = null;
 
         startTime = System.currentTimeMillis();
 
