@@ -184,7 +184,7 @@ public class OpenCGAMain {
                                 new QueryOptions("include", Arrays.asList("id", "name", "projects.id","projects.alias","projects.name")), sessionId).first();
                         System.out.println(user.getId() + " - " + user.getName());
                         indent+= "\t";
-                        System.out.println(listProjects(user.getProjects(), c.recursive ? c.level : 1, indent, new StringBuilder(), sessionId));
+                        System.out.println(listProjects(user.getProjects(), c.recursive ? c.level : 1, indent, c.uries, new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -264,7 +264,7 @@ public class OpenCGAMain {
 
                         URI uri = null;
                         if (c.uri != null && !c.uri.isEmpty()) {
-                            uri = new URI(null, c.uri, null);
+                            uri = UriUtils.getUri(c.uri);
                         }
                         Map<File.Bioformat, DataStore> dataStoreMap = parseBioformatDataStoreMap(c);
                         int projectId = catalogManager.getProjectId(c.projectId);
@@ -315,7 +315,7 @@ public class OpenCGAMain {
                         int studyId = catalogManager.getStudyId(c.id);
                         List<Study> studies = catalogManager.getStudy(studyId, sessionId).getResult();
                         String indent = "";
-                        System.out.println(listStudies(studies, c.recursive ? c.level : 1, indent, new StringBuilder(), sessionId));
+                        System.out.println(listStudies(studies, c.recursive ? c.level : 1, indent, c.uries, new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -332,11 +332,13 @@ public class OpenCGAMain {
                         int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
                         /** Get untracked files **/
-                        List<URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
+//                        List<URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
+//
+//                        URI studyUri = catalogManager.getStudyUri(studyId);
+//                        Map<URI, String> relativeUrisMap = untrackedFiles.stream().collect(Collectors.toMap((k) -> k, (u) -> studyUri.relativize(u).toString()));
 
-                        URI studyUri = catalogManager.getStudyUri(studyId);
-                        Map<URI, String> relativeUrisMap = untrackedFiles.stream().collect(Collectors.toMap((k) -> k, (u) -> studyUri.relativize(u).toString()));
-                        int maxUntracked = relativeUrisMap.values().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+                        Map<String, URI> relativeUrisMap = fileScanner.untrackedFiles(study, sessionId);
+                        int maxUntracked = relativeUrisMap.keySet().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
                         /** Get missing files **/
                         List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
@@ -348,7 +350,7 @@ public class OpenCGAMain {
 
                         if (!relativeUrisMap.isEmpty()) {
                             System.out.println("UNTRACKED files");
-                            relativeUrisMap.forEach((u, s) -> System.out.printf(format, s, u));
+                            relativeUrisMap.forEach((s, u) -> System.out.printf(format, s, u));
                             System.out.println("\n");
                         }
 
@@ -426,8 +428,13 @@ public class OpenCGAMain {
 
                         int studyId = catalogManager.getStudyId(c.studyId);
                         String path = c.path.isEmpty()? inputFile.getFileName().toString() : Paths.get(c.path, inputFile.getFileName().toString()).toString();
-                        File file = catalogManager.createFile(studyId, null, null,
-                                path, c.description, c.parents, -1, sessionId).first();
+                        File file;
+                        if (ioManager.isDirectory(inputUri)) {
+                            file = catalogManager.createFolder(studyId, Paths.get(path), File.Status.STAGE, c.parents, null, sessionId).first();
+                        } else {
+                            file = catalogManager.createFile(studyId, null, null,
+                                    path, c.description, c.parents, -1, sessionId).first();
+                        }
                         new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, inputUri, false, sessionId);
                         file = catalogManager.getFile(file.getId(), c.cOpt.getQueryOptions(), sessionId).first();
                         file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
@@ -519,7 +526,7 @@ public class OpenCGAMain {
                         int fileId = catalogManager.getFileId(c.id);
                         List<File> result = catalogManager.getFile(fileId, sessionId).getResult();
                         int studyId = catalogManager.getStudyIdByFileId(fileId);
-                        System.out.println(listFiles(result, studyId, c.recursive? c.level : 1, "", new StringBuilder(), sessionId));
+                        System.out.println(listFiles(result, studyId, c.recursive? c.level : 1, "", c.uries, new StringBuilder(), sessionId));
 
                         break;
                     }
@@ -917,48 +924,48 @@ public class OpenCGAMain {
         return object.getClass().getMethod("getName").invoke(object);
     }
 
-    private StringBuilder listProjects(List<Project> projects, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listProjects(List<Project> projects, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             for (Iterator<Project> iterator = projects.iterator(); iterator.hasNext(); ) {
                 Project project = iterator.next();
                 sb.append(String.format("%s (%d) - %s : %s\n", indent + (iterator.hasNext() ? "├──" : "└──"), project.getId(), project.getName(), project.getAlias()));
-                listStudies(project.getId(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
+                listStudies(project.getId(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
     }
 
-    private StringBuilder listStudies(int projectId, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(int projectId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<Study> studies = catalogManager.getAllStudies(projectId,
                     new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
                     sessionId).getResult();
 
-            listStudies(studies, level, indent, sb, sessionId);
+            listStudies(studies, level, indent, showUries, sb, sessionId);
         }
         return sb;
     }
 
-    private StringBuilder listStudies(List<Study> studies, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
                 sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
-                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
+                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
     }
 
-    private StringBuilder listFiles(int studyId, String path, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(int studyId, String path, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new QueryOptions("directory", path), sessionId).getResult();
-            listFiles(files, studyId, level, indent, sb, sessionId);
+            listFiles(files, studyId, level, indent, showUries, sb, sessionId);
         }
         return sb;
     }
 
-    private StringBuilder listFiles(List<File> files, int studyId, int level, String indent, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(List<File> files, int studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
                 File file = iterator.next();
@@ -969,10 +976,10 @@ public class OpenCGAMain {
                         file.getName(),
                         file.getStatus(),
                         humanReadableByteCount(file.getDiskUsage(), false),
-                        file.getUri() == null? "" : " --> " + file.getUri()
+                        showUries && file.getUri() != null ? " --> " + file.getUri() : ""
                 ));
                 if (file.getType() == File.Type.FOLDER) {
-                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), sb, sessionId);
+                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
 //                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "| " : "  "), sessionId);
                 }
             }

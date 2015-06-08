@@ -301,6 +301,9 @@ public class OptionsParser {
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
 
+            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+            public boolean uries = false;
+
         }
 
         @Parameters(commandNames = {"login"}, commandDescription = "Login as user and return its sessionId")
@@ -467,6 +470,9 @@ public class OptionsParser {
 
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
+
+            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+            public boolean uries = false;
         }
 
         @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
@@ -651,6 +657,9 @@ public class OptionsParser {
 
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
+
+            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+            public boolean uries = false;
         }
 
         @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
