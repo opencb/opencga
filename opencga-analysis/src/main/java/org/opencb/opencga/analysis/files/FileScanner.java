@@ -65,35 +65,9 @@ public class FileScanner {
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
-            switch (file.getStatus()) {
-                case READY:
-                case MISSING: {
-                    URI fileUri = catalogManager.getFileUri(study, file);
-                    if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                        logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
-                        if (file.getStatus() != File.Status.MISSING) {
-                            logger.info("Set status to " + File.Status.MISSING);
-                            catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.MISSING), sessionId);
-                            modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
-                        }
-                    } else if (file.getStatus() == File.Status.MISSING) {
-                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
-                        logger.info("Set status to " + File.Status.READY);
-                        ObjectMap params = catalogFileUtils.getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                        params.put("status", File.Status.READY);
-                        catalogManager.modifyFile(file.getId(), params, sessionId);
-                        modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
-                    }
-                    break;
-                }
-                case TRASHED: {
-                    URI fileUri = catalogManager.getFileUri(study, file);
-                    if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
-                        modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
-                        break;
-                    }
-                }
+            File checkedFile = catalogFileUtils.checkFile(file, calculateChecksum, sessionId);
+            if (checkedFile != file) {
+                modifiedFiles.add(checkedFile);
             }
         }
         return modifiedFiles;

@@ -154,8 +154,9 @@ public class CatalogFileUtilsTest {
     @Test
     public void linkFolderTest() throws Exception {
         Path directory = Paths.get("/tmp/linkFolderTest");
-        Files.createDirectory(directory);
-        IOUtils.deleteDirectory(directory);
+        if (directory.toFile().exists()) {
+            IOUtils.deleteDirectory(directory);
+        }
         Files.createDirectory(directory);
         List<java.io.File> createdFiles = new LinkedList<>();
         createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString()));

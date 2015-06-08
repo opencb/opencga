@@ -93,11 +93,12 @@ public class CatalogFileUtils {
 
         //If the source is equals to the target, calculate checksum (if needed) and exit
         if (sourceUri.equals(targetUri)) {
-            logger.info("SourceURI equals to TargetURI. Only calculate checksum and update file entry");
             String targetChecksum;
             if (calculateChecksum) {
+                logger.info("SourceURI equals to TargetURI. Only calculate checksum and update file entry");
                 targetChecksum = targetIOManager.calculateChecksum(targetUri);
             } else {
+                logger.info("SourceURI equals to TargetURI. Only update file entry");
                 targetChecksum = sourceChecksum;
             }
             updateFileAttributes(file, targetChecksum, targetUri, new ObjectMap("status", File.Status.READY), sessionId);
@@ -261,43 +262,53 @@ public class CatalogFileUtils {
             int studyId = catalogManager.getStudyIdByFileId(file.getId());
             List<File> files = new LinkedList<>();
             List<URI> uris = ioManager.listFiles(externalUri);
-            Map<URI, String> uriStringMap = new HashMap<>();
+            Map<URI, String> uriPathMap = new HashMap<>();
 
-            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
             Path folderPath = Paths.get(file.getPath());
             for (URI uri : uris) {
                 if (ioManager.isDirectory(uri)) {
                     continue;       //Skip directories. Will be created automatically with "parents = true"
                 }
                 String relativePath = folderPath.resolve(externalUri.relativize(uri).getPath()).toString();
-                uriStringMap.put(uri, relativePath);
+                uriPathMap.put(uri, relativePath);
             }
 
             //Search if there is any existing file in the folder with the path to use.
             QueryOptions pathsQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
-                    new LinkedList<>(uriStringMap.values()));
-            List<File> result = catalogManager.getAllFiles(studyId, pathsQuery, sessionId).getResult();
-            if (result.size() != 0) {
-                for (File f : result) {
-                    logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
+                    new LinkedList<>(uriPathMap.values()));
+            List<File> existingFiles = catalogManager.getAllFiles(studyId, pathsQuery, sessionId).getResult();
+            if (!relink) {
+                if (existingFiles.size() != 0) {
+                    for (File f : existingFiles) {
+                        logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
+                    }
+                    throw new CatalogException("Unable to link folder " + file.getPath() + " to uri " + externalUri + ". Existing files on folder");
                 }
-                throw new CatalogException("Unable to link folder " + file.getPath() + " to uri " + externalUri + ". Existing files on folder");
             }
+            Map<String, File> pathFileMap = existingFiles.stream().collect(Collectors.toMap(File::getPath, f -> f));
 
             //Set URI to folder. This will mark the directory as "external"
             catalogManager.modifyFile(file.getId(), new ObjectMap("uri", externalUri), sessionId);
 
             //Create and link files.
-            for (Map.Entry<URI, String> entry : uriStringMap.entrySet()) {
+            for (Map.Entry<URI, String> entry : uriPathMap.entrySet()) {
                 String relativePath = entry.getValue();
                 URI uri = entry.getKey();
                 logger.info("Adding file \"{}\"", relativePath);
-                //Create new file. Parents = true to create folders. Parameter "parents" should not be used here, it's
+                //Create new file. Do only create new files. Do not create already existing files.
+                //Parents = true to create folders. Parameter "parents" should not be used here, it's
                 //only related to the main folder creation.
-                File newFile = catalogManager.createFile(studyId, null, null, relativePath, "", true, -1, sessionId).first();
+                if (!pathFileMap.containsKey(entry.getValue())) {
+                    File newFile = catalogManager.createFile(studyId, null, null, relativePath, "", true, -1, sessionId).first();
 //                files.add(catalogFileUtils.link(newFile, calculateChecksum, uri, false, sessionId));
-                upload(uri, newFile, null, sessionId, false, false, false, calculateChecksum);
 //                files.add();
+                    upload(uri, newFile, null, sessionId, false, false, false, calculateChecksum);
+                } else {
+//                    updateFileAttributes(pathFileMap.get(entry.getValue()), calculateChecksum, sessionId);
+                }
+            }
+            for (File existingFile : existingFiles) {
+                checkFile(existingFile, calculateChecksum, sessionId);
             }
 
             ObjectMap objectMap = new ObjectMap();
@@ -366,6 +377,55 @@ public class CatalogFileUtils {
         catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
 
     }
+
+    /**
+     * Check if the fileURI related to the provided file exists, and modifies the file status if necessary.
+     *
+     * For READY files with a non existing file, set status to MISSING. "Lost file"
+     * For MISSING files who recover the file, set status to READY. "Found file"
+     * For TRASHED files with a non existing file, set status to DELETED.
+     *
+     * @param file                  File to check
+     * @param calculateChecksum     Calculate checksum for "found files"
+     * @param sessionId             User's sessionId
+     * @return                      If there is any change, returns the modified file. Else, return the same file.
+     * @throws CatalogException
+     */
+    public File checkFile(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+        File modifiedFile = file;
+        switch (file.getStatus()) {
+            case READY:
+            case MISSING: {
+                URI fileUri = catalogManager.getFileUri(file);
+                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+                    logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
+                    if (file.getStatus() != File.Status.MISSING) {
+                        logger.info("Set status to " + File.Status.MISSING);
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.MISSING), sessionId);
+                        modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                    }
+                } else if (file.getStatus() == File.Status.MISSING) {
+                    logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
+                    logger.info("Set status to " + File.Status.READY);
+                    ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
+                    params.put("status", File.Status.READY);
+                    catalogManager.modifyFile(file.getId(), params, sessionId);
+                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                }
+                break;
+            }
+            case TRASHED: {
+                URI fileUri = catalogManager.getFileUri(file);
+                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+                    catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
+                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                    break;
+                }
+            }
+        }
+        return modifiedFile;
+    }
+
 
     /**
      * Update some file attributes.
