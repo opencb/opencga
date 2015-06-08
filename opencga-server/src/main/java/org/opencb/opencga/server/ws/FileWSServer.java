@@ -755,18 +755,4 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @DELETE
-//    @Path("/{fileId}/delete")
-//    @ApiOperation(value = "Delete file")
-//    public Response delete(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
-//        try {
-//            int fileIdNum = catalogManager.getFileId(fileId);
-//            QueryResult result = catalogManager.deleteFile(fileIdNum, sessionId);
-//            return createOkResponse(result);
-//        } catch (CatalogException | IOException e) {
-//            e.printStackTrace();
-//            return createErrorResponse(e.getMessage());
-//        }
-//    }
-
 }

@@ -19,6 +19,7 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -151,6 +152,29 @@ public class SampleWSServer extends OpenCGAWSServer {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
         }
+    }
+
+    @GET
+    @Path("/{sampleId}/update")
+    @ApiOperation(value = "Update some user attributes using GET method", position = 9)
+    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String userId) throws IOException {
+        return createErrorResponse("PENDING");
+    }
+
+    @POST
+    @Path("/{sampleId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 9)
+    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String userId,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+        return createErrorResponse("PENDING");
+    }
+
+    @GET
+    @Path("/{sampleId}/delete")
+    @ApiOperation(value = "Delete an user [NO TESTED]", position = 10)
+    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String userId) {
+        return createErrorResponse("PENDING");
     }
 
 }
