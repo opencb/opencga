@@ -295,7 +295,9 @@ public class CatalogFileUtils {
                 //Create new file. Parents = true to create folders. Parameter "parents" should not be used here, it's
                 //only related to the main folder creation.
                 File newFile = catalogManager.createFile(studyId, null, null, relativePath, "", true, -1, sessionId).first();
-                files.add(catalogFileUtils.link(newFile, calculateChecksum, uri, false, sessionId));
+//                files.add(catalogFileUtils.link(newFile, calculateChecksum, uri, false, sessionId));
+                upload(uri, newFile, null, sessionId, false, false, false, calculateChecksum);
+//                files.add();
             }
 
             ObjectMap objectMap = new ObjectMap();

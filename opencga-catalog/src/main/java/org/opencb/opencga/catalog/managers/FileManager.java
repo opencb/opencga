@@ -29,13 +29,15 @@ import java.util.*;
  */
 public class FileManager extends AbstractManager implements IFileManager {
 
-    private static final QueryOptions includeStudyUri = new QueryOptions("include", Arrays.asList("projects.studies.uri"));
-
     protected static Logger logger = LoggerFactory.getLogger(FileManager.class);
-    public static final Comparator<File> rootFirstComparator =
+
+    private static final QueryOptions includeStudyUri = new QueryOptions("include", Collections.singletonList("projects.studies.uri"));
+    private static final QueryOptions includeFileUriPath = new QueryOptions("include", Arrays.asList("projects.studies.files.uri", "projects.studies.files.path"));
+    private static final Comparator<File> rootFirstComparator =
             (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length()) - (f2.getPath() == null ? 0 : f2.getPath().length());
-    public static final Comparator<File> rootLastComparator =
+    private static final Comparator<File> rootLastComparator =
             (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length()) - (f1.getPath() == null ? 0 : f1.getPath().length());
+
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                        CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
@@ -66,6 +68,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
+            QueryResult<File> parents = getParents(file, false, includeFileUriPath);
+            for (File parent : parents.getResult()) {
+                if (parent.getUri() != null) {
+                    String relativePath = file.getPath().replaceFirst(parent.getPath(), "");
+                    return parent.getUri().resolve(relativePath);
+                }
+            }
             URI studyUri = study.getUri() == null ? getStudyUri(study.getId()) : study.getUri();
             return file.getPath().isEmpty() ?
                     studyUri :
@@ -73,6 +82,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
     }
 
+    @Deprecated
     @Override
     public URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException {
         ParamUtils.checkObj(studyUri, "studyUri");
@@ -81,6 +91,23 @@ public class FileManager extends AbstractManager implements IFileManager {
         return relativeFilePath.isEmpty() ?
                 studyUri :
                 catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
+    }
+
+    public URI getFileUri(int studyId, String filePath) throws CatalogException {
+        ParamUtils.checkObj(filePath, "filePath");
+
+        List<File> parents = getParents(false, null, filePath, studyId).getResult();
+
+        for (File parent : parents) {
+            if (parent.getUri() != null) {
+                String relativePath = filePath.replaceFirst(parent.getPath(), "");
+                return parent.getUri().resolve(relativePath);
+            }
+        }
+        URI studyUri = getStudyUri(studyId);
+        return filePath.isEmpty() ?
+                studyUri :
+                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
     }
 
     @Override
@@ -127,13 +154,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return true;
         }
-        List<File> parents = getParents(file, true,
-                new QueryOptions("include", "projects.studies.files.uri")).getResult();
-        for (File folder : parents) {
-            if (folder.getUri() != null) {
-                return true;
-            }
-        }
+//        List<File> parents = getParents(file, true,
+//                new QueryOptions("include", "projects.studies.files.uri")).getResult();
+//        for (File folder : parents) {
+//            if (folder.getUri() != null) {
+//                return true;
+//            }
+//        }
         return false;
     }
 
@@ -341,10 +368,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         if (file.getType() == File.Type.FOLDER && file.getStatus() == File.Status.READY && !isExternal) {
-            URI studyUri = getStudyUri(studyId);
-            CatalogIOManager ioManager = catalogIOManagerFactory.get(studyUri);
+            URI fileUri = getFileUri(studyId, file.getPath());
+            CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
 //            ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
-            ioManager.createFolder(studyUri, file.getPath(), parents);
+//            ioManager.createFolder(studyUri, file.getPath(), parents);
+            ioManager.createDirectory(fileUri, parents);
         }
 
 
@@ -579,13 +607,13 @@ public class FileManager extends AbstractManager implements IFileManager {
             case FOLDER:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
-                    catalogIOManager.rename(getFileUri(studyUri, oldPath), getFileUri(studyUri, newPath));   // io.move() 1
+                    catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
                 }
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
             case FILE:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri);
-                    catalogIOManager.rename(getFileUri(studyUri, file.getPath()), getFileUri(studyUri, newPath));
+                    catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
                 }
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
         }

@@ -191,6 +191,12 @@ public class CatalogManager {
         return fileManager.getFileUri(study, file);
     }
 
+    public URI getFileUri(int studyId, String relativeFilePath)
+            throws CatalogException {
+        return fileManager.getFileUri(studyId, relativeFilePath);
+    }
+
+    @Deprecated
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogException {
         return fileManager.getFileUri(studyUri, relativeFilePath);

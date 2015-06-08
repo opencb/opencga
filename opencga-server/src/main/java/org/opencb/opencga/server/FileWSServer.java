@@ -108,16 +108,14 @@ public class FileWSServer extends OpenCGAWSServer {
         long t = System.currentTimeMillis();
 
         java.nio.file.Path filePath = null;
-        int studyId;
-        URI studyUri;
+        final int studyId;
         try {
             studyId = catalogManager.getStudyId(studyIdStr);
-            studyUri = catalogManager.getStudyUri(studyId);
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
         try {
-            filePath = Paths.get(catalogManager.getFileUri(studyUri, relativeFilePath));
+            filePath = Paths.get(catalogManager.getFileUri(studyId, relativeFilePath));
             System.out.println(filePath);
         } catch (CatalogIOException e) {
             System.out.println("catalogManager.getFilePath");

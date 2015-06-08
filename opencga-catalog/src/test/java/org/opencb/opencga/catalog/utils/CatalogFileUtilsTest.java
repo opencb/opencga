@@ -154,6 +154,7 @@ public class CatalogFileUtilsTest {
     @Test
     public void linkFolderTest() throws Exception {
         Path directory = Paths.get("/tmp/linkFolderTest");
+        Files.createDirectory(directory);
         IOUtils.deleteDirectory(directory);
         Files.createDirectory(directory);
         List<java.io.File> createdFiles = new LinkedList<>();
@@ -181,34 +182,35 @@ public class CatalogFileUtilsTest {
             assertEquals(File.Status.READY, f.getStatus());
             if (f.getType() != File.Type.FOLDER) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
-                assertTrue(f.getUri() != null);
+                assertTrue(f.getUri() == null);
             }
         }
         assertTrue(!Paths.get(catalogManager.getStudyUri(studyId).resolve(folder.getName())).toFile().exists());
 
         //Delete folder. Should trash everything.
         catalogManager.deleteFolder(folder.getId(), userSessionId);
-        for (java.io.File createdFile : createdFiles) {
-            assertTrue(createdFile.exists());
-        }
+//        for (java.io.File createdFile : createdFiles) {
+//            assertTrue(createdFile.exists());
+//        }
         for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
             assertEquals(File.Status.TRASHED, f.getStatus());
             if (f.getType() != File.Type.FOLDER) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
-                assertTrue(f.getUri() != null);
+                assertTrue(f.getUri() == null);
             }
         }
 
-        //Final delete folder. Should not remove original files.
+        //Final delete folder. Should remove original files.
         catalogFileUtils.delete(catalogManager.getFile(folder.getId(), userSessionId).first(), userSessionId);
         for (java.io.File createdFile : createdFiles) {
-            assertTrue(createdFile.exists());
+            assertTrue(!createdFile.exists());
         }
+        assertEquals(0, catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).size());
         for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
             assertEquals(File.Status.DELETED, f.getStatus());
             if (f.getType() != File.Type.FOLDER) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
-                assertTrue(f.getUri() != null);
+                assertTrue(f.getUri() == null);
             }
         }
 

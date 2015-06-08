@@ -28,6 +28,9 @@ public interface IFileManager extends ResourceManager<Integer, File> {
 
     URI getFileUri(File file) throws CatalogException;
 
+    URI getFileUri(int studyId, String relativeFilePath) throws CatalogException;
+
+    @Deprecated
     URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException;
 
     /*-------------*/
