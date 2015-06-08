@@ -82,17 +82,6 @@ public class OpenCGAWSServer {
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
-
-//    @DefaultValue("-1")
-//    @QueryParam("limit")
-//    @ApiParam(name = "limit", value = "Max number of results to be returned. No limit applied when -1. No limit is set by default.")
-//    protected int limit;
-
-//    @DefaultValue("-1")
-//    @QueryParam("skip")
-//    @ApiParam(name = "skip", value = "Number of results to be skipped. No skip applied when -1. No skip by default.")
-//    protected int skip;
-
 //    @DefaultValue("true")
 //    @QueryParam("metadata")
 //    protected boolean metadata;
@@ -178,7 +167,7 @@ public class OpenCGAWSServer {
 
         startTime = System.currentTimeMillis();
 
-        queryResponse = new QueryResponse();
+//        queryResponse = new QueryResponse();
         queryOptions = new QueryOptions();
 
         parseParams();
@@ -283,12 +272,20 @@ public class OpenCGAWSServer {
         return createOkResponse(result);
     }
 
+    protected Response createErrorResponse(String method, String errorMessage) {
+        try {
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new HashMap<>().put("error", errorMessage)), MediaType.APPLICATION_JSON_TYPE));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     protected Response createOkResponse(Object obj) {
         queryResponse = new QueryResponse();
-        endTime = System.currentTimeMillis() - startTime;
-        queryResponse.setTime(new Long(endTime - startTime).intValue());
+        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(version);
-//        queryResponse.setQueryOptions(getQueryOptions());
+        queryResponse.setQueryOptions(queryOptions);
 
         // Guarantee that the QueryResponse object contains a list of results
         List list;
@@ -300,28 +297,15 @@ public class OpenCGAWSServer {
         }
         queryResponse.setResponse(list);
 
-//        switch (outputFormat.toLowerCase()) {
-//            case "json":
-//            return createJsonResponse(queryResponse);
-//            case "xml":
-////                return createXmlResponse(queryResponse);
-//            default:
-//            return buildResponse(Response.ok());
-//        }
-
         return createJsonResponse(queryResponse);
-
     }
 
-    protected Response createJsonResponse(Object object) {
+    protected Response createJsonResponse(QueryResponse queryResponse) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(object), MediaType.APPLICATION_JSON_TYPE));
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
-            System.out.println("object = " + object);
-            System.out.println("((QueryResponse)object).getResponse() = " + ((QueryResponse) object).getResponse());
-
-            System.out.println("e = " + e);
-            System.out.println("e.getMessage() = " + e.getMessage());
+            e.printStackTrace();
+            logger.error("Error parsing queryResponse object");
             return createErrorResponse("Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
@@ -336,6 +320,9 @@ public class OpenCGAWSServer {
     }
 
     protected Response buildResponse(ResponseBuilder responseBuilder) {
-        return responseBuilder.header("Access-Control-Allow-Origin", "*").header("Access-Control-Allow-Headers", "x-requested-with, content-type").build();
+        return responseBuilder
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
+                .build();
     }
 }
