@@ -23,6 +23,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -43,7 +44,7 @@ public class VariableWSServer extends OpenCGAWSServer {
 
 
     public VariableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                            @Context HttpServletRequest httpServletRequest) throws IOException {
+                            @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
 //        params = uriInfo.getQueryParameters();
     }
@@ -74,7 +75,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get VariableSet info", position = 2)
     public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") int variableSetId) {
         try {
-            QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, this.getQueryOptions(), sessionId);
+            QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

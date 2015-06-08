@@ -20,13 +20,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-
-
+import com.google.common.base.Splitter;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
@@ -35,11 +30,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.core.exception.VersionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,14 +40,13 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/{version}")
-@Produces("text/plain")
+@Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-    @DefaultValue("")
+    @DefaultValue("v1")
     @PathParam("version")
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
@@ -115,6 +105,7 @@ public class OpenCGAWSServer {
 
     static {
         logger = LoggerFactory.getLogger("org.opencb.opencga.server.ws.OpenCGAWSServer");
+        logger.info("Static block, creating OpenCGAWSServer, this log must appear only once");
 //        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
 //        properties = new Properties();
 //        try {
@@ -173,21 +164,74 @@ public class OpenCGAWSServer {
     }
 
     public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                           @Context HttpServletRequest httpServletRequest) throws IOException {
-        this.startTime = System.currentTimeMillis();
+                           @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+//        this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
+
         this.params = uriInfo.getQueryParameters();
 //        logger.debug(uriInfo.getRequestUri().toString());
-        this.queryOptions = null;
+//        this.queryOptions = null;
 //        this.sessionIp = httpServletRequest.getRemoteAddr();
 //        System.out.println("sessionIp = " + sessionIp);
+
+        startTime = System.currentTimeMillis();
+
+        queryResponse = new QueryResponse();
+        queryOptions = new QueryOptions();
+
+        parseParams();
     }
 
-    protected QueryOptions getQueryOptions() {
-        if(queryOptions == null) {
-            this.queryOptions = new QueryOptions();
+    public void parseParams() throws VersionException {
+        if (version == null) {
+            throw new VersionException("Version not valid: '" + version + "'");
+        }
+
+        /**
+         * Check version parameter, must be: v1, v2, ... If 'latest' then is
+         * converted to appropriate version
+         */
+        if (version.equalsIgnoreCase("latest")) {
+            version = "v1";
+            logger.info("Version 'latest' detected, setting version parameter to '{}'", version);
+        }
+        // TODO Valid OpenCGA versions need to be added configuration files
+//        if (!cellBaseConfiguration.getVersion().equalsIgnoreCase(this.version)) {
+//            logger.error("Version '{}' does not match configuration '{}'", this.version, cellBaseConfiguration.getVersion());
+//            throw new VersionException("Version not valid: '" + version + "'");
+//        }
+
+        MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
+        queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
+
+        if(exclude != null && !exclude.isEmpty()) {
+            queryOptions.put("exclude", new LinkedList<>(Splitter.on(",").splitToList(exclude)));
+        } else {
+            queryOptions.put("exclude", (multivaluedMap.get("exclude") != null)
+                    ? Splitter.on(",").splitToList(multivaluedMap.get("exclude").get(0))
+                    : null);
+        }
+
+        if(include != null && !include.isEmpty()) {
+            queryOptions.put("include", new LinkedList<>(Splitter.on(",").splitToList(include)));
+        } else {
+            queryOptions.put("include", (multivaluedMap.get("include") != null)
+                    ? Splitter.on(",").splitToList(multivaluedMap.get("include").get(0))
+                    : null);
+        }
+
+        // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
+        multivaluedMap.entrySet().stream().filter(entry -> !queryOptions.containsKey(entry.getKey())).forEach(entry -> {
+            logger.info("Adding '{}' to queryOptions object", entry);
+            queryOptions.put(entry.getKey(), entry.getValue().get(0));
+        });
+    }
+
+//    protected QueryOptions getQueryOptions() {
+//        if(queryOptions == null) {
+//            this.queryOptions = new QueryOptions();
 //            this.queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 //            if(!exclude.isEmpty()) {
 //                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
@@ -196,9 +240,9 @@ public class OpenCGAWSServer {
 //                queryOptions.put("include", Arrays.asList(include.split(",")));
 //            }
 //            queryOptions.put("metadata", metadata);
-        }
-        return queryOptions;
-    }
+//        }
+//        return queryOptions;
+//    }
 
 //    protected QueryOptions getAllQueryOptions() {
 //        return getAllQueryOptions(null);

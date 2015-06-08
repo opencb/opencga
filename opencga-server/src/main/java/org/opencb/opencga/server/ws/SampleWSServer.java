@@ -24,6 +24,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -44,9 +45,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
 
     public SampleWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException {
+                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
-        params = uriInfo.getQueryParameters();
     }
 
     @GET
@@ -70,7 +70,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get sample information", position = 2)
     public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
         try {
-            QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, this.getQueryOptions(), sessionId);
+            QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -119,7 +119,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                        Map<String, Object> annotations) {
         try {
             QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId,
-                    annotations, this.getQueryOptions(), sessionId);
+                    annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -140,13 +140,12 @@ public class SampleWSServer extends OpenCGAWSServer {
                 return createErrorResponse("VariableSet not find.");
             }
             Map<String, Object> annotations = new HashMap<>();
-            for (Variable variable : variableSetResult.getResult().get(0).getVariables()) {
-                if(params.containsKey(variable.getId())) {
-                    annotations.put(variable.getId(), params.getFirst(variable.getId()));
-                }
-            }
-
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId, annotations, this.getQueryOptions(), sessionId);
+            variableSetResult.getResult().get(0).getVariables().stream()
+                    .filter(variable -> params.containsKey(variable.getId()))
+                    .forEach(variable -> {
+                        annotations.put(variable.getId(), params.getFirst(variable.getId()));
+                    });
+            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId, annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

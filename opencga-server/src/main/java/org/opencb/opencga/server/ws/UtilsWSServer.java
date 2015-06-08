@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -46,7 +47,7 @@ import java.util.Properties;
 public class UtilsWSServer extends OpenCGAWSServer {
 
     public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest httpServletRequest) throws IOException {
+                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 

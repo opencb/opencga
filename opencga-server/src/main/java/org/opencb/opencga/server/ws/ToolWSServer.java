@@ -25,6 +25,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -47,7 +48,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
 
     public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest) throws IOException {
+                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 

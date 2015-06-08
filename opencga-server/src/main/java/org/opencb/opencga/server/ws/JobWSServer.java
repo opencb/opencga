@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -49,7 +50,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
 
     public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                       @Context HttpServletRequest httpServletRequest) throws IOException {
+                       @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -134,7 +135,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if(params.get(outputParam).get(0).equalsIgnoreCase("analysis")){
                 QueryOptions query = new QueryOptions();
                 query.put("name", params.get(outputParam).get(0));
-                QueryResult<File> result = catalogManager.searchFile(studyId, query, this.getQueryOptions(), sessionId);
+                QueryResult<File> result = catalogManager.searchFile(studyId, query, queryOptions, sessionId);
                 outDirId = result.getResult().get(0).getId();
             }
             else
@@ -146,7 +147,7 @@ public class JobWSServer extends OpenCGAWSServer {
             //create job folder with timestamp to store job result files
             boolean parents = true;
             java.nio.file.Path jobOutDirPath = Paths.get(outDir.getPath(), TimeUtils.getTime());
-            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, getQueryOptions(), sessionId);
+            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, queryOptions, sessionId);
             File jobOutDir = queryResult.getResult().get(0);
 
 
@@ -209,7 +210,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get job information", position = 2)
     public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
-            return createOkResponse(catalogManager.getJob(jobId, this.getQueryOptions(), sessionId));
+            return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
             return createErrorResponse(e.getMessage());
         }

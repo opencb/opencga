@@ -22,6 +22,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -40,7 +41,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
 
     public UserWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest) throws IOException {
+                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -54,7 +55,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         QueryResult queryResult;
         try {
-            queryResult = catalogManager.createUser(userId, name, email, password, organization, this.getQueryOptions());
+            queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
             return createOkResponse(queryResult);
         } catch (CatalogException  e) {
             e.printStackTrace();
@@ -68,7 +69,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                             @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, this.getQueryOptions(), sessionId);
+            QueryResult result = catalogManager.getUser(userId, lastActivity, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -163,7 +164,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Project information", position = 8)
     public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
-            QueryResult queryResult = catalogManager.getAllProjects(userId, this.getQueryOptions(), sessionId);
+            QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

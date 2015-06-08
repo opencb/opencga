@@ -21,6 +21,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -38,7 +39,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
 
     public StudiesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                           @Context HttpServletRequest httpServletRequest) throws IOException {
+                           @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -57,7 +58,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         try {
             int projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, status, cipher, null, null, null, null, null, this.getQueryOptions(), sessionId);
+                    creationDate, description, status, cipher, null, null, null, null, null, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException | IOException e) {
             e.printStackTrace();
@@ -96,7 +97,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
                         study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
                         study.getDescription(), study.getStatus(), study.getCipher(), null, null, null, study.getStats(),
-                        study.getAttributes(), this.getQueryOptions(), sessionId);
+                        study.getAttributes(), queryOptions, sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
                 queryResults.add(queryResult);
 //                List<File> files = study.getFiles();
@@ -130,7 +131,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         for (String studyIdStr : studyIdsStr.split(",")) {
             try {
                 int studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(catalogManager.getStudy(studyId, sessionId, this.getQueryOptions()));
+                queryResults.add(catalogManager.getStudy(studyId, sessionId, queryOptions));
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e.getMessage());
@@ -146,7 +147,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         QueryResult queryResult;
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            queryResult = catalogManager.getAllFiles(studyId, this.getQueryOptions(), sessionId);
+            queryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -172,7 +173,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.getAllSamples(studyId, this.getQueryOptions(), sessionId);
+            QueryResult queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

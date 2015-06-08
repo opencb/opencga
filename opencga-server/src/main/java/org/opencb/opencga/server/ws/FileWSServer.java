@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -61,7 +62,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                         @Context HttpServletRequest httpServletRequest)
-            throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+            throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
         super(version, uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
 //        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
@@ -112,7 +113,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
                         file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
-                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, getQueryOptions(), sessionId);
+                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, queryOptions, sessionId);
 //                file = fileQueryResult.getResult().get(0);
                 System.out.println("fileQueryResult = " + fileQueryResult);
                 queryResults.add(fileQueryResult);
@@ -144,7 +145,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, getQueryOptions(), sessionId);
+            QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -160,7 +161,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : splitedFileId) {
-                results.add(catalogManager.getFile(catalogManager.getFileId(id), this.getQueryOptions(), sessionId));
+                results.add(catalogManager.getFile(catalogManager.getFileId(id), this.queryOptions, sessionId));
             }
             return createOkResponse(results);
         } catch (CatalogException e) {
@@ -289,7 +290,7 @@ public class FileWSServer extends OpenCGAWSServer {
         File file = null;
         try {
             int fileId = catalogManager.getFileId(fileIdStr);
-            QueryResult<File> queryResult = catalogManager.getFile(fileId, this.getQueryOptions(), sessionId);
+            QueryResult<File> queryResult = catalogManager.getFile(fileId, this.queryOptions, sessionId);
             file = queryResult.getResult().get(0);
             stream = catalogManager.downloadFile(fileId, sessionId);
 
@@ -435,7 +436,7 @@ public class FileWSServer extends OpenCGAWSServer {
         QueryResult<File> results;
         try {
             int folderId = catalogManager.getFileId(folderIdStr);
-            results = catalogManager.getAllFilesInFolder(folderId, getQueryOptions(), sessionId);
+            results = catalogManager.getAllFilesInFolder(folderId, queryOptions, sessionId);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e.getMessage());
@@ -471,7 +472,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
             }
 
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.getQueryOptions(), sessionId);
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -485,7 +486,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response list(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
         try {
             int fileIdNum = catalogManager.getFileId(fileId);
-            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, this.getQueryOptions(), sessionId);
+            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -500,7 +501,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "outdir", required = false) @DefaultValue("-1") @QueryParam("outdir") String outDirStr) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
-        QueryOptions queryOptions = this.getQueryOptions();
+        QueryOptions queryOptions = this.queryOptions;
         QueryResult<Job> queryResult;
         try {
             int outDirId = catalogManager.getFileId(outDirStr);

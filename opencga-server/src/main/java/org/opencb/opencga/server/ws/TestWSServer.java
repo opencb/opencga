@@ -20,6 +20,7 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -36,7 +37,7 @@ import java.io.IOException;
 public class TestWSServer extends OpenCGAWSServer {
 
     public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest) throws IOException {
+                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 

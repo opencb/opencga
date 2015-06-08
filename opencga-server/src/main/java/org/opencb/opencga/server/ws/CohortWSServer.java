@@ -23,6 +23,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -32,6 +33,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -43,9 +46,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
 
     public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException {
+                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
-//        params = uriInfo.getQueryParameters();
     }
 
     @GET
@@ -103,7 +105,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get cohort information", position = 2)
     public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         try {
-            QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, this.getQueryOptions(), sessionId);
+            QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -117,7 +119,6 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get samples from cohort", position = 3)
     public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         try {
-            QueryOptions queryOptions = this.getQueryOptions();
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
             queryOptions.put("id", cohort.getSamples());
             int studyId = catalogManager.getStudyIdByCohortId(cohortId);
@@ -133,9 +134,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     private QueryResult<Cohort> createCohort(int studyId, String cohortName, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
         List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
-        for (Sample sample : queryResult.getResult()) {
-            sampleIds.add(sample.getId());
-        }
+        sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
         return catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
     }
 

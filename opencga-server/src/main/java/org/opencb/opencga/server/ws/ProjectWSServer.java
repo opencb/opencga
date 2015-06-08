@@ -23,6 +23,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -43,7 +44,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
 
     public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                           @Context HttpServletRequest httpServletRequest) throws IOException {
+                           @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -56,7 +57,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "description", required = true) @QueryParam("description") String description,
                                   @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
         try {
-            QueryResult queryResult = catalogManager.createProject(userId, name, alias, description, organization, this.getQueryOptions(), sessionId);
+            QueryResult queryResult = catalogManager.createProject(userId, name, alias, description, organization, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -73,7 +74,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         for (String projectIdStr : projectIdsStr.split(",")) {
             try {
                 int projectId = catalogManager.getProjectId(projectIdStr);
-                queryResults.add(catalogManager.getProject(projectId, this.getQueryOptions(), sessionId));
+                queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e.getMessage());
@@ -90,7 +91,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : splitedId) {
-                results.add(catalogManager.getAllStudies(Integer.parseInt(id), this.getQueryOptions(), sessionId));
+                results.add(catalogManager.getAllStudies(Integer.parseInt(id), queryOptions, sessionId));
             }
             return createOkResponse(results);
         } catch (CatalogException e) {
