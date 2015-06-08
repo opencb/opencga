@@ -59,6 +59,9 @@ public interface IFileManager extends ResourceManager<Integer, File> {
     QueryResult<File> getParent(int fileId, QueryOptions options, String sessionId)
             throws CatalogException;
 
+    QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId)
+            throws CatalogException;
+
     QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException;
 

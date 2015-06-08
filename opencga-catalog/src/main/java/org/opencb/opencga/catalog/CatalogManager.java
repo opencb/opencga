@@ -548,6 +548,11 @@ public class CatalogManager {
         return fileManager.getParent(fileId, options, sessionId);
     }
 
+    public QueryResult<File> getFileParents(int fileId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return fileManager.getParents(fileId, options, sessionId);
+    }
+
     public QueryResult<File> getFile(int fileId, String sessionId)
             throws CatalogException {
         return getFile(fileId, null, sessionId);

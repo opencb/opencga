@@ -748,6 +748,59 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testGetFileParents1() throws CatalogException {
+        int fileId;
+        QueryResult<File> fileParents;
+
+        fileId = catalogManager.getFileId("user@1000G:phase1:data/test/folder/");
+        fileParents = catalogManager.getFileParents(fileId, null, sessionIdUser);
+
+        assertEquals(4, fileParents.getNumResults());
+        assertEquals("", fileParents.getResult().get(0).getPath());
+        assertEquals("data/", fileParents.getResult().get(1).getPath());
+        assertEquals("data/test/", fileParents.getResult().get(2).getPath());
+        assertEquals("data/test/folder/", fileParents.getResult().get(3).getPath());
+    }
+
+    @Test
+    public void testGetFileParents2() throws CatalogException {
+        int fileId;
+        QueryResult<File> fileParents;
+
+        fileId = catalogManager.getFileId("user@1000G:phase1:data/test/folder/test_1K.txt.gz");
+        fileParents = catalogManager.getFileParents(fileId, null, sessionIdUser);
+
+        assertEquals(4, fileParents.getNumResults());
+        assertEquals("", fileParents.getResult().get(0).getPath());
+        assertEquals("data/", fileParents.getResult().get(1).getPath());
+        assertEquals("data/test/", fileParents.getResult().get(2).getPath());
+        assertEquals("data/test/folder/", fileParents.getResult().get(3).getPath());
+    }
+
+    @Test
+    public void testGetFileParents3() throws CatalogException {
+        int fileId;
+        QueryResult<File> fileParents;
+
+        fileId = catalogManager.getFileId("user@1000G:phase1:data/test/");
+        fileParents = catalogManager.getFileParents(fileId,
+                new QueryOptions("include", "projects.studies.files.path,projects.studies.files.id"),
+                sessionIdUser);
+
+        assertEquals(3, fileParents.getNumResults());
+        assertEquals("", fileParents.getResult().get(0).getPath());
+        assertEquals("data/", fileParents.getResult().get(1).getPath());
+        assertEquals("data/test/", fileParents.getResult().get(2).getPath());
+
+        fileParents.getResult().forEach(f -> {
+            assertNull(f.getName());
+            assertNotNull(f.getPath());
+            assertTrue(f.getId() != 0);
+        });
+
+    }
+
+    @Test
     public void testDeleteFile () throws CatalogException, IOException {
 
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();

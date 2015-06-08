@@ -32,6 +32,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     private static final QueryOptions includeStudyUri = new QueryOptions("include", Arrays.asList("projects.studies.uri"));
 
     protected static Logger logger = LoggerFactory.getLogger(FileManager.class);
+    public static final Comparator<File> rootFirstComparator =
+            (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length()) - (f2.getPath() == null ? 0 : f2.getPath().length());
+    public static final Comparator<File> rootLastComparator =
+            (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length()) - (f1.getPath() == null ? 0 : f1.getPath().length());
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                        CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
@@ -123,22 +127,52 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return true;
         }
-        List<String> paths = new LinkedList<>();
+        List<File> parents = getParents(file, true,
+                new QueryOptions("include", "projects.studies.files.uri")).getResult();
+        for (File folder : parents) {
+            if (folder.getUri() != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId) throws CatalogException {
+        return getParents(read(fileId, null, sessionId).first(), true, options);
+    }
+
+    /**
+     * Return all parent folders from a file.
+     * @param file
+     * @param options
+     * @return
+     * @throws CatalogException
+     */
+    private QueryResult<File> getParents(File file, boolean rootFirst, QueryOptions options) throws CatalogException {
+        String filePath = file.getPath();
+        return getParents(rootFirst, options, filePath, getStudyId(file.getId()));
+    }
+
+    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
         String path = "";
-        for (String f : file.getPath().split("/")) {
+        List<String> paths = new LinkedList<>();
+        paths.add("");  //Add root
+        for (String f : filePath.split("/")) {
             paths.add(path = path + f + "/");
         }
 
         if (!paths.isEmpty()) {
-            for (File folder : fileDBAdaptor.searchFile(
-                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths),
-                    new QueryOptions("include", "projects.studies.files.uri")).getResult()) {
-                if (folder.getUri() != null) {
-                    return true;
-                }
-            }
+            QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
+            query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
+            QueryResult<File> result = fileDBAdaptor.searchFile(
+                    query,
+                    options);
+            result.getResult().sort(rootFirst? rootFirstComparator : rootLastComparator);
+            return result;
+        } else {
+            return new QueryResult<>();
         }
-        return false;
     }
 
     @Override
