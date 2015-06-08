@@ -10,8 +10,9 @@
         <relativePath>..</relativePath>
     </parent>
 
+    <!-- Version must be set to a literal, variables cannot be used in nested modules -->
     <artifactId>opencga-storage</artifactId>
-    <version>${opencga.version}</version>
+    <version>0.5.2</version>
     <packaging>pom</packaging>
 
     <modules>
