@@ -503,7 +503,13 @@ public class CatalogManager {
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString() + "/", parents, options, sessionId);
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, options, sessionId);
+    }
+
+    public QueryResult<File> createFolder(int studyId, Path folderPath, File.Status status, boolean parents, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkPath(folderPath, "folderPath");
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, options, sessionId);
     }
 
     public QueryResult deleteFolder(int folderId, String sessionId)

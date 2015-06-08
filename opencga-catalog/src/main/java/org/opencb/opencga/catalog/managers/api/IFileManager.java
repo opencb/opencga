@@ -53,7 +53,7 @@ public interface IFileManager extends ResourceManager<Integer, File> {
                              Map<String, Object> stats, Map<String, Object> attributes,
                              boolean parents, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<File> createFolder(int studyId, String path, boolean parents, QueryOptions options, String sessionId)
+    QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException;
 
     QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)

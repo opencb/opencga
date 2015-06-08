@@ -227,10 +227,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(int studyId, String path, boolean parents, QueryOptions options, String sessionId)
+    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
-                path, null, null, null, File.Status.READY, 0, -1, null, -1, null, null,
+                path, null, null, null, status, 0, -1, null, -1, null, null,
                 parents, options, sessionId);
     }
 
@@ -252,7 +252,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         ownerId = ParamUtils.defaultString(ownerId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
-        status = ParamUtils.defaultObject(status, File.Status.STAGE);
+        status = type == File.Type.FILE ?
+                ParamUtils.defaultObject(status, File.Status.STAGE) :   //By default, files are STAGED
+                ParamUtils.defaultObject(status, File.Status.READY) ;   //By default, folders are READY
 
         if (diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");

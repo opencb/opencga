@@ -281,7 +281,7 @@ public class CatalogFileUtils {
                 for (File f : result) {
                     logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
                 }
-                throw new CatalogException("Unable to link folder {} to uri {}. Existing files on folder");
+                throw new CatalogException("Unable to link folder " + file.getPath() + " to uri " + externalUri + ". Existing files on folder");
             }
 
             //Set URI to folder. This will mark the directory as "external"

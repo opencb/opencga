@@ -169,6 +169,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         }
 
         studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri));
+        int rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
+        fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri));
 
         userDBAdaptor.updateUserLastActivity(projectOwnerId);
         return result;
