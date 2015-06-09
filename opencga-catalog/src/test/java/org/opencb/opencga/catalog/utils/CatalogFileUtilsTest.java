@@ -35,6 +35,7 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -45,8 +46,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by jacobo on 28/01/15.
@@ -117,7 +117,7 @@ public class CatalogFileUtilsTest {
     }
 
     @Test
-    public void linkFileTest() throws IOException, CatalogException {
+    public void linkStageFileTest() throws IOException, CatalogException {
 
         java.io.File createdFile;
         URI sourceUri;
@@ -128,9 +128,8 @@ public class CatalogFileUtilsTest {
 
         file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
                 "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
-        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+        file = catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
 
-        file = catalogManager.getFile(file.getId(), userSessionId).first();
         fileUri = catalogManager.getFileUri(file);
         assertEquals(sourceUri, fileUri);
         assertTrue(createdFile.exists());
@@ -141,10 +140,19 @@ public class CatalogFileUtilsTest {
         assertEquals(sourceUri, fileUri);
         assertTrue(createdFile.exists());
 
+        /** Relink to new file **/
         createdFile = CatalogManagerTest.createDebugFile();
         sourceUri = createdFile.toURI();
-        catalogFileUtils.link(file, true, sourceUri, true, userSessionId);
+        file = catalogFileUtils.link(file, true, sourceUri, true, userSessionId);
 
+        /** Link a missing file **/
+        assertTrue(createdFile.delete());
+        file = catalogFileUtils.checkFile(file, false, userSessionId);
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
+        file = catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+
+        /** File is ready **/
         createdFile = CatalogManagerTest.createDebugFile();
         sourceUri = createdFile.toURI();
         thrown.expect(CatalogException.class);
@@ -276,6 +284,7 @@ public class CatalogFileUtilsTest {
             assertTrue("File uri: " + fileUri + " should NOT exist", !ioManager.exists(fileUri));
         }
     }
+
     @Test
     public void deleteFoldersTest2() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
@@ -308,7 +317,76 @@ public class CatalogFileUtilsTest {
         }
     }
 
+    @Test
+    public void checkFileTest() throws CatalogException, IOException {
 
+        java.io.File createdFile;
+        URI sourceUri;
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
+        File file;
+        File returnedFile;
+        URI fileUri;
+
+        /** Check STAGE file. Nothing to do **/
+        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertSame("Should not modify the STAGE file, so should return the same file.", file, returnedFile);
+
+
+        /** Check READY and existing file **/
+        catalogFileUtils.upload(sourceUri, file, null, userSessionId, false, false, false, true);
+        fileUri = catalogManager.getFileUri(file);
+        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertSame("Should not modify the READY and existing file, so should return the same file.", file, returnedFile);
+
+
+        /** Check READY and missing file **/
+        assertTrue(Paths.get(fileUri).toFile().delete());
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertNotSame(file, returnedFile);
+        assertEquals(File.Status.MISSING, returnedFile.getStatus());
+
+        /** Check MISSING file still missing **/
+        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertSame("Should not modify the still MISSING file, so should return the same file.", file, returnedFile);
+
+        /** Check MISSING file with found file **/
+        FileOutputStream os = new FileOutputStream(fileUri.getPath());
+        os.write(StringUtils.randomString(1000).getBytes());
+        os.write('\n');
+        os.close();
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertNotSame(file, returnedFile);
+        assertEquals(File.Status.READY, returnedFile.getStatus());
+
+        /** Check TRASHED file with found file **/
+        catalogManager.deleteFile(file.getId(), userSessionId);
+        file = catalogManager.getFile(file.getId(), userSessionId).first();
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertSame(file, returnedFile);
+        assertEquals(File.Status.TRASHED, returnedFile.getStatus());
+
+
+        /** Check TRASHED file with missing file **/
+        catalogManager.deleteFile(file.getId(), userSessionId);
+        fileUri = catalogManager.getFileUri(file);
+        assertTrue(Paths.get(fileUri).toFile().delete());
+
+        returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
+
+        assertNotSame(file, returnedFile);
+        assertEquals(File.Status.DELETED, returnedFile.getStatus());
+    }
 
 
     private File prepareFiles(List<File> folderFiles) throws CatalogException, IOException {
