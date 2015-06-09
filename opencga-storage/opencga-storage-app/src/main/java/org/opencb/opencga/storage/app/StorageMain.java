@@ -43,58 +43,34 @@ public class StorageMain {
             }
         }else {
             CommandExecutor commandExecutor = null;
-            switch (parsedCommand) {
-                case "create-accessions":
-                    if (cliOptionsParser.getCreateAccessionsCommandOption().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+            if(cliOptionsParser.isHelp()) {
+                cliOptionsParser.printUsage();
+            } else {
+                switch (parsedCommand) {
+                    case "create-accessions":
                         commandExecutor = new CreateAccessionsCommandExecutor(cliOptionsParser.getCreateAccessionsCommandOption());
-                    }
-                    break;
-                case "index-alignments":
-                    if (cliOptionsParser.getIndexAlignmentsCommandOptions().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+                        break;
+                    case "index-alignments":
                         commandExecutor = new IndexAlignmentsCommandExecutor(cliOptionsParser.getIndexAlignmentsCommandOptions());
-                    }
-                    break;
-                case "index-variants":
-                    if (cliOptionsParser.getIndexVariantsCommandOptions().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+                        break;
+                    case "index-variants":
                         commandExecutor = new IndexVariantsCommandExecutor(cliOptionsParser.getIndexVariantsCommandOptions());
-                    }
-                    break;
-                case "fetch-alignments":
-                    if (cliOptionsParser.getQueryAlignmentsCommandOptions().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+                        break;
+                    case "fetch-alignments":
                         commandExecutor = new FetchAlignmentsCommandExecutor(cliOptionsParser.getQueryAlignmentsCommandOptions());
-                    }
-                    break;
-                case "fetch-variants":
-                    if (cliOptionsParser.getQueryVariantsCommandOptions().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+                        break;
+                    case "fetch-variants":
                         commandExecutor = new FetchVariantsCommandExecutor(cliOptionsParser.getQueryVariantsCommandOptions());
-                    }
-                    break;
-                case "annotate-variants":
-                    if (cliOptionsParser.getAnnotateVariantsCommandOptions().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+                        break;
+                    case "annotate-variants":
                         commandExecutor = new AnnotateVariantsCommandExecutor(cliOptionsParser.getAnnotateVariantsCommandOptions());
-                    }
-                    break;
-                case "stats-variants":
-                    if (cliOptionsParser.getStatsVariantsCommandOptions().help) {
-                        cliOptionsParser.printUsage();
-                    } else {
+                        break;
+                    case "stats-variants":
                         commandExecutor = new StatsVariantsCommandExecutor(cliOptionsParser.getStatsVariantsCommandOptions());
-                    }
-                    break;
-                default:
-                    break;
+                        break;
+                    default:
+                        break;
+                }
             }
 
             if (commandExecutor != null) {

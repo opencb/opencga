@@ -59,7 +59,7 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
                     : configuration.getDefaultStorageEngineId();
             logger.debug("storageEngine set to '{}'", storageEngine);
 
-            StorageEngineConfiguration mongoDBStorageConfiguration = configuration.getStorageEngine(storageEngine);
+            StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
 
 
 //            StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
@@ -90,17 +90,17 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
             if(indexAlignmentsCommandOptions.params != null) {
 //                params.putAll(indexAlignmentsCommandOptions.params);
-                mongoDBStorageConfiguration.getAlignment().getOptions().putAll(indexAlignmentsCommandOptions.params);
+                storageConfiguration.getAlignment().getOptions().putAll(indexAlignmentsCommandOptions.params);
             }
 
             if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
 //                params.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
-                mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
+                storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
             }
 
             if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
 //                params.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
-                mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
+                storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
             }
 //            else {
 //                params.put(AlignmentStorageManager.DB_NAME, configuration.getStorageEngine(storageEngine)
@@ -113,11 +113,11 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 //            params.put(AlignmentStorageManager.COPY_FILE, false);
 //            params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.PLAIN, false);
-            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
-            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
-            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.COPY_FILE, false);
-            mongoDBStorageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.ENCRYPT, "null");
+            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.PLAIN, false);
+            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
+            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.COPY_FILE, false);
+            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.ENCRYPT, "null");
 
             StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
             AlignmentStorageManager alignmentStorageManager;

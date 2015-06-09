@@ -82,6 +82,18 @@ public class CliOptionsParser {
         return (jcommander.getParsedCommand() != null) ? jcommander.getParsedCommand(): "";
     }
 
+    public boolean isHelp() {
+        String parsedCommand = jcommander.getParsedCommand();
+        if (parsedCommand != null) {
+            JCommander jCommander = jcommander.getCommands().get(parsedCommand);
+            List<Object> objects = jCommander.getObjects();
+            if (!objects.isEmpty() && objects.get(0) instanceof CommonCommandOptions) {
+                return ((CommonCommandOptions) objects.get(0)).help;
+            }
+        }
+        return getCommonCommandOptions().help;
+    }
+
     public void printUsage(){
         if(getCommand().isEmpty()) {
             jcommander.usage();
@@ -233,6 +245,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
         public boolean compressGenotypes = false;
 
+        @Deprecated
         @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
         public boolean includeSrc = false;
 

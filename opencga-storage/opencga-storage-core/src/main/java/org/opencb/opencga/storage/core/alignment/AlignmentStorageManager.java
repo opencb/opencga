@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -69,7 +70,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
     @Deprecated
     protected final Properties properties = new Properties();
-//    protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
+    private StorageEtlConfiguration storageEtlConfiguration;
+    //    protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
 
     public AlignmentStorageManager() {
         this(null);
@@ -157,12 +159,14 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         // Only binaries and sorted BAM files are accepted at this point.
         checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());
 
-        boolean plain = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(PLAIN, false);
-        boolean createBai = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(CREATE_BAI, true);
-        boolean includeCoverage = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(INCLUDE_COVERAGE, false);
-        boolean writeJsonAlignments = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getBoolean(WRITE_ALIGNMENTS, false);
+        storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
 
-        int regionSize = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getInt(REGION_SIZE,
+        boolean plain = storageEtlConfiguration.getOptions().getBoolean(PLAIN, false);
+        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(CREATE_BAI, true);
+        boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(INCLUDE_COVERAGE, false);
+        boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(WRITE_ALIGNMENTS, false);
+
+        int regionSize = storageEtlConfiguration.getOptions().getInt(REGION_SIZE,
 //                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
                 configuration.getStorageEngine().getOptions().getInt("transform.region_size", 200000));
 
@@ -170,7 +174,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         String defaultFileAlias = StringUtils.substringBeforeLast(input.getFileName().toString(), ".");
 //        System.out.println(defaultFileAlias + "\n" + defaultFileAlias2);
 
-        String fileAlias = configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getString(FILE_ALIAS, defaultFileAlias);
+        String fileAlias = storageEtlConfiguration.getOptions().getString(FILE_ALIAS, defaultFileAlias);
 
 //        String encrypt = params.getString(ENCRYPT, "null");
 //        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
@@ -212,8 +216,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         // We set the different coverage size regions
         if(includeCoverage) {
             AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
-            List<String> meanCoverageSizeList = configuration.getStorageEngine(storageEngineId)
-                    .getAlignment().getOptions().getAsStringList(MEAN_COVERAGE_SIZE_LIST);
+            List<String> meanCoverageSizeList = storageEtlConfiguration.getOptions().getAsStringList(MEAN_COVERAGE_SIZE_LIST);
             meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
             tasks.add(coverageCalculatorTask);
         }
