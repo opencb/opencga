@@ -150,18 +150,12 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public boolean isExternal(File file) throws CatalogException {
         ParamUtils.checkObj(file, "File");
+        return file.getUri() != null;
+    }
 
-        if (file.getUri() != null) {
-            return true;
-        }
-//        List<File> parents = getParents(file, true,
-//                new QueryOptions("include", "projects.studies.files.uri")).getResult();
-//        for (File folder : parents) {
-//            if (folder.getUri() != null) {
-//                return true;
-//            }
-//        }
-        return false;
+    public boolean isRootFolder(File file) throws CatalogException {
+        ParamUtils.checkObj(file, "File");
+        return file.getPath().isEmpty();
     }
 
     @Override
@@ -445,6 +439,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         File file = read(fileId, null, sessionId).first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not modify root folder");
+        }
+
         switch (authorizationManager.getUserRole(userId)) {
             case ADMIN:
                 logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
@@ -509,6 +508,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
         File file = fileDBAdaptor.getFile(fileId, null).first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not delete root folder");
+        }
+
         QueryResult<File> result = checkCanDeleteFile(file, userId);
         if (result != null) {
             return result;
@@ -591,6 +595,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw CatalogAuthorizationException.cantModify(userId, "File", fileId, null);
         }
         File file = fileDBAdaptor.getFile(fileId, null).first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not rename root folder");
+        }
 
         String oldPath = file.getPath();
         Path parent = Paths.get(oldPath).getParent();
