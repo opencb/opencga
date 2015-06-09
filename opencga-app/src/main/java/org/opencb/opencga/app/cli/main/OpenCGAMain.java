@@ -429,15 +429,16 @@ public class OpenCGAMain {
                         int studyId = catalogManager.getStudyId(c.studyId);
                         String path = c.path.isEmpty()? inputFile.getFileName().toString() : Paths.get(c.path, inputFile.getFileName().toString()).toString();
                         File file;
+                        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
-                            file = catalogManager.createFolder(studyId, Paths.get(path), File.Status.STAGE, c.parents, null, sessionId).first();
+                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.calculateChecksum, inputUri, false, false, sessionId);
+                            new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
                             file = catalogManager.createFile(studyId, null, null,
                                     path, c.description, c.parents, -1, sessionId).first();
+                            file = catalogFileUtils.link(file, c.calculateChecksum, inputUri, false, false, sessionId);
+                            file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
                         }
-                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, inputUri, false, sessionId);
-                        file = catalogManager.getFile(file.getId(), c.cOpt.getQueryOptions(), sessionId).first();
-                        file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
 
                         System.out.println(createOutput(c.cOpt, file, null));
 
@@ -456,7 +457,7 @@ public class OpenCGAMain {
                         int fileId = catalogManager.getFileId(c.id);
                         File file = catalogManager.getFile(fileId, sessionId).first();
 
-                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, true, sessionId);
+                        new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, true, sessionId);
                         file = catalogManager.getFile(file.getId(), c.cOpt.getQueryOptions(), sessionId).first();
                         file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, c.cOpt.getQueryOptions(), sessionId, false);
 
@@ -473,9 +474,11 @@ public class OpenCGAMain {
 
                         List<File> files;
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
                         if (file.getType() == File.Type.FILE) {
-                            File file1 = fileMetadataReader.setMetadataInformation(file, null, queryOptions, sessionId, false);
+                            File file1 = catalogFileUtils.checkFile(file, false, sessionId);
+                            file1 = fileMetadataReader.setMetadataInformation(file1, null, queryOptions, sessionId, false);
                             if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                                 files = Collections.emptyList();
                             } else {

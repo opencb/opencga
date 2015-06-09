@@ -128,7 +128,7 @@ public class CatalogFileUtilsTest {
 
         file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
                 "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
-        file = catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
 
         fileUri = catalogManager.getFileUri(file);
         assertEquals(sourceUri, fileUri);
@@ -143,20 +143,20 @@ public class CatalogFileUtilsTest {
         /** Relink to new file **/
         createdFile = CatalogManagerTest.createDebugFile();
         sourceUri = createdFile.toURI();
-        file = catalogFileUtils.link(file, true, sourceUri, true, userSessionId);
+        file = catalogFileUtils.link(file, true, sourceUri, true, true, userSessionId);
 
         /** Link a missing file **/
         assertTrue(createdFile.delete());
         file = catalogFileUtils.checkFile(file, false, userSessionId);
         createdFile = CatalogManagerTest.createDebugFile();
         sourceUri = createdFile.toURI();
-        file = catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
 
         /** File is ready **/
         createdFile = CatalogManagerTest.createDebugFile();
         sourceUri = createdFile.toURI();
         thrown.expect(CatalogException.class);
-        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+        catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
     }
 
     @Test
@@ -180,7 +180,7 @@ public class CatalogFileUtilsTest {
         //Create folder & link
         File folder = catalogManager.createFile(studyId, File.Type.FOLDER, null, null,
                 "test", null, null, null, File.Status.STAGE, 0, -1, null, -1, null, null, true, null, userSessionId).first();
-        folder = catalogFileUtils.link(folder, true, sourceUri, false, userSessionId);
+        folder = catalogFileUtils.link(folder, true, sourceUri, true, false, userSessionId);
 
         fileUri = catalogManager.getFileUri(folder);
         assertEquals(sourceUri, fileUri);

@@ -51,12 +51,7 @@ public class FileScanner {
      * @return found and lost files
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
-        URI studyUri = catalogManager.getStudyUri(study.getId());
-
-        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList(
-                "projects.studies.files.id",
-                "projects.studies.files.status",
-                "projects.studies.files.path"));
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(CatalogFileDBAdaptor.FileFilterOption.status.toString(), Arrays.asList(
                 File.Status.READY, File.Status.MISSING, File.Status.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(),
@@ -88,6 +83,7 @@ public class FileScanner {
 //        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
         QueryOptions query = new QueryOptions();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
+        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();
@@ -168,6 +164,9 @@ public class FileScanner {
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, int jobId, String sessionId)
             throws IOException, CatalogException {
+        if (directoryToScan == null) {
+            directoryToScan = catalogManager.getFileUri(directory);
+        }
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
         }
