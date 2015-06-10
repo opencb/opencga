@@ -58,9 +58,9 @@ public class FetchAlignmentsCommandExecutor extends CommandExecutor {
              * Open connection
              */
             AlignmentStorageManager alignmentStorageManager = new StorageManagerFactory(configuration).getAlignmentStorageManager(queryAlignmentsCommandOptions.backend);
-            if (queryAlignmentsCommandOptions.credentials != null && !queryAlignmentsCommandOptions.credentials.isEmpty()) {
-                alignmentStorageManager.addConfigUri(new URI(null, queryAlignmentsCommandOptions.credentials, null));
-            }
+//            if (queryAlignmentsCommandOptions.credentials != null && !queryAlignmentsCommandOptions.credentials.isEmpty()) {
+//                alignmentStorageManager.addConfigUri(new URI(null, queryAlignmentsCommandOptions.credentials, null));
+//            }
 
             ObjectMap params = new ObjectMap();
             AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.dbName);
@@ -176,8 +176,6 @@ public class FetchAlignmentsCommandExecutor extends CommandExecutor {
 //                System.out.println(dbAdaptor.getAllAlignments(options));
             }
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
             e.printStackTrace();
         } catch (StorageManagerException e) {
             e.printStackTrace();

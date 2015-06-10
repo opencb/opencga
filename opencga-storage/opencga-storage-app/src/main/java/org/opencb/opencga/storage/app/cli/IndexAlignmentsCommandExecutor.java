@@ -62,17 +62,6 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
             StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
 
 
-//            StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
-//            AlignmentStorageManager alignmentStorageManager;
-//            if (storageEngine == null || storageEngine.isEmpty()) {
-//                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-//            } else {
-//                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
-//            }
-//            if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
-//                alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
-//            }
-
             URI input = UriUtils.createUri(indexAlignmentsCommandOptions.input);
             URI outdir;
             if (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty()) {
@@ -85,39 +74,27 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 //            assertDirectoryExists(outdir);
             FileUtils.checkDirectory(Paths.get(outdir));
 
-            @Deprecated
-            ObjectMap params = new ObjectMap();
-
+            ObjectMap options = storageConfiguration.getAlignment().getOptions();
             if(indexAlignmentsCommandOptions.params != null) {
-//                params.putAll(indexAlignmentsCommandOptions.params);
-                storageConfiguration.getAlignment().getOptions().putAll(indexAlignmentsCommandOptions.params);
+                options.putAll(indexAlignmentsCommandOptions.params);
             }
 
             if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-//                params.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
-                storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
+                options.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
             }
 
             if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
-//                params.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
-                storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
+                options.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
             }
-//            else {
-//                params.put(AlignmentStorageManager.DB_NAME, configuration.getStorageEngine(storageEngine)
-//                        .getAlignment().getOptions().get("database.name"));
-//            }
 
-//            params.put(AlignmentStorageManager.PLAIN, false);
-//            params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
-//            params.put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
-//            params.put(AlignmentStorageManager.COPY_FILE, false);
-//            params.put(AlignmentStorageManager.ENCRYPT, "null");
 
-            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.PLAIN, false);
-            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
-            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
-            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.COPY_FILE, false);
-            storageConfiguration.getAlignment().getOptions().put(AlignmentStorageManager.ENCRYPT, "null");
+            options.put(AlignmentStorageManager.PLAIN, false);
+            options.put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+            if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
+                options.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
+            }
+            options.put(AlignmentStorageManager.COPY_FILE, false);
+            options.put(AlignmentStorageManager.ENCRYPT, "null");
 
             StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
             AlignmentStorageManager alignmentStorageManager;
@@ -126,9 +103,6 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
             } else {
                 alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
             }
-//            if(indexAlignmentsCommandOptions.credentials != null && !indexAlignmentsCommandOptions.credentials.isEmpty()) {
-//                alignmentStorageManager.addConfigUri(new URI(null, indexAlignmentsCommandOptions.credentials, null));
-//            }
 
 
             boolean extract, transform, load;

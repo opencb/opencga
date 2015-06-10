@@ -68,6 +68,7 @@ public class AnalysisFileIndexer {
     public static final String PARAMETERS = "parameters";
     public static final String TRANSFORM = "transform";
     public static final String LOAD = "load";
+    public static final String LOG_LEVEL = "logLevel";
 
 
     //Other
@@ -328,17 +329,20 @@ public class AnalysisFileIndexer {
 
         if(originalFile.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
-            commandLine = new StringBuilder(opencgaStorageBin)
-                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
+            StringBuilder sb = new StringBuilder(opencgaStorageBin)
                     .append(" index-alignments ")
+                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
                     .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --calculate-coverage ")
                     .append(" --mean-coverage ").append(chunkSize)
-                    .append(" --outdir ").append(outDirUri)
+                    .append(" --outdir ").append(outDirUri);
 //                    .append(" --credentials ")
-                    .toString();
+            if (options.containsKey(LOG_LEVEL)) {
+                sb.append(" --log-level ").append(options.getString(LOG_LEVEL));
+            }
+            commandLine = sb.toString();
 
             indexAttributes.put("chunkSize", chunkSize);
 
@@ -352,8 +356,8 @@ public class AnalysisFileIndexer {
             }
 
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
-                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" index-variants ")
+                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
                     .append(" --study-name \'").append(study.getName()).append("\'")
                     .append(" --study-id ").append(study.getId())
@@ -377,6 +381,9 @@ public class AnalysisFileIndexer {
             }
             if (options.getBoolean(LOAD, false)) {
                 sb.append(" --load ");
+            }
+            if (options.containsKey(LOG_LEVEL)) {
+                sb.append(" --log-level ").append(options.getString(LOG_LEVEL));
             }
             commandLine = sb.toString();
 

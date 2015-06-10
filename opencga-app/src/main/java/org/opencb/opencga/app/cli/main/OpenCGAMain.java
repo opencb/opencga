@@ -544,6 +544,8 @@ public class OpenCGAMain {
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        System.out.println("c.cOpt.logLevel = " + c.cOpt.logLevel);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
@@ -565,6 +567,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
@@ -584,6 +587,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
 
                         break;

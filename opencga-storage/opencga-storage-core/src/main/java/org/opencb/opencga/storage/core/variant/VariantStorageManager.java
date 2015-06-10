@@ -95,17 +95,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
 //    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_STATS          = "OPENCGA.STORAGE.VARIANT.INCLUDE_STATS";
 
-//    @Deprecated protected Properties properties;
     protected static Logger logger;
 
     public VariantStorageManager() {
-//        this.properties = new Properties();
         logger = LoggerFactory.getLogger(VariantStorageManager.class);
     }
-
-//    public VariantStorageManager() {
-//        this(null);
-//    }
 
     public VariantStorageManager(StorageConfiguration configuration) {
         super(configuration);
@@ -115,21 +109,6 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public VariantStorageManager(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
         logger = LoggerFactory.getLogger(VariantStorageManager.class);
-    }
-
-    @Override
-    @Deprecated
-    public void addConfigUri(URI configUri){
-        logger.warn("Ignoring Config URI {} ", configUri);
-//        if(configUri != null
-//                && Paths.get(configUri.getPath()).toFile().exists()
-//                && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
-//            try {
-//                properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
     @Override
@@ -174,11 +153,6 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         Path input = Paths.get(inputUri.getPath());
         Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
-
-
-//        boolean includeSamples = params.getBoolean(INCLUDE_GENOTYPES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
-//        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
-//        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
 
         boolean includeSamples = options.getBoolean(INCLUDE_GENOTYPES, false);
         boolean includeStats = options.getBoolean(INCLUDE_STATS, false);

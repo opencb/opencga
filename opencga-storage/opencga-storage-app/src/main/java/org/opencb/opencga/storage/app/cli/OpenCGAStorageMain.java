@@ -156,9 +156,9 @@ public class OpenCGAStorageMain {
                  * Open connection
                  */
                 VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(c.backend);
-                if (c.credentials != null && !c.credentials.isEmpty()) {
-                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-                }
+//                if (c.credentials != null && !c.credentials.isEmpty()) {
+//                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//                }
 
                 ObjectMap params = new ObjectMap();
                 VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
@@ -288,9 +288,9 @@ public class OpenCGAStorageMain {
                  * Open connection
                  */
                 AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager(c.backend);
-                if (c.credentials != null && !c.credentials.isEmpty()) {
-                    alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
-                }
+//                if (c.credentials != null && !c.credentials.isEmpty()) {
+//                    alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//                }
 
                 ObjectMap params = new ObjectMap();
                 AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName);
@@ -453,9 +453,9 @@ public class OpenCGAStorageMain {
             alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
         }
         URI input = new URI(null, c.input, null);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
 
         URI outdir;
         if (c.outdir != null && !c.outdir.isEmpty()) {
@@ -523,9 +523,9 @@ public class OpenCGAStorageMain {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
 
         URI variantsUri = new URI(null, c.input, null);
         URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? new URI(null, c.pedigree, null) : null;
@@ -656,9 +656,9 @@ public class OpenCGAStorageMain {
          * Create DBAdaptor
          */
         VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
         ObjectMap params = new ObjectMap();
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 
@@ -774,9 +774,9 @@ public class OpenCGAStorageMain {
          * Create DBAdaptor
          */
         VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 //        dbAdaptor.setConstantSamples(Integer.toString(c.fileId));    // TODO jmmut: change to studyId when we remove fileId
         StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(queryOptions);

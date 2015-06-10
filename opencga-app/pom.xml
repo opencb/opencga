@@ -177,7 +177,7 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
+                            <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
                             <name>${app.name}-storage.sh</name>
                             <platforms>
                                 <platform>unix</platform>
@@ -240,6 +240,7 @@
                                     <arg value="-r"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/bin"/>
+                                    <arg value="${build.dir}/examples"/>
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/tools"/>
                                     <arg value="${installation.dir}"/>

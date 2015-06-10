@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,10 +132,11 @@ public class StorageConfiguration {
      */
     public static StorageConfiguration findAndLoad() throws IOException {
         String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-        if (appHome != null && Files.exists(Paths.get(appHome + "/storage-configuration.yml"))) {
-            logger.debug("Loading configuration from '{}'", appHome + "/storage-configuration.yml");
+        Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
+        if (appHome != null && Files.exists(path)) {
+            logger.debug("Loading configuration from '{}'", appHome + "/conf/storage-configuration.yml");
             return StorageConfiguration
-                    .load(new FileInputStream(new File(appHome + "/storage-configuration.yml")));
+                    .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
         } else {
             logger.debug("Loading configuration from '{}'",
                     StorageConfiguration.class.getClassLoader()

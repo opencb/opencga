@@ -68,9 +68,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
              * Open connection
              */
             VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
-            if (queryVariantsCommandOptions.credentials != null && !queryVariantsCommandOptions.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(new URI(null, queryVariantsCommandOptions.credentials, null));
-            }
+//            if (queryVariantsCommandOptions.credentials != null && !queryVariantsCommandOptions.credentials.isEmpty()) {
+//                variantStorageManager.addConfigUri(new URI(null, queryVariantsCommandOptions.credentials, null));
+//            }
 
             ObjectMap params = new ObjectMap();
             VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
@@ -193,8 +193,6 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
 
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
             e.printStackTrace();
         } catch (StorageManagerException e) {
             e.printStackTrace();

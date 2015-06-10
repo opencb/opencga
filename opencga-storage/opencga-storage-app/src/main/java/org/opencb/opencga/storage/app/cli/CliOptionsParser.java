@@ -218,11 +218,11 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
 
-        @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing [true]")
+        @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
         public boolean calculateCoverage = true;
 
         @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
-        public List<String> meanCoverage = Arrays.asList("200", "10000");
+        public List<String> meanCoverage;
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
@@ -292,6 +292,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
 
+        @Deprecated
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         public String credentials;
 
@@ -391,6 +392,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
 
+        @Deprecated
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         public String credentials;
 
@@ -443,6 +445,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
 
+        @Deprecated
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         public String credentials;
 

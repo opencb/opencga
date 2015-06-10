@@ -65,16 +65,6 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     }
 
     @Override
-    public void addConfigUri(URI configUri) {
-        try {
-            properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        configUris.add(configUri);
-    }
-
-    @Override
     public void setConfiguration(StorageConfiguration configuration, String s) {
 
     }

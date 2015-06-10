@@ -54,9 +54,10 @@ import java.util.Properties;
  */
 public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
 
-    public static final String MEAN_COVERAGE_SIZE_LIST = "meanCoverageSizeList";
+    public static final String MEAN_COVERAGE_SIZE_LIST = "mean_coverage_size_list";
     public static final String PLAIN = "plain";
-    public static final String REGION_SIZE = "regionSize";
+    public static final String TRANSFORM_REGION_SIZE = "transform.region_size";
+    public static final String TRANSFORM_COVERAGE_CHUNK_SIZE = "transform.coverage_chunk_size";
     public static final String STUDY = "study";
     public static final String FILE_ID = "fileId";
     public static final String FILE_ALIAS = "fileAlias";
@@ -65,12 +66,9 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public static final String CREATE_BAI = "createBai";
     public static final String ENCRYPT = "encrypt";
     public static final String COPY_FILE = "copy";
-    public static final String DB_NAME = "dbName";
+    public static final String DB_NAME = "database.name";
 
-    @Deprecated
-    protected final Properties properties = new Properties();
     private StorageEtlConfiguration storageEtlConfiguration;
-    //    protected Logger logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
 
     public AlignmentStorageManager() {
         this(null);
@@ -85,23 +83,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         super(storageEngineId, configuration);
         logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
     }
-
-    @Override
-    public void addConfigUri(URI configUri){
-        if(configUri != null
-                && Paths.get(configUri.getPath()).toFile().exists()
-                && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
-            try {
-                properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-    }
-
-//    public Properties getProperties() {
-//        return properties;
-//    }
 
     @Override
     public URI extract(URI input, URI ouput) {
@@ -134,7 +115,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      *  Calculate the meanCoverage                  : <outputPath>/<FILE_ALIAS>.bam.mean-coverage.json[.gz]
      *
      *
-     * @param params        Hash for extra params. FILE_ID, ENCRYPT, PLAIN, REGION_SIZE, MEAN_COVERAGE_SIZE_LIST
      * @param inputUri      Sorted bam file
      * @param pedigree      Not used
      * @param outputUri     Output path where files are created
@@ -165,20 +145,16 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(INCLUDE_COVERAGE, false);
         boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(WRITE_ALIGNMENTS, false);
 
-        int regionSize = storageEtlConfiguration.getOptions().getInt(REGION_SIZE,
-//                Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE", "200000")));
-                configuration.getStorageEngine().getOptions().getInt("transform.region_size", 200000));
+        int regionSize = storageEtlConfiguration.getOptions().getInt(TRANSFORM_REGION_SIZE, 200000);
 
 //        String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
         String defaultFileAlias = StringUtils.substringBeforeLast(input.getFileName().toString(), ".");
-//        System.out.println(defaultFileAlias + "\n" + defaultFileAlias2);
 
         String fileAlias = storageEtlConfiguration.getOptions().getString(FILE_ALIAS, defaultFileAlias);
 
 //        String encrypt = params.getString(ENCRYPT, "null");
 //        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
 //        String fileName = inputPath.getFileName().toString();
-//        Path sqliteSequenceDBPath = Paths.get("/media/Nusado/jacobo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
 
         //1 Encrypt
         //encrypt(encrypt, bamFile, fileId, output, copy);
@@ -232,8 +208,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
-//                    Integer.parseInt(properties.getProperty("OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE", "1000")));
-                    configuration.getStorageEngine().getOptions().getInt("transform.coverage_chunk_size", 1000));
+                    storageEtlConfiguration.getOptions().getInt(TRANSFORM_COVERAGE_CHUNK_SIZE, 1000));
             writers.add(alignmentCoverageJsonDataWriter);
             if(outputFile == null) {
                 outputFile = alignmentCoverageJsonDataWriter.getCoverageFilename();

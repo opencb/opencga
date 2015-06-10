@@ -94,14 +94,14 @@
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
-                            <name>${app.name}.sh</name>
+                            <name>${app.name}-old.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
                         </program>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
-                            <name>opencga-storage2.sh</name>
+                            <name>${app.name}.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
