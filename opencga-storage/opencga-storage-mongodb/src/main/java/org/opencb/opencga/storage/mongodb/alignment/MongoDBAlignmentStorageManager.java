@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     /**
-     * This field value must be the same that the one at configuration.yml
+     * This field value must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 

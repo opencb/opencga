@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -105,27 +106,15 @@ public abstract class CommandExecutor {
 
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses
-     * the configuration from installation directory, if not exists then loads JAR configuration.json
-     * @throws URISyntaxException
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml
      * @throws IOException
      */
-    public void loadOpenCGAStorageConfiguration() throws URISyntaxException, IOException {
+    public void loadOpenCGAStorageConfiguration() throws IOException {
         if(this.configFile != null) {
             logger.debug("Loading configuration from '{}'", this.configFile);
             this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
         }else {
-            if(this.appHome != null && Files.exists(Paths.get(this.appHome + "/configuration.yml"))) {
-                logger.debug("Loading configuration from '{}'", this.appHome+"/configuration.yml");
-                this.configuration = StorageConfiguration
-                        .load(new FileInputStream(new File(this.appHome + "/configuration.yml")));
-            }else {
-                logger.debug("Loading configuration from '{}'",
-                        StorageConfiguration.class.getClassLoader()
-                                .getResourceAsStream("configuration.yml")
-                                .toString());
-                this.configuration = StorageConfiguration
-                        .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
-            }
+            this.configuration = StorageConfiguration.findAndLoad();
         }
     }
 

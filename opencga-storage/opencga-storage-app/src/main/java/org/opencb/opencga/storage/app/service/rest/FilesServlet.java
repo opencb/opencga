@@ -84,7 +84,7 @@ public class FilesServlet extends DaemonServlet {
 
                     break;
                 case "bam":
-                    AlignmentStorageManager sm = StorageManagerFactory.getAlignmentStorageManager(backend);
+                    AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(backend);
                     ObjectMap params = new ObjectMap();
                     AlignmentDBAdaptor dbAdaptor = sm.getDBAdaptor(dbName);
 

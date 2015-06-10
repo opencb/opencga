@@ -67,7 +67,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             /**
              * Open connection
              */
-            VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(queryVariantsCommandOptions.backend);
+            VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
             if (queryVariantsCommandOptions.credentials != null && !queryVariantsCommandOptions.credentials.isEmpty()) {
                 variantStorageManager.addConfigUri(new URI(null, queryVariantsCommandOptions.credentials, null));
             }

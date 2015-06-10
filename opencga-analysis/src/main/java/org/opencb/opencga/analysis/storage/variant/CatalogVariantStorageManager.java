@@ -149,7 +149,7 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
         try {
             QueryResult<File> file = getCatalogManager().getFile(params.getInt("fileId"), params.getString("sessionId"));
             String storageEngine = file.getResult().get(0).getAttributes().get("storageEngine").toString();
-            return StorageManagerFactory.getVariantStorageManager(storageEngine);
+            return StorageManagerFactory.get().getVariantStorageManager(storageEngine);
         } catch (Exception e) {
             throw new StorageManagerException("Can't get StorageEngine", e);
         }

@@ -149,8 +149,9 @@
                                     <arg value="${build.dir}/bin/${app.name}.sh"/>
                                     <arg value="${build.dir}/bin/${service.name}.sh"/>
                                 </exec>
+                                <echo>Coping configuration file</echo>
                                 <exec executable="cp">
-                                    <arg value="${pom.basedir}/../opencga-storage-core/target/classes/configuration.yml"/>
+                                    <arg value="${pom.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
                                     <arg value="${build.dir}/conf/"/>
                                 </exec>
                             </target>

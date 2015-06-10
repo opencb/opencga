@@ -773,7 +773,7 @@ public class OpenCGAMain {
     private Map<File.Bioformat, DataStore> parseBioformatDataStoreMap(OptionsParser.StudyCommands.CreateCommand c) throws Exception {
         Map<File.Bioformat, DataStore> dataStoreMap;
         dataStoreMap = new HashMap<>();
-        HashSet<String> storageEnginesSet = new HashSet<>(Arrays.asList(StorageManagerFactory.getDefaultStorageManagerNames()));
+        HashSet<String> storageEnginesSet = new HashSet<>(StorageManagerFactory.get().getDefaultStorageManagerNames());
         if (c.datastores != null) {
             for (String datastore : c.datastores) {
                 logger.debug("Parsing datastore {} ", datastore);

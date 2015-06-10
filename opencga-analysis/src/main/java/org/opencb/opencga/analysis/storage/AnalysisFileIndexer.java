@@ -30,6 +30,7 @@ import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -293,7 +294,7 @@ public class AnalysisFileIndexer {
             } else { //get default datastore
                 String userId = catalogManager.getUserIdByStudyId(studyId); //Must use the UserByStudyId instead of the file owner.
                 String alias = project.getAlias();
-                dataStore = new DataStore(StorageManagerFactory.getDefaultStorageManagerName(), Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias);
+                dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias);
             }
         }
         return dataStore;

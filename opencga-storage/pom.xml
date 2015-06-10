@@ -30,6 +30,10 @@
     <version>0.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <properties>
+        <storage.configuration.file>storage-configuration.yml</storage.configuration.file>
+    </properties>
+
     <modules>
         <module>opencga-storage-app</module>
         <module>opencga-storage-core</module>

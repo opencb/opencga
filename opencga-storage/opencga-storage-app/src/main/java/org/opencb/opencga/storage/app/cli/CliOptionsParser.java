@@ -139,7 +139,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-C", "--conf" }, description = "Properties path")
         public String configFile;
 
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in configuration.yml")
+        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in storage-configuration.yml")
         public String storageEngine;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb.compression=snappy", hidden = false)

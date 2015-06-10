@@ -77,7 +77,7 @@ public class StorageMain {
                 try {
                     commandExecutor.loadOpenCGAStorageConfiguration();
                     commandExecutor.execute();
-                } catch (IOException |URISyntaxException ex) {
+                } catch (IOException ex) {
                     commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
                 }
             }

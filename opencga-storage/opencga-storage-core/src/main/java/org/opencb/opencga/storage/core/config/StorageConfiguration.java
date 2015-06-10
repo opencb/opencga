@@ -18,8 +18,12 @@ package org.opencb.opencga.storage.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +65,7 @@ public class StorageConfiguration {
 //            #OPENCGA.STORAGE.MONGODB.DB.USER         =
 //            #OPENCGA.STORAGE.MONGODB.DB.PASSWORD     =
 
+    protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
 
     private String defaultStorageEngineId;
@@ -117,6 +122,27 @@ public class StorageConfiguration {
 //            }
         }
         return storageConfiguration;
+    }
+
+    /**
+     * This method attempts to find and load the configuration from installation directory,
+     * if not exists then loads JAR storage-configuration.yml
+     * @throws IOException
+     */
+    public static StorageConfiguration findAndLoad() throws IOException {
+        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
+        if (appHome != null && Files.exists(Paths.get(appHome + "/storage-configuration.yml"))) {
+            logger.debug("Loading configuration from '{}'", appHome + "/storage-configuration.yml");
+            return StorageConfiguration
+                    .load(new FileInputStream(new File(appHome + "/storage-configuration.yml")));
+        } else {
+            logger.debug("Loading configuration from '{}'",
+                    StorageConfiguration.class.getClassLoader()
+                            .getResourceAsStream("storage-configuration.yml")
+                            .toString());
+            return StorageConfiguration
+                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        }
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {

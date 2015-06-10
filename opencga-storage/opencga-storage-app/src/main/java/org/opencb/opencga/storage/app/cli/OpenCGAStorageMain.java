@@ -155,7 +155,7 @@ public class OpenCGAStorageMain {
                 /**
                  * Open connection
                  */
-                VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
+                VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(c.backend);
                 if (c.credentials != null && !c.credentials.isEmpty()) {
                     variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
                 }
@@ -287,7 +287,7 @@ public class OpenCGAStorageMain {
                 /**
                  * Open connection
                  */
-                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
+                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager(c.backend);
                 if (c.credentials != null && !c.credentials.isEmpty()) {
                     alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
                 }
@@ -448,9 +448,9 @@ public class OpenCGAStorageMain {
         AlignmentStorageManager alignmentStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         if (storageEngine == null || storageEngine.isEmpty()) {
-            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
+            alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager();
         } else {
-            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
+            alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
         }
         URI input = new URI(null, c.input, null);
         if(c.credentials != null && !c.credentials.isEmpty()) {
@@ -522,7 +522,7 @@ public class OpenCGAStorageMain {
             throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
-        variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
+        variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(storageEngine);
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
@@ -655,7 +655,7 @@ public class OpenCGAStorageMain {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
@@ -773,7 +773,7 @@ public class OpenCGAStorageMain {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }

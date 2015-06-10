@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     /**
-     * This field value must be the same that the one at configuration.yml
+     * This field value must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 

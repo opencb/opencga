@@ -59,7 +59,7 @@ public class VariantsWSServer extends DaemonServlet {
 
         try {
 //            CatalogVariantDBAdaptor variants = new CatalogVariantDBAdaptor(OpenCGAStorageService.getInstance().getCatalogManager(), fileId, sessionId);
-            VariantDBAdaptor variants = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+            VariantDBAdaptor variants = StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 
             for (String acceptedValue : VariantDBAdaptor.QueryParams.acceptedValues) {
                 addQueryOption(acceptedValue);

@@ -53,15 +53,15 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     public CatalogVariantDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         this.catalogManager = catalogManager;
-        this.dbAdaptor = buildBAdaptor(catalogManager, fileId, sessionId);
+        this.dbAdaptor = buildDBAdaptor(catalogManager, fileId, sessionId);
     }
 
-    private static VariantDBAdaptor buildBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageManagerException {
+    private static VariantDBAdaptor buildDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageManagerException {
         int id = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
         String storageEngine = file.getAttributes().get("storageEngine").toString();
-        return StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+        return StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
     }
 
     @Override

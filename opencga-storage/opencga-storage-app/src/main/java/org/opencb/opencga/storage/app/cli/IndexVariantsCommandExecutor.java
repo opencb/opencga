@@ -56,7 +56,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
         try {
             /** Get VariantStorageManager **/
             // We need to find out the Storage Engine Id to be used
-            // If not storage engine is passed then the default is taken from configuration.yml file
+            // If not storage engine is passed then the default is taken from storage-configuration.yml file
             String storageEngine = (indexVariantsCommandOptions.storageEngine != null && !indexVariantsCommandOptions.storageEngine.isEmpty())
                     ? indexVariantsCommandOptions.storageEngine
                     : configuration.getDefaultStorageEngineId();
