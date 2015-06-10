@@ -94,6 +94,6 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         String dbName;
 //        dbName = "testCompression";
         dbName = "bierapp";
-        return variantStorageManager.getDBAdaptor(dbName, null);
+        return variantStorageManager.getDBAdaptor(dbName);
     }
 }

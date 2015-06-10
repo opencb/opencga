@@ -28,7 +28,6 @@ import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
@@ -87,7 +86,7 @@ public class FilesServlet extends DaemonServlet {
                 case "bam":
                     AlignmentStorageManager sm = StorageManagerFactory.getAlignmentStorageManager(backend);
                     ObjectMap params = new ObjectMap();
-                    AlignmentDBAdaptor dbAdaptor = sm.getDBAdaptor(dbName, params);
+                    AlignmentDBAdaptor dbAdaptor = sm.getDBAdaptor(dbName);
 
                     QueryOptions options = new QueryOptions();
                     if (path != null && !path.isEmpty()) {

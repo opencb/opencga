@@ -47,7 +47,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(null, null), studyConfiguration, true, false);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(null), studyConfiguration, true, false);
     }
 
     /**
@@ -74,7 +74,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.gz"));
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(null, null), studyConfiguration, true, false);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(null), studyConfiguration, true, false);
 
     }
 
@@ -104,7 +104,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(null, null), studyConfiguration, false, false);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(null), studyConfiguration, false, false);
 
     }
 

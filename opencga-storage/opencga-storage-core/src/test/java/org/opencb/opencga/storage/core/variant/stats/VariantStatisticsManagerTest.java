@@ -52,7 +52,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
         etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(null, null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
     }
 
     @Test

@@ -82,30 +82,29 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
      * @param input Data source origin
      * @param ouput Final location of data
      */
-    public abstract URI extract(URI input, URI ouput, ObjectMap params) throws StorageManagerException;
+    public abstract URI extract(URI input, URI ouput) throws StorageManagerException;
 
 
-    public abstract URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
+    public abstract URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
 
-    public abstract URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
+    public abstract URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException;
 
-    public abstract URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException;
+    public abstract URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
 
 
-    public abstract URI preLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
+    public abstract URI preLoad(URI input, URI output) throws IOException, StorageManagerException;
 
     /**
      * This method loads the transformed data file into a database, the database credentials are expected to be read
      * from configuration file.
      * @param input
-     * @param params
      * @return
      * @throws IOException
      * @throws StorageManagerException
      */
-    public abstract URI load(URI input, ObjectMap params) throws IOException, StorageManagerException;
+    public abstract URI load(URI input) throws IOException, StorageManagerException;
 
-    public abstract URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException;
+    public abstract URI postLoad(URI input, URI output) throws IOException, StorageManagerException;
 
 
     /**
@@ -113,8 +112,8 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
      *  - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
      *  - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
-    public abstract DBWRITER getDBWriter(String dbName, ObjectMap params) throws StorageManagerException;
+    public abstract DBWRITER getDBWriter(String dbName) throws StorageManagerException;
 
-    public abstract DBADAPTOR getDBAdaptor(String dbName, ObjectMap params) throws StorageManagerException;
+    public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 
 }

@@ -133,12 +133,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
-    public URI extract(URI input, URI ouput, ObjectMap params) {
+    public URI extract(URI input, URI ouput) {
         return input;
     }
 
     @Override
-    public URI preTransform(URI input, ObjectMap unused_params) throws StorageManagerException, IOException, FileFormatException {
+    public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
@@ -165,7 +165,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
      * @throws IOException
      */
     @Override
-    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap unused_params) throws StorageManagerException {
+    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageManagerException {
         // input: VcfReader
         // output: JsonWriter
 
@@ -304,12 +304,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
-    public URI postTransform(URI input, ObjectMap unused_params) throws IOException, FileFormatException {
+    public URI postTransform(URI input) throws IOException, FileFormatException {
         return input;
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap unused_params) throws StorageManagerException {
+    public URI preLoad(URI input, URI output) throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
@@ -438,7 +438,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params_unused) throws IOException, StorageManagerException {
+    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         boolean annotate = options.getBoolean(ANNOTATE);
@@ -468,7 +468,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 return input;
             }
 
-            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName, params_unused));
+            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName));
 
             QueryOptions annotationOptions = new QueryOptions();
             if (!options.getBoolean(OVERWRITE_ANNOTATIONS, false)) {
@@ -488,7 +488,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             try {
                 logger.debug("about to calculate stats");
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
-                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, params_unused);
+                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
                 URI outputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
                 URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(options));
                 variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
@@ -563,16 +563,16 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
      *  If there is no StudyConfigurationManager, try to build by dependency injection.
      *  If can't build, call to the method "buildStudyConfigurationManager", witch could be override.
      *
-     * @param params
+     * @param options
      * @return
      */
-    final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap params) {
+    final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) {
         StudyConfigurationManager studyConfigurationManager = null;
         if (studyConfigurationManager == null) {
-            if (params.containsKey(STUDY_CONFIGURATION_MANAGER_CLASS_NAME)) {
-                String studyConfigurationManagerClassName = params.getString(STUDY_CONFIGURATION_MANAGER_CLASS_NAME);
+            if (options.containsKey(STUDY_CONFIGURATION_MANAGER_CLASS_NAME)) {
+                String studyConfigurationManagerClassName = options.getString(STUDY_CONFIGURATION_MANAGER_CLASS_NAME);
                 try {
-                    studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, params);
+                    studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, options);
                 } catch (ReflectiveOperationException e) {
                     e.printStackTrace();
                     logger.error("Error creating a StudyConfigurationManager. Creating default StudyConfigurationManager", e);
@@ -580,7 +580,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 }
             }
             if (studyConfigurationManager == null) {
-                studyConfigurationManager = buildStudyConfigurationManager(params);
+                studyConfigurationManager = buildStudyConfigurationManager(options);
             }
         }
         return studyConfigurationManager;
@@ -589,11 +589,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     /**
      * Build the default StudyConfigurationManager. This method could be override by children classes if they want to use other class.
      *
-     * @param params
+     * @param options
      * @return
      */
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap params) {
-        return new FileStudyConfigurationManager(params);
+    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) {
+        return new FileStudyConfigurationManager(options);
     }
 
     /**

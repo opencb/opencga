@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.junit.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -33,8 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -70,7 +67,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             clearDB(DB_NAME);
             etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
         }
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME, null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
     @After

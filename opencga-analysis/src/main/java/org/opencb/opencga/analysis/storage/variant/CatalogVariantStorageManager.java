@@ -50,6 +50,7 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     private CatalogManager catalogManager;
 //    private VariantStorageManager storageManager;
     private Properties properties;
+    private ObjectMap params;
     private final List<URI> configUris;
 
     public CatalogVariantStorageManager() {
@@ -79,54 +80,54 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     }
 
     @Override
-    public URI extract(URI input, URI ouput, ObjectMap params) throws StorageManagerException {
-        return getStorageManager(params).extract(input, ouput, params);
+    public URI extract(URI input, URI ouput) throws StorageManagerException {
+        return getStorageManager(params).extract(input, ouput);
     }
 
     @Override
-    public URI preTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException {
-        return getStorageManager(params).preTransform(input, params);
+    public URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException {
+        return getStorageManager(params).preTransform(input);
     }
 
     @Override
-    public URI transform(URI input, URI pedigree, URI output, ObjectMap params) throws IOException, FileFormatException, StorageManagerException {
-        return getStorageManager(params).transform(input, pedigree, output, params);
+    public URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException {
+        return getStorageManager(params).transform(input, pedigree, output);
     }
 
     @Override
-    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException, StorageManagerException {
-        return getStorageManager(params).postTransform(input, params);
+    public URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException {
+        return getStorageManager(params).postTransform(input);
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
-        return getStorageManager(params).preLoad(input, output, params);
+    public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
+        return getStorageManager(params).preLoad(input, output);
     }
 
     @Override
-    public URI load(URI input, ObjectMap params) throws IOException, StorageManagerException {
-        return getStorageManager(params).load(input, params);
+    public URI load(URI input) throws IOException, StorageManagerException {
+        return getStorageManager(params).load(input);
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
-        return getStorageManager(params).postLoad(input, output, params);
+    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
+        return getStorageManager(params).postLoad(input, output);
     }
 
     @Override
-    public VariantWriter getDBWriter(String dbName, ObjectMap params) throws StorageManagerException {
+    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
         if (dbName == null) {
             dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
         }
-        return getStorageManager(params).getDBWriter(dbName, params);
+        return getStorageManager(params).getDBWriter(dbName);
     }
 
     @Override
-    public VariantDBAdaptor getDBAdaptor(String dbName, ObjectMap params) throws StorageManagerException {
+    public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         if (dbName == null) {
             dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
         }
-        return getStorageManager(params).getDBAdaptor(dbName, params);
+        return getStorageManager(params).getDBAdaptor(dbName);
     }
 
     public CatalogManager getCatalogManager() {

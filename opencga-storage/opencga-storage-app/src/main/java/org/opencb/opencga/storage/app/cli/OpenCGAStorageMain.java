@@ -161,7 +161,7 @@ public class OpenCGAStorageMain {
                 }
 
                 ObjectMap params = new ObjectMap();
-                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 
                 /**
                  * Parse Regions
@@ -293,7 +293,7 @@ public class OpenCGAStorageMain {
                 }
 
                 ObjectMap params = new ObjectMap();
-                AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName, params);
+                AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName);
 
                 /**
                  * Parse Regions
@@ -496,25 +496,25 @@ public class OpenCGAStorageMain {
 
         if (extract) {
             logger.info("-- Extract alignments -- {}", input);
-            nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+            nextFileUri = alignmentStorageManager.extract(input, outdir);
         }
 
         if (transform) {
             logger.info("-- PreTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+            nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
             logger.info("-- Transform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir);
             logger.info("-- PostTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+            nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
         }
 
         if (load) {
             logger.info("-- PreLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir);
             logger.info("-- Load alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+            nextFileUri = alignmentStorageManager.load(nextFileUri);
             logger.info("-- PostLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir);
         }
     }
 
@@ -604,25 +604,25 @@ public class OpenCGAStorageMain {
 
         if (extract) {
             logger.info("-- Extract variants -- {}", variantsUri);
-            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri, params);
+            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri);
         }
 
         if (transform) {
             logger.info("-- PreTransform variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.preTransform(nextFileUri, params);
+            nextFileUri = variantStorageManager.preTransform(nextFileUri);
             logger.info("-- Transform variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri, params);
+            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri);
             logger.info("-- PostTransform variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
+            nextFileUri = variantStorageManager.postTransform(nextFileUri);
         }
 
         if (load) {
             logger.info("-- PreLoad variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
+            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri);
             logger.info("-- Load variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.load(nextFileUri, params);
+            nextFileUri = variantStorageManager.load(nextFileUri);
             logger.info("-- PostLoad variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
+            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri);
         }
 
     }
@@ -660,7 +660,7 @@ public class OpenCGAStorageMain {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
         ObjectMap params = new ObjectMap();
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 
         /**
          * Create Annotator
@@ -777,7 +777,7 @@ public class OpenCGAStorageMain {
         if(c.credentials != null && !c.credentials.isEmpty()) {
             variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
         }
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 //        dbAdaptor.setConstantSamples(Integer.toString(c.fileId));    // TODO jmmut: change to studyId when we remove fileId
         StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(queryOptions);
         /**

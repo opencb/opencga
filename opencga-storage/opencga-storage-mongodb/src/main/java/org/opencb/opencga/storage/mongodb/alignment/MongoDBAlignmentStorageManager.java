@@ -23,7 +23,6 @@ import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -31,7 +30,6 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataR
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -54,11 +52,11 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public static final String STORAGE_ENGINE_ID = "mongodb";
 
     public static final String MONGODB_DEFAULT_DATABASE_NAME = "opencga";
-    public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
-    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME";
-    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER";
-    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PASS";
-    public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOSTS";
+    @Deprecated public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.NAME";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_USER = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.USER";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_PASS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.PASS";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_HOSTS = "OPENCGA.STORAGE.MONGO.ALIGNMENT.DB.HOSTS";
 
     //private static Path indexerManagerScript = Paths.get(Config.getGcsaHome(), Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"), "indexer", "indexerManager.py");
 //    protected static Logger logger;
@@ -79,13 +77,13 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 //    }
 
     @Override
-    public CoverageMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
-        String fileId = params.getString(FILE_ID);
+    public CoverageMongoDBWriter getDBWriter(String dbName) {
+        String fileId = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(FILE_ID);
         return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);
     }
 
     @Override
-    public AlignmentDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
+    public AlignmentDBAdaptor getDBAdaptor(String dbName) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
 //            dbName = properties.getProperty(OPENCGA_STORAGE_MONGO_ALIGNMENT_DB_NAME, MONGODB_DEFAULT_DATABASE_NAME);
@@ -131,24 +129,24 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
 
     @Override
-    public URI transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params) throws IOException, FileFormatException {
+    public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException {
 //        params.put(WRITE_ALIGNMENTS, false);
 //        params.put(CREATE_BAI, true);
 //        params.put(INCLUDE_COVERAGE, true);
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(WRITE_ALIGNMENTS, false);
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(CREATE_BAI, true);
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(INCLUDE_COVERAGE, true);
-        return super.transform(inputUri, pedigree, outputUri, params);
+        return super.transform(inputUri, pedigree, outputUri);
     }
 
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params) throws IOException {
+    public URI preLoad(URI input, URI output) throws IOException {
         return input;
     }
 
     @Override
-    public URI load(URI inputUri, ObjectMap params) throws IOException {
+    public URI load(URI inputUri) throws IOException {
         checkUri(inputUri, "input uri");
         Path input = Paths.get(inputUri.getPath());
 
@@ -168,7 +166,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         alignmentDataReader.setReadRegionCoverage(false);   //Only load mean coverage
 
         //Writer
-        CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName, new ObjectMap(FILE_ID, fileId));
+        CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName);
 
         //Runner
         Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>(), 1);
@@ -184,7 +182,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
+    public URI postLoad(URI input, URI output) throws IOException {
         return input;
     }
 

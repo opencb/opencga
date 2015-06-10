@@ -152,25 +152,25 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
 
             if (extract) {
                 logger.info("-- Extract variants -- {}", variantsUri);
-                nextFileUri = variantStorageManager.extract(variantsUri, outdirUri, params);
+                nextFileUri = variantStorageManager.extract(variantsUri, outdirUri);
             }
 
             if (transform) {
                 logger.info("-- PreTransform variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.preTransform(nextFileUri, params);
+                nextFileUri = variantStorageManager.preTransform(nextFileUri);
                 logger.info("-- Transform variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri, params);
+                nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri);
                 logger.info("-- PostTransform variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
+                nextFileUri = variantStorageManager.postTransform(nextFileUri);
             }
 
             if (load) {
                 logger.info("-- PreLoad variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
+                nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri);
                 logger.info("-- Load variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.load(nextFileUri, params);
+                nextFileUri = variantStorageManager.load(nextFileUri);
                 logger.info("-- PostLoad variants -- {}", nextFileUri);
-                nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
+                nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri);
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

@@ -21,7 +21,6 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -62,7 +61,7 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
         String storageEngine = file.getAttributes().get("storageEngine").toString();
-        return StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, new ObjectMap());
+        return StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
     }
 
     @Override

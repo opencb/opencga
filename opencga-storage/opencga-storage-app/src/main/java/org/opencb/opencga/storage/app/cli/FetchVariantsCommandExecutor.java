@@ -73,7 +73,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
 
             ObjectMap params = new ObjectMap();
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName, params);
+            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
 
             /**
              * Parse Regions

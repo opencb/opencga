@@ -63,7 +63,7 @@ public class FetchAlignmentsCommandExecutor extends CommandExecutor {
             }
 
             ObjectMap params = new ObjectMap();
-            AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.dbName, params);
+            AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.dbName);
 
             /**
              * Parse Regions

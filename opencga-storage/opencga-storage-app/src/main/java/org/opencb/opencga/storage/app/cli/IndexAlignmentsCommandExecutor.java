@@ -146,25 +146,25 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
             if (extract) {
                 logger.info("-- Extract alignments -- {}", input);
-                nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+                nextFileUri = alignmentStorageManager.extract(input, outdir);
             }
 
             if (transform) {
                 logger.info("-- PreTransform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+                nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
                 logger.info("-- Transform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+                nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir);
                 logger.info("-- PostTransform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+                nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
             }
 
             if (load) {
                 logger.info("-- PreLoad alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+                nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir);
                 logger.info("-- Load alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+                nextFileUri = alignmentStorageManager.load(nextFileUri);
                 logger.info("-- PostLoad alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+                nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir);
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();

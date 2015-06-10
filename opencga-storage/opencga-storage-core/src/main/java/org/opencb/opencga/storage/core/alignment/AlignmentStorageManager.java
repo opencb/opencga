@@ -29,7 +29,6 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
@@ -105,12 +104,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 //    }
 
     @Override
-    public URI extract(URI input, URI ouput, ObjectMap params) {
+    public URI extract(URI input, URI ouput) {
         return input;
     }
 
     @Override
-    public URI preTransform(URI inputUri, ObjectMap params) throws IOException, FileFormatException {
+    public URI preTransform(URI inputUri) throws IOException, FileFormatException {
         checkUri(inputUri, "input file");
         Path input = Paths.get(inputUri.getPath());
         checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
@@ -135,15 +134,15 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      *  Calculate the meanCoverage                  : <outputPath>/<FILE_ALIAS>.bam.mean-coverage.json[.gz]
      *
      *
+     * @param params        Hash for extra params. FILE_ID, ENCRYPT, PLAIN, REGION_SIZE, MEAN_COVERAGE_SIZE_LIST
      * @param inputUri      Sorted bam file
      * @param pedigree      Not used
      * @param outputUri     Output path where files are created
-     * @param params        Hash for extra params. FILE_ID, ENCRYPT, PLAIN, REGION_SIZE, MEAN_COVERAGE_SIZE_LIST
      * @throws IOException
      * @throws FileFormatException
      */
     @Override
-    public URI transform(URI inputUri, URI pedigree, URI outputUri, ObjectMap params)
+    public URI transform(URI inputUri, URI pedigree, URI outputUri)
             throws IOException, FileFormatException {
 
 //        checkUri(inputUri, "input file");
@@ -261,7 +260,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     @Override
-    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+    public URI postTransform(URI input) throws IOException, FileFormatException {
         return input;
     }
 

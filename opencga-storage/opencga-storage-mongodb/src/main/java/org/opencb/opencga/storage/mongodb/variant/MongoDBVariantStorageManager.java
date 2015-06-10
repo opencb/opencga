@@ -53,36 +53,38 @@ import org.slf4j.LoggerFactory;
  */
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
+    /**
+     * This field value must be the same that the one at configuration.yml
+     */
+    public static final String STORAGE_ENGINE_ID = "mongodb";
+
     //StorageEngine specific Properties
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS                 = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB     = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION.DB";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS   = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
-//    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS                 = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB     = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION.DB";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS   = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
+//  @Deprecated   public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
+    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
+    //StorageEngine specific options
+//    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
     public static final String AUTHENTICATION_DB     = "authentication.db";
-
     public static final String COLLECTION_VARIANTS   = "collection.variants";
     public static final String COLLECTION_FILES      = "collection.files";
-
-    //StorageEngine specific params
-//    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
     public static final String BULK_SIZE = "bulkSize";
-    public static final String INCLUDE_SRC = "includeSrc";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
 
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
     @Override
-    public VariantMongoDBWriter getDBWriter(String dbName, ObjectMap params_unused) {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+    public VariantMongoDBWriter getDBWriter(String dbName) {
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         int fileId = options.getInt(FILE_ID);
 
@@ -98,10 +100,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantMongoDBAdaptor getDBAdaptor(String dbName, ObjectMap params_unused) {
+    public VariantMongoDBAdaptor getDBAdaptor(String dbName) {
         MongoCredentials credentials = getMongoCredentials(dbName);
         VariantMongoDBAdaptor variantMongoDBAdaptor;
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
 //        String variantsCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
 //        String filesCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
@@ -124,13 +126,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     /* package */ MongoCredentials getMongoCredentials(String dbName) {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
 //        String hosts = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS, "localhost");
 //        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(hosts);
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String host : configuration.getStorageEngine(storageEngineId).getVariant().getDatabase().getHosts()) {
+        for (String host : configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getHosts()) {
             if (host.contains(":")) {
                 String[] hostPort = host.split(":");
                 dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort[0], Integer.parseInt(hostPort[1])));
@@ -147,10 +149,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //        String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);
 //        String authenticationDatabase = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB, null);
 
-        String user = configuration.getStorageEngine(storageEngineId).getVariant().getDatabase().getUser();
-        String pass = configuration.getStorageEngine(storageEngineId).getVariant().getDatabase().getPassword();
+        String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
+        String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
 
-        String authenticationDatabase = configuration.getStorageEngine(storageEngineId).getVariant().getOptions().getString(AUTHENTICATION_DB, null);
+        String authenticationDatabase = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions().getString(AUTHENTICATION_DB, null);
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, user, pass);
@@ -163,20 +165,15 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
-        super.setConfiguration(configuration, storageEngineId);
+    public URI preLoad(URI input, URI output) throws StorageManagerException {
+        return super.preLoad(input, output);
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params_unused) throws StorageManagerException {
-        return super.preLoad(input, output, params_unused);
-    }
-
-    @Override
-    public URI load(URI inputUri, ObjectMap params_unused) throws IOException {
+    public URI load(URI inputUri) throws IOException {
         // input: getDBSchemaReader
         // output: getDBWriter()
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
         Path input = Paths.get(inputUri.getPath());
 
@@ -215,7 +212,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         List<DataWriter> writerList = new LinkedList<>();
         AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
-            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params_unused);
+            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName);
             variantDBWriter.setBulkSize(bulkSize);
             variantDBWriter.includeSrc(includeSrc);
             variantDBWriter.includeSamples(includeSamples);
@@ -267,8 +264,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params_unused) throws IOException, StorageManagerException {
-        return super.postLoad(input, output, params_unused);
+    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
+        return super.postLoad(input, output);
     }
 
     /* --------------------------------------- */
@@ -276,12 +273,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     /* --------------------------------------- */
 
     @Override
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap params) {
-        if (params != null && !params.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
-            return super.buildStudyConfigurationManager(params);
+    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) {
+        if (options != null && !options.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
+            return super.buildStudyConfigurationManager(options);
         } else {
-            String string = params == null? null : params.getString(DB_NAME);
-            return getDBAdaptor(string, params).getStudyConfigurationDBAdaptor();
+            String string = options == null? null : options.getString(DB_NAME);
+            return getDBAdaptor(string).getStudyConfigurationDBAdaptor();
         }
     }
 
