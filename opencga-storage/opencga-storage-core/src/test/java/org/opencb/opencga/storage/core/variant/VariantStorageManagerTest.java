@@ -40,7 +40,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
     @Test
     public void basicIndex() throws Exception {
-        clearDB();
+        clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         ETLResult etlResult = runDefaultETL(variantStorageManager, studyConfiguration);
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,
@@ -57,7 +57,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
      **/
     @Test
     public void singleThreadIndex() throws Exception {
-        clearDB();
+        clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
@@ -67,6 +67,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.LOAD_THREADS, 1);
         params.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
         params.put(VariantStorageManager.INCLUDE_SRC, true);
+        params.put(VariantStorageManager.DB_NAME, DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.gz'" ,
@@ -86,7 +87,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
      **/
     @Test
     public void fastIndex() throws Exception {
-        clearDB();
+        clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
@@ -96,6 +97,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.LOAD_THREADS, 8);
         params.put(VariantStorageManager.INCLUDE_GENOTYPES, false);
         params.put(VariantStorageManager.INCLUDE_SRC, false);
+        params.put(VariantStorageManager.DB_NAME, DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,

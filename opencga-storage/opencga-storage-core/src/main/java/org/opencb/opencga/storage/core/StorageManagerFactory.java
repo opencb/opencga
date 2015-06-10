@@ -82,7 +82,7 @@ public class StorageManagerFactory {
                 }
 
                 T storageManager = (T) Class.forName(clazz).newInstance();
-                storageManager.addConfiguration(storageConfiguration, storageEngineName);
+                storageManager.setConfiguration(storageConfiguration, storageEngineName);
 
                 storageManagerMap.put(storageEngineName, storageManager);
             }

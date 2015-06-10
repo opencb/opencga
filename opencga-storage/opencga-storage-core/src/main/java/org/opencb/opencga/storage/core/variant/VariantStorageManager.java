@@ -118,6 +118,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
+    @Deprecated
     public void addConfigUri(URI configUri){
         logger.warn("Ignoring Config URI {} ", configUri);
 //        if(configUri != null

@@ -74,7 +74,7 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     }
 
     @Override
-    public void addConfiguration(StorageConfiguration configuration, String s) {
+    public void setConfiguration(StorageConfiguration configuration, String s) {
 
     }
 

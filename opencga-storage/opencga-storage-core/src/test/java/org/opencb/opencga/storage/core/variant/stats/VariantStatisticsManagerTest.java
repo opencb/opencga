@@ -50,7 +50,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     @Before
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
-        clearDB();
+        clearDB(DB_NAME);
         etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
         dbAdaptor = getVariantStorageManager().getDBAdaptor(null, null);
     }

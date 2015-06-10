@@ -67,10 +67,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         if (etlResult == null) {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
-            clearDB();
+            clearDB(DB_NAME);
             etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
         }
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(null, null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME, null);
     }
 
     @After

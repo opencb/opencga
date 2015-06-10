@@ -163,8 +163,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public void addConfiguration(StorageConfiguration configuration, String storageEngineId) {
-        super.addConfiguration(configuration, storageEngineId);
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
+        super.setConfiguration(configuration, storageEngineId);
     }
 
     @Override
