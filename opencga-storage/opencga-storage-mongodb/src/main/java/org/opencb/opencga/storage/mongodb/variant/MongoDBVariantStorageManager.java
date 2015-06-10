@@ -33,7 +33,6 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 
@@ -68,6 +67,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
+    public static final String AUTHENTICATION_DB     = "authentication.db";
+
+    public static final String COLLECTION_VARIANTS   = "collection.variants";
+    public static final String COLLECTION_FILES      = "collection.files";
+
     //StorageEngine specific params
 //    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
     public static final String BULK_SIZE = "bulkSize";
@@ -77,25 +81,32 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
     @Override
-    public VariantMongoDBWriter getDBWriter(String dbName, ObjectMap params) {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
-        int fileId = params.getInt(FILE_ID);
-        Properties credentialsProperties = new Properties(properties);
+    public VariantMongoDBWriter getDBWriter(String dbName, ObjectMap params_unused) {
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        int fileId = options.getInt(FILE_ID);
+
+//        Properties credentialsProperties = new Properties(properties);
 
         MongoCredentials credentials = getMongoCredentials(dbName);
-        String variantsCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
-        String filesCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
+//        String variantsCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
+//        String filesCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
+        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
+        String filesCollection = options.getString(COLLECTION_FILES, "files");
         logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
         return new VariantMongoDBWriter(fileId, studyConfiguration, credentials, variantsCollection, filesCollection, false, false);
     }
 
     @Override
-    public VariantMongoDBAdaptor getDBAdaptor(String dbName, ObjectMap params) {
+    public VariantMongoDBAdaptor getDBAdaptor(String dbName, ObjectMap params_unused) {
         MongoCredentials credentials = getMongoCredentials(dbName);
         VariantMongoDBAdaptor variantMongoDBAdaptor;
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-        String variantsCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
-        String filesCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
+//        String variantsCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
+//        String filesCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
+        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
+        String filesCollection = options.getString(COLLECTION_FILES, "files");
         try {
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection);
         } catch (UnknownHostException e) {
@@ -113,17 +124,33 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     /* package */ MongoCredentials getMongoCredentials(String dbName) {
-        String hosts = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS, "localhost");
-        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(hosts);
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-//        int port = Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PORT, "27017"));
-        if(dbName == null || dbName.isEmpty()) {
-            dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME, "variants");
+//        String hosts = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS, "localhost");
+//        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(hosts);
+
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String host : configuration.getStorageEngine(storageEngineId).getVariant().getDatabase().getHosts()) {
+            if (host.contains(":")) {
+                String[] hostPort = host.split(":");
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort[0], Integer.parseInt(hostPort[1])));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
+            }
         }
-        String user = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER, null);
-        String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);
 
-        String authenticationDatabase = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB, null);
+        if(dbName == null || dbName.isEmpty()) {    //If no database name is provided, read from the configuration file
+//            dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME, "variants");
+            dbName = options.getString(DB_NAME, "variants");
+        }
+//        String user = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER, null);
+//        String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);
+//        String authenticationDatabase = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB, null);
+
+        String user = configuration.getStorageEngine(storageEngineId).getVariant().getDatabase().getUser();
+        String pass = configuration.getStorageEngine(storageEngineId).getVariant().getDatabase().getPassword();
+
+        String authenticationDatabase = configuration.getStorageEngine(storageEngineId).getVariant().getOptions().getString(AUTHENTICATION_DB, null);
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, user, pass);
@@ -136,40 +163,40 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public void addConfiguration(StorageConfiguration configuration) {
-
+    public void addConfiguration(StorageConfiguration configuration, String storageEngineId) {
+        super.addConfiguration(configuration, storageEngineId);
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params) throws StorageManagerException {
-        return super.preLoad(input, output, params);
+    public URI preLoad(URI input, URI output, ObjectMap params_unused) throws StorageManagerException {
+        return super.preLoad(input, output, params_unused);
     }
 
     @Override
-    public URI load(URI inputUri, ObjectMap params) throws IOException {
+    public URI load(URI inputUri, ObjectMap params_unused) throws IOException {
         // input: getDBSchemaReader
         // output: getDBWriter()
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         Path input = Paths.get(inputUri.getPath());
 
-        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
-//        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
-        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
-        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+        boolean includeSamples = options.getBoolean(INCLUDE_GENOTYPES, false);
+        boolean includeStats = options.getBoolean(INCLUDE_STATS, false);
+        boolean includeSrc = options.getBoolean(INCLUDE_SRC, false);
 
-        String defaultGenotype = params.getString(DEFAULT_GENOTYPE, properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE, ""));
-        boolean compressSamples = params.getBoolean(COMPRESS_GENOTYPES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES, "false")));
+        String defaultGenotype = options.getString(DEFAULT_GENOTYPE, "");
+        boolean compressSamples = options.getBoolean(COMPRESS_GENOTYPES, false);
 
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
 //        params.put(VARIANT_SOURCE, source);
-        String dbName = params.getString(DB_NAME, null);
+        String dbName = options.getString(DB_NAME, null);
 
 //        VariantSource variantSource = readVariantSource(input, null);
 //        new StudyInformation(variantSource.getStudyId())
 
-        int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE, "100")));
-        int bulkSize = params.getInt(BULK_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE, "" + batchSize)));
-        int loadThreads = params.getInt(LOAD_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_LOAD_THREADS, "8")));
+        int batchSize = options.getInt(BATCH_SIZE, 100);
+        int bulkSize = options.getInt(BULK_SIZE, batchSize);
+        int loadThreads = options.getInt(LOAD_THREADS, 8);
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         final int numReaders = 1;
         final int numWriters = loadThreads  == 1? 1 : loadThreads - numReaders; //Subtract the reader thread
@@ -188,7 +215,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         List<DataWriter> writerList = new LinkedList<>();
         AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
-            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params);
+            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, params_unused);
             variantDBWriter.setBulkSize(bulkSize);
             variantDBWriter.includeSrc(includeSrc);
             variantDBWriter.includeSamples(includeSamples);
@@ -240,12 +267,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
-        return super.postLoad(input, output, params);
+    public URI postLoad(URI input, URI output, ObjectMap params_unused) throws IOException, StorageManagerException {
+        return super.postLoad(input, output, params_unused);
     }
 
     /* --------------------------------------- */
-    /*  StudyConfiguration utils methods        */
+    /*  StudyConfiguration utils methods       */
     /* --------------------------------------- */
 
     @Override

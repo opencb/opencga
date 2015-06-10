@@ -43,7 +43,7 @@ import java.util.Properties;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Deprecated
-public class CatalogVariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
+public abstract class CatalogVariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
 //public class CatalogVariantStorageManager extends VariantStorageManager {
 
 
@@ -74,7 +74,7 @@ public class CatalogVariantStorageManager extends StorageManager<VariantWriter, 
     }
 
     @Override
-    public void addConfiguration(StorageConfiguration configuration) {
+    public void addConfiguration(StorageConfiguration configuration, String s) {
 
     }
 

@@ -23,10 +23,15 @@ storageEngines:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
     options:
       transform.batch_size: 200
+      transform.threads: 4
       load.batch_size: 100
       load.bulk_size: 100
       load.compress_genotypes: true
+      load.threads: 4
       database.name: "opencga"
+      include.src: false
+      include.genotypes: true
+      include.stats: false
     database:
       hosts:
       - ${OPENCGA.STORAGE.VARIANT.DB.HOST}

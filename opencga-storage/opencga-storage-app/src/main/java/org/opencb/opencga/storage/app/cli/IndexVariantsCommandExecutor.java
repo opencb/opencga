@@ -17,11 +17,14 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -48,41 +51,65 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
     }
     @Override
     public void execute() {
-        System.out.println("in IndexVariantsCommandExecutor");
+        logger.info("in IndexVariantsCommandExecutor");
         Config.setOpenCGAHome();
         try {
+            /** Get VariantStorageManager **/
+            // We need to find out the Storage Engine Id to be used
+            // If not storage engine is passed then the default is taken from configuration.yml file
+            String storageEngine = (indexVariantsCommandOptions.storageEngine != null && !indexVariantsCommandOptions.storageEngine.isEmpty())
+                    ? indexVariantsCommandOptions.storageEngine
+                    : configuration.getDefaultStorageEngineId();
+            logger.debug("storageEngine set to '{}'", storageEngine);
+
+            StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
+            StorageEtlConfiguration storageEtlConfiguration = storageConfiguration.getAlignment();
+
+            StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
             VariantStorageManager variantStorageManager;
-            String storageEngine = indexVariantsCommandOptions.storageEngine;
-            variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
-
-            if(indexVariantsCommandOptions.credentials != null && !indexVariantsCommandOptions.credentials.isEmpty()) {
-                variantStorageManager.addConfigUri(new URI(null, indexVariantsCommandOptions.credentials, null));
-            }
-
-            URI variantsUri = new URI(null, indexVariantsCommandOptions.input, null);
-            URI pedigreeUri = indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty() ? new URI(null, indexVariantsCommandOptions.pedigree, null) : null;
-            URI outdirUri;
-            if (indexVariantsCommandOptions.outdir != null && !indexVariantsCommandOptions.outdir.isEmpty()) {
-                outdirUri = new URI(null, indexVariantsCommandOptions.outdir + (indexVariantsCommandOptions.outdir.endsWith("/") ? "" : "/"), null).resolve(".");
+            if (storageEngine == null || storageEngine.isEmpty()) {
+                variantStorageManager = storageManagerFactory.getVariantStorageManager();
             } else {
-                outdirUri = variantsUri.resolve(".");
+                variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
             }
+
+//            if(indexVariantsCommandOptions.credentials != null && !indexVariantsCommandOptions.credentials.isEmpty()) {
+//                variantStorageManager.addConfigUri(new URI(null, indexVariantsCommandOptions.credentials, null));
+//            }
+
+            /** Get URIs **/
+            URI variantsUri = UriUtils.createUri(indexVariantsCommandOptions.input);
+            URI pedigreeUri = indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty()
+                    ? UriUtils.createUri(indexVariantsCommandOptions.pedigree)
+                    : null;
+            URI outdirUri = indexVariantsCommandOptions.outdir != null && !indexVariantsCommandOptions.outdir.isEmpty()
+                    ? UriUtils.createUri(indexVariantsCommandOptions.outdir + (indexVariantsCommandOptions.outdir.endsWith("/") ? "" : "/")).resolve(".")
+                    : variantsUri.resolve(".");
+
 //            assertDirectoryExists(outdirUri);
 
-            String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
-            VariantSource source = new VariantSource(fileName, indexVariantsCommandOptions.fileId,
-                    indexVariantsCommandOptions.studyId, indexVariantsCommandOptions.study, indexVariantsCommandOptions.studyType, indexVariantsCommandOptions.aggregated);
+//            String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
+//            VariantSource source = new VariantSource(fileName, indexVariantsCommandOptions.fileId,
+//                    indexVariantsCommandOptions.studyId, indexVariantsCommandOptions.study, indexVariantsCommandOptions.studyType, indexVariantsCommandOptions.aggregated);
 
-            ObjectMap params = new ObjectMap();
-            params.put(VariantStorageManager.CALCULATE_STATS, indexVariantsCommandOptions.calculateStats);
-            params.put(VariantStorageManager.INCLUDE_STATS, indexVariantsCommandOptions.includeStats);
-            params.put(VariantStorageManager.INCLUDE_SAMPLES, indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
-            params.put(VariantStorageManager.INCLUDE_SRC, indexVariantsCommandOptions.includeSrc);
-            params.put(VariantStorageManager.COMPRESS_GENOTYPES, indexVariantsCommandOptions.compressGenotypes);
-//            params.put(VariantStorageManager.VARIANT_SOURCE, source);
-            params.put(VariantStorageManager.DB_NAME, indexVariantsCommandOptions.dbName);
-            params.put(VariantStorageManager.ANNOTATE, indexVariantsCommandOptions.annotate);
-            params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
+            /** Add cli options to the variant options **/
+            ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
+            variantOptions.put(VariantStorageManager.STUDY_NAME, indexVariantsCommandOptions.study);
+            variantOptions.put(VariantStorageManager.STUDY_ID, indexVariantsCommandOptions.studyId);
+            variantOptions.put(VariantStorageManager.FILE_ID, indexVariantsCommandOptions.fileId);
+            variantOptions.put(VariantStorageManager.SAMPLE_IDS, indexVariantsCommandOptions.sampleIds);
+            variantOptions.put(VariantStorageManager.CALCULATE_STATS, indexVariantsCommandOptions.calculateStats);
+            variantOptions.put(VariantStorageManager.INCLUDE_STATS, indexVariantsCommandOptions.includeStats);
+            variantOptions.put(VariantStorageManager.INCLUDE_GENOTYPES, indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
+            variantOptions.put(VariantStorageManager.INCLUDE_SRC, indexVariantsCommandOptions.includeSrc);
+            variantOptions.put(VariantStorageManager.COMPRESS_GENOTYPES, indexVariantsCommandOptions.compressGenotypes);
+            variantOptions.put(VariantStorageManager.AGGREGATED_TYPE, indexVariantsCommandOptions.aggregated);
+            if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.DB_NAME, indexVariantsCommandOptions.dbName);
+            variantOptions.put(VariantStorageManager.ANNOTATE, indexVariantsCommandOptions.annotate);
+            variantOptions.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
+            if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+                variantOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
+            }
 
             if(indexVariantsCommandOptions.annotate) {
                 //Get annotator config
@@ -90,7 +117,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                 if(indexVariantsCommandOptions.annotatorConfigFile != null && !indexVariantsCommandOptions.annotatorConfigFile.isEmpty()) {
                     annotatorProperties.load(new FileInputStream(indexVariantsCommandOptions.annotatorConfigFile));
                 }
-                params.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
+                variantOptions.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
 
                 //Get annotation source
                 VariantAnnotationManager.AnnotationSource annotatorSource = indexVariantsCommandOptions.annotator;
@@ -102,14 +129,15 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                             ).toUpperCase()
                     );
                 }
-                params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
+                variantOptions.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
             }
 
-            params.putAll(indexVariantsCommandOptions.params);
+            variantOptions.putAll(indexVariantsCommandOptions.params);
 
+
+            /** Execute ETL steps **/
+            ObjectMap params = null;
             URI nextFileUri = variantsUri;
-
-
             boolean extract, transform, load;
 
             if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {

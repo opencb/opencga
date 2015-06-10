@@ -143,7 +143,7 @@ public class CliOptionsParser {
         public String storageEngine;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb.compression=snappy", hidden = false)
-        public Map<String, String> params;
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
 
         @Deprecated
         @Parameter(names = { "--sm-name" }, description = "StorageManager class name (Must be in the classpath).")
@@ -203,14 +203,16 @@ public class CliOptionsParser {
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         boolean load = false;
 
+        @Deprecated
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         public String credentials;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
         public String dbName;
 
-//        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
-//        String backend = "mongodb";
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        String studyConfigurationFile;
+
     }
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
@@ -234,6 +236,9 @@ public class CliOptionsParser {
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         public String pedigree;
+
+        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
+        public List<String> sampleIds;
 
         @Deprecated
         @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file")

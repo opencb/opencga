@@ -31,6 +31,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
@@ -44,9 +45,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,14 +56,15 @@ import java.util.*;
  */
 public abstract class VariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
 
-    public static final String INCLUDE_STATS = "includeStats";              //Include existing stats on the original file.
-    public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)
-    public static final String INCLUDE_SRC = "includeSrc";                  //Include original source file on the transformed file and the final db
+    public static final String INCLUDE_STATS = "include.stats";              //Include existing stats on the original file.
+    public static final String INCLUDE_GENOTYPES = "include.genotypes";      //Include sample information (genotypes)
+    public static final String INCLUDE_SRC = "include.src";                  //Include original source file on the transformed file and the final db
     public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
 //    @Deprecated public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
     public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
     public static final String STUDY_CONFIGURATION_MANAGER_CLASS_NAME         = "studyConfigurationManagerClassName";
     public static final String AGGREGATED_TYPE = "aggregatedType";
+    public static final String STUDY_NAME = "studyName";
     public static final String STUDY_ID = "studyId";
     public static final String FILE_ID = "fileId";
     public static final String STUDY_TYPE = "studyType";
@@ -75,7 +75,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
     public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
 
-    public static final String DB_NAME = "dbName";
+    public static final String DB_NAME = "database.name";
     public static final String SPECIES = "species";
 
     public static final String ASSEMBLY = "assembly";
@@ -84,34 +84,51 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
 
-    public static final String BATCH_SIZE = "batchSize";
-    public static final String TRANSFORM_THREADS = "transformThreads";
-    public static final String LOAD_THREADS = "loadThreads";
-    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_THREADS      = "OPENCGA.STORAGE.VARIANT.TRANSFORM.THREADS";
-    public static final String OPENCGA_STORAGE_VARIANT_LOAD_THREADS           = "OPENCGA.STORAGE.VARIANT.LOAD.THREADS";
-    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE   = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
-    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SRC            = "OPENCGA.STORAGE.VARIANT.INCLUDE_SRC";
-    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
-    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_STATS          = "OPENCGA.STORAGE.VARIANT.INCLUDE_STATS";
+    public static final String BATCH_SIZE = "batch.size";
+    public static final String TRANSFORM_THREADS = "transform.threads";
+    public static final String LOAD_THREADS = "load.threads";
 
-    protected Properties properties;
-    protected static Logger logger = LoggerFactory.getLogger(VariantStorageManager.class);
+//    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_THREADS      = "OPENCGA.STORAGE.VARIANT.TRANSFORM.THREADS";
+//    public static final String OPENCGA_STORAGE_VARIANT_LOAD_THREADS           = "OPENCGA.STORAGE.VARIANT.LOAD.THREADS";
+//    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE   = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
+//    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SRC            = "OPENCGA.STORAGE.VARIANT.INCLUDE_SRC";
+//    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
+//    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_STATS          = "OPENCGA.STORAGE.VARIANT.INCLUDE_STATS";
+
+//    @Deprecated protected Properties properties;
+    protected static Logger logger;
 
     public VariantStorageManager() {
-        this.properties = new Properties();
+//        this.properties = new Properties();
+        logger = LoggerFactory.getLogger(VariantStorageManager.class);
+    }
+
+//    public VariantStorageManager() {
+//        this(null);
+//    }
+
+    public VariantStorageManager(StorageConfiguration configuration) {
+        super(configuration);
+        logger = LoggerFactory.getLogger(VariantStorageManager.class);
+    }
+
+    public VariantStorageManager(String storageEngineId, StorageConfiguration configuration) {
+        super(storageEngineId, configuration);
+        logger = LoggerFactory.getLogger(VariantStorageManager.class);
     }
 
     @Override
     public void addConfigUri(URI configUri){
-        if(configUri != null
-                && Paths.get(configUri.getPath()).toFile().exists()
-                && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
-            try {
-                properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        logger.warn("Ignoring Config URI {} ", configUri);
+//        if(configUri != null
+//                && Paths.get(configUri.getPath()).toFile().exists()
+//                && (configUri.getScheme() == null || configUri.getScheme().equals("file"))) {
+//            try {
+//                properties.load(new InputStreamReader(new FileInputStream(configUri.getPath())));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     @Override
@@ -120,10 +137,18 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
-    public URI preTransform(URI input, ObjectMap params) throws StorageManagerException, IOException, FileFormatException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
+    public URI preTransform(URI input, ObjectMap unused_params) throws StorageManagerException, IOException, FileFormatException {
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+
+        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        if (studyConfiguration == null) {
+            logger.info("Creating a new StudyConfiguration");
+            studyConfiguration = new StudyConfiguration(options.getInt(STUDY_ID), options.getString(STUDY_NAME));
+            options.put(STUDY_CONFIGURATION, studyConfiguration);
+        }
         String fileName = Paths.get(input.getPath()).getFileName().toString();
-        Integer fileId = params.getInt(FILE_ID);    //TODO: Transform into an optional field
+        Integer fileId = options.getInt(FILE_ID);    //TODO: Transform into an optional field
 
         checkNewFile(studyConfiguration, fileId, fileName);
 
@@ -136,39 +161,44 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
      * @param inputUri         Input file. Accepted formats: *.vcf, *.vcf.gz
      * @param pedigreeUri      Pedigree input file. Accepted formats: *.ped
      * @param outputUri
-     * @param params
      * @throws IOException
      */
     @Override
-    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws StorageManagerException {
+    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap unused_params) throws StorageManagerException {
         // input: VcfReader
         // output: JsonWriter
+
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         Path input = Paths.get(inputUri.getPath());
         Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
 
-        boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
-        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
-        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+//        boolean includeSamples = params.getBoolean(INCLUDE_GENOTYPES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
+//        boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
+//        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
 
-        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
-        Integer fileId = params.getInt(FILE_ID);    //TODO: Transform into an optional field
-        VariantSource.Aggregation aggregation = params.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
+        boolean includeSamples = options.getBoolean(INCLUDE_GENOTYPES, false);
+        boolean includeStats = options.getBoolean(INCLUDE_STATS, false);
+        boolean includeSrc = options.getBoolean(INCLUDE_SRC, false);
+
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        Integer fileId = options.getInt(FILE_ID);    //TODO: Transform into an optional field
+        VariantSource.Aggregation aggregation = options.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
         String fileName = input.getFileName().toString();
-        VariantStudy.StudyType type = params.get(STUDY_TYPE, VariantStudy.StudyType.class, VariantStudy.StudyType.CASE_CONTROL);
+        VariantStudy.StudyType type = options.get(STUDY_TYPE, VariantStudy.StudyType.class, VariantStudy.StudyType.CASE_CONTROL);
         VariantSource source = new VariantSource(
                 fileName,
                 fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), type, aggregation);
 
-        int batchSize = params.getInt(BATCH_SIZE, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE, "100")));
-        String compression = params.getString(COMPRESS_METHOD, "snappy");
+        int batchSize = options.getInt(BATCH_SIZE, 100);
+        String compression = options.getString(COMPRESS_METHOD, "snappy");
         String extension = "";
-        int numThreads = params.getInt(VariantStorageManager.TRANSFORM_THREADS, 8);
-        int capacity = params.getInt("blockingQueueCapacity", numThreads*2);
+        int numThreads = options.getInt(VariantStorageManager.TRANSFORM_THREADS, 8);
+        int capacity = options.getInt("blockingQueueCapacity", numThreads*2);
 
         if (compression.equalsIgnoreCase("gzip") || compression.equalsIgnoreCase("gz")) {
             extension = ".gz";
@@ -190,10 +220,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     factory = new VariantAggregatedVcfFactory();
                     break;
                 case EVS:
-                    factory = new VariantVcfEVSFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
+                    factory = new VariantVcfEVSFactory(options.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
                     break;
                 case EXAC:
-                    factory = new VariantVcfExacFactory(params.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
+                    factory = new VariantVcfExacFactory(options.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
                     break;
             }
         } else {
@@ -273,13 +303,21 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
-    public URI postTransform(URI input, ObjectMap params) throws IOException, FileFormatException {
+    public URI postTransform(URI input, ObjectMap unused_params) throws IOException, FileFormatException {
         return input;
     }
 
     @Override
-    public URI preLoad(URI input, URI output, ObjectMap params) throws StorageManagerException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
+    public URI preLoad(URI input, URI output, ObjectMap unused_params) throws StorageManagerException {
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+
+        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        if (studyConfiguration == null) {
+            logger.info("Creating a new StudyConfiguration");
+            studyConfiguration = new StudyConfiguration(options.getInt(STUDY_ID), options.getString(STUDY_NAME));
+            options.put(STUDY_CONFIGURATION, studyConfiguration);
+        }
 
         //TODO: Expect JSON file
         VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
@@ -317,8 +355,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
          *      some sample was missing in the given SAMPLE_IDS param
          */
 
-        if (params.containsKey(SAMPLE_IDS) && !params.getAsStringList(SAMPLE_IDS).isEmpty()) {
-            for (String sampleEntry : params.getAsStringList(SAMPLE_IDS)) {
+        if (options.containsKey(SAMPLE_IDS) && !options.getAsStringList(SAMPLE_IDS).isEmpty()) {
+            for (String sampleEntry : options.getAsStringList(SAMPLE_IDS)) {
                 String[] split = sampleEntry.split(":");
                 if (split.length != 2) {
                     throw new StorageManagerException("Param " + sampleEntry + " is malformed");
@@ -393,25 +431,28 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 }
             }
         }
-        params.put(STUDY_CONFIGURATION, studyConfiguration);
+        options.put(STUDY_CONFIGURATION, studyConfiguration);
 
         return input;
     }
 
     @Override
-    public URI postLoad(URI input, URI output, ObjectMap params) throws IOException, StorageManagerException {
-        boolean annotate = params.getBoolean(ANNOTATE);
-        VariantAnnotationManager.AnnotationSource annotationSource = params.get(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.class, VariantAnnotationManager.AnnotationSource.CELLBASE_REST);
-        Properties annotatorProperties = params.get(ANNOTATOR_PROPERTIES, Properties.class, new Properties());
+    public URI postLoad(URI input, URI output, ObjectMap params_unused) throws IOException, StorageManagerException {
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+
+        boolean annotate = options.getBoolean(ANNOTATE);
+        String annotationSourceStr = options.getString(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name());
+        VariantAnnotationManager.AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.valueOf(annotationSourceStr);
+        Properties annotatorProperties = options.get(ANNOTATOR_PROPERTIES, Properties.class, new Properties());
 
         //Update StudyConfiguration
-        StudyConfiguration studyConfiguration = getStudyConfiguration(params);
-        getStudyConfigurationManager(params).updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
-        String dbName = params.getString(DB_NAME, null);
-        String species = params.getString(SPECIES, "hsapiens");
-        String assembly = params.getString(ASSEMBLY, "");
-        int fileId = params.getInt(FILE_ID);
+        String dbName = options.getString(DB_NAME, null);
+        String species = options.getString(SPECIES, "hsapiens");
+        String assembly = options.getString(ASSEMBLY, "");
+        int fileId = options.getInt(FILE_ID);
 
 //        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
@@ -426,10 +467,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 return input;
             }
 
-            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName, params));
+            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName, params_unused));
 
             QueryOptions annotationOptions = new QueryOptions();
-            if (!params.getBoolean(OVERWRITE_ANNOTATIONS, false)) {
+            if (!options.getBoolean(OVERWRITE_ANNOTATIONS, false)) {
                 annotationOptions.put(VariantDBAdaptor.ANNOTATION_EXISTS, false);
             }
             annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(fileId));    // annotate just the indexed variants
@@ -441,15 +482,15 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
         }
 
-        if (params.getBoolean(CALCULATE_STATS)) {
+        if (options.getBoolean(CALCULATE_STATS)) {
             // TODO add filters
             try {
                 logger.debug("about to calculate stats");
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
-                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, params);
+                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName, params_unused);
                 URI outputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(params));
-                variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(params));
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(options));
+                variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);
                 e.printStackTrace();

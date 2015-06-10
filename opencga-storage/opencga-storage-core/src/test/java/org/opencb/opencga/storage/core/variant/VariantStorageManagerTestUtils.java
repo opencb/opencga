@@ -11,7 +11,6 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -112,7 +111,7 @@ public abstract class VariantStorageManagerTestUtils {
         preTransformParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         ObjectMap transformParams = new ObjectMap();
         transformParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        transformParams.put(VariantStorageManager.INCLUDE_SAMPLES, true);
+        transformParams.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
         transformParams.put(VariantStorageManager.FILE_ID, 6);
         ObjectMap postTransformParams = new ObjectMap();
 
@@ -120,7 +119,7 @@ public abstract class VariantStorageManagerTestUtils {
         preLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         ObjectMap loadParams = new ObjectMap();
         loadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        loadParams.put(VariantStorageManager.INCLUDE_SAMPLES, true);
+        loadParams.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
         loadParams.put(VariantStorageManager.FILE_ID, 6);
         ObjectMap postLoadParams = new ObjectMap();
         postLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);

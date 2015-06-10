@@ -65,7 +65,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.COMPRESS_METHOD, "gZiP");
         params.put(VariantStorageManager.TRANSFORM_THREADS, 1);
         params.put(VariantStorageManager.LOAD_THREADS, 1);
-        params.put(VariantStorageManager.INCLUDE_SAMPLES, true);
+        params.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
         params.put(VariantStorageManager.INCLUDE_SRC, true);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
@@ -94,7 +94,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.COMPRESS_METHOD, "snappy");
         params.put(VariantStorageManager.TRANSFORM_THREADS, 8);
         params.put(VariantStorageManager.LOAD_THREADS, 8);
-        params.put(VariantStorageManager.INCLUDE_SAMPLES, false);
+        params.put(VariantStorageManager.INCLUDE_GENOTYPES, false);
         params.put(VariantStorageManager.INCLUDE_SRC, false);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 

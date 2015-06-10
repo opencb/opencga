@@ -51,8 +51,9 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
     @Deprecated
     public void addConfigUri(URI configUri) {}
 
-    public void addConfiguration(StorageConfiguration configuration){
+    public void addConfiguration(StorageConfiguration configuration, String storageEngineId){
         this.configuration = configuration;
+        this.storageEngineId = storageEngineId;
     }
 
     /**
