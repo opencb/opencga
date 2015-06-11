@@ -16,7 +16,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
-    public static final String ID = "id";
+    public static final String ID = "ids";
     public static final String REGION = "region";
     public static final String CHROMOSOME = "chromosome";
     public static final String GENE = "gene";
