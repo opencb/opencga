@@ -71,7 +71,7 @@ public class VariantStatisticsManager {
         /** Variables for statistics **/
         VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(variantSource.getFileId(), variantSource.getStudyId());
-//        options.put(VariantDBAdaptor.STUDIES, Collections.singletonList(variantSource.getStudyId()));
+        options.put(VariantDBAdaptor.STUDIES, Collections.singletonList(variantSource.getStudyId()));
         options.put(VariantDBAdaptor.FILES, Collections.singletonList(variantSource.getFileId())); // query just the asked file
 
         int batchSize = 1000;  // future optimization, threads, etc
