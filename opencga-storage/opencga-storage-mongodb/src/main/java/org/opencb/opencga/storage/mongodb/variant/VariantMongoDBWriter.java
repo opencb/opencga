@@ -305,7 +305,24 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             if (writeVariantSource) {
                 writeSourceSummary(source);
             }
+            DBObject onBackground = new BasicDBObject("background", true);
+            variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
+            variantMongoCollection.createIndex(new BasicDBObject("annot.xrefs.id", 1), onBackground);
+            variantMongoCollection.createIndex(new BasicDBObject("annot.ct.so", 1), onBackground);
+            variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
+            variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), onBackground);
+            variantMongoCollection.createIndex(
+                    new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+                            .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
+            variantMongoCollection.createIndex(new BasicDBObject("st.maf", 1), onBackground);
+            variantMongoCollection.createIndex(new BasicDBObject("st.mgf", 1), onBackground);
+            variantMongoCollection.createIndex(
+                    new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                            .append(DBObjectToVariantConverter.START_FIELD, 1)
+                            .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+            logger.debug("sent order to create indices");
         }
+
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
         logger.debug("bulkTime " + bulkTime / 1000000.0 + "ms ");

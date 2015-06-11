@@ -96,6 +96,11 @@ public class VariantStatisticsManager {
         String studyId = studyConfiguration.getStudyId() + "";                //TODO: Change to int value
 //        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyId);
+
+        options.put(VariantDBAdaptor.STUDIES, Collections.singletonList(studyId));
+        options.put(VariantDBAdaptor.FILES, Collections.singletonList(fileId)); // query just the asked file
+
+
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
         boolean defaultCohortAbsent = false;
 

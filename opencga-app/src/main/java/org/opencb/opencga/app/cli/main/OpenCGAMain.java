@@ -393,6 +393,9 @@ public class OpenCGAMain {
                         if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
                             sourceUri = inputFile.toUri();
                         }
+                        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
+                            throw new IOException("File " + sourceUri + " does not exist");
+                        }
 
                         QueryResult<File> file = catalogManager.createFile(studyId, c.format, c.bioformat,
                                 Paths.get(c.path, inputFile.getFileName().toString()).toString(), c.description,
@@ -410,6 +413,23 @@ public class OpenCGAMain {
                         QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, folder, null));
 
+                        break;
+                    }
+                    case "upload": {
+                        OptionsParser.FileCommands.UploadCommand c = optionsParser.getFileCommands().uploadCommand;
+                        URI sourceUri = new URI(null, c.inputFile, null);
+                        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
+                            sourceUri = Paths.get(c.inputFile).toUri();
+                        }
+                        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
+                            throw new IOException("File " + sourceUri + " does not exist");
+                        }
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        QueryResult<File> file = catalogManager.getFile(fileId, c.cOpt.getQueryOptions(), sessionId);
+
+                        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, c.replace, c.replace, c.move, c.calculateChecksum);
+                        System.out.println(createOutput(c.cOpt, catalogManager.getFile(file.first().getId(), c.cOpt.getQueryOptions(), sessionId), null));
                         break;
                     }
                     case "link": {
