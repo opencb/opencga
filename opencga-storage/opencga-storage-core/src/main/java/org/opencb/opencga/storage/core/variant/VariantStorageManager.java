@@ -24,6 +24,7 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -32,7 +33,6 @@ import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -50,6 +50,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by imedina on 13/08/14.
@@ -252,17 +253,28 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             //Writers
             StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
 
-            SimpleThreadRunner runner = new SimpleThreadRunner(
-                    dataReader,
-                    Collections.<Task>singletonList(new VariantJsonTransformTask(factory, source, outputFileJsonFile)),
-                    dataWriter,
-                    batchSize,
-                    capacity,
-                    numThreads);
-
+            final VariantSource finalSource = source;
+            final Path finalOutputFileJsonFile = outputFileJsonFile;
+            ParallelTaskRunner<String, String> ptr;
+            try {
+                ptr = new ParallelTaskRunner<>(
+                        dataReader,
+                        new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile),
+                        dataWriter,
+                        new ParallelTaskRunner.Config(numThreads, batchSize, capacity, false)
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
+            }
             logger.info("Multi thread transform...");
             start = System.currentTimeMillis();
-            runner.run();
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
+            }
             end = System.currentTimeMillis();
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");

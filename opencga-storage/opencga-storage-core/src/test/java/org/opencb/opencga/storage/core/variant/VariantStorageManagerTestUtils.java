@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.slf4j.Logger;
@@ -41,6 +42,10 @@ public abstract class VariantStorageManagerTestUtils {
     public static void _beforeClass() throws Exception {
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
         Path rootDir = getTmpRootDir();
+        if (rootDir.toFile().exists()) {
+            IOUtils.deleteDirectory(rootDir);
+            Files.createDirectories(rootDir);
+        }
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
         inputUri = inputPath.toUri();
@@ -49,7 +54,7 @@ public abstract class VariantStorageManagerTestUtils {
     }
 
     protected static Path getTmpRootDir() throws IOException {
-        Path rootDir = Paths.get("tmp", "VariantStorageManagerTest");
+        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
         Files.createDirectories(rootDir);
         return rootDir;
     }

@@ -22,6 +22,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -31,6 +32,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
@@ -38,8 +40,6 @@ import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.StorageManagerException;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.runner.SimpleThreadRunner;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -158,7 +158,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI load(URI inputUri) throws IOException {
+    public URI load(URI inputUri) throws IOException, StorageManagerException {
         // input: getDBSchemaReader
         // output: getDBWriter()
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
@@ -182,6 +182,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         int batchSize = options.getInt(BATCH_SIZE, 100);
         int bulkSize = options.getInt(BULK_SIZE, batchSize);
         int loadThreads = options.getInt(LOAD_THREADS, 8);
+        int capacity = options.getInt("blockingQueueCapacity", loadThreads*2);
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         final int numReaders = 1;
         final int numWriters = loadThreads  == 1? 1 : loadThreads - numReaders; //Subtract the reader thread
@@ -233,14 +234,67 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //            variantReadNode.append(variantWriterNode);
 //            runner.run();
 
-            SimpleThreadRunner threadRunner = new SimpleThreadRunner(
-                    variantJsonReader,
-                    Collections.<Task>emptyList(),
-                    writerList,
-                    batchSize,
-                    loadThreads*2,
-                    0);
-            threadRunner.run();
+
+            ParallelTaskRunner<Variant, Variant> ptr;
+            try {
+                class TaskWriter implements ParallelTaskRunner.Task<Variant, Variant> {
+                    private DataWriter<Variant> writer;
+
+                    public TaskWriter(DataWriter<Variant> writer) {
+                        this.writer = writer;
+                    }
+
+                    @Override
+                    public void pre() {
+                        writer.pre();
+                    }
+
+                    @Override
+                    public List<Variant> apply(List<Variant> batch) {
+                        writer.write(batch);
+                        return batch;
+                    }
+
+                    @Override
+                    public void post() {
+//                        writer.post();
+                    }
+                }
+
+                List<ParallelTaskRunner.Task<Variant, Variant>> tasks = new LinkedList<>();
+                for (VariantWriter writer : writers) {
+                    tasks.add(new TaskWriter(writer));
+                }
+
+                ptr = new ParallelTaskRunner<>(
+                        variantJsonReader,
+                        tasks,
+                        null,
+                        new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
+                );
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
+            }
+
+            try {
+                writers.forEach(DataWriter::open);
+                ptr.run();
+                writers.forEach(DataWriter::post);
+                writers.forEach(DataWriter::close);
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
+            }
+
+//            SimpleThreadRunner threadRunner = new SimpleThreadRunner(
+//                    variantJsonReader,
+//                    Collections.<Task>emptyList(),
+//                    writerList,
+//                    batchSize,
+//                    loadThreads * 2,
+//                    0);
+//            threadRunner.run();
 
         }
 
