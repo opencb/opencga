@@ -20,7 +20,7 @@ public class MongoVariantStorageManagerTestUtils {
     static public MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
         if (manager == null) {
             manager = new MongoDBVariantStorageManager();
-            InputStream is = MongoVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("configuration.yml");
+            InputStream is = MongoVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
             manager.setConfiguration(storageConfiguration, "mongodb");
         }

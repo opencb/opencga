@@ -136,7 +136,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"-C", "--conf" }, description = "Properties path")
+        @Parameter(names = {"-C", "--conf" }, description = "Configuration file path.")
         public String configFile;
 
         @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in storage-configuration.yml")
@@ -148,10 +148,6 @@ public class CliOptionsParser {
         @Deprecated
         @Parameter(names = { "--sm-name" }, description = "StorageManager class name (Must be in the classpath).")
         public String storageManagerName;
-
-        @Deprecated
-        @Parameter(names = {"--storage-engine-config"}, arity = 1, description = "Path of the file with options to overwrite storage-<Plugin>.properties")
-        public String storageEngineConfigFile;
 
     }
 
@@ -442,23 +438,28 @@ public class CliOptionsParser {
         public boolean overwriteStats = false;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        public String studyId;
+        public int studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        public String fileId;
+        public int fileId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
-
-        @Deprecated
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
-        public String credentials;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
         public String fileName;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
         public String outdir = ".";
+
+        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        Map<String, String> cohort = new HashMap<>();
+
+        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, cohortIds will be auto-generated.", assignment = ":")
+        Map<String, String> cohortIds = new HashMap<>();
+
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        String studyConfigurationFile;
 
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
