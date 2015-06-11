@@ -63,7 +63,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             //QueryOptions queryOptions = getAllQueryOptions();
             List<Cohort> cohorts = new LinkedList<>();
             if (variableName != null && !variableName.isEmpty() && sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
-                return createErrorResponse("Can only create a cohort given list of sampleIds or a categorical variable name");
+                return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
             int studyId = catalogManager.getStudyId(studyIdStr);
@@ -81,10 +81,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                     }
                 }
                 if (variable == null) {
-                    return createErrorResponse("Variable " + variable  + " does not exist. ");
+                    return createErrorResponse("", "Variable " + variable  + " does not exist. ");
                 }
                 if (variable.getType() != Variable.VariableType.CATEGORICAL) {
-                    return createErrorResponse("Can only create cohorts by variable, when is a categorical variable");
+                    return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");
                 }
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
@@ -94,9 +94,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
             }
             return createOkResponse(cohorts);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
@@ -107,9 +106,8 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
@@ -125,9 +123,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
             allSamples.setId("getCohortSamples");
             return createOkResponse(allSamples);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
@@ -172,7 +169,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId) throws IOException {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - GET", "PENDING");
     }
 
     @POST
@@ -181,14 +178,14 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some user attributes using POST method", position = 4)
     public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - POST", "PENDING");
     }
 
     @GET
     @Path("/{cohortId}/delete")
     @ApiOperation(value = "Delete cohort. PENDING", position = 5)
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("delete", "PENDING");
     }
 
 }

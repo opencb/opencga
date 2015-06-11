@@ -56,9 +56,9 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
             return createOkResponse(queryResult);
-        } catch (CatalogException  e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+//            e.printStackTrace();
+            return createErrorResponse(e);
         }
     }
 
@@ -66,13 +66,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/info")
     @ApiOperation(value = "Retrieves all user info", position = 2)
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) throws IOException {
+                            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) {
         try {
             QueryResult result = catalogManager.getUser(userId, lastActivity, queryOptions, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+//            e.printStackTrace();
+            return createErrorResponse(e);
         }
     }
 
@@ -90,17 +90,16 @@ public class UserWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.login(userId, password, sessionIp);
             }
             return createOkResponse(queryResult);
-        } catch (CatalogException | IOException  e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+//            e.printStackTrace();
+            return createErrorResponse(e);
         }
     }
 
     @GET
     @Path("/{userId}/logout")
     @ApiOperation(value = "User logout method", position = 4)
-    public Response logout(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId)
-            throws IOException {
+    public Response logout(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
             QueryResult result;
             if (userId.equalsIgnoreCase("anonymous")) {
@@ -109,9 +108,9 @@ public class UserWSServer extends OpenCGAWSServer {
                 result = catalogManager.logout(userId, sessionId);
             }
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+//            e.printStackTrace();
+            return createErrorResponse(e);
         }
     }
 
@@ -120,13 +119,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "User password change", position = 5)
     public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                    @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-                                   @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1) throws IOException {
+                                   @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1) {
         try {
             QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+//            e.printStackTrace();
+            return createErrorResponse(e);
         }
     }
 
@@ -134,13 +133,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/change-email")
     @ApiOperation(value = "User email change", position = 6)
     public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail) throws IOException {
+                                @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail) {
         try {
             QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+//            e.printStackTrace();
+            return createErrorResponse(e);
         }
     }
 
@@ -148,13 +147,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/reset-password")
     @ApiOperation(value = "User email change", position = 7)
     public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                  @ApiParam(value = "email", required = true) @QueryParam("email") String email) throws IOException {
+                                  @ApiParam(value = "email", required = true) @QueryParam("email") String email) {
         try {
             QueryResult result = catalogManager.resetPassword(userId, email);
             return createOkResponse(result);
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -166,9 +165,9 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -180,7 +179,7 @@ public class UserWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
                            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs) throws IOException {
+                           @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs) {
         try {
             ObjectMap objectMap = new ObjectMap();
             if (name != null) {
@@ -201,9 +200,9 @@ public class UserWSServer extends OpenCGAWSServer {
 
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -217,9 +216,9 @@ public class UserWSServer extends OpenCGAWSServer {
             ObjectMap objectMap = new ObjectMap(params);
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -230,9 +229,9 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             catalogManager.deleteUser(userId, sessionId);
             return createOkResponse("User '" + userId + "' deleted");
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 

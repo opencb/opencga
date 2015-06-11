@@ -72,7 +72,7 @@ public class ToolWSServer extends OpenCGAWSServer {
             return createOkResponse(results);
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -94,7 +94,7 @@ public class ToolWSServer extends OpenCGAWSServer {
             return createOkResponse(results);
         } catch (CatalogException | AnalysisExecutionException | IOException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -102,7 +102,7 @@ public class ToolWSServer extends OpenCGAWSServer {
     @Path("/{toolId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
     public Response update(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) throws IOException {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - GET", "PENDING");
     }
 
     @POST
@@ -111,14 +111,14 @@ public class ToolWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some user attributes using POST method", position = 4)
     public Response updateByPost(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - POST", "PENDING");
     }
 
     @GET
     @Path("/{toolId}/delete")
     @ApiOperation(value = "Delete an user [NO TESTED]", position = 5)
     public Response delete(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("delete", "PENDING");
     }
 
 }

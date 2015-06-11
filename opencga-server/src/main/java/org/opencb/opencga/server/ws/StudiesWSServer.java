@@ -62,7 +62,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException | IOException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -89,7 +89,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             projectId = catalogManager.getProjectId(projectIdStr);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
         for (Study study : studies) {
             System.out.println("study = " + study);
@@ -112,10 +112,10 @@ public class StudiesWSServer extends OpenCGAWSServer {
 //                        studyAdded.getFiles().add(file);
 //                    }
 //                }
-            } catch (CatalogException | IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
-//                return createErrorResponse(e.getMessage());
-                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e.getMessage(), Collections.<Study>emptyList()));
+//                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e, Collections.<Study>emptyList()));
+                return createErrorResponse(e);
             }
         }
         return createOkResponse(queryResults);
@@ -134,7 +134,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 queryResults.add(catalogManager.getStudy(studyId, sessionId, queryOptions));
             } catch (CatalogException e) {
                 e.printStackTrace();
-                return createErrorResponse(e.getMessage());
+                return createErrorResponse(e);
             }
         }
         return createOkResponse(queryResults);
@@ -151,7 +151,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -163,7 +163,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             int studyId = catalogManager.getStudyId(studyIdStr);
             return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
         } catch (CatalogException e) {
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -177,7 +177,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -228,7 +228,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 

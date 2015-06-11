@@ -61,7 +61,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
 
     }
@@ -77,7 +77,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
             } catch (CatalogException e) {
                 e.printStackTrace();
-                return createErrorResponse(e.getMessage());
+                return createErrorResponse(e);
             }
         }
         return createOkResponse(queryResults);
@@ -96,7 +96,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createOkResponse(results);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -122,7 +122,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -139,7 +139,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             return createOkResponse(result);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -147,7 +147,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{projectId}/delete")
     @ApiOperation(value = "Delete a project [PENDING]", position = 5)
     public Response delete(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectId) {
-        return createOkResponse("PENDING");
+        return createErrorResponse("delete", "PENDING");
     }
 
 }

@@ -266,11 +266,18 @@ public class OpenCGAWSServer {
         return createOkResponse("No help available");
     }
 
-    protected Response createErrorResponse(Object o) {
+    protected Response createErrorResponse(Exception e) {
         QueryResult<ObjectMap> result = new QueryResult();
-        result.setErrorMsg(o.toString());
+        result.setErrorMsg(e.toString());
+        e.printStackTrace();
         return createOkResponse(result);
     }
+
+//    protected Response createErrorResponse(String o) {
+//        QueryResult<ObjectMap> result = new QueryResult();
+//        result.setErrorMsg(o.toString());
+//        return createOkResponse(result);
+//    }
 
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
@@ -306,7 +313,7 @@ public class OpenCGAWSServer {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
-            return createErrorResponse("Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
 

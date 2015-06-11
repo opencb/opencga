@@ -62,7 +62,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -75,7 +75,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -92,7 +92,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(sampleQueryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -106,7 +106,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -124,7 +124,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -138,7 +138,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
             if(variableSetResult.getResult().isEmpty()) {
-                return createErrorResponse("VariableSet not find.");
+                return createErrorResponse("sample - annotate", "VariableSet not find.");
             }
             Map<String, Object> annotations = new HashMap<>();
             variableSetResult.getResult().get(0).getVariables().stream()
@@ -150,7 +150,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -158,7 +158,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 6)
     public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) throws IOException {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - GET", "PENDING");
     }
 
     @POST
@@ -167,14 +167,14 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some user attributes using POST method", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("upodate - POST", "PENDING");
     }
 
     @GET
     @Path("/{sampleId}/delete")
     @ApiOperation(value = "Delete an user [NO TESTED]", position = 7)
     public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("delete", "PENDING");
     }
 
 }

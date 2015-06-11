@@ -66,7 +66,7 @@ public class VariableWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -80,7 +80,7 @@ public class VariableWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -88,7 +88,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @Path("/{variableSetId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 3)
     public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) throws IOException {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - GET", "PENDING");
     }
 
     @POST
@@ -97,14 +97,14 @@ public class VariableWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some user attributes using POST method", position = 3)
     public Response updateByPost(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("update - POST", "PENDING");
     }
 
     @GET
     @Path("/{variableSetId}/delete")
     @ApiOperation(value = "Delete an user [NO TESTED]", position = 4)
     public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) {
-        return createErrorResponse("PENDING");
+        return createErrorResponse("delete", "PENDING");
     }
 
 }

@@ -127,7 +127,7 @@ public class JobWSServer extends OpenCGAWSServer {
             // Set outdir
             String outputParam = analysisJobExecutor.getExecution().getOutputParam();
             if (params.get(outputParam).isEmpty()) {
-                return createErrorResponse("Missing output param '" + outputParam + "'");
+                return createErrorResponse("", "Missing output param '" + outputParam + "'");
             }
 
             int outDirId;
@@ -199,9 +199,8 @@ public class JobWSServer extends OpenCGAWSServer {
 
             return createOkResponse(jobQueryResult);
 
-        } catch (CatalogException | IOException | AnalysisExecutionException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
@@ -212,7 +211,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -223,7 +222,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
         } catch (CatalogException e) {
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
@@ -244,7 +243,7 @@ public class JobWSServer extends OpenCGAWSServer {
             results.add(catalogManager.deleteJob(jobId, sessionId));
             return createOkResponse(results);
         } catch (CatalogException | IOException e) {
-            return createErrorResponse(e.getMessage());
+            return createErrorResponse(e);
         }
     }
 
