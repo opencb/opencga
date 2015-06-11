@@ -34,7 +34,9 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -96,6 +98,7 @@ public class OpenCGAWSServer {
     protected Boolean metadata;
 
     protected static CatalogManager catalogManager;
+    protected static StorageManagerFactory storageManagerFactory;
 
     static {
 
@@ -134,6 +137,13 @@ public class OpenCGAWSServer {
         } else {
             Config.setOpenCGAHome();
             System.out.println("Using OpenCGA_HOME = " + Config.getOpenCGAHome());
+        }
+
+        try {
+            StorageConfiguration storageConfiguration = StorageConfiguration.findAndLoad();
+            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         try {

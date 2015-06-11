@@ -549,7 +549,7 @@ public class OpenCGAStorageMain {
         params.put(VariantStorageManager.AGGREGATED_TYPE, c.aggregated);
         params.put(VariantStorageManager.DB_NAME, c.dbName);
         params.put(VariantStorageManager.ANNOTATE, c.annotate);
-        params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
+        params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
         if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
             params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
         }
@@ -560,7 +560,7 @@ public class OpenCGAStorageMain {
             if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
                 annotatorProperties.load(new FileInputStream(c.annotatorConfig));
             }
-            params.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
+//            params.put(VariantAnnotationManager.ANNOTATOR_PROPERTIES, annotatorProperties);
 
             //Get annotation source
             VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
@@ -572,7 +572,7 @@ public class OpenCGAStorageMain {
                         ).toUpperCase()
                 );
             }
-            params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
+            params.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotatorSource);
         }
         
         if (c.aggregationMappingFile != null) {
@@ -681,7 +681,7 @@ public class OpenCGAStorageMain {
             );
         }
         logger.info("Annotating with {}", annotatorSource);
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
+        VariantAnnotator annotator = null; //VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
         VariantAnnotationManager variantAnnotationManager =
                 new VariantAnnotationManager(annotator, dbAdaptor);
 

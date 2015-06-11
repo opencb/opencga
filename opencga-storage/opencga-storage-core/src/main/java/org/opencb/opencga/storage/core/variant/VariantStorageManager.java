@@ -76,17 +76,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
 
     public static final String DB_NAME = "database.name";
-    public static final String SPECIES = "species";
-
-    public static final String ASSEMBLY = "assembly";
-    public static final String ANNOTATE = "annotate";
-    public static final String ANNOTATION_SOURCE = "annotationSource";
-    public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
-    public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
 
     public static final String BATCH_SIZE = "batch.size";
     public static final String TRANSFORM_THREADS = "transform.threads";
     public static final String LOAD_THREADS = "load.threads";
+    public static final String ANNOTATE = "annotate";
 
 //    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_THREADS      = "OPENCGA.STORAGE.VARIANT.TRANSFORM.THREADS";
 //    public static final String OPENCGA_STORAGE_VARIANT_LOAD_THREADS           = "OPENCGA.STORAGE.VARIANT.LOAD.THREADS";
@@ -416,17 +410,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         boolean annotate = options.getBoolean(ANNOTATE);
-        String annotationSourceStr = options.getString(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name());
-        VariantAnnotationManager.AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.valueOf(annotationSourceStr);
-        Properties annotatorProperties = options.get(ANNOTATOR_PROPERTIES, Properties.class, new Properties());
 
         //Update StudyConfiguration
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
         String dbName = options.getString(DB_NAME, null);
-        String species = options.getString(SPECIES, "hsapiens");
-        String assembly = options.getString(ASSEMBLY, "");
         int fileId = options.getInt(FILE_ID);
 
 //        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
@@ -435,7 +424,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
             VariantAnnotator annotator;
             try {
-                annotator = VariantAnnotationManager.buildVariantAnnotator(annotationSource, annotatorProperties, species, assembly);
+                annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngineId);
             } catch (VariantAnnotatorException e) {
                 e.printStackTrace();
                 logger.error("Can't annotate variants." , e);
@@ -445,7 +434,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName));
 
             QueryOptions annotationOptions = new QueryOptions();
-            if (!options.getBoolean(OVERWRITE_ANNOTATIONS, false)) {
+            if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
                 annotationOptions.put(VariantDBAdaptor.ANNOTATION_EXISTS, false);
             }
             annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(fileId));    // annotate just the indexed variants

@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -106,30 +107,22 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
             variantOptions.put(VariantStorageManager.AGGREGATED_TYPE, indexVariantsCommandOptions.aggregated);
             if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.DB_NAME, indexVariantsCommandOptions.dbName);
             variantOptions.put(VariantStorageManager.ANNOTATE, indexVariantsCommandOptions.annotate);
-            variantOptions.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
+            if (indexVariantsCommandOptions.annotator != null) {
+                variantOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
+            }
+            variantOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
             if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
                 variantOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
             }
 
-            if(indexVariantsCommandOptions.annotate) {
-                //Get annotator config
-                Properties annotatorProperties = Config.getStorageProperties();
-                if(indexVariantsCommandOptions.annotatorConfigFile != null && !indexVariantsCommandOptions.annotatorConfigFile.isEmpty()) {
-                    annotatorProperties.load(new FileInputStream(indexVariantsCommandOptions.annotatorConfigFile));
+            if (indexVariantsCommandOptions.aggregationMappingFile != null) {
+                Properties aggregationMappingProperties = new Properties();
+                try {
+                    aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
+                    variantOptions.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+                } catch (FileNotFoundException e) {
+                    logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions.aggregationMappingFile);
                 }
-                variantOptions.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
-
-                //Get annotation source
-                VariantAnnotationManager.AnnotationSource annotatorSource = indexVariantsCommandOptions.annotator;
-                if(annotatorSource == null) {
-                    annotatorSource = org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource.valueOf(
-                            annotatorProperties.getProperty(
-                                    OPENCGA_STORAGE_ANNOTATOR,
-                                    org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()
-                            ).toUpperCase()
-                    );
-                }
-                variantOptions.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
             }
 
             variantOptions.putAll(indexVariantsCommandOptions.params);

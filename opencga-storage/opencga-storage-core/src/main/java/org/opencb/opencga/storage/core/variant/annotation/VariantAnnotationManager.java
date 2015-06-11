@@ -24,8 +24,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
@@ -44,6 +46,12 @@ import java.util.*;
  * @author Javier Lopez &lt;fjlopez@ebi.ac.uk&gt;
  */
 public class VariantAnnotationManager {
+
+    public static final String SPECIES = "species";
+    public static final String ASSEMBLY = "assembly";
+    public static final String ANNOTATION_SOURCE = "annotationSource";
+//    public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
+    public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
 
     public static final String CLEAN = "clean";
     public static final String FILE_NAME = "fileName";
@@ -94,19 +102,31 @@ public class VariantAnnotationManager {
         VEP
     }
 
-    public static VariantAnnotator buildVariantAnnotator(AnnotationSource source, Properties annotationProperties, String species, String assembly)
+
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId)
             throws VariantAnnotatorException {
-        switch (source) {
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.valueOf(
+                options.getString(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()).toUpperCase()
+        );
+
+        logger.info("Annotating with {}", annotationSource);
+
+        String species = options.getString(SPECIES);
+        String assembly = options.getString(ASSEMBLY);
+
+        switch (annotationSource) {
             case CELLBASE_DB_ADAPTOR:
-                return CellBaseVariantAnnotator.buildCellbaseAnnotator(annotationProperties, species, assembly, false);
+                return CellBaseVariantAnnotator.buildCellbaseAnnotator(configuration.getCellbase(), species, assembly, false);
             case CELLBASE_REST:
-                return CellBaseVariantAnnotator.buildCellbaseAnnotator(annotationProperties, species, assembly, true);
+                return CellBaseVariantAnnotator.buildCellbaseAnnotator(configuration.getCellbase(), species, assembly, true);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             default:
                 //TODO: Reflexion?
-                throw new VariantAnnotatorException("Unknown annotation source: " + source);
+                throw new VariantAnnotatorException("Unknown annotation source: " + annotationSource);
         }
+
     }
 
     class AnnotatorDBReader implements DataReader<VariantAnnotation> {

@@ -22,18 +22,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.ConsequenceType;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variation.GenomicVariant;
-import org.opencb.cellbase.core.CellBaseConfiguration;
 import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.common.core.CellbaseConfiguration;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
@@ -62,16 +60,16 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     private VariationDBAdaptor variationDBAdaptor;
     private DBAdaptorFactory dbAdaptorFactory;
 
-    public static final String CELLBASE_VERSION = "CELLBASE.VERSION";
-    public static final String CELLBASE_REST_URL = "CELLBASE.REST.URL";
-
-    public static final String CELLBASE_DB_HOST = "CELLBASE.DB.HOST";
-    public static final String CELLBASE_DB_NAME = "CELLBASE.DB.NAME";
-    public static final String CELLBASE_DB_PORT = "CELLBASE.DB.PORT";
-    public static final String CELLBASE_DB_USER = "CELLBASE.DB.USER";
-    public static final String CELLBASE_DB_PASSWORD = "CELLBASE.DB.PASSWORD";
-    public static final String CELLBASE_DB_MAX_POOL_SIZE = "CELLBASE.DB.MAX_POOL_SIZE";
-    public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
+//    public static final String CELLBASE_VERSION = "CELLBASE.VERSION";
+//    public static final String CELLBASE_REST_URL = "CELLBASE.REST.URL";
+//
+//    public static final String CELLBASE_DB_HOST = "CELLBASE.DB.HOST";
+//    public static final String CELLBASE_DB_NAME = "CELLBASE.DB.NAME";
+//    public static final String CELLBASE_DB_PORT = "CELLBASE.DB.PORT";
+//    public static final String CELLBASE_DB_USER = "CELLBASE.DB.USER";
+//    public static final String CELLBASE_DB_PASSWORD = "CELLBASE.DB.PASSWORD";
+//    public static final String CELLBASE_DB_MAX_POOL_SIZE = "CELLBASE.DB.MAX_POOL_SIZE";
+//    public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
 
 
 
@@ -104,14 +102,18 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         cellBaseClient.getObjectMapper().addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
     }
 
-    public static CellBaseVariantAnnotator buildCellbaseAnnotator(Properties annotatorProperties, String species, String assembly, boolean restConnection)
+    public static CellBaseVariantAnnotator buildCellbaseAnnotator(CellBaseConfiguration cellBaseConfiguration, String species, String assembly, boolean restConnection)
             throws VariantAnnotatorException {
         if (restConnection) {
-            String cellbaseVersion = annotatorProperties.getProperty(CELLBASE_VERSION, "v3");
-            String cellbaseRest = annotatorProperties.getProperty(CELLBASE_REST_URL, "");
+            String cellbaseVersion = cellBaseConfiguration.getVersion();
+            List<String> hosts = cellBaseConfiguration.getHosts();
+            if (hosts.isEmpty()) {
+                throw new VariantAnnotatorException("Missing value \"CellBase Hosts\"");
+            }
+            String cellbaseRest = hosts.get(0);
 
-            checkNull(cellbaseVersion, CELLBASE_VERSION);
-            checkNull(cellbaseRest, CELLBASE_REST_URL);
+            checkNotNull(cellbaseVersion, "cellbase version");
+            checkNotNull(cellbaseRest, "cellbase hosts");
 
             CellBaseClient cellBaseClient;
             try {
@@ -132,10 +134,10 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 //            int maxPoolSize = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_MAX_POOL_SIZE, "10"));
 //            int timeout = Integer.parseInt(annotatorProperties.getProperty(CELLBASE_DB_TIMEOUT, "200"));
 //
-//            checkNull(cellbaseHost, CELLBASE_DB_HOST);
-//            checkNull(cellbaseDatabase, CELLBASE_DB_NAME);
-//            checkNull(cellbaseUser, CELLBASE_DB_USER);
-//            checkNull(cellbasePassword, CELLBASE_DB_PASSWORD);
+//            checkNotNull(cellbaseHost, CELLBASE_DB_HOST);
+//            checkNotNull(cellbaseDatabase, CELLBASE_DB_NAME);
+//            checkNotNull(cellbaseUser, CELLBASE_DB_USER);
+//            checkNotNull(cellbasePassword, CELLBASE_DB_PASSWORD);
 //
 //
 //            CellBaseConfiguration cellbaseConfiguration = new CellBaseConfiguration();
@@ -156,7 +158,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
     }
 
-    private static void checkNull(String value, String name) throws VariantAnnotatorException {
+    private static void checkNotNull(String value, String name) throws VariantAnnotatorException {
         if(value == null || value.isEmpty()) {
             throw new VariantAnnotatorException("Missing value: " + name);
         }

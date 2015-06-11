@@ -91,8 +91,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //        Properties credentialsProperties = new Properties(properties);
 
         MongoCredentials credentials = getMongoCredentials(dbName);
-//        String variantsCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
-//        String filesCollection = credentialsProperties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
         String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
         String filesCollection = options.getString(COLLECTION_FILES, "files");
         logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
@@ -105,8 +103,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         VariantMongoDBAdaptor variantMongoDBAdaptor;
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
-//        String variantsCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS, "variants");
-//        String filesCollection = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES, "files");
         String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
         String filesCollection = options.getString(COLLECTION_FILES, "files");
         try {
@@ -128,9 +124,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     /* package */ MongoCredentials getMongoCredentials(String dbName) {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
-//        String hosts = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS, "localhost");
-//        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(hosts);
-
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String host : configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -142,13 +135,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         if(dbName == null || dbName.isEmpty()) {    //If no database name is provided, read from the configuration file
-//            dbName = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME, "variants");
             dbName = options.getString(DB_NAME, "variants");
         }
-//        String user = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER, null);
-//        String pass = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS, null);
-//        String authenticationDatabase = properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB, null);
-
         String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
         String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
 

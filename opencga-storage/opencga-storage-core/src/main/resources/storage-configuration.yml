@@ -30,9 +30,13 @@ storageEngines:
       load.compress_genotypes: true
       load.threads: 4
       database.name: "opencga"
+#      authentication.db:
+      collection.variants: "variants"
+      collection.files: "files"
       include.src: false
       include.genotypes: true
       include.stats: false
+      annotator: cellbase_rest
     database:
       hosts:
       - ${OPENCGA.STORAGE.VARIANT.DB.HOST}

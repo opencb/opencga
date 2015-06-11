@@ -257,6 +257,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        String aggregationMappingFile = null;
+
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
         public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
@@ -278,6 +281,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations = false;
 
+        @Deprecated
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         public String annotatorConfigFile;
     }
@@ -378,7 +382,7 @@ public class CliOptionsParser {
         public boolean create = false;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
-        public boolean load = false;
+        public String load = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;
@@ -386,10 +390,11 @@ public class CliOptionsParser {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations = false;
 
+        @Deprecated
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         public String annotatorConfig;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;
 
         @Deprecated
