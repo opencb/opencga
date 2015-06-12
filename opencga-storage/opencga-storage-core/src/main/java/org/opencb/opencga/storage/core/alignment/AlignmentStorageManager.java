@@ -58,6 +58,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public static final String PLAIN = "plain";
     public static final String TRANSFORM_REGION_SIZE = "transform.region_size";
     public static final String TRANSFORM_COVERAGE_CHUNK_SIZE = "transform.coverage_chunk_size";
+    public static final String WRITE_COVERAGE = "transform.write_coverage";
     public static final String STUDY = "study";
     public static final String FILE_ID = "fileId";
     public static final String FILE_ALIAS = "fileAlias";
@@ -205,8 +206,10 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         }
 
         if(includeCoverage) {
+            boolean writeMeanCoverage = !storageEtlConfiguration.getOptions().getAsStringList(MEAN_COVERAGE_SIZE_LIST).isEmpty();
+            boolean writeCoverage = storageEtlConfiguration.getOptions().getBoolean(WRITE_COVERAGE, false);
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
-                    new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
+                    new AlignmentCoverageJsonDataWriter(jsonOutputFiles, writeCoverage, writeMeanCoverage, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
                     storageEtlConfiguration.getOptions().getInt(TRANSFORM_COVERAGE_CHUNK_SIZE, 1000));
             writers.add(alignmentCoverageJsonDataWriter);
