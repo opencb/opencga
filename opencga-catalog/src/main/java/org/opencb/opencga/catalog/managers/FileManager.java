@@ -13,7 +13,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -30,9 +29,15 @@ import java.util.*;
  */
 public class FileManager extends AbstractManager implements IFileManager {
 
-    private static final QueryOptions includeStudyUri = new QueryOptions("include", Arrays.asList("projects.studies.uri"));
-
     protected static Logger logger = LoggerFactory.getLogger(FileManager.class);
+
+    private static final QueryOptions includeStudyUri = new QueryOptions("include", Collections.singletonList("projects.studies.uri"));
+    private static final QueryOptions includeFileUriPath = new QueryOptions("include", Arrays.asList("projects.studies.files.uri", "projects.studies.files.path"));
+    private static final Comparator<File> rootFirstComparator =
+            (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length()) - (f2.getPath() == null ? 0 : f2.getPath().length());
+    private static final Comparator<File> rootLastComparator =
+            (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length()) - (f1.getPath() == null ? 0 : f1.getPath().length());
+
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                        CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
@@ -63,6 +68,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
+            QueryResult<File> parents = getParents(file, false, includeFileUriPath);
+            for (File parent : parents.getResult()) {
+                if (parent.getUri() != null) {
+                    String relativePath = file.getPath().replaceFirst(parent.getPath(), "");
+                    return parent.getUri().resolve(relativePath);
+                }
+            }
             URI studyUri = study.getUri() == null ? getStudyUri(study.getId()) : study.getUri();
             return file.getPath().isEmpty() ?
                     studyUri :
@@ -70,6 +82,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
     }
 
+    @Deprecated
     @Override
     public URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException {
         ParamUtils.checkObj(studyUri, "studyUri");
@@ -78,6 +91,23 @@ public class FileManager extends AbstractManager implements IFileManager {
         return relativeFilePath.isEmpty() ?
                 studyUri :
                 catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
+    }
+
+    public URI getFileUri(int studyId, String filePath) throws CatalogException {
+        ParamUtils.checkObj(filePath, "filePath");
+
+        List<File> parents = getParents(false, null, filePath, studyId).getResult();
+
+        for (File parent : parents) {
+            if (parent.getUri() != null) {
+                String relativePath = filePath.replaceFirst(parent.getPath(), "");
+                return parent.getUri().resolve(relativePath);
+            }
+        }
+        URI studyUri = getStudyUri(studyId);
+        return filePath.isEmpty() ?
+                studyUri :
+                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
     }
 
     @Override
@@ -120,26 +150,50 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public boolean isExternal(File file) throws CatalogException {
         ParamUtils.checkObj(file, "File");
+        return file.getUri() != null;
+    }
 
-        if (file.getUri() != null) {
-            return true;
-        }
-        List<String> paths = new LinkedList<>();
+    public boolean isRootFolder(File file) throws CatalogException {
+        ParamUtils.checkObj(file, "File");
+        return file.getPath().isEmpty();
+    }
+
+    @Override
+    public QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId) throws CatalogException {
+        return getParents(read(fileId, null, sessionId).first(), true, options);
+    }
+
+    /**
+     * Return all parent folders from a file.
+     * @param file
+     * @param options
+     * @return
+     * @throws CatalogException
+     */
+    private QueryResult<File> getParents(File file, boolean rootFirst, QueryOptions options) throws CatalogException {
+        String filePath = file.getPath();
+        return getParents(rootFirst, options, filePath, getStudyId(file.getId()));
+    }
+
+    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
         String path = "";
-        for (String f : file.getPath().split("/")) {
+        List<String> paths = new LinkedList<>();
+        paths.add("");  //Add root
+        for (String f : filePath.split("/")) {
             paths.add(path = path + f + "/");
         }
 
         if (!paths.isEmpty()) {
-            for (File folder : fileDBAdaptor.searchFile(
-                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths),
-                    new QueryOptions("include", "projects.studies.files.uri")).getResult()) {
-                if (folder.getUri() != null) {
-                    return true;
-                }
-            }
+            QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
+            query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
+            QueryResult<File> result = fileDBAdaptor.searchFile(
+                    query,
+                    options);
+            result.getResult().sort(rootFirst? rootFirstComparator : rootLastComparator);
+            return result;
+        } else {
+            return new QueryResult<>();
         }
-        return false;
     }
 
     @Override
@@ -167,10 +221,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(int studyId, String path, boolean parents, QueryOptions options, String sessionId)
+    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
-                path, null, null, null, File.Status.READY, 0, -1, null, -1, null, null,
+                path, null, null, null, status, 0, -1, null, -1, null, null,
                 parents, options, sessionId);
     }
 
@@ -192,7 +246,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         ownerId = ParamUtils.defaultString(ownerId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
-        status = ParamUtils.defaultObject(status, File.Status.STAGE);
+        status = type == File.Type.FILE ?
+                ParamUtils.defaultObject(status, File.Status.STAGE) :   //By default, files are STAGED
+                ParamUtils.defaultObject(status, File.Status.READY) ;   //By default, folders are READY
 
         if (diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
@@ -308,10 +364,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         if (file.getType() == File.Type.FOLDER && file.getStatus() == File.Status.READY && !isExternal) {
-            URI studyUri = getStudyUri(studyId);
-            CatalogIOManager ioManager = catalogIOManagerFactory.get(studyUri);
+            URI fileUri = getFileUri(studyId, file.getPath());
+            CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
 //            ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
-            ioManager.createFolder(studyUri, file.getPath(), parents);
+//            ioManager.createFolder(studyUri, file.getPath(), parents);
+            ioManager.createDirectory(fileUri, parents);
         }
 
 
@@ -382,6 +439,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         File file = read(fileId, null, sessionId).first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not modify root folder");
+        }
+
         switch (authorizationManager.getUserRole(userId)) {
             case ADMIN:
                 logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
@@ -445,23 +507,15 @@ public class FileManager extends AbstractManager implements IFileManager {
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
-        if (!authorizationManager.getFileACL(userId, fileId).isDelete()) {
-            throw new CatalogDBException("Permission denied. User can't delete this file");
-        }
-        QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
+        File file = fileDBAdaptor.getFile(fileId, null).first();
 
-        File file = fileResult.getResult().get(0);
-        switch (file.getStatus()) {
-            case STAGE:
-                throw new CatalogException("File is not ready. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}");
-            case TRASHED:
-            case DELETED:
-                //Send warning message
-                return new QueryResult<File>("Delete file", 0, 0, 0,
-                        "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}",
-                        null, Collections.emptyList());
-            case READY:
-                break;
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not delete root folder");
+        }
+
+        QueryResult<File> result = checkCanDeleteFile(file, userId);
+        if (result != null) {
+            return result;
         }
 
         userDBAdaptor.updateUserLastActivity(ownerId);
@@ -471,25 +525,61 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         switch (file.getType()) {
             case FOLDER:
-                QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(fileId, null);// delete recursively
+                QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(fileId, null);
+                // delete recursively. Walk tree depth first
+                for (File subfolder : allFilesInFolder.getResult()) {
+                    if (subfolder.getType() == File.Type.FOLDER) {
+                        delete(subfolder.getId(), null, sessionId);
+                    }
+                }
+                //Check can delete files
                 for (File subfile : allFilesInFolder.getResult()) {
-                    delete(subfile.getId(), null, sessionId);
+                    if (subfile.getType() == File.Type.FILE) {
+                        checkCanDeleteFile(subfile, userId);
+                    }
+                }
+                for (File subfile : allFilesInFolder.getResult()) {
+                    if (subfile.getType() == File.Type.FILE) {
+                        delete(subfile.getId(), null, sessionId);
+                    }
                 }
 
-                rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-                QueryResult<File> queryResult = fileDBAdaptor.modifyFile(fileId, objectMap);
+                fileDBAdaptor.modifyFile(fileId, objectMap);
+                QueryResult<File> queryResult = rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 return queryResult; //TODO: Return the modified file
             case FILE:
                 rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 return fileDBAdaptor.modifyFile(fileId, objectMap); //TODO: Return the modified file
-//            case INDEX:       //#62
-//                throw new CatalogException("Can't delete INDEX file");
-            //rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-            //return catalogDBAdaptor.modifyFile(fileId, objectMap);
         }
         return null;
     }
 
+    private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
+        if (!authorizationManager.getFileACL(userId, file.getId()).isDelete()) {
+            throw new CatalogDBException("Permission denied. User can't delete this file");
+        }
+
+        switch (file.getStatus()) {
+            case STAGE:
+            case MISSING:
+            default:
+                throw new CatalogException("File is not ready. {" +
+                        "id: " + file.getId() + ", " +
+                        "path:\"" + file.getPath() + "\"," +
+                        "status: '" + file.getStatus() + "'}");
+            case TRASHED:
+            case DELETED:
+                //Send warning message
+                String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}";
+                logger.warn(warningMsg);
+                return new QueryResult<File>("Delete file", 0, 0, 0,
+                        warningMsg,
+                        null, Collections.emptyList());
+            case READY:
+                break;
+        }
+        return null;
+    }
 
     @Override
     public QueryResult<File> rename(int fileId, String newName, String sessionId)
@@ -504,12 +594,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!authorizationManager.getFileACL(userId, fileId).isWrite()) {
             throw CatalogAuthorizationException.cantModify(userId, "File", fileId, null);
         }
-        QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
-        if (fileResult.getResult().isEmpty()) {
-            return new QueryResult<File>("Rename file", 0, 0, 0, "File not found", null, null);
+        File file = fileDBAdaptor.getFile(fileId, null).first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not rename root folder");
         }
-        File file = fileResult.getResult().get(0);
-//        System.out.println("file = " + file);
 
         String oldPath = file.getPath();
         Path parent = Paths.get(oldPath).getParent();
@@ -528,13 +617,13 @@ public class FileManager extends AbstractManager implements IFileManager {
             case FOLDER:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
-                    catalogIOManager.rename(getFileUri(studyUri, oldPath), getFileUri(studyUri, newPath));   // io.move() 1
+                    catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
                 }
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
             case FILE:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri);
-                    catalogIOManager.rename(getFileUri(studyUri, file.getPath()), getFileUri(studyUri, newPath));
+                    catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
                 }
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
         }
