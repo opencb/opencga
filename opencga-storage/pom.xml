@@ -26,6 +26,7 @@
         <relativePath>..</relativePath>
     </parent>
 
+    <!-- Version must be set to a literal, variables cannot be used in nested modules -->
     <artifactId>opencga-storage</artifactId>
     <version>0.6-SNAPSHOT</version>
     <packaging>pom</packaging>

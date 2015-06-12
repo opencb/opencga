@@ -110,6 +110,38 @@ public class FileManager extends AbstractManager implements IFileManager {
         return fileDBAdaptor.getFileId(studyId, projectStudyPath[2]);
     }
 
+    /**
+     * Returns if a file is externally located.
+     *
+     * A file externally located is the one with a URI or a parent folder with an external URI.
+     *
+     * @throws CatalogException
+     */
+    @Override
+    public boolean isExternal(File file) throws CatalogException {
+        ParamUtils.checkObj(file, "File");
+
+        if (file.getUri() != null) {
+            return true;
+        }
+        List<String> paths = new LinkedList<>();
+        String path = "";
+        for (String f : file.getPath().split("/")) {
+            paths.add(path = path + f + "/");
+        }
+
+        if (!paths.isEmpty()) {
+            for (File folder : fileDBAdaptor.searchFile(
+                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths),
+                    new QueryOptions("include", "projects.studies.files.uri")).getResult()) {
+                if (folder.getUri() != null) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public QueryResult<File> create(QueryOptions params, String sessionId) throws CatalogException {
         return create(
@@ -230,7 +262,11 @@ public class FileManager extends AbstractManager implements IFileManager {
          * CHECK ALREADY EXISTS
          */
         if (fileDBAdaptor.getFileId(studyId, file.getPath()) >= 0) {
-            throw new CatalogException("Cannot create file ‘" + file.getPath() + "’: File exists");
+            if (file.getType() == File.Type.FOLDER && parents) {
+                return read(fileDBAdaptor.getFileId(studyId, file.getPath()), options, sessionId);
+            } else {
+                throw new CatalogException("Cannot create file ‘" + file.getPath() + "’: File exists");
+            }
         }
 
         //Find parent. If parents == true, create folders.
@@ -265,7 +301,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                     (parent != null ? "directory " + parent.toString() : "study " + studyId));
         }
 
-        if (file.getType() == File.Type.FOLDER) {
+        //Check external file
+        boolean isExternal = false;
+        if (fileId > 0) {
+            isExternal = isExternal(fileDBAdaptor.getFile(fileId, null).first());
+        }
+
+        if (file.getType() == File.Type.FOLDER && file.getStatus() == File.Status.READY && !isExternal) {
             URI studyUri = getStudyUri(studyId);
             CatalogIOManager ioManager = catalogIOManagerFactory.get(studyUri);
 //            ioManager.createFolder(getStudyUri(studyId), folderPath.toString(), parents);
@@ -481,7 +523,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         userDBAdaptor.updateUserLastActivity(ownerId);
         CatalogIOManager catalogIOManager;
         URI studyUri = getStudyUri(studyId);
-        boolean isExternal = file.getUri() != null; //If the file URI is not null, the file is external located.
+        boolean isExternal = isExternal(file); //If the file URI is not null, the file is external located.
         switch (file.getType()) {
             case FOLDER:
                 if (!isExternal) {  //Only rename non external files
