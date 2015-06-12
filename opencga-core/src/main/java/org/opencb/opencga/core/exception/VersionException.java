@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.serverold;
+package org.opencb.opencga.core.exception;
 
-import java.io.IOException;
+/**
+ * Created by imedina on 08/06/15.
+ */
+public class VersionException extends Exception {
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
-
-public class GffWSServer extends GenericWSServer {
-
-    public GffWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
-        super(uriInfo, httpServletRequest);
+    public VersionException(String msg) {
+        super(msg);
     }
-
 
 }

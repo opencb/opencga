@@ -196,6 +196,10 @@ public class CatalogManager {
         return fileManager.getFileUri(studyUri, relativeFilePath);
     }
 
+    public boolean isExternal(File file) throws CatalogException {
+        return fileManager.isExternal(file);
+    }
+
     public int getProjectIdByStudyId(int studyId) throws CatalogException {
         return studyManager.getProjectId(studyId);
     }

@@ -464,8 +464,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 logger.debug("about to calculate stats");
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
                 VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
-                URI outputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, null, studyConfiguration, new QueryOptions(options));
+                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, null, studyConfiguration, new QueryOptions(options));
                 variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);

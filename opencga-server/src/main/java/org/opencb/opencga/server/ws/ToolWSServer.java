@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -25,39 +25,43 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 30/10/14.
  */
-@Path("/tools")
-@Api(value = "tools", description = "tools", position = 6)
-public class ToolWSServer extends OpenCGAWSServer{
+@Path("/{version}/tools")
+@Produces(MediaType.APPLICATION_JSON)
+@Api(value = "Tools", position = 8, description = "Methods for working with 'tools' endpoint")
+public class ToolWSServer extends OpenCGAWSServer {
 
-    public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+
+    public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/{toolId}/info")
-    @Produces("application/json")
-    @ApiOperation(value = "Tool info")
+    @ApiOperation(value = "Tool info", position = 2)
     public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
-                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution
-    ) {
-        String[] splitedToolId = toolId.split(",");
+                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
+        String[] toolIds = toolId.split(",");
         try {
             List<QueryResult> results = new LinkedList<>();
-            for (String id : splitedToolId) {
+            for (String id : toolIds) {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
                 AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
@@ -66,25 +70,20 @@ public class ToolWSServer extends OpenCGAWSServer{
                 results.add(toolResult);
             }
             return createOkResponse(results);
-        } catch (CatalogException | AnalysisExecutionException | IOException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
-
-
     @GET
     @Path("/{toolId}/help")
-    @Produces("application/json")
-    @ApiOperation(value = "Tool help")
+    @ApiOperation(value = "Tool help", position = 3)
     public Response help(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
-                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution
-    ) {
-        String[] splitedToolId = toolId.split(",");
+                         @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
+        String[] toolIds = toolId.split(",");
         try {
             List<String> results = new LinkedList<>();
-            for (String id : splitedToolId) {
+            for (String id : toolIds) {
                 Tool tool = catalogManager.getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
                 AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 String help = analysisJobExecutor.help("");
@@ -92,10 +91,32 @@ public class ToolWSServer extends OpenCGAWSServer{
                 results.add(help);
             }
             return createOkResponse(results);
-        } catch (CatalogException | AnalysisExecutionException | IOException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
+    }
+
+    @GET
+    @Path("/{toolId}/update")
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    public Response update(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) throws IOException {
+        return createErrorResponse("update - GET", "PENDING");
+    }
+
+    @POST
+    @Path("/{toolId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 4)
+    public Response updateByPost(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId,
+                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+        return createErrorResponse("update - POST", "PENDING");
+    }
+
+    @GET
+    @Path("/{toolId}/delete")
+    @ApiOperation(value = "Delete an user [NO TESTED]", position = 5)
+    public Response delete(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) {
+        return createErrorResponse("delete", "PENDING");
     }
 
 }

@@ -244,7 +244,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
     public static String toShortFieldName(String longFieldName) {
         if(longFieldName.contains(".")) {
-            String[] split = longFieldName.split(".");
+            String[] split = longFieldName.split("\\.");
             return fieldsMap.get(split[0]);
         }
         return fieldsMap.get(longFieldName);

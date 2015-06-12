@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.serverold;
 
-import org.opencb.opencga.server.OpenCGAWSServer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
