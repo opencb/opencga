@@ -23,11 +23,13 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +110,16 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
     }
 
+    /**
+     * Corrupted file index. This test must fail
+     */
+    @Test
+    public void corruptedIndexTest() throws Exception {
+
+        thrown.expect(StorageManagerException.class);
+        runDefaultETL(corruptedInputUri, getVariantStorageManager(), newStudyConfiguration());
+
+    }
     /* ---------------------------------------------------- */
     /* Check methods for loaded and transformed Variants    */
     /* ---------------------------------------------------- */

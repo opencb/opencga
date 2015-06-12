@@ -1,10 +1,9 @@
 package org.opencb.opencga.storage.core.variant;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -24,19 +23,24 @@ import java.nio.file.StandardCopyOption;
  * Created by jacobo on 31/05/15.
  */
 @Ignore
-public abstract class VariantStorageManagerTestUtils {
+public abstract class VariantStorageManagerTestUtils extends GenericTest {
 
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
     public static final int NUM_VARIANTS = 9792;
     public static final int STUDY_ID = 5;
     public static final String STUDY_NAME = "1000g";
     public static final String DB_NAME = "opencga_variants_test";
 
     protected static URI inputUri;
+    protected static URI corruptedInputUri;
     protected static URI outputUri;
     protected VariantStorageManager variantStorageManager;
     public static Logger logger;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @BeforeClass
     public static void _beforeClass() throws Exception {
@@ -47,8 +51,11 @@ public abstract class VariantStorageManagerTestUtils {
             Files.createDirectories(rootDir);
         }
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
+        Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath , StandardCopyOption.REPLACE_EXISTING);
         inputUri = inputPath.toUri();
+        corruptedInputUri = corruptedInputPath .toUri();
         outputUri = rootDir.toUri();
         logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
     }
