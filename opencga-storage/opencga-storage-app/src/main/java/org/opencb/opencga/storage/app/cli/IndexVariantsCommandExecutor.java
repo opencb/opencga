@@ -102,18 +102,18 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
 
             /** Add CLi options to the variant options **/
             ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
-            variantOptions.put(VariantStorageManager.STUDY_NAME, indexVariantsCommandOptions.study);
-            variantOptions.put(VariantStorageManager.STUDY_ID, indexVariantsCommandOptions.studyId);
-            variantOptions.put(VariantStorageManager.FILE_ID, indexVariantsCommandOptions.fileId);
-            variantOptions.put(VariantStorageManager.SAMPLE_IDS, indexVariantsCommandOptions.sampleIds);
-            variantOptions.put(VariantStorageManager.CALCULATE_STATS, indexVariantsCommandOptions.calculateStats);
-            variantOptions.put(VariantStorageManager.INCLUDE_STATS, indexVariantsCommandOptions.includeStats);
-            variantOptions.put(VariantStorageManager.INCLUDE_GENOTYPES, indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
-            variantOptions.put(VariantStorageManager.INCLUDE_SRC, indexVariantsCommandOptions.includeSrc);
-            variantOptions.put(VariantStorageManager.COMPRESS_GENOTYPES, indexVariantsCommandOptions.compressGenotypes);
-            variantOptions.put(VariantStorageManager.AGGREGATED_TYPE, indexVariantsCommandOptions.aggregated);
-            if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.DB_NAME, indexVariantsCommandOptions.dbName);
-            variantOptions.put(VariantStorageManager.ANNOTATE, indexVariantsCommandOptions.annotate);
+            variantOptions.put(VariantStorageManager.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
+            variantOptions.put(VariantStorageManager.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
+            variantOptions.put(VariantStorageManager.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
+            variantOptions.put(VariantStorageManager.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
+            variantOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
+            variantOptions.put(VariantStorageManager.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
+            variantOptions.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
+            variantOptions.put(VariantStorageManager.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
+            variantOptions.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
+            variantOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+            if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
+            variantOptions.put(VariantStorageManager.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
             if (indexVariantsCommandOptions.annotator != null) {
                 variantOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
             }
@@ -127,7 +127,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                 Properties aggregationMappingProperties = new Properties();
                 try {
                     aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
-                    variantOptions.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+                    variantOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
                 } catch (FileNotFoundException e) {
                     logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions.aggregationMappingFile);
                 }

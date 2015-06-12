@@ -59,7 +59,7 @@ public class VepVariantAnnotator implements VariantAnnotator {
 
     private static void checkNull(String value, String name) throws VariantAnnotatorException {
         if(value == null || value.isEmpty()) {
-            throw new VariantAnnotatorException("Missing value: " + name);
+            throw new VariantAnnotatorException("Missing defaultValue: " + name);
         }
     }
 

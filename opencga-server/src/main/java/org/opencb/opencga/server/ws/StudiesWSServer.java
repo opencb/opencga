@@ -196,8 +196,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
                            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
-//            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-//            @ApiParam(value = "stats", required = false) @QueryParam("stats") String stats)
+//            @ApiParam(defaultValue = "attributes", required = false) @QueryParam("attributes") String attributes,
+//            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);

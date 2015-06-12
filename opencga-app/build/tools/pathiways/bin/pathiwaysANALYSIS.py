@@ -143,17 +143,17 @@ def get_options():
     parser.add_option('--cel-compressed-file', dest='celfileFlag', metavar="TYPE_FILE",
                       help='cell files must be converted in to normalized file')
     parser.add_option('--summ', dest='summ', metavar="STRING",
-                      help='summ value')
+                      help='summ defaultValue')
     parser.add_option('--exp-design', dest='experimentaldesign', metavar="TYPE_FILE",
                       help='path to experimental design')
     parser.add_option('--control', dest='control', metavar="STRING",
-                      help='control value')
+                      help='control defaultValue')
     parser.add_option('--disease', dest='disease', metavar="STRING",
-                      help='disease value')
+                      help='disease defaultValue')
     parser.add_option('--outdir', dest='outdir', metavar="PATH",
                       help='output directory')
     parser.add_option('--platform', dest='platform', metavar="STRING",
-                      help='platform value')
+                      help='platform defaultValue')
     parser.add_option('--exp-name', dest='expname', metavar="STRING",
                       help='experiment name')
     parser.add_option('--test', dest='test', metavar="STRING",

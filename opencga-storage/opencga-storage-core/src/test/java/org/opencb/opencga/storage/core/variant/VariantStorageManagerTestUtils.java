@@ -115,24 +115,24 @@ public abstract class VariantStorageManagerTestUtils {
         ObjectMap extractParams = new ObjectMap();
 
         ObjectMap preTransformParams = new ObjectMap();
-        preTransformParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        preTransformParams.put(VariantStorageManager.FILE_ID, 6);
+        preTransformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        preTransformParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
 
         ObjectMap transformParams = new ObjectMap();
-        transformParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        transformParams.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
-        transformParams.put(VariantStorageManager.FILE_ID, 6);
+        transformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        transformParams.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+        transformParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         ObjectMap postTransformParams = new ObjectMap();
 
         ObjectMap preLoadParams = new ObjectMap();
-        preLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        preLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         ObjectMap loadParams = new ObjectMap();
-        loadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        loadParams.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
-        loadParams.put(VariantStorageManager.FILE_ID, 6);
-        loadParams.put(VariantStorageManager.DB_NAME, DB_NAME);
+        loadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        loadParams.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+        loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        loadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ObjectMap postLoadParams = new ObjectMap();
-        postLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);
     }

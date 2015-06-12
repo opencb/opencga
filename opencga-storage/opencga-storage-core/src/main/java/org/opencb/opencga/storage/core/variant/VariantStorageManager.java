@@ -57,38 +57,79 @@ import java.util.concurrent.ExecutionException;
  */
 public abstract class VariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
 
-    public static final String INCLUDE_STATS = "include.stats";              //Include existing stats on the original file.
-    public static final String INCLUDE_GENOTYPES = "include.genotypes";      //Include sample information (genotypes)
-    public static final String INCLUDE_SRC = "include.src";                  //Include original source file on the transformed file and the final db
-    public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
-//    @Deprecated public static final String VARIANT_SOURCE = "variantSource";            //VariantSource object
-    public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
-    public static final String STUDY_CONFIGURATION_MANAGER_CLASS_NAME         = "studyConfigurationManagerClassName";
-    public static final String AGGREGATED_TYPE = "aggregatedType";
-    public static final String STUDY_NAME = "studyName";
-    public static final String STUDY_ID = "studyId";
-    public static final String FILE_ID = "fileId";
-    public static final String STUDY_TYPE = "studyType";
-    public static final String SAMPLE_IDS = "sampleIds";
-    public static final String COMPRESS_METHOD = "compressMethod";
+//    public static final String INCLUDE_STATS = "include.stats";              //Include existing stats on the original file.
+//    public static final String INCLUDE_GENOTYPES = "include.genotypes";      //Include sample information (genotypes)
+//    public static final String INCLUDE_SRC = "include.src";                  //Include original source file on the transformed file and the final db
+//    public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
+//    public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
+//    public static final String STUDY_CONFIGURATION_MANAGER_CLASS_NAME         = "studyConfigurationManagerClassName";
+//    public static final String AGGREGATED_TYPE = "aggregatedType";
+//    public static final String STUDY_NAME = "studyName";
+//    public static final String STUDY_ID = "studyId";
+//    public static final String FILE_ID = "fileId";
+//    public static final String STUDY_TYPE = "studyType";
+//    public static final String SAMPLE_IDS = "sampleIds";
+//    public static final String COMPRESS_METHOD = "compressMethod";
+//
+//    public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
+//    public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
+//    public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
+//
+//    public static final String DB_NAME = "database.name";
+//
+//    public static final String TRANSFORM_BATCH_SIZE = "transform.batch.size";
+//    public static final String LOAD_BATCH_SIZE = "load.batch.size";
+//    public static final String TRANSFORM_THREADS = "transform.threads";
+//    public static final String LOAD_THREADS = "load.threads";
+//    public static final String ANNOTATE = "annotate";
 
-    public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
-    public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
-    public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
+    public enum Options {
+        INCLUDE_STATS ("include.stats", true),              //Include existing stats on the original file.
+        INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
+        @Deprecated
+        INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
+        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
 
-    public static final String DB_NAME = "database.name";
+        STUDY_CONFIGURATION ("studyConfiguration", ""),      //
+        STUDY_CONFIGURATION_MANAGER_CLASS_NAME ("studyConfigurationManagerClassName", ""),
 
-    public static final String BATCH_SIZE = "batch.size";
-    public static final String TRANSFORM_THREADS = "transform.threads";
-    public static final String LOAD_THREADS = "load.threads";
-    public static final String ANNOTATE = "annotate";
+        STUDY_TYPE ("studyType", VariantStudy.StudyType.CASE_CONTROL),
+        AGGREGATED_TYPE ("aggregatedType", VariantSource.Aggregation.NONE),
+        STUDY_NAME ("studyName", ""),
+        STUDY_ID ("studyId", ""),
+        FILE_ID ("fileId", ""),
+        SAMPLE_IDS ("sampleIds", ""),
 
-//    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_THREADS      = "OPENCGA.STORAGE.VARIANT.TRANSFORM.THREADS";
-//    public static final String OPENCGA_STORAGE_VARIANT_LOAD_THREADS           = "OPENCGA.STORAGE.VARIANT.LOAD.THREADS";
-//    public static final String OPENCGA_STORAGE_VARIANT_TRANSFORM_BATCH_SIZE   = "OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE";
-//    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SRC            = "OPENCGA.STORAGE.VARIANT.INCLUDE_SRC";
-//    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES        = "OPENCGA.STORAGE.VARIANT.INCLUDE_SAMPLES";
-//    public static final String OPENCGA_STORAGE_VARIANT_INCLUDE_STATS          = "OPENCGA.STORAGE.VARIANT.INCLUDE_STATS";
+        COMPRESS_METHOD ("compressMethod", "snappy"),
+        AGGREGATION_MAPPING_PROPERTIES ("aggregationMappingFile", null),
+        DB_NAME ("database.name", "opencga"),
+
+        TRANSFORM_BATCH_SIZE ("transform.batch.size", 200),
+        TRANSFORM_THREADS ("transform.threads", 4),
+        LOAD_BATCH_SIZE ("load.batch.size", 100),
+        LOAD_THREADS ("load.threads", 4),
+
+        CALCULATE_STATS ("calculateStats", false),          //Calculate stats on the postLoad step
+        OVERWRITE_STATS ("overwriteStats", false),          //Overwrite stats already present
+        ANNOTATE ("annotate", false);
+
+        private final String key;
+        private final Object value;
+
+        Options(String key, Object value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public <T> T defaultValue() {
+            return (T) value;
+        }
+
+    }
 
     protected static Logger logger;
 
@@ -113,17 +154,17 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        StudyConfiguration studyConfiguration = getStudyConfiguration(variantOptions);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(options.getInt(STUDY_ID), options.getString(STUDY_NAME));
-            options.put(STUDY_CONFIGURATION, studyConfiguration);
+            studyConfiguration = new StudyConfiguration(variantOptions.getInt(Options.STUDY_ID.key), variantOptions.getString(Options.STUDY_NAME.key));
+            variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
         }
         String fileName = Paths.get(input.getPath()).getFileName().toString();
-        Integer fileId = options.getInt(FILE_ID);    //TODO: Transform into an optional field
+        Integer fileId = variantOptions.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
 
         checkNewFile(studyConfiguration, fileId, fileName);
 
@@ -149,25 +190,28 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
-        boolean includeSamples = options.getBoolean(INCLUDE_GENOTYPES, false);
-        boolean includeStats = options.getBoolean(INCLUDE_STATS, false);
-        boolean includeSrc = options.getBoolean(INCLUDE_SRC, false);
+        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
+        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
+        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        Integer fileId = options.getInt(FILE_ID);    //TODO: Transform into an optional field
-        VariantSource.Aggregation aggregation = options.get(AGGREGATED_TYPE, VariantSource.Aggregation.class, VariantSource.Aggregation.NONE);
+        Integer fileId = options.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
+        VariantSource.Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue());
         String fileName = input.getFileName().toString();
-        VariantStudy.StudyType type = options.get(STUDY_TYPE, VariantStudy.StudyType.class, VariantStudy.StudyType.CASE_CONTROL);
+        VariantStudy.StudyType type = options.get(Options.STUDY_TYPE.key, VariantStudy.StudyType.class, Options.STUDY_TYPE.defaultValue());
         VariantSource source = new VariantSource(
                 fileName,
                 fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), type, aggregation);
 
-        int batchSize = options.getInt(BATCH_SIZE, 100);
-        String compression = options.getString(COMPRESS_METHOD, "snappy");
+       
+       
+        int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key, Options.TRANSFORM_BATCH_SIZE.defaultValue());
+
+        String compression = options.getString(Options.COMPRESS_METHOD.key, Options.COMPRESS_METHOD.defaultValue());
         String extension = "";
-        int numThreads = options.getInt(VariantStorageManager.TRANSFORM_THREADS, 8);
+        int numThreads = options.getInt(Options.TRANSFORM_THREADS.key, Options.TRANSFORM_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", numThreads*2);
 
         if (compression.equalsIgnoreCase("gzip") || compression.equalsIgnoreCase("gz")) {
@@ -190,10 +234,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     factory = new VariantAggregatedVcfFactory();
                     break;
                 case EVS:
-                    factory = new VariantVcfEVSFactory(options.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
+                    factory = new VariantVcfEVSFactory(options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key, Properties.class, null));
                     break;
                 case EXAC:
-                    factory = new VariantVcfExacFactory(options.get(AGGREGATION_MAPPING_PROPERTIES, Properties.class, null));
+                    factory = new VariantVcfExacFactory(options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key, Properties.class, null));
                     break;
             }
         } else {
@@ -296,8 +340,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(options.getInt(STUDY_ID), options.getString(STUDY_NAME));
-            options.put(STUDY_CONFIGURATION, studyConfiguration);
+            studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key), options.getString(Options.STUDY_NAME.key));
+            options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
         }
 
         //TODO: Expect JSON file
@@ -336,8 +380,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
          *      some sample was missing in the given SAMPLE_IDS param
          */
 
-        if (options.containsKey(SAMPLE_IDS) && !options.getAsStringList(SAMPLE_IDS).isEmpty()) {
-            for (String sampleEntry : options.getAsStringList(SAMPLE_IDS)) {
+        if (options.containsKey(Options.SAMPLE_IDS.key) && !options.getAsStringList(Options.SAMPLE_IDS.key).isEmpty()) {
+            for (String sampleEntry : options.getAsStringList(Options.SAMPLE_IDS.key)) {
                 String[] split = sampleEntry.split(":");
                 if (split.length != 2) {
                     throw new StorageManagerException("Param " + sampleEntry + " is malformed");
@@ -412,7 +456,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 }
             }
         }
-        options.put(STUDY_CONFIGURATION, studyConfiguration);
+        options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
 
         return input;
     }
@@ -421,14 +465,14 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-        boolean annotate = options.getBoolean(ANNOTATE);
+        boolean annotate = options.getBoolean(Options.ANNOTATE.key, Options.ANNOTATE.defaultValue());
 
         //Update StudyConfiguration
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
-        String dbName = options.getString(DB_NAME, null);
-        int fileId = options.getInt(FILE_ID);
+        String dbName = options.getString(Options.DB_NAME.key, null);
+        int fileId = options.getInt(Options.FILE_ID.key);
 
 //        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
@@ -458,7 +502,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
         }
 
-        if (options.getBoolean(CALCULATE_STATS)) {
+        if (options.getBoolean(Options.CALCULATE_STATS.key, Options.CALCULATE_STATS.defaultValue())) {
             // TODO add filters
             try {
                 logger.debug("about to calculate stats");
@@ -524,11 +568,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     /* --------------------------------------- */
 
     final public StudyConfiguration getStudyConfiguration(ObjectMap params) {
-        if (params.containsKey(STUDY_CONFIGURATION)) {
-            return params.get(STUDY_CONFIGURATION, StudyConfiguration.class);
+        if (params.containsKey(Options.STUDY_CONFIGURATION.key)) {
+            return params.get(Options.STUDY_CONFIGURATION.key, StudyConfiguration.class);
         } else {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
-            return studyConfigurationManager.getStudyConfiguration(params.getInt(STUDY_ID), new QueryOptions(params)).first();
+            return studyConfigurationManager.getStudyConfiguration(params.getInt(Options.STUDY_ID.key), new QueryOptions(params)).first();
         }
     }
 
@@ -544,8 +588,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) {
         StudyConfigurationManager studyConfigurationManager = null;
         if (studyConfigurationManager == null) {
-            if (options.containsKey(STUDY_CONFIGURATION_MANAGER_CLASS_NAME)) {
-                String studyConfigurationManagerClassName = options.getString(STUDY_CONFIGURATION_MANAGER_CLASS_NAME);
+            if (options.containsKey(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key)) {
+                String studyConfigurationManagerClassName = options.getString(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key);
                 try {
                     studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, options);
                 } catch (ReflectiveOperationException e) {

@@ -71,7 +71,7 @@ def set_prefs(prefs):
     prefs['import_dynload_stdmods'] = True
 
     # If `True` modules with syntax errors are considered to be empty.
-    # The default value is `False`; When `False` syntax errors raise
+    # The default defaultValue is `False`; When `False` syntax errors raise
     # `rope.base.exceptions.ModuleSyntaxError` exception.
     prefs['ignore_syntax_errors'] = False
 

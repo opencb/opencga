@@ -71,7 +71,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     private StorageEtlConfiguration storageEtlConfiguration;
 
     public AlignmentStorageManager() {
-        this(null);
+        logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
     }
 
     public AlignmentStorageManager(StorageConfiguration configuration) {

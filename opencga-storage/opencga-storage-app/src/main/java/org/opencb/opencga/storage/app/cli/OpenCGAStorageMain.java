@@ -538,17 +538,17 @@ public class OpenCGAStorageMain {
         assertDirectoryExists(outdirUri);
 
         ObjectMap params = new ObjectMap();
-        params.put(VariantStorageManager.STUDY_ID, c.studyId);
-        params.put(VariantStorageManager.FILE_ID, c.fileId);
-        params.put(VariantStorageManager.SAMPLE_IDS, c.sampleIds);
-        params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
-        params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
-        params.put(VariantStorageManager.INCLUDE_GENOTYPES, c.includeGenotype);   // TODO rename samples to genotypes
-        params.put(VariantStorageManager.INCLUDE_SRC, c.includeSrc);
-        params.put(VariantStorageManager.COMPRESS_GENOTYPES, c.compressGenotypes);
-        params.put(VariantStorageManager.AGGREGATED_TYPE, c.aggregated);
-        params.put(VariantStorageManager.DB_NAME, c.dbName);
-        params.put(VariantStorageManager.ANNOTATE, c.annotate);
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), c.studyId);
+        params.put(VariantStorageManager.Options.FILE_ID.key(), c.fileId);
+        params.put(VariantStorageManager.Options.SAMPLE_IDS.key(), c.sampleIds);
+        params.put(VariantStorageManager.Options.CALCULATE_STATS.key(), c.calculateStats);
+        params.put(VariantStorageManager.Options.INCLUDE_STATS.key(), c.includeStats);
+        params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), c.includeGenotype);   // TODO rename samples to genotypes
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), c.includeSrc);
+        params.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), c.compressGenotypes);
+        params.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), c.dbName);
+        params.put(VariantStorageManager.Options.ANNOTATE.key(), c.annotate);
         params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
         if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
             params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
@@ -579,7 +579,7 @@ public class OpenCGAStorageMain {
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(c.aggregationMappingFile));
-                params.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+                params.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", c.aggregationMappingFile);
             }
@@ -752,10 +752,10 @@ public class OpenCGAStorageMain {
         QueryOptions queryOptions = new QueryOptions();
 //        VariantSource variantSource = new VariantSource(null, c.fileId, c.studyId, null);
 //        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
-        queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
-        queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
-        queryOptions.put(VariantStorageManager.FILE_ID, c.fileId);
-        queryOptions.put(VariantStorageManager.STUDY_ID, c.studyId);
+        queryOptions.put(VariantStorageManager.Options.DB_NAME.key(), c.dbName);
+        queryOptions.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), c.overwriteStats);
+        queryOptions.put(VariantStorageManager.Options.FILE_ID.key(), c.fileId);
+        queryOptions.put(VariantStorageManager.Options.STUDY_ID.key(), c.studyId);
 //        queryOptions.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
             queryOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);

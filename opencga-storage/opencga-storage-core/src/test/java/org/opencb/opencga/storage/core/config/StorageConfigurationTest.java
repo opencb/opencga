@@ -37,7 +37,7 @@ public class StorageConfigurationTest {
 
 //        Map<String, String> options = new HashMap<>();
         ObjectMap options = new ObjectMap();
-        options.put("key", "value");
+        options.put("key", "defaultValue");
 
         StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
                 "mongodb",

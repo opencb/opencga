@@ -57,10 +57,10 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
              * query options
              */
             QueryOptions queryOptions = new QueryOptions();
-            queryOptions.put(VariantStorageManager.DB_NAME, statsVariantsCommandOptions.dbName);
-            queryOptions.put(VariantStorageManager.OVERWRITE_STATS, statsVariantsCommandOptions.overwriteStats);
-            queryOptions.put(VariantStorageManager.FILE_ID, statsVariantsCommandOptions.fileId);
-            queryOptions.put(VariantStorageManager.STUDY_ID, statsVariantsCommandOptions.studyId);
+            queryOptions.put(VariantStorageManager.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
+            queryOptions.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
+            queryOptions.put(VariantStorageManager.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
+            queryOptions.put(VariantStorageManager.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
             if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
                 queryOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
             }

@@ -173,8 +173,8 @@ public class CliOptionsParser {
 
 //        class StudyIdValidator implements IValueValidator<String> {
 //            @Override
-//            public void validate(String name, String value) throws ParameterException {
-//                if (value.length() < 6) {
+//            public void validate(String name, String defaultValue) throws ParameterException {
+//                if (defaultValue.length() < 6) {
 //                    throw new ParameterException("The study ID must be at least 6 characters long");
 //                }
 //            }
