@@ -21,7 +21,7 @@ public class UriUtils {
 
     public static URI createDirectoryUri(String input) throws URISyntaxException {
         if(!input.endsWith("/")) {
-            input = "/";
+            input += "/";
         }
         return createUri(input);
     }
