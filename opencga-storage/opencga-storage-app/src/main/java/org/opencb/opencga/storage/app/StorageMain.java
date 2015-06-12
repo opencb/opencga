@@ -43,6 +43,7 @@ public class StorageMain {
             }
         }else {
             CommandExecutor commandExecutor = null;
+            // Check if any command -h option is present
             if(cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
             } else {
@@ -69,6 +70,7 @@ public class StorageMain {
                         commandExecutor = new StatsVariantsCommandExecutor(cliOptionsParser.getStatsVariantsCommandOptions());
                         break;
                     default:
+                        System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                         break;
                 }
             }
