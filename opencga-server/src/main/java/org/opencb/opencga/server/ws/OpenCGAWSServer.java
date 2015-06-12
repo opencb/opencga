@@ -277,10 +277,24 @@ public class OpenCGAWSServer {
     }
 
     protected Response createErrorResponse(Exception e) {
-        QueryResult<ObjectMap> result = new QueryResult();
-        result.setErrorMsg(e.toString());
+        // First we print the exception in Server logs
         e.printStackTrace();
-        return createOkResponse(result);
+
+        // Now we prepare the response to client
+        queryResponse = new QueryResponse();
+        queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
+        queryResponse.setApiVersion(version);
+        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setError(e.toString());
+
+        QueryResult<ObjectMap> result = new QueryResult();
+        result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
+        result.setErrorMsg("DEPRECATED: " + e.toString());
+        queryResponse.setResponse(Arrays.asList(result));
+
+        return Response.fromResponse(createJsonResponse(queryResponse))
+                .status(Response.Status.INTERNAL_SERVER_ERROR).build();
+//        return createOkResponse(result);
     }
 
 //    protected Response createErrorResponse(String o) {
@@ -317,6 +331,16 @@ public class OpenCGAWSServer {
         return createJsonResponse(queryResponse);
     }
 
+    //Response methods
+    protected Response createOkResponse(Object o1, MediaType o2) {
+        return buildResponse(Response.ok(o1, o2));
+    }
+
+    protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
+        return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
+    }
+
+
     protected Response createJsonResponse(QueryResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
@@ -325,15 +349,6 @@ public class OpenCGAWSServer {
             logger.error("Error parsing queryResponse object");
             return createErrorResponse("", "Error parsing QueryResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
-    }
-
-    //Response methods
-    protected Response createOkResponse(Object o1, MediaType o2) {
-        return buildResponse(Response.ok(o1, o2));
-    }
-
-    protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
-        return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
     protected Response buildResponse(ResponseBuilder responseBuilder) {
