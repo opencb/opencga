@@ -16,10 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -54,12 +51,7 @@ public class FileScanner {
      * @return found and lost files
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
-        URI studyUri = catalogManager.getStudyUri(study.getId());
-
-        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList(
-                "projects.studies.files.id",
-                "projects.studies.files.status",
-                "projects.studies.files.path"));
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(CatalogFileDBAdaptor.FileFilterOption.status.toString(), Arrays.asList(
                 File.Status.READY, File.Status.MISSING, File.Status.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(),
@@ -68,35 +60,9 @@ public class FileScanner {
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
-            switch (file.getStatus()) {
-                case READY:
-                case MISSING: {
-                    URI fileUri = catalogManager.getFileUri(study, file);
-                    if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                        logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
-                        if (file.getStatus() != File.Status.MISSING) {
-                            logger.info("Set status to " + File.Status.MISSING);
-                            catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.MISSING), sessionId);
-                            modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
-                        }
-                    } else if (file.getStatus() == File.Status.MISSING) {
-                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
-                        logger.info("Set status to " + File.Status.READY);
-                        ObjectMap params = catalogFileUtils.getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                        params.put("status", File.Status.READY);
-                        catalogManager.modifyFile(file.getId(), params, sessionId);
-                        modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
-                    }
-                    break;
-                }
-                case TRASHED: {
-                    URI fileUri = catalogManager.getFileUri(study, file);
-                    if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
-                        modifiedFiles.add(catalogManager.getFile(file.getId(), sessionId).first());
-                        break;
-                    }
-                }
+            File checkedFile = catalogFileUtils.checkFile(file, calculateChecksum, sessionId);
+            if (checkedFile != file) {
+                modifiedFiles.add(checkedFile);
             }
         }
         return modifiedFiles;
@@ -114,12 +80,18 @@ public class FileScanner {
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
         int studyId = study.getId();
-        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
-        URI studyUri = catalogManager.getStudyUri(studyId);
-        List<File> scan = scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum,
-                false, sessionId);
+//        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
+        QueryOptions query = new QueryOptions();
+        query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
+        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
+        List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
 
-        scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
+        List<File> scan = new LinkedList<>();
+        for (File file : files) {
+            scan.addAll(scan(file, catalogManager.getFileUri(file), FileScannerPolicy.REPLACE, calculateChecksum,
+                    false, sessionId));
+            scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
+        }
 
         return scan;
     }
@@ -130,26 +102,40 @@ public class FileScanner {
      * @return              Untracked files
      * @throws CatalogException
      */
-    public List<URI> untrackedFiles(Study study, String sessionId)
+    public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
         int studyId = study.getId();
         URI studyUri = catalogManager.getStudyUri(studyId);
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
-        List<URI> uris = ioManager.listFiles(studyUri);
+        Map<String, URI> linkedFolders = new HashMap<>();
+        linkedFolders.put("", studyUri);
+        QueryOptions query = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
+        query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
+        catalogManager.getAllFiles(studyId, query, sessionId).getResult().forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
-        for (Iterator<URI> iterator = uris.iterator(); iterator.hasNext(); ) {
-            URI uri = iterator.next();
-            String filePath = studyUri.relativize(uri).toString();
+        Map<String, URI> untrackedFiles = new HashMap<>();
+        for (Map.Entry<String, URI> entry : linkedFolders.entrySet()) {
+            if (!ioManager.exists(entry.getValue())) {
+                untrackedFiles.put(entry.getKey(), entry.getValue());
+                continue;
+            }
+            List<URI> files = ioManager.listFiles(entry.getValue());
 
-            QueryResult<File> searchFile = catalogManager.searchFile(studyId,
-                    new QueryOptions("path", filePath),
-                    new QueryOptions("include", "projects.studies.files.id"), sessionId);
-            if (!searchFile.getResult().isEmpty()) {
-                iterator.remove(); //Remove the ones that have an entry in Catalog
+            for (URI uri : files) {
+                String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
+
+                QueryResult<File> searchFile = catalogManager.searchFile(studyId,
+                        new QueryOptions("path", filePath),
+                        new QueryOptions("include", "projects.studies.files.id"), sessionId);
+                if (searchFile.getResult().isEmpty()) {
+                    untrackedFiles.put(filePath, uri);
+                } /*else {
+                    iterator.remove(); //Remove the ones that have an entry in Catalog
+                }*/
             }
         }
-        return uris;
+        return untrackedFiles ;
     }
 
     /**
@@ -178,6 +164,9 @@ public class FileScanner {
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, int jobId, String sessionId)
             throws IOException, CatalogException {
+        if (directoryToScan == null) {
+            directoryToScan = catalogManager.getFileUri(directory);
+        }
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
         }

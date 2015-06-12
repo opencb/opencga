@@ -191,6 +191,12 @@ public class CatalogManager {
         return fileManager.getFileUri(study, file);
     }
 
+    public URI getFileUri(int studyId, String relativeFilePath)
+            throws CatalogException {
+        return fileManager.getFileUri(studyId, relativeFilePath);
+    }
+
+    @Deprecated
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogException {
         return fileManager.getFileUri(studyUri, relativeFilePath);
@@ -497,7 +503,13 @@ public class CatalogManager {
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString() + "/", parents, options, sessionId);
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, options, sessionId);
+    }
+
+    public QueryResult<File> createFolder(int studyId, Path folderPath, File.Status status, boolean parents, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkPath(folderPath, "folderPath");
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, options, sessionId);
     }
 
     public QueryResult deleteFolder(int folderId, String sessionId)
@@ -546,6 +558,11 @@ public class CatalogManager {
     public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.getParent(fileId, options, sessionId);
+    }
+
+    public QueryResult<File> getFileParents(int fileId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return fileManager.getParents(fileId, options, sessionId);
     }
 
     public QueryResult<File> getFile(int fileId, String sessionId)
