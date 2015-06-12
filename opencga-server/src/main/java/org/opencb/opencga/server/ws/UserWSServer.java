@@ -57,7 +57,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
-//            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -71,7 +70,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult result = catalogManager.getUser(userId, lastActivity, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
-//            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -91,7 +89,6 @@ public class UserWSServer extends OpenCGAWSServer {
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
-//            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -109,7 +106,6 @@ public class UserWSServer extends OpenCGAWSServer {
             }
             return createOkResponse(result);
         } catch (Exception e) {
-//            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -124,7 +120,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
-//            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -138,7 +133,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
-//            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -152,7 +146,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult result = catalogManager.resetPassword(userId, email);
             return createOkResponse(result);
         } catch (Exception e) {
-            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -166,7 +159,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
-            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -201,7 +193,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
-            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -217,7 +208,6 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
-            e.printStackTrace();
             return createErrorResponse(e);
         }
     }
@@ -230,7 +220,6 @@ public class UserWSServer extends OpenCGAWSServer {
             catalogManager.deleteUser(userId, sessionId);
             return createOkResponse("User '" + userId + "' deleted");
         } catch (Exception e) {
-            e.printStackTrace();
             return createErrorResponse(e);
         }
     }

@@ -70,8 +70,7 @@ public class ToolWSServer extends OpenCGAWSServer {
                 results.add(toolResult);
             }
             return createOkResponse(results);
-        } catch (CatalogException | AnalysisExecutionException | IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -92,8 +91,7 @@ public class ToolWSServer extends OpenCGAWSServer {
                 results.add(help);
             }
             return createOkResponse(results);
-        } catch (CatalogException | AnalysisExecutionException | IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

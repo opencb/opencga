@@ -231,8 +231,8 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete job", position = 4)
     public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
                            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
-        List<QueryResult> results = new LinkedList<>();
         try {
+            List<QueryResult> results = new LinkedList<>();
             if (deleteFiles) {
                 QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
                 for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {

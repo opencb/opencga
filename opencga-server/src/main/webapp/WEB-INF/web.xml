@@ -39,11 +39,6 @@
             <param-value>org.opencb.opencga.server.ws;com.wordnik.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
         </init-param>
 
-        <!--<init-param>-->
-        <!--<param-name>javax.ws.rs.Application</param-name>-->
-        <!--<param-value>org.opencb.opencga.server.OpenCGAServer</param-value>-->
-        <!--</init-param>-->
-
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>
             <param-value>org.glassfish.jersey.media.multipart.MultiPartFeature</param-value>

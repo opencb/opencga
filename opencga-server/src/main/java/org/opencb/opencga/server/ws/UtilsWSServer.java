@@ -105,7 +105,7 @@ public class UtilsWSServer extends OpenCGAWSServer {
 
             br.close();
 
-        } catch (InterruptedException | IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             result.put("error", "could not read result files");
         }

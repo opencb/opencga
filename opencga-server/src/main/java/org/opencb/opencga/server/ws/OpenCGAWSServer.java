@@ -212,10 +212,20 @@ public class OpenCGAWSServer {
         }
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
-        multivaluedMap.entrySet().stream().filter(entry -> !queryOptions.containsKey(entry.getKey())).forEach(entry -> {
-            logger.info("Adding '{}' to queryOptions object", entry);
-            queryOptions.put(entry.getKey(), entry.getValue().get(0));
-        });
+        // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute
+        multivaluedMap.entrySet().stream()
+                .filter(entry -> !queryOptions.containsKey(entry.getKey()))
+                .filter(entry -> !entry.getKey().equals("sid"))
+                .forEach(entry -> {
+                    logger.debug("Adding '{}' to queryOptions object", entry);
+                    queryOptions.put(entry.getKey(), entry.getValue().get(0));
+                });
+
+        try {
+            System.out.println("queryOptions = \n" + jsonObjectWriter.writeValueAsString(queryOptions));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
     }
 
 //    protected QueryOptions getQueryOptions() {

@@ -60,8 +60,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             QueryResult<Sample> queryResult = catalogManager.createSample(catalogManager.getStudyId(studyIdStr), name, source, description, null, null, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -73,8 +72,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -90,8 +88,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             File pedigreeFile = catalogManager.getFile(catalogManager.getFileId(fileIdStr), sessionId).first();
             QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSetId, sessionId);
             return createOkResponse(sampleQueryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -104,8 +101,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 //            QueryOptions queryOptions = getAllQueryOptions();
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(catalogManager.getStudyId(studyIdStr), queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -122,8 +118,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId,
                     annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -148,8 +143,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     });
             QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId, annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

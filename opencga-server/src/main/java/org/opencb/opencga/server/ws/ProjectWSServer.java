@@ -70,32 +70,31 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{projectId}/info")
     @ApiOperation(value = "Project information", position = 2)
     public Response info(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
-        List<QueryResult<Project>> queryResults = new LinkedList<>();
-        for (String projectIdStr : projectIdsStr.split(",")) {
-            try {
+        try {
+            String[] projectIdArray = projectIdsStr.split(",");
+            List<QueryResult<Project>> queryResults = new LinkedList<>();
+            for (String projectIdStr : projectIdArray) {
                 int projectId = catalogManager.getProjectId(projectIdStr);
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
-            } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse(e);
             }
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
-        return createOkResponse(queryResults);
     }
 
     @GET
     @Path("/{projectId}/studies")
     @ApiOperation(value = "Get all studies the from a project", position = 3)
     public Response getAllStudies(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
-        String[] splitedId = projectIdsStr.split(",");
         try {
+            String[] projectIdArray = projectIdsStr.split(",");
             List<QueryResult> results = new LinkedList<>();
-            for (String id : splitedId) {
+            for (String id : projectIdArray) {
                 results.add(catalogManager.getAllStudies(Integer.parseInt(id), queryOptions, sessionId));
             }
             return createOkResponse(results);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -120,8 +119,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             int projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -137,8 +135,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             int projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

@@ -47,7 +47,6 @@ public class VariableWSServer extends OpenCGAWSServer {
     public VariableWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
                             @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
-//        params = uriInfo.getQueryParameters();
     }
 
     @POST
@@ -64,8 +63,7 @@ public class VariableWSServer extends OpenCGAWSServer {
             QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId,
                     name, unique, description, null, variables, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -78,8 +76,7 @@ public class VariableWSServer extends OpenCGAWSServer {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, queryOptions, sessionId);
             return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

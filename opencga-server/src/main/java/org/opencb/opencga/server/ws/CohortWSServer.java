@@ -168,7 +168,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
-    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId) throws IOException {
+    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId) {
         return createErrorResponse("update - GET", "PENDING");
     }
 
