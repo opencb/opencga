@@ -34,7 +34,6 @@ import org.opencb.opencga.account.beans.Bucket;
 import org.opencb.opencga.account.beans.Project;
 import org.opencb.opencga.account.db.AccountManagementException;
 import org.opencb.opencga.account.io.IOManagementException;
-import org.opencb.opencga.server.OpenCGAWSServer;
 
 @Path("/account/{accountId}/admin")
 public class AdminWSServer extends GenericWSServer {

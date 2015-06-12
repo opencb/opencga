@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -41,11 +42,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-
-@Path("/util")
+@Path("/{version}/util")
+@Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
 
-    public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -56,7 +58,6 @@ public class UtilsWSServer extends OpenCGAWSServer {
                               @DefaultValue("F") @FormDataParam("directed") String directed,
                               @DefaultValue("F") @FormDataParam("weighted") String weighted,
                               @DefaultValue("infomap") @FormDataParam("method") String method) throws IOException {
-
         String home = Config.getGcsaHome();
         Properties analysisProperties = Config.getAnalysisProperties();
         Properties accountProperties = Config.getAccountProperties();
@@ -104,7 +105,7 @@ public class UtilsWSServer extends OpenCGAWSServer {
 
             br.close();
 
-        } catch (InterruptedException | IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             result.put("error", "could not read result files");
         }
@@ -118,7 +119,6 @@ public class UtilsWSServer extends OpenCGAWSServer {
     public Response topology(@FormDataParam("sif") String sifData,
                              @DefaultValue("F") @FormDataParam("directed") String directed,
                              @DefaultValue("F") @FormDataParam("weighted") String weighted) throws IOException {
-
         String home = Config.getGcsaHome();
         Properties analysisProperties = Config.getAnalysisProperties();
         Properties accountProperties = Config.getAccountProperties();
@@ -173,7 +173,6 @@ public class UtilsWSServer extends OpenCGAWSServer {
 
         return createOkResponse(result);
     }
-
 
     @GET
     @Path("/proxy")

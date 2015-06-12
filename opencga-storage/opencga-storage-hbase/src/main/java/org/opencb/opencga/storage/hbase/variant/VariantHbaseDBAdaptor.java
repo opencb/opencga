@@ -80,7 +80,7 @@ public class VariantHbaseDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public void setConstantSamples(String sourceEntry) {
-        
+        throw new UnsupportedOperationException();
     }
 
     @Override
