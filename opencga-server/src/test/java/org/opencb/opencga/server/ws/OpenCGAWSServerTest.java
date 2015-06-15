@@ -32,15 +32,22 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -57,12 +64,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
 public class OpenCGAWSServerTest {
 
+    public static final String TEST_SERVER_USER = "test_server_user";
     private Client webClient;
     private WebTarget webTarget;
 
@@ -131,7 +140,9 @@ public class OpenCGAWSServerTest {
 
         InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog.properties"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL").getBytes());
+        String databasePrefix = "opencga_server_test_";
+        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + databasePrefix).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage.properties");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage.properties"), StandardCopyOption.REPLACE_EXISTING);
@@ -139,6 +150,11 @@ public class OpenCGAWSServerTest {
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-mongodb.properties"), StandardCopyOption.REPLACE_EXISTING);
 
         CatalogManagerTest catalogManagerTest = new CatalogManagerTest();
+
+        //Drop default user mongoDB database.
+        String databaseName = databasePrefix + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
+        new MongoDataStoreManager("localhost", 27017).drop(databaseName);
+
         catalogManagerTest.setUp(); //Clear and setup CatalogDatabase
         OpenCGAWSServer.catalogManager = catalogManagerTest.getTestCatalogManager();
 
@@ -168,7 +184,7 @@ public class OpenCGAWSServerTest {
     @Test
     public void userTests() throws IOException {
         UserWSServerTest userTest = new UserWSServerTest(webTarget);
-        User user = userTest.createUser(getRandomUserId());
+        User user = userTest.createUser(TEST_SERVER_USER);
         String sessionId = userTest.loginUser(user.getId());
         userTest.updateUser(user.getId(), sessionId);
     }
@@ -176,7 +192,7 @@ public class OpenCGAWSServerTest {
     @Test
     public void workflowCreation() throws Exception {
         UserWSServerTest userTest = new UserWSServerTest(webTarget);
-        User user = userTest.createUser(getRandomUserId());
+        User user = userTest.createUser(TEST_SERVER_USER);
         String sessionId = userTest.loginUser(user.getId());
         user = userTest.info(user.getId(), sessionId);
 
@@ -217,9 +233,10 @@ public class OpenCGAWSServerTest {
         indexJobBam = runIndexJob(sessionId, indexJobBam);
         assertEquals(Job.Status.READY, indexJobBam.getStatus());
 
-//        queryOptions = new QueryOptions("limit", 10);
-//        queryOptions.put("region", "1");
-//        List<Alignment> alignments = fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
+        queryOptions = new QueryOptions("limit", 10);
+        queryOptions.put("region", "20:60000-60200");
+        queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, false);
+        List<ObjectMap> alignments = fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
 //        assertEquals(10, alignments.size());
 
     }
@@ -234,10 +251,6 @@ public class OpenCGAWSServerTest {
         indexJob.setCommandLine("echo 'Executing fake CLI'");
         AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, indexJob, sessionId);
         return OpenCGAWSServer.catalogManager.getJob(indexJob.getId(), null, sessionId).first();
-    }
-
-    public String getRandomUserId() {
-        return "user_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
     }
 
 }

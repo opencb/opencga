@@ -3,7 +3,10 @@ package org.opencb.opencga.server.ws;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
@@ -11,6 +14,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -110,10 +114,11 @@ public class FileWSServerTest {
         System.out.println("\nINPUT PARAMS");
         System.out.println("\tsid: " + sessionId);
         System.out.println("\tfileId: " + fileId);
+        System.out.println("\t" + VariantStorageManager.ANNOTATE + ": " + true);
 
         String json = webTarget.path("files").path(String.valueOf(fileId)).path("index")
                 .queryParam("sid", sessionId)
-                .queryParam("annotate", true)
+                .queryParam(VariantStorageManager.ANNOTATE, true)
                 .request().get(String.class);
 
         QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
@@ -158,4 +163,33 @@ public class FileWSServerTest {
         return variants;
     }
 
+    public List<ObjectMap> fetchAlignments(int fileId, String sessionId, QueryOptions queryOptions) throws IOException {
+        System.out.println("\nTesting file fetch alignments...");
+        System.out.println("---------------------");
+        System.out.println("\nINPUT PARAMS");
+        System.out.println("\tsid: " + sessionId);
+        System.out.println("\tfileId: " + fileId);
+
+        WebTarget webTarget = this.webTarget.path("files").path(String.valueOf(fileId)).path("fetch")
+                .queryParam("sid", sessionId);
+        for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
+            webTarget = webTarget.queryParam(entry.getKey(), entry.getValue());
+            System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
+
+        }
+        System.out.println("webTarget = " + webTarget);
+        String json = webTarget.request().get(String.class);
+        System.out.println("json = " + json);
+
+
+        QueryResponse<QueryResult<ObjectMap>> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+        System.out.println("\nOUTPUT PARAMS");
+        assertEquals("", queryResponse.getError());
+        List<ObjectMap> alignments = queryResponse.getResponse().get(0).getResult();
+
+        System.out.println("\nJSON RESPONSE");
+        System.out.println(json);
+
+        return alignments;    }
 }

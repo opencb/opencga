@@ -23,14 +23,13 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Project;
 
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
 public class ProjectWSServerTest {
 
+    public static final String PROJECT_ALIAS = "def_pr";
     private WebTarget webTarget;
 
     public ProjectWSServerTest(WebTarget webTarget){
@@ -39,6 +38,7 @@ public class ProjectWSServerTest {
 
     public Project createProject(String userId, String sessionId) throws IOException {
         String prName = "pr_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
+        String prAlias = PROJECT_ALIAS;
 
         System.out.println("\nTesting project creation...");
         System.out.println("---------------------");
@@ -46,7 +46,7 @@ public class ProjectWSServerTest {
         System.out.println("\tuserId: "+ userId);
         System.out.println("\tsid: "+ sessionId);
         System.out.println("\tname: "+ prName);
-        System.out.println("\talias: "+ prName);
+        System.out.println("\talias: "+ prAlias);
         System.out.println("\tdescription: description");
         System.out.println("\tstatus: status");
         System.out.println("\torganization: organization");
@@ -55,7 +55,7 @@ public class ProjectWSServerTest {
                 .queryParam("userId", userId)
                 .queryParam("sid", sessionId)
                 .queryParam("name", prName)
-                .queryParam("alias", prName)
+                .queryParam("alias", prAlias)
                 .queryParam("description", "description")
                 .queryParam("status", "status")
                 .queryParam("organization", "organization")
