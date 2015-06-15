@@ -19,7 +19,10 @@ package org.opencb.opencga.server.ws;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.RandomStringUtils;
 import org.opencb.datastore.core.QueryResponse;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.models.Project;
 
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
@@ -28,107 +31,88 @@ import static org.junit.Assert.assertEquals;
 
 public class ProjectWSServerTest {
 
-    private UserWSServerTest userTest;
-    private int projectId;
+    private WebTarget webTarget;
 
-    public ProjectWSServerTest(UserWSServerTest uTest ){
-        userTest = uTest;
+    public ProjectWSServerTest(WebTarget webTarget){
+        this.webTarget = webTarget;
     }
 
-    public void createProject() {
-        ObjectMapper objectMapper = new ObjectMapper();
+    public Project createProject(String userId, String sessionId) throws IOException {
         String prName = "pr_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
 
         System.out.println("\nTesting project creation...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
-        System.out.println("\tuserId: "+ userTest.getUserId());
-        System.out.println("\tsid: "+ userTest.getSessionId());
+        System.out.println("\tuserId: "+ userId);
+        System.out.println("\tsid: "+ sessionId);
         System.out.println("\tname: "+ prName);
         System.out.println("\talias: "+ prName);
         System.out.println("\tdescription: description");
         System.out.println("\tstatus: status");
         System.out.println("\torganization: organization");
-//        MultivaluedMap queryParams = new MultivaluedHashMap();
-//        queryParams.add("userId", userTest.getUserId());
-//        queryParams.add("sid", userTest.getSessionId());
-//        queryParams.add("name", prName);
-//        queryParams.add("alias", prName);
-//        queryParams.add("description", "description");
-//        queryParams.add("status", "status");
-//        queryParams.add("organization", "organization");
-        String s = userTest.getWebTarget().path("projects").path("create")
-                .queryParam("userId", userTest.getUserId())
-                .queryParam("sid", userTest.getSessionId())
+
+        String json = webTarget.path("projects").path("create")
+                .queryParam("userId", userId)
+                .queryParam("sid", sessionId)
                 .queryParam("name", prName)
                 .queryParam("alias", prName)
                 .queryParam("description", "description")
                 .queryParam("status", "status")
                 .queryParam("organization", "organization")
                 .request().get(String.class);
-        try {
-            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
-            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
-            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-            System.out.println("\nOUTPUT PARAMS");
-            projectId = Integer.parseInt(WSServerTestUtils.getField(queryResponse,"id"));
-            System.out.println("\tprojectId: "+ projectId);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        QueryResponse<QueryResult<Project>> queryResponse = WSServerTestUtils.parseResult(json, Project.class);
+
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+        System.out.println("\nOUTPUT PARAMS");
+        Project project = queryResponse.getResponse().get(0).first();
+        int projectId = project.getId();
+        System.out.println("\tprojectId: "+ projectId);
+
         System.out.println("\nJSON RESPONSE");
-        System.out.println(s);
+        System.out.println(json);
 
+        return project;
     }
-    public void info(){
-        ObjectMapper objectMapper = new ObjectMapper();
-
+    public Project info(int projectId, String sessionId) throws IOException {
         System.out.println("\nTesting project info...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
-        System.out.println("\tsid: " + userTest.getSessionId());
+        System.out.println("\tsid: " + sessionId);
         System.out.println("\tprojectId: " + projectId);
 
-//        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("sid", userTest.getSessionId());
+        String json = webTarget.path("projects").path(String.valueOf(projectId)).path("info")
+                .queryParam("sid", sessionId).request().get(String.class);
 
-        String s = userTest.getWebTarget().path("projects").path(String.valueOf(projectId)).path("info")
-                .queryParam("sid", userTest.getSessionId()).request().get(String.class);
-        try {
-            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
-            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
-            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-            System.out.println("\nOUTPUT PARAMS");
-            String name = WSServerTestUtils.getField(queryResponse, "name");
-            System.out.println("\nname: "+ name);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        QueryResponse<QueryResult<Project>> queryResponse = WSServerTestUtils.parseResult(json, Project.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+        System.out.println("\nOUTPUT PARAMS");
+        Project project = queryResponse.getResponse().get(0).first();
+
         System.out.println("\nJSON RESPONSE");
-        System.out.println(s);
+        System.out.println(json);
 
+        return project;
     }
-    public void getAllProjects(){
+
+    public void getAllStudies(int projectId, String sessionId){
         ObjectMapper objectMapper = new ObjectMapper();
-        String ownerId = userTest.getUserId();
-        System.out.println("\nTesting all projects info...");
+        System.out.println("\nTesting all studies info...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
-        System.out.println("\tsid: "+ userTest.getSessionId());
-        System.out.println("\townerId: "+ ownerId);
+        System.out.println("\tprojectId: " + String.valueOf(projectId));
+        System.out.println("\tsid: " + sessionId);
 
 //        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("sid", userTest.getSessionId());
-
-        String s = userTest.getWebTarget().path("projects").path(String.valueOf(ownerId)).path("all-projects")
-                .queryParam("sid", userTest.getSessionId()).request().get(String.class);
+//        queryParams.add("sid", sessionId);
+        String s = webTarget.path("projects").path(String.valueOf(projectId))
+                .path("studies")
+                .queryParam("sid", sessionId)
+                .request().get(String.class);
         try {
             QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
             //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
             assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-            System.out.println("\nOUTPUT PARAMS");
-            String name = WSServerTestUtils.getField(queryResponse,"name");
-            System.out.println("\nname: "+ name);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -136,7 +120,7 @@ public class ProjectWSServerTest {
         System.out.println(s);
 
     }
-    public void modifyProject() {
+    public void modifyProject(int projectId, String sessionId) {
         String name = projectId + "-mod";
         String description = "desc-mod";
         String organization = "org-mod";
@@ -144,18 +128,14 @@ public class ProjectWSServerTest {
         System.out.println("------------------------");
         System.out.println("\nINPUT PARAMS");
         System.out.println("\tprojectId: " + projectId);
-        System.out.println("\tsessionId: " + userTest.getSessionId());
+        System.out.println("\tsessionId: " + sessionId);
         System.out.println("\tname: " + name);
         System.out.println("\tdescription: " + description);
         System.out.println("\torganization: " + organization);
 
-//        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("sid", userTest.getSessionId());
-//        queryParams.add("name", name);
-//        queryParams.add("description", description);
-//        queryParams.add("organization", organization);
-        String s = userTest.getWebTarget().path("projects").path(String.valueOf(projectId)).path("modify")
-                .queryParam("sid", userTest.getSessionId())
+
+        String s = webTarget.path("projects").path(String.valueOf(projectId)).path("update")
+                .queryParam("sid", sessionId)
                 .queryParam("name", name)
                 .queryParam("description", description)
                 .queryParam("organization", organization)
@@ -173,10 +153,5 @@ public class ProjectWSServerTest {
         }
         System.out.println("Testing project modification finished");
     }
-    public int getProjectId(){
-        return projectId;
-    }
-    public UserWSServerTest getUserTest(){
-        return userTest;
-    }
+
 }

@@ -109,6 +109,31 @@
             <artifactId>asm</artifactId>
             <version>3.3.1</version>
         </dependency>
+
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-mongodb</artifactId>
+            <scope>test</scope>
+            <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
