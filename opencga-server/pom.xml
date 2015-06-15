@@ -113,6 +113,19 @@
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-app</artifactId>
+            <version>${opencga.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
+            <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
@@ -124,6 +137,7 @@
             <scope>test</scope>
             <version>${opencga.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>

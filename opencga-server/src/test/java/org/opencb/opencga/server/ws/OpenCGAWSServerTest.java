@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.ws;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.tools.ant.types.Commandline;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -30,10 +31,16 @@ import org.junit.Test;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.Config;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -41,8 +48,16 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
@@ -101,10 +116,32 @@ public class OpenCGAWSServerTest {
 
 
     @Before
-    public void init() {
+    public void init() throws IOException, CatalogException {
         webClient = ClientBuilder.newClient();
         webClient.register(MultiPartFeature.class);
         webTarget = webClient.target(restURL);
+
+        //Create test environment. Override OpenCGA_Home
+        Path opencgaHome = Paths.get("/tmp/opencga-server-test");
+        System.setProperty("app.home", opencgaHome.toString());
+        Config.setOpenCGAHome(opencgaHome.toString());
+
+        Files.createDirectories(opencgaHome);
+        Files.createDirectories(opencgaHome.resolve("conf"));
+
+        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog.properties"), StandardCopyOption.REPLACE_EXISTING);
+        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL").getBytes());
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
+        inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage.properties");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage.properties"), StandardCopyOption.REPLACE_EXISTING);
+        inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage-mongodb.properties");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-mongodb.properties"), StandardCopyOption.REPLACE_EXISTING);
+
+        CatalogManagerTest catalogManagerTest = new CatalogManagerTest();
+        catalogManagerTest.setUp(); //Clear and setup CatalogDatabase
+        OpenCGAWSServer.catalogManager = catalogManagerTest.getTestCatalogManager();
+
     }
 
     /** First echo message to test Server connectivity **/
@@ -156,24 +193,51 @@ public class OpenCGAWSServerTest {
         prTest.getAllStudies(project.getId(), sessionId);
 
         FileWSServerTest fileTest = new FileWSServerTest(webTarget);
-        File file = fileTest.uploadVcf(study.getId(), sessionId);
-        Job indexJob = fileTest.index(file.getId(), sessionId);
+        File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
+        assertEquals(File.Status.READY, fileVcf.getStatus());
+        assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
+        Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
         /* Emulate DAEMON working */
-        AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, indexJob, sessionId);
+        indexJobVcf = runIndexJob(sessionId, indexJobVcf);
+        assertEquals(Job.Status.READY, indexJobVcf.getStatus());
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
-        List<Variant> variants = fileTest.fetchVariants(file.getId(), sessionId, queryOptions);
+        List<Variant> variants = fileTest.fetchVariants(fileVcf.getId(), sessionId, queryOptions);
         assertEquals(10, variants.size());
 
+
+        File fileBam = fileTest.uploadBam(study.getId(), sessionId);
+        assertEquals(File.Status.READY, fileBam.getStatus());
+        assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
+        Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
+
+        /* Emulate DAEMON working */
+        indexJobBam = runIndexJob(sessionId, indexJobBam);
+        assertEquals(Job.Status.READY, indexJobBam.getStatus());
+
+//        queryOptions = new QueryOptions("limit", 10);
+//        queryOptions.put("region", "1");
+//        List<Alignment> alignments = fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
+//        assertEquals(10, alignments.size());
+
+    }
+
+    /**
+     * Do not execute Job using its command line, won't find the opencga-storage.sh
+     * Call directly to the OpenCGAStorageMain
+     */
+    private Job runIndexJob(String sessionId, Job indexJob) throws AnalysisExecutionException, IOException, CatalogException {
+        String[] args = Commandline.translateCommandline(indexJob.getCommandLine());
+        org.opencb.opencga.storage.app.cli.OpenCGAStorageMain.main(Arrays.copyOfRange(args, 1, args.length));
+        indexJob.setCommandLine("echo 'Executing fake CLI'");
+        AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, indexJob, sessionId);
+        return OpenCGAWSServer.catalogManager.getJob(indexJob.getId(), null, sessionId).first();
     }
 
     public String getRandomUserId() {
         return "user_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
     }
-
-//
-
 
 }

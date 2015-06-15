@@ -39,8 +39,14 @@ public class FileWSServerTest {
         String fileName = "variant-test-file.vcf.gz";
 //        String fileName = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
         InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
-
         return upload(studyId, fileName, File.Bioformat.VARIANT, is, sessionId);
+    }
+
+    public File uploadBam(int studyId, String sessionId) throws IOException, CatalogException {
+        String fileName = "HG00096.chrom20.small.bam";
+        InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
+
+        return upload(studyId, fileName, File.Bioformat.ALIGNMENT, is, sessionId);
     }
 
     public File upload(int studyId, String fileName, File.Bioformat bioformat, InputStream is, String sessionId) throws IOException, CatalogException {
@@ -55,7 +61,7 @@ public class FileWSServerTest {
 
 
         int totalSize = is.available();
-        int bufferSize = 200000;
+        int bufferSize = Math.min(totalSize/100+10, 100000);
         byte[] buffer = new byte[bufferSize];
         int size;
         int chunk_id = 0;
@@ -68,7 +74,7 @@ public class FileWSServerTest {
             multiPart.bodyPart(new FormDataBodyPart("chunk_id", Integer.toString(chunk_id)));
             multiPart.bodyPart(new FormDataBodyPart("chunk_size", Integer.toString(size)));
             multiPart.bodyPart(new FormDataBodyPart("chunk_total", Integer.toString(totalSize)));
-            multiPart.bodyPart(new FormDataBodyPart("last_chunk", Boolean.toString(size != bufferSize)));
+            multiPart.bodyPart(new FormDataBodyPart("last_chunk", Boolean.toString(is.available() == 0)));
             multiPart.bodyPart(new FormDataBodyPart("filename", fileName));
             multiPart.bodyPart(new FormDataBodyPart("studyId", Integer.toString(studyId)));
             multiPart.bodyPart(new FormDataBodyPart("fileFormat", File.Format.PLAIN.toString()));
@@ -136,7 +142,9 @@ public class FileWSServerTest {
             System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
 
         }
+        System.out.println("webTarget = " + webTarget);
         String json = webTarget.request().get(String.class);
+        System.out.println("json = " + json);
 
 
         QueryResponse<QueryResult<Variant>> queryResponse = WSServerTestUtils.parseResult(json, Variant.class);

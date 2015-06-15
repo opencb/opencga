@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 public class CatalogManagerTest extends GenericTest {
 
     public final String PASSWORD = "asdf";
-    CatalogManager catalogManager;
+    protected CatalogManager catalogManager;
     protected String sessionIdUser;
     protected String sessionIdUser2;
     protected String sessionIdUser3;
@@ -125,9 +125,6 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("numValue", 50);
         catalogManager.modifyFile(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(1,2,3,4,5)), sessionIdUser);
         catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
-
-
-
     }
 
 
@@ -144,6 +141,9 @@ public class CatalogManagerTest extends GenericTest {
         }
     }
 
+    public CatalogManager getTestCatalogManager() {
+        return catalogManager;
+    }
 
     @Test
     public void testCreateExistingUser() throws Exception {
