@@ -113,7 +113,7 @@ public class FileWSServerTest {
 
         String json = webTarget.path("files").path(String.valueOf(fileId)).path("index")
                 .queryParam("sid", sessionId)
-                .queryParam("annotate", false)
+                .queryParam("annotate", true)
                 .request().get(String.class);
 
         QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
