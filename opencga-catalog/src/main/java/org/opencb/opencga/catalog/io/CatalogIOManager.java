@@ -88,6 +88,10 @@ public abstract class CatalogIOManager {
      */
     public void setup() throws CatalogIOException {
         setProperties(properties);
+        if (!exists(rootDir)) {
+            logger.info("Initializing CatalogIOManager. Creating main folder '" + rootDir + "'");
+            createDirectory(rootDir, true);
+        }
         checkDirectoryUri(rootDir, true);
 
         if(!exists(rootDir.resolve(OPENCGA_USERS_FOLDER))) {

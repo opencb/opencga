@@ -1069,9 +1069,7 @@ public class CatalogManagerTest extends GenericTest {
         db.getDb().dropDatabase();
 
         Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
-//        Path rootdir = Paths.get(URI.create(properties.getProperty("CATALOG.MAIN.ROOTDIR")));
         deleteFolderTree(rootdir.toFile());
-        Files.createDirectory(rootdir);
     }
 
     public static void deleteFolderTree(java.io.File folder) {

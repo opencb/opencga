@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.core.UriUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,12 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     protected void setProperties(Properties properties) throws CatalogIOException {
-        this.rootDir = URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+        try {
+            String property = properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR);
+            rootDir = UriUtils.getUri(property.endsWith("/") ? property : property + "/");
+        } catch (URISyntaxException e) {
+            throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+        }
         if (!rootDir.getScheme().equals("file")) {
             throw new CatalogIOException("wrong posix file system in catalog.properties: " + rootDir);
         }

@@ -22,6 +22,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
@@ -39,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -85,7 +88,8 @@ public class CatalogManager {
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOException {
+    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties)
+            throws IOException, CatalogIOException {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
