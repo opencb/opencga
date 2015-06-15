@@ -164,7 +164,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
-                                @DefaultValue("") @FormDataParam("last_chunk") String last_chunk,
+                                @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
                                 @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
                                 @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
                                 @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
@@ -234,6 +234,11 @@ public class FileWSServer extends OpenCGAWSServer {
             // hash = chunkHash;
             if (chunkBytes.length == chunkSize) {
                 Files.write(folderPath.resolve(chunkId + "_" + chunkBytes.length + "_partial"), chunkBytes);
+            } else {
+                String errorMessage = "Chunk content size (" + chunkBytes.length + ") " +
+                        "!= chunk_size (" + chunk_size + ").";
+                logger.error(errorMessage);
+                return createErrorResponse(new IOException(errorMessage));
             }
 
             if (lastChunk) {
