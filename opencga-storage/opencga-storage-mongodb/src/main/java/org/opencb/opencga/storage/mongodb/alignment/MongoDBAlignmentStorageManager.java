@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
@@ -114,7 +113,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     @Override
     public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException {
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(WRITE_ALIGNMENTS, false);
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(CREATE_BAI, true);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(CREATE_BAM_INDEX, true);
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(INCLUDE_COVERAGE, true);
         return super.transform(inputUri, pedigree, outputUri);
     }

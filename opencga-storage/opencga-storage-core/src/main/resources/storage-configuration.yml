@@ -12,6 +12,7 @@ storageEngines:
     manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
     options:
       database.name: "opencga"
+      tools.samtools: "${OPENCGA.INSTALLATION.DIR}/tools/samtools/samtools"
       transform.region_size: 200000
       transform.coverage_chunk_size: 1000
       mean_coverage_size_list: [200, 10000]

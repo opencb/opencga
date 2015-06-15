@@ -90,6 +90,28 @@ public class StorageConfiguration {
         this.cellbase = new CellBaseConfiguration();
     }
 
+    /**
+     * This method attempts to find and load the configuration from installation directory,
+     * if not exists then loads JAR storage-configuration.yml
+     * @throws IOException
+     */
+    public static StorageConfiguration load() throws IOException {
+        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
+        Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
+        if (appHome != null && Files.exists(path)) {
+            logger.debug("Loading configuration from '{}'", appHome + "/conf/storage-configuration.yml");
+            return StorageConfiguration
+                    .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
+        } else {
+            logger.debug("Loading configuration from '{}'",
+                    StorageConfiguration.class.getClassLoader()
+                            .getResourceAsStream("storage-configuration.yml")
+                            .toString());
+            return StorageConfiguration
+                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        }
+    }
+
     public static StorageConfiguration load(InputStream configurationInputStream) throws IOException {
         return load(configurationInputStream, "yaml");
     }
@@ -123,28 +145,6 @@ public class StorageConfiguration {
 //            }
         }
         return storageConfiguration;
-    }
-
-    /**
-     * This method attempts to find and load the configuration from installation directory,
-     * if not exists then loads JAR storage-configuration.yml
-     * @throws IOException
-     */
-    public static StorageConfiguration findAndLoad() throws IOException {
-        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-        Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
-        if (appHome != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", appHome + "/conf/storage-configuration.yml");
-            return StorageConfiguration
-                    .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
-        } else {
-            logger.debug("Loading configuration from '{}'",
-                    StorageConfiguration.class.getClassLoader()
-                            .getResourceAsStream("storage-configuration.yml")
-                            .toString());
-            return StorageConfiguration
-                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
-        }
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {

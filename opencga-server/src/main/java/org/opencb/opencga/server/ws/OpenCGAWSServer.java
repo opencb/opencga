@@ -138,7 +138,7 @@ public class OpenCGAWSServer {
 //        }
 
         try {
-            StorageConfiguration storageConfiguration = StorageConfiguration.findAndLoad();
+            StorageConfiguration storageConfiguration = StorageConfiguration.load();
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
             e.printStackTrace();

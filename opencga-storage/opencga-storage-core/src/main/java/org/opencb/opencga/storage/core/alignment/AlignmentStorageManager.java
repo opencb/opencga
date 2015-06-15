@@ -47,7 +47,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created by jacobo on 14/08/14.
@@ -63,10 +62,11 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public static final String FILE_ALIAS = "fileAlias";
     public static final String WRITE_ALIGNMENTS = "writeAlignments";
     public static final String INCLUDE_COVERAGE = "includeCoverage";
-    public static final String CREATE_BAI = "createBai";
+    public static final String CREATE_BAM_INDEX = "createBai";
     public static final String ENCRYPT = "encrypt";
     public static final String COPY_FILE = "copy";
     public static final String DB_NAME = "database.name";
+    public static final String TOOLS_SAMTOOLS = "tools.samtools";
 
     private StorageEtlConfiguration storageEtlConfiguration;
 
@@ -105,7 +105,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      *  Copy into the output path                   : <outputPath>/<FILE_ALIAS>.encrypt.bam                 (pending)
      * if !ENCRYPT && COPY_FILE
      *  Encrypt into the output path                : <outputPath>/<FILE_ALIAS>.bam                         (pending)
-     * if CREATE_BAI
+     * if CREATE_BAM_INDEX
      *  Create the bai with the samtools            : <outputPath>/<FILE_ALIAS>.bam.bai
      * if WRITE_ALIGNMENTS
      *  Write Json alignments                       : <outputPath>/<FILE_ALIAS>.bam.alignments.json[.gz]
@@ -125,9 +125,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public URI transform(URI inputUri, URI pedigree, URI outputUri)
             throws IOException, FileFormatException {
 
-//        checkUri(inputUri, "input file");
-//        checkUri(outputUri, "output directory");
-
         Path input = Paths.get(inputUri.getPath());
         FileUtils.checkFile(input);
 
@@ -141,30 +138,36 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
 
         boolean plain = storageEtlConfiguration.getOptions().getBoolean(PLAIN, false);
-        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(CREATE_BAI, true);
+        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(CREATE_BAM_INDEX, true);
         boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(INCLUDE_COVERAGE, false);
         boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(WRITE_ALIGNMENTS, false);
 
         int regionSize = storageEtlConfiguration.getOptions().getInt(TRANSFORM_REGION_SIZE, 200000);
 
-//        String defaultFileAlias = input.getFileName().toString().substring(0, input.getFileName().toString().lastIndexOf("."));
-        String defaultFileAlias = StringUtils.substringBeforeLast(input.getFileName().toString(), ".");
-
-        String fileAlias = storageEtlConfiguration.getOptions().getString(FILE_ALIAS, defaultFileAlias);
-
-//        String encrypt = params.getString(ENCRYPT, "null");
-//        boolean copy = params.getBoolean(COPY_FILE, params.containsKey(FILE_ID));
-//        String fileName = inputPath.getFileName().toString();
+//        String defaultFileAlias = StringUtils.substringBeforeLast(input.getFileName().toString(), ".");
+//        String fileAlias = storageEtlConfiguration.getOptions().getString(FILE_ALIAS, defaultFileAlias);
 
         //1 Encrypt
         //encrypt(encrypt, bamFile, fileId, output, copy);
 
         //2 Index (bai)
         if(createBai) {
-            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
-            if (!Files.exists(bamIndexFile)) {
+//            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
+            Path bamIndexPath = output.resolve(input.getFileName().toString() + ".bai");
+            if (!Files.exists(bamIndexPath)) {
+
+                Path samtoolsPath = Paths.get(storageEtlConfiguration.getOptions().getString(TOOLS_SAMTOOLS, null));
+                String samtoolsBin;
+                if (samtoolsPath != null && samtoolsPath.toFile().exists() && samtoolsPath.toFile().canExecute()) {
+                    samtoolsBin = samtoolsPath.toFile().getAbsolutePath();
+                    logger.debug("samtools binary set to '{}' file", samtoolsBin);
+                } else {
+                    samtoolsBin = "samtools";
+                    logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", TOOLS_SAMTOOLS, samtoolsPath);
+                }
+
                 long start = System.currentTimeMillis();
-                String indexBai = "samtools index " + input.toString() + " " + bamIndexFile.toString();
+                String indexBai = samtoolsBin + " index " + input.toString(); //  + " " + bamIndexFile.toString();
                 logger.info("Creating BAM index: '{}'", indexBai);
                 try {
                     Runtime.getRuntime().exec(indexBai).waitFor();
@@ -185,7 +188,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         // Reader and Writer creation
         AlignmentDataReader reader = new AlignmentBamDataReader(input, null); //Read from sorted BamFile
         List<DataWriter<AlignmentRegion>> writers = new LinkedList<>();
-        String jsonOutputFiles = output.resolve(fileAlias + ".bam").toString();
+//        String jsonOutputFiles = output.resolve(fileAlias + ".bam").toString();
+        String jsonOutputFiles = output.resolve(input.getFileName()).toString();
         String outputFile = null;
 
         // We set the different coverage size regions
