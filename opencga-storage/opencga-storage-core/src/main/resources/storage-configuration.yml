@@ -44,10 +44,10 @@ storageEngines:
       - ${OPENCGA.STORAGE.VARIANT.DB.HOST}
       user: ${OPENCGA.STORAGE.VARIANT.DB.USER}
       password: ${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}
-- id: "hbase"
+- id: "hadoop"
   options: {}
   alignment:
-    manager: "org.opencb.opencga.storage.hbase.alignment.MongoDBAlignmentStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
     options: {}
     database:
       hosts:
@@ -55,7 +55,7 @@ storageEngines:
       user: "user"
       password: "password"
   variant:
-    manager: "org.opencb.opencga.storage.hbase.variant.MongoDBVariantStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
     options: {}
     database:
       hosts:
