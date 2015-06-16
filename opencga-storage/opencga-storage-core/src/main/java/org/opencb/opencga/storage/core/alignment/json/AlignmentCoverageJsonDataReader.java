@@ -28,6 +28,7 @@ import org.opencb.commons.io.DataReader;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,14 +71,24 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
     @Override
     public boolean open() {
         try {
-            coverageStream = new FileInputStream(coverageFilename);
-            if(coverageFilename.endsWith(".gz")){
-                coverageStream = new GZIPInputStream(coverageStream);
+            if (Paths.get(coverageFilename).toFile().exists()) {
+                readRegionCoverage = true;
+                coverageStream = new FileInputStream(coverageFilename);
+                if (coverageFilename.endsWith(".gz")) {
+                    coverageStream = new GZIPInputStream(coverageStream);
+                }
+            } else {
+                readRegionCoverage = false;
             }
 
-            meanCoverageStream = new FileInputStream(meanCoverageFilename);
-            if (meanCoverageFilename.endsWith(".gz")) {
-                meanCoverageStream = new GZIPInputStream(meanCoverageStream);
+            if (Paths.get(meanCoverageFilename).toFile().exists()) {
+                readMeanCoverage = true;
+                meanCoverageStream = new FileInputStream(meanCoverageFilename);
+                if (meanCoverageFilename.endsWith(".gz")) {
+                    meanCoverageStream = new GZIPInputStream(meanCoverageStream);
+                }
+            } else {
+                readMeanCoverage = false;
             }
 
         } catch (IOException e) {
@@ -92,8 +103,12 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
     @Override
     public boolean close() {
         try {
-            coverageStream.close();
-            meanCoverageStream.close();
+            if (coverageStream != null) {
+                coverageStream.close();
+            }
+            if (meanCoverageStream != null) {
+                meanCoverageStream.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
             logger.error(e.toString(), e);
@@ -118,7 +133,7 @@ public class AlignmentCoverageJsonDataReader implements DataReader<AlignmentRegi
 
     @Override
     public boolean post() {
-        return false;
+        return true;
     }
 
     private MeanCoverage readMeanCoverage(){

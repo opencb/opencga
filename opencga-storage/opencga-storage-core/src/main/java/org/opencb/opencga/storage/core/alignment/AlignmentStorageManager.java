@@ -45,6 +45,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -53,21 +54,56 @@ import java.util.List;
  */
 public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
 
-    public static final String MEAN_COVERAGE_SIZE_LIST = "mean_coverage_size_list";
-    public static final String PLAIN = "plain";
-    public static final String TRANSFORM_REGION_SIZE = "transform.region_size";
-    public static final String TRANSFORM_COVERAGE_CHUNK_SIZE = "transform.coverage_chunk_size";
-    public static final String STUDY = "study";
-    public static final String FILE_ID = "fileId";
-    public static final String FILE_ALIAS = "fileAlias";
-    public static final String WRITE_ALIGNMENTS = "writeAlignments";
-    public static final String INCLUDE_COVERAGE = "includeCoverage";
-    public static final String CREATE_BAM_INDEX = "createBai";
-    public static final String ENCRYPT = "encrypt";
-    public static final String COPY_FILE = "copy";
-    public static final String DB_NAME = "database.name";
-    public static final String TOOLS_SAMTOOLS = "tools.samtools";
+//    public static final String MEAN_COVERAGE_SIZE_LIST = "mean_coverage_size_list";
+//    public static final String PLAIN = "plain";
+//    public static final String TRANSFORM_REGION_SIZE = "transform.region_size";
+//    public static final String TRANSFORM_COVERAGE_CHUNK_SIZE = "transform.coverage_chunk_size";
+//    public static final String WRITE_COVERAGE = "transform.write_coverage";
+//    public static final String STUDY = "study";
+//    public static final String FILE_ID = "fileId";
+//    public static final String FILE_ALIAS = "fileAlias";
+//    public static final String WRITE_ALIGNMENTS = "writeAlignments";
+//    public static final String INCLUDE_COVERAGE = "includeCoverage";
+//    public static final String CREATE_BAM_INDEX = "createBai";
+//    public static final String ENCRYPT = "encrypt";
+//    public static final String COPY_FILE = "copy";
+//    public static final String DB_NAME = "database.name";
+//    public static final String TOOLS_SAMTOOLS = "tools.samtools";
 
+    public enum Options {
+        MEAN_COVERAGE_SIZE_LIST ("mean_coverage_size_list", Arrays.asList("200", "10000")),
+        PLAIN ("plain", false),
+        TRANSFORM_REGION_SIZE ("transform.region_size", 200000),
+        TRANSFORM_COVERAGE_CHUNK_SIZE ("transform.coverage_chunk_size", 1000),
+        WRITE_COVERAGE ("transform.write_coverage", true),
+        STUDY ("study", true),
+        FILE_ID ("fileId", ""),
+        FILE_ALIAS ("fileAlias", ""),
+        WRITE_ALIGNMENTS ("writeAlignments", false),
+        INCLUDE_COVERAGE ("includeCoverage", true),
+        CREATE_BAM_INDEX ("createBai", true),
+        ENCRYPT ("encrypt", false),
+        COPY_FILE ("copy", false),
+        DB_NAME ("database.name", "opencga"),
+        TOOLS_SAMTOOLS ("tools.samtools", null);
+
+        private final String key;
+        private final Object value;
+
+        Options(String key, Object value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        public <T> T defaultValue() {
+            return (T) value;
+        }    
+    }
+    
     private StorageEtlConfiguration storageEtlConfiguration;
 
     public AlignmentStorageManager() {
@@ -137,15 +173,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
 
-        boolean plain = storageEtlConfiguration.getOptions().getBoolean(PLAIN, false);
-        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(CREATE_BAM_INDEX, true);
-        boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(INCLUDE_COVERAGE, false);
-        boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(WRITE_ALIGNMENTS, false);
+        boolean plain = storageEtlConfiguration.getOptions().getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
+        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(Options.CREATE_BAM_INDEX.key(), Options.CREATE_BAM_INDEX.defaultValue());
+        boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.INCLUDE_COVERAGE.key, Options.INCLUDE_COVERAGE.defaultValue());
+        boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_ALIGNMENTS.key, Options.WRITE_ALIGNMENTS.defaultValue());
 
-        int regionSize = storageEtlConfiguration.getOptions().getInt(TRANSFORM_REGION_SIZE, 200000);
-
-//        String defaultFileAlias = StringUtils.substringBeforeLast(input.getFileName().toString(), ".");
-//        String fileAlias = storageEtlConfiguration.getOptions().getString(FILE_ALIAS, defaultFileAlias);
+        int regionSize = storageEtlConfiguration.getOptions().getInt(Options.TRANSFORM_REGION_SIZE.key, Options.TRANSFORM_REGION_SIZE.defaultValue());
 
         //1 Encrypt
         //encrypt(encrypt, bamFile, fileId, output, copy);
@@ -156,14 +189,14 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
             Path bamIndexPath = output.resolve(input.getFileName().toString() + ".bai");
             if (!Files.exists(bamIndexPath)) {
 
-                Path samtoolsPath = Paths.get(storageEtlConfiguration.getOptions().getString(TOOLS_SAMTOOLS, null));
+                Path samtoolsPath = Paths.get(storageEtlConfiguration.getOptions().getString(Options.TOOLS_SAMTOOLS.key, Options.TOOLS_SAMTOOLS.defaultValue()));
                 String samtoolsBin;
                 if (samtoolsPath != null && samtoolsPath.toFile().exists() && samtoolsPath.toFile().canExecute()) {
                     samtoolsBin = samtoolsPath.toFile().getAbsolutePath();
                     logger.debug("samtools binary set to '{}' file", samtoolsBin);
                 } else {
                     samtoolsBin = "samtools";
-                    logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", TOOLS_SAMTOOLS, samtoolsPath);
+                    logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", Options.TOOLS_SAMTOOLS.key, samtoolsPath);
                 }
 
                 long start = System.currentTimeMillis();
@@ -195,7 +228,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         // We set the different coverage size regions
         if(includeCoverage) {
             AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
-            List<String> meanCoverageSizeList = storageEtlConfiguration.getOptions().getAsStringList(MEAN_COVERAGE_SIZE_LIST);
+            List<String> meanCoverageSizeList = storageEtlConfiguration.getOptions().getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key);
             meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
             tasks.add(coverageCalculatorTask);
         }
@@ -209,10 +242,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         }
 
         if(includeCoverage) {
+            boolean writeMeanCoverage = !storageEtlConfiguration.getOptions().getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options.MEAN_COVERAGE_SIZE_LIST.defaultValue()).isEmpty();
+            boolean writeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_COVERAGE.key, Options.WRITE_COVERAGE.defaultValue());
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
-                    new AlignmentCoverageJsonDataWriter(jsonOutputFiles, !plain);
+                    new AlignmentCoverageJsonDataWriter(jsonOutputFiles, writeCoverage, writeMeanCoverage, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
-                    storageEtlConfiguration.getOptions().getInt(TRANSFORM_COVERAGE_CHUNK_SIZE, 1000));
+                    storageEtlConfiguration.getOptions().getInt(Options.TRANSFORM_COVERAGE_CHUNK_SIZE.key, Options.TRANSFORM_COVERAGE_CHUNK_SIZE.defaultValue()));
             writers.add(alignmentCoverageJsonDataWriter);
             if(outputFile == null) {
                 outputFile = alignmentCoverageJsonDataWriter.getCoverageFilename();

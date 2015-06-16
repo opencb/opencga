@@ -131,7 +131,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
     }
 
-    protected static Logger logger;
+//    protected static Logger logger;
 
     public VariantStorageManager() {
         logger = LoggerFactory.getLogger(VariantStorageManager.class);
@@ -187,7 +187,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         Path input = Paths.get(inputUri.getPath());
-        Path pedigree = pedigreeUri == null? null : Paths.get(pedigreeUri.getPath());
+        Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);

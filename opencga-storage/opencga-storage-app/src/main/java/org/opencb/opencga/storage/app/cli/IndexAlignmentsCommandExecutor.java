@@ -87,22 +87,22 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
              */
             ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
             if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-                alignmentOptions.put(AlignmentStorageManager.FILE_ID, indexAlignmentsCommandOptions.fileId);
+                alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
             }
             if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
-                alignmentOptions.put(AlignmentStorageManager.DB_NAME, indexAlignmentsCommandOptions.dbName);
+                alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
             }
             if(indexAlignmentsCommandOptions.params != null) {
                 alignmentOptions.putAll(indexAlignmentsCommandOptions.params);
             }
 
-            alignmentOptions.put(AlignmentStorageManager.PLAIN, false);
-            alignmentOptions.put(AlignmentStorageManager.INCLUDE_COVERAGE, indexAlignmentsCommandOptions.calculateCoverage);
+            alignmentOptions.put(AlignmentStorageManager.Options.PLAIN.key(), false);
+            alignmentOptions.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
             if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
-                alignmentOptions.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, indexAlignmentsCommandOptions.meanCoverage);
+                alignmentOptions.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), indexAlignmentsCommandOptions.meanCoverage);
             }
-            alignmentOptions.put(AlignmentStorageManager.COPY_FILE, false);
-            alignmentOptions.put(AlignmentStorageManager.ENCRYPT, "null");
+            alignmentOptions.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
+            alignmentOptions.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
             logger.debug("Configuration options: {}", alignmentOptions.toJson());
 
 

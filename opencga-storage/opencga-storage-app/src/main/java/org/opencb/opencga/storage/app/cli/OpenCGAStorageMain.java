@@ -470,14 +470,14 @@ public class OpenCGAStorageMain {
         params.putAll(parser.getGeneralParameters().params);
 
         if (c.fileId != 0) {
-            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+            params.put(AlignmentStorageManager.Options.FILE_ID.key(), c.fileId);
         }
-        params.put(AlignmentStorageManager.PLAIN, false);
-        params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
-        params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.calculateCoverage);
-        params.put(AlignmentStorageManager.DB_NAME, c.dbName);
-        params.put(AlignmentStorageManager.COPY_FILE, false);
-        params.put(AlignmentStorageManager.ENCRYPT, "null");
+        params.put(AlignmentStorageManager.Options.PLAIN.key(), false);
+        params.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), c.meanCoverage);
+        params.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), c.calculateCoverage);
+        params.put(AlignmentStorageManager.Options.DB_NAME.key(), c.dbName);
+        params.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
+        params.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
 
         params.putAll(c.params);
 
