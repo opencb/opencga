@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     /**
-     * This field value must be the same that the one at storage-configuration.yml
+     * This field defaultValue must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 
@@ -86,7 +86,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public VariantMongoDBWriter getDBWriter(String dbName) {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        int fileId = options.getInt(FILE_ID);
+        int fileId = options.getInt(Options.FILE_ID.key());
 
 //        Properties credentialsProperties = new Properties(properties);
 
@@ -135,7 +135,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         if(dbName == null || dbName.isEmpty()) {    //If no database name is provided, read from the configuration file
-            dbName = options.getString(DB_NAME, "variants");
+            dbName = options.getString(Options.DB_NAME.key(), "variants");
         }
         String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
         String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
@@ -165,23 +165,23 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         Path input = Paths.get(inputUri.getPath());
 
-        boolean includeSamples = options.getBoolean(INCLUDE_GENOTYPES, false);
-        boolean includeStats = options.getBoolean(INCLUDE_STATS, false);
-        boolean includeSrc = options.getBoolean(INCLUDE_SRC, false);
+        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
+        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
+        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), false);
 
         String defaultGenotype = options.getString(DEFAULT_GENOTYPE, "");
-        boolean compressSamples = options.getBoolean(COMPRESS_GENOTYPES, false);
+        boolean compressSamples = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
 //        params.put(VARIANT_SOURCE, source);
-        String dbName = options.getString(DB_NAME, null);
+        String dbName = options.getString(Options.DB_NAME.key(), null);
 
 //        VariantSource variantSource = readVariantSource(input, null);
 //        new StudyInformation(variantSource.getStudyId())
 
-        int batchSize = options.getInt(BATCH_SIZE, 100);
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 100);
         int bulkSize = options.getInt(BULK_SIZE, batchSize);
-        int loadThreads = options.getInt(LOAD_THREADS, 8);
+        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), 8);
         int capacity = options.getInt("blockingQueueCapacity", loadThreads*2);
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         final int numReaders = 1;
@@ -319,7 +319,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         if (options != null && !options.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.buildStudyConfigurationManager(options);
         } else {
-            String string = options == null? null : options.getString(DB_NAME);
+            String string = options == null? null : options.getString(Options.DB_NAME.key());
             return getDBAdaptor(string).getStudyConfigurationDBAdaptor();
         }
     }

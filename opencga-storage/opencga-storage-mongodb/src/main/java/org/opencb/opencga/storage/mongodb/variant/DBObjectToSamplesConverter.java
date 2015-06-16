@@ -185,7 +185,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
             }
         }
 
-        // Loop through the non-most commmon genotypes, and set their value
+        // Loop through the non-most commmon genotypes, and set their defaultValue
         // in the position specified in the array, such as:
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
         // genotypes[41], genotypes[311], etc, will be set to "0|1"

@@ -176,7 +176,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
                                 @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
-//                                @ApiParam(value = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
+//                                @ApiParam(defaultValue = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
                                 @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = true) @DefaultValue("") @FormDataParam("description") String description,
@@ -185,17 +185,15 @@ public class FileWSServer extends OpenCGAWSServer {
         long t = System.currentTimeMillis();
 
         java.nio.file.Path filePath = null;
-        int studyId;
-        URI studyUri;
+        final int studyId;
         try {
             studyId = catalogManager.getStudyId(studyIdStr);
-            studyUri = catalogManager.getStudyUri(studyId);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
 
         try {
-            filePath = Paths.get(catalogManager.getFileUri(studyUri, relativeFilePath));
+            filePath = Paths.get(catalogManager.getFileUri(studyId, relativeFilePath));
             System.out.println(filePath);
         } catch (CatalogIOException e) {
             System.out.println("catalogManager.getFilePath");

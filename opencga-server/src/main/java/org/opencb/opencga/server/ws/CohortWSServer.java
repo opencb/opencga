@@ -139,11 +139,11 @@ public class CohortWSServer extends OpenCGAWSServer {
 //    @GET
 //    @Path("/create")
 //    @Produces("application/json")
-//    @ApiOperation(value = "Create a cohort")
+//    @ApiOperation(defaultValue = "Create a cohort")
 //    public Response createCohort(
-//            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
-//            @ApiParam(value = "cohortName", required = true) @QueryParam("cohortName") String cohortName,
-//            @ApiParam(value = "cohortDescription", required = false) @QueryParam("cohortDescription") String cohortDescription) {
+//            @ApiParam(defaultValue = "studyId", required = true) @QueryParam("studyId") int studyId,
+//            @ApiParam(defaultValue = "cohortName", required = true) @QueryParam("cohortName") String cohortName,
+//            @ApiParam(defaultValue = "cohortDescription", required = false) @QueryParam("cohortDescription") String cohortDescription) {
 //        try {
 //            QueryOptions queryOptions = getAllQueryOptions();
 ////            Object cohortInclude = queryOptions.remove("include");

@@ -487,8 +487,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        String fileId = queryOptions.getString(VariantStorageManager.FILE_ID);  //TODO: Change to int value
-        String studyId = ""+ studyConfiguration.getStudyId();                    //TODO: Change to int value
+        String fileId = queryOptions.getString(VariantStorageManager.Options.FILE_ID.key());  //TODO: Change to int defaultValue
+        String studyId = ""+ studyConfiguration.getStudyId();                    //TODO: Change to int defaultValue
         //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
@@ -506,7 +506,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // )
             // db.variants.update(
             //      {_id:<id>},
-            //      {$push:{st:{$each: [{cid:"Cohort 1", fid:"file 1", ... , value:3},{cid:"Cohort 2", ... , value:3}] }}}
+            //      {$push:{st:{$each: [{cid:"Cohort 1", fid:"file 1", ... , defaultValue:3},{cid:"Cohort 2", ... , defaultValue:3}] }}}
             // )
 
             if (!cohorts.isEmpty()) {

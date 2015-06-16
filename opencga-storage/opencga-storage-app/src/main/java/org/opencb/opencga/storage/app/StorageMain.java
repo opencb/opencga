@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.app;
 import org.opencb.opencga.storage.app.cli.*;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 02/03/15.
@@ -43,6 +42,7 @@ public class StorageMain {
             }
         }else {
             CommandExecutor commandExecutor = null;
+            // Check if any command -h option is present
             if(cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
             } else {
@@ -69,13 +69,14 @@ public class StorageMain {
                         commandExecutor = new StatsVariantsCommandExecutor(cliOptionsParser.getStatsVariantsCommandOptions());
                         break;
                     default:
+                        System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                         break;
                 }
             }
 
             if (commandExecutor != null) {
                 try {
-                    commandExecutor.loadOpenCGAStorageConfiguration();
+                    commandExecutor.loadStorageConfiguration();
                 } catch (IOException ex) {
                     commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
                     System.exit(1);

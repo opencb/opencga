@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.UriUtils;
@@ -33,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
@@ -42,7 +44,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
 
     private CliOptionsParser.IndexVariantsCommandOptions indexVariantsCommandOptions;
 
-    public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
+//    public static final String OPENCGA_STORAGE_ANNOTATOR = "OPENCGA.STORAGE.ANNOTATOR";
 
     public IndexVariantsCommandExecutor(CliOptionsParser.IndexVariantsCommandOptions indexVariantsCommandOptions) {
         super(indexVariantsCommandOptions.logLevel, indexVariantsCommandOptions.verbose,
@@ -52,19 +54,20 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
     }
     @Override
     public void execute() {
-        logger.info("in IndexVariantsCommandExecutor");
-        Config.setOpenCGAHome();
+        logger.debug("Executing index-variants command line");
+
         try {
-            /** Get VariantStorageManager **/
-            // We need to find out the Storage Engine Id to be used
-            // If not storage engine is passed then the default is taken from storage-configuration.yml file
+            /**
+             * Getting VariantStorageManager
+             * We need to find out the Storage Engine Id to be used
+             * If not storage engine is passed then the default is taken from storage-configuration.yml file
+             **/
             String storageEngine = (indexVariantsCommandOptions.storageEngine != null && !indexVariantsCommandOptions.storageEngine.isEmpty())
                     ? indexVariantsCommandOptions.storageEngine
                     : configuration.getDefaultStorageEngineId();
-            logger.debug("storageEngine set to '{}'", storageEngine);
+            logger.debug("Storage Engine set to '{}'", storageEngine);
 
             StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
-            StorageEtlConfiguration storageEtlConfiguration = storageConfiguration.getAlignment();
 
             StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
             VariantStorageManager variantStorageManager;
@@ -74,39 +77,43 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                 variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
             }
 
-//            if(indexVariantsCommandOptions.credentials != null && !indexVariantsCommandOptions.credentials.isEmpty()) {
-//                variantStorageManager.addConfigUri(new URI(null, indexVariantsCommandOptions.credentials, null));
-//            }
-
-            /** Get URIs **/
+            /*
+             * Getting URIs and checking Paths
+             */
             URI variantsUri = UriUtils.createUri(indexVariantsCommandOptions.input);
-            URI pedigreeUri = indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty()
+            FileUtils.checkFile(Paths.get(variantsUri));
+
+            URI pedigreeUri = (indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty())
                     ? UriUtils.createUri(indexVariantsCommandOptions.pedigree)
                     : null;
-            URI outdirUri = indexVariantsCommandOptions.outdir != null && !indexVariantsCommandOptions.outdir.isEmpty()
-                    ? UriUtils.createUri(indexVariantsCommandOptions.outdir + (indexVariantsCommandOptions.outdir.endsWith("/") ? "" : "/")).resolve(".")
+            if (pedigreeUri != null) {
+                FileUtils.checkFile(Paths.get(pedigreeUri));
+            }
+
+            URI outdirUri = (indexVariantsCommandOptions.outdir != null && !indexVariantsCommandOptions.outdir.isEmpty())
+                    ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.outdir)
+                    // Get parent folder from input file
                     : variantsUri.resolve(".");
+            FileUtils.checkDirectory(Paths.get(outdirUri), true);
+            logger.debug("All files and directories exist");
 
-//            assertDirectoryExists(outdirUri);
-
-//            String fileName = variantsUri.resolve(".").relativize(variantsUri).toString();
 //            VariantSource source = new VariantSource(fileName, indexVariantsCommandOptions.fileId,
 //                    indexVariantsCommandOptions.studyId, indexVariantsCommandOptions.study, indexVariantsCommandOptions.studyType, indexVariantsCommandOptions.aggregated);
 
-            /** Add cli options to the variant options **/
+            /** Add CLi options to the variant options **/
             ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
-            variantOptions.put(VariantStorageManager.STUDY_NAME, indexVariantsCommandOptions.study);
-            variantOptions.put(VariantStorageManager.STUDY_ID, indexVariantsCommandOptions.studyId);
-            variantOptions.put(VariantStorageManager.FILE_ID, indexVariantsCommandOptions.fileId);
-            variantOptions.put(VariantStorageManager.SAMPLE_IDS, indexVariantsCommandOptions.sampleIds);
-            variantOptions.put(VariantStorageManager.CALCULATE_STATS, indexVariantsCommandOptions.calculateStats);
-            variantOptions.put(VariantStorageManager.INCLUDE_STATS, indexVariantsCommandOptions.includeStats);
-            variantOptions.put(VariantStorageManager.INCLUDE_GENOTYPES, indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
-            variantOptions.put(VariantStorageManager.INCLUDE_SRC, indexVariantsCommandOptions.includeSrc);
-            variantOptions.put(VariantStorageManager.COMPRESS_GENOTYPES, indexVariantsCommandOptions.compressGenotypes);
-            variantOptions.put(VariantStorageManager.AGGREGATED_TYPE, indexVariantsCommandOptions.aggregated);
-            if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.DB_NAME, indexVariantsCommandOptions.dbName);
-            variantOptions.put(VariantStorageManager.ANNOTATE, indexVariantsCommandOptions.annotate);
+            variantOptions.put(VariantStorageManager.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
+            variantOptions.put(VariantStorageManager.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
+            variantOptions.put(VariantStorageManager.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
+            variantOptions.put(VariantStorageManager.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
+            variantOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
+            variantOptions.put(VariantStorageManager.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
+            variantOptions.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.includeGenotype);   // TODO rename samples to genotypes
+            variantOptions.put(VariantStorageManager.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
+            variantOptions.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
+            variantOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+            if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
+            variantOptions.put(VariantStorageManager.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
             if (indexVariantsCommandOptions.annotator != null) {
                 variantOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
             }
@@ -116,20 +123,23 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
             }
 
             if (indexVariantsCommandOptions.aggregationMappingFile != null) {
+                // TODO move this options to new configuration.yml
                 Properties aggregationMappingProperties = new Properties();
                 try {
                     aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
-                    variantOptions.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+                    variantOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
                 } catch (FileNotFoundException e) {
                     logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions.aggregationMappingFile);
                 }
             }
 
-            variantOptions.putAll(indexVariantsCommandOptions.params);
+            if (indexVariantsCommandOptions.params != null) {
+                variantOptions.putAll(indexVariantsCommandOptions.params);
+            }
+            logger.debug("Configuration options: {}", variantOptions.toJson());
 
 
             /** Execute ETL steps **/
-            ObjectMap params = null;
             URI nextFileUri = variantsUri;
             boolean extract, transform, load;
 
@@ -144,25 +154,25 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
             }
 
             if (extract) {
-                logger.info("-- Extract variants -- {}", variantsUri);
+                logger.info("Extract variants '{}'", variantsUri);
                 nextFileUri = variantStorageManager.extract(variantsUri, outdirUri);
             }
 
             if (transform) {
-                logger.info("-- PreTransform variants -- {}", nextFileUri);
+                logger.info("PreTransform variants '{}'", nextFileUri);
                 nextFileUri = variantStorageManager.preTransform(nextFileUri);
-                logger.info("-- Transform variants -- {}", nextFileUri);
+                logger.info("Transform variants '{}'", nextFileUri);
                 nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri);
-                logger.info("-- PostTransform variants -- {}", nextFileUri);
+                logger.info("PostTransform variants '{}'", nextFileUri);
                 nextFileUri = variantStorageManager.postTransform(nextFileUri);
             }
 
             if (load) {
-                logger.info("-- PreLoad variants -- {}", nextFileUri);
+                logger.info("PreLoad variants '{}'", nextFileUri);
                 nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri);
-                logger.info("-- Load variants -- {}", nextFileUri);
+                logger.info("Load variants '{}'", nextFileUri);
                 nextFileUri = variantStorageManager.load(nextFileUri);
-                logger.info("-- PostLoad variants -- {}", nextFileUri);
+                logger.info("PostLoad variants '{}'", nextFileUri);
                 nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri);
             }
         } catch (ClassNotFoundException e) {
@@ -181,7 +191,5 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
             e.printStackTrace();
         }
     }
-
-
 
 }

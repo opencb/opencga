@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core;
 
-import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -25,11 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -52,7 +49,7 @@ public class StorageManagerFactory {
     public static StorageManagerFactory get() {
         if (storageManagerFactory == null) {
             try {
-                storageManagerFactory = new StorageManagerFactory(StorageConfiguration.findAndLoad());
+                storageManagerFactory = new StorageManagerFactory(StorageConfiguration.load());
                 return storageManagerFactory;
             } catch (IOException e) {
                 e.printStackTrace();

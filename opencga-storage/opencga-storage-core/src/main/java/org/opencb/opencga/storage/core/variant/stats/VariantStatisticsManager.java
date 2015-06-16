@@ -67,7 +67,7 @@ public class VariantStatisticsManager {
      *
      * @param variantDBAdaptor to obtain the Variants
      * @param output where to write the VariantStats
-     * @param cohorts cohorts (subsets) of the samples. key: cohort name, value: list of sample names.
+     * @param cohorts cohorts (subsets) of the samples. key: cohort name, defaultValue: list of sample names.
      * @param options filters to the query, batch size, number of threads to use...
      *
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
@@ -88,12 +88,12 @@ public class VariantStatisticsManager {
         ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
 
         /** Variables for statistics **/
-        int batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, 1000); // future optimization, threads, etc
-        boolean overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, false);
+        int batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 1000); // future optimization, threads, etc
+        boolean overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
         List<Variant> variantBatch = new ArrayList<>(batchSize);
         int retrievedVariants = 0;
-        String fileId = options.getString(VariantStorageManager.FILE_ID);   //TODO: Change to int value
-        String studyId = studyConfiguration.getStudyId() + "";                //TODO: Change to int value
+        String fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());   //TODO: Change to int defaultValue
+        String studyId = studyConfiguration.getStudyId() + "";                //TODO: Change to int defaultValue
 //        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyId);
 
@@ -192,7 +192,7 @@ public class VariantStatisticsManager {
      *
      * @param variantDBAdaptor to obtain the Variants
      * @param output where to write the VariantStats
-     * @param samples cohorts (subsets) of the samples. key: cohort name, value: list of sample names.
+     * @param samples cohorts (subsets) of the samples. key: cohort name, defaultValue: list of sample names.
      * @param options (mandatory) fileId, (optional) filters to the query, batch size, number of threads to use...
      *
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
@@ -204,10 +204,10 @@ public class VariantStatisticsManager {
         boolean overwrite = false;
         String fileId;
         if(options != null) { //Parse query options
-            batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, batchSize);
-            numTasks = options.getInt(VariantStorageManager.LOAD_THREADS, numTasks);
-            overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
-            fileId = options.getString(VariantStorageManager.FILE_ID);
+            batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), batchSize);
+            numTasks = options.getInt(VariantStorageManager.Options.LOAD_THREADS.key(), numTasks);
+            overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), overwrite);
+            fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
         } else {
             logger.error("missing required fileId in QueryOptions");
             throw new Exception("createStats: need a fileId to calculate stats from.");
@@ -328,7 +328,7 @@ public class VariantStatisticsManager {
         /** Initialize Json parse **/
         JsonParser parser = jsonFactory.createParser(variantInputStream);
 
-        int batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, 1000);
+        int batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 1000);
         ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(batchSize);
         int writes = 0;
         int variantsNumber = 0;

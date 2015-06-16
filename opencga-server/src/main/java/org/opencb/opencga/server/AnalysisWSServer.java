@@ -18,7 +18,7 @@ package org.opencb.opencga.server;
 
 
 //@Path("/{version}/analysis")
-//@Api(value = "analysis", description = "analysis")
+//@Api(defaultValue = "analysis", description = "analysis")
 @Deprecated
 public class AnalysisWSServer {
 
@@ -29,14 +29,14 @@ public class AnalysisWSServer {
 //    @GET
 //    @Path("/create")
 //    @Produces("application/json")
-//    @ApiOperation(value = "Create analysis")
+//    @ApiOperation(defaultValue = "Create analysis")
 //
 //    public Response createStudy(
-//            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
-//            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-//            @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-//            @ApiParam(value = "creatorId", required = true) @QueryParam("creatorId") String creatorId,
-//            @ApiParam(value = "description", required = true) @QueryParam("description") String description
+//            @ApiParam(defaultValue = "studyId", required = true) @QueryParam("studyId") int studyId,
+//            @ApiParam(defaultValue = "name", required = true) @QueryParam("name") String name,
+//            @ApiParam(defaultValue = "alias", required = true) @QueryParam("alias") String alias,
+//            @ApiParam(defaultValue = "creatorId", required = true) @QueryParam("creatorId") String creatorId,
+//            @ApiParam(defaultValue = "description", required = true) @QueryParam("description") String description
 //    ) {
 //
 //
@@ -58,9 +58,9 @@ public class AnalysisWSServer {
 //    @GET
 //    @Path("/{analysisId}/info")
 //    @Produces("application/json")
-//    @ApiOperation(value = "Get analysisInfo")
+//    @ApiOperation(defaultValue = "Get analysisInfo")
 //    public Response info(
-//            @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
+//            @ApiParam(defaultValue = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
 //        try {
 //            return createOkResponse(catalogManager.getAnalysis(analysisId, sessionId));
 //        } catch (CatalogManagerException e) {
@@ -71,9 +71,9 @@ public class AnalysisWSServer {
 //    @GET
 //    @Path("/{analysisId}/jobs")
 //    @Produces("application/json")
-//    @ApiOperation(value = "Get all jobs")
+//    @ApiOperation(defaultValue = "Get all jobs")
 //    public Response getAllJobs(
-//            @ApiParam(value = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
+//            @ApiParam(defaultValue = "analysisId", required = true) @PathParam("analysisId") int analysisId) {
 //        try {
 //            return createOkResponse(catalogManager.getJobsByAnalysis(analysisId, sessionId));
 //        } catch (CatalogManagerException e) {

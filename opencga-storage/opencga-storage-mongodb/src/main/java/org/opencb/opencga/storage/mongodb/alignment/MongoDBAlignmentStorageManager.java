@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
@@ -48,11 +47,10 @@ import java.util.stream.Collectors;
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     /**
-     * This field value must be the same that the one at storage-configuration.yml
+     * This field defaultValue must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 
-    public static final String MONGODB_DEFAULT_DATABASE_NAME = "opencga";
     @Deprecated public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
 
     public MongoDBAlignmentStorageManager() {
@@ -66,7 +64,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     @Override
     public CoverageMongoDBWriter getDBWriter(String dbName) {
-        String fileId = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(FILE_ID);
+        String fileId = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(Options.FILE_ID.key());
         return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);
     }
 
@@ -74,10 +72,10 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public AlignmentDBAdaptor getDBAdaptor(String dbName) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
-            dbName = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(DB_NAME, MONGODB_DEFAULT_DATABASE_NAME);
+            dbName = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
             logger.info("Using default dbName '{}' in MongoDBAlignmentStorageManager.getDBAdaptor()", dbName);
         }
-        logger.debug("Using {} : '{}'", DB_NAME, dbName);
+        logger.debug("Using {} : '{}'", Options.DB_NAME.key(), dbName);
         Path path = Paths.get(configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
         if (path == null || path.toString() == null || path.toString().isEmpty() || !path.toFile().exists()) {
             adaptor = new CellBaseSequenceDBAdaptor();
@@ -113,9 +111,9 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     @Override
     public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException {
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(WRITE_ALIGNMENTS, false);
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(CREATE_BAI, true);
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(INCLUDE_COVERAGE, true);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.WRITE_ALIGNMENTS.key(), false);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.CREATE_BAM_INDEX.key(), true);
+        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.INCLUDE_COVERAGE.key(), true);
         return super.transform(inputUri, pedigree, outputUri);
     }
 
@@ -133,8 +131,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 //        System.out.println("configuration = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configuration));
 
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions();
-        String fileId = options.getString(AlignmentStorageManager.FILE_ID, input.getFileName().toString().split("\\.")[0]);
-        String dbName = options.getString(DB_NAME, MONGODB_DEFAULT_DATABASE_NAME);
+        String fileId = options.getString(Options.FILE_ID.key(), input.getFileName().toString().split("\\.")[0]);
+        String dbName = options.getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
 
         //Reader
         AlignmentCoverageJsonDataReader alignmentDataReader = getAlignmentCoverageJsonDataReader(input);

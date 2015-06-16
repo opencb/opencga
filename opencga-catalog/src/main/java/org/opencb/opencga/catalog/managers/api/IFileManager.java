@@ -28,6 +28,9 @@ public interface IFileManager extends ResourceManager<Integer, File> {
 
     URI getFileUri(File file) throws CatalogException;
 
+    URI getFileUri(int studyId, String relativeFilePath) throws CatalogException;
+
+    @Deprecated
     URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException;
 
     /*-------------*/
@@ -50,13 +53,16 @@ public interface IFileManager extends ResourceManager<Integer, File> {
                              Map<String, Object> stats, Map<String, Object> attributes,
                              boolean parents, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<File> createFolder(int studyId, String path, boolean parents, QueryOptions options, String sessionId)
+    QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException;
 
     QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException;
 
     QueryResult<File> getParent(int fileId, QueryOptions options, String sessionId)
+            throws CatalogException;
+
+    QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId)
             throws CatalogException;
 
     QueryResult<File> rename(int fileId, String newName, String sessionId)

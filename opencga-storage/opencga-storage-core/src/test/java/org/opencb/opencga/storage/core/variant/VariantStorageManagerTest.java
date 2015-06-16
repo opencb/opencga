@@ -62,14 +62,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        params.put(VariantStorageManager.FILE_ID, 6);
-        params.put(VariantStorageManager.COMPRESS_METHOD, "gZiP");
-        params.put(VariantStorageManager.TRANSFORM_THREADS, 1);
-        params.put(VariantStorageManager.LOAD_THREADS, 1);
-        params.put(VariantStorageManager.INCLUDE_GENOTYPES, true);
-        params.put(VariantStorageManager.INCLUDE_SRC, true);
-        params.put(VariantStorageManager.DB_NAME, DB_NAME);
+        params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), true);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.gz'" ,
@@ -92,14 +92,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        params.put(VariantStorageManager.FILE_ID, 6);
-        params.put(VariantStorageManager.COMPRESS_METHOD, "snappy");
-        params.put(VariantStorageManager.TRANSFORM_THREADS, 8);
-        params.put(VariantStorageManager.LOAD_THREADS, 8);
-        params.put(VariantStorageManager.INCLUDE_GENOTYPES, false);
-        params.put(VariantStorageManager.INCLUDE_SRC, false);
-        params.put(VariantStorageManager.DB_NAME, DB_NAME);
+        params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "snappy");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 8);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 8);
+        params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), false);
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), false);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,

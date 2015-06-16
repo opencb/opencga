@@ -364,15 +364,15 @@ public class AnalysisFileIndexer {
                     .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --outdir ").append(outDirUri)
-                    .append(" -D").append(VariantStorageManager.STUDY_CONFIGURATION_MANAGER_CLASS_NAME).append("=").append(CatalogStudyConfigurationManager.class.getName())
+                    .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
                     .append(" -D").append("sessionId").append("=").append(sessionId)
                     .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
-            if (options.getBoolean(VariantStorageManager.ANNOTATE, true)) {
+            if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), true)) {
                 sb.append(" --annotate ");
             }
-            if (options.getBoolean(VariantStorageManager.INCLUDE_SRC, false)) {
+            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), false)) {
                 sb.append(" --include-src ");
             }
             if (options.getBoolean(TRANSFORM, false)) {

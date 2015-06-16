@@ -108,7 +108,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             String cellbaseVersion = cellBaseConfiguration.getVersion();
             List<String> hosts = cellBaseConfiguration.getHosts();
             if (hosts.isEmpty()) {
-                throw new VariantAnnotatorException("Missing value \"CellBase Hosts\"");
+                throw new VariantAnnotatorException("Missing defaultValue \"CellBase Hosts\"");
             }
             String cellbaseRest = hosts.get(0);
 
@@ -160,7 +160,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
     private static void checkNotNull(String value, String name) throws VariantAnnotatorException {
         if(value == null || value.isEmpty()) {
-            throw new VariantAnnotatorException("Missing value: " + name);
+            throw new VariantAnnotatorException("Missing defaultValue: " + name);
         }
     }
 

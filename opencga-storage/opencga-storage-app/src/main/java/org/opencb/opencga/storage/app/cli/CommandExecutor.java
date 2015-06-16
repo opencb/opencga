@@ -23,11 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,12 +106,12 @@ public abstract class CommandExecutor {
      * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml
      * @throws IOException
      */
-    public void loadOpenCGAStorageConfiguration() throws IOException {
+    public void loadStorageConfiguration() throws IOException {
         if(this.configFile != null) {
             logger.debug("Loading configuration from '{}'", this.configFile);
             this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
         }else {
-            this.configuration = StorageConfiguration.findAndLoad();
+            this.configuration = StorageConfiguration.load();
         }
     }
 

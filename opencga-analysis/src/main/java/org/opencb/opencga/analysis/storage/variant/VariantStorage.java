@@ -108,7 +108,7 @@ public class VariantStorage {
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
 //                .append(" --study-id ").append(studyId)
                 .append(" --database ").append(dataStore.getDbName())
-                .append(" -D").append(VariantStorageManager.STUDY_CONFIGURATION_MANAGER_CLASS_NAME).append("=").append(CatalogStudyConfigurationManager.class.getName())
+                .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
                 .append(" -D").append("sessionId").append("=").append(sessionId)
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")

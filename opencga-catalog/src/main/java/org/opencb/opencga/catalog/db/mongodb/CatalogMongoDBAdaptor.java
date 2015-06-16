@@ -1256,7 +1256,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             String oldPath = file.getPath();
             filePath += filePath.endsWith("/")? "" : "/";
             for (File subFile : allFilesInFolder.getResult()) {
-                String replacedPath = subFile.getPath().replace(oldPath, filePath);
+                String replacedPath = subFile.getPath().replaceFirst(oldPath, filePath);
                 renameFile(subFile.getId(), replacedPath); // first part of the path in the subfiles 3
             }
         }

@@ -58,7 +58,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create job", position = 1)
     public Response createJob(
-//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+//            @ApiParam(defaultValue = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
             @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,

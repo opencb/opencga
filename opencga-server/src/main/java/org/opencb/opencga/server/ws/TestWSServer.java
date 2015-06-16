@@ -46,15 +46,15 @@ public class TestWSServer extends OpenCGAWSServer {
 //    @POST
 //    @Consumes(MediaType.MULTIPART_FORM_DATA)
 //    @Path("/echo")
-//    @ApiOperation(value = "echo multipart")
+//    @ApiOperation(defaultValue = "echo multipart")
 //    public Response chunkUpload(@DefaultValue("") @FormDataParam("message") String message) {
 //        return createOkResponse(message);
 //    }
 
 //    @GET
 //    @Path("/{param}")
-//    @ApiOperation(value="just to test the sample api")
-//    public Response getMsg(@ApiParam(value="param",required=true)@PathParam("param") String msg ) {
+//    @ApiOperation(defaultValue="just to test the sample api")
+//    public Response getMsg(@ApiParam(defaultValue="param",required=true)@PathParam("param") String msg ) {
 //        String output = "Hello : " + msg;
 //        return Response.status(200).entity(output).build();
 //    }

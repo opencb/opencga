@@ -38,8 +38,8 @@ public class TestServlet extends DaemonServlet {
     @GET
     @Path("/echo/{message}")
     @Produces("text/plain")
-//    @ApiOperation(value = "Just to test the api")
-    public Response echoGet(/*@ApiParam(value = "message", required = true)*/ @PathParam("message") String message) {
+//    @ApiOperation(defaultValue = "Just to test the api")
+    public Response echoGet(/*@ApiParam(defaultValue = "message", required = true)*/ @PathParam("message") String message) {
         System.out.println("Test message: " + message);
         return buildResponse(Response.ok(message));
     }
@@ -47,7 +47,7 @@ public class TestServlet extends DaemonServlet {
     @GET
     @Path("/hello")
     @Produces("text/plain")
-//    @ApiOperation(value = "Just to test the api")
+//    @ApiOperation(defaultValue = "Just to test the api")
     public Response helloWorld() {
         System.out.println("Hello World ");
         return createOkResponse("Hello world");
