@@ -138,16 +138,14 @@ public class OpenCGAWSServerTest {
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
 
-        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
+        InputStream inputStream = OpenCGAWSServerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog.properties"), StandardCopyOption.REPLACE_EXISTING);
         String databasePrefix = "opencga_server_test_";
         inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + databasePrefix).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage.properties");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage.properties"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage-mongodb.properties");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-mongodb.properties"), StandardCopyOption.REPLACE_EXISTING);
+        inputStream = OpenCGAWSServerTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
         CatalogManagerTest catalogManagerTest = new CatalogManagerTest();
 
@@ -247,7 +245,7 @@ public class OpenCGAWSServerTest {
      */
     private Job runIndexJob(String sessionId, Job indexJob) throws AnalysisExecutionException, IOException, CatalogException {
         String[] args = Commandline.translateCommandline(indexJob.getCommandLine());
-        org.opencb.opencga.storage.app.cli.OpenCGAStorageMain.main(Arrays.copyOfRange(args, 1, args.length));
+        org.opencb.opencga.storage.app.StorageMain.main(Arrays.copyOfRange(args, 1, args.length));
         indexJob.setCommandLine("echo 'Executing fake CLI'");
         AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, indexJob, sessionId);
         return OpenCGAWSServer.catalogManager.getJob(indexJob.getId(), null, sessionId).first();

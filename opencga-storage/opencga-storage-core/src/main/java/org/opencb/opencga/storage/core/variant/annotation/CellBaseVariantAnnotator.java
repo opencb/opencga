@@ -114,6 +114,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
             checkNotNull(cellbaseVersion, "cellbase version");
             checkNotNull(cellbaseRest, "cellbase hosts");
+            checkNotNull(species, "species");
 
             CellBaseClient cellBaseClient;
             try {

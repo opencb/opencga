@@ -243,7 +243,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         }
 
         if(includeCoverage) {
-            boolean writeMeanCoverage = !storageEtlConfiguration.getOptions().getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options.MEAN_COVERAGE_SIZE_LIST.defaultValue()).isEmpty();
+            boolean writeMeanCoverage = !storageEtlConfiguration.getOptions().getList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options.MEAN_COVERAGE_SIZE_LIST.defaultValue()).isEmpty();
             boolean writeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_COVERAGE.key, Options.WRITE_COVERAGE.defaultValue());
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, writeCoverage, writeMeanCoverage, !plain);
