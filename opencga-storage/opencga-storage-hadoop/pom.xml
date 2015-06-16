@@ -32,6 +32,17 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.hpg</groupId>
+            <artifactId>hpg-bigdata-core</artifactId>
+            <version>0.5-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hadoop-client</artifactId>
+                    <groupId>org.apache.hadoop</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
