@@ -99,6 +99,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
             return key;
         }
 
+        @SuppressWarnings("unchecked")
         public <T> T defaultValue() {
             return (T) value;
         }    

@@ -76,7 +76,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
                 .build();
 
-        String database = properties.getProperty(CatalogManager.CATALOG_DB_DATABASE) + "_catalog_test";
+        String database = properties.getProperty(CatalogManager.CATALOG_DB_DATABASE);
         /**
          * Database is cleared before each execution
          */

@@ -18,6 +18,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Properties;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -139,6 +142,11 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
         loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         loadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ObjectMap postLoadParams = new ObjectMap();
+        postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+
+        postLoadParams.put(VariantStorageManager.Options.ANNOTATE.key(), true);
+        postLoadParams.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);

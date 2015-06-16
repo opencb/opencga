@@ -16,8 +16,14 @@
 
 package org.opencb.opencga.server.ws;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResponse;
+import org.opencb.datastore.core.QueryResult;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
@@ -25,6 +31,14 @@ import java.util.LinkedHashMap;
  * Created by ralonso on 9/25/14.
  */
 public class WSServerTestUtils {
+
+    static ObjectMapper mapper = OpenCGAWSServer.jsonObjectMapper;
+
+    public static <T> QueryResponse<QueryResult<T>> parseResult(String json, Class<T> clazz) throws IOException {
+        ObjectReader reader = mapper.reader(mapper.getTypeFactory().constructParametricType(
+                QueryResponse.class, mapper.getTypeFactory().constructParametricType(QueryResult.class, clazz)));
+        return reader.readValue(json);
+    }
 
     public static String getField(QueryResponse queryResponse, String field){
         //            queryResponse = objectMapper.readValue(response, QueryResponse.class);
