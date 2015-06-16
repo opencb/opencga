@@ -61,151 +61,134 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 
 
     @Override
-    public void execute() {
+    public void execute() throws Exception {
 
-        try {
-            /**
-             * Open connection
-             */
-            VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
+        /**
+         * Open connection
+         */
+        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
 //            if (queryVariantsCommandOptions.credentials != null && !queryVariantsCommandOptions.credentials.isEmpty()) {
 //                variantStorageManager.addConfigUri(new URI(null, queryVariantsCommandOptions.credentials, null));
 //            }
 
-            ObjectMap params = new ObjectMap();
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
+        ObjectMap params = new ObjectMap();
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
 
-            /**
-             * Parse Regions
-             */
-            List<Region> regions = null;
-            GffReader gffReader = null;
-            if (queryVariantsCommandOptions.regions != null && !queryVariantsCommandOptions.regions.isEmpty()) {
-                regions = new LinkedList<>();
-                for (String csvRegion : queryVariantsCommandOptions.regions) {
-                    for (String strRegion : csvRegion.split(",")) {
-                        Region region = new Region(strRegion);
-                        regions.add(region);
-                        logger.info("Parsed region: {}", region);
-                    }
+        /**
+         * Parse Regions
+         */
+        List<Region> regions = null;
+        GffReader gffReader = null;
+        if (queryVariantsCommandOptions.regions != null && !queryVariantsCommandOptions.regions.isEmpty()) {
+            regions = new LinkedList<>();
+            for (String csvRegion : queryVariantsCommandOptions.regions) {
+                for (String strRegion : csvRegion.split(",")) {
+                    Region region = new Region(strRegion);
+                    regions.add(region);
+                    logger.info("Parsed region: {}", region);
                 }
-            } else if (queryVariantsCommandOptions.gffFile != null && !queryVariantsCommandOptions.gffFile.isEmpty()) {
-                try {
-                    gffReader = new GffReader(queryVariantsCommandOptions.gffFile);
-                } catch (NoSuchMethodException e) {
-                    e.printStackTrace();
-                }
+            }
+        } else if (queryVariantsCommandOptions.gffFile != null && !queryVariantsCommandOptions.gffFile.isEmpty()) {
+            try {
+                gffReader = new GffReader(queryVariantsCommandOptions.gffFile);
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
 //                throw new UnsupportedOperationException("Unsuppoted GFF file");
-            }
+        }
 
-            /**
-             * Parse QueryOptions
-             */
-            QueryOptions options = new QueryOptions(new HashMap<>(queryVariantsCommandOptions.params));
+        /**
+         * Parse QueryOptions
+         */
+        QueryOptions options = new QueryOptions(new HashMap<>(queryVariantsCommandOptions.params));
 
-            if (queryVariantsCommandOptions.studyAlias != null && !queryVariantsCommandOptions.studyAlias.isEmpty()) {
-                options.add("studies", Arrays.asList(queryVariantsCommandOptions.studyAlias.split(",")));
-            }
-            if (queryVariantsCommandOptions.fileId != null && !queryVariantsCommandOptions.fileId.isEmpty()) {
-                options.add("files", Arrays.asList(queryVariantsCommandOptions.fileId.split(",")));
-            }
-            if (queryVariantsCommandOptions.effect != null && !queryVariantsCommandOptions.effect.isEmpty()) {
-                options.add("effect", Arrays.asList(queryVariantsCommandOptions.effect.split(",")));
-            }
+        if (queryVariantsCommandOptions.studyAlias != null && !queryVariantsCommandOptions.studyAlias.isEmpty()) {
+            options.add("studies", Arrays.asList(queryVariantsCommandOptions.studyAlias.split(",")));
+        }
+        if (queryVariantsCommandOptions.fileId != null && !queryVariantsCommandOptions.fileId.isEmpty()) {
+            options.add("files", Arrays.asList(queryVariantsCommandOptions.fileId.split(",")));
+        }
+        if (queryVariantsCommandOptions.effect != null && !queryVariantsCommandOptions.effect.isEmpty()) {
+            options.add("effect", Arrays.asList(queryVariantsCommandOptions.effect.split(",")));
+        }
 
-            if (queryVariantsCommandOptions.stats != null && !queryVariantsCommandOptions.stats.isEmpty()) {
-                for (String csvStat : queryVariantsCommandOptions.stats) {
-                    for (String stat : csvStat.split(",")) {
-                        int index = stat.indexOf("<");
-                        index = index >= 0 ? index : stat.indexOf("!");
-                        index = index >= 0 ? index : stat.indexOf("~");
-                        index = index >= 0 ? index : stat.indexOf("<");
-                        index = index >= 0 ? index : stat.indexOf(">");
-                        index = index >= 0 ? index : stat.indexOf("=");
-                        if (index < 0) {
-                            throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
-                        }
-                        String name = stat.substring(0, index);
-                        String cond = stat.substring(index);
+        if (queryVariantsCommandOptions.stats != null && !queryVariantsCommandOptions.stats.isEmpty()) {
+            for (String csvStat : queryVariantsCommandOptions.stats) {
+                for (String stat : csvStat.split(",")) {
+                    int index = stat.indexOf("<");
+                    index = index >= 0 ? index : stat.indexOf("!");
+                    index = index >= 0 ? index : stat.indexOf("~");
+                    index = index >= 0 ? index : stat.indexOf("<");
+                    index = index >= 0 ? index : stat.indexOf(">");
+                    index = index >= 0 ? index : stat.indexOf("=");
+                    if (index < 0) {
+                        throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                    }
+                    String name = stat.substring(0, index);
+                    String cond = stat.substring(index);
 
 //                        if("maf".equals(name) || "mgf".equals(name) || "missingAlleles".equals(name) || "missingGenotypes".equals(name)) {
-                        if (name.matches("maf|mgf|missingAlleles|missingGenotypes")) {
-                            options.put(name, cond);
-                        } else {
-                            throw new UnsupportedOperationException("Unknown stat filter name: " + name);
-                        }
-                        logger.info("Parsed stat filter: {} {}", name, cond);
+                    if (name.matches("maf|mgf|missingAlleles|missingGenotypes")) {
+                        options.put(name, cond);
+                    } else {
+                        throw new UnsupportedOperationException("Unknown stat filter name: " + name);
                     }
+                    logger.info("Parsed stat filter: {} {}", name, cond);
                 }
             }
-            if (queryVariantsCommandOptions.id != null && !queryVariantsCommandOptions.id.isEmpty()) {   //csv
-                options.add("id", queryVariantsCommandOptions.id);
-            }
-            if (queryVariantsCommandOptions.gene != null && !queryVariantsCommandOptions.gene.isEmpty()) {   //csv
-                options.add("gene", queryVariantsCommandOptions.gene);
-            }
-            if (queryVariantsCommandOptions.type != null && !queryVariantsCommandOptions.type.isEmpty()) {   //csv
-                options.add("type", queryVariantsCommandOptions.type);
-            }
-            if (queryVariantsCommandOptions.reference != null && !queryVariantsCommandOptions.reference.isEmpty()) {   //csv
-                options.add("reference", queryVariantsCommandOptions.reference);
-            }
+        }
+        if (queryVariantsCommandOptions.id != null && !queryVariantsCommandOptions.id.isEmpty()) {   //csv
+            options.add("id", queryVariantsCommandOptions.id);
+        }
+        if (queryVariantsCommandOptions.gene != null && !queryVariantsCommandOptions.gene.isEmpty()) {   //csv
+            options.add("gene", queryVariantsCommandOptions.gene);
+        }
+        if (queryVariantsCommandOptions.type != null && !queryVariantsCommandOptions.type.isEmpty()) {   //csv
+            options.add("type", queryVariantsCommandOptions.type);
+        }
+        if (queryVariantsCommandOptions.reference != null && !queryVariantsCommandOptions.reference.isEmpty()) {   //csv
+            options.add("reference", queryVariantsCommandOptions.reference);
+        }
 
 
-            /**
-             * Run query
-             */
-            int subListSize = 20;
-            logger.info("options = " + options.toJson());
-            if (regions != null && !regions.isEmpty()) {
-                for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
-                    List<Region> subRegions = regions.subList(
-                            i * subListSize,
-                            Math.min((i + 1) * subListSize, regions.size()));
+        /**
+         * Run query
+         */
+        int subListSize = 20;
+        logger.info("options = " + options.toJson());
+        if (regions != null && !regions.isEmpty()) {
+            for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
+                List<Region> subRegions = regions.subList(
+                        i * subListSize,
+                        Math.min((i + 1) * subListSize, regions.size()));
 
-                    logger.info("subRegions = " + subRegions);
+                logger.info("subRegions = " + subRegions);
 //                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariants(subRegions, options);
-                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-                    StringBuilder sb = new StringBuilder();
-                    for (QueryResult<Variant> queryResult : queryResults) {
-                        printQueryResult(queryResult, sb);
-                    }
-                    System.out.println(sb);
+                List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                StringBuilder sb = new StringBuilder();
+                for (QueryResult<Variant> queryResult : queryResults) {
+                    printQueryResult(queryResult, sb);
                 }
-            } else if (gffReader != null) {
-                List<Gff> gffList;
-                List<Region> subRegions;
-                while ((gffList = gffReader.read(subListSize)) != null) {
-                    subRegions = new ArrayList<>(subListSize);
-                    for (Gff gff : gffList) {
-                        subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
-                    }
-                    logger.info("subRegions = " + subRegions);
-                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-                    StringBuilder sb = new StringBuilder();
-                    for (QueryResult<Variant> queryResult : queryResults) {
-                        printQueryResult(queryResult, sb);
-                    }
-                    System.out.println(sb);
-                }
-            } else {
-                System.out.println(printQueryResult(dbAdaptor.getAllVariants(options), null));
+                System.out.println(sb);
             }
-
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (StorageManagerException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (FileFormatException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else if (gffReader != null) {
+            List<Gff> gffList;
+            List<Region> subRegions;
+            while ((gffList = gffReader.read(subListSize)) != null) {
+                subRegions = new ArrayList<>(subListSize);
+                for (Gff gff : gffList) {
+                    subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                }
+                logger.info("subRegions = " + subRegions);
+                List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
+                StringBuilder sb = new StringBuilder();
+                for (QueryResult<Variant> queryResult : queryResults) {
+                    printQueryResult(queryResult, sb);
+                }
+                System.out.println(sb);
+            }
+        } else {
+            System.out.println(printQueryResult(dbAdaptor.getAllVariants(options), null));
         }
     }
 

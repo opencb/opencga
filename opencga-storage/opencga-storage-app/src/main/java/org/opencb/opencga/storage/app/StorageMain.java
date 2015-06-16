@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.app;
 
+import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.storage.app.cli.*;
 
 import java.io.IOException;
@@ -30,21 +31,32 @@ public class StorageMain {
     public static void main(String[] args) {
 
         CliOptionsParser cliOptionsParser = new CliOptionsParser();
-        cliOptionsParser.parse(args);
+        try {
+            cliOptionsParser.parse(args);
+        } catch (ParameterException e) {
+            System.err.println(e.getMessage());
+            cliOptionsParser.printUsage();
+            System.exit(1);
+        }
 
         String parsedCommand = cliOptionsParser.getCommand();
         if(parsedCommand == null || parsedCommand.isEmpty()) {
-            if(cliOptionsParser.getGeneralOptions().help) {
-                cliOptionsParser.printUsage();
-            }
             if(cliOptionsParser.getGeneralOptions().version) {
                 System.out.println("Version " + VERSION);
+                System.exit(0);
+            } else if(cliOptionsParser.getGeneralOptions().help) {
+                cliOptionsParser.printUsage();
+                System.exit(0);
+            } else {
+                cliOptionsParser.printUsage();
+                System.exit(1);
             }
-        }else {
+        } else {
             CommandExecutor commandExecutor = null;
             // Check if any command -h option is present
             if(cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
+                System.exit(0);
             } else {
                 switch (parsedCommand) {
                     case "create-accessions":
@@ -72,19 +84,22 @@ public class StorageMain {
                         System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                         break;
                 }
-            }
 
-            if (commandExecutor != null) {
-                try {
-                    commandExecutor.loadStorageConfiguration();
-                } catch (IOException ex) {
-                    commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
-                    System.exit(1);
-                }
-                try {
-                    commandExecutor.execute();
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (commandExecutor != null) {
+                    try {
+                        commandExecutor.loadStorageConfiguration();
+                    } catch (IOException ex) {
+                        commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
+                        System.exit(1);
+                    }
+                    try {
+                        commandExecutor.execute();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                } else {
+                    cliOptionsParser.printUsage();
                     System.exit(1);
                 }
             }

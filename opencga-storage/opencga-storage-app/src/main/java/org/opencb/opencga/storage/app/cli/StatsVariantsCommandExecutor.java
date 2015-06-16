@@ -50,51 +50,50 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
 
 
     @Override
-    public void execute() {
+    public void execute() throws Exception {
 
-        try {
-            /**
-             * query options
-             */
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.put(VariantStorageManager.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
-            queryOptions.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
-            queryOptions.put(VariantStorageManager.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
-            queryOptions.put(VariantStorageManager.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
-            if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
-                queryOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
+        /**
+         * query options
+         */
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(VariantStorageManager.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
+        queryOptions.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
+        queryOptions.put(VariantStorageManager.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
+        queryOptions.put(VariantStorageManager.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
+        if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+            queryOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
+        }
+
+        Map<String, Set<String>> cohorts = null;
+        if (statsVariantsCommandOptions.cohort != null && !statsVariantsCommandOptions.cohort.isEmpty()) {
+            cohorts = new LinkedHashMap<>(statsVariantsCommandOptions.cohort.size());
+            for (Map.Entry<String, String> entry : statsVariantsCommandOptions.cohort.entrySet()) {
+                cohorts.put(entry.getKey(), new HashSet<>(Arrays.asList(entry.getValue().split(","))));
             }
+        }
 
-            Map<String, Set<String>> cohorts = null;
-            if (statsVariantsCommandOptions.cohort != null && !statsVariantsCommandOptions.cohort.isEmpty()) {
-                cohorts = new LinkedHashMap<>(statsVariantsCommandOptions.cohort.size());
-                for (Map.Entry<String, String> entry : statsVariantsCommandOptions.cohort.entrySet()) {
-                    cohorts.put(entry.getKey(), new HashSet<>(Arrays.asList(entry.getValue().split(","))));
-                }
-            }
-
-            /**
-             * Create DBAdaptor
-             */
-            VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(statsVariantsCommandOptions.storageEngine);
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(statsVariantsCommandOptions.dbName);
+        /**
+         * Create DBAdaptor
+         */
+        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(statsVariantsCommandOptions.storageEngine);
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(statsVariantsCommandOptions.dbName);
 //        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we remove fileId
-            StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(queryOptions);
-            if (studyConfiguration == null) {
-                studyConfiguration = new StudyConfiguration(statsVariantsCommandOptions.studyId, statsVariantsCommandOptions.dbName);
-            }
-            /**
-             * Create and load stats
-             */
-            URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null? "" : statsVariantsCommandOptions.fileName);
-            URI directoryUri = outputUri.resolve(".");
-            String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyId(), statsVariantsCommandOptions.fileId)
-                    : Paths.get(outputUri.getPath()).getFileName().toString();
-            assertDirectoryExists(directoryUri);
-            VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+        StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(queryOptions);
+        if (studyConfiguration == null) {
+            studyConfiguration = new StudyConfiguration(statsVariantsCommandOptions.studyId, statsVariantsCommandOptions.dbName);
+        }
+        /**
+         * Create and load stats
+         */
+        URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null? "" : statsVariantsCommandOptions.fileName);
+        URI directoryUri = outputUri.resolve(".");
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyId(), statsVariantsCommandOptions.fileId)
+                : Paths.get(outputUri.getPath()).getFileName().toString();
+        assertDirectoryExists(directoryUri);
+        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
 
-            boolean doCreate = true;
-            boolean doLoad = true;
+        boolean doCreate = true;
+        boolean doLoad = true;
 //        doCreate = statsVariantsCommandOptions.create;
 //        doLoad = statsVariantsCommandOptions.load != null;
 //        if (!statsVariantsCommandOptions.create && statsVariantsCommandOptions.load == null) {
@@ -103,39 +102,27 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
 //            filename = statsVariantsCommandOptions.load;
 //        }
 
-            try {
+        try {
 
-                Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
-                /** Check and update StudyConfiguration **/
-                variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
+            Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
+            /** Check and update StudyConfiguration **/
+            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
 
-                if (doCreate) {
-                    filename += "." + TimeUtils.getTime();
-                    outputUri = outputUri.resolve(filename);
-                    outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, studyConfiguration, queryOptions);
-                }
-
-                if (doLoad) {
-                    outputUri = outputUri.resolve(filename);
-                    variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
-                    variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-                    variantStorageManager.getStudyConfigurationManager(queryOptions).updateStudyConfiguration(studyConfiguration, queryOptions);
-                }
-            } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
-                e.printStackTrace();
-                logger.error(e.getMessage());
+            if (doCreate) {
+                filename += "." + TimeUtils.getTime();
+                outputUri = outputUri.resolve(filename);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, studyConfiguration, queryOptions);
             }
 
-        } catch (ClassNotFoundException e) {
+            if (doLoad) {
+                outputUri = outputUri.resolve(filename);
+                variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
+                variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
+                variantStorageManager.getStudyConfigurationManager(queryOptions).updateStudyConfiguration(studyConfiguration, queryOptions);
+            }
+        } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
             e.printStackTrace();
-        } catch (StorageManagerException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
     }
 }
