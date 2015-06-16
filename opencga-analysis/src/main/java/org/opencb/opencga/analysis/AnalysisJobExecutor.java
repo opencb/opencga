@@ -48,6 +48,7 @@ public class AnalysisJobExecutor {
 
     public static final String EXECUTE = "execute";
     public static final String SIMULATE = "simulate";
+    public static final String OPENCGA_ANALYSIS_JOB_EXECUTOR = "OPENCGA.ANALYSIS.JOB.EXECUTOR";
     protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecutor.class);
     protected final Properties analysisProperties;
     protected final String home;
@@ -123,7 +124,7 @@ public class AnalysisJobExecutor {
         logger.debug("AnalysisJobExecuter: execute, job: {}", job);
 
         // read execution param
-        String jobExecutor = Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.JOB.EXECUTOR");
+        String jobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR);
 
         // local execution
         if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {

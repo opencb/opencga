@@ -8,6 +8,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Properties;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -139,6 +144,13 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
         loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         loadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ObjectMap postLoadParams = new ObjectMap();
+        postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+
+        postLoadParams.put(VariantStorageManager.Options.ANNOTATE.key(), true);
+        postLoadParams.put(VariantAnnotationManager.SPECIES, "hsapiens");
+        postLoadParams.put(VariantAnnotationManager.ASSEMBLY, "GRc37");
+        postLoadParams.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);

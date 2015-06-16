@@ -135,7 +135,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         if(dbName == null || dbName.isEmpty()) {    //If no database name is provided, read from the configuration file
-            dbName = options.getString(Options.DB_NAME.key(), "variants");
+            dbName = options.getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
         }
         String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
         String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
