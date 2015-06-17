@@ -42,6 +42,7 @@ import static org.junit.Assert.*;
 public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
+    public static final int NUM_VARIANTS = 999;
     private static URI inputUri;
     private static ETLResult etlResult = null;
     private VariantDBAdaptor dbAdaptor;
@@ -79,7 +80,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants() {
         options = new QueryOptions("limit", 1);
         queryResult = dbAdaptor.getAllVariants(options);
-        assertEquals(999, queryResult.getNumTotalResults());
+        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
         assertEquals(1, queryResult.getNumResults());
     }
 
@@ -123,7 +124,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         options.put("limit", 1);
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(1, queryResult.getNumResults());
-        assertEquals(999, queryResult.getNumTotalResults());
+        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
 
         options = new QueryOptions(VariantDBAdaptor.FILES, -1);
         queryResult = dbAdaptor.getAllVariants(options);
@@ -132,12 +133,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testIterator() {
+        int numVariants = 0;
         for (Variant variant : dbAdaptor) {
+            numVariants++;
             VariantSourceEntry entry = variant.getSourceEntries().entrySet().iterator().next().getValue();
             assertEquals("6", entry.getFileId());
             assertEquals("5", entry.getStudyId());
             assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getSampleNames());
         }
+        assertEquals(NUM_VARIANTS, numVariants);
     }
 
     @Test
@@ -156,7 +160,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         options.add("limit", 1);
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(1, queryResult.getNumResults());
-        assertEquals(999, queryResult.getNumTotalResults());
+        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
 
         //Get all missing genotypes for sample na19600
         options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":./.");

@@ -33,34 +33,34 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
-    public static final String ID = "ids";
-    public static final String REGION = "region";
-    public static final String CHROMOSOME = "chromosome";
-    public static final String GENE = "gene";
-    public static final String TYPE = "type";
-    public static final String REFERENCE = "reference";
-    public static final String ALTERNATE = "alternate";
-    public static final String EFFECT = "effect";
-    public static final String STUDIES = "studies";
-    public static final String FILES = "files";
-    public static final String FILE_ID = "fileId";
-    public static final String MAF = "maf";
-    public static final String MGF = "mgf";
-    public static final String MISSING_ALLELES = "missingAlleles";
-    public static final String MISSING_GENOTYPES = "missingGenotypes";
-    public static final String ANNOTATION_EXISTS = "annotationExists";
-    public static final String GENOTYPE = "genotype";
-    public static final String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
-    public static final String ANNOT_XREF = "annot-xref";
-    public static final String ANNOT_BIOTYPE = "annot-biotype";
-    public static final String POLYPHEN = "polyphen";
-    public static final String SIFT = "sift";
-    public static final String PROTEIN_SUBSTITUTION = "protein_substitution";
-    public static final String CONSERVED_REGION = "conserved_region";
-    public static final String MERGE = "merge";
-    public static final String SORT = "sort";
+    String ID = "ids";
+    String REGION = "region";
+    String CHROMOSOME = "chromosome";
+    String GENE = "gene";
+    String TYPE = "type";
+    String REFERENCE = "reference";
+    String ALTERNATE = "alternate";
+    String EFFECT = "effect";
+    String STUDIES = "studies";
+    String FILES = "files";
+    String FILE_ID = "fileId";
+    String MAF = "maf";
+    String MGF = "mgf";
+    String MISSING_ALLELES = "missingAlleles";
+    String MISSING_GENOTYPES = "missingGenotypes";
+    String ANNOTATION_EXISTS = "annotationExists";
+    String GENOTYPE = "genotype";
+    String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
+    String ANNOT_XREF = "annot-xref";
+    String ANNOT_BIOTYPE = "annot-biotype";
+    String POLYPHEN = "polyphen";
+    String SIFT = "sift";
+    String PROTEIN_SUBSTITUTION = "protein_substitution";
+    String CONSERVED_REGION = "conserved_region";
+    String MERGE = "merge";
+    String SORT = "sort";
 
-    static public class QueryParams {
+    class QueryParams {
         public static final Set<String> acceptedValues;
         static {
             acceptedValues = new HashSet<>();
@@ -116,13 +116,13 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * This method set a data writer object for data serialization. When used no data will be return in
      * QueryResult object.
      */
-    public void setDataWriter(DataWriter dataWriter);
+    void setDataWriter(DataWriter dataWriter);
 
     /**
      * This method can be used if the samples are going to be the same, so optimizations can be done, e.g. skipping the 
      * samples name retrieval for each variant.
      */
-    public void setConstantSamples(String sourceEntry);
+    void setConstantSamples(String sourceEntry);
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -132,12 +132,12 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    public QueryResult<Variant> getAllVariants(QueryOptions options);
+    QueryResult<Variant> getAllVariants(QueryOptions options);
 
 
-    public QueryResult<Variant> getVariantById(String id, QueryOptions options);
+    QueryResult<Variant> getVariantById(String id, QueryOptions options);
 
-    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
+    List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -148,13 +148,13 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
+    QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
 
     /**
      * @deprecated Use "getAllVariants" with VariantDBAdaptor.REGION filter instead.
      */
     @Deprecated
-    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
+    List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
 
     QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
@@ -162,18 +162,34 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     QueryResult groupBy(String field, QueryOptions options);
 
 
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor();
+    VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
     @Override
-    public VariantDBIterator iterator();
+    VariantDBIterator iterator();
 
-    public VariantDBIterator iterator(QueryOptions options);
+    VariantDBIterator iterator(QueryOptions options);
 
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+    //QueryResult insert(List<Variant> variants, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
 
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+    //QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions);
 
-    public boolean close();
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions);
+
+    //QueryResult addAnnotation(List<VariantAnnotation> variantAnnotation, QueryOptions queryOptions);
+
+    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    //QueryResult deleteStudy(int studyId, QueryOptions queryOptions);
+
+    //QueryResult deleteSamples(List<Integer> sampleIds, int studyId, QueryOptions queryOptions);
+
+    //QueryResult deleteSamples(List<String> sampleIds, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+
+    //QueryResult deleteStats(int studyId, int cohortId, QueryOptions queryOptions);
+
+    //QueryResult deleteAnnotation(int studyId, QueryOptions queryOptions);
+
+    boolean close();
 
 
     /**

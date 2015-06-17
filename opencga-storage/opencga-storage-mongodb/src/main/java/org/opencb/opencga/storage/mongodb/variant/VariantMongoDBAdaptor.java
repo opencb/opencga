@@ -17,19 +17,20 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.*;
+
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -455,6 +456,54 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new VariantMongoDBIterator(dbCursor, variantConverter);
     }
 
+    //@Override
+    public QueryResult insert(List<Variant> variants, StudyConfiguration studyConfiguration, QueryOptions options) {
+        String fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
+        boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
+        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
+        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
+        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
+
+        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter() : null);
+        DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
+                includeGenotypes? new DBObjectToSamplesConverter(compressGenotypes, studyConfiguration) : null);
+        return insert(variants, fileId, variantConverter, sourceEntryConverter);
+    }
+
+    /*package*/ QueryResult insert(List<Variant> data, String fileId, DBObjectToVariantConverter variantConverter, DBObjectToVariantSourceEntryConverter sourceEntryConverter) {
+        if (data.isEmpty()) {
+            return new QueryResult("insertVariants");
+        }
+        List<DBObject> queries = new ArrayList<>(data.size());
+        List<DBObject> updates = new ArrayList<>(data.size());
+        for (Variant variant : data) {
+            variant.setAnnotation(null);
+            String id = variantConverter.buildStorageId(variant);
+
+            for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+                if (!variantSourceEntry.getFileId().equals(fileId)) {
+                    continue;
+                }
+                BasicDBObject addToSet = new BasicDBObject(
+                        DBObjectToVariantConverter.FILES_FIELD,
+                        sourceEntryConverter.convertToStorageType(variantSourceEntry));
+
+                BasicDBObject update = new BasicDBObject()
+                        .append("$addToSet", addToSet)
+                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));
+                if (variant.getIds() != null && !variant.getIds().isEmpty()) {
+                    addToSet.put(DBObjectToVariantConverter.IDS_FIELD, new BasicDBObject("$each", variant.getIds()));
+                }
+                queries.add(new BasicDBObject("_id", id));
+                updates.add(update);
+            }
+
+        }
+        QueryOptions options = new QueryOptions("upsert", true);
+        options.put("multi", false);
+        return db.getCollection(collectionName).update(queries, updates, options);
+    }
+
     @Override
     public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
 
@@ -480,7 +529,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
         DBCollection coll = db.getDb().getCollection(collectionName);
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
@@ -488,7 +537,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
         String fileId = queryOptions.getString(VariantStorageManager.Options.FILE_ID.key());  //TODO: Change to int defaultValue
-        String studyId = ""+ studyConfiguration.getStudyId();                    //TODO: Change to int defaultValue
         //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
@@ -496,7 +544,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId, fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, ""+ studyId, fileId);   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
@@ -553,6 +601,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         int writes = writeResult.getModifiedCount();
 
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
+    }
+
+
+    public void createIndexes(QueryOptions options) {
+        logger.debug("Start creating indexes");
+        MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
+        DBObject onBackground = new BasicDBObject("background", true);
+        variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("annot.xrefs.id", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("annot.ct.so", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), onBackground);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("st.maf", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("st.mgf", 1), onBackground);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                        .append(DBObjectToVariantConverter.START_FIELD, 1)
+                        .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        logger.debug("sent order to create indices");
     }
 
     @Override

@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -40,8 +39,7 @@ import java.util.*;
 /**
 * Created by hpccoll1 on 13/02/15.
 */
-//public class CatalogVariantDBAdaptor {}
-public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
+public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private final CatalogManager catalogManager;
     private final VariantDBAdaptor dbAdaptor;
@@ -180,7 +178,7 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
         return null;
     }
 

@@ -338,7 +338,7 @@ public class VariantStatisticsManager {
             statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
 
             if (statsBatch.size() == batchSize) {
-                QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
+                QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration.getStudyId(), options);
                 writes += writeResult.getNumResults();
                 logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size()-1).getChromosome(), statsBatch.get(statsBatch.size()-1).getPosition());
                 statsBatch.clear();
@@ -346,7 +346,7 @@ public class VariantStatisticsManager {
         }
 
         if (!statsBatch.isEmpty()) {
-            QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
+            QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration.getStudyId(), options);
             writes += writeResult.getNumResults();
             logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size()-1).getChromosome(), statsBatch.get(statsBatch.size()-1).getPosition());
             statsBatch.clear();

@@ -87,14 +87,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         int fileId = options.getInt(Options.FILE_ID.key());
-
-//        Properties credentialsProperties = new Properties(properties);
-
-        MongoCredentials credentials = getMongoCredentials(dbName);
-        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
-        String filesCollection = options.getString(COLLECTION_FILES, "files");
-        logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
-        return new VariantMongoDBWriter(fileId, studyConfiguration, credentials, variantsCollection, filesCollection, false, false);
+//
+////        Properties credentialsProperties = new Properties(properties);
+//
+//        MongoCredentials credentials = getMongoCredentials(dbName);
+//        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
+//        String filesCollection = options.getString(COLLECTION_FILES, "files");
+//        logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
+        return new VariantMongoDBWriter(fileId, studyConfiguration, getDBAdaptor(dbName), false, false);
     }
 
     @Override
@@ -202,13 +202,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName);
-            variantDBWriter.setBulkSize(bulkSize);
+//            variantDBWriter.setBulkSize(bulkSize);
             variantDBWriter.includeSrc(includeSrc);
             variantDBWriter.includeSamples(includeSamples);
             variantDBWriter.includeStats(includeStats);
             variantDBWriter.setCompressDefaultGenotype(compressSamples);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
-            variantDBWriter.setVariantSource(source);
+//            variantDBWriter.setVariantSource(source);
 //            variantDBWriter.setSamplesIds(samplesIds);
             variantDBWriter.setThreadSyncronizationBoolean(atomicBoolean);
             writerList.add(variantDBWriter);
