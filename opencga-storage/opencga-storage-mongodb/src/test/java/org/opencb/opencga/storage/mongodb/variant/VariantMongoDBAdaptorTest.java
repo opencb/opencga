@@ -16,7 +16,17 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import org.junit.Test;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -32,6 +42,34 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
     @Override
     protected void clearDB(String dbName) throws Exception {
         MongoVariantStorageManagerTestUtils.clearDB(dbName);
+    }
+
+    @Test
+    public void deleteStudyTest() throws Exception {
+        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        dbAdaptor.deleteStudy(studyConfiguration.getStudyId(), new QueryOptions("purge", false));
+        for (Variant variant : dbAdaptor) {
+            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
+            }
+        }
+        QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
+        assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
+        etlResult = null;
+    }
+
+    @Test
+    public void deleteAndPurgeStudyTest() throws Exception {
+        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        dbAdaptor.deleteStudy(studyConfiguration.getStudyId(), new QueryOptions("purge", true));
+        for (Variant variant : dbAdaptor) {
+            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+                assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
+            }
+        }
+        QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
+        assertEquals(0, allVariants.getNumTotalResults());
+        etlResult = null;
     }
 
 }

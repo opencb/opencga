@@ -603,8 +603,37 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
 
+    public QueryResult deleteStudy(int studyId, QueryOptions queryOptions) {
+        MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
 
-    public void createIndexes(QueryOptions options) {
+        if (queryOptions == null) {
+            queryOptions = new QueryOptions();
+        }
+        queryOptions.put(STUDIES, studyId);
+        DBObject query = parseQueryOptions(queryOptions, new QueryBuilder()).get();
+
+        // { $pull : { files : {  sid : <studyId> } } }
+        BasicDBObject update = new BasicDBObject(
+                "$pull",
+                new BasicDBObject(
+                        DBObjectToVariantConverter.FILES_FIELD,
+                        new BasicDBObject(
+                                DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, Integer.toString(studyId)
+                        )
+                )
+        );
+        QueryResult<WriteResult> result = variantMongoCollection.update(query, update, new QueryOptions("multi", true));
+
+        if (queryOptions.getBoolean("purge", false)) {
+            BasicDBObject purgeQuery = new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, new BasicDBObject("$size", 0));
+            variantMongoCollection.remove(purgeQuery, new QueryOptions("multi", true));
+        }
+
+        return result;
+    }
+
+
+    void createIndexes(QueryOptions options) {
         logger.debug("Start creating indexes");
         MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
         DBObject onBackground = new BasicDBObject("background", true);

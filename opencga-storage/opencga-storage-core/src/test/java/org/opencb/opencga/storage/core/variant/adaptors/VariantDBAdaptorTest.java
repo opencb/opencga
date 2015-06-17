@@ -43,9 +43,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     public static final int NUM_VARIANTS = 999;
-    private static URI inputUri;
-    private static ETLResult etlResult = null;
-    private VariantDBAdaptor dbAdaptor;
+    protected static URI inputUri;
+    protected static ETLResult etlResult = null;
+    protected VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
     protected static StudyConfiguration studyConfiguration;
