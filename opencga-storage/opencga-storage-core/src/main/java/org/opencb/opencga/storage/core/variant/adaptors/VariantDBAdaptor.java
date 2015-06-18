@@ -187,7 +187,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     //QueryResult deleteStats(int studyId, int cohortId, QueryOptions queryOptions);
 
-    //QueryResult deleteAnnotation(int studyId, QueryOptions queryOptions);
+    //QueryResult deleteAnnotation(int annotationId, int studyId, QueryOptions queryOptions);
 
     boolean close();
 

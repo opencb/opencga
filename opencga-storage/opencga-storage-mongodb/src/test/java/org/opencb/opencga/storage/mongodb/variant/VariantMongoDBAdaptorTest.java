@@ -23,15 +23,16 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -126,6 +127,33 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
         assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
         etlResult = null;
+    }
+
+    @Test
+    public void deleteAnnotationTest() throws Exception {
+        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+        QueryOptions queryOptions = new QueryOptions(VariantDBAdaptor.ANNOTATION_EXISTS, true);
+        queryOptions.add(VariantDBAdaptor.STUDIES, studyConfiguration.getStudyId());
+        queryOptions.add("limit", 1);
+        long numAnnotatedVariants = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
+
+        assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
+
+        queryOptions = new QueryOptions(VariantDBAdaptor.CHROMOSOME, "1");
+        queryOptions.add(VariantDBAdaptor.STUDIES, studyConfiguration.getStudyId());
+        queryOptions.add("limit", 1);
+        long numVariantsChr1 = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
+        dbAdaptor.deleteAnnotation(0, studyConfiguration.getStudyId(), new QueryOptions(VariantDBAdaptor.CHROMOSOME, "1"));
+
+        queryOptions = new QueryOptions(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+        queryOptions.add(VariantDBAdaptor.STUDIES, studyConfiguration.getStudyId());
+        queryOptions.add("limit", 1);
+        long numVariantsNoAnnotation = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
+
+        assertEquals(numVariantsChr1, numVariantsNoAnnotation);
+        etlResult = null;
+
     }
 
 }

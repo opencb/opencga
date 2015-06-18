@@ -603,6 +603,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
 
+    //@Override
     public QueryResult deleteStudy(int studyId, QueryOptions queryOptions) {
         MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
 
@@ -635,6 +636,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return result;
     }
 
+    //@Override
     QueryResult deleteStats(int studyId, String cohortId) {
         MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
 
@@ -654,6 +656,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         );
         logger.debug("deleteStats: query = {}", query);
         logger.debug("deleteStats: update = {}", update);
+
+        return variantMongoCollection.update(query, update, new QueryOptions("multi", true));
+    }
+
+    //@Override
+    QueryResult deleteAnnotation(int annotationId, int studyId, QueryOptions queryOptions) {
+        MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
+
+        if (queryOptions == null) {
+            queryOptions = new QueryOptions();
+        }
+        queryOptions.put(STUDIES, studyId);
+        DBObject query = parseQueryOptions(queryOptions, new QueryBuilder()).get();
+
+        DBObject update = new BasicDBObject("$unset", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD, ""));
+
+        logger.debug("deleteAnnotation: query = {}", query);
+        logger.debug("deleteAnnotation: update = {}", update);
 
         return variantMongoCollection.update(query, update, new QueryOptions("multi", true));
     }
