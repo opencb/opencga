@@ -624,6 +624,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         );
         QueryResult<WriteResult> result = variantMongoCollection.update(query, update, new QueryOptions("multi", true));
 
+        logger.debug("deleteStudy: query = {}", query);
+        logger.debug("deleteStudy: update = {}", update);
+
         if (queryOptions.getBoolean("purge", false)) {
             BasicDBObject purgeQuery = new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, new BasicDBObject("$size", 0));
             variantMongoCollection.remove(purgeQuery, new QueryOptions("multi", true));
@@ -632,6 +635,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return result;
     }
 
+    QueryResult deleteStats(int studyId, String cohortId) {
+        MongoDBCollection variantMongoCollection = db.getCollection(collectionName);
+
+        // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
+        DBObject query = new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                new BasicDBObject("$elemMatch",
+                        new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, Integer.toString(studyId))
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)));
+
+        // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
+        BasicDBObject update = new BasicDBObject(
+                "$pull",
+                new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                        new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, Integer.toString(studyId))
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)
+                )
+        );
+        logger.debug("deleteStats: query = {}", query);
+        logger.debug("deleteStats: update = {}", update);
+
+        return variantMongoCollection.update(query, update, new QueryOptions("multi", true));
+    }
 
     void createIndexes(QueryOptions options) {
         logger.debug("Start creating indexes");
