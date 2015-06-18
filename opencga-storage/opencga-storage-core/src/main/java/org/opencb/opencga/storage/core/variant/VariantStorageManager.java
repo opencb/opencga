@@ -181,7 +181,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
             }
 
             //Reader
-            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString(), factory);
 
             //Writers
             VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
