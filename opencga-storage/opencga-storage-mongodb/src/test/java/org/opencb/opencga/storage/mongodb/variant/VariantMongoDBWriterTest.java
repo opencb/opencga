@@ -56,7 +56,7 @@ public class VariantMongoDBWriterTest {
         // Delete Mongo collection
         MongoClient mongoClient = new MongoClient("localhost");
         DB db = mongoClient.getDB(credentials.getMongoDbName());
-//        db.dropDatabase();
+        db.dropDatabase();
         mongoClient.close();
     }
 
