@@ -61,7 +61,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         }
         QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
         assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
-        etlResult = null;
+        fileIndexed = false;
     }
 
     @Test
@@ -75,7 +75,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         }
         QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
         assertEquals(0, allVariants.getNumTotalResults());
-        etlResult = null;
+        fileIndexed = false;
     }
 
     @Test
@@ -126,7 +126,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         }
         QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
         assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
-        etlResult = null;
+        fileIndexed = false;
     }
 
     @Test
@@ -152,8 +152,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         long numVariantsNoAnnotation = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
 
         assertEquals(numVariantsChr1, numVariantsNoAnnotation);
-        etlResult = null;
-
+        fileIndexed = false;
     }
 
 }

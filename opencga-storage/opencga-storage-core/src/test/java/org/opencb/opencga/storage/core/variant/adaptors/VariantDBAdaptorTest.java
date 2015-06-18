@@ -44,7 +44,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     public static final int NUM_VARIANTS = 999;
     protected static URI inputUri;
-    protected static ETLResult etlResult = null;
+    protected static boolean fileIndexed;
+    protected static ETLResult etlResult;
     protected VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
@@ -52,6 +53,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @BeforeClass
     public static void beforeClass() throws IOException {
+        fileIndexed = false;
         etlResult = null;
         Path rootDir = getTmpRootDir();
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
@@ -62,11 +64,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Override
     @Before
     public void before() throws Exception {
-        if (etlResult == null) {
+        if (!fileIndexed) {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
+            fileIndexed = true;
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
