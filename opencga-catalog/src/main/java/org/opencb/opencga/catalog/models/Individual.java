@@ -30,8 +30,8 @@ public class Individual {
 
     private int id;
     private String name;
-    private Integer father;
-    private Integer mother;
+    private int father;
+    private int mother;
     private String family;
     private Gender gender;
 
@@ -41,16 +41,133 @@ public class Individual {
     private Population population;
 
     // internal class
-    class Species {
+    public static class Species {
         private String taxonomyCode;
         private String scientificName;
         private String commonName;
+
+        public Species() {
+        }
+
+        @Override
+        public String toString() {
+            return "Species {" +
+                    "\"taxonomyCode\": " + '\"' + taxonomyCode + '\"' +
+                    ", \"scientificName\": " + '\"' + scientificName + '\"' +
+                    ", \"commonName\": " + '\"' + commonName + '\"' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Species)) return false;
+
+            Species species = (Species) o;
+
+            if (taxonomyCode != null ? !taxonomyCode.equals(species.taxonomyCode) : species.taxonomyCode != null)
+                return false;
+            if (scientificName != null ? !scientificName.equals(species.scientificName) : species.scientificName != null)
+                return false;
+            return !(commonName != null ? !commonName.equals(species.commonName) : species.commonName != null);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = taxonomyCode != null ? taxonomyCode.hashCode() : 0;
+            result = 31 * result + (scientificName != null ? scientificName.hashCode() : 0);
+            result = 31 * result + (commonName != null ? commonName.hashCode() : 0);
+            return result;
+        }
+
+        public String getTaxonomyCode() {
+            return taxonomyCode;
+        }
+
+        public void setTaxonomyCode(String taxonomyCode) {
+            this.taxonomyCode = taxonomyCode;
+        }
+
+        public String getScientificName() {
+            return scientificName;
+        }
+
+        public void setScientificName(String scientificName) {
+            this.scientificName = scientificName;
+        }
+
+        public String getCommonName() {
+            return commonName;
+        }
+
+        public void setCommonName(String commonName) {
+            this.commonName = commonName;
+        }
     }
 
-    class Population {
+    public static class Population {
         private String name;
         private String subpopulation;
         private String description;
+
+        public Population() {
+        }
+
+        @Override
+        public String toString() {
+            return "Population {" +
+                    "\"name\": " + '\"' + name + '\"' +
+                    ", \"subpopulation\": " + '\"' + subpopulation + '\"' +
+                    ", \"description\": " + '\"' + description + '\"' +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Population)) return false;
+
+            Population that = (Population) o;
+
+            if (name != null ? !name.equals(that.name) : that.name != null) return false;
+            if (subpopulation != null ? !subpopulation.equals(that.subpopulation) : that.subpopulation != null)
+                return false;
+            return !(description != null ? !description.equals(that.description) : that.description != null);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = name != null ? name.hashCode() : 0;
+            result = 31 * result + (subpopulation != null ? subpopulation.hashCode() : 0);
+            result = 31 * result + (description != null ? description.hashCode() : 0);
+            return result;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getSubpopulation() {
+            return subpopulation;
+        }
+
+        public void setSubpopulation(String subpopulation) {
+            this.subpopulation = subpopulation;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
     }
 
     private Map<String, Object> attributes;
@@ -58,7 +175,7 @@ public class Individual {
     public Individual() {
     }
 
-    public Individual(int id, String name, Integer father, Integer mother, String family, Gender gender, String race, Species species, Population population, Map<String, Object> attributes) {
+    public Individual(int id, String name, int father, int mother, String family, Gender gender, String race, Species species, Population population, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -100,25 +217,62 @@ public class Individual {
         return name;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Individual)) return false;
+
+        Individual that = (Individual) o;
+
+        if (id != that.id) return false;
+        if (father != that.father) return false;
+        if (mother != that.mother) return false;
+        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        if (family != null ? !family.equals(that.family) : that.family != null) return false;
+        if (gender != that.gender) return false;
+        if (race != null ? !race.equals(that.race) : that.race != null) return false;
+        if (species != null ? !species.equals(that.species) : that.species != null) return false;
+        if (population != null ? !population.equals(that.population) : that.population != null) return false;
+        if (attributes != null ? !attributes.equals(that.attributes) : that.attributes != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + father;
+        result = 31 * result + mother;
+        result = 31 * result + (family != null ? family.hashCode() : 0);
+        result = 31 * result + (gender != null ? gender.hashCode() : 0);
+        result = 31 * result + (race != null ? race.hashCode() : 0);
+        result = 31 * result + (species != null ? species.hashCode() : 0);
+        result = 31 * result + (population != null ? population.hashCode() : 0);
+        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
+        return result;
+    }
+
     public Individual setName(String name) {
         this.name = name;
         return this;
+
     }
 
-    public Integer getFather() {
+    public int getFather() {
         return father;
     }
 
-    public Individual setFather(Integer father) {
+    public Individual setFather(int father) {
         this.father = father;
         return this;
     }
 
-    public Integer getMother() {
+    public int getMother() {
         return mother;
     }
 
-    public Individual setMother(Integer mother) {
+    public Individual setMother(int mother) {
         this.mother = mother;
         return this;
     }

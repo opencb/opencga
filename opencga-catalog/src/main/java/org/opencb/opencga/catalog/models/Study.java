@@ -43,6 +43,7 @@ public class Study {
 
     private List<File> files;
     private List<Job> jobs;
+    private List<Individual> individuals;
     private List<Sample> samples;
 
     private List<Dataset> datasets;
@@ -262,6 +263,14 @@ public class Study {
 
     public void setJobs(List<Job> jobs) {
         this.jobs = jobs;
+    }
+
+    public List<Individual> getIndividuals() {
+        return individuals;
+    }
+
+    public void setIndividuals(List<Individual> individuals) {
+        this.individuals = individuals;
     }
 
     public List<Sample> getSamples() {

@@ -45,17 +45,17 @@ import static org.junit.Assert.*;
 
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
-    private static CatalogMongoDBAdaptor catalogDBAdaptor;
+    static CatalogMongoDBAdaptor catalogDBAdaptor;
 
 //    @Rule
 //    public Timeout globalTimeout = new Timeout(2000); // 200 ms max per method tested
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private static User user1;
-    private static User user2;
-    private static User user3;
-    private CatalogUserDBAdaptor catalogUserDBAdaptor;
+    static User user1;
+    static User user2;
+    static User user3;
+    CatalogUserDBAdaptor catalogUserDBAdaptor;
 
     /**
      * This method is executed one single time beforeClass all the tests. It connects to the MongoDB server.

@@ -1,32 +1,12 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-//import com.fasterxml.jackson.databind.DeserializationFeature;
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.fasterxml.jackson.databind.ObjectReader;
-//import com.fasterxml.jackson.databind.ObjectWriter;
-//import com.mongodb.*;
-//import org.opencb.datastore.core.ObjectMap;
-//import org.opencb.datastore.core.QueryOptions;
-//import org.opencb.datastore.core.QueryResult;
-//import org.opencb.datastore.core.config.DataStoreServerAddress;
-//import org.opencb.datastore.mongodb.MongoDBCollection;
-//import org.opencb.datastore.mongodb.MongoDBConfiguration;
-//import org.opencb.datastore.mongodb.MongoDataStore;
-//import org.opencb.datastore.mongodb.MongoDataStoreManager;
-//import org.opencb.opencga.catalog.models.*;
-//import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-//import org.opencb.opencga.core.common.TimeUtils;
-//import org.slf4j.LoggerFactory;
-//
-//import java.io.IOException;
-//import java.utils.*;
-
 import com.mongodb.*;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -44,12 +24,12 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
 
     private final MongoDBCollection userCollection;
     private final MongoDBCollection metaCollection;
-    private final CatalogStudyDBAdaptor studyDBAdaptor;
+    private final CatalogDBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogMongoUserDBAdaptor(MongoDBCollection metaCollection, MongoDBCollection userCollection, CatalogStudyDBAdaptor studyDBAdaptor) {
+    public CatalogMongoUserDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection userCollection) {
+        this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.userCollection = userCollection;
-        this.studyDBAdaptor = studyDBAdaptor;
     }
 
     /** **************************
@@ -391,7 +371,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
 
         String errorMsg = "";
         for (Study study : studies) {
-            String studyErrorMsg = studyDBAdaptor.createStudy(project.getId(), study, options).getErrorMsg();
+            String studyErrorMsg = dbAdaptorFactory.getCatalogStudyDBAdaptor().createStudy(project.getId(), study, options).getErrorMsg();
             if(studyErrorMsg != null && !studyErrorMsg.isEmpty()){
                 errorMsg += ", " + study.getAlias() + ":" + studyErrorMsg;
             }
@@ -681,7 +661,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
             return;
         }
         if (options.getBoolean("includeStudies")) {
-            project.setStudies(studyDBAdaptor.getAllStudies(project.getId(), options).getResult());
+            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudies(project.getId(), options).getResult());
         }
     }
 }

@@ -108,7 +108,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public CatalogIndividualDBAdaptor getIndividualDBAdaptor() {
+    public CatalogIndividualDBAdaptor getCatalogIndividualDBAdaptor() {
         return individualDBAdaptor;
     }
 
@@ -145,8 +145,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         collections.put(INDIVIDUAL_COLLECTION, individualCollection = db.getCollection(INDIVIDUAL_COLLECTION));
         collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
 
-        userDBAdaptor = new CatalogMongoUserDBAdaptor(metaCollection, userCollection, this);
-        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(metaCollection, individualCollection);
+        userDBAdaptor = new CatalogMongoUserDBAdaptor(this, metaCollection, userCollection);
+        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, metaCollection, individualCollection);
     }
 
     @Override

@@ -7,6 +7,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Individual;
@@ -24,17 +25,37 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements CatalogIndividualDBAdaptor {
 
+    private CatalogDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection metaCollection;
     private final MongoDBCollection individualCollection;
 
-    public CatalogMongoIndividualDBAdaptor(MongoDBCollection metaCollection, MongoDBCollection individualCollection) {
+    public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection individualCollection) {
+        this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.individualCollection = individualCollection;
+    }
+
+    boolean individualExists(int individualId) {
+        return individualCollection.count(new BasicDBObject(_ID, individualId)).first() != 0;
     }
 
     @Override
     public QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
+
+
+        if (!dbAdaptorFactory.getCatalogStudyDBAdaptor().studyExists(studyId)) {
+            throw CatalogDBException.idNotFound("Study", studyId);
+        }
+        if (!getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.name.toString(), individual.getName())).getResult().isEmpty()) {
+            throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
+        }
+        if (individual.getFather() > 0 && !individualExists(individual.getFather())) {
+            throw CatalogDBException.idNotFound("Individual", individual.getFather());
+        }
+        if (individual.getMother() > 0 && !individualExists(individual.getMother())) {
+            throw CatalogDBException.idNotFound("Individual", individual.getMother());
+        }
 
         int individualId = getNewAutoIncrementId(metaCollection);
 
@@ -63,7 +84,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
-
+        options.addToListOption(IndividualFilterOption.studyId.toString(), studyId);
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
@@ -94,12 +115,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     @Override
     public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException {
-        throw new UnsupportedOperationException();
+        throw new CatalogDBException("Unimplemented method modifyIndividual");
     }
 
     @Override
     public QueryResult<Integer> deleteIndividual(int individualId) throws CatalogDBException {
-        throw new UnsupportedOperationException();
+        throw new CatalogDBException("Unimplemented method deleteIndividual");
     }
 
     @Override

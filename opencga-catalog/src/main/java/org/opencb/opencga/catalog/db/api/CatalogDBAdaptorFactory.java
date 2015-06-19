@@ -28,7 +28,7 @@ public interface CatalogDBAdaptorFactory {
 
     CatalogSampleDBAdaptor getCatalogSampleDBAdaptor();
 
-    CatalogIndividualDBAdaptor getIndividualDBAdaptor();
+    CatalogIndividualDBAdaptor getCatalogIndividualDBAdaptor();
 
     CatalogJobDBAdaptor getCatalogJobDBAdaptor();
 }

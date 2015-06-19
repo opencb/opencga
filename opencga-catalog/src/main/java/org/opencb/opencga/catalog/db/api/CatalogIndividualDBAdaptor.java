@@ -63,17 +63,17 @@ public interface CatalogIndividualDBAdaptor {
      * ***************************
      */
     
-    QueryResult<Individual> createIndividual(int studyId, Individual sample, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> getIndividual(int sampleId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> modifyIndividual(int sampleId, QueryOptions parameters) throws CatalogDBException;
+    QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<Integer> deleteIndividual(int sampleId) throws CatalogDBException;
+    QueryResult<Integer> deleteIndividual(int individualId) throws CatalogDBException;
 
-    int getStudyIdByIndividualId(int sampleId) throws CatalogDBException;
+    int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
 
 
 

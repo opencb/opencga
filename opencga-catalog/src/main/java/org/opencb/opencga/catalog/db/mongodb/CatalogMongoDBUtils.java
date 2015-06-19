@@ -46,7 +46,7 @@ class CatalogMongoDBUtils {
     private static Map<Class, ObjectReader> jsonReaderMap;
 
     public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect(Collectors.toSet());
-    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "metadata").stream().collect(Collectors.toSet());
+    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "metadata", "includeProjects", "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
