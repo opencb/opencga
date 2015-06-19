@@ -24,100 +24,156 @@ import java.util.Map;
  */
 public class Individual {
 
-    private String name;
-    private String gender;
-    private String type;
+    public enum Gender {
+        MALE, FEMALE, UNKNOWN
+    }
 
-    private String taxonomyCode;
-    private String scientificName;
-    private String commonName;
+    private int id;
+    private String name;
+    private Integer father;
+    private Integer mother;
+    private String family;
+    private Gender gender;
+
+
+    private String race;
+    private Species species;
+    private Population population;
+
+    // internal class
+    class Species {
+        private String taxonomyCode;
+        private String scientificName;
+        private String commonName;
+    }
+
+    class Population {
+        private String name;
+        private String subpopulation;
+        private String description;
+    }
 
     private Map<String, Object> attributes;
 
     public Individual() {
     }
 
-    public Individual(String name, String gender, String type, String taxonomyCode, String scientificName, String commonName) {
-        this(name, gender, type, taxonomyCode, scientificName, commonName, new HashMap<String, Object>());
-    }
-
-    public Individual(String name, String gender, String type, String taxonomyCode, String scientificName,
-                      String commonName, Map<String, Object> attributes) {
+    public Individual(int id, String name, Integer father, Integer mother, String family, Gender gender, String race, Species species, Population population, Map<String, Object> attributes) {
+        this.id = id;
         this.name = name;
+        this.father = father;
+        this.mother = mother;
+        this.family = family;
         this.gender = gender;
-        this.type = type;
-        this.taxonomyCode = taxonomyCode;
-        this.scientificName = scientificName;
-        this.commonName = commonName;
+        this.race = race;
+        this.species = species;
+        this.population = population;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Individual{" +
-                "name='" + name + '\'' +
-                ", gender='" + gender + '\'' +
-                ", type='" + type + '\'' +
-                ", taxonomyCode='" + taxonomyCode + '\'' +
-                ", scientificName='" + scientificName + '\'' +
-                ", commonName='" + commonName + '\'' +
-                ", annotations=" + attributes +
+        return "Individual {" +
+                "\"id\": " + id +
+                ", \"name\": " + '\"' + name + '\"' +
+                ", \"father\": " + father +
+                ", \"mother\": " + mother +
+                ", \"family\": " + '\"' + family + '\"' +
+                ", \"gender\": " + gender +
+                ", \"race\": " + '\"' + race + '\"' +
+                ", \"species\": " + species +
+                ", \"population\": " + population +
+                ", \"attributes\": " + attributes +
                 '}';
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public Individual setId(int id) {
+        this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Individual setName(String name) {
         this.name = name;
+        return this;
     }
 
-    public String getGender() {
+    public Integer getFather() {
+        return father;
+    }
+
+    public Individual setFather(Integer father) {
+        this.father = father;
+        return this;
+    }
+
+    public Integer getMother() {
+        return mother;
+    }
+
+    public Individual setMother(Integer mother) {
+        this.mother = mother;
+        return this;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public Individual setFamily(String family) {
+        this.family = family;
+        return this;
+    }
+
+    public Gender getGender() {
         return gender;
     }
 
-    public void setGender(String gender) {
+    public Individual setGender(Gender gender) {
         this.gender = gender;
+        return this;
     }
 
-    public String getType() {
-        return type;
+    public String getRace() {
+        return race;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public Individual setRace(String race) {
+        this.race = race;
+        return this;
     }
 
-    public String getTaxonomyCode() {
-        return taxonomyCode;
+    public Species getSpecies() {
+        return species;
     }
 
-    public void setTaxonomyCode(String taxonomyCode) {
-        this.taxonomyCode = taxonomyCode;
+    public Individual setSpecies(Species species) {
+        this.species = species;
+        return this;
     }
 
-    public String getScientificName() {
-        return scientificName;
+    public Population getPopulation() {
+        return population;
     }
 
-    public void setScientificName(String scientificName) {
-        this.scientificName = scientificName;
-    }
-
-    public String getCommonName() {
-        return commonName;
-    }
-
-    public void setCommonName(String commonName) {
-        this.commonName = commonName;
+    public Individual setPopulation(Population population) {
+        this.population = population;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Individual setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 }

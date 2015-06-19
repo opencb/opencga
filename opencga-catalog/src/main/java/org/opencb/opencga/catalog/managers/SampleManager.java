@@ -111,7 +111,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
-        Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
+        Sample sample = new Sample(-1, name, source, -1, description, Collections.<AnnotationSet>emptyList(),
                 attributes);
 
         return sampleDBAdaptor.createSample(studyId, sample, options);

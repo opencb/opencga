@@ -100,7 +100,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         QueryResult insert;
         try {
             insert = userCollection.insert(userDBObject, null);
-        } catch (MongoException.DuplicateKey e) {
+        } catch (DuplicateKeyException e) {
             throw new CatalogDBException("User {id:\""+user.getId()+"\"} already exists");
         }
 
@@ -222,7 +222,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         ObjectMap resultObjectMap = new ObjectMap();
         resultObjectMap.put("sessionId", session.getId());
         resultObjectMap.put("userId", userId);
-        return endQuery("Login as anonymous", startTime, Arrays.asList(resultObjectMap));
+        return endQuery("Login as anonymous", startTime, Collections.singletonList(resultObjectMap));
     }
 
     @Override
@@ -248,7 +248,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
             return endQuery("Get user", startTime); // user exists but no different lastActivity was found: return empty result
         } else {
             joinFields(user, options);
-            return endQuery("Get user", startTime, Arrays.asList(user));
+            return endQuery("Get user", startTime, Collections.singletonList(user));
         }
     }
 

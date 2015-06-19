@@ -10,6 +10,54 @@ import org.opencb.opencga.catalog.models.Individual;
  */
 public interface CatalogIndividualDBAdaptor {
 
+    enum IndividualFilterOption implements CatalogDBAdaptor.FilterOption {
+        studyId(Type.NUMERICAL, ""),
+        id(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        father(Type.NUMERICAL, ""),
+        mother(Type.NUMERICAL, ""),
+        family(Type.TEXT, ""),
+        gender(Type.TEXT, ""),
+        race(Type.TEXT, ""),
+        species(Type.TEXT, ""),
+        population(Type.TEXT, ""),
+        attributes("attributes", Type.TEXT, ""),
+        nattributes("attributes", Type.NUMERICAL, ""),
+        battributes("attributes", Type.BOOLEAN, ""),
+        ;
+
+        IndividualFilterOption(Type type, String description) {
+            this._key = name();
+            this._description = description;
+            this._type = type;
+        }
+
+        IndividualFilterOption(String key, Type type, String description) {
+            this._key = key;
+            this._description = description;
+            this._type = type;
+        }
+
+        final private String _key;
+        final private String _description;
+        final private Type _type;
+
+        @Override
+        public String getDescription() {
+            return _description;
+        }
+
+        @Override
+        public Type getType() {
+            return _type;
+        }
+
+        @Override
+        public String getKey() {
+            return _key;
+        }
+    }
+
     /**
      * Individual methods
      * ***************************

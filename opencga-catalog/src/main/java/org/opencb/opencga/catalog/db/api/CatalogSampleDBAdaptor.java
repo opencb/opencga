@@ -22,6 +22,7 @@ public interface CatalogSampleDBAdaptor {
         id(Type.NUMERICAL, ""),
         name(Type.TEXT, ""),
         source(Type.TEXT, ""),
+        individualId(Type.NUMERICAL, ""),
 
         attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),

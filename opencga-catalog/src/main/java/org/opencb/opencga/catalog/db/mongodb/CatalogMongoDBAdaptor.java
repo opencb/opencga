@@ -52,18 +52,19 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private static final String FILE_COLLECTION = "file";
     private static final String JOB_COLLECTION = "job";
     private static final String SAMPLE_COLLECTION = "sample";
+    private static final String INDIVIDUAL_COLLECTION = "individual";
     private static final String METADATA_COLLECTION = "metadata";
 
     static final String METADATA_OBJECT_ID = "METADATA";
 
     //Keys to foreign objects.
-    private static final String _ID = "_id";
-    private static final String _PROJECT_ID = "_projectId";
-    private static final String _STUDY_ID = "_studyId";
-    private static final String FILTER_ROUTE_STUDIES = "projects.studies.";
-    private static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
-    private static final String FILTER_ROUTE_FILES =   "projects.studies.files.";
-    private static final String FILTER_ROUTE_JOBS =    "projects.studies.jobs.";
+    static final String _ID = "_id";
+    static final String _PROJECT_ID = "_projectId";
+    static final String _STUDY_ID = "_studyId";
+    static final String FILTER_ROUTE_STUDIES = "projects.studies.";
+    static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
+    static final String FILTER_ROUTE_FILES =   "projects.studies.files.";
+    static final String FILTER_ROUTE_JOBS =    "projects.studies.jobs.";
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
@@ -76,9 +77,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private MongoDBCollection studyCollection;
     private MongoDBCollection fileCollection;
     private MongoDBCollection sampleCollection;
+    private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
     private Map<String, MongoDBCollection> collections;
     private CatalogMongoUserDBAdaptor userDBAdaptor;
+    private CatalogMongoIndividualDBAdaptor individualDBAdaptor;
 
     //    private static final Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
 
@@ -106,7 +109,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
     @Override
     public CatalogIndividualDBAdaptor getIndividualDBAdaptor() {
-        return null;
+        return individualDBAdaptor;
     }
 
     @Override
@@ -139,9 +142,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         collections.put(STUDY_COLLECTION, studyCollection = db.getCollection(STUDY_COLLECTION));
         collections.put(FILE_COLLECTION, fileCollection = db.getCollection(FILE_COLLECTION));
         collections.put(SAMPLE_COLLECTION, sampleCollection = db.getCollection(SAMPLE_COLLECTION));
+        collections.put(INDIVIDUAL_COLLECTION, individualCollection = db.getCollection(INDIVIDUAL_COLLECTION));
         collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
 
         userDBAdaptor = new CatalogMongoUserDBAdaptor(metaCollection, userCollection, this);
+        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(metaCollection, individualCollection);
     }
 
     @Override
@@ -768,7 +773,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
-                if (isDataStoreOption(key) || key.equals("sid") || key.equals("metadata")) {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
                     continue;   //Exclude DataStore options
                 }
                 FileFilterOption option = FileFilterOption.valueOf(key);
@@ -1208,9 +1213,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         String warning = "";
 
         // Annotation Filters
-        String AND = ";";
-        String OR = ",";
-        String IS = ":";
+        final String AND = ";";
+        final String OR = ",";
+        final String IS = ":";
 
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
 
@@ -1219,7 +1224,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
-                if (isDataStoreOption(key) || key.equals("sid") || key.equals("metadata")) {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
                     continue;   //Exclude DataStore options
                 }
                 SampleFilterOption option = SampleFilterOption.valueOf(key);

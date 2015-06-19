@@ -45,7 +45,8 @@ class CatalogMongoDBUtils {
     private static ObjectWriter jsonObjectWriter;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
-    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit").stream().collect(Collectors.toSet());
+    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect(Collectors.toSet());
+    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "metadata").stream().collect(Collectors.toSet());
     //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
@@ -373,6 +374,10 @@ class CatalogMongoDBUtils {
 
     static boolean isDataStoreOption(String key) {
         return datastoreOptions.contains(key);
+    }
+
+    static boolean isOtherKnownOption(String key) {
+        return otherOptions.contains(key);
     }
 
     static List<DBObject> addCompQueryFilter(String optionKey, QueryOptions options, CatalogDBAdaptor.FilterOption.Type type, List<DBObject> andQuery) throws CatalogDBException {
