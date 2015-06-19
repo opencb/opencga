@@ -81,6 +81,7 @@ public class CatalogManager {
     private IStudyManager studyManager;
     private IFileManager fileManager;
     private IJobManager jobManager;
+    private IIndividualManager individualManager;
     private ISampleManager sampleManager;
 
     private Properties properties;
@@ -128,6 +129,7 @@ public class CatalogManager {
         projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {

@@ -50,11 +50,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         if (!getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.name.toString(), individual.getName())).getResult().isEmpty()) {
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
         }
-        if (individual.getFather() > 0 && !individualExists(individual.getFather())) {
-            throw CatalogDBException.idNotFound("Individual", individual.getFather());
+        if (individual.getFatherId() > 0 && !individualExists(individual.getFatherId())) {
+            throw CatalogDBException.idNotFound("Individual", individual.getFatherId());
         }
-        if (individual.getMother() > 0 && !individualExists(individual.getMother())) {
-            throw CatalogDBException.idNotFound("Individual", individual.getMother());
+        if (individual.getMotherId() > 0 && !individualExists(individual.getMotherId())) {
+            throw CatalogDBException.idNotFound("Individual", individual.getMotherId());
         }
 
         int individualId = getNewAutoIncrementId(metaCollection);

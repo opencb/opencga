@@ -22,6 +22,7 @@ public abstract class AbstractManager {
     final protected CatalogUserDBAdaptor userDBAdaptor;
     final protected CatalogStudyDBAdaptor studyDBAdaptor;
     final protected CatalogFileDBAdaptor fileDBAdaptor;
+    final protected CatalogIndividualDBAdaptor individualDBAdaptor;
     final protected CatalogSampleDBAdaptor sampleDBAdaptor;
     final protected CatalogJobDBAdaptor jobDBAdaptor;
 
@@ -36,6 +37,7 @@ public abstract class AbstractManager {
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;

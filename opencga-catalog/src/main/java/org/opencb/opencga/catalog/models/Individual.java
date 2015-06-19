@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -30,8 +29,8 @@ public class Individual {
 
     private int id;
     private String name;
-    private int father;
-    private int mother;
+    private int fatherId;
+    private int motherId;
     private String family;
     private Gender gender;
 
@@ -175,11 +174,11 @@ public class Individual {
     public Individual() {
     }
 
-    public Individual(int id, String name, int father, int mother, String family, Gender gender, String race, Species species, Population population, Map<String, Object> attributes) {
+    public Individual(int id, String name, int fatherId, int motherId, String family, Gender gender, String race, Species species, Population population, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.father = father;
-        this.mother = mother;
+        this.fatherId = fatherId;
+        this.motherId = motherId;
         this.family = family;
         this.gender = gender;
         this.race = race;
@@ -193,8 +192,8 @@ public class Individual {
         return "Individual {" +
                 "\"id\": " + id +
                 ", \"name\": " + '\"' + name + '\"' +
-                ", \"father\": " + father +
-                ", \"mother\": " + mother +
+                ", \"father\": " + fatherId +
+                ", \"mother\": " + motherId +
                 ", \"family\": " + '\"' + family + '\"' +
                 ", \"gender\": " + gender +
                 ", \"race\": " + '\"' + race + '\"' +
@@ -225,8 +224,8 @@ public class Individual {
         Individual that = (Individual) o;
 
         if (id != that.id) return false;
-        if (father != that.father) return false;
-        if (mother != that.mother) return false;
+        if (fatherId != that.fatherId) return false;
+        if (motherId != that.motherId) return false;
         if (name != null ? !name.equals(that.name) : that.name != null) return false;
         if (family != null ? !family.equals(that.family) : that.family != null) return false;
         if (gender != that.gender) return false;
@@ -242,8 +241,8 @@ public class Individual {
     public int hashCode() {
         int result = id;
         result = 31 * result + (name != null ? name.hashCode() : 0);
-        result = 31 * result + father;
-        result = 31 * result + mother;
+        result = 31 * result + fatherId;
+        result = 31 * result + motherId;
         result = 31 * result + (family != null ? family.hashCode() : 0);
         result = 31 * result + (gender != null ? gender.hashCode() : 0);
         result = 31 * result + (race != null ? race.hashCode() : 0);
@@ -259,21 +258,21 @@ public class Individual {
 
     }
 
-    public int getFather() {
-        return father;
+    public int getFatherId() {
+        return fatherId;
     }
 
-    public Individual setFather(int father) {
-        this.father = father;
+    public Individual setFatherId(int fatherId) {
+        this.fatherId = fatherId;
         return this;
     }
 
-    public int getMother() {
-        return mother;
+    public int getMotherId() {
+        return motherId;
     }
 
-    public Individual setMother(int mother) {
-        this.mother = mother;
+    public Individual setMotherId(int motherId) {
+        this.motherId = motherId;
         return this;
     }
 
