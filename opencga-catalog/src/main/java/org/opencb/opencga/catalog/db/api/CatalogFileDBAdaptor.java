@@ -13,7 +13,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
  */
 public interface CatalogFileDBAdaptor {
 
-    public enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
+    enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         directory(Type.TEXT, ""),
 
@@ -51,13 +51,13 @@ public interface CatalogFileDBAdaptor {
         @Deprecated startsWith(Type.TEXT, ""),
         ;
 
-        private FileFilterOption(Type type, String description) {
+        FileFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
 
-        private FileFilterOption(String key, Type type, String description) {
+        FileFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;
             this._type = type;

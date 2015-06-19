@@ -35,8 +35,11 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.addCompQueryFilter;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -1812,58 +1815,98 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
     @Override
     public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
+        int variableSetId = options.getInt("variableSetId");
+        Map<String, Variable> variableMap = null;
+        if (variableSetId > 0) {
+            variableMap = getVariableSet(variableSetId, null).first()
+                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+        }
+        return getAllSamples(studyId, variableMap, options);
+    }
+
+    @Override
+    public QueryResult<Sample> getAllSamples(int studyId, Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         String warning = "";
 
-        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-        DBObject query = new BasicDBObject(_STUDY_ID, studyId);
-
-        // Sample Filters  //
-        addQueryIntegerListFilter("id", options, "_id", query);
-        addQueryStringListFilter("name", options, query);
-        addQueryStringListFilter("source", options, query);
-
-        // AnnotationSet Filters //
-        BasicDBObject annotationSetFilter = new BasicDBObject();
-        addQueryIntegerListFilter("variableSetId", options, annotationSetFilter);
-        addQueryStringListFilter("annotationSetId", options, "id", annotationSetFilter);
-
-
-        List<DBObject> annotationFilters = new LinkedList<>();
         // Annotation Filters
-        if (options.containsKey("annotation")) {
-            List<String> annotations = options.getAsStringList("annotation");
-            for (String annotation : annotations) {
-                String[] split = annotation.split(":", 2);
-                if (split.length != 2) {
-                    String w = "Malformed annotation query : " + annotation;
-                    warning += w + "\n";
-                    logger.warn(warning);
-                    continue;
+        String AND = ";";
+        String OR = ",";
+        String IS = ":";
+
+        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
+
+        List<DBObject> mongoQueryList = new LinkedList<>();
+        List<DBObject> annotationSetFilter = new LinkedList<>();
+        for (Map.Entry<String, Object> entry : options.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || key.equals("sid") || key.equals("metadata")) {
+                    continue;   //Exclude DataStore options
                 }
-//                annotationFilters.add(
-//                        new BasicDBObject("annotations",
-//                                new BasicDBObject("$elemMatch", BasicDBObjectBuilder
-//                                        .start("id", split[0])
-//                                        .add("value", split[1]).get()
-//                                )
-//                        )
-//                );
-                String[] values = split[1].split(",");
-                if (values.length > 1) {
-                    annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], new BasicDBObject("$in", Arrays.asList(values)) ));
-                } else {
-                    annotationFilters.add(new BasicDBObject("_annotMap" + "." + split[0], split[1] ));
+                SampleFilterOption option = SampleFilterOption.valueOf(key);
+                switch (option) {
+                    case id:
+                        addCompQueryFilter(option.getType(), option.name(), options, _ID, mongoQueryList);
+                        break;
+//                    case studyId:
+//                        addCompQueryFilter(option.getType(), option.name(), options, _STUDY_ID, mongoQueryList);
+//                        break;
+                    case annotationSetId:
+                        addCompQueryFilter(option.getType(), option.name(), options, "id", annotationSetFilter);
+                        break;
+                    case variableSetId:
+                        addCompQueryFilter(option.getType(), option.name(), options, option.getKey(), annotationSetFilter);
+                        break;
+                    case annotation:
+                        for (String annotation : options.getAsStringList("annotation", AND)) {
+                            String[] split = annotation.split(IS, 2);
+                            if (split.length != 2) {
+                                throw new CatalogDBException("Malformed annotation query : " + annotation);
+                            }
+                            String[] values = split[1].split(OR);
+
+                            FilterOption.Type type = FilterOption.Type.TEXT;
+
+                            if (variableMap != null) {
+                                Variable.VariableType i = variableMap.get(split[0]).getType();
+                                if (i == Variable.VariableType.BOOLEAN) {
+                                    type = FilterOption.Type.BOOLEAN;
+
+                                } else if (i == Variable.VariableType.NUMERIC) {
+                                    type = FilterOption.Type.NUMERICAL;
+                                }
+                            }
+                            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value", new LinkedList<>());
+                            annotationSetFilter.add(
+                                    new BasicDBObject("annotations",
+                                            new BasicDBObject("$elemMatch",
+                                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", split[0])
+                                            )
+                                    )
+                            );
+                        }
+                        break;
+                    default:
+                        String optionsKey = entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option.getType(), entry.getKey(), options, optionsKey, mongoQueryList);
+                        break;
                 }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
             }
         }
 
-        if (!annotationFilters.isEmpty()) {
-            annotationSetFilter.put("$and", annotationFilters);
-        }
+        DBObject query = new BasicDBObject(_STUDY_ID, studyId);
+
         if (!annotationSetFilter.isEmpty()) {
-            query.put("annotationSets", new BasicDBObject("$elemMatch", annotationSetFilter));
+            query.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
         }
+        if (!mongoQueryList.isEmpty()) {
+            query.put("$and", mongoQueryList);
+        }
+        logger.debug("GetAllSamples query: {}", query);
+
         QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
         List<Sample> samples = parseSamples(queryResult);
 
@@ -2037,11 +2080,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
 
         DBObject object = getDbObject(annotationSet, "AnnotationSet");
-        Map<String, String> annotationMap = new HashMap<>();
-        for (Annotation annotation : annotationSet.getAnnotations()) {
-            annotationMap.put(annotation.getId(), annotation.getValue().toString());
-        }
-        object.put("_annotMap", annotationMap);
+//        Map<String, String> annotationMap = new HashMap<>();
+//        for (Annotation annotation : annotationSet.getAnnotations()) {
+//            annotationMap.put(annotation.getId(), annotation.getValue().toString());
+//        }
+//        object.put("_annotMap", annotationMap);
 
         DBObject query = new BasicDBObject("id", sampleId);
         DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
