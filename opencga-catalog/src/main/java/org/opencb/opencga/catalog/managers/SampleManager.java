@@ -28,9 +28,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
 
     public SampleManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                         CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                          Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 

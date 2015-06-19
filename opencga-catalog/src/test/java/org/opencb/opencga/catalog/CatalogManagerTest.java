@@ -1048,17 +1048,16 @@ public class CatalogManagerTest extends GenericTest {
         ));
         QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(study.getId(), "vs1", true, "", null, variables, sessionIdUser);
 
-        assertEquals(variableSetNum + 1, queryResult.getResult().size());
+        assertEquals(1, queryResult.getResult().size());
 
         study = catalogManager.getStudy(study.getId(), sessionIdUser).first();
-        assertEquals(1, study.getVariableSets().size());
+        assertEquals(variableSetNum + 1, study.getVariableSets().size());
     }
 
     @Test
     public void testCreateRepeatedVariableSet () throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
-        assertEquals(0, study.getVariableSets().size());
 
         List<Variable> variables = Arrays.asList(
                 new Variable("NAME", "", Variable.VariableType.TEXT, "", true, Collections.<String>emptyList(), 0, "", "", Collections.<String, Object>emptyMap()),

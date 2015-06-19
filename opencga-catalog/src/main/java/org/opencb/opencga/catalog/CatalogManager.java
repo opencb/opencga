@@ -21,6 +21,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.*;
@@ -71,7 +72,7 @@ public class CatalogManager {
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
-    private CatalogDBAdaptor catalogDBAdaptor;
+    private CatalogDBAdaptorFactory catalogDBAdaptor;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
@@ -88,7 +89,7 @@ public class CatalogManager {
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties)
+    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptor, Properties catalogProperties)
             throws IOException, CatalogIOException {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;

@@ -76,27 +76,15 @@ public abstract class CatalogDBAdaptor {
         return queryResult;
     }
 
+    protected void checkParameter(Object param, String name) throws CatalogDBException {
+        if (param == null) {
+            throw new CatalogDBException("Error: parameter '" + name + "' is null");
+        }
+        if(param instanceof String) {
+            if(param.equals("") || param.equals("null")) {
+                throw new CatalogDBException("Error: parameter '" + name + "' is empty or it values 'null");
+            }
+        }
+    }
 
-    /**
-     * Says if the catalog database is ready to be used. If false, needs to be initialized
-     */
-    public abstract boolean isCatalogDBReady();
-
-    /**
-     * Initializes de Database with the initial structure.
-     * @throws CatalogDBException   if there was any problem, or it was already initialized.
-     */
-    public abstract void initializeCatalogDB() throws CatalogDBException;
-
-    public abstract void disconnect();
-
-    public abstract CatalogUserDBAdaptor getCatalogUserDBAdaptor();
-
-    public abstract CatalogStudyDBAdaptor getCatalogStudyDBAdaptor();
-
-    public abstract CatalogFileDBAdaptor getCatalogFileDBAdaptor();
-
-    public abstract CatalogSampleDBAdaptor getCatalogSampleDBAdaptor();
-
-    public abstract CatalogJobDBAdaptor getCatalogJobDBAdaptor();
 }

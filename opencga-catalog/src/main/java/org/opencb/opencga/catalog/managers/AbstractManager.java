@@ -28,16 +28,16 @@ public abstract class AbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(AbstractManager.class);
 
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                            Properties catalogProperties) {
         this.authorizationManager = authorizationManager;
         this.authenticationManager = authenticationManager;
         this.catalogProperties = catalogProperties;
-        this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
-        this.jobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
+        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
+        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
+        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
+        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
     }
 
