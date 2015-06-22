@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptorTest2 {
+public class CatalogMongoIndividualDBAdaptorTest {
 
     private CatalogDBAdaptorFactory dbAdaptorFactory;
     private CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
@@ -72,7 +72,7 @@ public class CatalogMongoIndividualDBAdaptorTest2 {
     public void testCreateIndividualAlreadyExists() throws Exception {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", -1, -1, "", null, "", null, null, null), null);
-        thrown.expect(CatalogDBException.class);
+        thrown.expect(CatalogDBException.class); //Name already exists
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", -1, -1, "", null, "", null, null, null), null);
     }
 
@@ -83,6 +83,16 @@ public class CatalogMongoIndividualDBAdaptorTest2 {
         individual = catalogIndividualDBAdaptor.createIndividual(studyId, individual, null).first();
         Individual individual2 = catalogIndividualDBAdaptor.getIndividual(individual.getId(), null).first();
         assertEquals(individual, individual2);
+    }
+
+    @Test
+    public void testGetIndividualNoExists() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Gender.MALE, "", null, new Individual.Population(), null);
+        catalogIndividualDBAdaptor.createIndividual(studyId, individual, null).first();
+        catalogIndividualDBAdaptor.getIndividual(individual.getId(), null).first();
+        thrown.expect(CatalogDBException.class); //Id not found
+        catalogIndividualDBAdaptor.getIndividual(9999, null);
     }
 
     @Test
@@ -109,10 +119,47 @@ public class CatalogMongoIndividualDBAdaptorTest2 {
         assertEquals(1, result.getNumResults());
     }
 
-//    @Test
-//    public void testModifyIndividual() throws Exception {
-//
-//    }
+    @Test
+    public void testModifyIndividual() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+
+        QueryOptions params = new QueryOptions("family", "new Family");
+        params.add("gender", "MALE");
+        catalogIndividualDBAdaptor.modifyIndividual(individualId, params);
+        Individual individual = catalogIndividualDBAdaptor.getIndividual(individualId, null).first();
+        assertEquals("new Family", individual.getFamily());
+        assertEquals(Individual.Gender.MALE, individual.getGender());
+
+    }
+
+    @Test
+    public void testModifyIndividualBadGender() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+
+        thrown.expect(CatalogDBException.class);
+        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("gender", "bad gender"));
+    }
+
+    @Test
+    public void testModifyIndividualBadFatherId() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+
+        thrown.expect(CatalogDBException.class);
+        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("fatherId", -4));
+    }
+
+    @Test
+    public void testModifyIndividualExistingName() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+        catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+
+        thrown.expect(CatalogDBException.class);
+        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("name", "in2"));
+    }
 //
 //    @Test
 //    public void testDeleteIndividual() throws Exception {

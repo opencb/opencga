@@ -274,6 +274,19 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static void filterEnumParams(ObjectMap parameters, Map<String, Object> filteredParams, Map<String, Class<? extends Enum>> acceptedParams) throws CatalogDBException {
+        for (Map.Entry<String, Class<? extends Enum>> e : acceptedParams.entrySet()) {
+            if (parameters.containsKey(e.getKey())) {
+                String parameterValue = parameters.getString(e.getKey());
+                Set<String> set = (Set<String>) EnumSet.allOf(e.getValue()).stream().map(Object::toString).collect(Collectors.toSet());
+                if (!set.contains(parameterValue)) {
+                    throw new CatalogDBException("Invalid parameter { " + e.getKey() + ": \"" + parameterValue + "\" }. Accepted values from Enum " + e.getValue() + " " + EnumSet.allOf(e.getValue()));
+                }
+                filteredParams.put(e.getKey(), parameterValue);
+            }
+        }
+    }
+
     static void filterIntegerListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntegerListParams) {
         for (String s : acceptedIntegerListParams) {
             if (parameters.containsKey(s)) {

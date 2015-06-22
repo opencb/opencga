@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -12,10 +13,7 @@ import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Individual;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
@@ -75,6 +73,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
         QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), options);
         Individual individual = parseObject(result, Individual.class);
+        if (individual == null) {
+            throw CatalogDBException.idNotFound("Individual", individualId);
+        }
 
         return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
     }
@@ -115,7 +116,54 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     @Override
     public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException {
-        throw new CatalogDBException("Unimplemented method modifyIndividual");
+
+        long startTime = startQuery();
+        Map<String, Object> individualParameters = new HashMap<>();
+
+        String[] acceptedParams = {"name", "family", "race", "gender",
+                "species.taxonomyCode", "species.scientificName", "species.commonName",
+                "population.name", "population.subpopulation", "population.description"};
+        filterStringParams(parameters, individualParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("gender"), Individual.Gender.class);
+        filterEnumParams(parameters, individualParameters, acceptedEnums);
+
+        String[] acceptedIntParams = {"fatherId", "motherId"};
+        filterIntParams(parameters, individualParameters, acceptedIntParams);
+
+        String[] acceptedMapParams = {"attributes"};
+        filterMapParams(parameters, individualParameters, acceptedMapParams);
+
+
+        //Check existing name
+        if (individualParameters.containsKey("name")) {
+            String name = individualParameters.get("name").toString();
+            if (!getAllIndividuals(getStudyIdByIndividualId(individualId), new QueryOptions(IndividualFilterOption.name.toString(), name)).getResult().isEmpty()) {
+                throw CatalogDBException.alreadyExists("Individual", "name", name);
+            }
+        }
+        //Check individualIds exists
+        String[] individualIdParams = {"fatherId", "motherId"};
+        for (String individualIdParam : individualIdParams) {
+            if (individualParameters.containsKey(individualIdParam)) {
+                Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
+                if (!individualExists(individualId1)) {
+                    throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
+                }
+            }
+        }
+
+
+        if(!individualParameters.isEmpty()) {
+            QueryResult<WriteResult> update = individualCollection.update(
+                    new BasicDBObject(_ID, individualId),
+                    new BasicDBObject("$set", individualParameters), null);
+            if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
+                throw CatalogDBException.idNotFound("Individual", individualId);
+            }
+        }
+
+        return endQuery("Modify individual", startTime);
     }
 
     @Override

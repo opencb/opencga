@@ -15,6 +15,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
 
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor._ID;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
@@ -44,7 +45,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
 
     @Override
     public boolean userExists(String userId){
-        QueryResult<Long> count = userCollection.count(new BasicDBObject("id", userId));
+        QueryResult<Long> count = userCollection.count(new BasicDBObject(_ID, userId));
         long l = count.getResult().get(0);
         return l != 0;
     }
@@ -75,7 +76,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         user.setProjects(Collections.<Project>emptyList());
         user.setLastActivity(TimeUtils.getTimeMillis());
         DBObject userDBObject = getDbObject(user, "User " + user.getId());
-        userDBObject.put("_id", user.getId());
+        userDBObject.put(_ID, user.getId());
 
         QueryResult insert;
         try {
@@ -118,7 +119,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         long startTime = startQuery();
 
 //        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
-        WriteResult wr = userCollection.remove(new BasicDBObject("id", userId), null).getResult().get(0);
+        WriteResult wr = userCollection.remove(new BasicDBObject(_ID, userId), null).getResult().get(0);
         if (wr.getN() == 0) {
             throw CatalogDBException.idNotFound("User", userId);
         } else {
@@ -142,7 +143,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
             if (countSessions.getResult().get(0) != 0) {
                 throw new CatalogDBException("Already logged");
             } else {
-                BasicDBObject id = new BasicDBObject("id", userId);
+                BasicDBObject id = new BasicDBObject(_ID, userId);
                 BasicDBObject updates = new BasicDBObject(
                         "$push", new BasicDBObject(
                         "sessions", getDbObject(session, "Sesion")
@@ -191,7 +192,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, "");
         user.getSessions().add(session);
         DBObject anonymous = getDbObject(user, "User");
-        anonymous.put("_id", user.getId());
+        anonymous.put(_ID, user.getId());
 
         try {
             userCollection.insert(anonymous, null);
@@ -220,7 +221,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         if (!userExists(userId)) {
             throw CatalogDBException.idNotFound("User", userId);
         }
-        DBObject query = new BasicDBObject("id", userId);
+        DBObject query = new BasicDBObject(_ID, userId);
         query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
         QueryResult<DBObject> result = userCollection.find(query, options);
         User user = parseUser(result);
@@ -262,17 +263,21 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
-        String[] acceptedParams = {"name", "email", "organization", "lastActivity", "role", "status"};
+        final String[] acceptedParams = {"name", "email", "organization", "lastActivity", "status"};
         filterStringParams(parameters, userParameters, acceptedParams);
-        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
+        filterEnumParams(parameters, userParameters, acceptedEnums);
+
+        final String[] acceptedIntParams = {"diskQuota", "diskUsage"};
         filterIntParams(parameters, userParameters, acceptedIntParams);
 
-        String[] acceptedMapParams = {"attributes", "configs"};
+        final String[] acceptedMapParams = {"attributes", "configs"};
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if(!userParameters.isEmpty()) {
             QueryResult<WriteResult> update = userCollection.update(
-                    new BasicDBObject("id", userId),
+                    new BasicDBObject(_ID, userId),
                     new BasicDBObject("$set", userParameters), null);
             if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
                 throw CatalogDBException.idNotFound("User", userId);
