@@ -715,6 +715,35 @@ public class CatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
+    
+    /**
+     * Project methods
+     * ***************************
+     */
+
+    public QueryResult<Individual> createIndividual(int studyId, String name, String family, int fatherId, int motherId,
+                                                    Individual.Gender gender, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.create(studyId, name, family, fatherId, motherId, gender, options, sessionId);
+    }
+
+    public QueryResult<Individual> getIndividual(int individualId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.read(individualId, options, sessionId);
+    }
+
+    public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.readAll(studyId, options, sessionId);
+    }
+
+    public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.update(individualId, options, options, sessionId);
+    }
+
+    public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.delete(individualId, options, sessionId);
+    }
+    
     /**
      * Samples methods
      * ***************************
