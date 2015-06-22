@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
@@ -160,11 +161,39 @@ public class CatalogMongoIndividualDBAdaptorTest {
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("name", "in2"));
     }
-//
-//    @Test
-//    public void testDeleteIndividual() throws Exception {
-//
-//    }
+
+    @Test
+    public void testDeleteIndividual() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+        int individualId2 = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, individualId, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+
+        catalogIndividualDBAdaptor.deleteIndividual(individualId2, null);
+        catalogIndividualDBAdaptor.deleteIndividual(individualId, null);
+
+    }
+
+    @Test
+    public void testDeleteIndividualInUse() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+        int individualId2 = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, individualId, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+
+        thrown.expect(CatalogDBException.class);
+        catalogIndividualDBAdaptor.deleteIndividual(individualId, null);
+
+    }
+
+    @Test
+    public void testDeleteIndividualInUseAsSample() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, null), null).first().getId();
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, new Sample(0, "Sample", "", individualId, ""), null);
+
+        thrown.expect(CatalogDBException.class);
+        catalogIndividualDBAdaptor.deleteIndividual(individualId, null);
+
+    }
 
     @Test
     public void testGetStudyIdByIndividualId() throws Exception {

@@ -3,15 +3,16 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 
 import java.util.*;
 
@@ -167,8 +168,52 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Integer> deleteIndividual(int individualId) throws CatalogDBException {
-        throw new CatalogDBException("Unimplemented method deleteIndividual");
+    public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        QueryResult<Individual> individual = getIndividual(individualId, options);
+
+        checkInUse(individualId);
+
+        QueryResult<WriteResult> remove = individualCollection.remove(new BasicDBObject(_ID, individualId), options);
+        if (remove.first().getN() == 0) {
+            throw CatalogDBException.idNotFound("Individual", individualId);
+        }
+
+        return endQuery("Delete individual", startTime, individual);
+    }
+
+    public void checkInUse(int individualId) throws CatalogDBException {
+        int studyId = getStudyIdByIndividualId(individualId);
+        QueryResult<Individual> individuals = getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.fatherId.toString(), individualId));
+        if (individuals.getNumResults() != 0) {
+            String msg = "Can't delete Individual, still in use as \"fatherId\" of individual : [";
+            for (Individual individual : individuals.getResult()) {
+                msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+        individuals = getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.motherId.toString(), individualId));
+        if (individuals.getNumResults() != 0) {
+            String msg = "Can't delete Individual, still in use as \"motherId\" of individual : [";
+            for (Individual individual : individuals.getResult()) {
+                msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(studyId, new QueryOptions(SampleFilterOption.individualId.toString(), individualId));
+        if (samples.getNumResults() != 0) {
+            String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
+            for (Sample sample : samples.getResult()) {
+                msg += " { id: " + sample.getId() + ", name: \"" + sample.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+
     }
 
     @Override

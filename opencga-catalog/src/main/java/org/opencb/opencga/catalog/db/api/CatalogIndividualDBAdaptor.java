@@ -71,7 +71,7 @@ public interface CatalogIndividualDBAdaptor {
 
     QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<Integer> deleteIndividual(int individualId) throws CatalogDBException;
+    QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
     int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
 

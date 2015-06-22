@@ -8,10 +8,8 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
-import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -128,8 +126,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
         }
 
-        QueryResult<Individual> individual = read(individualId, options, sessionId);
-        individualDBAdaptor.deleteIndividual(individualId);
-        return individual;
+        return individualDBAdaptor.deleteIndividual(individualId, options);
     }
 }

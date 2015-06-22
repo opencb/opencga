@@ -1,12 +1,11 @@
 package org.opencb.opencga.server.ws;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 
 import javax.ws.rs.client.WebTarget;
@@ -29,6 +28,9 @@ public class IndividualWSServerTest {
     private int in2;
     private int in3;
     private int in4;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @BeforeClass
     static public void initServer() throws Exception {
@@ -114,10 +116,23 @@ public class IndividualWSServerTest {
                 .queryParam("sid", sessionId).request().get(String.class);
 
         QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
-        System.out.println("json = " + json);
 
         Individual individual = response.getResponse().get(0).first();
         assertEquals("f3", individual.getFamily());
+    }
+
+    @Test
+    public void deleteIndividualTest() throws IOException, CatalogException {
+        String json = webTarget.path("individuals").path(Integer.toString(in1)).path("delete")
+                .queryParam("sid", sessionId).request().get(String.class);
+
+        QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
+
+        Individual individual = response.getResponse().get(0).first();
+
+        thrown.expect(CatalogException.class);
+        OpenCGAWSServer.catalogManager.getIndividual(individual.getId(), null, sessionId);
+
     }
 
 }
