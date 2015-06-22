@@ -192,8 +192,8 @@ public class Individual {
         return "Individual {" +
                 "\"id\": " + id +
                 ", \"name\": " + '\"' + name + '\"' +
-                ", \"father\": " + fatherId +
-                ", \"mother\": " + motherId +
+                ", \"fatherId\": " + fatherId +
+                ", \"motherId\": " + motherId +
                 ", \"family\": " + '\"' + family + '\"' +
                 ", \"gender\": " + gender +
                 ", \"race\": " + '\"' + race + '\"' +

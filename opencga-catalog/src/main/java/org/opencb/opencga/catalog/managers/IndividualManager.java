@@ -45,8 +45,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                                           Individual.Gender gender, QueryOptions options, String sessionId)
             throws CatalogException {
 
-        ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(gender, "gender");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        gender = ParamUtils.defaultObject(gender, Individual.Gender.UNKNOWN);
         ParamUtils.checkAlias(name, "name");
         family = ParamUtils.defaultObject(family, "");
 
@@ -63,7 +63,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             throws CatalogException {
         ParamUtils.checkObj(individualId, "individualId");
         ParamUtils.checkObj(sessionId, "sessionId");
-        ParamUtils.defaultObject(options, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -77,7 +77,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public QueryResult<Individual> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.defaultObject(query, QueryOptions::new);
+        options = ParamUtils.defaultObject(query, QueryOptions::new);
         if (options != null) {
             query.putAll(options);
         }
@@ -88,7 +88,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<Individual> readAll(int studyId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");
-        ParamUtils.defaultObject(options, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {

@@ -115,7 +115,7 @@ public class CatalogMongoIndividualDBAdaptorTest {
         result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.family.toString(), "Family2"));
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.father.toString(), ">0"));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.fatherId.toString(), ">0"));
         assertEquals(1, result.getNumResults());
     }
 

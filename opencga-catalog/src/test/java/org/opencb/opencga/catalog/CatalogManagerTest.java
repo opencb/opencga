@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 
 public class CatalogManagerTest extends GenericTest {
 
-    public final String PASSWORD = "asdf";
+    public final static String PASSWORD = "asdf";
     protected CatalogManager catalogManager;
     protected String sessionIdUser;
     protected String sessionIdUser2;
@@ -123,7 +123,6 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("field", "other");
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(1,2,3,4,5)), sessionIdUser);
         catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
 
         Set<Variable> variables = new HashSet<>();
@@ -154,6 +153,9 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.annotateSample(s_6, "annot2", vs.getId(), new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"), null, true, sessionIdUser);
         catalogManager.annotateSample(s_7, "annot2", vs.getId(), new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"), null, true, sessionIdUser);
         catalogManager.annotateSample(s_8, "annot2", vs.getId(), new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"), null, true, sessionIdUser);
+
+
+        catalogManager.modifyFile(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)), sessionIdUser);
 
     }
 
@@ -619,7 +621,8 @@ public class CatalogManagerTest extends GenericTest {
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        result = catalogManager.searchFile(studyId, new QueryOptions("sampleIds", "3,4,5"), sessionIdUser);
+        List<Integer> sampleIds = catalogManager.getAllSamples(studyId, new QueryOptions("name", "s_1,s_3,s_4"), sessionIdUser).getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        result = catalogManager.searchFile(studyId, new QueryOptions("sampleIds", sampleIds), sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         options = new QueryOptions("type", "FILE");

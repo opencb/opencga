@@ -62,6 +62,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     static final String _PROJECT_ID = "_projectId";
     static final String _STUDY_ID = "_studyId";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
+    static final String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
     static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
     static final String FILTER_ROUTE_FILES =   "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS =    "projects.studies.jobs.";
@@ -618,7 +619,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if (parameters.containsKey("sampleIds")) {
             for (Integer sampleId : parameters.getAsIntegerList("sampleIds")) {
                 if (!sampleExists(sampleId)) {
-                    throw CatalogDBException.idNotFound("Sampel", sampleId);
+                    throw CatalogDBException.idNotFound("Sample", sampleId);
                 }
             }
         }

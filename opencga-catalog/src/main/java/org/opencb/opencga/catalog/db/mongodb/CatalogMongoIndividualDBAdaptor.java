@@ -71,7 +71,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     public QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), options);
+        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
         Individual individual = parseObject(result, Individual.class);
         if (individual == null) {
             throw CatalogDBException.idNotFound("Individual", individualId);
@@ -85,7 +85,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
-        options.addToListOption(IndividualFilterOption.studyId.toString(), studyId);
+        options.put(IndividualFilterOption.studyId.toString(), studyId);
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
@@ -109,7 +109,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
                 throw new CatalogDBException(e);
             }
         }
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject("$and", mongoQueryList), options);
+        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject("$and", mongoQueryList), filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
         List<Individual> individuals = parseObjects(result, Individual.class);
         return endQuery("getAllIndividuals", startTime, individuals);
     }
@@ -163,7 +163,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             }
         }
 
-        return endQuery("Modify individual", startTime);
+        return endQuery("Modify individual", startTime, getIndividual(individualId, parameters));
     }
 
     @Override

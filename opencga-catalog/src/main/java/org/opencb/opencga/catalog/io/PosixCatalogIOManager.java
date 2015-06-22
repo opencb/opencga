@@ -542,7 +542,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         String checksum;
         try {
             String[] command = {"md5sum", file.getPath()};
-            logger.info("command = {} {}", command[0], command[1]);
+            logger.debug("command = {} {}", command[0], command[1]);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             checksum = br.readLine();
