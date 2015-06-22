@@ -235,22 +235,32 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                 if (!variantSourceEntry.getFileId().equals(fileId)) {
                     continue;
                 }
-                BasicDBObject addToSet = new BasicDBObject(
-                        DBObjectToVariantConverter.FILES_FIELD,
-                        sourceEntryConverter.convertToStorageType(variantSourceEntry));
 
-                BasicDBObject update = new BasicDBObject()
-                        .append("$addToSet", addToSet)
-                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));
+                BasicDBObject addToSet = new BasicDBObject()
+                        .append(DBObjectToVariantConverter.FILES_FIELD,
+                                sourceEntryConverter.convertToStorageType(variantSourceEntry));
+
+                if (includeStats) {
+                    List<DBObject> sourceEntryStats = statsConverter.convertCohortsToStorageType(variantSourceEntry.getCohortStats(),
+                            variantSourceEntry.getStudyId(), variantSourceEntry.getFileId());
+                    addToSet.put(DBObjectToVariantConverter.STATS_FIELD, new BasicDBObject("$each", sourceEntryStats));
+                }
+
                 if (variant.getIds() != null && !variant.getIds().isEmpty()) {
                     addToSet.put(DBObjectToVariantConverter.IDS_FIELD, new BasicDBObject("$each", variant.getIds()));
                 }
+
+                BasicDBObject update = new BasicDBObject()
+                        .append("$addToSet", addToSet)
+                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));    // assuming variantConverter.statsConverter == null
+
                 bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
+
                 currentBulkSize++;
             }
 
         }
-        if (currentBulkSize >= bulkSize) {
+        if (currentBulkSize >= bulkSize && currentBulkSize != 0) {
             executeBulk();
         }
         return true;
@@ -382,10 +392,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         );
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
-        // Do not create the VariantConverter with the sourceEntryConverter.
-        // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
+        // Do not create the VariantConverter with the sourceEntryConverter nor the statsconverter.
+        // The variantSourceEntry and stats conversion will be done on demand to create a proper mongoDB update query.
         // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
-        variantConverter = new DBObjectToVariantConverter(null, statsConverter);
+        variantConverter = new DBObjectToVariantConverter(null, null);
     }
 
     public void setBulkSize(int bulkSize) {
