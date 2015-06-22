@@ -357,10 +357,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        if(parameters.containsKey("type")) {
-            Study.Type type = parameters.get("type", Study.Type.class);
-            studyParameters.put("type", type);
-        }
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
+        filterEnumParams(parameters, studyParameters, acceptedEnums);
 
         if(parameters.containsKey("uri")) {
             URI uri = parameters.get("uri", URI.class);
@@ -464,6 +462,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
      * File methods
      * ***************************
      */
+
+    private boolean fileExists(int fileId) {
+        QueryResult<Long> count = fileCollection.count(new BasicDBObject(_ID, fileId));
+        return count.getResult().get(0) != 0;
+    }
 
     private boolean filePathExists(int studyId, String path) {
         BasicDBObject query = new BasicDBObject(_STUDY_ID, studyId);
@@ -589,17 +592,36 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         Map<String, Object> fileParameters = new HashMap<>();
 
-        String[] acceptedParams = {"type", "format", "bioformat", "uriScheme", "description", "status", "uri", "creationDate", "modificationDate"};
+        String[] acceptedParams = {"description", "uri", "creationDate", "modificationDate"};
         filterStringParams(parameters, fileParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
+        acceptedEnums.put("type", File.Type.class);
+        acceptedEnums.put("format", File.Format.class);
+        acceptedEnums.put("bioformat", File.Bioformat.class);
+        acceptedEnums.put("status", File.Status.class);
+        filterEnumParams(parameters, fileParameters, acceptedEnums);
 
         String[] acceptedLongParams = {"diskUsage"};
         filterLongParams(parameters, fileParameters, acceptedLongParams);
 
         String[] acceptedIntParams = {"jobId"};
         filterIntParams(parameters, fileParameters, acceptedIntParams);
+        if (parameters.containsKey("jobId")) {
+            if (!jobExists(parameters.getInt("jobId"))) {
+                throw CatalogDBException.idNotFound("Job", parameters.getInt("jobId"));
+            }
+        }
 
         String[] acceptedIntegerListParams = {"sampleIds"};
         filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
+        if (parameters.containsKey("sampleIds")) {
+            for (Integer sampleId : parameters.getAsIntegerList("sampleIds")) {
+                if (!sampleExists(sampleId)) {
+                    throw CatalogDBException.idNotFound("Sampel", sampleId);
+                }
+            }
+        }
 
         String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, fileParameters, acceptedMapParams);
@@ -974,6 +996,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         String[] acceptedParams = {"name", "userId", "toolName", "date", "description", "outputError", "commandLine", "status", "outdir", "error", "errorDescription"};
         filterStringParams(parameters, jobParameters, acceptedParams);
 
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("status"), Job.Status.class);
+        filterEnumParams(parameters, jobParameters, acceptedEnums);
+
         String[] acceptedIntParams = {"visits"};
         filterIntParams(parameters, jobParameters, acceptedIntParams);
 
@@ -982,6 +1007,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         String[] acceptedIntegerListParams = {"output"};
         filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
+        if (parameters.containsKey("output")) {
+            for (Integer fileId : parameters.getAsIntegerList("output")) {
+                if (!fileExists(fileId)) {
+                    throw CatalogDBException.idNotFound("Output File", fileId);
+                }
+            }
+        }
 
         String[] acceptedMapParams = {"attributes", "resourceManagerAttributes"};
         filterMapParams(parameters, jobParameters, acceptedMapParams);
