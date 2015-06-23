@@ -21,23 +21,23 @@ public class CatalogAnnotationsValidatorTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    private Variable string = new Variable(
+    public static final Variable string = new Variable(
             "string", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null);
 
-    private Variable stringList = new Variable(
+    public static final Variable stringList = new Variable(
             "stringList", "", Variable.VariableType.TEXT, null, true, true, null, 0, null, null, null, null);
 
-    private Variable numberList = new Variable(
+    public static final Variable numberList = new Variable(
             "numberList", "", Variable.VariableType.NUMERIC, null, true, true, null, 0, null, null, null, null);
 
-    private Variable object = new Variable(
+    public static final Variable object = new Variable(
             "object", "", Variable.VariableType.OBJECT, null, true, false, null, 0, null, null,
             new HashSet<>(Arrays.<Variable>asList(string, numberList)), null);
 
-    private Variable freeObject = new Variable(
+    public static final Variable freeObject = new Variable(
             "freeObject", "", Variable.VariableType.OBJECT, null, true, false, null, 0, null, null, null, null);
 
-    private Variable nestedObject = new Variable(
+    public static final Variable nestedObject = new Variable(
             "nestedObject", "", Variable.VariableType.OBJECT, null, true, false, null, 0, null, null,
             new HashSet<>(Arrays.<Variable>asList(stringList, object)), null);
 

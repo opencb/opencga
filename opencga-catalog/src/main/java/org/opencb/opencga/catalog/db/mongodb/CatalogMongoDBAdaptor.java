@@ -1280,24 +1280,53 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                             if (split.length != 2) {
                                 throw new CatalogDBException("Malformed annotation query : " + annotation);
                             }
+                            final String variableId;
+                            final String route;
+                            if (split[0].contains(".")) {
+                                String[] variableId_route = split[0].split("\\.", 2);
+                                variableId = variableId_route[0];
+                                route = "." + variableId_route[1];
+                            } else {
+                                variableId = split[0];
+                                route = "";
+                            }
                             String[] values = split[1].split(OR);
 
                             FilterOption.Type type = FilterOption.Type.TEXT;
 
                             if (variableMap != null) {
-                                Variable.VariableType i = variableMap.get(split[0]).getType();
-                                if (i == Variable.VariableType.BOOLEAN) {
+                                Variable variable = variableMap.get(variableId);
+                                Variable.VariableType variableType = variable.getType();
+                                if ( variable.getType() == Variable.VariableType.OBJECT) {
+                                    String[] routes = route.split("\\.");
+                                    for (String r : routes) {
+                                        if (variable.getType() != Variable.VariableType.OBJECT) {
+                                            throw new CatalogDBException("Unable to query variable " + split[0]);
+                                        }
+                                        if (variable.getVariableSet() != null) {
+                                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                            if (subVariableMap.containsKey(r)) {
+                                                variable = subVariableMap.get(r);
+                                                variableType = variable.getType();
+                                            }
+                                        } else {
+                                            variableType = Variable.VariableType.TEXT;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (variableType == Variable.VariableType.BOOLEAN) {
                                     type = FilterOption.Type.BOOLEAN;
 
-                                } else if (i == Variable.VariableType.NUMERIC) {
+                                } else if (variableType == Variable.VariableType.NUMERIC) {
                                     type = FilterOption.Type.NUMERICAL;
                                 }
                             }
-                            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value", new LinkedList<>());
+                            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<>());
                             annotationSetFilter.add(
                                     new BasicDBObject("annotations",
                                             new BasicDBObject("$elemMatch",
-                                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", split[0])
+                                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", variableId)
                                             )
                                     )
                             );
