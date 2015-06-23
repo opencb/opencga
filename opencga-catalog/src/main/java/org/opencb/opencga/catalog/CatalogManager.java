@@ -813,9 +813,9 @@ public class CatalogManager {
         return sampleManager.readCohort(cohortId, options, sessionId);
     }
 
-    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
+    public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
-        return sampleManager.createCohort(studyId, name, description, sampleIds, attributes, sessionId);
+        return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
     }
 
     /**

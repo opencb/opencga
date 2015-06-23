@@ -250,17 +250,18 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
+    public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(sampleIds, "Samples list");
+        type = ParamUtils.defaultObject(type, Cohort.Type.COLLECTION);
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         if (readAll(studyId, new QueryOptions("id", sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
-        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, sampleIds, attributes);
+        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
         return sampleDBAdaptor.createCohort(studyId, cohort);
     }
 

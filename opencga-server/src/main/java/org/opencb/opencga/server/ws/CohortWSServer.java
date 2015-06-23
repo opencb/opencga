@@ -55,6 +55,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a cohort", position = 1)
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
+                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
                                  @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
@@ -70,7 +71,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                 samplesQuery.add("id", sampleIdsStr);
-                cohorts.add(createCohort(studyId, cohortName, cohortDescription, samplesQuery).first());
+                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery).first());
             } else {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
@@ -90,7 +91,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                     samplesQuery.add("annotation", variableName + ":" + s);
                     samplesQuery.add("variableSetId", variableSetId);
-                    cohorts.add(createCohort(studyId, s, cohortDescription, samplesQuery).first());
+                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery).first());
                 }
             }
             return createOkResponse(cohorts);
@@ -128,11 +129,11 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(int studyId, String cohortName, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
+    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
         List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
-        return catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
+        return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
 
 //

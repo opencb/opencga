@@ -744,7 +744,7 @@ public class OpenCGAMain {
                                 for (Sample sample : entry.getValue()) {
                                     sampleIds.add(sample.getId());
                                 }
-                                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, entry.getKey(), c.description, sampleIds, c.cOpt.getQueryOptions(), sessionId);
+                                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, entry.getKey(), c.type, c.description, sampleIds, c.cOpt.getQueryOptions(), sessionId);
                                 queryResults.add(cohort);
                             }
                             System.out.println(createOutput(c.cOpt, queryResults, null));

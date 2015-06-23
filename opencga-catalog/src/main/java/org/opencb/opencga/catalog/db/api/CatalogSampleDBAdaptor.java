@@ -83,6 +83,11 @@ public interface CatalogSampleDBAdaptor {
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
+    /**
+     * Cohort methods
+     * ***************************
+     */
+
     QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
 
     QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;

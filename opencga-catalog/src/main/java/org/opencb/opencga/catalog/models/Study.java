@@ -57,13 +57,6 @@ public class Study {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    /**
-     * To think about:
-        public static final String STUDY_TYPE = "study_type";
-        private List<Sample> files;
-        private List<SampleAnnotationDescription> files;
-     */
-
     public enum Type {
         CASE_CONTROL,
         CASE_SET,
