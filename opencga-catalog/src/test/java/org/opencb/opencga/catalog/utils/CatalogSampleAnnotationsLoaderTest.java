@@ -116,11 +116,11 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         options.put("limit", 2);
         System.out.println(catalogManager.getAllSamples(studyId, options, sessionId));
 
-        options.put("annotation", "sex:2,Population:ITU");
+        options.put("annotation", "sex:2;Population:ITU");
         QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, options, sessionId);
         System.out.println(femaleIta);
 
-        options.put("annotation", "sex:1,Population:ITU");
+        options.put("annotation", "sex:1;Population:ITU");
         QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, options, sessionId);
         System.out.println(maleIta);
 

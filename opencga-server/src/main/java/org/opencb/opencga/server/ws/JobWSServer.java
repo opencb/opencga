@@ -39,6 +39,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -64,6 +65,72 @@ public class JobWSServer extends OpenCGAWSServer {
 //    ) {
 //        catalogManager.search
 //    }
+
+    public static class InputJob {
+        public InputJob() {
+        }
+
+        public InputJob(String name, String toolName, String description, String commandLine, Status status, int outDirId,
+                        List<Integer> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+            this.name = name;
+            this.toolName = toolName;
+            this.description = description;
+            this.commandLine = commandLine;
+            this.status = status;
+            this.outDirId = outDirId;
+            this.input = input;
+            this.attributes = attributes;
+            this.resourceManagerAttributes = resourceManagerAttributes;
+        }
+
+        enum Status{READY, ERROR}
+        private String name;
+        private String toolName;
+        private String description;
+        private String commandLine;
+        private Status status;
+        private int outDirId;
+        private List<Integer> input;
+        private Map<String, Object> attributes;
+        private Map<String, Object> resourceManagerAttributes;
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getToolName() { return toolName; }
+        public void setToolName(String toolName) { this.toolName = toolName; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getCommandLine() { return commandLine; }
+        public void setCommandLine(String commandLine) { this.commandLine = commandLine; }
+        public int getOutDirId() { return outDirId; }
+        public void setOutDirId(int outDirId) { this.outDirId = outDirId; }
+        public List<Integer> getInput() { return input; }
+        public void setInput(List<Integer> input) { this.input = input; }
+        public Map<String,Object> getAttributes() { return attributes; }
+        public void setAttributes(Map<String, Object> attributes) { this.attributes = attributes; }
+        public Status getStatus() { return status; }
+        public void setStatus(Status status) { this.status = status; }
+        public Map<String,Object> getResourceManagerAttributes() { return resourceManagerAttributes; }
+        public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) { this.resourceManagerAttributes = resourceManagerAttributes; }
+    }
+
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create job with POST method", position = 1, notes = "Required values: [name, toolName, commandLine]")
+    public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "studies", required = true) InputJob job) {
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            QueryResult<Job> result = catalogManager.createJob(studyId, job.getName(), job.getToolName(), job.getDescription(),
+                    job.getCommandLine(), null, job.getOutDirId(), job.getInput(), job.getAttributes(),
+                    job.getResourceManagerAttributes(), Job.Status.valueOf(job.getStatus().toString()), queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     @GET
     @Path("/create")

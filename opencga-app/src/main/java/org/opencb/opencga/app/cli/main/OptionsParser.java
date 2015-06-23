@@ -626,7 +626,7 @@ public class OptionsParser {
             boolean calculateChecksum = false;
         }
 
-        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be on STAGE of be an external file")
+        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external file")
         class RelinkCommand extends BaseFileCommand {
             @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
             String inputFile;

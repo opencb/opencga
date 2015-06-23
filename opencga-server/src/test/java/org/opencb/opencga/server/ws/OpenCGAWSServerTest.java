@@ -133,7 +133,7 @@ public class OpenCGAWSServerTest {
         study = stTest.info(study.getId(), sessionId);
         prTest.getAllStudies(project.getId(), sessionId);
 
-        FileWSServerTest fileTest = new FileWSServerTest(webTarget);
+        FileWSServerTest fileTest = new FileWSServerTest(); fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
         assertEquals(File.Status.READY, fileVcf.getStatus());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());

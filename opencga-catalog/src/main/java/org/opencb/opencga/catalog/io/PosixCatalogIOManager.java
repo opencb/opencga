@@ -164,7 +164,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public boolean isDirectory(URI uri) {
-        return uri.getRawPath().endsWith("/");
+        return Paths.get(uri).toFile().isDirectory();
+//        return uri.getRawPath().endsWith("/");
     }
 
     @Override
