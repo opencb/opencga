@@ -202,19 +202,19 @@ public class CatalogSampleAnnotationsLoader {
 
         String category = "PEDIGREE";
         variableList.add(new Variable("family", category, Variable.VariableType.TEXT,      null, true,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("id", category, Variable.VariableType.NUMERIC,       null, true,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("name", category, Variable.VariableType.TEXT,        null, true,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherId", category, Variable.VariableType.NUMERIC, null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT,  null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherId", category, Variable.VariableType.NUMERIC, null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT,  null, false,
-                false, Collections.<String>emptyList(), variableList.size(), null, "", null));
+                false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
 
         Set<String> allowedSexValues = new HashSet<>();
         HashSet<String> allowedPhenotypeValues = new HashSet<>();
@@ -223,9 +223,9 @@ public class CatalogSampleAnnotationsLoader {
             allowedSexValues.add(individual.getSex());
         }
         variableList.add(new Variable("sex", category, Variable.VariableType.CATEGORICAL,   null, true,
-                false, new LinkedList<>(allowedSexValues), variableList.size(), null, "", null));
+                false, new LinkedList<>(allowedSexValues), variableList.size(), null, "", null, null));
         variableList.add(new Variable("phenotype", category, Variable.VariableType.CATEGORICAL,    null, true,
-                false, new LinkedList<>(allowedPhenotypeValues), variableList.size(), null, "", null));
+                false, new LinkedList<>(allowedPhenotypeValues), variableList.size(), null, "", null, null));
 
 
         int categoricalThreshold = (int) (ped.getIndividuals().size()*0.1);
@@ -277,7 +277,7 @@ public class CatalogSampleAnnotationsLoader {
             }
 
             variableList.add(new Variable(entry.getKey(), category, type, null, false, false, new ArrayList<>(allowedValues),
-                    variableList.size(), null, "", null));
+                    variableList.size(), null, "", null, null));
         }
 
         VariableSet variableSet = new VariableSet(-1, "", false, "", new HashSet(variableList), null);

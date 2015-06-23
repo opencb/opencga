@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -23,6 +26,8 @@ import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 14/12/14.
@@ -55,8 +60,11 @@ public class CatalogAnnotationsValidator {
         }
         variable.setAllowedValues(acceptedValues);
 
-        if(variable.getType() == null) {
+        if (variable.getType() == null) {
             throw new CatalogException("VariableType is null");
+        }
+        if (variable.getVariableSet() != null && variable.getType() != Variable.VariableType.OBJECT) {
+            throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
         //Check default values
@@ -92,6 +100,13 @@ public class CatalogAnnotationsValidator {
                 break;
             }
             case TEXT:
+                break;
+            case OBJECT:
+                if (variable.getVariableSet() != null) {
+                    for (Variable v : variable.getVariableSet()) {
+                        checkVariable(v);
+                    }
+                }
                 break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
@@ -193,6 +208,8 @@ public class CatalogAnnotationsValidator {
                 String stringValue = getStringValue(defaultValue);
                 return stringValue == null ? null : new Annotation(variable.getId(), stringValue);
             }
+            case OBJECT:
+                return variable.getDefaultValue() == null ? null : new Annotation(variable.getId(), variable.getDefaultValue());
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
@@ -225,9 +242,7 @@ public class CatalogAnnotationsValidator {
             case CATEGORICAL: {
                 for (Object object : listValues) {
                     String stringValue = (String)object;
-                    if(variable.getAllowedValues().contains(stringValue)) {
-                        continue;
-                    } else {
+                    if (variable.getAllowedValues() != null && !variable.getAllowedValues().contains(stringValue)) {
                         throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
                     }
                 }
@@ -236,7 +251,7 @@ public class CatalogAnnotationsValidator {
                 for (Object object : listValues) {
                     Double numericValue = (Double)object;
 
-                    if (!variable.getAllowedValues().isEmpty()) {
+                    if (variable.getAllowedValues() != null && !variable.getAllowedValues().isEmpty()) {
                         boolean valid = false;
                         for (String range : variable.getAllowedValues()) {
                             String[] split = range.split(":", -1);
@@ -253,10 +268,26 @@ public class CatalogAnnotationsValidator {
                     }
                     //If there is no "allowedValues", accept any number
                 }
-
             case TEXT: {
                 //Check regex?
                 return;
+            }
+            case OBJECT: {
+                //Check variableSet
+                for (Object object : listValues) {
+                    if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                        Map objectMap = (Map) object;
+
+                        Set<Annotation> annotationSet = new HashSet<>();
+                        for (Map.Entry entry : (Set<Map.Entry>) objectMap.entrySet()) {
+//                            checkAnnotation(variableMap, new Annotation(entry.getKey().toString(), entry.getValue()));
+                            annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
+                        }
+                        checkAnnotationSet(new VariableSet(0, variable.getId(), false, variable.getDescription(), variable.getVariableSet(), null), new AnnotationSet("", 0, annotationSet, null, null), null);
+                    }
+                }
+                break;
             }
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
@@ -281,6 +312,8 @@ public class CatalogAnnotationsValidator {
                 return getStringValue(value);
             case NUMERIC:
                 return getNumericValue(value);
+            case OBJECT:
+                return getMapValue(value);
             default:
                 throw new CatalogException("Unknown VariableType " + variableType.name());
         }
@@ -345,16 +378,8 @@ public class CatalogAnnotationsValidator {
         Double numericValue = null;
         if(value == null) {
             return null;
-        } else if( value instanceof Double) {
-            return (Double) value;
-        } else if(value instanceof Integer) {
-            return ((Integer) value).doubleValue();
-        } else if(value instanceof Short) {
-            return ((Short) value).doubleValue();
-        } else if(value instanceof Long) {
-            return ((Long) value).doubleValue();
-        } else if(value instanceof Float) {
-            return ((Float) value).doubleValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).doubleValue();
         } else if (value instanceof String) {
             if (((String) value).isEmpty()) {
                 numericValue = null;    //Empty string
@@ -369,6 +394,20 @@ public class CatalogAnnotationsValidator {
             return (double) ((Boolean) value ? 1 : 0);
         }
         return numericValue;
+    }
+
+    private static Map getMapValue(Object value) throws CatalogException {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Map) {
+            return ((Map) value);
+        }
+        try {
+            return new ObjectMap(new ObjectMapper().writeValueAsString(value));
+        } catch (JsonProcessingException e) {
+            throw new CatalogException(e);
+        }
     }
 
 }

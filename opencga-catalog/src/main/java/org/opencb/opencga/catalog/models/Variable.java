@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.models;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -44,34 +45,6 @@ public class Variable {
     private String dependsOn;
     private String description;
 
-    private Map<String, Object> attributes;
-
-    public enum VariableType {
-        BOOLEAN,
-        CATEGORICAL,
-        NUMERIC,
-        TEXT
-    }
-
-    public Variable() {
-    }
-
-    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
-                    boolean multiValue, List<String> allowedValues, int rank, String dependsOn, String description,
-                    Map<String, Object> attributes) {
-        this.id = id;
-        this.category = category;
-        this.type = type;
-        this.defaultValue = defaultValue;
-        this.required = required;
-        this.multiValue = multiValue;
-        this.allowedValues = allowedValues;
-        this.rank = rank;
-        this.dependsOn = dependsOn;
-        this.description = description;
-        this.attributes = attributes;
-    }
-
     @Override
     public String toString() {
         return "Variable{" +
@@ -85,8 +58,42 @@ public class Variable {
                 ", rank=" + rank +
                 ", dependsOn='" + dependsOn + '\'' +
                 ", description='" + description + '\'' +
+                ", variableSet=" + variableSet +
                 ", attributes=" + attributes +
                 '}';
+    }
+
+    /** Variables for validate internal fields. Only valid if type is OBJECT **/
+    private Set<Variable> variableSet;
+
+    private Map<String, Object> attributes;
+
+    public enum VariableType {
+        BOOLEAN,
+        CATEGORICAL,
+        NUMERIC,
+        TEXT,
+        OBJECT
+    }
+
+    public Variable() {
+    }
+
+    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
+                    boolean multiValue, List<String> allowedValues, int rank, String dependsOn, String description,
+                    Set<Variable> variableSet, Map<String, Object> attributes) {
+        this.id = id;
+        this.category = category;
+        this.type = type;
+        this.defaultValue = defaultValue;
+        this.required = required;
+        this.multiValue = multiValue;
+        this.allowedValues = allowedValues;
+        this.rank = rank;
+        this.dependsOn = dependsOn;
+        this.description = description;
+        this.variableSet = variableSet;
+        this.attributes = attributes;
     }
 
     @Override
@@ -185,6 +192,14 @@ public class Variable {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Set<Variable> getVariableSet() {
+        return variableSet;
+    }
+
+    public void setVariableSet(Set<Variable> variableSet) {
+        this.variableSet = variableSet;
     }
 
     public Map<String, Object> getAttributes() {
