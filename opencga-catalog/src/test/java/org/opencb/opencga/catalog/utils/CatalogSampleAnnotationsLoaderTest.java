@@ -29,9 +29,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsValidator;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -90,10 +87,10 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @Test
     public void testLoadPedigree_GivenVariableSet() throws Exception {
         HashSet<Variable> variables = new HashSet<>();
-        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, Collections.<String>emptyList(), 0, null, "", null));
-        variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, Collections.<String>emptyList(), 0, null, "", null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, Collections.<String>emptyList(), 0, null, "", null));
-        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, populations, 0, null, "", null));
+        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, false, Collections.<String>emptyList(), 0, null, "", null));
+        variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, false, Collections.<String>emptyList(), 0, null, "", null));
+        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, false, Collections.<String>emptyList(), 0, null, "", null));
+        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "", null));
 
         VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);
 
@@ -140,7 +137,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
-            CatalogSampleAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", null), null);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", null), null);
         }
     }
 }

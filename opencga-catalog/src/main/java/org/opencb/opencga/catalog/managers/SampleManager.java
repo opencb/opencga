@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -72,7 +72,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
         if (checkAnnotationSet) {
-            CatalogSampleAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
         }
 
         return sampleDBAdaptor.annotateSample(sampleId, annotationSet);
@@ -209,7 +209,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
-        CatalogSampleAnnotationsValidator.checkVariableSet(variableSet);
+        CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         return sampleDBAdaptor.createVariableSet(studyId, variableSet);
     }

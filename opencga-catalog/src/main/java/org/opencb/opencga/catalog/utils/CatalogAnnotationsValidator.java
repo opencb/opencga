@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Created by jacobo on 14/12/14.
  */
-public class CatalogSampleAnnotationsValidator {
+public class CatalogAnnotationsValidator {
 
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
@@ -200,6 +200,7 @@ public class CatalogSampleAnnotationsValidator {
 
     private static void checkAllowedValue(Variable variable, Object value, String message) throws CatalogException {
 
+        List listValues;
         Object realValue = getValue(variable.getType(), value);
         if (realValue == null) {
             if (variable.isRequired()) {
@@ -208,33 +209,49 @@ public class CatalogSampleAnnotationsValidator {
                 return;
             }
         }
+        if (realValue instanceof Collection) {
+            listValues = new ArrayList((Collection) realValue);
+            if (!variable.isMultiValue()) {
+                throw new CatalogException(message + " value '" + value + "' does not accept multiple values for " + variable);
+            }
+        } else {
+            listValues = Collections.singletonList(realValue);
+        }
+        realValue = null;
 
         switch (variable.getType()) {
             case BOOLEAN:
                 return;
             case CATEGORICAL: {
-                String stringValue = (String)realValue;
-                if(variable.getAllowedValues().contains(stringValue)) {
-                    return;
-                } else {
-                    throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
+                for (Object object : listValues) {
+                    String stringValue = (String)object;
+                    if(variable.getAllowedValues().contains(stringValue)) {
+                        continue;
+                    } else {
+                        throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
+                    }
                 }
             }
             case NUMERIC:
-                Double numericValue = (Double)realValue;
+                for (Object object : listValues) {
+                    Double numericValue = (Double)object;
 
-                if (!variable.getAllowedValues().isEmpty()) {
-                    for (String range : variable.getAllowedValues()) {
-                        String[] split = range.split(":", -1);
-                        Double min = split[0].isEmpty() ? Double.MIN_VALUE : Double.valueOf(split[0]);
-                        Double max = split[1].isEmpty() ? Double.MAX_VALUE : Double.valueOf(split[1]);
-                        if (numericValue >= min && numericValue <= max) {
-                            return;
+                    if (!variable.getAllowedValues().isEmpty()) {
+                        boolean valid = false;
+                        for (String range : variable.getAllowedValues()) {
+                            String[] split = range.split(":", -1);
+                            Double min = split[0].isEmpty() ? Double.MIN_VALUE : Double.valueOf(split[0]);
+                            Double max = split[1].isEmpty() ? Double.MAX_VALUE : Double.valueOf(split[1]);
+                            if (numericValue >= min && numericValue <= max) {
+                                valid = true;
+                                break;
+                            }
+                        }
+                        if (!valid) {
+                            throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It is in any range.");
                         }
                     }
-                    throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It is in any range.");
-                } else {
-                    return;    //If there is no "allowedValues", any number
+                    //If there is no "allowedValues", accept any number
                 }
 
             case TEXT: {
@@ -247,7 +264,16 @@ public class CatalogSampleAnnotationsValidator {
     }
 
     private static Object getValue(Variable.VariableType variableType, Object value) throws CatalogException {
-        switch(variableType) {
+        Collection valueCollection;
+        if (value instanceof Collection) {
+            valueCollection = ((Collection) value);
+            ArrayList<Object> list = new ArrayList<>(valueCollection.size());
+            for (Object o : valueCollection) {
+                list.add(getValue(variableType, o));
+            }
+            return list;
+        }
+        switch (variableType) {
             case BOOLEAN:
                 return getBooleanValue(value);
             case TEXT:
