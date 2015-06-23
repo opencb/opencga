@@ -42,6 +42,18 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <includes><include>*.properties</include></includes>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+            <testResource>
+                <excludes><exclude>*.properties</exclude></excludes>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -26,8 +26,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
-import org.opencb.opencga.server.OpenCGAWSServer;
 //import org.opencb.opencga.storage.datamanagers.bam.BamManager;
 
 @Deprecated

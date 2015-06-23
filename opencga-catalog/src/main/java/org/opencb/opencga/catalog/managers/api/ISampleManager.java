@@ -13,6 +13,7 @@ import java.util.Set;
 * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
 */
 public interface ISampleManager extends ResourceManager<Integer, Sample> {
+
     Integer getStudyId(int sampleId) throws CatalogException;
 
     QueryResult<AnnotationSet> annotate(int sampleId, String id, int variableSetId, Map<String, Object> annotations,

@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.serverold;
 
-import org.opencb.opencga.server.OpenCGAWSServer;
-
 import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;

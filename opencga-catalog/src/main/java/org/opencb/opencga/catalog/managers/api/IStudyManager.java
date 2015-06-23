@@ -16,9 +16,11 @@ import java.util.Map;
 */
 public interface IStudyManager extends ResourceManager<Integer, Study> {
 
-    public String  getUserId(int studyId) throws CatalogException;
-    public Integer getProjectId(int studyId) throws CatalogException;
-    public Integer getStudyId(String studyId) throws CatalogException;
+    String  getUserId(int studyId) throws CatalogException;
+
+    Integer getProjectId(int studyId) throws CatalogException;
+
+    Integer getStudyId(String studyId) throws CatalogException;
 
     /**
      * Creates a new Study in catalog
@@ -41,10 +43,10 @@ public interface IStudyManager extends ResourceManager<Integer, Study> {
      * @return              Generated study
      * @throws CatalogException
      */
-    public QueryResult<Study> create(int projectId, String name, String alias, Study.Type type,
+    QueryResult<Study> create(int projectId, String name, String alias, Study.Type type,
                                      String creatorId, String creationDate, String description, String status,
                                      String cipher, String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                      Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException;
 
-    public QueryResult<Study> share(int studyId, Acl acl) throws CatalogException;
+    QueryResult<Study> share(int studyId, Acl acl) throws CatalogException;
 }

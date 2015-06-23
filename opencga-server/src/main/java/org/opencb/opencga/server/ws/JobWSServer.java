@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
-
+package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -31,22 +30,28 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Path("/job")
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
-@Api(value = "job", description = "job", position = 5)
+@Path("/{version}/jobs")
+@Produces(MediaType.APPLICATION_JSON)
+@Api(value = "Jobs", position = 5, description = "Methods for working with 'jobs' endpoint")
 public class JobWSServer extends OpenCGAWSServer {
 
-    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+
+    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                       @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -61,60 +66,75 @@ public class JobWSServer extends OpenCGAWSServer {
 //        catalogManager.search
 //    }
 
+    public static class InputJob {
+        public InputJob() {
+        }
 
-    @GET
-    @Path("/{jobId}/info")
-    @Produces("application/json")
-    @ApiOperation(value = "Get job information")
-    public Response info(
-            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+        public InputJob(String name, String toolName, String description, String commandLine, Status status, int outDirId,
+                        List<Integer> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+            this.name = name;
+            this.toolName = toolName;
+            this.description = description;
+            this.commandLine = commandLine;
+            this.status = status;
+            this.outDirId = outDirId;
+            this.input = input;
+            this.attributes = attributes;
+            this.resourceManagerAttributes = resourceManagerAttributes;
+        }
+
+        enum Status{READY, ERROR}
+        private String name;
+        private String toolName;
+        private String description;
+        private String commandLine;
+        private Status status;
+        private int outDirId;
+        private List<Integer> input;
+        private Map<String, Object> attributes;
+        private Map<String, Object> resourceManagerAttributes;
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getToolName() { return toolName; }
+        public void setToolName(String toolName) { this.toolName = toolName; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getCommandLine() { return commandLine; }
+        public void setCommandLine(String commandLine) { this.commandLine = commandLine; }
+        public int getOutDirId() { return outDirId; }
+        public void setOutDirId(int outDirId) { this.outDirId = outDirId; }
+        public List<Integer> getInput() { return input; }
+        public void setInput(List<Integer> input) { this.input = input; }
+        public Map<String,Object> getAttributes() { return attributes; }
+        public void setAttributes(Map<String, Object> attributes) { this.attributes = attributes; }
+        public Status getStatus() { return status; }
+        public void setStatus(Status status) { this.status = status; }
+        public Map<String,Object> getResourceManagerAttributes() { return resourceManagerAttributes; }
+        public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) { this.resourceManagerAttributes = resourceManagerAttributes; }
+    }
+
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create job with POST method", position = 1, notes = "Required values: [name, toolName, commandLine]")
+    public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "studies", required = true) InputJob job) {
         try {
-            return createOkResponse(catalogManager.getJob(jobId, this.getQueryOptions(), sessionId));
-        } catch (CatalogException e) {
-            return createErrorResponse(e.getMessage());
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            QueryResult<Job> result = catalogManager.createJob(studyId, job.getName(), job.getToolName(), job.getDescription(),
+                    job.getCommandLine(), null, job.getOutDirId(), job.getInput(), job.getAttributes(),
+                    job.getResourceManagerAttributes(), Job.Status.valueOf(job.getStatus().toString()), queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
-    @GET
-    @Path("/{jobId}/visit")
-    @Produces("application/json")
-    @ApiOperation(value = "Increment job visites")
-    public Response visit(
-            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
-        try {
-            return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
-        } catch (CatalogException e) {
-            return createErrorResponse(e.getMessage());
-        }
-    }
-
-    @GET
-    @Path("/{jobId}/delete")
-    @Produces("application/json")
-    @ApiOperation(value = "Delete job")
-    public Response delete(
-            @ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
-            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
-        List<QueryResult> results = new LinkedList<>();
-        try {
-            if (deleteFiles) {
-                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
-                for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {
-                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
-                    results.add(queryResult);
-                }
-            }
-            results.add(catalogManager.deleteJob(jobId, sessionId));
-            return createOkResponse(results);
-        } catch (CatalogException | IOException e) {
-            return createErrorResponse(e.getMessage());
-        }
-    }
 
     @GET
     @Path("/create")
-    @Produces("application/json")
-    @ApiOperation(value = "Create job")
+    @ApiOperation(value = "Create job", position = 1)
     public Response createJob(
 //            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
             @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
@@ -174,7 +194,7 @@ public class JobWSServer extends OpenCGAWSServer {
             // Set outdir
             String outputParam = analysisJobExecutor.getExecution().getOutputParam();
             if (params.get(outputParam).isEmpty()) {
-                return createErrorResponse("Missing output param '" + outputParam + "'");
+                return createErrorResponse("", "Missing output param '" + outputParam + "'");
             }
 
             int outDirId;
@@ -182,7 +202,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if(params.get(outputParam).get(0).equalsIgnoreCase("analysis")){
                 QueryOptions query = new QueryOptions();
                 query.put("name", params.get(outputParam).get(0));
-                QueryResult<File> result = catalogManager.searchFile(studyId, query, this.getQueryOptions(), sessionId);
+                QueryResult<File> result = catalogManager.searchFile(studyId, query, queryOptions, sessionId);
                 outDirId = result.getResult().get(0).getId();
             }
             else
@@ -194,7 +214,7 @@ public class JobWSServer extends OpenCGAWSServer {
             //create job folder with timestamp to store job result files
             boolean parents = true;
             java.nio.file.Path jobOutDirPath = Paths.get(outDir.getPath(), TimeUtils.getTime());
-            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, getQueryOptions(), sessionId);
+            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, queryOptions, sessionId);
             File jobOutDir = queryResult.getResult().get(0);
 
 
@@ -246,18 +266,52 @@ public class JobWSServer extends OpenCGAWSServer {
 
             return createOkResponse(jobQueryResult);
 
-        } catch (CatalogException | IOException | AnalysisExecutionException e) {
-            e.printStackTrace();
-            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
-
-    private Response executeTool() {
-
-
-        return null;
+    @GET
+    @Path("/{jobId}/info")
+    @ApiOperation(value = "Get job information", position = 2)
+    public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+        try {
+            return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
+    @GET
+    @Path("/{jobId}/visit")
+    @ApiOperation(value = "Increment job visits", position = 3)
+    public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+        try {
+            return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/delete")
+    @ApiOperation(value = "Delete job", position = 4)
+    public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
+                           @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+        try {
+            List<QueryResult> results = new LinkedList<>();
+            if (deleteFiles) {
+                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
+                for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {
+                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
+                    results.add(queryResult);
+                }
+            }
+            results.add(catalogManager.deleteJob(jobId, sessionId));
+            return createOkResponse(results);
+        } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
 
 }

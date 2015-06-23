@@ -21,7 +21,9 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
@@ -39,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +49,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -68,7 +72,7 @@ public class CatalogManager {
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
-    private CatalogDBAdaptor catalogDBAdaptor;
+    private CatalogDBAdaptorFactory catalogDBAdaptor;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
@@ -77,6 +81,7 @@ public class CatalogManager {
     private IStudyManager studyManager;
     private IFileManager fileManager;
     private IJobManager jobManager;
+    private IIndividualManager individualManager;
     private ISampleManager sampleManager;
 
     private Properties properties;
@@ -85,7 +90,8 @@ public class CatalogManager {
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties) throws IOException, CatalogIOException {
+    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptor, Properties catalogProperties)
+            throws IOException, CatalogIOException {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
 
@@ -124,6 +130,7 @@ public class CatalogManager {
         projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {
@@ -192,9 +199,19 @@ public class CatalogManager {
         return fileManager.getFileUri(study, file);
     }
 
+    public URI getFileUri(int studyId, String relativeFilePath)
+            throws CatalogException {
+        return fileManager.getFileUri(studyId, relativeFilePath);
+    }
+
+    @Deprecated
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogException {
         return fileManager.getFileUri(studyUri, relativeFilePath);
+    }
+
+    public boolean isExternal(File file) throws CatalogException {
+        return fileManager.isExternal(file);
     }
 
     public int getProjectIdByStudyId(int studyId) throws CatalogException {
@@ -494,7 +511,13 @@ public class CatalogManager {
     public QueryResult<File> createFolder(int studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString() + "/", parents, options, sessionId);
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, options, sessionId);
+    }
+
+    public QueryResult<File> createFolder(int studyId, Path folderPath, File.Status status, boolean parents, QueryOptions options, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkPath(folderPath, "folderPath");
+        return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, options, sessionId);
     }
 
     public QueryResult deleteFolder(int folderId, String sessionId)
@@ -543,6 +566,11 @@ public class CatalogManager {
     public QueryResult<File> getFileParent(int fileId, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.getParent(fileId, options, sessionId);
+    }
+
+    public QueryResult<File> getFileParents(int fileId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return fileManager.getParents(fileId, options, sessionId);
     }
 
     public QueryResult<File> getFile(int fileId, String sessionId)
@@ -688,6 +716,35 @@ public class CatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
+    
+    /**
+     * Project methods
+     * ***************************
+     */
+
+    public QueryResult<Individual> createIndividual(int studyId, String name, String family, int fatherId, int motherId,
+                                                    Individual.Gender gender, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.create(studyId, name, family, fatherId, motherId, gender, options, sessionId);
+    }
+
+    public QueryResult<Individual> getIndividual(int individualId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.read(individualId, options, sessionId);
+    }
+
+    public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.readAll(studyId, options, sessionId);
+    }
+
+    public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.update(individualId, options, options, sessionId);
+    }
+
+    public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.delete(individualId, options, sessionId);
+    }
+    
     /**
      * Samples methods
      * ***************************

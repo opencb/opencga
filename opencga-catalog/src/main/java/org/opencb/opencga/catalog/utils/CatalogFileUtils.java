@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
@@ -31,7 +33,10 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Objects;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -87,11 +92,12 @@ public class CatalogFileUtils {
 
         //If the source is equals to the target, calculate checksum (if needed) and exit
         if (sourceUri.equals(targetUri)) {
-            logger.info("SourceURI equals to TargetURI. Only calculate checksum and update file entry");
             String targetChecksum;
             if (calculateChecksum) {
+                logger.info("SourceURI equals to TargetURI. Only calculate checksum and update file entry");
                 targetChecksum = targetIOManager.calculateChecksum(targetUri);
             } else {
+                logger.info("SourceURI equals to TargetURI. Only update file entry");
                 targetChecksum = sourceChecksum;
             }
             updateFileAttributes(file, targetChecksum, targetUri, new ObjectMap("status", File.Status.READY), sessionId);
@@ -227,31 +233,83 @@ public class CatalogFileUtils {
 
     }
 
-    public void link(File file, boolean calculateChecksum, URI externalUri, boolean relink, String sessionId) throws CatalogException {
+
+    /**
+     * Link an external file into Catalog. Adds an URI to the field File::uri
+     * A file with a uri is an "external" file. Files inside external folders are not external.
+     *
+     * @param file              Already existing file. Should be "STAGE" or "MISSING", or have relink == true
+     * @param calculateChecksum Calculate checksum from the new linked file
+     * @param externalUri       External file to link
+     * @param createFoundFiles  Create a simple catalog file entry for found files. Used only for link folders
+     * @param relink            Change the existing link of a file.
+     * @param sessionId         User's sessionId
+     * @return                  Modified file
+     * @throws CatalogException
+     */
+    public File link(File file, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        if (!file.getType().equals(File.Type.FILE)) {
-            throw new CatalogIOException("Only files with type File.Type.FILE can have an external link");
+        checkCanLinkFile(file, relink);
+        if (file.getType() == File.Type.FOLDER) {
+            return linkFolder(file, calculateChecksum, externalUri, createFoundFiles, relink, sessionId);
+        } else {
+            return linkFile(file, calculateChecksum, externalUri, sessionId);
         }
+    }
 
+    /**
+     * Creates and links an external folder.
+     *
+     * @param studyId           StudyId where to place the folder
+     * @param filePath          Path to create the folder
+     * @param parents           Make parent directories as needed
+     * @param calculateChecksum Calculate checksum from the new linked file
+     * @param externalUri       External file to link
+     * @param createFoundFiles  Create a simple catalog file entry for found files.
+     * @param relink            Change the existing link of a file.
+     * @param sessionId         User's sessionId
+     * @return                  Created folder
+     * @throws CatalogException
+     */
+    public File linkFolder(int studyId, String filePath, boolean parents, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(externalUri, "externalUri");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), File.Status.STAGE, parents, null, sessionId).first();
+
+        checkCanLinkFile(folder, relink);
+
+        return linkFolder(folder, calculateChecksum, externalUri, createFoundFiles, relink, sessionId);
+    }
+
+
+    private void checkCanLinkFile(File file, boolean relink) throws CatalogException {
         File.Status fileStatus = file.getStatus();
-        if (!fileStatus.equals(File.Status.STAGE) && !fileStatus.equals(File.Status.MISSING)) {
-            if (relink) {
-                if (!fileStatus.equals(File.Status.READY)) {
-                    throw new CatalogIOException("Unable to relink a file with status : " + fileStatus);
-                }
-                if (file.getUri() == null) {
-                    throw new CatalogIOException("Unable to relink a non linked file");
-                }
-            } else {
-                throw new CatalogIOException("Unable to create a link a file with status : " + fileStatus);
+        if (relink) {
+            if (!fileStatus.equals(File.Status.READY)) {
+                throw new CatalogIOException("Unable to relink a file with status : " + fileStatus);
+            }
+            if (!catalogManager.isExternal(file)) {
+                throw new CatalogIOException("Unable to relink a non linked file");
+            }
+        } else {
+            if (!fileStatus.equals(File.Status.STAGE) && !fileStatus.equals(File.Status.MISSING)) {
+                throw new CatalogIOException("Unable to link a file with status : " + fileStatus);
             }
         }
+    }
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
+    private File linkFile(File file, boolean calculateChecksum, URI externalUri, String sessionId) throws CatalogException {
         String checksum = null;
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
+
+        if (ioManager.isDirectory(externalUri)) {
+            throw new CatalogIOException("Can't link file '" + file.getPath() + "' with a folder uri " + externalUri);
+        }
+
         if (calculateChecksum) {
             try {
                 checksum = ioManager.calculateChecksum(externalUri);
@@ -263,7 +321,75 @@ public class CatalogFileUtils {
         ObjectMap objectMap = new ObjectMap("uri", externalUri);
         objectMap.put("status", File.Status.READY);
         updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
+        return catalogManager.getFile(file.getId(), sessionId).first();
+    }
 
+    private File linkFolder(File file, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
+        logger.debug("Linking a folder");
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
+
+        if (!ioManager.isDirectory(externalUri)) {
+            throw new CatalogIOException("Can't link folder '" + file.getPath() + "' with a file uri " + externalUri);
+        }
+
+        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        List<File> files = new LinkedList<>();
+        List<URI> uris = ioManager.listFiles(externalUri);
+        Map<URI, String> uriPathMap = new HashMap<>();
+
+        Path folderPath = Paths.get(file.getPath());
+        for (URI uri : uris) {
+            if (ioManager.isDirectory(uri)) {
+                continue;       //Skip directories. Will be created automatically with "parents = true"
+            }
+            String relativePath = folderPath.resolve(externalUri.relativize(uri).getPath()).toString();
+            uriPathMap.put(uri, relativePath);
+        }
+
+        //Search if there is any existing file in the folder with the path to use.
+        QueryOptions pathsQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
+                new LinkedList<>(uriPathMap.values()));
+        List<File> existingFiles = catalogManager.getAllFiles(studyId, pathsQuery, sessionId).getResult();
+        if (!relink) {
+            if (existingFiles.size() != 0) {
+                for (File f : existingFiles) {
+                    logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
+                }
+                throw new CatalogException("Unable to link folder " + file.getPath() + " to uri " + externalUri + ". Existing files on folder");
+            }
+        }
+        Map<String, File> pathFileMap = existingFiles.stream().collect(Collectors.toMap(File::getPath, f -> f));
+
+        //Set URI to folder. This will mark the directory as "external"
+        catalogManager.modifyFile(file.getId(), new ObjectMap("uri", externalUri), sessionId);
+
+        //Create and link files.
+        for (Map.Entry<URI, String> entry : uriPathMap.entrySet()) {
+            String relativePath = entry.getValue();
+            URI uri = entry.getKey();
+            logger.debug("Adding file \"{}\"", relativePath);
+            //Create new file. Do only create new files. Do not create already existing files.
+            //Parents = true to create folders. Parameter "parents" should not be used here, it's
+            //only related to the main folder creation.
+            if (!pathFileMap.containsKey(entry.getValue())) {
+                if (createFoundFiles) {
+                    File newFile = catalogManager.createFile(studyId, null, null, relativePath, "", true, -1, sessionId).first();
+                    upload(uri, newFile, null, sessionId, false, false, false, calculateChecksum);
+                }
+            }
+        }
+        for (File existingFile : existingFiles) {
+            checkFile(existingFile, calculateChecksum, sessionId);
+        }
+
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put("status", File.Status.READY);
+        updateFileAttributes(file, null, externalUri, objectMap, sessionId);
+        return catalogManager.getFile(file.getId(), sessionId).first();
+    }
+
+    public void delete(int fileId, String sessionId) throws CatalogException {
+        delete(catalogManager.getFile(fileId, sessionId).first(), sessionId);
     }
 
     public void delete(File file, String sessionId) throws CatalogException {
@@ -272,15 +398,90 @@ public class CatalogFileUtils {
         if (!file.getStatus().equals(File.Status.TRASHED)) {
             throw new CatalogIOException("Only trashed files can be deleted");
         }
+        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        if (file.getType().equals(File.Type.FOLDER)) {
+            List<File> files = catalogManager.getAllFiles(studyId,
+                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
+                            "~" + file.getPath() + "..*"), sessionId).getResult();
+            for (File f : files) {
+                if (f.getStatus() != File.Status.TRASHED && f.getStatus() != File.Status.DELETED) {
+                    throw new CatalogIOException("Only trashed files can be deleted");
+                }
+            }
+            for (File f : files) {
+                if (f.getType() == File.Type.FILE && f.getStatus() != File.Status.DELETED) {
+                    delete(f, sessionId);
+                }
+            }
+            List<File> folders = files.stream().filter(f -> f.getType() == File.Type.FOLDER && f.getStatus() != File.Status.DELETED)
+                    .sorted((f1, f2) -> f2.getPath().length() - f1.getPath().length()).collect(Collectors.toList());
+            for (File folder : folders) {
+                delete(folder, sessionId);
+            }
+        }
 
-        if (file.getUri() == null) { //Do not delete file if is external
+        if (!catalogManager.isExternal(file)) { //Do not delete file if is external
             URI fileUri = catalogManager.getFileUri(file);
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileUri);
+            if (ioManager.isDirectory(fileUri)) {
+                if (!ioManager.listFiles(fileUri).isEmpty()) {
+                    throw new CatalogIOException("Unable to delete folder " + fileUri + ". Folder is not empty!");
+                }
+            }
             ioManager.deleteFile(fileUri);
         }
         catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
 
     }
+
+    /**
+     * Check if the fileURI related to the provided file exists, and modifies the file status if necessary.
+     *
+     * For READY files with a non existing file, set status to MISSING. "Lost file"
+     * For MISSING files who recover the file, set status to READY. "Found file"
+     * For TRASHED files with a non existing file, set status to DELETED.
+     *
+     * @param file                  File to check
+     * @param calculateChecksum     Calculate checksum for "found files"
+     * @param sessionId             User's sessionId
+     * @return                      If there is any change, returns the modified file. Else, return the same file.
+     * @throws CatalogException
+     */
+    public File checkFile(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
+        File modifiedFile = file;
+        switch (file.getStatus()) {
+            case READY:
+            case MISSING: {
+                URI fileUri = catalogManager.getFileUri(file);
+                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+                    logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
+                    if (file.getStatus() != File.Status.MISSING) {
+                        logger.info("Set status to " + File.Status.MISSING);
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.MISSING), sessionId);
+                        modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                    }
+                } else if (file.getStatus() == File.Status.MISSING) {
+                    logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
+                    logger.info("Set status to " + File.Status.READY);
+                    ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
+                    params.put("status", File.Status.READY);
+                    catalogManager.modifyFile(file.getId(), params, sessionId);
+                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                }
+                break;
+            }
+            case TRASHED: {
+                URI fileUri = catalogManager.getFileUri(file);
+                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+                    catalogManager.modifyFile(file.getId(), new ObjectMap("status", File.Status.DELETED), sessionId);
+                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                    break;
+                }
+            }
+        }
+        return modifiedFile;
+    }
+
 
     /**
      * Update some file attributes.

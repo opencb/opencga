@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -23,11 +26,13 @@ import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 14/12/14.
  */
-public class CatalogSampleAnnotationsValidator {
+public class CatalogAnnotationsValidator {
 
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
@@ -55,8 +60,11 @@ public class CatalogSampleAnnotationsValidator {
         }
         variable.setAllowedValues(acceptedValues);
 
-        if(variable.getType() == null) {
+        if (variable.getType() == null) {
             throw new CatalogException("VariableType is null");
+        }
+        if (variable.getVariableSet() != null && variable.getType() != Variable.VariableType.OBJECT) {
+            throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
         //Check default values
@@ -92,6 +100,13 @@ public class CatalogSampleAnnotationsValidator {
                 break;
             }
             case TEXT:
+                break;
+            case OBJECT:
+                if (variable.getVariableSet() != null) {
+                    for (Variable v : variable.getVariableSet()) {
+                        checkVariable(v);
+                    }
+                }
                 break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
@@ -193,6 +208,8 @@ public class CatalogSampleAnnotationsValidator {
                 String stringValue = getStringValue(defaultValue);
                 return stringValue == null ? null : new Annotation(variable.getId(), stringValue);
             }
+            case OBJECT:
+                return variable.getDefaultValue() == null ? null : new Annotation(variable.getId(), variable.getDefaultValue());
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
@@ -200,6 +217,7 @@ public class CatalogSampleAnnotationsValidator {
 
     private static void checkAllowedValue(Variable variable, Object value, String message) throws CatalogException {
 
+        List listValues;
         Object realValue = getValue(variable.getType(), value);
         if (realValue == null) {
             if (variable.isRequired()) {
@@ -208,38 +226,69 @@ public class CatalogSampleAnnotationsValidator {
                 return;
             }
         }
+        if (realValue instanceof Collection) {
+            listValues = new ArrayList((Collection) realValue);
+            if (!variable.isMultiValue()) {
+                throw new CatalogException(message + " value '" + value + "' does not accept multiple values for " + variable);
+            }
+        } else {
+            listValues = Collections.singletonList(realValue);
+        }
 
         switch (variable.getType()) {
             case BOOLEAN:
-                return;
+                break;
             case CATEGORICAL: {
-                String stringValue = (String)realValue;
-                if(variable.getAllowedValues().contains(stringValue)) {
-                    return;
-                } else {
-                    throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
+                for (Object object : listValues) {
+                    String stringValue = (String)object;
+                    if (variable.getAllowedValues() != null && !variable.getAllowedValues().contains(stringValue)) {
+                        throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
+                    }
                 }
+                break;
             }
             case NUMERIC:
-                Double numericValue = (Double)realValue;
+                for (Object object : listValues) {
+                    Double numericValue = (Double)object;
 
-                if (!variable.getAllowedValues().isEmpty()) {
-                    for (String range : variable.getAllowedValues()) {
-                        String[] split = range.split(":", -1);
-                        Double min = split[0].isEmpty() ? Double.MIN_VALUE : Double.valueOf(split[0]);
-                        Double max = split[1].isEmpty() ? Double.MAX_VALUE : Double.valueOf(split[1]);
-                        if (numericValue >= min && numericValue <= max) {
-                            return;
+                    if (variable.getAllowedValues() != null && !variable.getAllowedValues().isEmpty()) {
+                        boolean valid = false;
+                        for (String range : variable.getAllowedValues()) {
+                            String[] split = range.split(":", -1);
+                            Double min = split[0].isEmpty() ? Double.MIN_VALUE : Double.valueOf(split[0]);
+                            Double max = split[1].isEmpty() ? Double.MAX_VALUE : Double.valueOf(split[1]);
+                            if (numericValue >= min && numericValue <= max) {
+                                valid = true;
+                                break;
+                            }
+                        }
+                        if (!valid) {
+                            throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It is in any range.");
                         }
                     }
-                    throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It is in any range.");
-                } else {
-                    return;    //If there is no "allowedValues", any number
+                    //If there is no "allowedValues", accept any number
                 }
-
+                break;
             case TEXT: {
                 //Check regex?
                 return;
+            }
+            case OBJECT: {
+                //Check variableSet
+                for (Object object : listValues) {
+                    if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                        Map objectMap = (Map) object;
+
+                        Set<Annotation> annotationSet = new HashSet<>();
+                        for (Map.Entry entry : (Set<Map.Entry>) objectMap.entrySet()) {
+//                            checkAnnotation(variableMap, new Annotation(entry.getKey().toString(), entry.getValue()));
+                            annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
+                        }
+                        checkAnnotationSet(new VariableSet(0, variable.getId(), false, variable.getDescription(), variable.getVariableSet(), null), new AnnotationSet("", 0, annotationSet, null, null), null);
+                    }
+                }
+                break;
             }
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
@@ -247,7 +296,16 @@ public class CatalogSampleAnnotationsValidator {
     }
 
     private static Object getValue(Variable.VariableType variableType, Object value) throws CatalogException {
-        switch(variableType) {
+        Collection valueCollection;
+        if (value instanceof Collection) {
+            valueCollection = ((Collection) value);
+            ArrayList<Object> list = new ArrayList<>(valueCollection.size());
+            for (Object o : valueCollection) {
+                list.add(getValue(variableType, o));
+            }
+            return list;
+        }
+        switch (variableType) {
             case BOOLEAN:
                 return getBooleanValue(value);
             case TEXT:
@@ -255,6 +313,8 @@ public class CatalogSampleAnnotationsValidator {
                 return getStringValue(value);
             case NUMERIC:
                 return getNumericValue(value);
+            case OBJECT:
+                return getMapValue(value);
             default:
                 throw new CatalogException("Unknown VariableType " + variableType.name());
         }
@@ -319,16 +379,8 @@ public class CatalogSampleAnnotationsValidator {
         Double numericValue = null;
         if(value == null) {
             return null;
-        } else if( value instanceof Double) {
-            return (Double) value;
-        } else if(value instanceof Integer) {
-            return ((Integer) value).doubleValue();
-        } else if(value instanceof Short) {
-            return ((Short) value).doubleValue();
-        } else if(value instanceof Long) {
-            return ((Long) value).doubleValue();
-        } else if(value instanceof Float) {
-            return ((Float) value).doubleValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).doubleValue();
         } else if (value instanceof String) {
             if (((String) value).isEmpty()) {
                 numericValue = null;    //Empty string
@@ -343,6 +395,20 @@ public class CatalogSampleAnnotationsValidator {
             return (double) ((Boolean) value ? 1 : 0);
         }
         return numericValue;
+    }
+
+    private static Map getMapValue(Object value) throws CatalogException {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Map) {
+            return ((Map) value);
+        }
+        try {
+            return new ObjectMap(new ObjectMapper().writeValueAsString(value));
+        } catch (JsonProcessingException e) {
+            throw new CatalogException(e);
+        }
     }
 
 }

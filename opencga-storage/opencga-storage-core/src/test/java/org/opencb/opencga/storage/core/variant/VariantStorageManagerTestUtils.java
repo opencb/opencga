@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Properties;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -35,6 +36,7 @@ public abstract class VariantStorageManagerTestUtils {
     protected static URI outputUri;
     protected VariantStorageManager variantStorageManager;
     public static Logger logger;
+    protected static Properties storageProperties;
 
     @BeforeClass
     public static void _beforeClass() throws Exception {
@@ -45,6 +47,9 @@ public abstract class VariantStorageManagerTestUtils {
         inputUri = inputPath.toUri();
         outputUri = rootDir.toUri();
         logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
+
+        storageProperties = new Properties();
+        storageProperties.load(VariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage.properties"));
     }
 
     protected static Path getTmpRootDir() throws IOException {
@@ -122,7 +127,13 @@ public abstract class VariantStorageManagerTestUtils {
         loadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         loadParams.put(VariantStorageManager.INCLUDE_SAMPLES, true);
         loadParams.put(VariantStorageManager.FILE_ID, 6);
+
         ObjectMap postLoadParams = new ObjectMap();
+        postLoadParams.put(VariantStorageManager.FILE_ID, 6);
+        postLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
+        postLoadParams.put(VariantStorageManager.ANNOTATOR_PROPERTIES, storageProperties);
+        postLoadParams.put(VariantStorageManager.ANNOTATE, true);
+        postLoadParams.put(VariantStorageManager.CALCULATE_STATS, true);
         postLoadParams.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);

@@ -30,9 +30,9 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
 
     public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                        CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -144,7 +144,9 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         }
 
 
-        files.add(new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0));
+        File rootFile = new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0);
+        rootFile.setUri(uri);
+        files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
@@ -167,6 +169,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         }
 
         studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri));
+        int rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
+        fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri));
 
         userDBAdaptor.updateUserLastActivity(projectOwnerId);
         return result;

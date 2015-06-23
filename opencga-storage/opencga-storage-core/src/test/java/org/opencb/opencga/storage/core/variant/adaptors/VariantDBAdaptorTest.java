@@ -50,7 +50,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     private VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
-    protected StudyConfiguration studyConfiguration;
+    protected static StudyConfiguration studyConfiguration;
 
     @BeforeClass
     public static void beforeClass() throws IOException {

@@ -45,7 +45,8 @@ class CatalogMongoDBUtils {
     private static ObjectWriter jsonObjectWriter;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
-    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit").stream().collect(Collectors.toSet());
+    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect(Collectors.toSet());
+    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "metadata", "includeProjects", "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
@@ -273,6 +274,19 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static void filterEnumParams(ObjectMap parameters, Map<String, Object> filteredParams, Map<String, Class<? extends Enum>> acceptedParams) throws CatalogDBException {
+        for (Map.Entry<String, Class<? extends Enum>> e : acceptedParams.entrySet()) {
+            if (parameters.containsKey(e.getKey())) {
+                String parameterValue = parameters.getString(e.getKey());
+                Set<String> set = (Set<String>) EnumSet.allOf(e.getValue()).stream().map(Object::toString).collect(Collectors.toSet());
+                if (!set.contains(parameterValue)) {
+                    throw new CatalogDBException("Invalid parameter { " + e.getKey() + ": \"" + parameterValue + "\" }. Accepted values from Enum " + e.getValue() + " " + EnumSet.allOf(e.getValue()));
+                }
+                filteredParams.put(e.getKey(), parameterValue);
+            }
+        }
+    }
+
     static void filterIntegerListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntegerListParams) {
         for (String s : acceptedIntegerListParams) {
             if (parameters.containsKey(s)) {
@@ -375,6 +389,10 @@ class CatalogMongoDBUtils {
         return datastoreOptions.contains(key);
     }
 
+    static boolean isOtherKnownOption(String key) {
+        return otherOptions.contains(key);
+    }
+
     static List<DBObject> addCompQueryFilter(String optionKey, QueryOptions options, CatalogDBAdaptor.FilterOption.Type type, List<DBObject> andQuery) throws CatalogDBException {
         return addCompQueryFilter(type, optionKey, options, "", andQuery);
     }
@@ -384,6 +402,10 @@ class CatalogMongoDBUtils {
         if (queryKey == null) {
             queryKey = "";
         }
+        return addCompQueryFilter(type, optionsList, queryKey, andQuery);
+    }
+
+    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
 
         ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {

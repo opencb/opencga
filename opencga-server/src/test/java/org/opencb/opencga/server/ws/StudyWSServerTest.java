@@ -18,120 +18,78 @@ package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.RandomStringUtils;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResponse;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.models.Study;
 
+import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
 public class StudyWSServerTest {
 
-    private ProjectWSServerTest projectTest;
-    private int studyId;
-    public StudyWSServerTest(ProjectWSServerTest prTest){
+    private WebTarget webTarget;
 
-        projectTest = prTest;
+    public StudyWSServerTest(WebTarget webTarget) {
+        this.webTarget = webTarget;
     }
 
-    public void createStudy(){
-        ObjectMapper objectMapper = new ObjectMapper();
+    public Study createStudy(int projectId, String sessionId) throws IOException {
         String stName = "st_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
         System.out.println("\nTesting study creation...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
-        System.out.println("\tprojectId: " + String.valueOf(projectTest.getProjectId()));
-        System.out.println("\tsid: " + projectTest.getUserTest().getSessionId());
+        System.out.println("\tprojectId: " + projectId);
+        System.out.println("\tsid: " + sessionId);
         System.out.println("\tname: " + stName);
         System.out.println("\talias: " + stName);
         System.out.println("\ttype: type");
         System.out.println("\tstatus: status");
         System.out.println("\tdescription: description");
 
-//        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("projectId", String.valueOf(projectTest.getProjectId()));
-//        queryParams.add("sid", projectTest.getUserTest().getSessionId());
-//        queryParams.add("name", stName);
-//        queryParams.add("alias", stName);
-//        queryParams.add("type", "type");
-//        queryParams.add("status", "status");
-//        queryParams.add("description", "description");
-        String s = projectTest.getUserTest().getWebTarget().path("studies").path("create")
-                .queryParam("projectId", String.valueOf(projectTest.getProjectId()))
-                .queryParam("sid", projectTest.getUserTest().getSessionId())
+        String s = webTarget.path("studies").path("create")
+                .queryParam("projectId", projectId)
+                .queryParam("sid", sessionId)
                 .queryParam("name", stName)
                 .queryParam("alias", stName)
-                .queryParam("type", "type")
+                .queryParam("type", Study.Type.CASE_CONTROL)
                 .queryParam("status", "status")
                 .queryParam("description", "description")
                 .request().get(String.class);
-        try {
-            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
-            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
-            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-            studyId = Integer.parseInt(WSServerTestUtils.getField(queryResponse,"id"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        QueryResponse<QueryResult<Study>> queryResponse = WSServerTestUtils.parseResult(s, Study.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+
         System.out.println("\nJSON RESPONSE");
         System.out.println(s);
 
+        return queryResponse.getResponse().get(0).first();
     }
 
-    public void info(){
-        ObjectMapper objectMapper = new ObjectMapper();
+    public Study info(int studyId, String sessionId) throws IOException {
         System.out.println("\nTesting study info...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
         System.out.println("\tstudyId: " + String.valueOf(studyId));
-        System.out.println("\tsid: " + projectTest.getUserTest().getSessionId());
+        System.out.println("\tsid: " + sessionId);
 
-//        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("sid", projectTest.getUserTest().getSessionId());
-        String s = projectTest.getUserTest().getWebTarget().path("studies").path(String.valueOf(studyId)).path("info")
-                .queryParam("sid", projectTest.getUserTest().getSessionId())
+        String json = webTarget.path("studies").path(String.valueOf(studyId)).path("info")
+                .queryParam("sid", sessionId)
                 .request().get(String.class);
-        try {
-            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
-            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
-            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        QueryResponse<QueryResult<Study>> queryResponse = WSServerTestUtils.parseResult(json, Study.class);
+        Study study = queryResponse.getResponse().get(0).first();
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+
         System.out.println("\nJSON RESPONSE");
-        System.out.println(s);
+        System.out.println(json);
 
+        return study;
     }
-    public void getAllStudies(){
 
-        int projectId = projectTest.getProjectId();
-        ObjectMapper objectMapper = new ObjectMapper();
-        System.out.println("\nTesting all studies info...");
-        System.out.println("---------------------");
-        System.out.println("\nINPUT PARAMS");
-        System.out.println("\tprojectId: " + String.valueOf(projectId));
-        System.out.println("\tsid: " + projectTest.getUserTest().getSessionId());
-
-//        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("sid", projectTest.getUserTest().getSessionId());
-        String s = projectTest.getUserTest().getWebTarget().path("studies").path(String.valueOf(projectId))
-                .path("all-studies")
-                .queryParam("sid", projectTest.getUserTest().getSessionId())
-                .request().get(String.class);
-        try {
-            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse .class);
-            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
-            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("\nJSON RESPONSE");
-        System.out.println(s);
-
-    }
-    public void modifyStudy() {
-        String sessionId = projectTest.getUserTest().getSessionId();
+    public void modifyStudy(int studyId, String sessionId) throws IOException {
         String name = studyId + "-mod";
-        String type = "type-mod";
+        Study.Type type = Study.Type.CASE_SET;
         String description = "desc-mod";
         String status = "status-mod";
         //String attr = "attr-mod";
@@ -148,15 +106,8 @@ public class StudyWSServerTest {
         System.out.println("\tdescription: " + description);
         System.out.println("\tstatus: " + status);
 
-//        MultivaluedMap queryParams = new MultivaluedMapImpl();
-//        queryParams.add("sid", sessionId);
-//        queryParams.add("name", name);
-//        queryParams.add("type", type);
-//        queryParams.add("description", description);
-//        queryParams.add("status", status);
-        //queryParams.add("stats", stats);
-        String s = projectTest.getUserTest().getWebTarget().path("studies").path(String.valueOf(studyId))
-                .path("modify")
+        String json = webTarget.path("studies").path(String.valueOf(studyId))
+                .path("update")
                 .queryParam("sid", sessionId)
                 .queryParam("name", name)
                 .queryParam("type", type)
@@ -165,15 +116,10 @@ public class StudyWSServerTest {
                 .request().get(String.class);
 
         System.out.println("\nJSON RESPONSE");
-        System.out.println(s);
-        try {
-            org.codehaus.jackson.map.ObjectMapper objectMapper = new org.codehaus.jackson.map.ObjectMapper();
-            QueryResponse queryResponse = objectMapper.readValue(s, QueryResponse.class);
-            //Map<String,Object> userData = objectMapper.readValue(s, Map.class);
-            assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println(json);
+
+        QueryResponse<QueryResult<ObjectMap>> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("Testing study modification finished");
     }
 }

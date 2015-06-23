@@ -31,9 +31,9 @@ public class JobManager extends AbstractManager implements IJobManager {
     protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
 
     public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                      CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                      CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                       Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 

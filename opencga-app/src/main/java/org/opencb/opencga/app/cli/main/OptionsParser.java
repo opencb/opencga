@@ -301,6 +301,9 @@ public class OptionsParser {
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
 
+            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+            public boolean uries = false;
+
         }
 
         @Parameters(commandNames = {"login"}, commandDescription = "Login as user and return its sessionId")
@@ -432,7 +435,7 @@ public class OptionsParser {
             String alias;
 
             @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
-            Study.Type type = Study.Type.CASE_CONTROL;
+            Study.Type type = Study.Type.COLLECTION;
 
             @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
             String description;
@@ -467,6 +470,9 @@ public class OptionsParser {
 
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
+
+            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+            public boolean uries = false;
         }
 
         @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
@@ -483,6 +489,7 @@ public class OptionsParser {
         final LinkCommand linkCommand;
         final RelinkCommand relinkCommand;
         final RefreshCommand refreshCommand;
+        final UploadCommand uploadCommand;
         final InfoCommand infoCommand;
         final SearchCommand searchCommand;
         final ListCommand listCommand;
@@ -495,6 +502,7 @@ public class OptionsParser {
             JCommander files = jcommander.getCommands().get("files");
             files.addCommand(this.createCommand = new CreateCommand());
             files.addCommand(this.createFolderCommand = new CreateFolderCommand());
+            files.addCommand(this.uploadCommand = new UploadCommand());
             files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.listCommand = new ListCommand());
             files.addCommand(this.linkCommand = new LinkCommand());
@@ -555,6 +563,23 @@ public class OptionsParser {
             boolean calculateChecksum = false;
         }
 
+        @Parameters(commandNames = {"upload"}, commandDescription = "Attach a physical file to a catalog entry file.")
+        class UploadCommand extends BaseFileCommand{
+
+            @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
+            String inputFile;
+
+            @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed", required = false, arity = 0)
+            boolean replace = false;
+
+            @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
+            boolean move = false;
+
+            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+            boolean calculateChecksum = false;
+
+        }
+
         @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
         class CreateFolderCommand {
 
@@ -591,7 +616,7 @@ public class OptionsParser {
             @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
             String description;
 
-            @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
+            @Parameter(names = {"--path"}, description = "New folder path", required = false, arity = 1)
             String path  = "";
 
             @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
@@ -601,7 +626,7 @@ public class OptionsParser {
             boolean calculateChecksum = false;
         }
 
-        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be on STAGE of be an external file")
+        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external file")
         class RelinkCommand extends BaseFileCommand {
             @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
             String inputFile;
@@ -651,6 +676,9 @@ public class OptionsParser {
 
             @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
             public boolean recursive = false;
+
+            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+            public boolean uries = false;
         }
 
         @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")

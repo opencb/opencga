@@ -14,40 +14,44 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server;
+package org.opencb.opencga.server.ws;
 
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
-@Path("/test")
-@Api(value = "test", description = "test web services")
+@Path("/{version}/test")
+@Api(value = "test", position = 12, description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
     //
-//
-//    @POST
-//    @Consumes(MediaType.MULTIPART_FORM_DATA)
-//    @Path("/echo")
-//    @ApiOperation(value = "echo multipart")
-//    public Response chunkUpload(@DefaultValue("") @FormDataParam("message") String message) {
-//        return createOkResponse(message);
-//    }
+
+    @POST
+    @Consumes({MediaType.MULTIPART_FORM_DATA})
+    @Path("/echo")
+    @ApiOperation(value = "echo multipart")
+    public Response formPost(@DefaultValue("") @FormDataParam("message") String message) {
+        System.out.println("Recived message " + message);
+        return buildResponse(Response.ok(message));
+    }
+
+
 
 //    @GET
 //    @Path("/{param}")

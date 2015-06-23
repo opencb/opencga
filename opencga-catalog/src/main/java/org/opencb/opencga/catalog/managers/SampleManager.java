@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -28,9 +28,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
 
     public SampleManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                         CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                          Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 
@@ -72,7 +72,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
         if (checkAnnotationSet) {
-            CatalogSampleAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
         }
 
         return sampleDBAdaptor.annotateSample(sampleId, annotationSet);
@@ -111,7 +111,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
-        Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
+        Sample sample = new Sample(-1, name, source, -1, description, Collections.<AnnotationSet>emptyList(),
                 attributes);
 
         return sampleDBAdaptor.createSample(studyId, sample, options);
@@ -209,7 +209,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
-        CatalogSampleAnnotationsValidator.checkVariableSet(variableSet);
+        CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         return sampleDBAdaptor.createVariableSet(studyId, variableSet);
     }
