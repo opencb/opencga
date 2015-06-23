@@ -234,11 +234,10 @@ public class CatalogAnnotationsValidator {
         } else {
             listValues = Collections.singletonList(realValue);
         }
-        realValue = null;
 
         switch (variable.getType()) {
             case BOOLEAN:
-                return;
+                break;
             case CATEGORICAL: {
                 for (Object object : listValues) {
                     String stringValue = (String)object;
@@ -246,6 +245,7 @@ public class CatalogAnnotationsValidator {
                         throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
                     }
                 }
+                break;
             }
             case NUMERIC:
                 for (Object object : listValues) {
@@ -268,6 +268,7 @@ public class CatalogAnnotationsValidator {
                     }
                     //If there is no "allowedValues", accept any number
                 }
+                break;
             case TEXT: {
                 //Check regex?
                 return;
